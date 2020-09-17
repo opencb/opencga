@@ -24,10 +24,15 @@ import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
@@ -46,6 +51,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -54,11 +60,8 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -148,8 +151,8 @@ public class OpenCGAWSServer {
         jsonObjectWriter = jsonObjectMapper.writer();
 
         //Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+//        LogManager.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+//        LogManager.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
     }
 
 
@@ -211,7 +214,7 @@ public class OpenCGAWSServer {
     static void init(String opencgaHomeStr) {
         initialized.set(true);
 
-        logger = LoggerFactory.getLogger("org.opencb.opencga.server.rest.OpenCGAWSServer");
+        logger = LogManager.getLogger("org.opencb.opencga.server.rest.OpenCGAWSServer");
         logger.info("========================================================================");
         logger.info("| Starting OpenCGA REST server, initializing OpenCGAWSServer");
         logger.info("| This message must appear only once.");
@@ -289,19 +292,38 @@ public class OpenCGAWSServer {
     }
 
     private static void initLogger(java.nio.file.Path logs) {
-        try {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
-            String logFile = logs.resolve("server.log").toString();
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
-            rollingFileAppender.setThreshold(Level.DEBUG);
-            rollingFileAppender.setMaxFileSize("20MB");
-            rollingFileAppender.setMaxBackupIndex(10);
-            rootLogger.setLevel(Level.TRACE);
-            rootLogger.addAppender(rollingFileAppender);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
+//        ConfigurationBuilder<BuiltConfiguration> configurationBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
+//
+//        ComponentBuilder triggeringPolicy = configurationBuilder.newComponent("Policies")
+//                .addComponent(configurationBuilder.newComponent("SizeBasedTriggeringPolicy").addAttribute("size", "20MB"));
+//        ComponentBuilder rolloverStrategy = configurationBuilder.newComponent("DirectWriteRolloverStrategy")
+//                .addAttribute("maxFiles", 10);
+//
+//        String logFile = logs.resolve("server.log").toString();
+//
+//        AppenderComponentBuilder appender = configurationBuilder.newAppender("rolling", "RollingFile")
+////                .addAttribute("fileName", logFile)
+//                .addAttribute("filePattern", logFile + ".%i")
+//                .addAttribute("append", true)
+//                .addComponent(triggeringPolicy)
+//                .addComponent(rolloverStrategy);
+//        configurationBuilder.add(appender);
+//
+//        appender = configurationBuilder.newAppender("stdout", "CONSOLE");
+//        configurationBuilder.add(appender);
+//
+//        configurationBuilder.add(configurationBuilder.newLogger("org.apache.logging.log4j", Level.DEBUG)
+//                .add(configurationBuilder.newAppenderRef("rolling"))
+//                .add(configurationBuilder.newAppenderRef("stdout")));
+//        configurationBuilder.add(configurationBuilder.newRootLogger(Level.TRACE)
+//                .add(configurationBuilder.newAppenderRef("rolling"))
+//                .add(configurationBuilder.newAppenderRef("stdout")));
+//        Configurator.reconfigure(configurationBuilder.build());
+//
+//        LogManager.getRootLogger().trace("my test");
+//
+//        System.out.println(configurationBuilder.toXmlConfiguration());
     }
 
     static void shutdown() {
@@ -716,7 +738,7 @@ public class OpenCGAWSServer {
     }
 
     public Response submitJob(String toolId, String project, String study, Map<String, Object> paramsMap,
-                               String jobName, String jobDescription, String jobDependsOne, String jobTags) {
+                              String jobName, String jobDescription, String jobDependsOne, String jobTags) {
         return run(() -> submitJobRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags));
     }
 
@@ -731,7 +753,7 @@ public class OpenCGAWSServer {
     }
 
     protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams,
-                                         String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
         Map<String, Object> paramsMap = bodyParams.toParams();
         if (StringUtils.isNotEmpty(study)) {

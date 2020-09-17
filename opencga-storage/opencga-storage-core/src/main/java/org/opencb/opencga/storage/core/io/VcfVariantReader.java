@@ -20,6 +20,8 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
@@ -27,8 +29,6 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantC
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  */
 @Deprecated
 public class VcfVariantReader implements DataReader<Variant> {
-    protected static Logger logger = LoggerFactory.getLogger(VcfVariantReader.class);
+    protected static Logger logger = LogManager.getLogger(VcfVariantReader.class);
 
     protected final DataReader<String> reader;
     protected final VCFCodec vcfCodec;

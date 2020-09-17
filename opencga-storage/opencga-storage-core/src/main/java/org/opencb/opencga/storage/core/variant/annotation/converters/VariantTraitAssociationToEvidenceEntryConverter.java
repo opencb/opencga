@@ -4,12 +4,12 @@ package org.opencb.opencga.storage.core.variant.annotation.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  */
 public class VariantTraitAssociationToEvidenceEntryConverter implements Converter<VariantTraitAssociation, List<EvidenceEntry>> {
 
-    protected static Logger logger = LoggerFactory.getLogger(VariantTraitAssociationToEvidenceEntryConverter.class);
+    protected static Logger logger = LogManager.getLogger(VariantTraitAssociationToEvidenceEntryConverter.class);
 
     private static final String CLINVAR = "clinvar";
     private static final String COSMIC = "cosmic";

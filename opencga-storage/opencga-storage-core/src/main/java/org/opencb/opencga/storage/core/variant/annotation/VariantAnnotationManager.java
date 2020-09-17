@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -24,8 +26,6 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata.VariantAnnotationMetadata;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata.VariantAnnotatorProgram;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Date;
@@ -50,7 +50,7 @@ public abstract class VariantAnnotationManager {
     public static final String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
     public static final String CURRENT = "CURRENT";
 
-    private static Logger logger = LoggerFactory.getLogger(VariantAnnotationManager.class);
+    private static Logger logger = LogManager.getLogger(VariantAnnotationManager.class);
 
     public abstract long annotate(Query query, ObjectMap options) throws VariantAnnotatorException, IOException, StorageEngineException;
 

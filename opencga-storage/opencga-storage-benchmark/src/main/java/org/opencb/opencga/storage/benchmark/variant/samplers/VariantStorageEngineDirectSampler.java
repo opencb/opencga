@@ -22,15 +22,15 @@ import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSampler;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +42,7 @@ import java.util.Map;
  */
 public class VariantStorageEngineDirectSampler extends JavaSampler implements VariantStorageEngineSampler {
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
 
     public VariantStorageEngineDirectSampler() {
         super();
@@ -93,7 +93,7 @@ public class VariantStorageEngineDirectSampler extends JavaSampler implements Va
     }
 
     protected static class VariantStorageEngineJavaSamplerClient extends AbstractJavaSamplerClient {
-        private Logger logger = LoggerFactory.getLogger(getClass());
+        private Logger logger = LogManager.getLogger(getClass());
         private VariantStorageEngine variantStorageEngine;
         private QueryGenerator queryGenerator;
 

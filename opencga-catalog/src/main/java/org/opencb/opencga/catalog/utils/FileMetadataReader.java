@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import htsjdk.samtools.SAMFileHeader;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.variant.metadata.VariantMetadataUtils;
@@ -36,8 +38,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -62,7 +62,7 @@ public class FileMetadataReader {
     public static final String FILE_VARIANT_STATS_VARIABLE_SET = "opencga_file_variant_stats";
 
     private final CatalogManager catalogManager;
-    protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
+    protected static Logger logger = LogManager.getLogger(FileMetadataReader.class);
 
     public FileMetadataReader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;

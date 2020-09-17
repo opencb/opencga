@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -51,8 +53,6 @@ import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
@@ -68,7 +68,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
 
 public class PanelManager extends ResourceManager<Panel> {
 
-    protected static Logger logger = LoggerFactory.getLogger(PanelManager.class);
+    protected static Logger logger = LogManager.getLogger(PanelManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
 

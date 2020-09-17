@@ -22,6 +22,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -47,7 +48,6 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -69,7 +69,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection,
                               MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(UserMongoDBAdaptor.class));
+        super(LogManager.getLogger(UserMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
         this.deletedUserCollection = deletedUserCollection;

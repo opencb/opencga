@@ -17,10 +17,10 @@
 package org.opencb.opencga.server;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -80,7 +80,7 @@ public abstract class AbstractStorageServer {
     }
 
     private void init() {
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
 
         initConfigurationFiles(opencgaHome);
 

@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.app.cli.client.executors;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -27,10 +29,8 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -48,7 +48,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 public class VariantQueryCommandUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(VariantQueryCommandUtils.class);
+    private static Logger logger = LogManager.getLogger(VariantQueryCommandUtils.class);
 
     public static Query parseBasicVariantQuery(StorageVariantCommandOptions.BasicVariantQueryOptions options,
                                                Query query) throws IOException {

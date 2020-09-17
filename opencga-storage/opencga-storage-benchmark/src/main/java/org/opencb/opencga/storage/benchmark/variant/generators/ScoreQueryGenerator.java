@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.opencb.opencga.storage.benchmark.variant.queries.Score;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -34,7 +34,7 @@ public abstract class ScoreQueryGenerator extends ConfiguredQueryGenerator {
     protected static final List<String> DEF_OPS = Arrays.asList(">", "<");
     private List<Score> scores;
     private String queryKey;
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
 
     public ScoreQueryGenerator(String queryKey) {
         this(new ArrayList<>(), queryKey);

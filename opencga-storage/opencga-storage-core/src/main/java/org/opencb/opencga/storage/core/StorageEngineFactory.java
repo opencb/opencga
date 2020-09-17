@@ -17,13 +17,13 @@
 package org.opencb.opencga.storage.core;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -41,7 +41,7 @@ public final class StorageEngineFactory {
 
     private Map<String, AlignmentStorageEngine> alignmentStorageEngineMap = new ConcurrentHashMap<>();
     private Map<String, VariantStorageEngine> variantStorageEngineMap = new ConcurrentHashMap<>();
-    protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
+    protected static Logger logger = LogManager.getLogger(StorageConfiguration.class);
 
     private StorageEngineFactory(StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;

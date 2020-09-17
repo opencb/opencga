@@ -16,14 +16,14 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +74,7 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
     public static final Comparator<Variant> VARIANT_COMPARATOR = VARIANT_COMPARATOR_FAST;
     protected long timeFetching = 0;
     protected long timeConverting = 0;
-    private final Logger logger = LoggerFactory.getLogger(VariantDBIterator.class);
+    private final Logger logger = LogManager.getLogger(VariantDBIterator.class);
 
     @Override
     public VariantDBIterator addCloseable(AutoCloseable closeable) {

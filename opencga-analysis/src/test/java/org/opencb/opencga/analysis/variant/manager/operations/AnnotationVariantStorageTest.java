@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
@@ -32,8 +34,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.*;
  */
 public class AnnotationVariantStorageTest extends AbstractVariantOperationManagerTest {
 
-    protected Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);
+    protected Logger logger = LogManager.getLogger(StatsVariantStorageTest.class);
 
     @Before
     public void setUp() throws Exception {

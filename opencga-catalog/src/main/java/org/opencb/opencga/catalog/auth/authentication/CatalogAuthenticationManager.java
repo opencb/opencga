@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -30,7 +31,6 @@ import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.security.Key;
 import java.util.List;
@@ -58,7 +58,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
         Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
         this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
 
-        this.logger = LoggerFactory.getLogger(CatalogAuthenticationManager.class);
+        this.logger = LogManager.getLogger(CatalogAuthenticationManager.class);
     }
 
     @Override

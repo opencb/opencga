@@ -2,10 +2,10 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -203,7 +203,7 @@ public enum GenotypeClass implements Predicate<String> {
 
     private final Predicate<String> predicate;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GenotypeClass.class);
+    private static final Logger LOGGER = LogManager.getLogger(GenotypeClass.class);
 
     GenotypeClass(Predicate<String> predicate) {
         final char first = UNKNOWN_GENOTYPE.charAt(0);

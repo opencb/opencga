@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,8 +50,6 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -74,7 +74,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    Logger logger = LoggerFactory.getLogger(VariantFileIndexerOperationManagerTest.class);
+    Logger logger = LogManager.getLogger(VariantFileIndexerOperationManagerTest.class);
 
     @Test
     public void testIndexWithStats() throws Exception {

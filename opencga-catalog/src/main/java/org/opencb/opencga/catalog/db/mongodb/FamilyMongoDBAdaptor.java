@@ -22,6 +22,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -58,7 +59,6 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -81,7 +81,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBCollection deletedFamilyCollection,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(FamilyMongoDBAdaptor.class));
+        super(LogManager.getLogger(FamilyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.familyCollection = familyCollection;
         this.deletedFamilyCollection = deletedFamilyCollection;

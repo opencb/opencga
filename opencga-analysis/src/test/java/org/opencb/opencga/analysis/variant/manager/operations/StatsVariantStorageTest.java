@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -45,8 +47,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -67,7 +67,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  */
 public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest {
 
-    Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);
+    Logger logger = LogManager.getLogger(StatsVariantStorageTest.class);
     private String all;
     private String[] coh = new String[5];
 

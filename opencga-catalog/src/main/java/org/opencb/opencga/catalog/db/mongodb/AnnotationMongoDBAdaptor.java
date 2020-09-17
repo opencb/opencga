@@ -23,6 +23,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -43,7 +44,6 @@ import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.*;

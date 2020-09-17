@@ -17,10 +17,10 @@
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,7 +43,7 @@ public class MultiQueryGenerator extends QueryGenerator {
     private RandomQueries randomQueries;
     private Map<String, String> baseQueriesFromCLI;
     private Pattern pattern = Pattern.compile("(?<param>[^(]+)(\\((?<extraParam>[^)]+)\\))?");
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
     private String query;
 
     @Override

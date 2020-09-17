@@ -18,21 +18,21 @@ package org.opencb.opencga.analysis.tools;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ConfigurationBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class ToolExecutorFactory {
-    private final Logger logger = LoggerFactory.getLogger(ToolExecutorFactory.class);
+    private final Logger logger = LogManager.getLogger(ToolExecutorFactory.class);
 
     private static Set<Class<? extends OpenCgaToolExecutor>> executorsCache;
 

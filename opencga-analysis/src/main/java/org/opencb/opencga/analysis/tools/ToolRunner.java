@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.tools;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -27,15 +29,13 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ToolRunner {
 
-    private Logger logger = LoggerFactory.getLogger(ToolRunner.class);
+    private Logger logger = LogManager.getLogger(ToolRunner.class);
 
     private final CatalogManager catalogManager;
     private final StorageEngineFactory storageEngineFactory;

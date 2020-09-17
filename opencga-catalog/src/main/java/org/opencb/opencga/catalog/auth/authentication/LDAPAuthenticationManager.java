@@ -18,12 +18,12 @@ package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -86,7 +86,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
         this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
 
-        this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
+        this.logger = LogManager.getLogger(LDAPAuthenticationManager.class);
     }
 
     @Override

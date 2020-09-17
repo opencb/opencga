@@ -22,11 +22,11 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.config.ServerConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +50,7 @@ public class StorageConfiguration {
     private BenchmarkConfiguration benchmark;
 
 
-    protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
+    protected static Logger logger = LogManager.getLogger(StorageConfiguration.class);
 
     public StorageConfiguration() {
         this.alignment = new ObjectMap();

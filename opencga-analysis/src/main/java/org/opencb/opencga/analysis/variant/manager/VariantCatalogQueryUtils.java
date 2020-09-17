@@ -18,6 +18,8 @@ package org.opencb.opencga.analysis.variant.manager;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
@@ -61,8 +63,6 @@ import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -187,7 +187,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     private final SampleFilterValidator sampleFilterValidator;
     private final CohortFilterValidator cohortFilterValidator;
     //    public static final QueryParam SAMPLE_FILTER_GENOTYPE = QueryParam.create("sampleFilterGenotype", "", QueryParam.Type.TEXT_ARRAY);
-    protected static Logger logger = LoggerFactory.getLogger(VariantCatalogQueryUtils.class);
+    protected static Logger logger = LogManager.getLogger(VariantCatalogQueryUtils.class);
 
     public VariantCatalogQueryUtils(CatalogManager catalogManager) {
         super(catalogManager);

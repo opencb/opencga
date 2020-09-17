@@ -1,8 +1,8 @@
 package org.opencb.opencga.storage.core.io.managers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.solr.common.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -16,7 +16,7 @@ import java.nio.file.Paths;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class LocalIOConnector implements IOConnector {
-    protected static Logger logger = LoggerFactory.getLogger(LocalIOConnector.class);
+    protected static Logger logger = LogManager.getLogger(LocalIOConnector.class);
 
     @Override
     public boolean isValid(URI uri) {

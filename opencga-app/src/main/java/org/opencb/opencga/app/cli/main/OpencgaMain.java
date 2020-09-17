@@ -18,6 +18,8 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.ClinicalCommandExecutor;
@@ -26,8 +28,6 @@ import org.opencb.opencga.app.cli.main.executors.catalog.*;
 import org.opencb.opencga.app.cli.main.executors.operations.OperationsCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by imedina on 27/05/16.
@@ -45,7 +45,7 @@ public class OpencgaMain {
                 switch (arg) {
                     case "--password":
                     case "-p":
-                        Logger logger = LoggerFactory.getLogger(OpencgaMain.class);
+                        Logger logger = LogManager.getLogger(OpencgaMain.class);
                         logger.warn("Argument " + arg + " no longer required. It will be forbidden in future releases.");
                     case "--help":
                     case "-h":

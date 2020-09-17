@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,8 +33,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.models.job.Job;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,7 +53,7 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
 
-    private Logger logger = LoggerFactory.getLogger(JobCatalogMongoDBIterator.class);
+    private Logger logger = LogManager.getLogger(JobCatalogMongoDBIterator.class);
 
     public JobCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession, JobConverter converter,
                                      JobMongoDBAdaptor jobDBAdaptor, FileMongoDBAdaptor fileDBAdaptor, QueryOptions options) {

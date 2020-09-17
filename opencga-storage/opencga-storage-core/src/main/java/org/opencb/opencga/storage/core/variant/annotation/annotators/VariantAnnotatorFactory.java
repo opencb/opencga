@@ -17,17 +17,17 @@
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 
-import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.*;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.ANNOTATION_SOURCE;
 
 /**
  * Created on 23/11/16.
@@ -43,7 +43,7 @@ public final class VariantAnnotatorFactory {
         OTHER
     }
 
-    protected static Logger logger = LoggerFactory.getLogger(VariantAnnotatorFactory.class);
+    protected static Logger logger = LogManager.getLogger(VariantAnnotatorFactory.class);
 
     public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration,
                                                          ProjectMetadata projectMetadata)

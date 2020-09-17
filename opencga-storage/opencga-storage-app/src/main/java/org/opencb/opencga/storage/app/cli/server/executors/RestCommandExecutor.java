@@ -17,10 +17,10 @@
 package org.opencb.opencga.storage.app.cli.server.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.storage.app.cli.server.options.ServerCommandOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.rest.RestStorageServer;
-import org.slf4j.Logger;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DBObject;
 import com.mongodb.client.model.Filters;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -28,7 +29,6 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -43,7 +43,7 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
     private final MongoDBCollection auditCollection;
 
     public AuditMongoDBAdaptor(MongoDBCollection auditCollection) {
-        super(LoggerFactory.getLogger(AuditMongoDBAdaptor.class));
+        super(LogManager.getLogger(AuditMongoDBAdaptor.class));
         this.auditCollection = auditCollection;
     }
 

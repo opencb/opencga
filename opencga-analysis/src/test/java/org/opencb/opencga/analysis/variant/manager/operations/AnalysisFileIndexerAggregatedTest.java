@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -23,8 +25,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,7 +41,7 @@ import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 public class AnalysisFileIndexerAggregatedTest extends AbstractVariantOperationManagerTest {
 
     private List<File> files = new ArrayList<>();
-    private Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerAggregatedTest.class);
+    private Logger logger = LogManager.getLogger(AnalysisFileIndexerAggregatedTest.class);
 
     @Before
     public void beforeAggregatedIndex() throws Exception {

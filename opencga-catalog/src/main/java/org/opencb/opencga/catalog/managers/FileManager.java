@@ -19,6 +19,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
@@ -55,8 +57,6 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -122,7 +122,7 @@ public class FileManager extends AnnotationSetManager<File> {
         ROOT_LAST_COMPARATOR = (f1, f2) -> (f2.getPath() == null ? 0 : f2.getPath().length())
                 - (f1.getPath() == null ? 0 : f1.getPath().length());
 
-        logger = LoggerFactory.getLogger(FileManager.class);
+        logger = LogManager.getLogger(FileManager.class);
     }
 
     FileManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,

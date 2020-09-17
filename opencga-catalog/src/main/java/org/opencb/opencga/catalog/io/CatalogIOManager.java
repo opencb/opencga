@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.catalog.io;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -45,7 +45,7 @@ public class CatalogIOManager {
      */
     protected static final String USER_PROJECTS_FOLDER = "projects/";
     protected static final String USER_BIN_FOLDER = "bin/";
-    protected static Logger logger = LoggerFactory.getLogger(CatalogIOManager.class);
+    protected static Logger logger = LogManager.getLogger(CatalogIOManager.class);
     protected URI rootDir;
     private URI jobDir;
     private IOManager ioManager;

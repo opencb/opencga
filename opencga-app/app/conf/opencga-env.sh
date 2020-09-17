@@ -25,9 +25,23 @@ if [ -z "$JAVA_HEAP" ]; then
   esac
 fi
 
+case `basename $PRG` in
+  "opencga.sh")
+    LOGFILE="log4j2.xml"
+    ;;
+  "opencga-admin.sh")
+    LOGFILE="log4j2-server.xml"
+    ;;
+  "opencga-internal.sh")
+    LOGFILE="log4j2.xml"
+    ;;
+  *)
+    LOGFILE="log4j2.xml"
+    ;;
+esac
 
 #Set log4j properties file
-export JAVA_OPTS="${JAVA_OPTS} -Dlog4j.configuration=file:${BASEDIR}/conf/log4j.properties"
+export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/${LOGFILE}"
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
 

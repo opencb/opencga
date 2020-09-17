@@ -18,13 +18,13 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.FileContent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 
 public class PosixIOManager extends IOManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(PosixIOManager.class);
+    protected static Logger logger = LogManager.getLogger(PosixIOManager.class);
     protected static ObjectMapper jsonObjectMapper;
 
     private static final int MAXIMUM_BYTES = 1024 * 1024;

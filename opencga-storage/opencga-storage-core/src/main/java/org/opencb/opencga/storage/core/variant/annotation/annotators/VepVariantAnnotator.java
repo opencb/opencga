@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.formats.variant.annotation.io.VepFormatReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -28,8 +30,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -45,7 +45,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
     private final JsonFactory factory;
     private ObjectMapper jsonObjectMapper;
 
-    protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
+    protected static Logger logger = LogManager.getLogger(AbstractCellBaseVariantAnnotator.class);
 
     public VepVariantAnnotator() throws VariantAnnotatorException {
         super(null, null, null);

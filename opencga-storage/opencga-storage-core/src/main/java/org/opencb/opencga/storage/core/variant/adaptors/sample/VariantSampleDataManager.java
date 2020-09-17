@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors.sample;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -14,8 +16,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -31,7 +31,7 @@ public class VariantSampleDataManager {
     private final VariantDBAdaptor dbAdaptor;
     private final VariantStorageMetadataManager metadataManager;
     private final Map<String, String> normalizeGt = new HashMap<>();
-    private final Logger logger = LoggerFactory.getLogger(VariantSampleDataManager.class);
+    private final Logger logger = LogManager.getLogger(VariantSampleDataManager.class);
 
     public VariantSampleDataManager(VariantDBAdaptor dbAdaptor) {
         this.dbAdaptor = dbAdaptor;

@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -60,8 +62,6 @@ import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -105,7 +105,7 @@ public class StudyManager extends AbstractManager {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
-        logger = LoggerFactory.getLogger(StudyManager.class);
+        logger = LogManager.getLogger(StudyManager.class);
     }
 
     public String getProjectId(long studyId) throws CatalogException {

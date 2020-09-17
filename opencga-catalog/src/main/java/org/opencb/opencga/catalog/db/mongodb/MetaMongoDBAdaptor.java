@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -35,7 +36,6 @@ import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Metadata;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
@@ -57,7 +57,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     private static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
+        super(LogManager.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaMongoDBCollection;
     }

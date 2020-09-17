@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -32,8 +34,6 @@ import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.file.SmallFileInternal;
 import org.opencb.opencga.core.models.study.Study;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -50,7 +50,7 @@ import java.util.stream.Stream;
  */
 public class FileScanner {
 
-    private static Logger logger = LoggerFactory.getLogger(FileScanner.class);
+    private static Logger logger = LogManager.getLogger(FileScanner.class);
 
     protected final CatalogManager catalogManager;
 

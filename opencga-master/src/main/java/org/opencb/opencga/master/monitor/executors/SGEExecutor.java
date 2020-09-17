@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.master.monitor.executors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
@@ -32,7 +32,7 @@ public class SGEExecutor implements BatchExecutor {
     private static Logger logger;
 
     public SGEExecutor(Execution execution) {
-        logger = LoggerFactory.getLogger(SGEExecutor.class);
+        logger = LogManager.getLogger(SGEExecutor.class);
         sgeManager = new SGEManager(execution);
     }
 

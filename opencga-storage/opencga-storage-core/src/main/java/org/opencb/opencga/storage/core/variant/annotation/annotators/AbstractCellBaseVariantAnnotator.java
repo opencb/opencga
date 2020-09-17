@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -29,8 +31,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +48,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
 
 
     public static final int SLOW_CELLBASE_SECONDS = 60;
-    protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
+    protected static Logger logger = LogManager.getLogger(AbstractCellBaseVariantAnnotator.class);
     protected final String species;
     protected final String assembly;
     protected final String cellbaseVersion;

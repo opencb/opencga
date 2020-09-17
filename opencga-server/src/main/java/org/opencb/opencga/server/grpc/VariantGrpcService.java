@@ -17,6 +17,8 @@
 package org.opencb.opencga.server.grpc;
 
 import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
@@ -27,8 +29,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by imedina on 29/12/15.
@@ -37,7 +37,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
 
     private GenericGrpcService genericGrpcService;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LogManager.getLogger(getClass());
 
     public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
         genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);

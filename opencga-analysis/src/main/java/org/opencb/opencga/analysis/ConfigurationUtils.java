@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.analysis;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,7 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ConfigurationUtils {
-    private static Logger logger = LoggerFactory.getLogger(ConfigurationUtils.class);
+    private static Logger logger = LogManager.getLogger(ConfigurationUtils.class);
 
     /**
      * This method attempts to load general configuration from OpenCGA installation folder, if not exists then loads JAR configuration.yml.

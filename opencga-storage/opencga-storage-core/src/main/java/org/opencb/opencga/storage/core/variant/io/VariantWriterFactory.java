@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.variant.io;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
@@ -33,23 +35,22 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_STUDY;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.TPED;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
-import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF_GZ;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
 
 /**
  * Created on 06/12/16.
@@ -58,7 +59,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
  */
 public class VariantWriterFactory {
 
-    private static Logger logger = LoggerFactory.getLogger(VariantWriterFactory.class);
+    private static Logger logger = LogManager.getLogger(VariantWriterFactory.class);
     private final VariantStorageMetadataManager variantStorageMetadataManager;
 
     public VariantWriterFactory(VariantDBAdaptor dbAdaptor) {

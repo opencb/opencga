@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,8 +35,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -70,7 +70,7 @@ public abstract class StorageManager {
         this.storageEngineFactory = storageEngineFactory == null
                 ? StorageEngineFactory.get(storageConfiguration)
                 : storageEngineFactory;
-        logger = LoggerFactory.getLogger(getClass());
+        logger = LogManager.getLogger(getClass());
     }
 
 

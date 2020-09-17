@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core.variant.io.db;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -25,8 +27,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class VariantDBReader implements VariantReader {
     private long timeFetching = 0;
     private long timeConverting = 0;
 
-    protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
+    protected static Logger logger = LogManager.getLogger(VariantDBReader.class);
 
     public VariantDBReader(VariantIterable iterable, Query query, QueryOptions options) {
         this.iterable = iterable;

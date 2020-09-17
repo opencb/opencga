@@ -16,14 +16,14 @@
 
 package org.opencb.opencga.master.monitor.daemons;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
@@ -49,7 +49,7 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.interval = interval;
         this.catalogManager = catalogManager;
         this.token = token;
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
         dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
         this.batchExecutor = executorFactory.getExecutor();

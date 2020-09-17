@@ -17,10 +17,10 @@
 package org.opencb.opencga.analysis.variant.samples;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -85,7 +85,7 @@ public class TreeQuery {
     }
 
     public void log() {
-        Logger logger = LoggerFactory.getLogger(this.getClass());
+        Logger logger = LogManager.getLogger(this.getClass());
         logger.info(toString());
         for (String s : toTreeString().split("\n")) {
             logger.info(s);

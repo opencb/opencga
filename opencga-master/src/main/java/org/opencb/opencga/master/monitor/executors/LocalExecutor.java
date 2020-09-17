@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.master.monitor.executors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -47,7 +47,7 @@ public class LocalExecutor implements BatchExecutor {
     private final int maxConcurrentJobs;
 
     public LocalExecutor(Execution execution) {
-        logger = LoggerFactory.getLogger(LocalExecutor.class);
+        logger = LogManager.getLogger(LocalExecutor.class);
         maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
         threadPool = Executors.newFixedThreadPool(maxConcurrentJobs);
         jobStatus = Collections.synchronizedMap(new LinkedHashMap<String, String>(1000) {

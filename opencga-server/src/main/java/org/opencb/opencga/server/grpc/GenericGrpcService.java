@@ -16,18 +16,17 @@
 
 package org.opencb.opencga.server.grpc;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Created by imedina on 16/12/15.
  */
@@ -53,8 +52,8 @@ public class GenericGrpcService {
 
     public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
 
-        privLogger = LoggerFactory.getLogger(this.getClass().toString());
-        logger = LoggerFactory.getLogger(this.getClass().toString());
+        privLogger = LogManager.getLogger(this.getClass().toString());
+        logger = LogManager.getLogger(this.getClass().toString());
 
         this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;

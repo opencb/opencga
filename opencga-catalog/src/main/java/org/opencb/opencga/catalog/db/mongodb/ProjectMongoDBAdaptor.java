@@ -24,6 +24,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -49,7 +50,6 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -69,7 +69,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     public ProjectMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection,
                                  MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
+        super(LogManager.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
         this.deletedUserCollection = deletedUserCollection;

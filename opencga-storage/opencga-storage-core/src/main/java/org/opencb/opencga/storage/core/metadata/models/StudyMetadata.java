@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
@@ -8,10 +10,11 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -31,7 +34,7 @@ public class StudyMetadata {
 
     private ObjectMap attributes;
 
-    private static Logger logger = LoggerFactory.getLogger(StudyMetadata.class);
+    private static Logger logger = LogManager.getLogger(StudyMetadata.class);
 
     public StudyMetadata() {
         this(-1, null);

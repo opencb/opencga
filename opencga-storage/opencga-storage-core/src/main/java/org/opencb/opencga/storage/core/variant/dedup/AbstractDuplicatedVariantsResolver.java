@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.core.variant.dedup;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
@@ -8,8 +10,6 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.VariantDeduplicationTask;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.DataOutputStream;
@@ -22,7 +22,7 @@ import java.util.List;
 
 public abstract class AbstractDuplicatedVariantsResolver implements Closeable, VariantDeduplicationTask.DuplicatedVariantsResolver {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LogManager.getLogger(getClass());
     private final IOConnector ioConnector;
     private final String variantFile;
     private final URI duplicatedVariantsOutputFile;

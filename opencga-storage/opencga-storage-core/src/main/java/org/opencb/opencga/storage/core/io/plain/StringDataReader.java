@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.storage.core.io.plain;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.io.managers.IOConnector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.*;
@@ -43,7 +43,7 @@ public class StringDataReader implements DataReader<String> {
     private final IOConnector ioConnector;
     protected BufferedReader reader;
     protected final Path path;
-    protected static Logger logger = LoggerFactory.getLogger(StringDataReader.class);
+    protected static Logger logger = LogManager.getLogger(StringDataReader.class);
     protected long readLines = 0L;
     protected long lastAvailable = 0;
     private SizeInputStream sizeInputStream;

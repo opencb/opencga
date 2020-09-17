@@ -20,6 +20,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
@@ -49,8 +51,6 @@ import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -68,7 +68,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class JobManager extends ResourceManager<Job> {
 
-    protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
+    protected static Logger logger = LogManager.getLogger(JobManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
     private IOManagerFactory ioManagerFactory;

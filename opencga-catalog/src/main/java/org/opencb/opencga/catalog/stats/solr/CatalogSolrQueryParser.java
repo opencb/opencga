@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -31,8 +33,6 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -46,7 +46,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 public class CatalogSolrQueryParser {
 
-    protected static Logger logger = LoggerFactory.getLogger(CatalogSolrQueryParser.class);
+    protected static Logger logger = LogManager.getLogger(CatalogSolrQueryParser.class);
 
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 

@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.catalog.db;
 
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedList;

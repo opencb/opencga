@@ -25,11 +25,11 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -81,7 +81,7 @@ public class K8SExecutor implements BatchExecutor {
     private final Config k8sConfig;
     private final Container dockerDaemonSidecar;
     private final KubernetesClient kubernetesClient;
-    private static Logger logger = LoggerFactory.getLogger(K8SExecutor.class);
+    private static Logger logger = LogManager.getLogger(K8SExecutor.class);
 
     private final Map<String, String> jobStatusCache = new ConcurrentHashMap<>();
     private final Watch podsWatcher;

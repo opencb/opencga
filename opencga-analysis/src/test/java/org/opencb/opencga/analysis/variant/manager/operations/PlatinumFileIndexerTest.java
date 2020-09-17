@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -32,8 +34,6 @@ import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest {
 
-    private Logger logger = LoggerFactory.getLogger(AbstractVariantOperationManagerTest.class);
+    private Logger logger = LogManager.getLogger(AbstractVariantOperationManagerTest.class);
 
     @Override
     protected Aggregation getAggregation() {

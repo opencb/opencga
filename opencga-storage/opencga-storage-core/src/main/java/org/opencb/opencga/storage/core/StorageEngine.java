@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.storage.core;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
     protected String dbName;
     protected IOConnectorProvider ioConnectorProvider;
 
-    private Logger logger = LoggerFactory.getLogger(StorageEngine.class);
+    private Logger logger = LogManager.getLogger(StorageEngine.class);
 
     public StorageEngine() {
     }

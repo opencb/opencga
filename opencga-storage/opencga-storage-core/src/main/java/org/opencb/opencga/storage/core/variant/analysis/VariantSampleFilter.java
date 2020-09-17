@@ -17,14 +17,14 @@
 package org.opencb.opencga.storage.core.variant.analysis;
 
 import com.google.common.base.Throwables;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -40,7 +40,7 @@ public class VariantSampleFilter {
 
     private final VariantIterable iterable;
     private int maxVariants;
-    protected final Logger logger = LoggerFactory.getLogger(VariantSampleFilter.class);
+    protected final Logger logger = LogManager.getLogger(VariantSampleFilter.class);
 
     public VariantSampleFilter(VariantIterable iterable) {
         this.iterable = iterable;

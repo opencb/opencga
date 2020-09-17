@@ -1,6 +1,8 @@
 package org.opencb.opencga.app.cli.admin.executors.migration;
 
 import com.mongodb.client.model.Updates;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -17,8 +19,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -33,7 +33,7 @@ public class AnnotationSetMigration {
     private Map<Long, VariableSet> variableSetMap;
     private MongoDBAdaptorFactory dbAdaptorFactory;
     private GenericDocumentComplexConverter<AnnotableForMigration> converter;
-    private final Logger logger = LoggerFactory.getLogger(AnnotationSetMigration.class);
+    private final Logger logger = LogManager.getLogger(AnnotationSetMigration.class);
 
     public AnnotationSetMigration(CatalogManager catalogManager) throws CatalogDBException {
         this.dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());

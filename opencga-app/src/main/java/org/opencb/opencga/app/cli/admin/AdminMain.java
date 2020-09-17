@@ -17,11 +17,11 @@
 package org.opencb.opencga.app.cli.admin;
 
 import com.beust.jcommander.ParameterException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -44,7 +44,7 @@ public class AdminMain {
                 switch (arg) {
                     case "--password":
                     case "-p":
-                        Logger logger = LoggerFactory.getLogger(AdminMain.class);
+                        Logger logger = LogManager.getLogger(AdminMain.class);
                         logger.warn("Argument " + arg + " no longer required. It will be forbidden in future releases.");
                     case "--help":
                     case "-h":

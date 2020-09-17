@@ -17,13 +17,13 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.security.Key;
@@ -41,7 +41,7 @@ public abstract class AuthenticationManager {
 
     AuthenticationManager() {
         // Any class extending this one must properly initialise JwtManager
-        this.logger = LoggerFactory.getLogger(this.getClass());
+        this.logger = LogManager.getLogger(this.getClass());
     }
 
     Key converStringToKeyObject(String keyString, String jcaAlgorithm) {

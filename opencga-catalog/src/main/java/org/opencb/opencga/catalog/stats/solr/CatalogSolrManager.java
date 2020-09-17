@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,8 +34,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.study.Study;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,7 +83,7 @@ public class CatalogSolrManager implements AutoCloseable {
 
         populateConfigCollectionMap();
 
-        logger = LoggerFactory.getLogger(CatalogSolrManager.class);
+        logger = LogManager.getLogger(CatalogSolrManager.class);
     }
 
     public boolean isAlive(String collection) {

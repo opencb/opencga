@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -50,8 +52,6 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -66,7 +66,7 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class IndividualManager extends AnnotationSetManager<Individual> {
 
-    protected static Logger logger = LoggerFactory.getLogger(IndividualManager.class);
+    protected static Logger logger = LogManager.getLogger(IndividualManager.class);
     private UserManager userManager;
     private StudyManager studyManager;
 

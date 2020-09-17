@@ -18,6 +18,8 @@ package org.opencb.opencga.analysis.clinical.tiering;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -44,8 +46,6 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -74,7 +74,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
     private final static Query recessiveQuery;
     private final static Query mitochondrialQuery;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LogManager.getLogger(this.getClass());
 
     static {
         recessiveQuery = new Query()

@@ -7,11 +7,11 @@ import io.reactivex.Single;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -42,7 +42,7 @@ public class AzureBlobStorageIOConnector implements IOConnector {
     private final String accountName;
     private final String accountKey;
     private ServiceURL serviceURL;
-    protected static Logger logger = LoggerFactory.getLogger(AzureBlobStorageIOConnector.class);
+    protected static Logger logger = LogManager.getLogger(AzureBlobStorageIOConnector.class);
 
     public AzureBlobStorageIOConnector() {
         this(System.getenv("AZURE_STORAGE_ACCOUNT"), System.getenv("AZURE_STORAGE_ACCESS_KEY"));

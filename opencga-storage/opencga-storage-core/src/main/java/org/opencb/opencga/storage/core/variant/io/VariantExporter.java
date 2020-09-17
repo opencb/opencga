@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.metadata.Individual;
 import org.opencb.biodata.models.variant.Variant;
@@ -37,8 +39,6 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.*;
@@ -66,7 +66,7 @@ public class VariantExporter {
     protected final VariantMetadataFactory metadataFactory;
     protected final IOConnectorProvider ioConnectorProvider;
 
-    private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
+    private final Logger logger = LogManager.getLogger(VariantExporter.class);
 
     public VariantExporter(VariantStorageEngine engine, IOConnectorProvider ioConnectorProvider) throws StorageEngineException {
         this(engine, new VariantMetadataFactory(engine.getMetadataManager()), ioConnectorProvider);

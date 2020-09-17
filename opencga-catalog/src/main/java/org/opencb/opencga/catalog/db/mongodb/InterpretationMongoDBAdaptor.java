@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -46,7 +47,6 @@ import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -62,7 +62,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection deletedInterpretationCollection,
                                         MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
+        super(LogManager.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationCollection = interpretationCollection;

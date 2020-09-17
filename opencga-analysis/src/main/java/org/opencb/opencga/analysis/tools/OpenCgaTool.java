@@ -20,6 +20,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
@@ -41,8 +43,6 @@ import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -79,7 +79,7 @@ public abstract class OpenCgaTool {
     private ExecutionResultManager erm;
 
     public OpenCgaTool() {
-        privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
+        privateLogger = LogManager.getLogger(OpenCgaTool.class);
         toolExecutorFactory = new ToolExecutorFactory();
         params = new ObjectMap();
     }
@@ -136,7 +136,7 @@ public abstract class OpenCgaTool {
     }
 
     private void setUpFrameworksAndSource() {
-        logger = LoggerFactory.getLogger(this.getClass().toString());
+        logger = LogManager.getLogger(this.getClass().toString());
 
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();

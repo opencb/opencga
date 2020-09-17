@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -35,8 +37,6 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.*;
 import javax.ws.rs.client.*;
@@ -83,7 +83,7 @@ public abstract class AbstractParentClient {
     protected AbstractParentClient(String token, ClientConfiguration configuration) {
         Objects.requireNonNull(configuration);
         Objects.requireNonNull(configuration.getRest());
-        this.logger = LoggerFactory.getLogger(this.getClass().toString());
+        this.logger = LogManager.getLogger(this.getClass().toString());
         this.token = token;
         this.configuration = configuration;
         this.client = newClient(configuration);

@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public abstract class Lock implements Closeable {
-    protected static Logger logger = LoggerFactory.getLogger(Lock.class);
+    protected static Logger logger = LogManager.getLogger(Lock.class);
 
     private final AtomicLong token = new AtomicLong();
     private final AtomicBoolean keepAlive;

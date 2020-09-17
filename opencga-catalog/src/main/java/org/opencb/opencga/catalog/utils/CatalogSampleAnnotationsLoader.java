@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.models.pedigree.Individual;
@@ -30,14 +32,12 @@ import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.*;
@@ -47,7 +47,7 @@ import java.util.*;
  */
 public class CatalogSampleAnnotationsLoader {
 
-    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+    private static Logger logger = LogManager.getLogger(FileUtils.class);
     private final CatalogManager catalogManager;
 
     public CatalogSampleAnnotationsLoader(CatalogManager catalogManager) {

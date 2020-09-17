@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -39,8 +41,6 @@ import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -53,7 +53,7 @@ import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 
 public class CatalogManager implements AutoCloseable {
 
-    protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
+    protected static Logger logger = LogManager.getLogger(CatalogManager.class);
 
     private DBAdaptorFactory catalogDBAdaptorFactory;
     private IOManagerFactory ioManagerFactory;

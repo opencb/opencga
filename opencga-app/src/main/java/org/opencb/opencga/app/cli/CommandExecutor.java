@@ -21,17 +21,17 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.*;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.FileInputStream;
@@ -97,8 +97,8 @@ public abstract class CommandExecutor {
         }
 
         // Loggers can be initialized, the configuration happens just below these lines
-        logger = LoggerFactory.getLogger(this.getClass().toString());
-        privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
+        logger = LogManager.getLogger(this.getClass().toString());
+        privateLogger = LogManager.getLogger(CommandExecutor.class);
 
         try {
             // At the moment this is needed for all three command lines, this might change soon since REST client should not need this one.
@@ -156,11 +156,9 @@ public abstract class CommandExecutor {
     public abstract void execute() throws Exception;
 
     private void configureLogger() throws IOException {
-        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-
         // Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
 
         // Command line parameters have preference over configuration file
         // We overwrite logLevel configuration param with command line value
@@ -174,19 +172,47 @@ public abstract class CommandExecutor {
         }
 
         Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
-        rootLogger.setLevel(level);
 
         // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
-        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        ConfigurationBuilder<BuiltConfiguration> configurationBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
+
+        AppenderComponentBuilder appender;
         if (StringUtils.isEmpty(this.configuration.getLogFile())) {
-            stderr.setThreshold(level);
+            appender = configurationBuilder.newAppender("appender", "CONSOLE");
         } else {
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
-            rootLogger.addAppender(rollingFileAppender);
-            rollingFileAppender.setThreshold(level);
-            rollingFileAppender.setMaxFileSize("100MB");
-            rollingFileAppender.setMaxBackupIndex(10);
+            ComponentBuilder triggeringPolicy = configurationBuilder.newComponent("Policies")
+                    .addComponent(configurationBuilder.newComponent("SizeBasedTriggeringPolicy").addAttribute("size", "100MB"));
+            ComponentBuilder rolloverStrategy = configurationBuilder.newComponent("DirectWriteRolloverStrategy")
+                    .addAttribute("maxFiles", 10);
+
+            appender = configurationBuilder.newAppender("appender", "RollingFile")
+                    .addAttribute("filePattern", this.configuration.getLogFile() + ".%i")
+                    .addAttribute("append", true)
+                    .addComponent(triggeringPolicy)
+                    .addComponent(rolloverStrategy);
         }
+
+//        LayoutComponentBuilder layout = configurationBuilder.newLayout("PatternLayout")
+//                .addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %X{dd.trace_id} %X{dd.span_id} - %m%n");
+        LayoutComponentBuilder layout = configurationBuilder.newLayout("JsonLayout")
+                .addAttribute("compact", "true")
+                .addAttribute("eventEol", "true")
+                .addAttribute("properties", "true")
+                .addAttribute("stacktraceAsString", "true");
+        appender.addComponent(layout);
+
+        configurationBuilder.add(appender);
+
+        configurationBuilder.add(configurationBuilder.newRootLogger(level)
+                .add(configurationBuilder.newAppenderRef("appender")));
+
+        Configurator.reconfigure(configurationBuilder.build());
+
+        System.out.println(configurationBuilder.toXmlConfiguration());
+        LogManager.getLogger(this.getClass()).info("INFO Hello world!!!");
+        LogManager.getLogger(this.getClass()).trace("TRACE Hello world 2!!!");
+        LogManager.getLogger(this.getClass()).debug("DEBUG Hello world 2!!!");
+
     }
 
 

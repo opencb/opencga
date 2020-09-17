@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -31,7 +32,6 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
 
 import java.util.*;
 import java.util.function.Consumer;

@@ -19,9 +19,9 @@ package org.opencb.opencga.master.monitor.executors;
 import com.microsoft.azure.batch.BatchClient;
 import com.microsoft.azure.batch.auth.BatchSharedKeyCredentials;
 import com.microsoft.azure.batch.protocol.models.PoolInformation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.core.config.Execution;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
@@ -52,7 +52,7 @@ public class AzureBatchExecutor implements BatchExecutor {
 
 
     public AzureBatchExecutor(Execution execution) {
-        logger = LoggerFactory.getLogger(AzureBatchExecutor.class);
+        logger = LogManager.getLogger(AzureBatchExecutor.class);
         populateOptions(execution);
         this.batchClient = createBatchClient();
         this.poolInformation = new PoolInformation().withPoolId(batchPoolId);

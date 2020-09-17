@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -34,8 +36,6 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -97,7 +97,7 @@ public abstract class AbstractManager {
 
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
 
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
     }
 
     protected void fixQueryObject(Query query) {

@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -27,8 +29,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.Study;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -43,7 +43,7 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
     private Study study;
     private Map<String, Map<String, QueryParam.Type>> variableMap;
 
-    protected static Logger logger = LoggerFactory.getLogger(CatalogIndividualToSolrIndividualConverter.class);
+    protected static Logger logger = LogManager.getLogger(CatalogIndividualToSolrIndividualConverter.class);
 
     public CatalogIndividualToSolrIndividualConverter(Study study) {
         this.study = study;

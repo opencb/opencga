@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.storage.core.io.plain;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.io.DataWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyOutputStream;
 
 import java.io.FileOutputStream;
@@ -41,7 +41,7 @@ public class StringDataWriter implements DataWriter<String> {
     protected long writtenLines = 0L;
     protected final boolean closeOutputStream;
 
-    protected static Logger logger = LoggerFactory.getLogger(StringDataWriter.class);
+    protected static Logger logger = LogManager.getLogger(StringDataWriter.class);
 
     public StringDataWriter(Path path) {
         this(path, false);

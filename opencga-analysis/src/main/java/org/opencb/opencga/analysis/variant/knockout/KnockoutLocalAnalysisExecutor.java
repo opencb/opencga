@@ -19,6 +19,8 @@ package org.opencb.opencga.analysis.variant.knockout;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -44,8 +46,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -64,7 +64,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.IS
         framework = ToolExecutor.Framework.LOCAL)
 public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor implements VariantStorageToolExecutor {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LogManager.getLogger(this.getClass());
     private VariantStorageManager variantStorageManager;
     private boolean allProteinCoding;
     private List<String> biotype;

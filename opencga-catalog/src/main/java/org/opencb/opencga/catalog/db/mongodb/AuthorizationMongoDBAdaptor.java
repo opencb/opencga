@@ -22,6 +22,7 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -44,7 +45,6 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -64,7 +64,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     static final String MEMBER_WITH_INTERNAL_ACL = "_withInternalAcls";
 
     public AuthorizationMongoDBAdaptor(DBAdaptorFactory dbFactory) throws CatalogDBException {
-        super(LoggerFactory.getLogger(AuthorizationMongoDBAdaptor.class));
+        super(LogManager.getLogger(AuthorizationMongoDBAdaptor.class));
         this.dbAdaptorFactory = (MongoDBAdaptorFactory) dbFactory;
         initCollectionConnections();
     }

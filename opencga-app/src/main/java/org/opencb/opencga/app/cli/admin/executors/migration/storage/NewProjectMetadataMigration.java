@@ -3,6 +3,8 @@ package org.opencb.opencga.app.cli.admin.executors.migration.storage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -10,6 +12,7 @@ import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.project.DataStore;
@@ -17,13 +20,10 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -39,7 +39,7 @@ public class NewProjectMetadataMigration {
     private final StorageConfiguration storageConfiguration;
     private final CatalogManager catalogManager;
     private final ObjectMapper objectMapper;
-    private final Logger logger = LoggerFactory.getLogger(NewProjectMetadataMigration.class);
+    private final Logger logger = LogManager.getLogger(NewProjectMetadataMigration.class);
 
     public NewProjectMetadataMigration(StorageConfiguration storageConfiguration, CatalogManager catalogManager,
                                        MigrationCommandOptions.MigrateV1_4_0CommandOptions options) {

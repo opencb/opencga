@@ -17,18 +17,18 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -41,7 +41,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.Va
  */
 public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(VariantQueryCommandUtils.class);
+    private static Logger logger = LogManager.getLogger(VariantQueryCommandUtils.class);
 
     public static Query parseQuery(VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, Map<Long, String> studyIds, ClientConfiguration clientConfiguration)
             throws Exception {

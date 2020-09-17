@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ import java.util.Map;
 public class RegionQueryGenerator extends ConfiguredQueryGenerator {
 
     private ArrayList<Region> regionLimits = new ArrayList<>();
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
 
     @Override
     public void setUp(Map<String, String> params, RandomQueries configuration) {

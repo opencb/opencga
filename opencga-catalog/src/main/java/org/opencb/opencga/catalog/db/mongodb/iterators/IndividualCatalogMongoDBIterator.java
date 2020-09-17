@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -32,8 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Annotable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
@@ -76,7 +76,7 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
 
         this.individualListBuffer = new LinkedList<>();
-        this.logger = LoggerFactory.getLogger(IndividualCatalogMongoDBIterator.class);
+        this.logger = LogManager.getLogger(IndividualCatalogMongoDBIterator.class);
     }
 
     @Override

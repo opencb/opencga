@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -27,8 +29,6 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -47,7 +47,7 @@ import java.util.regex.Pattern;
  */
 public class FileUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+    private static Logger logger = LogManager.getLogger(FileUtils.class);
     private final CatalogManager catalogManager;
 
     public static final Map<File.Format, Pattern> FORMAT_MAP = new HashMap<>();

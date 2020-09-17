@@ -20,11 +20,11 @@ import com.google.common.base.Throwables;
 import org.apache.jmeter.protocol.http.sampler.HTTPSampleResult;
 import org.apache.jmeter.protocol.http.sampler.HTTPSampler;
 import org.apache.jmeter.protocol.http.util.HTTPArgument;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.benchmark.variant.generators.QueryGenerator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +39,7 @@ public class VariantStorageEngineRestSampler extends HTTPSampler implements Vari
 
     public static final String REST_PATH = "/webservices/rest/v1/analysis/variant/query";
     public static final String STORAGE_REST_PATH = "/webservices/rest/variants/query";
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
     private QueryGenerator queryGenerator;
 
     public VariantStorageEngineRestSampler() {

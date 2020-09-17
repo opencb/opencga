@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -138,7 +138,7 @@ public enum VariantField {
         }
     }
 
-    private static Logger logger = LoggerFactory.getLogger(VariantField.class);
+    private static Logger logger = LogManager.getLogger(VariantField.class);
 
     public String fieldName() {
         return names.get(0);

@@ -19,8 +19,8 @@ package org.opencb.opencga.catalog.auth.authentication.azure;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
 import com.microsoft.graph.authentication.IAuthenticationProvider;
 import com.microsoft.graph.http.IHttpRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 
@@ -35,7 +35,7 @@ public class AuthenticationProvider implements IAuthenticationProvider {
     private static Logger logger;
 
     {
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
     }
 
     public AuthenticationProvider(String clientId, String clientSecret, String tenantId) {

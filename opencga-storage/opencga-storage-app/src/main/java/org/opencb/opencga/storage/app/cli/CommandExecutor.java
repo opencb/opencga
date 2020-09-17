@@ -18,10 +18,16 @@ package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.*;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -86,20 +92,20 @@ public abstract class CommandExecutor {
     }
 
     public void configureDefaultLog(String logLevel) {
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
 
-        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", org.apache.logging.log4j.Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", org.apache.logging.log4j.Level.WARN);
 
         Level level = Level.toLevel(logLevel, Level.INFO);
-        rootLogger.setLevel(level);
+        Configurator.setRootLevel(level);
 
         // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
-        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-        stderr.setThreshold(level);
-
+        ConfigurationBuilder<BuiltConfiguration> configurationBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
+        configurationBuilder.setStatusLevel(level);
+        AppenderComponentBuilder appender = configurationBuilder.newAppender("Stderr", "CONSOLE");
+        configurationBuilder.add(appender);
+        Configurator.reconfigure(configurationBuilder.build());
 
         this.logLevel = logLevel;
     }
@@ -173,16 +179,23 @@ public abstract class CommandExecutor {
 
         // If user has set up a logFile we redirect logs to it
         if (this.logFile != null && !this.logFile.isEmpty()) {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+            ConfigurationBuilder<BuiltConfiguration> configurationBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
 
-            // If a log file is used then console log is removed
-            rootLogger.removeAppender("stderr");
+            ComponentBuilder triggeringPolicy = configurationBuilder.newComponent("Policies")
+                    .addComponent(configurationBuilder.newComponent("SizeBasedTriggeringPolicy").addAttribute("size", "100MB"));
+            ComponentBuilder rolloverStrategy = configurationBuilder.newComponent("DirectWriteRolloverStrategy")
+                    .addAttribute("maxFiles", 10);
 
-            // Creating a RollingFileAppender to output the log
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
-                    + "%m%n"), this.logFile, true);
-            rollingFileAppender.setThreshold(Level.toLevel(this.logLevel));
-            rootLogger.addAppender(rollingFileAppender);
+            AppenderComponentBuilder appender = configurationBuilder.newAppender("rolling", "RollingFile")
+                    .addAttribute("fileName", this.logFile)
+                    .addAttribute("filePattern", this.logFile + ".%i")
+                    .addAttribute("append", true)
+                    .addComponent(triggeringPolicy)
+                    .addComponent(rolloverStrategy);
+            configurationBuilder.setStatusLevel(Level.getLevel(this.logLevel));
+            configurationBuilder.add(appender);
+
+            Configurator.reconfigure(configurationBuilder.build());
         }
 
         logger.debug("Loading configuration from '{}'", loadedConfigurationFile);

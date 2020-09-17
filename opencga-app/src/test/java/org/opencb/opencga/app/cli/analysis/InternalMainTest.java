@@ -17,6 +17,8 @@
 package org.opencb.opencga.app.cli.analysis;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,8 +49,6 @@ import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -84,7 +84,7 @@ public class InternalMainTest {
     private String projectId;
     private String studyId;
     private String outdirId;
-    private Logger logger = LoggerFactory.getLogger(InternalMainTest.class);
+    private Logger logger = LogManager.getLogger(InternalMainTest.class);
     private Map<File.Bioformat, DataStore> datastores;
 
 

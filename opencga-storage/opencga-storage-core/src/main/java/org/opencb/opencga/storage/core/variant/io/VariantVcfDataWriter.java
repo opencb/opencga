@@ -25,6 +25,8 @@ import htsjdk.variant.vcf.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -37,8 +39,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.OutputStream;
 import java.net.URI;
@@ -64,7 +64,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     private static final DecimalFormat DECIMAL_FORMAT_7 = new DecimalFormat("#.#######");
     private static final DecimalFormat DECIMAL_FORMAT_3 = new DecimalFormat("#.###");
-    private final Logger logger = LoggerFactory.getLogger(VariantVcfDataWriter.class);
+    private final Logger logger = LogManager.getLogger(VariantVcfDataWriter.class);
 
 
     private static final String DEFAULT_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"

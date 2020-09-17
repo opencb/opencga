@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -41,8 +43,6 @@ import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -78,7 +78,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
             throws CatalogDBException {
-        this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
+        this.logger = LogManager.getLogger(CatalogAuthorizationManager.class);
         this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory);
 
         this.openRegister = configuration.isOpenRegister();

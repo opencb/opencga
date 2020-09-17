@@ -23,6 +23,8 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -37,8 +39,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -65,7 +65,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private static final int DEFAULT_TIMEOUT = 60000;
     public static final String SECONDARY_INDEX_PREFIX = "__SECONDARY_INDEX_COHORT_";
 
-    protected static Logger logger = LoggerFactory.getLogger(VariantStorageMetadataManager.class);
+    protected static Logger logger = LogManager.getLogger(VariantStorageMetadataManager.class);
 
     private final ProjectMetadataAdaptor projectDBAdaptor;
     private final StudyMetadataDBAdaptor studyDBAdaptor;

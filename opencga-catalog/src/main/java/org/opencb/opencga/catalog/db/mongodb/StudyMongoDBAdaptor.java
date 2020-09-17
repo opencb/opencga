@@ -24,6 +24,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -53,7 +54,6 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.net.URI;
@@ -80,7 +80,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBCollection deletedStudyCollection,
                                MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
+        super(LogManager.getLogger(StudyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;
         this.deletedStudyCollection = deletedStudyCollection;

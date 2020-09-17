@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.formats.feature.bed.Bed;
 import org.opencb.biodata.formats.feature.bed.io.BedReader;
 import org.opencb.biodata.formats.feature.gff.Gff;
@@ -57,8 +59,6 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationJsonData
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationJsonDataWriter;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -91,7 +91,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     protected VariantDBAdaptor dbAdaptor;
     protected VariantAnnotator variantAnnotator;
     private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
-    protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
+    protected static Logger logger = LogManager.getLogger(DefaultVariantAnnotationManager.class);
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
     protected Map<Integer, List<Integer>> alreadyAnnotatedFiles = new HashMap<>();
     private final IOConnectorProvider ioConnectorProvider;

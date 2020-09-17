@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class IOManagerFactory {
 
-    protected static Logger logger = LoggerFactory.getLogger(IOManagerFactory.class);
+    protected static Logger logger = LogManager.getLogger(IOManagerFactory.class);
     private String defaultScheme = "file";
     private Map<String, IOManager> ioManagers = new HashMap<>();
 

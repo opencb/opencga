@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Configuration>
+    <Appenders>
+        <RollingFile name="rolling" filePattern="/opt/opencga/logs/server.log.%i" append="true">
+            <Policies>
+                <SizeBasedTriggeringPolicy size="20MB"/>
+            </Policies>
+            <DirectWriteRolloverStrategy maxFiles="10"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+        </RollingFile>
+        <Console name="Console" target="SYSTEM_OUT">
+            <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true"/>
+        </Console>
+
+    </Appenders>
+    <Loggers>
+        <Logger name="org.apache.logging.log4j" level="DEBUG">
+            <AppenderRef ref="rolling"/>
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="org.mongodb.driver.cluster" level="WARN">
+            <AppenderRef ref="rolling"/>
+        </Logger>
+        <Logger name="org.mongodb.driver.connection" level="WARN">
+            <AppenderRef ref="rolling"/>
+        </Logger>
+        <Root level="TRACE">
+            <AppenderRef ref="rolling"/>
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>

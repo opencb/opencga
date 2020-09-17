@@ -18,9 +18,9 @@ package org.opencb.opencga.client.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.utils.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,14 +49,14 @@ public class ClientConfiguration {
 
 
     public ClientConfiguration() {
-        logger = LoggerFactory.getLogger(ClientConfiguration.class);
+        logger = LogManager.getLogger(ClientConfiguration.class);
     }
 
     public ClientConfiguration(RestConfig rest, GrpcConfig grpc) {
         this.rest = rest;
         this.grpc = grpc;
 
-        logger = LoggerFactory.getLogger(ClientConfiguration.class);
+        logger = LogManager.getLogger(ClientConfiguration.class);
     }
 
     public static ClientConfiguration load(Path configurationPath) throws IOException {

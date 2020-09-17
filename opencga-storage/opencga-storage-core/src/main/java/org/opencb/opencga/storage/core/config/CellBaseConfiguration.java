@@ -17,9 +17,9 @@
 package org.opencb.opencga.storage.core.config;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -101,7 +101,7 @@ public class CellBaseConfiguration {
     @Deprecated
     public void setDatabase(Object database) {
         if (database != null) {
-            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.database'");
+            LogManager.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.database'");
         }
     }
 
@@ -113,7 +113,7 @@ public class CellBaseConfiguration {
     @Deprecated
     public void setPreferred(String preferred) {
         if (StringUtils.isNotEmpty(preferred)) {
-            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.preferred'");
+            LogManager.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.preferred'");
         }
     }
 

@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -56,7 +57,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -79,7 +79,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
     public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBCollection deletedIndividualCollection,
                                     MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(IndividualMongoDBAdaptor.class));
+        super(LogManager.getLogger(IndividualMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
         this.deletedIndividualCollection = deletedIndividualCollection;

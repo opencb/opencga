@@ -23,6 +23,8 @@ import htsjdk.samtools.util.GZIIndex;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
@@ -44,8 +46,6 @@ import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -63,7 +63,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     public final static String CONTEXT_FILENAME = "context.txt";
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LogManager.getLogger(this.getClass());
 
     private VariantStorageManager storageManager;
 

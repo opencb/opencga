@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.common;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Thread for monitoring the memory usage of the JDK.
@@ -44,7 +44,7 @@ public class MemoryUsageMonitor extends Thread {
 
     public MemoryUsageMonitor() {
         this.setName("memory-monitor");
-        this.logger = LoggerFactory.getLogger(MemoryUsageMonitor.class);
+        this.logger = LogManager.getLogger(MemoryUsageMonitor.class);
         delay = 1000;
     }
 

@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.samples;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -24,17 +26,18 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,7 +53,7 @@ public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "sample-variant-filter";
     public static final String DESCRIPTION = "Get samples given a set of variants";
 
-    protected final Logger logger = LoggerFactory.getLogger(SampleVariantFilterAnalysis.class);
+    protected final Logger logger = LogManager.getLogger(SampleVariantFilterAnalysis.class);
     private Query query;
     private List<GenotypeClass> genotypeClasses;
     private Set<String> genotypesSet;

@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -49,8 +51,6 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -102,7 +102,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     public VariantFileIndexerOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine engine) {
         super(variantStorageManager, engine);
-        logger = LoggerFactory.getLogger(VariantFileIndexerOperationManager.class);
+        logger = LogManager.getLogger(VariantFileIndexerOperationManager.class);
     }
 
     private enum Type {

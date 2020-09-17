@@ -18,6 +18,8 @@ package org.opencb.opencga.client.template;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
@@ -56,8 +58,6 @@ import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.nio.file.Paths;
@@ -77,7 +77,7 @@ public class TemplateManager {
         this.openCGAClient.setThrowExceptionOnError(true);
         this.resume = resume;
 
-        this.logger = LoggerFactory.getLogger(TemplateManager.class);
+        this.logger = LogManager.getLogger(TemplateManager.class);
     }
 
     public void execute(TemplateConfiguration template, Set<String> studiesSubSet) throws ClientException {

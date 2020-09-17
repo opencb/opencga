@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.master.monitor.executors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.SingleProcess;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -45,7 +45,7 @@ import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.*;
  */
 public class SGEManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(SGEManager.class);
+    protected static Logger logger = LogManager.getLogger(SGEManager.class);
     private static final Map<String, String> STATE_DIC;
     private Execution execution;
 

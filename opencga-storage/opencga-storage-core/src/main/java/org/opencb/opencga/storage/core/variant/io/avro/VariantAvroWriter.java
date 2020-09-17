@@ -21,11 +21,11 @@ import org.apache.avro.file.CodecFactory;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.io.DataWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -45,7 +45,7 @@ public class VariantAvroWriter implements DataWriter<Variant> {
     private final DatumWriter<VariantAvro> datumWriter;
     private int numWrites = 0;
 
-    protected Logger logger = LoggerFactory.getLogger(this.getClass().toString());
+    protected Logger logger = LogManager.getLogger(this.getClass().toString());
 
     public VariantAvroWriter(Schema schema, String codecName, OutputStream outputStream) {
         this.schema = schema;

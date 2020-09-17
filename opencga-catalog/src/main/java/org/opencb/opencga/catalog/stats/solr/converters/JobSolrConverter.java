@@ -17,14 +17,14 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.catalog.stats.solr.JobSolrModel;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -37,7 +37,7 @@ public class JobSolrConverter implements ComplexTypeConverter<Job, JobSolrModel>
 
     private Study study;
 
-    protected static Logger logger= LoggerFactory.getLogger(JobSolrConverter.class);
+    protected static Logger logger= LogManager.getLogger(JobSolrConverter.class);
 
     public JobSolrConverter(Study study) {
         this.study=study;

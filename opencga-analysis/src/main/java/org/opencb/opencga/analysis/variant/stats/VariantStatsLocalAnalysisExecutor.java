@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis.variant.stats;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -38,8 +40,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -52,7 +52,7 @@ import java.util.concurrent.ExecutionException;
         source = ToolExecutor.Source.STORAGE)
 public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements VariantStorageToolExecutor {
 
-    private final Logger logger = LoggerFactory.getLogger(VariantStatsLocalAnalysisExecutor.class);
+    private final Logger logger = LogManager.getLogger(VariantStatsLocalAnalysisExecutor.class);
 
     @Override
     public void run() throws ToolException {

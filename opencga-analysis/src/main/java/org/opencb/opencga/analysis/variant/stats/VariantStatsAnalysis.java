@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.variant.stats;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
@@ -46,7 +47,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -430,7 +430,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         if (AggregationUtils.isAggregated(argsAggregation)) {
             if (studyAggregation != null && !studyAggregation.equals(argsAggregation)) {
                 // FIXME: Throw an exception?
-                LoggerFactory.getLogger(VariantStatsAnalysis.class)
+                LogManager.getLogger(VariantStatsAnalysis.class)
                         .warn("Calculating statistics with aggregation " + argsAggregation + " instead of " + studyAggregation);
             }
             aggregation = argsAggregation;

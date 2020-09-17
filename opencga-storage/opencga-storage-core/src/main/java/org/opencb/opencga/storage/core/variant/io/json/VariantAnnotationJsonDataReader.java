@@ -20,11 +20,11 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataReader;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,7 +44,7 @@ public class VariantAnnotationJsonDataReader implements DataReader<VariantAnnota
     private JsonParser parser;
     private int readsCounter;
     private File file;
-    protected Logger logger = LoggerFactory.getLogger(this.getClass().toString());
+    protected Logger logger = LogManager.getLogger(this.getClass().toString());
 
     public VariantAnnotationJsonDataReader(File file) {
         readsCounter = 0;

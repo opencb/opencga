@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.storage.core.alignment;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by pfurio on 07/11/16.
@@ -28,7 +28,7 @@ public abstract class AlignmentStorageEngine extends StorageEngine<AlignmentDBAd
 
     public static final String ALIGNMENT_STATS_VARIABLE_SET = "opencga_alignment_stats";
 
-    private Logger logger = LoggerFactory.getLogger(AlignmentStorageEngine.class);
+    private Logger logger = LogManager.getLogger(AlignmentStorageEngine.class);
 
     public AlignmentStorageEngine() {
     }

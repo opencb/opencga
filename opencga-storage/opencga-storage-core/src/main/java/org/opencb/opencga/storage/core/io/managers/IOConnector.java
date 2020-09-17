@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.io.managers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 
@@ -25,7 +25,7 @@ public interface IOConnector {
     InputStream newInputStreamRaw(URI uri) throws IOException;
 
     default InputStream newInputStream(URI uri) throws IOException {
-        Logger logger = LoggerFactory.getLogger(IOConnector.class);
+        Logger logger = LogManager.getLogger(IOConnector.class);
         InputStream inputStream = newInputStreamRaw(uri);
         if (uri.getPath().endsWith(".gz")) {
             logger.debug("Gzip input compress");
@@ -42,7 +42,7 @@ public interface IOConnector {
     OutputStream newOutputStreamRaw(URI uri) throws IOException;
 
     default OutputStream newOutputStream(URI uri) throws IOException {
-        Logger logger = LoggerFactory.getLogger(IOConnector.class);
+        Logger logger = LogManager.getLogger(IOConnector.class);
         OutputStream outputStream = newOutputStreamRaw(uri);
         if (uri.getPath().endsWith(".gz")) {
             logger.debug("Gzip output compress");

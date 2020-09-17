@@ -16,13 +16,14 @@
 
 package org.opencb.opencga.storage.benchmark.variant.generators;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ import java.util.stream.IntStream;
 public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
     protected List<String> terms = new ArrayList<>();
     private String queryKey;
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
 
     public TermQueryGenerator(String queryKey) {
         super();
@@ -201,7 +202,7 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
     }
 
     public static class BiotypeQueryGenerator extends TermQueryGenerator {
-        private Logger logger = LoggerFactory.getLogger(getClass());
+        private Logger logger = LogManager.getLogger(getClass());
 
         public BiotypeQueryGenerator() {
             super(VariantQueryParam.ANNOT_BIOTYPE.key());
@@ -263,7 +264,7 @@ public abstract class TermQueryGenerator extends ConfiguredQueryGenerator {
     }
 
     public static class ConsequenceTypeQueryGenerator extends TermQueryGenerator {
-        private Logger logger = LoggerFactory.getLogger(getClass());
+        private Logger logger = LogManager.getLogger(getClass());
 
         public ConsequenceTypeQueryGenerator() {
             super(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());

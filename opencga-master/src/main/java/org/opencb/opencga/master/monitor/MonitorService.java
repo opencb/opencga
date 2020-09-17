@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.master.monitor;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -23,10 +25,8 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 import org.opencb.opencga.core.config.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 
 /**
  * Created by imedina on 16/06/16.
@@ -63,7 +63,7 @@ public class MonitorService {
     }
 
     private void init(String token) throws CatalogException {
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
 
         this.catalogManager = new CatalogManager(this.configuration);
         String nonExpiringToken = this.catalogManager.getUserManager().getAdminNonExpiringToken(token);

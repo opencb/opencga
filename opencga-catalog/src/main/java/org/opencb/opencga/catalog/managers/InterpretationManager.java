@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -45,8 +47,6 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -54,7 +54,7 @@ import java.util.function.Function;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
-    protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
+    protected static Logger logger = LogManager.getLogger(InterpretationManager.class);
 
     private UserManager userManager;
     private StudyManager studyManager;

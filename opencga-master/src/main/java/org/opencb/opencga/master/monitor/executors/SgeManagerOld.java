@@ -18,12 +18,12 @@ package org.opencb.opencga.master.monitor.executors;
 
 import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.SingleProcess;
 import org.opencb.opencga.core.config.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -52,7 +52,7 @@ public class SgeManagerOld {
     public static final String FINISHED = "finished";
     public static final String EXECUTION_ERROR = "execution error";
 
-    protected static Logger logger = LoggerFactory.getLogger(SgeManagerOld.class);
+    protected static Logger logger = LogManager.getLogger(SgeManagerOld.class);
 //    @Deprecated
 //    private static Properties analysisProperties = Config.getAnalysisProperties();
     private static Configuration configuration;

@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,8 +61,6 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -125,7 +125,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     protected static final String STORAGE_ENGINE_DUMMY = DummyVariantStorageEngine.STORAGE_ENGINE_ID;
     protected static final String STORAGE_ENGINE_MONGODB = "mongodb";
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
-    private Logger logger = LoggerFactory.getLogger(AbstractVariantOperationManagerTest.class);
+    private Logger logger = LogManager.getLogger(AbstractVariantOperationManagerTest.class);
 
 
 

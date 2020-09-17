@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,8 +32,6 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -143,7 +143,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         this.configuration = mongoDBConfiguration;
         this.database = getCatalogDatabase(catalogConfiguration.getDatabasePrefix());
 
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
         connect();
     }
 
@@ -155,7 +155,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         this.configuration = configuration;
         this.database = database;
 
-        logger = LoggerFactory.getLogger(this.getClass());
+        logger = LogManager.getLogger(this.getClass());
         connect();
     }
 

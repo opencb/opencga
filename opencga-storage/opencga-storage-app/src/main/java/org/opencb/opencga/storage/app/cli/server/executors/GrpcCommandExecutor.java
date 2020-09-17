@@ -19,12 +19,12 @@ package org.opencb.opencga.storage.app.cli.server.executors;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.storage.app.cli.server.options.ServerCommandOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
 import org.opencb.opencga.storage.server.grpc.GrpcStorageServer;
-import org.slf4j.Logger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;

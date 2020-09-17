@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -49,7 +50,6 @@ import org.opencb.opencga.core.models.job.JobInternalWebhook;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -72,7 +72,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection,
                              MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
+        super(LogManager.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
         this.deletedJobCollection = deletedJobCollection;

@@ -21,13 +21,13 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
@@ -56,7 +56,7 @@ public class ExecutionResultManager {
     private File swapFile;
     private boolean initialized;
     private boolean closed;
-    private final Logger logger = LoggerFactory.getLogger(ExecutionResultManager.class);
+    private final Logger logger = LogManager.getLogger(ExecutionResultManager.class);
     private int monitorThreadPeriod = 60000;
 
     public ExecutionResultManager(String toolId, Path outDir) throws ToolException {

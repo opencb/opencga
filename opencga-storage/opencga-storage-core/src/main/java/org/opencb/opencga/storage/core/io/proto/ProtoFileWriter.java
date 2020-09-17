@@ -4,9 +4,9 @@ package org.opencb.opencga.storage.core.io.proto;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.io.DataWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ProtoFileWriter<T extends com.google.protobuf.GeneratedMessageV3> implements DataWriter<T> {
     private String compression = StringUtils.EMPTY;
-    protected Logger logger = LoggerFactory.getLogger(this.getClass().toString());
+    protected Logger logger = LogManager.getLogger(this.getClass().toString());
 
     private OutputStream outputStream = null;
     private Path input = null;

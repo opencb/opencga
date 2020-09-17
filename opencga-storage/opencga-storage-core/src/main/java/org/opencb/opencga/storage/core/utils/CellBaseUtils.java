@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.utils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -29,8 +31,6 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class CellBaseUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(CellBaseUtils.class);
+    private static Logger logger = LogManager.getLogger(CellBaseUtils.class);
     private static final int GENE_EXTRA_REGION = 5000;
     private final CellBaseClient cellBaseClient;
     private final String assembly;

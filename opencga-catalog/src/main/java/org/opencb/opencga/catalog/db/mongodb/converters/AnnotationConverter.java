@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
@@ -25,8 +27,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,7 +47,7 @@ public class AnnotationConverter {
     private final Logger logger;
 
     public AnnotationConverter() {
-        this.logger = LoggerFactory.getLogger(AnnotationConverter.class);
+        this.logger = LogManager.getLogger(AnnotationConverter.class);
     }
 
 

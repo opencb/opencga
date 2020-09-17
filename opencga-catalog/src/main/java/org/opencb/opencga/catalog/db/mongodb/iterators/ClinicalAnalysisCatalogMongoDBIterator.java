@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -30,8 +32,6 @@ import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -81,7 +81,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         this.interpretationQueryOptions = createInnerQueryOptions(INTERPRETATION.key(), false);
 
         this.clinicalAnalysisListBuffer = new LinkedList<>();
-        this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
+        this.logger = LogManager.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
     }
 
     @Override

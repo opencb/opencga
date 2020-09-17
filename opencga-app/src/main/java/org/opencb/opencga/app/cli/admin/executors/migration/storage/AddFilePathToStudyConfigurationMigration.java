@@ -1,14 +1,14 @@
 package org.opencb.opencga.app.cli.admin.executors.migration.storage;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.common.Status;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.core.models.file.File;
 
 import java.util.Arrays;
 
@@ -24,7 +24,7 @@ public class AddFilePathToStudyConfigurationMigration {
 
     protected static final QueryOptions QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(URI.key()));
     private final CatalogManager catalogManager;
-    private final Logger logger = LoggerFactory.getLogger(AddFilePathToStudyConfigurationMigration.class);
+    private final Logger logger = LogManager.getLogger(AddFilePathToStudyConfigurationMigration.class);
 
     public AddFilePathToStudyConfigurationMigration(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;

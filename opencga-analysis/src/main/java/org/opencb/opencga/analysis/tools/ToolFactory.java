@@ -17,22 +17,22 @@
 package org.opencb.opencga.analysis.tools;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.tools.annotations.Tool;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.*;
 
 public class ToolFactory {
-    private static final Logger logger = LoggerFactory.getLogger(ToolFactory.class);
+    private static final Logger logger = LogManager.getLogger(ToolFactory.class);
     private static Map<String, Class<? extends OpenCgaTool>> toolsCache;
     private static Map<String, Set<Class<? extends OpenCgaTool>>> duplicatedTools;
     private static List<Class<? extends OpenCgaTool>> toolsList;

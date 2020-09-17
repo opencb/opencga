@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.variant.manager.operations;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
@@ -35,8 +37,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,7 +50,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 
 public class VariantStatsOperationManager extends OperationManager {
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
 
     public VariantStatsOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine variantStorageEngine) {
         super(variantStorageManager, variantStorageEngine);

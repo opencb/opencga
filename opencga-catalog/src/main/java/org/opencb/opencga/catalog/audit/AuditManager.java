@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.audit;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,8 +35,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -45,7 +45,7 @@ import java.util.*;
  */
 public class AuditManager {
 
-    protected static Logger logger = LoggerFactory.getLogger(AuditManager.class);
+    protected static Logger logger = LogManager.getLogger(AuditManager.class);
 
     private final CatalogManager catalogManager;
     private final AuthorizationManager authorizationManager;

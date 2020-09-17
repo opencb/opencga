@@ -18,13 +18,13 @@ package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +51,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
     private boolean pendingSkip;
     // Count of returned results.
     private int numResults;
-    private Logger logger = LoggerFactory.getLogger(MultiVariantDBIterator.class);
+    private Logger logger = LogManager.getLogger(MultiVariantDBIterator.class);
     private Query query;
     private int numQueries;
     private Variant lastVariant = null;
@@ -243,7 +243,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
         private List<Object> lastBatch = Collections.emptyList();
         private int totalBatchSizeCount;
         //        private boolean firstBatch = true;
-        private Logger logger = LoggerFactory.getLogger(VariantQueryIterator.class);
+        private Logger logger = LogManager.getLogger(VariantQueryIterator.class);
 
         VariantQueryIterator(Iterator<?> variantsIterator, Query query, int batchSize) {
             this.variantsIterator = Objects.requireNonNull(variantsIterator);

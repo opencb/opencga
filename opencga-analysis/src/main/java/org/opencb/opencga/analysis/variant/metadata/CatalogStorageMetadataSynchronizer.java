@@ -20,6 +20,8 @@ package org.opencb.opencga.analysis.variant.metadata;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -44,8 +46,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.util.*;
@@ -81,7 +81,7 @@ public class CatalogStorageMetadataSynchronizer {
             CohortDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key()
     ));
 
-    protected static Logger logger = LoggerFactory.getLogger(CatalogStorageMetadataSynchronizer.class);
+    protected static Logger logger = LogManager.getLogger(CatalogStorageMetadataSynchronizer.class);
 
     private final CatalogManager catalogManager;
     private final VariantStorageMetadataManager metadataManager;

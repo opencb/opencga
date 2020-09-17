@@ -17,9 +17,9 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.security.Key;
@@ -50,7 +50,7 @@ public class JwtManager {
         this.privateKey = privateKey;
         this.publicKey = publicKey;
 
-        logger = LoggerFactory.getLogger(JwtManager.class);
+        logger = LogManager.getLogger(JwtManager.class);
     }
 
     public SignatureAlgorithm getAlgorithm() {

@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -65,8 +67,6 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResu
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -93,7 +93,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public static final String REMOVE_OPERATION_NAME = TaskMetadata.Type.REMOVE.name().toLowerCase();
 
-    private Logger logger = LoggerFactory.getLogger(VariantStorageEngine.class);
+    private Logger logger = LogManager.getLogger(VariantStorageEngine.class);
     private ObjectMap options;
 
     public enum MergeMode {

@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -53,7 +54,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -72,7 +72,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     public CohortMongoDBAdaptor(MongoDBCollection cohortCollection, MongoDBCollection deletedCohortCollection,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(CohortMongoDBAdaptor.class));
+        super(LogManager.getLogger(CohortMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.cohortCollection = cohortCollection;
         this.deletedCohortCollection = deletedCohortCollection;

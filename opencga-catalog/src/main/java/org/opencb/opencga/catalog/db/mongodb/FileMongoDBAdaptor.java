@@ -22,6 +22,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -52,7 +53,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.net.URI;
@@ -89,7 +89,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
      */
     public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection,
                               MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(FileMongoDBAdaptor.class));
+        super(LogManager.getLogger(FileMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
         this.deletedFileCollection = deletedFileCollection;

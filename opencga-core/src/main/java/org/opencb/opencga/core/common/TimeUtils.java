@@ -18,8 +18,8 @@ package org.opencb.opencga.core.common;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -34,7 +34,7 @@ public class TimeUtils {
     private static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
     private static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
 
-    private static final Logger logger = LoggerFactory.getLogger(TimeUtils.class);
+    private static final Logger logger = LogManager.getLogger(TimeUtils.class);
 
     public static String getTime() {
         return getTime(new Date());

@@ -19,10 +19,10 @@ package org.opencb.opencga.storage.benchmark.variant.generators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Throwables;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.benchmark.variant.queries.RandomQueries;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -44,7 +44,7 @@ public abstract class QueryGenerator {
     public static final String USER_PROPERTIES_FILE = "user.properties";
     protected Random random;
 
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private Logger logger = LogManager.getLogger(getClass());
     private int arity;
 
     public void setUp(Map<String, String> params) {

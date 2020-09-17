@@ -1,5 +1,7 @@
 package org.opencb.opencga.app.cli.admin.executors.migration.storage;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -9,8 +11,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -23,7 +23,7 @@ import java.util.*;
  */
 public class NewStudyMetadata extends AbstractStorageMigrator {
 
-    private final Logger logger = LoggerFactory.getLogger(NewStudyMetadata.class);
+    private final Logger logger = LogManager.getLogger(NewStudyMetadata.class);
     private final AddFilePathToStudyConfigurationMigration filePathMigrator;
 
 

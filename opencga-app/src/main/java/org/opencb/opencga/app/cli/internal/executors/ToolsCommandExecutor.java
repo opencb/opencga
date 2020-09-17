@@ -1,16 +1,16 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.LogManager;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -25,7 +25,7 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
         super(toolCommandOptions.commonCommandOptions);
         this.toolCommandOptions = toolCommandOptions;
 
-        this.logger = LoggerFactory.getLogger(ToolsCommandExecutor.class);
+        this.logger = LogManager.getLogger(ToolsCommandExecutor.class);
     }
 
     @Override
