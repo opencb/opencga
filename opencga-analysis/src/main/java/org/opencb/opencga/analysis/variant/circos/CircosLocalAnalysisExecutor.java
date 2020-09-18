@@ -30,7 +30,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -71,8 +70,7 @@ import static org.opencb.biodata.models.variant.avro.VariantType.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_INPUT_PATH;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH;
-import static org.opencb.opencga.core.api.ParamConstants.OFFSET_DEFAULT;
-import static org.opencb.opencga.core.api.ParamConstants.ONLY_EXONS_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @ToolExecutor(id="opencga-local", tool = CircosAnalysis.ID,
@@ -140,12 +138,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 case GENE:
                     futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> geneQuery(query, track))));
                     break;
-//                case COVERAGE:
-//                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> coverageQuery(track))));
-//                    break;
-//                case COVERAGE_RATIO:
-//                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> coverageRatioQuery(track))));
-//                    break;
+                case COVERAGE:
+                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> coverageQuery(query, track))));
+                    break;
+                case COVERAGE_RATIO:
+                    futureList.add(threadPool.submit(getNamedThread(track.getType().name(), () -> coverageRatioQuery(query, track))));
+                    break;
             }
         }
 
@@ -487,52 +485,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             pw = new PrintWriter(trackFile);
             pw.println("Chromosome\tchromStart\tchromEnd\tCoverage");
 
-            List<Region> regions = new ArrayList<>();
-
-            // Input regions management
-            if (trackQuery.containsKey(REGION.key())) {
-                regions = Region.parseRegions(trackQuery.get(REGION.key()));
-            }
-
-            // Get genes and panel genes
-            Set<String> geneSet = new HashSet<>();
-            if (trackQuery.containsKey(GENE.key())) {
-                geneSet.addAll(Arrays.asList(trackQuery.get(GENE.key()).split(",")));
-            }
-            if (trackQuery.containsKey(PANEL.key())) {
-                List<String> panelIds = Arrays.asList(trackQuery.get(PANEL.key()).split(","));
-                QueryOptions queryOptions = new QueryOptions("include", "genes");
-                OpenCGAResult<Panel> panelResult = storageManager.getCatalogManager().getPanelManager().get(study, panelIds, queryOptions,
-                        getToken());
-                for (Panel panel : panelResult.getResults()) {
-                    if (CollectionUtils.isNotEmpty(panel.getGenes())) {
-                        for (DiseasePanel.GenePanel gene : panel.getGenes()) {
-                            geneSet.add(gene.getId());
-                        }
-                    }
-                }
-            }
-
-            // Merge regions and gene regions
-            boolean onlyExons = Boolean.parseBoolean(trackQuery.getOrDefault(ONLY_EXONS_PARAM, "false"));
-            int offset = Integer.parseInt(trackQuery.getOrDefault(OFFSET_DEFAULT, "500"));
-            List<Region> regionList = alignmentStorageManager.mergeRegions(regions, new ArrayList<>(geneSet), onlyExons, offset, study,
-                    getToken());
-
-            // If input regions were not provided by the user, we compute the coverage taking into account the whole genome
-            if (CollectionUtils.isEmpty(regionList)) {
-                regionList = new ArrayList<>();
-                // TODO: get list of chromosomes from cellbase
-                for (int i = 0; i <= 22; i++) {
-                    regionList.add(new Region(String.valueOf(i)));
-                }
-            }
+            List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
 
             // Compute window size
-            // TODO: compute window size from: genome_size / num_pixels, where num_pixels = 2 * PI * radius
-            int windowSize = 250000;
+            int windowSize = computeWindowSize();
 
-            for (Region region : regionList) {
+            for (Region region : regions) {
                 OpenCGAResult<RegionCoverage> coverageResult = alignmentStorageManager.coverageQuery(study, inputFile, region, 0,
                         Integer.MAX_VALUE, windowSize, getToken());
                 for (RegionCoverage regionCoverage : coverageResult.getResults()) {
@@ -563,12 +521,147 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         return true;
     }
 
+    /**
+     * Create file with coverage ratio (from two files) to plot the corresponding Circos track..
+     *
+     * @param query General query
+     * @param track Circos track
+     * @return True or false depending on successs
+     */
+    private boolean coverageRatioQuery(Query query, CircosTrack track) {
+        PrintWriter pw = null;
+
+        try {
+            AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
+
+            Map<String, String> trackQuery = track.getQuery();
+
+            String somaticFile = trackQuery.get(FILE_ID_1_PARAM);
+            ParamUtils.checkIsSingleID(somaticFile, FILE_ID_1_PARAM);
+            String germlineFile = trackQuery.get(FILE_ID_1_PARAM);
+            ParamUtils.checkIsSingleID(germlineFile, FILE_ID_2_PARAM);
+
+
+            File trackFile = getTrackFilename(track.getType().name());
+            pw = new PrintWriter(trackFile);
+            pw.println("Chromosome\tchromStart\tchromEnd\tRatio");
+
+
+            List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
+
+            // Compute window size
+            int windowSize = computeWindowSize();
+
+            boolean skipLog2 = Boolean.parseBoolean(trackQuery.getOrDefault(SKIP_LOG2_PARAM, "false"));
+
+
+            // Getting total counts for file #1: somatic file
+            OpenCGAResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(study, somaticFile, getToken());
+            if (CollectionUtils.isEmpty(somaticResult.getResults()) || somaticResult.getResults().get(0) == 0) {
+                throw new ToolException("Coverage ratio: impossible get total counts for file " + somaticFile);
+            }
+            long somaticTotalCounts = somaticResult.getResults().get(0);
+
+            // Getting total counts for file #2: germline file
+            OpenCGAResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(study, germlineFile, getToken());
+            if (CollectionUtils.isEmpty(germlineResult.getResults()) || germlineResult.getResults().get(0) == 0) {
+                throw new ToolException("Coverage ratio: impossible get total counts for file " + germlineFile);
+            }
+            long germlineTotalCounts = germlineResult.getResults().get(0);
+
+            // Compute (log2) coverage ratio for each region given
+            for (Region region : regions) {
+
+                OpenCGAResult<RegionCoverage> ratioResult = alignmentStorageManager.coverageRatioQuery(study, somaticFile,
+                        somaticTotalCounts, germlineFile, germlineTotalCounts,
+                        region, windowSize, skipLog2, getToken());
+
+                if (CollectionUtils.isNotEmpty(ratioResult.getResults())) {
+                    for (RegionCoverage regionCoverage : ratioResult.getResults()) {
+                        if (regionCoverage.getValues() != null && regionCoverage.getValues().length > 0) {
+                            int start = regionCoverage.getStart();
+                            int end = regionCoverage.getEnd();
+                            for (double coverageValue : regionCoverage.getValues()) {
+                                pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue);
+                                start += regionCoverage.getWindowSize();
+                                end += regionCoverage.getWindowSize();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Set track file
+            track.setFile(trackFile.getAbsolutePath());
+
+        } catch (Exception e) {
+            errors.put(track.getType().name(), e.getMessage());
+            return false;
+        } finally {
+            if (pw != null) {
+                pw.close();
+            }
+        }
+
+        return true;
+    }
 
     private File getTrackFilename(String name) {
         return getOutDir().resolve(name + System.currentTimeMillis() + ".tsv").toFile();
     }
 
-    //
+    private int computeWindowSize() {
+        // TODO: compute window size from: genome_size / num_pixels, where num_pixels = 2 * PI * radius
+        return 250000;
+    }
+
+    private List<Region> getRegionsFromQuery(Map<String, String> query, AlignmentStorageManager alignmentStorageManager)
+            throws CatalogException, IOException, StorageEngineException {
+        List<Region> inRegions = new ArrayList<>();
+
+        // Input regions management
+        if (query.containsKey(REGION.key())) {
+            inRegions = Region.parseRegions(query.get(REGION.key()));
+        }
+
+        // Get genes and panel genes
+        Set<String> geneSet = new HashSet<>();
+        if (query.containsKey(GENE.key())) {
+            geneSet.addAll(Arrays.asList(query.get(GENE.key()).split(",")));
+        }
+        if (query.containsKey(PANEL.key())) {
+            List<String> panelIds = Arrays.asList(query.get(PANEL.key()).split(","));
+            QueryOptions queryOptions = new QueryOptions("include", "genes");
+            OpenCGAResult<Panel> panelResult = storageManager.getCatalogManager().getPanelManager().get(study, panelIds, queryOptions,
+                    getToken());
+            for (Panel panel : panelResult.getResults()) {
+                if (CollectionUtils.isNotEmpty(panel.getGenes())) {
+                    for (DiseasePanel.GenePanel gene : panel.getGenes()) {
+                        geneSet.add(gene.getId());
+                    }
+                }
+            }
+        }
+
+        // Merge regions and gene regions
+        boolean onlyExons = Boolean.parseBoolean(query.getOrDefault(ONLY_EXONS_PARAM, "false"));
+        int offset = Integer.parseInt(query.getOrDefault(OFFSET_DEFAULT, "500"));
+
+        List<Region> outRegions = alignmentStorageManager.mergeRegions(inRegions, new ArrayList<>(geneSet), onlyExons, offset, study,
+                getToken());
+
+        // If input regions were not provided by the user, we compute the coverage taking into account the whole genome
+        if (CollectionUtils.isEmpty(outRegions)) {
+            outRegions = new ArrayList<>();
+            // TODO: get list of chromosomes from cellbase
+            for (int i = 0; i <= 22; i++) {
+                outRegions.add(new Region(String.valueOf(i)));
+            }
+        }
+
+        return outRegions;
+    }
+//
 //    /**
 //     * Create file with INDEL variants.
 //     *

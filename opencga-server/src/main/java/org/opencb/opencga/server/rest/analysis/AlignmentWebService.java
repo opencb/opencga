@@ -319,25 +319,13 @@ public class AlignmentWebService extends AnalysisWebService {
                 // Compute (log2) coverage ratio for each region given
                 List<OpenCGAResult> results = new ArrayList<>();
                 for (Region region : regionList) {
-                    OpenCGAResult<RegionCoverage> somaticCoverage = alignmentStorageManager
-                            .coverageQuery(study, somaticFile, region, 0, Integer.MAX_VALUE, windowSize, token);
-                    OpenCGAResult<RegionCoverage> germlineCoverage = alignmentStorageManager
-                            .coverageQuery(study, germlineFile, region, 0, Integer.MAX_VALUE, windowSize, token);
-                    if (somaticCoverage.getResults().size() == 1 && germlineCoverage.getResults().size() == 1) {
-                        try {
-                            StopWatch watch = StopWatch.createStarted();
-                            RegionCoverage coverage = BamUtils.coverageRatio(somaticCoverage.getResults().get(0), somaticTotalCounts,
-                                    germlineCoverage.getResults().get(0), germlineTotalCounts, !skipLog2);
-                            int dbTime = somaticResult.getTime() + somaticCoverage.getTime()
-                                    + germlineResult.getTime() + germlineCoverage.getTime() + ((int) watch.getTime());
-                            results.add(new OpenCGAResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
-                        } catch (AlignmentCoverageException e) {
-                            logger.error("Coverage ratio: {}: somatic file = {}, germline file = {}, region = {}",
-                                    e.getMessage(), somaticFile, germlineFile, region.toString());
-                        }
-                    } else {
-                        logger.error("Coverage ratio: something wrong happened: somatic file = {}, germline file = {}, region = {}",
-                                somaticFile, germlineFile, region.toString());
+                    try {
+                        OpenCGAResult<RegionCoverage> regionCoverageResult = alignmentStorageManager.coverageRatioQuery(study, somaticFile,
+                                somaticTotalCounts, germlineFile, germlineTotalCounts, region, windowSize, skipLog2, token);
+                        results.add(regionCoverageResult);
+                    } catch (AlignmentCoverageException e) {
+                        logger.error("Coverage ratio: {}: somatic file = {}, germline file = {}, region = {}",
+                                e.getMessage(), somaticFile, germlineFile, region.toString());
                     }
                 }
                 return createOkResponse(postProcessingResult(results, splitResults, regionList));

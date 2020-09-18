@@ -27,6 +27,7 @@ import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.tools.alignment.BamUtils;
+import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -232,6 +233,26 @@ public class AlignmentStorageManager extends StorageManager {
                                                        int windowSize, String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
         return alignmentStorageEngine.getDBAdaptor().coverageQuery(Paths.get(file.getUri()), region, minCoverage, maxCoverage, windowSize);
+    }
+
+    //-------------------------------------------------------------------------
+
+    public OpenCGAResult<RegionCoverage> coverageRatioQuery(String study, String somaticFile, long somaticTotalCounts, String germlineFile,
+                                                            long germlineTotalCounts, Region region, int windowSize, boolean skipLog2,
+                                                            String sessionId) throws Exception {
+        // Compute (log2) coverage ratio for each region given
+        OpenCGAResult<RegionCoverage> somaticCoverage = coverageQuery(study, somaticFile, region, 0, Integer.MAX_VALUE, windowSize,
+                sessionId);
+        OpenCGAResult<RegionCoverage> germlineCoverage = coverageQuery(study, germlineFile, region, 0, Integer.MAX_VALUE, windowSize,
+                sessionId);
+        if (somaticCoverage.getResults().size() == 1 && germlineCoverage.getResults().size() == 1) {
+            StopWatch watch = StopWatch.createStarted();
+            RegionCoverage coverage = BamUtils.coverageRatio(somaticCoverage.getResults().get(0), somaticTotalCounts,
+                    germlineCoverage.getResults().get(0), germlineTotalCounts, !skipLog2);
+            int dbTime =  (int) watch.getTime();
+            return new OpenCGAResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1);
+        }
+        throw new AlignmentCoverageException("Something wrong happened in coverage ratio query");
     }
 
     //-------------------------------------------------------------------------
