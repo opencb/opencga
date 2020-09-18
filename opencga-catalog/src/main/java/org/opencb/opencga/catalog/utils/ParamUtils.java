@@ -145,6 +145,16 @@ public class ParamUtils {
         }
     }
 
+    public static void checkIsSingleID(String id, String field) throws CatalogParameterException {
+        if (StringUtils.isNotEmpty(id)) {
+            if (id.contains(",")) {
+                throw new CatalogParameterException("More than one id found. Only one " + field + " ID is allowed.");
+            }
+        } else {
+            throw new CatalogParameterException("Missing " + field + " ID ");
+        }
+    }
+
     public static long getAsLong(Object value) throws CatalogException {
         try {
             return (Long) value;
