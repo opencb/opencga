@@ -321,6 +321,9 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Action to be performed if the array of primary findings is being updated.",
                     allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
+            @ApiParam(value = "Action to be performed if the array of methods is being updated.",
+                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("methodsAction") ParamUtils.UpdateAction methodsAction,
             @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.",
                     allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
@@ -341,11 +344,15 @@ public class ClinicalWebService extends AnalysisWebService {
             if (commentsAction == null) {
                 commentsAction = ParamUtils.UpdateAction.ADD;
             }
+            if (methodsAction == null) {
+                methodsAction = ParamUtils.UpdateAction.ADD;
+            }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindingsAction);
             actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindingsAction);
             actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), methodsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, params, saveAs, queryOptions, token));

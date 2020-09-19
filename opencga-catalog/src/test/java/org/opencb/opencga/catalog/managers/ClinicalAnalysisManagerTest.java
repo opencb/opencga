@@ -381,7 +381,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(0, interpretationResult.getMethods().size());
         assertEquals(0, interpretationResult.getPrimaryFindings().size());
         assertEquals(0, interpretationResult.getSecondaryFindings().size());
-        assertEquals(0, interpretationResult.getComments().size());
+        assertEquals(1, interpretationResult.getComments().size());
     }
 
     @Test
