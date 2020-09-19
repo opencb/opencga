@@ -23,7 +23,7 @@
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
         <version>2.0.0-rc2</version>
-        <relativePath>..</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-analysis</artifactId>

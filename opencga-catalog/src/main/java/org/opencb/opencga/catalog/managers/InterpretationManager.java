@@ -304,7 +304,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
             actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
-            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.UpdateAction.SET);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), ParamUtils.UpdateAction.SET);
             QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
             InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
