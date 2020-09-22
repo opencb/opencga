@@ -56,7 +56,7 @@ rest:
 
   image:
     # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-base:2.0.0-rc2-hdp3.1
+    repository: opencb/opencga-base:2.0.0-dev-hdp3.1
     pullPolicy: Always
 
   imagePullSecrets: []
@@ -132,7 +132,7 @@ master:
 
   image:
     # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-base:2.0.0-rc2-hdp3.1
+    repository: opencb/opencga-base:2.0.0-dev-hdp3.1
     pullPolicy: Always
 
   imagePullSecrets: []
@@ -182,7 +182,7 @@ init:
   name: init
   image:
     # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-init:2.0.0-rc2-hdp3.1
+    repository: opencb/opencga-init:2.0.0-dev-hdp3.1
     pullPolicy: Always
 
   podSecurityContext: {}
