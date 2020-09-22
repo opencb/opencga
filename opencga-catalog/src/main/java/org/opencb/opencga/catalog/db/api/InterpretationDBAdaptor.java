@@ -29,6 +29,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -125,6 +126,9 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult update(long uid, ObjectMap parameters, ParamUtils.SaveInterpretationAs action, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Interpretation> merge(long interpretationUid, Interpretation interpretation, List<String> clinicalVariantList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)

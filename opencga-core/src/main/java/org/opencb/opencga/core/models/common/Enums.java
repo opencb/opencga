@@ -109,6 +109,7 @@ public final class Enums {
         CREATE,
         CLEAR,
         UPDATE,
+        MERGE,
         INFO,
         SEARCH,
         COUNT,
