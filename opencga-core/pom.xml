@@ -35,23 +35,25 @@
             <groupId>org.opencb.biodata</groupId>
             <artifactId>biodata-models</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.biodata</groupId>
-            <artifactId>biodata-tools</artifactId>
-        </dependency>
+        <!-- TODO remove oskar-analysis dependency and add these ones:       -->
+<!--        <dependency>-->
+<!--            <groupId>org.opencb.commons</groupId>-->
+<!--            <artifactId>commons-datastore-core</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.opencb.biodata</groupId>-->
+<!--            <artifactId>biodata-formats</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.oskar</groupId>
             <artifactId>oskar-analysis</artifactId>
         </dependency>
 
+        <!-- TODO this is only needed in one line of UriUtils       -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -109,15 +111,12 @@
                 </executions>
 
                 <configuration>
-                    <!-- ... -->
-
                     <!-- this is false by default, forces the plugin to generate the git.properties file -->
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
 
                     <!-- The path for the to be generated properties file, it's relative to ${project.basedir} -->
                     <generateGitPropertiesFilename>target/generated-resources/org/opencb/opencga/core/git.properties</generateGitPropertiesFilename>
                     <gitDescribe>
-
                         <!-- don't generate the describe property -->
                         <skip>false</skip>
 

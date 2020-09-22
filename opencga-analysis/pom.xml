@@ -39,20 +39,11 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.bionetdb</groupId>-->
-<!--            <artifactId>bionetdb-core</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-core</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.reflections</groupId>-->
-<!--            <artifactId>reflections</artifactId>-->
-<!--            <version>0.9.11</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
@@ -111,12 +102,12 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
 
