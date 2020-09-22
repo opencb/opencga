@@ -50,34 +50,21 @@
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>${protobuf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-all</artifactId>
-            <version>${grpc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-servlet</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.opencb.opencga</groupId>-->
-            <!--<artifactId>opencga-server</artifactId>-->
-            <!--<scope>test</scope>-->
-            <!--<type>test-jar</type>-->
-            <!--<version>${opencga.version}</version>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.glassfish.jersey.media</groupId>-->
-            <!--<artifactId>jersey-media-multipart</artifactId>-->
-            <!--<version>${jersey.version}</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>com.google.protobuf</groupId>-->
+        <!--            <artifactId>protobuf-java</artifactId>-->
+        <!--            <version>${protobuf.version}</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>io.grpc</groupId>-->
+        <!--            <artifactId>grpc-all</artifactId>-->
+        <!--            <version>${grpc.version}</version>-->
+        <!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.glassfish.jersey.containers</groupId>-->
+        <!--            <artifactId>jersey-container-servlet</artifactId>-->
+        <!--            <scope>test</scope>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
@@ -85,12 +72,6 @@
             <type>test-jar</type>
             <version>${opencga.version}</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.opencb.opencga</groupId>-->
-            <!--<artifactId>opencga-analysis</artifactId>-->
-            <!--<scope>test</scope>-->
-            <!--<version>${opencga.version}</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>

@@ -369,6 +369,17 @@ public class FileManagerTest extends AbstractManagerTest {
         file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
         assertEquals(1, file.getSampleIds().size());
         assertEquals("NA19661", file.getSampleIds().get(0));
+
+        file = fileManager.get(studyFqn, link.first().getId(),
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
+        assertEquals(1, file.getSampleIds().size());
+        assertEquals("NA19661", file.getSampleIds().get(0));
+        assertNull(file.getPath());
+
+        file = fileManager.get(studyFqn, link.first().getId(),
+                new QueryOptions(QueryOptions.EXCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
+        assertTrue(file.getSampleIds().isEmpty());
+        assertNotNull(file.getPath());
     }
 
     @Test
