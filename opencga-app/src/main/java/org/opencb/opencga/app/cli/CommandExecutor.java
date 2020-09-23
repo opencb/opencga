@@ -109,9 +109,6 @@ public abstract class CommandExecutor {
                 if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
                     this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
                 }
-                if (StringUtils.isNotEmpty(this.clientConfiguration.getLogFile())) {
-                    this.configuration.setLogFile(this.clientConfiguration.getLogFile());
-                }
             }
 
             // Do not change the order here, we can only configure logger after loading the configuration files,
@@ -162,11 +159,6 @@ public abstract class CommandExecutor {
         // We overwrite logLevel configuration param with command line value
         if (StringUtils.isNotEmpty(this.logLevel)) {
             this.configuration.setLogLevel(this.logLevel);
-        }
-
-        // We overwrite logFile configuration param with command line value
-        if (StringUtils.isNotEmpty(this.options.logFile)) {
-            this.configuration.setLogFile(this.options.logFile);
         }
 
         Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
