@@ -309,6 +309,7 @@
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j.properties"/>
+                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.xml"/>
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>

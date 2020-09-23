@@ -24,10 +24,8 @@ import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
@@ -46,6 +44,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -54,7 +53,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -148,8 +146,8 @@ public class OpenCGAWSServer {
         jsonObjectWriter = jsonObjectMapper.writer();
 
         //Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
 
 
@@ -253,7 +251,7 @@ public class OpenCGAWSServer {
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
             logger.info("|  * Server logfile: " + OpenCGAWSServer.opencgaHome.resolve("logs").resolve("server.log"));
-            initLogger(OpenCGAWSServer.opencgaHome.resolve("logs"));
+//            initLogger(OpenCGAWSServer.opencgaHome.resolve("logs"));
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirPath.toString() + "'";
             logger.error(errorMessage);
@@ -288,21 +286,21 @@ public class OpenCGAWSServer {
         }
     }
 
-    private static void initLogger(java.nio.file.Path logs) {
-        try {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
-            String logFile = logs.resolve("server.log").toString();
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
-            rollingFileAppender.setThreshold(Level.DEBUG);
-            rollingFileAppender.setMaxFileSize("20MB");
-            rollingFileAppender.setMaxBackupIndex(10);
-            rootLogger.setLevel(Level.TRACE);
-            rootLogger.addAppender(rollingFileAppender);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    private static void initLogger(java.nio.file.Path logs) {
+//        try {
+//            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
+//            String logFile = logs.resolve("server.log").toString();
+//            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
+//            rollingFileAppender.setThreshold(Level.DEBUG);
+//            rollingFileAppender.setMaxFileSize("20MB");
+//            rollingFileAppender.setMaxBackupIndex(10);
+//            rootLogger.setLevel(Level.TRACE);
+//            rootLogger.addAppender(rollingFileAppender);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     static void shutdown() {
         logger.info("========================================================================");

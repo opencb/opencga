@@ -21,10 +21,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -156,11 +154,9 @@ public abstract class CommandExecutor {
     public abstract void execute() throws Exception;
 
     private void configureLogger() throws IOException {
-        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-
         // Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
 
         // Command line parameters have preference over configuration file
         // We overwrite logLevel configuration param with command line value
@@ -174,19 +170,20 @@ public abstract class CommandExecutor {
         }
 
         Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
-        rootLogger.setLevel(level);
-
-        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
-        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-        if (StringUtils.isEmpty(this.configuration.getLogFile())) {
-            stderr.setThreshold(level);
-        } else {
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
-            rootLogger.addAppender(rollingFileAppender);
-            rollingFileAppender.setThreshold(level);
-            rollingFileAppender.setMaxFileSize("100MB");
-            rollingFileAppender.setMaxBackupIndex(10);
-        }
+        Configurator.setRootLevel(level);
+//        rootLogger.setLevel(level);
+//
+//        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
+//        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+//        if (StringUtils.isEmpty(this.configuration.getLogFile())) {
+//            stderr.setThreshold(level);
+//        } else {
+//            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
+//            rootLogger.addAppender(rollingFileAppender);
+//            rollingFileAppender.setThreshold(level);
+//            rollingFileAppender.setMaxFileSize("100MB");
+//            rollingFileAppender.setMaxBackupIndex(10);
+//        }
     }
 
 

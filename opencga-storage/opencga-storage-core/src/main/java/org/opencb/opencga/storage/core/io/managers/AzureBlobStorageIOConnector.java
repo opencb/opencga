@@ -6,7 +6,8 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.reactivestreams.Publisher;
@@ -87,7 +88,7 @@ public class AzureBlobStorageIOConnector implements IOConnector {
     private void open() throws InvalidKeyException {
         // Mute INFO from LoggingFactory.slf4jLogger.
         // See https://github.com/Azure/azure-storage-java/issues/433
-        org.apache.log4j.Logger.getLogger(LoggingFactory.class).setLevel(Level.WARN);
+        Configurator.setLevel(LoggingFactory.class.getName(), Level.WARN);
 
         // Create a ServiceURL to call the Blob service. We will also use this to construct the ContainerURL
         SharedKeyCredentials creds = new SharedKeyCredentials(accountName, accountKey);
