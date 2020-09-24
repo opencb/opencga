@@ -30,6 +30,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -147,7 +148,6 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             }
         }
 
-
         if (MapUtils.isEmpty(errors)) {
             // Write Circos config in JSON format
             File circosFile = getOutDir().resolve("circos.config.json").toFile();
@@ -183,6 +183,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     }
 
 
+    /**
+     * Create file with the distance of consecutive SNV, INDEL, DELETION, INSERTION variants.
+     *
+     * @param query General query
+     * @param track Circos track
+     * @return True or false depending on successs
+     */
     private boolean variantQuery(Query query, CircosTrack track) {
         PrintWriter pw = null;
 
@@ -210,6 +217,29 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
                         + v.getAlternate());
 
+            }
+
+            // Set color if necessary
+            if (!track.getDisplay().containsKey("color") || StringUtils.isEmpty(track.getDisplay().get("color"))) {
+                String color;
+                switch (track.getType()) {
+                    case SNV:
+                        color = "red";
+                        break;
+                    case INDEL:
+                        color = "blue";
+                        break;
+                    case DELETION:
+                        color = "yellow";
+                        break;
+                    case INSERTION:
+                        color = "green";
+                        break;
+                    default:
+                        color = "orange";
+                        break;
+                }
+                track.getDisplay().put("color", color);
             }
 
             // Set track file
@@ -241,7 +271,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             File trackFile = getTrackFilename(track.getType().name());
 
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tref\talt\tlogDistPrev");
+            pw.println("Chromosome\tchromStart\tchromEnd\tref\talt\tlogDistPrev\tcolor");
 
             pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
 
@@ -259,6 +289,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             logger.info(track.getType().name() + " track, query: " + rainplotQuery.toJson());
             logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
 
+            // Get colors
+            Map<String, String> colors = getRainplotColors();
+
             VariantDBIterator iterator = storageManager.iterator(rainplotQuery, queryOptions, getToken());
 
             int prevStart = 0;
@@ -273,8 +306,14 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         prevStart = 0;
                         currentChrom = v.getChromosome();
                     }
+                    String color, key = v.getReference() + v.getAlternate();
+                    if (colors.containsKey(key)) {
+                        color = colors.get(key);
+                    } else {
+                        color = "grey";
+                    }
                     pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
-                            + v.getAlternate() + "\t" + Math.log10(v.getStart() - prevStart));
+                            + v.getAlternate() + "\t" + Math.log10(v.getStart() - prevStart) + "\t" + color);
                     prevStart = v.getStart();
                 }
             }
@@ -306,7 +345,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             File trackFile = getTrackFilename(track.getType().name());
 
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tData");
+            pw.println("Chromosome\tchromStart\tchromEnd\tdata\tcolor");
 
             pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
 
@@ -338,6 +377,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             logger.info(track.getType().name() + " track, query: " + cnvQuery.toJson());
             logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
 
+            // Get colors
+            Map<Double, String> colors = getCnvColors();
 
             VariantDBIterator iterator = storageManager.iterator(cnvQuery, queryOptions, getToken());
             while (iterator.hasNext()) {
@@ -375,7 +416,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             data = Double.parseDouble(strScore1);
                             break;
                     }
-                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + data);
+                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + data + "\t"
+                            + getColorByRange((double) data, colors));
 
                 }
             }
@@ -474,6 +516,16 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         PrintWriter pw = null;
 
         try {
+            // Color management
+            String colorLabel;
+            Map<Double, String> colors = null;
+            if (!track.getDisplay().containsKey("color") || StringUtils.isEmpty(track.getDisplay().get("color"))) {
+                colors = getCoverageColors();
+                colorLabel = "";
+            } else {
+                colorLabel = "\tcolor";
+            }
+
             AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
 
             Map<String, String> trackQuery = track.getQuery();
@@ -483,7 +535,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tCoverage");
+            pw.println("Chromosome\tchromStart\tchromEnd\tcoverage" + colorLabel);
 
             List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
 
@@ -498,7 +550,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         int start = regionCoverage.getStart();
                         int end = regionCoverage.getEnd();
                         for (double coverageValue : regionCoverage.getValues()) {
-                            pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue);
+                            if (colors != null) {
+                                pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
+                                        + "\t" + getColorByRange(coverageValue, colors));
+                            } else {
+                                pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue);
+                            }
                             start += regionCoverage.getWindowSize();
                             end += regionCoverage.getWindowSize();
                         }
@@ -532,6 +589,16 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         PrintWriter pw = null;
 
         try {
+            // Color management
+            String colorLabel;
+            Map<Double, String> colors = null;
+            if (!track.getDisplay().containsKey("color") || StringUtils.isEmpty(track.getDisplay().get("color"))) {
+                colors = getCoverageRatioColors();
+                colorLabel = "";
+            } else {
+                colorLabel = "\tcolor";
+            }
+
             AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
 
             Map<String, String> trackQuery = track.getQuery();
@@ -541,10 +608,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             String germlineFile = trackQuery.get(FILE_ID_1_PARAM);
             ParamUtils.checkIsSingleID(germlineFile, FILE_ID_2_PARAM);
 
-
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tRatio");
+            pw.println("Chromosome\tchromStart\tchromEnd\tratio" + colorLabel);
 
 
             List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
@@ -582,7 +648,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             int start = regionCoverage.getStart();
                             int end = regionCoverage.getEnd();
                             for (double coverageValue : regionCoverage.getValues()) {
-                                pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue);
+                                if (colors != null) {
+                                    pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
+                                            + "\t" + getColorByRange(coverageValue, colors));
+                                } else {
+                                    pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue);
+                                }
                                 start += regionCoverage.getWindowSize();
                                 end += regionCoverage.getWindowSize();
                             }
@@ -604,6 +675,118 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         }
 
         return true;
+    }
+
+    /**
+     * Create file with rearrangement variants.
+     *
+     * @param query General query
+     * @param track Circos track
+     * @return True or false depending on successs
+     */
+    private boolean rearrangementQuery(Query query, CircosTrack track) {
+        PrintWriter pw = null;
+        PrintWriter pwOut = null;
+        try {
+            File trackFile = getTrackFilename(track.getType().name());
+
+            pw = new PrintWriter(trackFile);
+            pw.println("Chromosome\tchromStart\tchromEnd\tChromosome.1\tchromStart.1\tchromEnd.1\ttype\tcolor");
+
+            pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
+
+            // Create rainplot query
+            Query rearrangementQuery = new Query(query);
+            if (MapUtils.isNotEmpty(track.getQuery())) {
+                rearrangementQuery.putAll(track.getQuery());
+            }
+            rearrangementQuery.put(TYPE.key(), "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
+
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
+
+            logger.info(track.getType().name() + " track, query: " + rearrangementQuery.toJson());
+            logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
+
+            VariantDBIterator iterator = storageManager.iterator(rearrangementQuery, queryOptions, getToken());
+
+            Map<VariantType, String> colors = getRearrangementColors();
+            while (iterator.hasNext()) {
+                Variant v = iterator.next();
+                String type = null;
+                switch (v.getType()) {
+                    case DELETION: {
+                        type = "DEL";
+                        break;
+                    }
+                    case BREAKEND:
+                    case TRANSLOCATION: {
+                        type = "BND";
+                        break;
+                    }
+                    case DUPLICATION: {
+                        type = "DUP";
+                        break;
+                    }
+                    case INVERSION: {
+                        type = "INV";
+                        break;
+                    }
+                    default: {
+                        // Sanity check
+                        pwOut.println(v.toString() + "\tUnknown type: " + v.getType() + ". Valid values: " + DELETION + ", " + BREAKEND
+                                + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
+
+                        break;
+                    }
+                }
+
+                if (type != null) {
+                    // Check structural variation
+                    StructuralVariation sv = v.getSv();
+                    if (sv != null) {
+                        if (sv.getBreakend() != null) {
+                            if (sv.getBreakend().getMate() != null) {
+                                BreakendMate mate = sv.getBreakend().getMate();
+                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
+                                        + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type
+                                        + "\t" + colors.get(v.getType()));
+                            } else {
+                                pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + v.getType() + ")");
+                            }
+                        } else {
+                            pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + v.getType() + ")");
+                        }
+                    } else {
+                        pwOut.println(v.toString() + "\tSV is empy (variant type: " + v.getType() + ")");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            errors.put(track.getType().name(), e.getMessage());
+            return false;
+        } finally {
+            if (pw != null) {
+                pw.close();
+            }
+            if (pwOut != null) {
+                pwOut.close();
+            }
+        }
+        return true;
+    }
+
+    //------------------------------------------------------------------------//
+    //
+    // M I S C E L L A N E O U S     F U N C T I O N S
+    //
+    //------------------------------------------------------------------------//
+
+    private <T> Callable<T> getNamedThread(String name, Callable<T> c) {
+        String parentThreadName = Thread.currentThread().getName();
+        return () -> {
+            Thread.currentThread().setName(parentThreadName + "-" + name);
+            return c.call();
+        };
     }
 
     private File getTrackFilename(String name) {
@@ -653,7 +836,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         // If input regions were not provided by the user, we compute the coverage taking into account the whole genome
         if (CollectionUtils.isEmpty(outRegions)) {
             outRegions = new ArrayList<>();
-            // TODO: get list of chromosomes from cellbase
+            //  TODO: get list of chromosomes from cellbase
             for (int i = 0; i <= 22; i++) {
                 outRegions.add(new Region(String.valueOf(i)));
             }
@@ -661,202 +844,93 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         return outRegions;
     }
-//
-//    /**
-//     * Create file with INDEL variants.
-//     *
-//     * @param query General query
-//     * @param storageManager    Variant storage manager
-//     * @return True or false depending on successs
-//     */
-//    private boolean indelQuery(Query query, VariantStorageManager storageManager) {
-//        PrintWriter pw = null;
-//        PrintWriter pwOut = null;
-//        try {
-//            indelsFile = getOutDir().resolve("indels.tsv").toFile();
-//            pw = new PrintWriter(indelsFile);
-//            pw.println("Chromosome\tchromStart\tchromEnd\ttype\tclassification");
-//
-//            pwOut = new PrintWriter(getOutDir().resolve("indels.discarded").toFile());
-//
-//            CircosTrack indelTrack = getCircosParams().getCircosTrackByType("INDEL");
-//            if (indelTrack != null) {
-//                plotIndels = true;
-//
-//                Map<String, String> trackQuery = checkTrackQuery(indelTrack);
-//
-//                Query indelQuery = new Query(query);
-//                indelQuery.putAll(trackQuery);
-//
-//                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
-//
-//                logger.info("INDEL track, query: " + indelQuery.toJson());
-//                logger.info("INDEL track, query options: " + queryOptions.toJson());
-//
-//                VariantDBIterator iterator = storageManager.iterator(indelQuery, queryOptions, getToken());
-//
-//                while (iterator.hasNext()) {
-//                    Variant v = iterator.next();
-//                    switch (v.getType()) {
-//                        case INSERTION: {
-//                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
-//                            break;
-//                        }
-//                        case DELETION: {
-//                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
-//                            break;
-//                        }
-//                        case INDEL: {
-//                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
-//                            break;
-//                        }
-//                        default: {
-//                            // Sanity check
-//                            pwOut.println(v.toString() + "\tInvalid type " + v.getType() + ". Valid values: " + VariantType.INSERTION
-//                                    + ", " + DELETION + ", " + VariantType.INDEL);
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
-//        } catch(Exception e){
-//            errors.put("INDEL", e.getMessage());
-//            return false;
-////            throw new ToolExecutorException(e);
-//        } finally {
-//            if (pw != null) {
-//                pw.close();
-//            }
-//            if (pwOut != null) {
-//                pwOut.close();
-//            }
-//        }
-//        return true;
-//    }
 
-    /**
-     * Create file with rearrangement variants.
-     *
-     * @param query General query
-     * @param track Circos track
-     * @return True or false depending on successs
-     */
-    private boolean rearrangementQuery(Query query, CircosTrack track) {
-        PrintWriter pw = null;
-        PrintWriter pwOut = null;
-        try {
-            File trackFile = getTrackFilename(track.getType().name());
+    private Map<String, String> getRainplotColors() {
+        Map<String, String> colors = new HashMap<>();
 
-            pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tChromosome.1\tchromStart.1\tchromEnd.1\ttype");
+        colors.put("CA", "royalblue");
+        colors.put("GT", "royalblue");
+        colors.put("CG", "black");
+        colors.put("GC", "black");
+        colors.put("CT", "red");
+        colors.put("GA", "red");
+        colors.put("TA", "grey");
+        colors.put("AT", "grey");
+        colors.put("TC", "green2");
+        colors.put("AG", "green2");
+        colors.put("TG", "hotpink");
+        colors.put("AC", "hotpink");
 
-            pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
+        return colors;
+    }
 
-            // Create rainplot query
-            Query rearrangementQuery = new Query(query);
-            if (MapUtils.isNotEmpty(track.getQuery())) {
-                rearrangementQuery.putAll(track.getQuery());
+    private Map<VariantType, String> getRearrangementColors() {
+        Map<VariantType, String> colors = new HashMap<>();
+
+        colors.put(DELETION, "coral2");
+        colors.put(BREAKEND, "gray35");
+        colors.put(TRANSLOCATION, "gray35");
+        colors.put(DUPLICATION, "darkgreen");
+        colors.put(INVERSION, "dodgerblue2");
+
+        return colors;
+    }
+
+    private Map<Double, String> getCnvColors() {
+        Map<Double, String> colors = new LinkedHashMap<>();
+
+        colors.put(0d, "lightcoral");
+        colors.put(2d, "lightgrey");
+        colors.put(4d, "olivedrab1");
+        colors.put(8d, "olivedrab2");
+        colors.put(16d, "olivedrab3");
+        colors.put(32d, "olivedrab4");
+        colors.put(64d, "darkgreen");
+        colors.put(1000d, "dodgerblue2");
+
+        return colors;
+    }
+
+    private Map<Double, String> getCoverageColors() {
+        Map<Double, String> colors = new LinkedHashMap<>();
+
+        colors.put(0d, "lightcoral");
+        colors.put(10d, "lightgrey");
+        colors.put(20d, "olivedrab1");
+        colors.put(30d, "olivedrab2");
+        colors.put(40d, "olivedrab3");
+        colors.put(50d, "olivedrab4");
+        colors.put(75d, "darkgreen");
+        colors.put(100d, "dodgerblue2");
+
+        return colors;
+    }
+
+    private Map<Double, String> getCoverageRatioColors() {
+        Map<Double, String> colors = new LinkedHashMap<>();
+
+        colors.put(0.25d, "olivedrab1");
+        colors.put(0.50d, "olivedrab2");
+        colors.put(0.75d, "olivedrab3");
+        colors.put(1d, "olivedrab4");
+        colors.put(1.5d, "darkgreen");
+        colors.put(2d, "dodgerblue2");
+
+        return colors;
+    }
+
+    private String getColorByRange(double score, Map<Double, String> colors) {
+        Iterator<Double> iterator = colors.keySet().iterator();
+        Double prev = iterator.next();
+        while (iterator.hasNext()) {
+            Double curr = iterator.next();
+            if (score >= prev && score < curr) {
+                return colors.get(prev);
+
             }
-            rearrangementQuery.put(TYPE.key(), "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
-
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
-
-            logger.info(track.getType().name() + " track, query: " + rearrangementQuery.toJson());
-            logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
-
-            VariantDBIterator iterator = storageManager.iterator(rearrangementQuery, queryOptions, getToken());
-
-            while (iterator.hasNext()) {
-                Variant v = iterator.next();
-                String type = null;
-                switch (v.getType()) {
-                    case DELETION: {
-                        type = "DEL";
-                        break;
-                    }
-                    case BREAKEND:
-                    case TRANSLOCATION: {
-                        type = "BND";
-                        break;
-                    }
-                    case DUPLICATION: {
-                        type = "DUP";
-                        break;
-                    }
-                    case INVERSION: {
-                        type = "INV";
-                        break;
-                    }
-                    default: {
-                        // Sanity check
-                        pwOut.println(v.toString() + "\tUnknown type: " + v.getType() + ". Valid values: " + DELETION + ", " + BREAKEND
-                                + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
-
-                        break;
-                    }
-                }
-
-                if (type != null) {
-                    // Check structural variation
-                    StructuralVariation sv = v.getSv();
-                    if (sv != null) {
-                        if (sv.getBreakend() != null) {
-                            if (sv.getBreakend().getMate() != null) {
-                                BreakendMate mate = sv.getBreakend().getMate();
-                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
-                                        + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
-                            } else {
-                                pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + v.getType() + ")");
-                            }
-                        } else {
-                            pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + v.getType() + ")");
-                        }
-                    } else {
-                        pwOut.println(v.toString() + "\tSV is empy (variant type: " + v.getType() + ")");
-                    }
-                }
-            }
-        } catch (Exception e) {
-            errors.put(track.getType().name(), e.getMessage());
-            return false;
-        } finally {
-            if (pw != null) {
-                pw.close();
-            }
-            if (pwOut != null) {
-                pwOut.close();
-            }
+            prev = curr;
         }
-        return true;
+        return colors.get(prev);
     }
 
-    private <T> Callable<T> getNamedThread(String name, Callable<T> c) {
-        String parentThreadName = Thread.currentThread().getName();
-        return () -> {
-            Thread.currentThread().setName(parentThreadName + "-" + name);
-            return c.call();
-        };
-    }
-//
-//    private Map<String, String> checkTrackQuery(CircosTrack track) throws ToolException {
-//        Map<String, String> query = new HashMap<>();
-//
-//        if (MapUtils.isNotEmpty(track.getQuery())) {
-//            query = track.getQuery();
-//        }
-//
-//        if ("COPY-NUMBER".equals(track.getType())) {
-//            query.put("type", "CNV");
-//        } else if ("INDEL".equals(track.getType())) {
-//            query.put("type", "INSERTION,DELETION,INDEL");
-//        } else if ("REARRANGEMENT".equals(track.getType())) {
-//            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
-//        } else if ("SNV".equals(track.getType())) {
-//            query.put("type", "SNV");
-//        } else {
-//            throw new ToolException("Unknown Circos track type: '" + track.getType() + "'");
-//        }
-//
-//        return query;
-//    }
 }
