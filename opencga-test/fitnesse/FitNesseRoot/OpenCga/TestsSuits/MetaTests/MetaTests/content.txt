@@ -4,7 +4,7 @@
 
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/meta/about |200|  Content-Type: application/json ||
-|let||js|response.jsonbody.response[0].result[0].Version|2.0.0-dev|
+|let||js|response.jsonbody.response[0].result[0].Version|2.0.0-rc3|
 
 !3 OpenCGA Status
 !|Table: Rest Fixture | $baseURL |
