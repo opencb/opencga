@@ -21,6 +21,7 @@ import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -42,6 +43,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
+import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -131,6 +133,8 @@ public class VariantCommandOptions {
     public final RvtestsCommandOptions rvtestsCommandOptions;
     public final GatkCommandOptions gatkCommandOptions;
 
+    public final CircosCommandOptions circosCommandOptions;
+
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public final DataModelOptions commonDataModelOptions;
@@ -193,6 +197,7 @@ public class VariantCommandOptions {
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
+        this.circosCommandOptions = new CircosCommandOptions();
     }
 
     @Parameters(commandNames = {VariantIndexCommandOptions.INDEX_RUN_COMMAND}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
@@ -1473,6 +1478,30 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
+
+    @Parameters(commandNames = CircosCommandOptions.CIRCOS_RUN_COMMAND, commandDescription = CircosAnalysis.DESCRIPTION)
+    public class CircosCommandOptions {
+        public static final String CIRCOS_RUN_COMMAND = CircosAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--circos-config-file"}, description = "Circos configuration file in JSON format: "
+                + CircosAnalysisParams.DESCRIPTION)
+        public String configFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
 
     @Parameters(commandNames = JulieRunCommandOptions.JULIE_RUN_COMMAND, commandDescription = JulieRunCommandOptions.DESCRIPTION)
     public class JulieRunCommandOptions extends GenericJulieRunCommandOptions {

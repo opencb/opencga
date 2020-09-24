@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -40,6 +41,7 @@ import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -50,11 +52,13 @@ import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CircosCommandOptions.CIRCOS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
@@ -211,6 +215,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case GATK_RUN_COMMAND:
                 queryResponse = gatk();
+                break;
+
+            case CIRCOS_RUN_COMMAND:
+                queryResponse = circos();
                 break;
 
             default:
@@ -759,6 +767,29 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.gatkCommandOptions.outdir,
                         variantCommandOptions.gatkCommandOptions.basicOptions.params
                 ), getParams(variantCommandOptions.gatkCommandOptions.study));
+    }
+
+    private RestResponse<Job> circos() throws ClientException {
+
+        //ObjectMap params = getParams(variantCommandOptions.gatkCommandOptions.study);
+        ObjectMap params = new ObjectMap();
+        params.put(ParamConstants.STUDY_PARAM, variantCommandOptions.circosCommandOptions.study);
+
+        File configFile = new File(variantCommandOptions.circosCommandOptions.configFile);
+        if (!configFile.exists()) {
+            throw new ClientException("Circos configuration file does not exist: " + configFile.getAbsolutePath());
+        }
+
+        CircosAnalysisParams circosParams;
+        try {
+            circosParams = JacksonUtils.getDefaultObjectMapper().readerFor(CircosAnalysisParams.class)
+                    .readValue(configFile.getAbsolutePath());
+        } catch (JsonProcessingException e) {
+            throw new ClientException(e);
+        }
+
+        return null;
+//        return openCGAClient.getVariantClient().runCircos(circosParams, getParams(variantCommandOptions.gatkCommandOptions.study));
     }
 
     private ObjectMap getParams(String study) {
