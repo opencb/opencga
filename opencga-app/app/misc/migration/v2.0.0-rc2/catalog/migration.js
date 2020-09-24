@@ -64,8 +64,7 @@ db.job.find({}, {id:1, output:1, stdout:1, stderr:1}).forEach(function(job) {
     }
 
     // Update file documents
-    print(job.id + ": " + fileUids);
-    db.file.update({"uid": {"$in": fileUids}}, {"$set": {"jobId": "caca"}}, {"multi": true});
+    db.file.update({"uid": {"$in": fileUids}}, {"$set": {"jobId": job.id}}, {"multi": true});
 });
 
 // Fix clinical issue where member ids were not populated
