@@ -151,10 +151,6 @@ public abstract class CommandExecutor {
     public abstract void execute() throws Exception;
 
     private void configureLogger() throws IOException {
-        // Disable MongoDB useless logging
-        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
-        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
-
         // Command line parameters have preference over configuration file
         // We overwrite logLevel configuration param with command line value
         if (StringUtils.isNotEmpty(this.logLevel)) {
@@ -162,20 +158,8 @@ public abstract class CommandExecutor {
         }
 
         Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
-        Configurator.setRootLevel(level);
-//        rootLogger.setLevel(level);
-//
-//        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
-//        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-//        if (StringUtils.isEmpty(this.configuration.getLogFile())) {
-//            stderr.setThreshold(level);
-//        } else {
-//            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
-//            rootLogger.addAppender(rollingFileAppender);
-//            rollingFileAppender.setThreshold(level);
-//            rollingFileAppender.setMaxFileSize("100MB");
-//            rollingFileAppender.setMaxBackupIndex(10);
-//        }
+        System.setProperty("opencga.log.level", level.name());
+        Configurator.reconfigure();
     }
 
 

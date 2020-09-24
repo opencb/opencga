@@ -18,10 +18,7 @@ package org.opencb.opencga.server;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.rest.AdminRestWebService;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,7 +49,6 @@ public class RestServer extends AbstractStorageServer {
         Optional<Path> warPath = Files.list(opencgaHome)
                 .filter(path -> path.toString().endsWith("war"))
                 .findFirst();
-
         // Check is a war file has been found in opencgaHome
         if (!warPath.isPresent()) {
             throw new Exception("No war file found at: " + opencgaHome.toString());
@@ -62,6 +58,8 @@ public class RestServer extends AbstractStorageServer {
         webapp.setContextPath("/" + opencgaVersion);
         webapp.setWar(warPath.get().toString());
         webapp.setInitParameter("OPENCGA_HOME", opencgaHome.toFile().toString());
+        webapp.getServletContext().setAttribute("OPENCGA_HOME", opencgaHome.toFile().toString());
+//        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
         server.setHandler(webapp);
 
         server.start();

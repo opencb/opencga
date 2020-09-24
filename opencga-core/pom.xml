@@ -88,8 +88,19 @@
 
         <resources>
             <resource>
+                <!-- Only need to filter the configuration.yml file-->
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <includes>
+                    <include>configuration.yml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>configuration.yml</exclude>
+                </excludes>
             </resource>
             <resource>
                 <directory>target/generated-resources</directory>

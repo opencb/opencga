@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <!--
+     | Accepted System Properties
+     |   app.home                 :  Property set by Appassembler script pointing to the OPENCGA_HOME dir
+     |   opencga.log.name         :
+     |   opencga.log.file.enabled : Indicate if file logs should be enabled. Default : false
+     |   opencga.log.dir          : Logs dir location. Default : app.home/logs
+    -->
+    <Properties>
+        <Property name="name">${sys:opencga.log.name:-opencga-server}</Property>
+        <Property name="baseDir">${sys:app.home:-${log4j:configParentLocation}/../}</Property>
+        <Property name="logDir">${sys:opencga.log.dir:-${baseDir}/logs}</Property>
+        <Property name="logFile">${name}.${hostName}.log</Property>
+        <Property name="logFileArchive">${name}.${hostName}.%i.log.gz</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_ERR">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n"/>
+            <ThresholdFilter level="${sys:opencga.log.level:-info}" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+
+        <RollingFile name="RollingFileJson"
+                     append="true"
+                     immediateFlush="true"
+                     fileName="${logDir}/${logFile}"
+                     filePattern="${logDir}/${logFileArchive}"
+                     createOnDemand="true"
+                     ignoreExceptions="false">
+            <Policies>
+                <SizeBasedTriggeringPolicy size="100 MB" />
+<!--                <OnStartupTriggeringPolicy />-->
+<!--                <TimeBasedTriggeringPolicy />-->
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+
+            <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true"/>
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingFile>
+
+        <Routing name="RollingFileJsonOrNull">
+            <Routes pattern="${upper:${sys:opencga.log.file.enabled}}">
+                <Route ref="RollingFileJson" key="TRUE" />
+            </Routes>
+        </Routing>
+
+    </Appenders>
+    <Loggers>
+        <Root level="DEBUG">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="RollingFileJsonOrNull" />
+        </Root>
+        <Logger name="org.mongodb.driver.cluster" level="WARN"/>
+        <Logger name="org.mongodb.driver.connection" level="WARN"/>
+    </Loggers>
+</Configuration>

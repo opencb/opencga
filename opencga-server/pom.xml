@@ -151,13 +151,13 @@
                            <filtering>true</filtering>
                            <targetPath>WEB-INF</targetPath>
                        </resource>
-                       <resource>
-                           <directory>../opencga-core/src/main/resources/</directory>
-                           <targetPath>WEB-INF/classes</targetPath>
-                           <includes>
-                               <include>log4j.properties</include>
-                           </includes>
-                       </resource>
+<!--                       <resource>-->
+<!--                           <directory>../opencga-core/src/main/resources/</directory>-->
+<!--                           <targetPath>WEB-INF/classes</targetPath>-->
+<!--                           <includes>-->
+<!--                               <include>log4j.properties</include>-->
+<!--                           </includes>-->
+<!--                       </resource>-->
                     </webResources>
                 </configuration>
             </plugin>

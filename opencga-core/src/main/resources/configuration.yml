@@ -1,6 +1,6 @@
 ---
 logLevel: "INFO"
-logDir: ${OPENCGA.USER.WORKSPACE}/logs
+logDir: ${OPENCGA.INSTALLATION.DIR}/logs
 
 openRegister: false
 

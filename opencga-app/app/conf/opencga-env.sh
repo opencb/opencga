@@ -10,24 +10,33 @@
 # Increase Java Heap if needed
 if [ -z "$JAVA_HEAP" ]; then
   case `basename $PRG` in
-  "opencga.sh")
-    JAVA_HEAP="2048m"
-    ;;
   "opencga-admin.sh")
     JAVA_HEAP="8192m"
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.server.xml
+    OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
   "opencga-internal.sh")
     JAVA_HEAP="12288m"
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.internal.xml
+    OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
+#  "opencga.sh")
   *)
     JAVA_HEAP="2048m"
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.client.xml
+    OPENCGA_LOG_DIR=""
     ;;
   esac
 fi
 
+if [ -n "$OPENCGA_LOG_DIR" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.dir=${OPENCGA_LOG_DIR}"
+fi
 
+# Log files disabled by default
+export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.file.enabled=false"
 #Set log4j properties file
-export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/log4j2.xml"
+export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/${OPENCGA_LOG4J_CONFIGURATION_FILE}"
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
 

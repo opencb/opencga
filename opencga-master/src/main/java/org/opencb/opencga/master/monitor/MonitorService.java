@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.master.monitor;
 
+import org.apache.logging.log4j.core.config.Configurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -63,6 +64,10 @@ public class MonitorService {
     }
 
     private void init(String token) throws CatalogException {
+        System.setProperty("opencga.log.name", "opencga-master");
+        System.setProperty("opencga.log.file.enable", "true");
+        Configurator.reconfigure();
+
         logger = LoggerFactory.getLogger(this.getClass());
 
         this.catalogManager = new CatalogManager(this.configuration);

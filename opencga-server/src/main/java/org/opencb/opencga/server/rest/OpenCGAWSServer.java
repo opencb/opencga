@@ -133,7 +133,7 @@ public class OpenCGAWSServer {
     private static final int MAX_LIMIT = AbstractManager.MAX_LIMIT;
     private static final int MAX_ID_SIZE = 100;
 
-    private static String errorMessage;
+    public static String errorMessage;
 
     static {
         initialized = new AtomicBoolean(false);
@@ -144,10 +144,6 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
 
         jsonObjectWriter = jsonObjectMapper.writer();
-
-        //Disable MongoDB useless logging
-        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
-        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
 
 
@@ -209,7 +205,7 @@ public class OpenCGAWSServer {
     static void init(String opencgaHomeStr) {
         initialized.set(true);
 
-        logger = LoggerFactory.getLogger("org.opencb.opencga.server.rest.OpenCGAWSServer");
+        logger = LoggerFactory.getLogger(OpenCGAWSServer.class);
         logger.info("========================================================================");
         logger.info("| Starting OpenCGA REST server, initializing OpenCGAWSServer");
         logger.info("| This message must appear only once.");
@@ -247,11 +243,13 @@ public class OpenCGAWSServer {
         java.nio.file.Path configDirPath = OpenCGAWSServer.opencgaHome.resolve("conf");
         if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
-            initOpenCGAObjects(configDirPath);
+            loadOpenCGAConfiguration(configDirPath);
 
-            // TODO use configuration.yml for getting the server.log, for now is hardcoded
-            logger.info("|  * Server logfile: " + OpenCGAWSServer.opencgaHome.resolve("logs").resolve("server.log"));
-//            initLogger(OpenCGAWSServer.opencgaHome.resolve("logs"));
+            String logDir = initLogger();
+            if (StringUtils.isNotEmpty(logDir)) {
+                logger.info("|  * Server logDir: " + logDir);
+            }
+            initOpenCGAObjects();
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirPath.toString() + "'";
             logger.error(errorMessage);
@@ -262,45 +260,62 @@ public class OpenCGAWSServer {
     }
 
     /**
-     * This method loads OpenCGA configuration files and initialize CatalogManager and StorageManagerFactory.
+     * This method loads OpenCGA configuration files.
      * This must be only executed once.
      *
      * @param configDir directory containing the configuration files
      */
-    private static void initOpenCGAObjects(java.nio.file.Path configDir) {
+    private static void loadOpenCGAConfiguration(java.nio.file.Path configDir) {
         try {
             logger.info("|  * Catalog configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/configuration.yml");
             configuration = Configuration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/configuration.yml")));
-            catalogManager = new CatalogManager(configuration);
 
             logger.info("|  * Storage configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/storage-configuration.yml");
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
-            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-            variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-        } catch (IOException | CatalogException e) {
+        } catch (Exception e) {
             errorMessage = e.getMessage();
-            e.printStackTrace();
+//            e.printStackTrace();
             logger.error("Error while creating CatalogManager", e);
         }
     }
 
-//    private static void initLogger(java.nio.file.Path logs) {
-//        try {
-//            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-//            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
-//            String logFile = logs.resolve("server.log").toString();
-//            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
-//            rollingFileAppender.setThreshold(Level.DEBUG);
-//            rollingFileAppender.setMaxFileSize("20MB");
-//            rollingFileAppender.setMaxBackupIndex(10);
-//            rootLogger.setLevel(Level.TRACE);
-//            rootLogger.addAppender(rollingFileAppender);
-//        } catch (IOException e) {
+    /**
+     * This method initialize CatalogManager and StorageManagerFactory.
+     * This must be only executed once.
+     *
+     */
+    private static void initOpenCGAObjects() {
+        try {
+            catalogManager = new CatalogManager(configuration);
+            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
+            variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+        } catch (Exception e) {
+            errorMessage = e.getMessage();
 //            e.printStackTrace();
-//        }
-//    }
+            logger.error("Error while creating CatalogManager", e);
+        }
+    }
+
+    private static String initLogger() {
+        String logDir = System.getProperty("opencga.log.dir");
+        if (StringUtils.isBlank(logDir)) {
+            logDir = configuration.getLogDir();
+        }
+        if (StringUtils.isBlank(logDir)) {
+            return null;
+        }
+        if (StringUtils.isNotBlank(configuration.getLogLevel())) {
+            Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
+            System.setProperty("opencga.log.level", level.name());
+        }
+        System.setProperty("opencga.log.name", "opencga-rest");
+        System.setProperty("opencga.log.file.enabled", "true");
+        System.setProperty("opencga.log.dir", logDir);
+        Configurator.reconfigure();
+        return logDir;
+    }
 
     static void shutdown() {
         logger.info("========================================================================");
@@ -502,7 +517,8 @@ public class OpenCGAWSServer {
             logResponse(response.getStatusInfo());
             return response;
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
+            logger.error("Error creating error response", e);
         }
 
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
@@ -573,8 +589,8 @@ public class OpenCGAWSServer {
             logResponse(response.getStatusInfo());
             return response;
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            logger.error("Error parsing response object");
+//            e.printStackTrace();
+            logger.error("Error parsing response object", e);
             return createErrorResponse("", "Error parsing response object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }
@@ -628,8 +644,8 @@ public class OpenCGAWSServer {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            logger.error("Error parsing queryResponse object");
+//            e.printStackTrace();
+            logger.error("Error parsing queryResponse object", e);
             return createErrorResponse("", "Error parsing RestResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }

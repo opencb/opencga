@@ -90,9 +90,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private VariantStorageMetadataManager metadataManager;
 
     public MongoDBVariantStorageEngine() {
-        //Disable MongoDB useless logging
-        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
-        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
 
     @Override
