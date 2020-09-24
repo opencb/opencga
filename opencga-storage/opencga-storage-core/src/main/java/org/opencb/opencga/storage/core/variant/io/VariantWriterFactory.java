@@ -73,6 +73,7 @@ public class VariantWriterFactory {
         VCF("vcf", false),
         VCF_GZ("vcf.gz", false),
         JSON("json"),
+        JSON_PRETTY("json_pretty"),
         JSON_GZ("json.gz"),
         AVRO("avro"),
         AVRO_GZ("avro.gz"),
