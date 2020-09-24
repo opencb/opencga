@@ -92,7 +92,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
-import static org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -1227,8 +1226,6 @@ public class VariantWebService extends AnalysisWebService {
                 SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
                         Collections.singletonList(params.getSample()),
                         null,
-                        false,
-                        null,
                         params.getVariantStatsQuery(),
                         params.getOutdir()
                 );
@@ -1373,7 +1370,7 @@ public class VariantWebService extends AnalysisWebService {
             if (outDir != null) {
                 // Delete temporal directory
                 try {
-                    if (outDir.exists()) {
+                    if (outDir.exists() && !params.getTitle().startsWith("no.delete.")) {
                         FileUtils.deleteDirectory(outDir);
                     }
                 } catch (IOException e) {

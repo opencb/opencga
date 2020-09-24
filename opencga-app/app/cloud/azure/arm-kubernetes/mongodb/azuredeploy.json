@@ -155,7 +155,6 @@
         ],
         "fqdn": "[concat(variables('vmName'), '#VM_INDEX#', '.', parameters('dnsZonesName'))]",
         "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('LogAnalyticsWorkSpaceID'),' -e KEY=',parameters('LogAnalyticsWorkspaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
         "_comment": "we need a single quote around the url to avoid & breaking out of the script https://stackoverflow.com/questions/33986180/how-to-escape-single-quote-in-arm-template",
         "singleQuote": "'",
         "cloudInitArray": [
@@ -166,12 +165,9 @@
             "",
             "runcmd:",
             "- export DEBIAN_FRONTEND='noninteractive'",
-            "- curl -fsSL https://get.docker.com/ | sh",
-            "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
             "[concat('- curl -fsSL ', concat(parameters('_artifactsLocation'), '/mongodb/installmongodb.sh'), ' -o /opt/installmongodb.sh')]",
             "[concat('- curl -fsSL ', concat(parameters('_artifactsLocation'), '/mongodb/renew_mongo_cert.sh'), ' -o /opt/renew_mongo_cert.sh')]",
             "- chmod +x /opt/installmongodb.sh /opt/renew_mongo_cert.sh",
-            "[if (parameters('LogAnalyticsActive'), concat('- ', variables('logAnalyticsAgent')), '')]",
             "[concat('- VM_INDEX=#VM_INDEX# CLUSTER_SIZE=', parameters('clusterSize'), ' MONGODB_DUMP_URL=', variables('singleQuote'), parameters('mongoDbDumpUrl'), variables('singleQuote'), ' MONGODB_USERNAME=', parameters('mongoDBUsername'), ' MONGODB_PASSWORD=', parameters('mongoDBPassword'),' APP_DNS_NAME=', variables('fqdn'), ' /bin/bash /opt/installmongodb.sh')]"
         ],
         "cloudInit": "[replace(replace(replace(string(variables('cloudInitArray')),'\",\"','\n'),'[\"',''),'\"]','')]"
@@ -294,6 +290,54 @@
                 }
             },
             "tags": {}
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(concat(variables('vmName'), copyIndex()),'/CheckCloudInit')]",
+            "apiVersion": "2019-12-01",
+            "copy": {
+                "name": "mongo-rs",
+                "count": "[parameters('clusterSize')]"
+            },
+            "dependsOn": [
+                "[concat(variables('vmName'), copyIndex())]"
+            ],
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.0",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "commandToExecute": "bash -cex 'until [ -f /var/lib/cloud/instance/boot-finished ]; do echo \"Wait cloud-init\"; sleep 5; done; apt-get install -y jq; jq -e \"[] | length == 0\" /var/lib/cloud/data/result.json'"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(concat(variables('vmName'), copyIndex()),'/OMSExtension')]",
+            "apiVersion": "2019-12-01",
+            "copy": {
+                "name": "mongo-rs",
+                "count": "[parameters('clusterSize')]"
+            },
+            "condition": "[parameters('LogAnalyticsActive')]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex(), '/extensions/CheckCloudInit')]"
+            ],
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+                "type": "OmsAgentForLinux",
+                "typeHandlerVersion": "1.13",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "workspaceId": "[parameters('LogAnalyticsWorkspaceID')]"
+                },
+                "protectedSettings": {
+                    "workspaceKey": "[parameters('LogAnalyticsWorkspaceKey')]"
+                }
+            }
         }
     ],
     "outputs": {

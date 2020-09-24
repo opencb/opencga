@@ -1023,21 +1023,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "List of samples.")
         public List<String> sample;
 
-        @Parameter(names = {"--family"}, description = "Select samples form the individuals of this family..")
-        public String family;
-
-        @Parameter(names = {"--samples-annotation"}, description = "Samples query selecting samples of the control cohort."
-                + " Example: age>30;gender=FEMALE."
-                + " For more information, please visit " + ParamConstants.ANNOTATION_DOC_URL)
-        public String samplesAnnotation;
-
+        @Parameter(names = {"--individual"}, description = "List of individuals")
+        public List<String> individual;
 
         @DynamicParameter(names = {"--vq", "--variant-query"}, description = "Variant query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
         public Map<String, String> variantQuery = new HashMap<>();
-
-        @Parameter(names = {"--index"}, description = "Index results in catalog."
-                + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
-        public boolean index;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;

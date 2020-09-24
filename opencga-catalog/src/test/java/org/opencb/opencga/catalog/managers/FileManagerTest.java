@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
@@ -36,7 +37,6 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -81,7 +81,7 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreateFileFromUnsharedStudy() throws CatalogException {
         try {
             fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                    "data/test/folder/file.txt", "My description", 0, null, null, null, true, null, null, sessionIdUser2);
+                    "data/test/folder/file.txt", "My description", 0, null, null, true, null, null, sessionIdUser2);
             fail("The file could be created despite not having the proper permissions.");
         } catch (CatalogAuthorizationException e) {
             assertEquals(0, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
@@ -94,7 +94,7 @@ public class FileManagerTest extends AbstractManagerTest {
         StudyAclParams aclParams = new StudyAclParams("", "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, ParamUtils.AclAction.ADD, token);
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null, sessionIdUser2);
+                "data/test/folder/file.txt", "My description", 0, null, null, true, "blabla", null, sessionIdUser2);
         assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), null, token).getNumResults());
     }
@@ -121,7 +121,9 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(File.Bioformat.ALIGNMENT, link.first().getBioformat());
         assertEquals(referenceFile.getId(), link.first().getRelatedFiles().get(0).getFile().getId());
         assertEquals(FileRelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
-        assertEquals("cram_with_crai_index.cram", link.first().getSamples().get(0).getFileIds().get(0));
+
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, link.first().getSampleIds().get(0), QueryOptions.empty(), token).first();
+        assertEquals("cram_with_crai_index.cram", sample.getFileIds().get(0));
     }
 
     @Test
@@ -325,10 +327,9 @@ public class FileManagerTest extends AbstractManagerTest {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         DataResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);
 
-        assertEquals(4, link.first().getSamples().size());
+        assertEquals(4, link.first().getSampleIds().size());
 
-        List<Long> sampleList = link.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
-        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleList);
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds());
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
 
         assertEquals(4, sampleDataResult.getNumResults());
@@ -343,31 +344,42 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testAssociateSamples() throws CatalogException, URISyntaxException {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         DataResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);
-        assertEquals(4, link.first().getSamples().size());
+        assertEquals(4, link.first().getSampleIds().size());
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name());
-        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Collections.emptyList()),
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.SET.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Collections.emptyList()),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
 
         File file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
-        assertEquals(0, file.getSamples().size());
+        assertEquals(0, file.getSampleIds().size());
 
-        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD.name());
-        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Arrays.asList("NA19660", "NA19661")),
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Arrays.asList("NA19660", "NA19661")),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
 
         file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
-        assertEquals(2, file.getSamples().size());
+        assertEquals(2, file.getSampleIds().size());
 
 
-        actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name());
-        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSamples(Arrays.asList("NA19660")),
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.REMOVE.name());
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Arrays.asList("NA19660")),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
 
         file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
-        assertEquals(1, file.getSamples().size());
-        assertEquals("NA19661", file.getSamples().get(0).getId());
+        assertEquals(1, file.getSampleIds().size());
+        assertEquals("NA19661", file.getSampleIds().get(0));
+
+        file = fileManager.get(studyFqn, link.first().getId(),
+                new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
+        assertEquals(1, file.getSampleIds().size());
+        assertEquals("NA19661", file.getSampleIds().get(0));
+        assertNull(file.getPath());
+
+        file = fileManager.get(studyFqn, link.first().getId(),
+                new QueryOptions(QueryOptions.EXCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
+        assertTrue(file.getSampleIds().isEmpty());
+        assertNotNull(file.getPath());
     }
 
     @Test
@@ -385,10 +397,9 @@ public class FileManagerTest extends AbstractManagerTest {
                 .setInternal(new FileLinkInternalParams(sampleIdNames));
         DataResult<File> link = fileManager.link(studyFqn, params, false, token);
 
-        assertEquals(4, link.first().getSamples().size());
+        assertEquals(4, link.first().getSampleIds().size());
 
-        List<Long> sampleList = link.first().getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
-        Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleList);
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), link.first().getSampleIds());
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
 
         assertEquals(4, sampleDataResult.getNumResults());
@@ -526,7 +537,7 @@ public class FileManagerTest extends AbstractManagerTest {
         String content = "This is the content\tof the file";
         try {
             fileManager.create(studyFqn3, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
-                    "data/test/myTest/myFile.txt", null, 0, null,
+                    "data/test/myTest/myFile.txt", null, 0,
                     null, null, false, "This is the content\tof the file", null, sessionIdUser2);
             fail("An error should be raised because parents is false");
         } catch (CatalogException e) {
@@ -534,7 +545,7 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         DataResult<File> fileDataResult = fileManager.create(studyFqn3, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
-                "data/test/myTest/myFile.txt", null, 0, null, null, null, true,
+                "data/test/myTest/myFile.txt", null, 0, null, null, true,
                 content, null, sessionIdUser2);
         IOManager ioManager = catalogManager.getIoManagerFactory().get(fileDataResult.first().getUri());
         assertTrue(ioManager.exists(fileDataResult.first().getUri()));
@@ -696,15 +707,20 @@ public class FileManagerTest extends AbstractManagerTest {
         assertFalse(sample1.getFileIds().contains("data:test:folder:test_1K.txt.gz"));
         assertFalse(sample2.getFileIds().contains("data:test:folder:test_1K.txt.gz"));
 
-        FileUpdateParams updateParams = new FileUpdateParams().setSamples(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
+        FileUpdateParams updateParams = new FileUpdateParams().setSampleIds(Arrays.asList("s_1", "s_1", "s_2", "s_1"));
         DataResult<File> updateResult = fileManager.update(studyFqn, "test_1K.txt.gz", updateParams, null, token);
         assertEquals(1, updateResult.getNumUpdated());
 
         File file = fileManager.get(studyFqn, "test_1K.txt.gz", QueryOptions.empty(), token).first();
-        assertEquals(2, file.getSamples().size());
-        assertTrue(file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()).containsAll(Arrays.asList("s_1", "s_2")));
-        assertTrue(file.getSamples().get(0).getFileIds().contains(file.getId()));
-        assertTrue(file.getSamples().get(1).getFileIds().contains(file.getId()));
+        assertEquals(2, file.getSampleIds().size());
+        assertTrue(file.getSampleIds().containsAll(Arrays.asList("s_1", "s_2")));
+
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyFqn, Arrays.asList("s_1", "s_2"), QueryOptions.empty(), token);
+        assertEquals(2, sampleResult.getNumResults());
+        for (Sample sample : sampleResult.getResults()) {
+            assertTrue(sample.getFileIds().contains(file.getId()));
+        }
+
         System.out.println(file.getId());
         sample1 = catalogManager.getSampleManager().get(studyFqn, "s_1", QueryOptions.empty(), token).first();
         sample2 = catalogManager.getSampleManager().get(studyFqn, "s_2", QueryOptions.empty(), token).first();
@@ -716,12 +732,12 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testCreate() throws Exception {
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT,
-                "data/" + fileName, "description", 0, null, null, null, true, getDummyVCFContent(), null, token);
-        assertEquals(3, fileResult.first().getSamples().size());
+                "data/" + fileName, "description", 0, null, null, true, getDummyVCFContent(), null, token);
+        assertEquals(3, fileResult.first().getSampleIds().size());
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "description", 0,
-                null, null, null, true, getDummyVCFContent(), null, token);
+                null, null, true, getDummyVCFContent(), null, token);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         DataResult<File> queryResult = fileManager.create(studyFqn, new File().setPath("data/" + fileName), false,
@@ -730,17 +746,17 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(200, queryResult.first().getSize());
 
         fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/deletable/folder/item." + TimeUtils.getTimeMillis() + ".txt",
-                "description", 0, null, null, null, true, createRandomString(200), null, token);
+                "description", 0, null, null, true, createRandomString(200), null, token);
 
         fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/deletable/item." + TimeUtils.getTimeMillis() + ".txt",
-                "description", 0, null, null, null, true, createRandomString(200), null, token);
+                "description", 0, null, null, true, createRandomString(200), null, token);
 
         fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt",
-                "file at root", 0, null, null, null, true, createRandomString(200), null, token);
+                "file at root", 0, null, null, true, createRandomString(200), null, token);
 
         fileName =  "item." + TimeUtils.getTimeMillis() + ".txt";
         fileManager.create(studyFqn2, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, fileName,
-                "file at root", 0, null, null, null, true, createRandomString(200), null, token);
+                "file at root", 0, null, null, true, createRandomString(200), null, token);
 
         DataResult<File> fileDataResult = fileManager.get(studyFqn2, fileName, null, token);
         assertTrue(fileDataResult.first().getSize() > 0);
@@ -767,7 +783,7 @@ public class FileManagerTest extends AbstractManagerTest {
         String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
 
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName,
-                "description", 0, null, null, null, true, getDummyVCFContent(), null, token).first();
+                "description", 0, null, null, true, getDummyVCFContent(), null, token).first();
 
         byte[] bytes = new byte[100];
         byte[] bytesOrig = new byte[100];
@@ -910,7 +926,7 @@ public class FileManagerTest extends AbstractManagerTest {
         StudyAclParams aclParams = new StudyAclParams("", "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, ParamUtils.AclAction.ADD, token);
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", 0, null, null, null, true, "blabla", null,
+                "data/test/folder/file.txt", "My description", 0, null, null, true, "blabla", null,
                 sessionIdUser2).first();
         long fileId = fileManager.get(studyFqn, file.getPath(), FileManager.INCLUDE_FILE_IDS, token).first().getUid();
         assertEquals(file.getUid(), fileId);
@@ -1028,7 +1044,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 .stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
-        result = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.SAMPLES.key(), sampleIds), null, token);
+        result = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds), null, token);
         assertEquals(1, result.getNumResults());
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE");
@@ -1262,7 +1278,7 @@ public class FileManagerTest extends AbstractManagerTest {
         DataResult<File> fileDataResult = fileManager.get(studyFqn, "data/test/", QueryOptions.empty(),
                 token);
         assertEquals(1, fileDataResult.getNumResults());
-        assertEquals(0, fileDataResult.first().getSamples().size());
+        assertEquals(0, fileDataResult.first().getSampleIds().size());
 
         // Create two samples
         Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(),
@@ -1271,37 +1287,17 @@ public class FileManagerTest extends AbstractManagerTest {
                 token).first();
 
         // Associate the two samples to the file
-        fileManager.update(studyFqn, "data/test/", new FileUpdateParams().setSamples(Arrays.asList(sample1.getId(), sample2.getId())),
+        fileManager.update(studyFqn, "data/test/", new FileUpdateParams().setSampleIds(Arrays.asList(sample1.getId(), sample2.getId())),
                 QueryOptions.empty(), token);
 
         // Fetch the file
         fileDataResult = fileManager.get(studyFqn, "data/test/", new QueryOptions(
-                QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key())),
+                QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(), FileDBAdaptor.QueryParams.SAMPLE_IDS.key())),
                 token);
         assertEquals(1, fileDataResult.getNumResults());
-        assertEquals(2, fileDataResult.first().getSamples().size());
-        for (Sample sample : fileDataResult.first().getSamples()) {
-            assertTrue(sample.getUid() > 0);
-            assertTrue(org.apache.commons.lang3.StringUtils.isEmpty(sample.getId()));
-        }
-
-        // Update the version of one of the samples
-        catalogManager.getSampleManager().update(studyFqn, sample1.getId(), new SampleUpdateParams(),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
-
-        // Fetch the file again to see if we get the latest version as expected
-        fileDataResult = fileManager.get(studyFqn, "data/test/", QueryOptions.empty(),
-                token);
-        assertEquals(1, fileDataResult.getNumResults());
-        assertEquals(2, fileDataResult.first().getSamples().size());
-        for (Sample sample : fileDataResult.first().getSamples()) {
-            if (sample.getId().equals(sample1.getId())) {
-                assertEquals(2, sample.getVersion());
-            } else if (sample.getId().equals(sample2.getId())) {
-                assertEquals(1, sample.getVersion());
-            } else {
-                fail("The sample found is not sample1 or sample2");
-            }
+        assertEquals(2, fileDataResult.first().getSampleIds().size());
+        for (String sampleId : fileDataResult.first().getSampleIds()) {
+            assertTrue(StringUtils.isNotEmpty(sampleId));
         }
     }
 
@@ -1683,7 +1679,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Path filePath = Paths.get("data", "file1.txt");
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, filePath.toString(),
-                "", 10, null, null, null, true, "My content", null, token);
+                "", 10, null, null, true, "My content", null, token);
 
         DataResult<Map<String, List<String>>> dataResult = fileManager.updateAcl(studyFqn, Arrays.asList("data/new/",
                 filePath.toString()), "user2", new FileAclParams(null, "VIEW"), ParamUtils.AclAction.SET, token);
@@ -1702,7 +1698,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Files.copy(sourcePath, path.resolve("data/" + sourcePath.getFileName()));
         DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.VCF,
                 File.Bioformat.VARIANT, "data/variant-test-file.vcf.gz", "description", 0,
-                Collections.emptyList(), Collections.emptyMap(), null, true, null, new QueryOptions(), token);
+                Collections.emptyMap(), null, true, null, new QueryOptions(), token);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, token);
         DataResult<File> read = fileManager.get(studyFqn, fileResult.first().getPath(), new QueryOptions(), token);

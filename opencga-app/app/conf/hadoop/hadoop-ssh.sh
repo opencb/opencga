@@ -44,6 +44,17 @@ ${SSHPASS_CMD} ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST} /bin/bash <
 export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
 export HADOOP_USER_CLASSPATH_FIRST=${HADOOP_USER_CLASSPATH_FIRST}
 
+if \$(command -v hbase >/dev/null 2>&1) ; then
+    hbase_conf=\$(hbase classpath | tr ":" "\n" | grep "/conf" | tr "\n" ":")
+
+    if [ -z "\${HADOOP_CLASSPATH}" ]; then
+        export HADOOP_CLASSPATH=\${hbase_conf}
+    else
+        export HADOOP_CLASSPATH=\${HADOOP_CLASSPATH}:\${hbase_conf}
+    fi
+fi
+
+
 exec ${CMD}
 
 EOF

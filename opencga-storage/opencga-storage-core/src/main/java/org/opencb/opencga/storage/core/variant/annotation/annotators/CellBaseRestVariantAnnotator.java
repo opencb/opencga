@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.config.ClientConfiguration;
@@ -49,12 +50,11 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             throws VariantAnnotatorException {
         super(storageConfiguration, projectMetadata, options);
 
-        List<String> hosts = storageConfiguration.getCellbase().getHosts();
-        if (hosts.isEmpty()) {
+        String cellbaseRest = storageConfiguration.getCellbase().getHost();
+        if (StringUtils.isEmpty(cellbaseRest)) {
             throw new VariantAnnotatorException("Missing defaultValue \"CellBase Hosts\"");
         }
 
-        String cellbaseRest = hosts.get(0);
         checkNotNull(cellbaseRest, "cellbase hosts");
         ClientConfiguration clientConfiguration = storageConfiguration.getCellbase().toClientConfiguration();
         clientConfiguration.getRest().setTimeout(TIMEOUT);

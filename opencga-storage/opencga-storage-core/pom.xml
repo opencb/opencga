@@ -25,7 +25,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>2.0.0-rc2</version>
+        <version>2.0.0-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -45,17 +45,6 @@
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-client</artifactId>
-        </dependency>
-        <!-- cellbase-lib dependency required to enable direct annotation against the database using the adaptors -->
-        <dependency>
-            <groupId>org.opencb.cellbase</groupId>
-            <artifactId>cellbase-lib</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>bionetdb-core</artifactId>
-                    <groupId>org.opencb.bionetdb</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>

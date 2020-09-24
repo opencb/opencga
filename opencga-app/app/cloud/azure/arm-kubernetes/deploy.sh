@@ -33,15 +33,34 @@ spAzudeDeployParameters=$(realpath "${spAzudeDeployParameters}")
 # Don't move the PWD until we found out the realpath. It could be a relative path.
 cd "$(dirname "$0")"
 
-templateContainer="templates"
-location=$(jq -r '.parameters.rgLocation.value' "${azudeDeployParameters}")
-rgName=$(jq -r '.parameters.rgPrefix.value' "${azudeDeployParameters}")
-storageAccountName=$(echo "${rgName}artifacts" | tr '[:upper:]' '[:lower:]' | tr -d "_-")
-deploymentOut="$(dirname "${azudeDeployParameters}")/deployment-outputs-$(date "+%Y%m%d%H%M%S").json"
-deployId=${rgName}-$(date "+%Y-%m-%d-%H.%M.%S")-R${RANDOM}
+# Location parameter is mandatory in the parameters file.
+location=$(jq -r '.parameters.location.value' "${azudeDeployParameters}")
 
-
+# Set account subscription
 az account set --subscription "${subscriptionName}"
+
+# Run validation to get final parameters.
+finalParameters=$(az deployment sub validate \
+    --template-file <(jq '{parameters:.parameters, "$schema":."$schema" , resources:[], contentVersion:.contentVersion}' azuredeploy.json) \
+    --location "${location}" \
+    --parameters @"${azudeDeployParameters}"  \
+    --parameters @"${spAzudeDeployParameters}"  \
+    --parameters _artifactsLocation="_artifactsLocation"   \
+    --parameters _artifactsLocationSasToken="?_artifactsLocationSasToken" < /dev/null | jq .properties.parameters)
+
+if [ -z "${finalParameters}" ]; then
+  echo "Error executing validation"
+  exit 1
+fi
+
+deploymentOut="$(dirname "${azudeDeployParameters}")/deployment-outputs-$(date "+%Y%m%d%H%M%S").json"
+rgName=$(jq -r '.rgPrefix.value' <<< ${finalParameters})
+clusterName=$(jq -r '.clusterName.value' <<< ${finalParameters})
+deployId=${clusterName}-$(date "+%Y-%m-%d-%H.%M.%S")-R${RANDOM}
+storageNamePrefix=$(jq -r '.storageNamePrefix.value' <<< ${finalParameters})
+storageAccountName=$(echo "${storageNamePrefix}artifacts" | tr '[:upper:]' '[:lower:]' | tr -d "_-" | cut -c 1-24)
+templateContainer="templates"
+
 az group create --name "${rgName}" --location "${location}"
 
 echo "# Uploading file templates"
@@ -50,6 +69,7 @@ az storage account create \
     --resource-group "${rgName}" \
     --location "${location}" \
     --sku Standard_LRS \
+    --https-only \
     --kind StorageV2 \
     --name $storageAccountName
 
@@ -84,7 +104,7 @@ blob_base_url="$(az storage account show -n $storageAccountName  --query primary
 container_base_url=${blob_base_url//\"/}$templateContainer
 
 echo "# Deploy infrastructure"
-echo "az deployment sub create -n $deployId ... "
+echo "az deployment sub create -n $deployId ... > ${deploymentOut} "
 
 # deploy infra
 az deployment sub create -n $deployId  -l ${location} --template-uri $template_url \
@@ -98,6 +118,6 @@ function getOutput() {
 }
 
 # Enable HDInsight monitor
-$(getOutput "hdInsightEnableMonitor")
+$(getOutput hdInsightEnableMonitor)
 
 ./setup-aks.sh ${subscriptionName} ${deploymentOut}

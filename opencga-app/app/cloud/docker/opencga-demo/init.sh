@@ -27,6 +27,7 @@ fi
 
 /opt/solr/bin/solr status
 sleep 2
+chmod +x /opt/opencga/misc/solr/install.sh
 /opt/opencga/misc/solr/install.sh
 
 CONTAINER_ALREADY_STARTED="CONTAINER_ALREADY_STARTED"

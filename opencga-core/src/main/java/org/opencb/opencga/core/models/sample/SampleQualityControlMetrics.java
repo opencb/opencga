@@ -4,10 +4,9 @@ import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
-import org.opencb.opencga.core.models.variant.HsMetricsReport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +23,7 @@ public class SampleQualityControlMetrics {
     private List<Signature> signatures;
 
     List<String> fileIds;
-    List<Comment> comments;
+    List<ClinicalComment> comments;
 
     public SampleQualityControlMetrics() {
         this(null, new ArrayList<>(), null, null, null, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
@@ -33,7 +32,7 @@ public class SampleQualityControlMetrics {
     public SampleQualityControlMetrics(String bamFileId, List<SampleQcVariantStats> variantStats, FastQc fastQc,
                                        SamtoolsFlagstats samtoolsFlagstats, HsMetrics hsMetrics,
                                        List<GeneCoverageStats> geneCoverageStats, List<Signature> signatures, List<String> fileIds,
-                                       List<Comment> comments) {
+                                       List<ClinicalComment> comments) {
         this.bamFileId = bamFileId;
         this.variantStats = variantStats;
         this.fastQc = fastQc;
@@ -133,11 +132,11 @@ public class SampleQualityControlMetrics {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public SampleQualityControlMetrics setComments(List<Comment> comments) {
+    public SampleQualityControlMetrics setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

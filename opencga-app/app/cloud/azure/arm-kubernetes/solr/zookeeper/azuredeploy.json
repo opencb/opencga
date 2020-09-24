@@ -110,9 +110,7 @@
           "diskName": "[concat(parameters('clusterName'), '-zookeeper',copyIndex('vmNames'), '-disk')]"
         }
       }
-    ],   
-    "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('LogAnalyticsWorkSpaceID'),' -e KEY=',parameters('LogAnalyticsWorkspaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
-      
+    ],
     "cloudInit": [
         "#cloud-config",
         "",
@@ -123,8 +121,7 @@
         "- export DEBIAN_FRONTEND='noninteractive'",
         "- curl -fsSL https://get.docker.com/ | sh",
         "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
-        "[concat('- ', variables('logAnalyticsAgent'))]",
-        "[concat('- curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', parameters('clusterName'), '-zookeeper', ' ', parameters('scaleNumber'), ' ',variables('zookeeperVersion'))]"      
+        "[concat('- curl -fsSL ',variables('customScriptFilePath'),' | bash -s -- #VM_INDEX# ', parameters('clusterName'), '-zookeeper', ' ', parameters('scaleNumber'), ' ',variables('zookeeperVersion'))]"
     ]
   },
   "resources": [
@@ -252,6 +249,53 @@
               "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmNames')[copyIndex()].nicName)]"
             }
           ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/CheckCloudInit')]",
+      "apiVersion": "2019-12-01",
+      "copy": {
+        "name": "zookeeper-rs",
+        "count": "[parameters('scaleNumber')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNames')[copyIndex()].vmName)]"
+      ],
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "commandToExecute": "bash -cex 'until [ -f /var/lib/cloud/instance/boot-finished ]; do echo \"Wait cloud-init\"; sleep 5; done; apt-get install -y jq; jq -e \"[] | length == 0\" /var/lib/cloud/data/result.json'"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmNames')[copyIndex()].vmName,'/OMSExtension')]",
+      "copy": {
+        "name": "zookeeper-rs",
+        "count": "[parameters('scaleNumber')]"
+      },
+      "apiVersion": "2019-12-01",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNames')[copyIndex()].vmName, '/extensions/CheckCloudInit')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+        "type": "OmsAgentForLinux",
+        "typeHandlerVersion": "1.13",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "workspaceId": "[parameters('LogAnalyticsWorkspaceID')]"
+        },
+        "protectedSettings": {
+          "workspaceKey": "[parameters('LogAnalyticsWorkspaceKey')]"
         }
       }
     }

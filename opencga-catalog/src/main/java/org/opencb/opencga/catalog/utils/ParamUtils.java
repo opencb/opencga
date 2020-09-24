@@ -178,6 +178,11 @@ public class ParamUtils {
         return object;
     }
 
+    public enum SaveInterpretationAs {
+        PRIMARY,                    // Write the interpretation as the primary and move the current primary one (if any) as a secondary
+        SECONDARY                   // Add interpretation as a secondary one
+    }
+
     public enum BasicUpdateAction {
         ADD,
         REMOVE;

@@ -24,28 +24,22 @@ import java.util.List;
 public class SampleVariantStatsAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample variant stats params";
     private List<String> sample;
-    private String family;
-    private boolean index;
-    private String sampleAnnotation;
+    private List<String> individual;
     private AnnotationVariantQueryParams variantQuery;
     private String outdir;
 
     public SampleVariantStatsAnalysisParams() {
     }
 
-    public SampleVariantStatsAnalysisParams(List<String> sample, String family,
-                                            boolean index, String sampleAnnotation,
+    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual,
                                             Query variantQuery, String outdir) {
-        this(sample, family, index, sampleAnnotation, new AnnotationVariantQueryParams(variantQuery), outdir);
+        this(sample, individual, new AnnotationVariantQueryParams(variantQuery), outdir);
     }
 
-    public SampleVariantStatsAnalysisParams(List<String> sample, String family,
-                                            boolean index, String sampleAnnotation,
+    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual,
                                             AnnotationVariantQueryParams variantQuery, String outdir) {
         this.sample = sample;
-        this.family = family;
-        this.index = index;
-        this.sampleAnnotation = sampleAnnotation;
+        this.individual = individual;
         this.variantQuery = variantQuery;
         this.outdir = outdir;
     }
@@ -59,30 +53,12 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getFamily() {
-        return family;
+    public List<String> getIndividual() {
+        return individual;
     }
 
-    public SampleVariantStatsAnalysisParams setFamily(String family) {
-        this.family = family;
-        return this;
-    }
-
-    public boolean isIndex() {
-        return index;
-    }
-
-    public SampleVariantStatsAnalysisParams setIndex(boolean index) {
-        this.index = index;
-        return this;
-    }
-
-    public String getSampleAnnotation() {
-        return sampleAnnotation;
-    }
-
-    public SampleVariantStatsAnalysisParams setSampleAnnotation(String sampleAnnotation) {
-        this.sampleAnnotation = sampleAnnotation;
+    public SampleVariantStatsAnalysisParams setIndividual(List<String> individual) {
+        this.individual = individual;
         return this;
     }
 

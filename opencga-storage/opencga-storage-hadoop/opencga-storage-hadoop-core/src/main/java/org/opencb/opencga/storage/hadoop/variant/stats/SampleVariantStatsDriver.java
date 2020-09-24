@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -20,6 +21,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -28,6 +30,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.AvroWritable;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.VariantTableAggregationDriver;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
@@ -52,6 +55,8 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 //    public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     //    public static final boolean STATS_PARTIAL_RESULTS_DEFAULT = true;
     private static final String TRIOS = "trios";
+    private static final String SAMPLE_DATA_DP_IDX = "SAMPLE_DATA_DP_IDX";
+    private static final String FILE_DATA_DP_IDX = "FILE_DATA_DP_IDX";
     private static final String WRITE_TO_DISK = "write";
     private static final String STATS_OPERATION_NAME = "sample_stats";
     private List<Integer> sampleIds;
@@ -214,7 +219,14 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         super.setupJob(job, archiveTable, variantTable);
+
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
+        List<String> fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
+        List<String> fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
+        job.getConfiguration().setInt(SAMPLE_DATA_DP_IDX, fixedFormat.indexOf(VCFConstants.DEPTH_KEY));
+        job.getConfiguration().setInt(FILE_DATA_DP_IDX, fileAttributes.indexOf(VCFConstants.DEPTH_KEY));
         job.getConfiguration().setInt(STUDY_ID, getStudyId());
         job.getConfiguration().set(TRIOS, trios);
         if (outdir != null) {
@@ -336,6 +348,8 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         private Map<Integer, List<Integer>> fileToSampleIds = new HashMap<>();
         private DistributedSampleVariantStatsCalculator calculator;
         private int[] sampleIdsPosition;
+        private int sampleDataDpIdx;
+        private int fileDataDpIdx;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -343,6 +357,9 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             studyId = context.getConfiguration().getInt(STUDY_ID, -1);
             samples = context.getConfiguration().getInts(SAMPLES);
             sampleIdsPosition = new int[IntStream.of(samples).max().orElse(0) + 1];
+            sampleDataDpIdx = context.getConfiguration().getInt(SAMPLE_DATA_DP_IDX, -1);
+            fileDataDpIdx = context.getConfiguration().getInt(FILE_DATA_DP_IDX, -1);
+
             Arrays.fill(sampleIdsPosition, -1);
             for (int i = 0; i < samples.length; i++) {
                 sampleIdsPosition[samples[i]] = i;
@@ -370,6 +387,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             VariantAnnotation annotation = row.getVariantAnnotation();
 
             List<String> gts = Arrays.asList(new String[samples.length]);
+            List<String> dps = Arrays.asList(new String[samples.length]);
             List<String> quals = Arrays.asList(new String[samples.length]);
             List<String> filters = Arrays.asList(new String[samples.length]);
 
@@ -387,6 +405,14 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 } else {
                     gts.set(sampleIdsPosition[sampleId], gt);
                 }
+
+                if (sampleDataDpIdx > 0) {
+                    String dp = sampleCell.getSampleData(sampleDataDpIdx);
+                    // Do not set invalid values
+                    if (StringUtils.isNumeric(dp)) {
+                        dps.set(sampleIdsPosition[sampleId], dp);
+                    }
+                }
             }).onFile(fileCell -> {
                 int fileId = fileCell.getFileId();
 
@@ -394,11 +420,21 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                     for (Integer sampleId : getSamplesFromFileId(fileId)) {
                         filters.set(sampleIdsPosition[sampleId], fileCell.getFilter());
                         quals.set(sampleIdsPosition[sampleId], fileCell.getQualString());
+                        if (fileDataDpIdx > 0) {
+                            String dp = fileCell.getFileData(fileDataDpIdx);
+                            // Do not set invalid values
+                            if (StringUtils.isNumeric(dp)) {
+                                // Prioritize DP value from FORMAT. Do not overwrite if present.
+                                if (StringUtils.isEmpty(dps.get(sampleIdsPosition[sampleId]))) {
+                                    dps.set(sampleIdsPosition[sampleId], dp);
+                                }
+                            }
+                        }
                     }
                 }
             }).walk();
 
-            calculator.update(variant, annotation, gts, quals, filters);
+            calculator.update(variant, annotation, gts, dps, quals, filters);
         }
 
         @Override

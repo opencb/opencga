@@ -16,13 +16,18 @@
 
 package org.opencb.opencga.analysis.clinical;
 
-import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -76,7 +81,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
                 Collections.singletonList(new Software().setName(getId())));
 
         // Analyst
-        Analyst analyst = clinicalInterpretationManager.getAnalyst(token);
+        ClinicalAnalyst analyst = clinicalInterpretationManager.getAnalyst(token);
 
         List<ClinicalVariant> primaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + PRIMARY_FINDINGS_FILENAME));
@@ -95,7 +100,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    true, QueryOptions.empty(), token);
+                    ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new ToolException("Error saving interpretation into database", e);
         }

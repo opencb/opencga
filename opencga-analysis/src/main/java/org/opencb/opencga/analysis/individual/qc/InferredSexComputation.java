@@ -103,7 +103,7 @@ public class InferredSexComputation {
         Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key());
 
-        query.put(FileDBAdaptor.QueryParams.SAMPLES.key(), sample);
+        query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample);
         try {
             fileQueryResult = fileManager.search(study, query, queryOptions, token);
         } catch (CatalogException e) {

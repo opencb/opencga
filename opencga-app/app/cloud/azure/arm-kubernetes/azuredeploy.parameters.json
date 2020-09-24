@@ -8,10 +8,10 @@
         "_artifactsLocationSasToken": {
             "value": ""
         },
-        "rgPrefix": {
+        "clusterName": {
             "value": "opencga"
         },
-        "rgLocation": {
+        "location": {
             "value": "uksouth"
         },
         "deploymentSize": {

@@ -126,7 +126,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
-        assertEquals(4, file.getSamples().size());
+        assertEquals(4, file.getSampleIds().size());
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get(VARIANT_FILE_METADATA)).get("sampleIds"));
 //        catalogManager.getSampleManager().search(study.getFqn(), new Query(SampleDBAdaptor.QueryParams.ID.key(),
 //                file.getSamples().stream().map(Sample::getId).collect(Collectors.toList())), new QueryOptions(), sessionIdUser).getResults();
@@ -177,17 +177,17 @@ public class FileMetadataReaderTest {
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
-        assertEquals(4, file.getSamples().size());
+        assertEquals(4, file.getSampleIds().size());
 
         //Add a sampleId
         String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), null, sessionIdUser)
                 .first().getId();
         catalogManager.getFileManager().update(study.getFqn(), file.getPath(),
-                new FileUpdateParams().setSamples(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
+                new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFileManager().get(study.getFqn(), file.getPath(), null, sessionIdUser).first();
-        assertEquals(5, file.getSamples().size());
-        assertEquals(sampleId, file.getSamples().get(4).getId());
+        assertEquals(5, file.getSampleIds().size());
+        assertEquals(sampleId, file.getSampleIds().get(4));
     }
 
     @Test
@@ -206,7 +206,7 @@ public class FileMetadataReaderTest {
 //        assertEquals(File.Format.GZIP, file.getFormat());
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));
-        assertEquals(1, file.getSamples().size());
+        assertEquals(1, file.getSampleIds().size());
 //        assertEquals("HG00096", catalogManager.getSampleManager().get(study.getFqn(), file.getSamples().get(0).getId(), null,
 //                sessionIdUser).first().getId());
     }

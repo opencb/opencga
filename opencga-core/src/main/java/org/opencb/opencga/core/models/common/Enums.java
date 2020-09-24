@@ -107,7 +107,9 @@ public final class Enums {
 
     public enum Action {
         CREATE,
+        CLEAR,
         UPDATE,
+        MERGE,
         INFO,
         SEARCH,
         COUNT,

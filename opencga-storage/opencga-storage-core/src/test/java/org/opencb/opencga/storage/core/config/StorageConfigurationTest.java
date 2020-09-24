@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.config;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.GrpcServerConfiguration;
 import org.opencb.opencga.core.config.RestServerConfiguration;
 import org.opencb.opencga.core.config.ServerConfiguration;
@@ -29,7 +28,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
 /**
  * Created by imedina on 01/05/15.
@@ -61,8 +59,7 @@ public class StorageConfigurationTest {
 //                options);
 
 
-        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials
-                (Arrays.asList("localhost"), "user", "password"));
+        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration("localhost", "v3");
         ServerConfiguration serverConfiguration = new ServerConfiguration()
                 .setRest(new RestServerConfiguration(9090))
                 .setGrpc(new GrpcServerConfiguration(9091));

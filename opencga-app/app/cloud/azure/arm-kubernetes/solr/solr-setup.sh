@@ -8,10 +8,10 @@ sleep 5
 
 ## Nacho (6/12/2018)
 
-VM_NAME_PREFIX=$1
+ZK_NAME_PREFIX=$1
 ZK_HOSTS_NUM=$2
 SOLR_VERSION=$3
-
+SOLR_VOLUME=/datadrive/solr-volume
 DOCKER_NAME=opencga-solr-${SOLR_VERSION}
 
 
@@ -54,14 +54,14 @@ formatAndMountDisk() {
 scanForNewDisks
 
 # create a directory to store the server/solr directory
-mkdir /datadrive/solr-volume
-mkdir /datadrive/solr-volume/data
+mkdir ${SOLR_VOLUME}
+mkdir ${SOLR_VOLUME}/data
 
 # make sure its host owner matches the container's solr user
-sudo chown -R 8983:8983 /datadrive/solr-volume
+sudo chown -R 8983:8983 ${SOLR_VOLUME}
 
 # copy the solr directory from a temporary container to the volume
-docker run --rm -v /datadrive/solr-volume:/target solr:${SOLR_VERSION} cp -r server/solr /target/
+docker run --rm -v ${SOLR_VOLUME}:/target solr:${SOLR_VERSION} cp -r server/solr /target/
 
 # get script
 docker run  --rm  solr:${SOLR_VERSION}  cat /opt/solr/bin/solr.in.sh.orig > /opt/solr.in.sh
@@ -75,21 +75,15 @@ if [[ $ZK_HOSTS_NUM -gt 0 ]]; then
     i=0
     while [ $i -lt $ZK_HOSTS_NUM ]
     do
-        ZK_HOST=${ZK_HOST},${VM_NAME_PREFIX}${i}
-       
-       
+        ZK_HOST=${ZK_HOST},${ZK_NAME_PREFIX}${i}
        # check zookeeper node status
-     
-        until ( echo stat | (exec 3<>/dev/tcp/${VM_NAME_PREFIX}${i}/2181; cat >&3; cat <&3;) > /dev/null);
-        do 
-            echo "Waiting for Zookeeper node ${VM_NAME_PREFIX}${i} \n"
+        until ( echo stat | (exec 3<>/dev/tcp/${ZK_NAME_PREFIX}${i}/2181; cat >&3; cat <&3;) > /dev/null);
+        do
+            echo "Waiting for Zookeeper node ${ZK_NAME_PREFIX}${i} \n"
             sleep 10
-        done     
-    
-       
-        i=$(($i+1))
+        done
 
-        
+        i=$(($i+1))
     done
 
     # Remove leading comma
@@ -116,8 +110,8 @@ docker run --name ${DOCKER_NAME}                                  \
     --restart always                                              \
     -h $(hostname)                                                \
     -p 8983:8983 -d                                               \
-    -v /datadrive/solr-volume/solr:/opt/solr/server/solr          \
-    -v /datadrive/solr-volume/data:/var/solr                       \
+    -v ${SOLR_VOLUME}/solr:/opt/solr/server/solr          \
+    -v ${SOLR_VOLUME}/data:/var/solr                       \
     -v /opt/solr.in.sh:/opt/solr/bin/solr.in.sh                   \
     -e SOLR_INCLUDE=/opt/solr/bin/solr.in.sh                      \
      solr:${SOLR_VERSION} docker-entrypoint.sh solr-foreground
@@ -130,9 +124,9 @@ done
 
 # Add OpenCGA Configuration Sets
 # copy configset to volume ready to mount
-docker run --rm -v /datadrive/solr-volume/solr/configsets:/target opencb/opencga-base:2.0.0-rc2 cp -r /opt/opencga/misc/solr/ /target/opencga/
+docker run --rm -v ${SOLR_VOLUME}/solr/configsets:/target opencb/opencga-base:2.0.0-dev cp -r /opt/opencga/misc/solr/ /target/opencga/
 
-for i in `ls  /datadrive/solr-volume/solr/configsets/opencga/ | grep "configset"` ; do
+for i in `ls  ${SOLR_VOLUME}/solr/configsets/opencga/ | grep "configset"` ; do
   echo "Install configset ${i}"
   docker exec ${DOCKER_NAME} /opt/solr/bin/solr zk upconfig -n $i -d /opt/solr/server/solr/configsets/opencga/$i $ZK_CLI
 done

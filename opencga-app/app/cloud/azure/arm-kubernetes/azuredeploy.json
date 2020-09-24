@@ -29,24 +29,63 @@
                 "description": "What size of deployment do you want? 0 = For single researches testing things out. 1 = For x genomics with xgb per sec load rate. 2 = is for x/y"
             }
         },
+        "clusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "Cluster name. Used as general naming prefix."
+            },
+            "defaultValue": "opencga"
+        },
+        "storageNamePrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage accounts naming prefix"
+            },
+            "defaultValue": "[concat(replace(parameters('clusterName'), '-', ''), uniqueString(parameters('rgPrefix')))]"
+        },
+        "nsgNamePrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "Name Security Group name prefix"
+            },
+            "defaultValue": "[concat('nsg-', parameters('clusterName'))]"
+        },
         "rgPrefix": {
             "type": "string",
             "metadata": {
                 "description": "The resource group prefix"
-            }
+            },
+            "defaultValue": "[parameters('clusterName')]"
         },
-        "rgLocation": {
+        "location": {
             "type": "string",
-            "defaultValue": "UK South",
             "metadata": {
                 "description": "Location for deployment"
             }
         },
+        "storageAccountName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('storageNamePrefix'), 'storage')]",
+            "metadata": {
+                "description": "Main storage account name. The name must be unique across all existing storage account names in Azure. It must be 3 to 24 characters long, and can contain only lowercase letters and numbers."
+            }
+        },
+        "logAnalyticsWorkspaceName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('clusterName'), uniqueString(resourceGroup().id))]"
+        },
         "privateDnsZonesName": {
             "type": "string",
-            "defaultValue": "opencga.zone",
+            "defaultValue": "[concat(parameters('clusterName'), '.zone')]",
             "metadata": {
                 "description": "Private internal DNS name"
+            }
+        },
+        "aksClusterName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('clusterName'), '-aks')]",
+            "metadata": {
+                "description": "Azure Kubernetes Service name"
             }
         },
         "aksServicePrincipalAppId": {
@@ -83,6 +122,20 @@
                 "description": "Used to login to OpenCGA. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
         },
+        "HDInsightClusterName": {
+            "type": "string",
+            "defaultValue": "[replace(concat(parameters('clusterName'), uniqueString(parameters('rgPrefix'))), '-', '')]",
+            "metadata": {
+                "description": "HDInsight cluster name. Allowed characters: a-z, 0-9, A-Z . Max length: 59. Reserved names: apps. The cluster naming scope is for all Azure, across all subscriptions. So the cluster name must be unique worldwide. First six characters must be unique within a virtual network. See https://docs.microsoft.com/en-us/azure/hdinsight/hdinsight-hadoop-provision-linux-clusters#cluster-name"
+            }
+        },
+        "HDInsightStorageAccountName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('storageNamePrefix'), 'hdi')]",
+            "metadata": {
+                "description": "HDInsight storage account name. The name must be unique across all existing storage account names in Azure. It must be 3 to 24 characters long, and can contain only lowercase letters and numbers."
+            }
+        },
         "HDInsightClusterLoginPassword": {
             "type": "securestring",
             "metadata": {
@@ -97,7 +150,7 @@
         },
         "jobsAgentPoolOrVirtualNode": {
             "type": "string",
-             "defaultValue": "AgentPool",
+            "defaultValue": "AgentPool",
             "allowedValues": [
                 "AgentPool",
                 "VirtualNode"
@@ -118,7 +171,7 @@
             "type": "bool",
             "defaultValue": true,
             "metadata": {
-                "description": "Optionally deploy a login node named {rgPrefix}-login01"
+                "description": "Optionally deploy a login node named {namePrefix}-login01"
             }
         },
         "loginNodeVMSize": {
@@ -128,6 +181,13 @@
                 "description": "Size of the Login Node VM"
             }
         },
+        "loginNodePublicIPAddressDNS": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('clusterName'), '-', uniquestring(concat(parameters('location'), parameters('clusterName'))) )]",
+            "metadata": {
+                "description": "Login node public IP address DNS. There are a number of reserved words that can not be part of the DNS name, such as 'windows' or 'login'. Get more information at https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/error-reserved-resource-name"
+            }
+        },
         "networkCIDR": {
             "type": "object",
             "metadata": {
@@ -135,14 +195,40 @@
             },
             "defaultValue": {
                 "vnet": {
-                    "addressPrefixes": "10.0.0.0/16",
+                    "name" : "vnet",
+                    "addressPrefix": "10.0.0.0/16",
                     "subnets": {
-                        "kubernetes": "10.0.0.0/22",
-                        "aci": "10.0.4.0/22",
-                        "hdinsight": "10.0.8.0/24",
-                        "mongodb": "10.0.9.0/24",
-                        "solr": "10.0.10.0/24",
-                        "login": "10.0.12.0/24"
+                        "kubernetes" : {
+                            "name" : "kubernetes",
+                            "addressPrefix": "10.0.0.0/22"
+                        },
+                        "aci" : {
+                            "name" : "aci",
+                            "addressPrefix": "10.0.4.0/22"
+                        },
+                        "hdinsight" : {
+                            "name" : "hdinsight",
+                            "addressPrefix": "10.0.8.0/24",
+                            "nsg": {
+                                "name": "[concat(parameters('nsgNamePrefix'), '-hdi')]",
+                                "serviceTag" : "HDInsight"
+                            }
+                        },
+                        "mongodb" : {
+                            "name" : "mongodb",
+                            "addressPrefix": "10.0.9.0/24"
+                        },
+                        "solr" : {
+                            "name" : "solr",
+                            "addressPrefix": "10.0.10.0/24"
+                        },
+                        "login" : {
+                            "name" : "login",
+                            "addressPrefix": "10.0.12.0/24",
+                            "nsg": {
+                                "name": "[concat(parameters('nsgNamePrefix'), '-login')]"
+                            }
+                        }
                     }
                 },
                 "aks": {
@@ -290,13 +376,14 @@
                 }
             }
         ],
-        "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]"
+        "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]",
+        "createAciSubnet": "[equals(parameters('jobsAgentPoolOrVirtualNode'), 'VirtualNode')]"
     },
     "resources": [
         {
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
-            "location": "[parameters('rgLocation')]",
+            "location": "[parameters('location')]",
             "name": "[parameters('rgPrefix')]",
             "properties": {
             }
@@ -316,8 +403,11 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "cidr": {
+                    "config": {
                         "value" : "[parameters('networkCIDR').vnet]"
+                    },
+                    "createAciSubnet": {
+                        "value": "[variables('createAciSubnet')]"
                     }
                 }
             }
@@ -363,8 +453,8 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "storageNamePrefix": {
-                        "value": "[replace(parameters('rgPrefix'), '-', '')]"
+                    "storageAccountName": {
+                        "value": "[parameters('storageAccountName')]"
                     },
                     "vnetId": {
                         "value" : "[reference('vnet').outputs.vnetId.value]"
@@ -373,7 +463,7 @@
                         "value" : "[reference('vnet').outputs.loginSubnetId.value]"
                     },
                     "aciSubnetId": {
-                        "value" : "[reference('vnet').outputs.aciSubnetId.value]"
+                        "value" : "[if (variables('createAciSubnet'), reference('vnet').outputs.aciSubnetId.value, '')]"
                     },
                     "kubernetesSubnetId": {
                         "value" : "[reference('vnet').outputs.kubernetesSubnetId.value]"
@@ -396,17 +486,19 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "WorkspaceName": {
+                        "value": "[parameters('logAnalyticsWorkspaceName')]"
+                    },
                     "WorkspaceLocation": {
-                        "value": "[parameters('rgLocation')]"
+                        "value": "[parameters('location')]"
                     }
                 }
             }
         },
-
         {
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
-            "location": "[parameters('rgLocation')]",
+            "location": "[parameters('location')]",
             "name": "[concat(parameters('rgPrefix'),'-hdinsight')]",
             "properties": {
             }
@@ -428,8 +520,11 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
-                    "clusterNamePrefix": {
-                        "value": "[replace(parameters('rgPrefix'), '-', '')]"
+                    "clusterName": {
+                        "value": "[parameters('HDInsightClusterName')]"
+                    },
+                    "storageAccountName": {
+                        "value": "[parameters('HDInsightStorageAccountName')]"
                     },
                     "clusterLoginUserName": {
                         "value": "[parameters('adminUsername')]"
@@ -522,6 +617,9 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
+                    "aksClusterName": {
+                        "value": "[parameters('aksClusterName')]"
+                    },
                     "aksServicePrincipalAppId": {
                         "value": "[parameters('aksServicePrincipalAppId')]"
                     },
@@ -554,6 +652,9 @@
                     },
                     "kubernetesSubnetId": {
                         "value": "[reference('vnet').outputs.kubernetesSubnetId.value]"
+                    },
+                    "aciSubnetId": {
+                        "value": "[reference('vnet').outputs.aciSubnetId.value]"
                     },
                     "aksServiceCIDR": {
                         "value": "[parameters('networkCIDR').aks.serviceCIDR]"
@@ -592,10 +693,13 @@
                 },
                 "parameters": {
                     "VMName" : {
-                        "value" : "[concat(parameters('rgPrefix'), '-login01')]"
+                        "value" : "[concat(parameters('clusterName'), '-login01')]"
                     },
                     "VMSize" : {
                         "value" : "[parameters('loginNodeVMSize')]"
+                    },
+                    "publicIPAddressDNS" : {
+                        "value" : "[parameters('loginNodePublicIPAddressDNS')]"
                     },
                     "adminUsername" : {
                         "value": "[parameters('adminUsername')]"
@@ -621,7 +725,7 @@
         {
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
-            "location": "[parameters('rgLocation')]",
+            "location": "[parameters('location')]",
             "name": "[concat(parameters('rgPrefix'),'-solr')]",
             "properties": {
             }
@@ -643,7 +747,7 @@
                 },
                 "parameters": {
                     "clusterName": {
-                        "value": "[parameters('rgPrefix')]"
+                        "value": "[parameters('clusterName')]"
                     },
                     "subnetId": {
                         "value": "[reference('vnet').outputs.solrSubnetId.value]"
@@ -655,7 +759,7 @@
                         "value": "[parameters('_artifactsLocationSasToken')]"
                     },
                     "location": {
-                        "value": "[parameters('rgLocation')]"
+                        "value": "[parameters('location')]"
                     },
                     "adminUsername": {
                         "value": "[parameters('adminUsername')]"
@@ -693,7 +797,7 @@
         {
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
-            "location": "[parameters('rgLocation')]",
+            "location": "[parameters('location')]",
             "name": "[concat(parameters('rgPrefix'),'-mongodb')]",
             "properties": {
             }
@@ -725,10 +829,10 @@
                         "value": "[reference('vnet').outputs.mongodbSubnetId.value]"
                     },
                     "location": {
-                        "value": "[parameters('rgLocation')]"
+                        "value": "[parameters('location')]"
                     },
                     "clusterName": {
-                        "value": "[parameters('rgPrefix')]"
+                        "value": "[parameters('clusterName')]"
                     },
                     "vmSize": {
                         "value": "[variables('selectedSize').mongo.nodeSize]"

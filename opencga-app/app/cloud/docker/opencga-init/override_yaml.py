@@ -8,10 +8,7 @@ parser.add_argument("--client-config-path", help="path to the client-configurati
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
-parser.add_argument("--cellbase-mongo-hosts", required=False, help="A CSV list of mongodb hosts which are running the cellbase database")
-parser.add_argument("--cellbase-mongo-hosts-password", required=False, help="The password for the cellbase mongo server provided in '--cellbase-mongo-hosts'")
-parser.add_argument("--cellbase-mongo-hosts-user", required=False, help="The username for the cellbase mongo server provided in '--cellbase-mongo-hosts'")
-parser.add_argument("--cellbase-rest-urls", required=False, help="A CSV list of cellbase rest servers hosting the cellbase service")
+parser.add_argument("--cellbase-rest-url", required=False, help="Cellbase rest server hosting the cellbase service")
 parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
@@ -66,44 +63,14 @@ for i, clinical_host in enumerate(clinical_hosts):
         storage_config["clinical"]["hosts"].clear()
     storage_config["clinical"]["hosts"].insert(i, clinical_host.strip())
 
-# Inject cellbase database
-has_cellbase_mongo_hosts = args.cellbase_mongo_hosts is not None and args.cellbase_mongo_hosts != ""
-
-if has_cellbase_mongo_hosts:
-    cellbase_mongo_hosts = args.cellbase_mongo_hosts.replace('\"','').replace('[','').replace(']','').split(",")
-    for i, cellbase_mongo_host in enumerate(cellbase_mongo_hosts):
-        if i == 0:
-            # If we are overriding the default hosts,
-            # clear them only on the first iteration
-            storage_config["cellbase"]["database"]["hosts"].clear()
-        storage_config["cellbase"]["database"]["hosts"].insert(i, cellbase_mongo_host.strip())
-
-    storage_config["cellbase"]["database"]["options"]["authenticationDatabase"] = "admin"
-    storage_config["cellbase"]["database"]["options"]["sslEnabled"] = True
-    storage_config["cellbase"]["database"]["user"] = args.cellbase_mongo_hosts_user
-    storage_config["cellbase"]["database"]["password"] = args.cellbase_mongo_hosts_password
-    storage_config["cellbase"]["preferred"] = "local"
-
 # Inject cellbase rest host, if set
-if args.cellbase_rest_urls is not None and args.cellbase_rest_urls != "":
-    cellbase_rest_urls = args.cellbase_rest_urls.replace('\"', '').replace('[','').replace(']','').split(",")
-    if len(cellbase_rest_urls) > 0:
-        for i, cellbase_url in enumerate(cellbase_rest_urls):
-            if i == 0:
-                # If we are overriding the default hosts,
-                # clear them only on the first iteration
-                storage_config["cellbase"]["hosts"].clear()
-            storage_config["cellbase"]["hosts"].insert(i, cellbase_url.strip())
+if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
+    cellbase_rest_url = args.cellbase_rest_url.replace('\"', '').replace('[','').replace(']','')
+    storage_config["cellbase"]["host"] = cellbase_rest_url
     
 # set default engine
 storage_config["variant"]["defaultEngine"] = args.variant_default_engine
-
-
-# If we have cellbase hosts set the annotator to the DB Adaptor
-if has_cellbase_mongo_hosts:
-    storage_config["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
-else :
-    storage_config["variant"]["options"]["annotator"] = "cellbase_rest"
+storage_config["variant"]["options"]["annotator"] = "cellbase"
 
 # Inject Hadoop ssh configuration
 for _, storage_engine in enumerate(storage_config["variant"]["engines"]):

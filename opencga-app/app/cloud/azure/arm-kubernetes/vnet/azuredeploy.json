@@ -2,57 +2,136 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "vnetName": {
-            "type": "string",
-            "defaultValue": "vnet"
+        "createAciSubnet": {
+            "type": "bool",
+            "defaultValue": true
         },
-        "cidr": {
+        "config": {
             "type": "object",
             "defaultValue": {
-                "addressPrefixes": "10.0.0.0/16",
+                "name" : "vnet",
+                "addressPrefix": "10.0.0.0/16",
                 "subnets": {
-                    "kubernetes": "10.0.0.0/22",
-                    "aci": "10.0.4.0/22",
-                    "hdinsight": "10.0.8.0/24",
-                    "mongodb": "10.0.9.0/24",
-                    "solr": "10.0.10.0/24",
-                    "login": "10.0.12.0/24"
+                    "kubernetes" : {
+                        "name" : "kubernetes",
+                        "addressPrefix": "10.0.0.0/22"
+                    },
+                    "aci" : {
+                        "name" : "aci",
+                        "addressPrefix": "10.0.4.0/22"
+                    },
+                    "hdinsight" : {
+                        "name" : "hdinsight",
+                        "addressPrefix": "10.0.8.0/24",
+                        "nsg": {
+                            "name": "nsg-hdi",
+                            "serviceTag" : "HDInsight"
+                        }
+                    },
+                    "mongodb" : {
+                        "name" : "mongodb",
+                        "addressPrefix": "10.0.9.0/24"
+                    },
+                    "solr" : {
+                        "name" : "solr",
+                        "addressPrefix": "10.0.10.0/24"
+                    },
+                    "login" : {
+                        "name" : "login",
+                        "addressPrefix": "10.0.12.0/24",
+                        "nsg": {
+                          "name": "nsg-login"
+                        }
+                    }
                 }
             }
         }
     },
     "variables": {
-        "loginNetworkSecurityGroupName": "login-nsg"
     },
     "resources": [
         {
-            "apiVersion": "2015-06-15",
+            "apiVersion": "2020-05-01",
             "type": "Microsoft.Network/networkSecurityGroups",
-            "name": "[variables('loginNetworkSecurityGroupName')]",
+            "name": "[parameters('config').subnets.login.nsg.name]",
             "location": "[resourceGroup().location]",
             "properties": {
                 "securityRules": []
             }
         },
         {
+            "apiVersion": "2020-05-01",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[parameters('config').subnets.hdinsight.nsg.name]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "Allow_HDInsight_Management_Traffic_Specific_IPs",
+                        "properties": {
+                            "description": "Allow traffic from the Azure health and management services to reach HDInsight - Specific IPs list",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
+                            "sourceAddressPrefixes": ["168.61.49.99", "23.99.5.239", "168.61.48.131", "138.91.141.162"],
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 300,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "Allow_HDInsight_Management_Traffic",
+                        "properties": {
+                            "description": "Allow traffic from the Azure health and management services to reach HDInsight - Service Tag",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
+                            "sourceAddressPrefix": "[parameters('config').subnets.hdinsight.nsg.serviceTag]",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 301,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "Allow_Azure_Resolver_Traffic",
+                        "properties": {
+                            "description": "Allow access from Azure's recursive resolver",
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
+                            "sourceAddressPrefix": "168.63.129.16",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 302,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "apiVersion": "2018-08-01",
-            "name": "[parameters('vnetName')]",
+            "name": "[parameters('config').name]",
             "type": "Microsoft.Network/virtualNetworks",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Network/networkSecurityGroups/', variables('loginNetworkSecurityGroupName'))]"
+                "[concat('Microsoft.Network/networkSecurityGroups/', parameters('config').subnets.login.nsg.name)]",
+                "[concat('Microsoft.Network/networkSecurityGroups/', parameters('config').subnets.hdinsight.nsg.name)]"
             ],
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
-                        "[parameters('cidr').addressPrefixes]"
+                        "[parameters('config').addressPrefix]"
                     ]
                 },
                 "subnets": [
                     {
-                        "name": "kubernetes",
+                        "type": "Microsoft.Network/virtualNetworks/subnets",
+                        "name": "[parameters('config').subnets.kubernetes.name]",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').subnets.kubernetes]",
+                            "addressPrefix": "[parameters('config').subnets.kubernetes.addressPrefix]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -62,36 +141,13 @@
                                     "service": "Microsoft.Storage"
                                 }
                             ]
-                        },
-                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                        }
                     },
                     {
-                        "name": "aci",
+                        "type": "Microsoft.Network/virtualNetworks/subnets",
+                        "name": "[parameters('config').subnets.hdinsight.name]",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').subnets.aci]",
-                            "ipConfigurations": [
-                            ],
-                            "delegations": [
-                                {
-
-                                    "name": "aciDelegation",
-                                    "properties": {
-                                        "serviceName": "Microsoft.ContainerInstance/containerGroups"
-                                    }
-                                }
-                            ],
-                            "serviceEndpoints": [
-                                {
-                                    "service": "Microsoft.Storage"
-                                }
-                            ]
-                        },
-                        "type": "Microsoft.Network/virtualNetworks/subnets"
-                    },
-                    {
-                        "name": "hdinsight",
-                        "properties": {
-                            "addressPrefix": "[parameters('cidr').subnets.hdinsight]",
+                            "addressPrefix": "[parameters('config').subnets.hdinsight.addressPrefix]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
@@ -100,40 +156,43 @@
                                 {
                                     "service": "Microsoft.Storage"
                                 }
-                            ]
-                        },
-                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                            ],
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('config').subnets.hdinsight.nsg.name)]"
+                            }
+                        }
                     },
                     {
-                        "name": "mongodb",
+                        "type": "Microsoft.Network/virtualNetworks/subnets",
+                        "name": "[parameters('config').subnets.mongodb.name]",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').subnets.mongodb]",
+                            "addressPrefix": "[parameters('config').subnets.mongodb.addressPrefix]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
                             ],
                             "serviceEndpoints": [
                             ]
-                        },
-                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                        }
                     },
                     {
-                        "name": "solr",
+                        "type": "Microsoft.Network/virtualNetworks/subnets",
+                        "name": "[parameters('config').subnets.solr.name]",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').subnets.solr]",
+                            "addressPrefix": "[parameters('config').subnets.solr.addressPrefix]",
                             "ipConfigurations": [
                             ],
                             "delegations": [
                             ],
                             "serviceEndpoints": [
                             ]
-                        },
-                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                        }
                     },
                     {
-                        "name": "login",
+                        "type": "Microsoft.Network/virtualNetworks/subnets",
+                        "name": "[parameters('config').subnets.login.name]",
                         "properties": {
-                            "addressPrefix": "[parameters('cidr').subnets.login]",
+                            "addressPrefix": "[parameters('config').subnets.login.addressPrefix]",
                             "ipConfigurations": [],
                             "delegations": [],
                             "serviceEndpoints": [
@@ -144,10 +203,9 @@
                             "privateEndpointNetworkPolicies": "Disabled",
                             "privateLinkServiceNetworkPolicies": "Enabled",
                             "networkSecurityGroup": {
-                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('loginNetworkSecurityGroupName'))]"
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('config').subnets.login.nsg.name)]"
                             }
-                        },
-                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                        }
                     }
                 ],
                 "virtualNetworkPeerings": [
@@ -155,40 +213,65 @@
                 "enableDdosProtection": false,
                 "enableVmProtection": false
             }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2018-08-01",
+            "name": "[concat(parameters('config').name, '/', parameters('config').subnets.aci.name)]",
+            "location": "[resourceGroup().location]",
+            "condition": "[parameters('createAciSubnet')]",
+            "properties": {
+                "addressPrefix": "[parameters('config').subnets.aci.addressPrefix]",
+                "ipConfigurations": [
+                ],
+                "delegations": [
+                    {
+                        "name": "aciDelegation",
+                        "properties": {
+                            "serviceName": "Microsoft.ContainerInstance/containerGroups"
+                        }
+                    }
+                ],
+                "serviceEndpoints": [
+                    {
+                        "service": "Microsoft.Storage"
+                    }
+                ]
+            }
         }
     ],
     "outputs": {
         "vnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('config').name)]"
         },
         "virtualNetworkName": {
             "type": "string",
-            "value": "[parameters('vnetName')]"
+            "value": "[parameters('config').name]"
         },
         "kubernetesSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'kubernetes')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('config').name, parameters('config').subnets.kubernetes.name)]"
         },
         "aciSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'aci')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('config').name, parameters('config').subnets.aci.name)]"
         },
         "hdinsightSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'hdinsight')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('config').name, parameters('config').subnets.hdinsight.name)]"
         },
         "mongodbSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'mongodb')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('config').name, parameters('config').subnets.mongodb.name)]"
         },
         "solrSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'solr')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('config').name, parameters('config').subnets.solr.name)]"
         },
         "loginSubnetId": {
             "type": "string",
-            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'),'login')]"
+            "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('config').name, parameters('config').subnets.login.name)]"
         }
     }
 }

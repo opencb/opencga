@@ -17,11 +17,10 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
-import org.opencb.biodata.models.clinical.Comment;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.cellbase.core.api.ClinicalDBAdaptor;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,8 +30,8 @@ import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationA
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -90,12 +89,14 @@ public class ClinicalWebService extends AnalysisWebService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new clinical analysis", response = ClinicalAnalysis.class)
     public Response create(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYSIS_CREATE_DEFAULT_DESCRIPTION)
+                @QueryParam(ParamConstants.CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM) boolean createDefaultInterpretation,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisCreateParams params) {
         try {
-            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, token));
+            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), createDefaultInterpretation, queryOptions,
+                    token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -129,19 +130,6 @@ public class ClinicalWebService extends AnalysisWebService {
                     ClinicalUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            if (params != null) {
-                Map<String, Object> actionMap = new HashMap<>();
-                if (params.getInterpretation() != null) {
-                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ParamUtils.UpdateAction.SET.name());
-                }
-                if (params.getSecondaryInterpretations() != null) {
-                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
-                }
-                if (actionMap.size() > 0) {
-                    queryOptions.put(Constants.ACTIONS, actionMap);
-                }
-            }
-
             return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -157,19 +145,6 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalUpdateParams params) {
         try {
-            if (params != null) {
-                Map<String, Object> actionMap = new HashMap<>();
-                if (params.getInterpretation() != null) {
-                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ParamUtils.UpdateAction.SET.name());
-                }
-                if (params.getSecondaryInterpretations() != null) {
-                    actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
-                }
-                if (actionMap.size() > 0) {
-                    queryOptions.put(Constants.ACTIONS, actionMap);
-                }
-            }
-
             return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -317,67 +292,48 @@ public class ClinicalWebService extends AnalysisWebService {
      * INTERPRETATION METHODS
      */
 
-//    @POST
-//    @Path("/interpretation/create")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "Create a new clinical interpretation", position = 1,
-//            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
-//    public Response create(
-//            @ApiParam(value = "[[user@]project:]study id") @QueryParam(Params.STUDY_PARAM) String studyId,
-//            @ApiParam(value = "Clinical analysis the interpretation belongs to") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
-//            @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
-//                    ClinicalInterpretationParameters params) {
-//        try {
-//            return createOkResponse(catalogInterpretationManager.create(studyId, params.toClinicalInterpretation(), queryOptions, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-
     @POST
-    @Path("/{clinicalAnalysis}/secondaryInterpretations/update")
+    @Path("/{clinicalAnalysis}/interpretation/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Add or remove secondary interpretations to/from a Clinical Analysis", response = ClinicalAnalysis.class)
-    public Response interpretationUpdate(
-            @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
-            @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
+    @ApiOperation(value = "Create a new Interpretation", response = Interpretation.class)
+    public Response create(
+            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
+            @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Save interpretation as", allowableValues = "PRIMARY,SECONDARY", defaultValue = "SECONDARY")
+                @QueryParam("saveAs") ParamUtils.SaveInterpretationAs saveAs,
+            @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationCreateParams params) {
         try {
-            if (interpretationAction == null) {
-                interpretationAction = ParamUtils.BasicUpdateAction.ADD;
+            if (saveAs == null) {
+                saveAs = ParamUtils.SaveInterpretationAs.SECONDARY;
             }
-
-            if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
-                org.opencb.opencga.core.models.clinical.Interpretation interpretation = params.toClinicalInterpretation();
-                interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
-                return createOkResponse(catalogInterpretationManager.addSecondaryInterpretation(studyStr, clinicalAnalysisStr,
-                        interpretation, queryOptions, token));
-            } else {
-                // TODO: Implement delete interpretation
-                return createErrorResponse(new NotImplementedException("Delete still not supported"));
-            }
+            return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalId, params.toClinicalInterpretation(), saveAs,
+                    queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/interpretation/update")
+    @Path("/{clinicalAnalysis}/interpretation/{interpretationId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update interpretation fields of primary interpretation",
-            response = Interpretation.class)
+    @ApiOperation(value = "Update interpretation fields", response = Interpretation.class)
     public Response updateInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of primary findings is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
-            @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @ApiParam(value = "Action to be performed if the array of primary findings is being updated.",
+                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
+            @ApiParam(value = "Action to be performed if the array of methods is being updated.",
+                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("methodsAction") ParamUtils.UpdateAction methodsAction,
+            @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.",
+                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
-            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("commentsAction") ParamUtils.UpdateAction commentsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,SET,REMOVE",
+                    defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.UpdateAction commentsAction,
+            @ApiParam(value = "Save interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("saveAs") ParamUtils.SaveInterpretationAs saveAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
+            @ApiParam(value = "Interpretation ID") @PathParam("interpretationId") String interpretationId,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
         try {
@@ -390,14 +346,79 @@ public class ClinicalWebService extends AnalysisWebService {
             if (commentsAction == null) {
                 commentsAction = ParamUtils.UpdateAction.ADD;
             }
+            if (methodsAction == null) {
+                methodsAction = ParamUtils.UpdateAction.ADD;
+            }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindingsAction);
             actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindingsAction);
             actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), methodsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, params, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, params, saveAs, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{clinicalAnalysis}/interpretation/{interpretationId}/merge")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Merge interpretation", response = Interpretation.class)
+    public Response mergeInterpretation(
+            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
+            @ApiParam(value = "Interpretation ID where it will be merged") @PathParam("interpretationId") String interpretationId,
+            @ApiParam(value = "Secondary Interpretation ID to merge from") @QueryParam("secondaryInterpretationId") String secondaryInterpretationId,
+            @ApiParam(value = "Comma separated list of findings to merge. If not provided, all findings will be merged.")
+                @QueryParam("findings") String findings,
+            @ApiParam(name = "body", value = "JSON containing clinical interpretation to merge from") InterpretationMergeParams params) {
+        try {
+            if (StringUtils.isNotEmpty(secondaryInterpretationId) && params != null) {
+                throw new CatalogParameterException("Only one 'secondaryInterpretationId' or an interpretation in the body is accepted.");
+            } else if (StringUtils.isEmpty(secondaryInterpretationId) && params == null) {
+                throw new CatalogParameterException("One 'secondaryInterpretationId' or an interpretation in the body is expected.");
+            } else if (StringUtils.isNotEmpty(secondaryInterpretationId)) {
+                return createOkResponse(catalogInterpretationManager.merge(studyStr, clinicalId, interpretationId, secondaryInterpretationId,
+                        getIdList(findings, false), token));
+            } else {
+                return createOkResponse(catalogInterpretationManager.merge(studyStr, clinicalId, interpretationId, params.toInterpretation(),
+                        getIdList(findings, false), token));
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @DELETE
+    @Path("/{clinicalAnalysis}/interpretation/{interpretations}/delete")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Delete interpretation", response = Interpretation.class)
+    public Response deleteInterpretation(
+            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
+            @ApiParam(value = "Interpretation IDs of the Clinical Analysis") @PathParam("interpretations") String interpretations,
+            @ApiParam(value = "Interpretation id to set as primary from the list of secondaries in case of deleting the actual primary one")
+            @QueryParam("setAsPrimary") String newPrimaryInterpretation) {
+        try {
+            return createOkResponse(catalogInterpretationManager.delete(studyStr, clinicalId, getIdList(interpretations), true, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{clinicalAnalysis}/interpretation/clear")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Clear the fields of the main interpretation of the Clinical Analysis", response = Interpretation.class)
+    public Response clearInterpretation(
+            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId) {
+        try {
+            return createOkResponse(catalogInterpretationManager.clear(studyStr, clinicalId, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -445,10 +466,9 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
-            // TODO: Think about having an action in this web service. Are we ever going to allow people to set or remove comments?
             @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
             @ApiParam(name = "body", value = "JSON containing a list of comments", required = true)
-                    List<Comment> comments) {
+                    List<ClinicalComment> comments) {
         try {
             InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
 
@@ -456,7 +476,8 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, interpretationId, updateParams, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, updateParams, null, queryOptions,
+                    token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

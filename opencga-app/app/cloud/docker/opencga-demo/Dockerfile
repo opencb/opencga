@@ -6,7 +6,10 @@ FROM $ORG/opencga-init:$TAG
 ARG SOLR_VERSION="8.4.0"
 
 # install mongodb, Solr
+# Upgrade twice, to ensure that openjdk8-jre-lib and openjdk8-jre-base are in sync
+# See https://github.com/opencb/opencga/issues/1653
 RUN apk update && \
+    apk upgrade && \
     apk upgrade && \
     apk add --no-cache bash && \
     apk add --no-cache mongodb && \ 

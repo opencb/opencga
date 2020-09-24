@@ -61,8 +61,11 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         Document interpretation = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key());
         if (interpretation != null) {
             document.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
-                    new Document(InterpretationDBAdaptor.QueryParams.UID.key(),
-                            getLongValue(interpretation, InterpretationDBAdaptor.QueryParams.UID.key())));
+                    new Document()
+                            .append(InterpretationDBAdaptor.QueryParams.UID.key(),
+                                    getLongValue(interpretation, InterpretationDBAdaptor.QueryParams.UID.key()))
+                            .append(InterpretationDBAdaptor.QueryParams.VERSION.key(),
+                                    interpretation.getInteger(InterpretationDBAdaptor.QueryParams.VERSION.key())));
         }
     }
 
@@ -71,8 +74,11 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         if (interpretationList != null) {
             List<Document> newInterpretationList = new ArrayList<>();
             for (int i = 0; i < interpretationList.size(); i++) {
-                newInterpretationList.add(new Document(InterpretationDBAdaptor.QueryParams.UID.key(),
-                        getLongValue(interpretationList.get(i), InterpretationDBAdaptor.QueryParams.UID.key())));
+                newInterpretationList.add(new Document()
+                        .append(InterpretationDBAdaptor.QueryParams.UID.key(),
+                                getLongValue(interpretationList.get(i), InterpretationDBAdaptor.QueryParams.UID.key()))
+                        .append(InterpretationDBAdaptor.QueryParams.VERSION.key(),
+                                interpretationList.get(i).getInteger(InterpretationDBAdaptor.QueryParams.VERSION.key())));
             }
 
             document.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), newInterpretationList);

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.individual;
 
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 
@@ -48,14 +48,14 @@ public class IndividualQualityControl {
     /**
      * Comments related to the quality control
      */
-    private List<Comment> comments;
+    private List<ClinicalComment> comments;
 
     public IndividualQualityControl() {
         this(null, new ArrayList<>(), null, new ArrayList<>(), new ArrayList<>());
     }
 
     public IndividualQualityControl(String sampleId, List<InferredSexReport> inferredSexReports, MendelianErrorReport mendelianErrorReport,
-                                    List<String> fileIds, List<Comment> comments) {
+                                    List<String> fileIds, List<ClinicalComment> comments) {
         this.sampleId = sampleId;
         this.inferredSexReports = inferredSexReports;
         this.mendelianErrorReport = mendelianErrorReport;
@@ -111,11 +111,11 @@ public class IndividualQualityControl {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public IndividualQualityControl setComments(List<Comment> comments) {
+    public IndividualQualityControl setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

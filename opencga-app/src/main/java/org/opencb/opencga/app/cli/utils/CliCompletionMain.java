@@ -42,11 +42,10 @@ public class CliCompletionMain {
                     "opencga-admin", Collections.singletonList("-D"));
 
             InternalCliOptionsParser internalCliOptionsParser = new InternalCliOptionsParser();
-            CommandLineUtils.generateBashAutoComplete(internalCliOptionsParser.getJCommander(), output + "/opencga-analysis",
-                    "opencga-analysis", Collections.singletonList("-D"));
+            CommandLineUtils.generateBashAutoComplete(internalCliOptionsParser.getJCommander(), output + "/opencga-internal",
+                    "opencga-internal", Collections.singletonList("-D"));
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 }

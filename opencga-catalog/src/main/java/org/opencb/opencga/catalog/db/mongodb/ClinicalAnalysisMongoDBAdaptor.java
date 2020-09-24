@@ -116,16 +116,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public OpenCGAResult update(long uid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), uid);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
-        OpenCGAResult<Document> documentResult = nativeGet(query, options);
-        if (documentResult.getNumResults() == 0) {
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()))
+                .append(NATIVE_QUERY, true);
+        OpenCGAResult<ClinicalAnalysis> result = get(query, options);
+        if (result.getNumResults() == 0) {
             throw new CatalogDBException("Could not update clinical analysis. Clinical Analysis uid '" + uid + "' not found.");
         }
-        String clinicalAnalysisId = documentResult.first().getString(QueryParams.ID.key());
+        String clinicalAnalysisId = result.first().getId();
 
         try {
-            return runTransaction(clientSession -> privateUpdate(clientSession, documentResult.first(), parameters, queryOptions));
+            return runTransaction(clientSession -> update(clientSession, result.first(), parameters, queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
             throw new CatalogDBException("Could not update clinical analysis " + clinicalAnalysisId + ": " + e.getMessage(), e.getCause());
@@ -137,11 +138,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return null;
     }
 
-    private OpenCGAResult privateUpdate(ClientSession clientSession, Document first, ObjectMap parameters, QueryOptions queryOptions)
+    OpenCGAResult update(ClientSession clientSession, ClinicalAnalysis clinical, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
-        String clinicalAnalysisId = first.getString(QueryParams.ID.key());
-        long clinicalAnalysisUid = first.getLong(QueryParams.UID.key());
+        String clinicalAnalysisId = clinical.getId();
+        long clinicalAnalysisUid = clinical.getUid();
 
         Query query = new Query(QueryParams.UID.key(), clinicalAnalysisUid);
         UpdateDocument updateDocument = parseAndValidateUpdateParams(parameters, query, queryOptions);
@@ -206,6 +207,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
+        String[] acceptedBooleanParams = {LOCKED.key()};
+        filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
+
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
@@ -216,6 +220,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(),
                 QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
+            // User wants to remove current interpretation
+            document.getSet().put(INTERPRETATION.key(), null);
+        }
+
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
@@ -237,11 +247,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     break;
                 case REMOVE:
                     filterObjectParams(parameters, document.getPullAll(), secondaryInterpretationParams);
-                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getPullAll());
                     break;
                 case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), secondaryInterpretationParams);
-                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getSet());
+                    clinicalConverter.validateSecondaryInterpretationsToUpdate(document.getAddToSet());
                     break;
                 default:
                     throw new IllegalStateException("Unknown operation " + operation);
@@ -520,8 +530,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (clinicalAnalysis.getInterpretation() != null) {
             InterpretationMongoDBAdaptor interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
-            Interpretation interpretation = interpretationDBAdaptor.insert(clientSession, studyId, clinicalAnalysis.getInterpretation(),
-                    true);
+            Interpretation interpretation = interpretationDBAdaptor.insert(clientSession, studyId, clinicalAnalysis.getInterpretation());
             clinicalAnalysis.setInterpretation(interpretation);
         }
 
@@ -711,8 +720,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(PROBAND_ID.key(), queryParam.key(), queryCopy, PROBAND_ID.type(), andBsonList);
                         break;
                     case ANALYST:
-                    case ANALYST_ASSIGNEE:
-                        addAutoOrQuery(ANALYST_ASSIGNEE.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                    case ANALYST_ID:
+                        addAutoOrQuery(ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:
@@ -720,6 +729,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case TYPE:
                     case DUE_DATE:
                     case PRIORITY:
+                    case LOCKED:
                     case PROBAND_SAMPLES_ID:
                     case PROBAND_SAMPLES_UID:
                     case PROBAND_UID:

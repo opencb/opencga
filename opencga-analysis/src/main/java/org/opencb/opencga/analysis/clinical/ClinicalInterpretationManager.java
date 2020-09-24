@@ -22,10 +22,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.Comment;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
@@ -219,7 +216,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.iterator(query, options, "");
     }
 
-    public void addInterpretationComment(String study, long interpretationId, Comment comment, String token)
+    public void addInterpretationComment(String study, long interpretationId, ClinicalComment comment, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         checkInterpretationPermissions(study, interpretationId, token);
@@ -227,7 +224,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEngine.addInterpretationComment(interpretationId, comment, "");
     }
 
-    public void addClinicalVariantComment(String study, long interpretationId, String variantId, Comment comment, String token)
+    public void addClinicalVariantComment(String study, long interpretationId, String variantId, ClinicalComment comment, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         checkInterpretationPermissions(study, interpretationId, token);
@@ -373,7 +370,9 @@ public class ClinicalInterpretationManager extends StorageManager {
         List<ClinicalVariantEvidence> evidences = new ArrayList<>();
 
         for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
-            gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(), null);
+
+            gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
+                    ct.getSequenceOntologyTerms(), null);
             panelIds = null;
             if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
                 panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
@@ -420,11 +419,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
-        // Consequence types
-        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
-            // Set consequence type
-            clinicalVariantEvidence.setConsequenceTypes(consequenceType.getSequenceOntologyTerms());
-        }
+//        // Consequence types
+//        if (CollectionUtils.isNotEmpty(consequenceType.getSequenceOntologyTerms())) {
+//            // Set consequence type
+//            clinicalVariantEvidence.setConsequenceTypes(consequenceType.getSequenceOntologyTerms());
+//        }
 
         // Genomic feature
         if (genomicFeature != null) {
@@ -467,7 +466,6 @@ public class ClinicalInterpretationManager extends StorageManager {
                 clinicalVariantEvidence.setRoleInCancer(roleInCancer.get(genomicFeature.getGeneName()));
             }
         }
-
 
         // Set tier and actionable if necessary
         if (MapUtils.isNotEmpty(actionableVariants) && actionableVariants.containsKey(variantId)) {
@@ -1019,13 +1017,13 @@ public class ClinicalInterpretationManager extends StorageManager {
 //        return reportedLowCoverages;
 //    }
 
-    public Analyst getAnalyst(String token) throws ToolException {
+    public ClinicalAnalyst getAnalyst(String token) throws ToolException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
             OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
-
-            return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
+            User user = userQueryResult.first();
+            return new ClinicalAnalyst(userId, user.getName(), user.getEmail(), "", "");
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

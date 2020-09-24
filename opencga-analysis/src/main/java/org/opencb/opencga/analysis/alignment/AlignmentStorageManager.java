@@ -263,8 +263,8 @@ public class AlignmentStorageManager extends StorageManager {
             geneCoverageStats.setFile(file.getId());
 
             geneCoverageStats.setGeneName(geneName);
-            if (CollectionUtils.isNotEmpty(file.getSamples())) {
-                geneCoverageStats.setSampleId(file.getSamples().get(0).getId());
+            if (CollectionUtils.isNotEmpty(file.getSampleIds())) {
+                geneCoverageStats.setSampleId(file.getSampleIds().get(0));
             }
 
             // Get exon regions per transcript

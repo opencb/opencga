@@ -9,9 +9,9 @@
         "description": "Location for all resources."
       }
     },
-    "storageNamePrefix": {
+    "storageAccountName": {
       "type": "string",
-      "defaultValue": "opencgastorage"
+      "defaultValue": "[concat(parameters('storageNamePrefix'), 'storage', uniquestring(resourceGroup().id))]"
     },
     "vnetId": {
       "type": "string"
@@ -27,36 +27,40 @@
     }
   },
   "variables": {
-    "storageAccountName": "[concat(parameters('storageNamePrefix'), uniquestring(resourceGroup().id))]",
     "privateDnsZonesName": "privatelink.file.core.windows.net",
-    "privateEndpointName" : "[concat(variables('storageAccountName'), 'privatelink')]"
+    "privateEndpointName" : "[concat(parameters('storageAccountName'), 'privatelink')]",
+    "virtualNetworkRulesBase" : [
+      {
+        "id": "[parameters('loginSubnetId')]",
+        "action": "Allow",
+        "state": "Succeeded"
+      },
+      {
+        "id": "[parameters('kubernetesSubnetId')]",
+        "action": "Allow",
+        "state": "Succeeded"
+      }
+    ],
+    "virtualNetworkRulesAci" : [
+      {
+        "id": "[parameters('aciSubnetId')]",
+        "action": "Allow",
+        "state": "Succeeded"
+      }
+    ],
+    "emptyArray" : [],
+    "virtualNetworkRules" : "[concat( variables('virtualNetworkRulesBase') , if ( equals(parameters('aciSubnetId'), ''), variables('emptyArray'), variables('virtualNetworkRulesAci') ) )]"
   },
   "resources": [
     {
-      "name": "[variables('storageAccountName')]",
+      "name": "[parameters('storageAccountName')]",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2019-06-01",
       "location": "[parameters('location')]",
       "properties": {
         "networkAcls": {
           "bypass": "AzureServices",
-          "virtualNetworkRules": [
-            {
-              "id": "[parameters('loginSubnetId')]",
-              "action": "Allow",
-              "state": "Succeeded"
-            },
-            {
-              "id": "[parameters('aciSubnetId')]",
-              "action": "Allow",
-              "state": "Succeeded"
-            },
-            {
-              "id": "[parameters('kubernetesSubnetId')]",
-              "action": "Allow",
-              "state": "Succeeded"
-            }
-          ],
+          "virtualNetworkRules": "[variables('virtualNetworkRules')]",
           "ipRules": [
           ],
           "defaultAction": "Deny"
@@ -86,7 +90,7 @@
       }
     },
     {
-      "name": "[concat(variables('storageAccountName'), '/default/variants')]",
+      "name": "[concat(parameters('storageAccountName'), '/default/variants')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2019-06-01",
       "properties": {
@@ -95,11 +99,11 @@
         "shareQuota": 5000
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
     {
-      "name": "[concat(variables('storageAccountName'), '/default/conf')]",
+      "name": "[concat(parameters('storageAccountName'), '/default/conf')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2019-06-01",
       "properties": {
@@ -108,11 +112,11 @@
         "shareQuota": 100
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
     {
-      "name": "[concat(variables('storageAccountName'), '/default/ivaconf')]",
+      "name": "[concat(parameters('storageAccountName'), '/default/ivaconf')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2019-06-01",
       "properties": {
@@ -121,11 +125,11 @@
         "shareQuota": 100
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
     {
-      "name": "[concat(variables('storageAccountName'), '/default/analysisconf')]",
+      "name": "[concat(parameters('storageAccountName'), '/default/analysisconf')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2019-06-01",
       "properties": {
@@ -134,11 +138,11 @@
         "shareQuota": 100
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
     {
-      "name": "[concat(variables('storageAccountName'), '/default/sessions')]",
+      "name": "[concat(parameters('storageAccountName'), '/default/sessions')]",
       "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
       "apiVersion": "2019-06-01",
       "properties": {
@@ -147,7 +151,7 @@
         "shareQuota": 5000
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ]
     },
     {
@@ -155,7 +159,7 @@
       "name": "[variables('privateEndpointName')]",
       "type": "Microsoft.Network/privateEndpoints",
       "apiVersion": "2020-03-01",
-      "dependsOn": ["[variables('storageAccountName')]"],
+      "dependsOn": ["[parameters('storageAccountName')]"],
       "properties": {
         "subnet": {
           "id": "[parameters('loginSubnetId')]"
@@ -164,7 +168,7 @@
           {
             "name": "[variables('privateEndpointName')]",
             "properties": {
-              "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+              "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
               "groupIds": [ "file" ]
             }
           }
@@ -217,11 +221,11 @@
   "outputs": {
     "accountName": {
       "type": "string",
-      "value": "[variables('storageAccountName')]"
+      "value": "[parameters('storageAccountName')]"
     },
     "accountKey": {
       "type": "string",
-      "value": "[listKeys(variables('storageAccountName'),'2017-10-01').keys[0].value]"
+      "value": "[listKeys(parameters('storageAccountName'),'2017-10-01').keys[0].value]"
     }
   }
 }

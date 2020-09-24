@@ -55,6 +55,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -230,11 +231,11 @@ public class InternalMainTest {
                 "-o", opencga.createTmpOutdir(studyId, "stats_all", sessionId));
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getName());
 
+        List<Sample> file1Samples = catalogManager.getSampleManager().get(studyId, file1.getSampleIds(), QueryOptions.empty(), sessionId).getResults();
+        List<Sample> file2Samples = catalogManager.getSampleManager().get(studyId, file2.getSampleIds(), QueryOptions.empty(), sessionId).getResults();
 
-        catalogManager.getCohortManager().create(studyId, "coh1", Enums.CohortType.CONTROL_SET, "", file1.getSamples(), null, null,
-                sessionId);
-        catalogManager.getCohortManager().create(studyId, "coh2", Enums.CohortType.CONTROL_SET, "", file2.getSamples(), null, null,
-                sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh1", Enums.CohortType.CONTROL_SET, "", file1Samples, null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, "coh2", Enums.CohortType.CONTROL_SET, "", file2Samples, null, null, sessionId);
 
         execute("variant", "stats",
                 "--session-id", sessionId,

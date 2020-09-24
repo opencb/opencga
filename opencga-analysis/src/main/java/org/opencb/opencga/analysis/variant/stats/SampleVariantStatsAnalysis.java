@@ -17,28 +17,18 @@
 package org.opencb.opencga.analysis.variant.stats;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -50,65 +40,13 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-variant-stats";
     public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
+    @Deprecated
     public static final String VARIABLE_SET_ID = "opencga_sample_variant_stats";
     private String study;
 
     private final SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams();
     private ArrayList<String> checkedSamplesList;
     private Path outputFile;
-
-    /**
-     * List of samples.
-     * @param sampleNames Sample names
-     * @return this
-     */
-    public SampleVariantStatsAnalysis setSampleNames(List<String> sampleNames) {
-        toolParams.setSample(sampleNames);
-        return this;
-    }
-
-//    /**
-//     * Samples query to select samples to be used.
-//     * @param samplesQuery Samples query
-//     * @return this
-//     */
-//    public SampleVariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
-//        this.samplesQuery = samplesQuery;
-//        return this;
-//    }
-//
-//    /**
-//     * Select samples from this individual.
-//     * @param individualId individual
-//     * @return this
-//     */
-//    public SampleVariantStatsAnalysis setIndividual(String individualId) {
-//        this.individual = individualId;
-//        return this;
-//    }
-
-    /**
-     * Select samples form the individuals of this family.
-     * @param family family
-     * @return this
-     */
-    public SampleVariantStatsAnalysis setFamily(String family) {
-        this.toolParams.setFamily(family);
-        return this;
-    }
-
-    /**
-     * Index results in catalog.
-     * Create an AnnotationSet for the VariableSet {@link #VARIABLE_SET_ID}
-     * containing the SampleVariantStats.
-     *
-     * @param indexResults index results
-     * @return boolean
-     */
-    public SampleVariantStatsAnalysis setIndexResults(boolean indexResults) {
-        toolParams.setIndex(indexResults);
-        return this;
-    }
 
     @Override
     protected void check() throws Exception {
@@ -119,41 +57,15 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         Set<String> allSamples = new HashSet<>();
 
         Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
-        List<String> sampleNames = toolParams.getSample();
-        if (CollectionUtils.isNotEmpty(sampleNames)) {
-            catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
+        if (CollectionUtils.isNotEmpty(toolParams.getSample())) {
+            catalogManager.getSampleManager().get(study, toolParams.getSample(), new QueryOptions(), token)
                     .getResults()
                     .stream()
                     .map(Sample::getId)
                     .forEach(allSamples::add);
         }
-
-//            if (samplesQuery != null) {
-//                List<String> samplesFromQuery = new LinkedList<>();
-//                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), token)
-//                        .getResults()
-//                        .stream()
-//                        .map(Sample::getId)
-//                        .forEach(samplesFromQuery::add);
-//                // Remove non-indexed samples
-//                samplesFromQuery.removeIf(s -> !indexedSamples.contains(s));
-//                allSamples.addAll(samplesFromQuery);
-//            }
-//            if (StringUtils.isNotEmpty(individual)) {
-//                Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individual);
-//                catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
-//                        .getResults()
-//                        .stream()
-//                        .map(Sample::getId)
-//                        .forEach(allSamples::add);
-//            }
-        if (StringUtils.isNotEmpty(toolParams.getFamily())) {
-            Family family = catalogManager.getFamilyManager().get(study, toolParams.getFamily(), null, token).first();
-            List<String> individualIds = new ArrayList<>(family.getMembers().size());
-            for (Individual member : family.getMembers()) {
-                individualIds.add(member.getId());
-            }
-            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
+        if (CollectionUtils.isNotEmpty(toolParams.getIndividual())) {
+            Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), toolParams.getIndividual());
             catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
                     .getResults()
                     .stream()
@@ -192,11 +104,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected List<String> getSteps() {
-        List<String> steps = super.getSteps();
-        if (toolParams.isIndex()) {
-            steps.add("index");
-        }
-        return steps;
+        return super.getSteps();
     }
 
     @Override
@@ -209,35 +117,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                     .setVariantQuery(toolParams.getVariantQuery() == null ? new Query() : toolParams.getVariantQuery().toQuery())
                     .execute();
         });
-
-        if (toolParams.isIndex()) {
-            step("index", () -> indexResults(outputFile));
-        }
-    }
-
-    private void indexResults(Path outputFile) throws ToolException {
-        List<SampleVariantStats> stats = new ArrayList<>(checkedSamplesList.size());
-        try {
-            JacksonUtils.getDefaultObjectMapper()
-                    .readerFor(SampleVariantStats.class)
-                    .<SampleVariantStats>readValues(outputFile.toFile())
-                    .forEachRemaining(stats::add);
-
-            try {
-                catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
-            } catch (CatalogException e) {
-                // Assume variable set not found. Try to create
-                catalogManager.getStudyManager().createDefaultVariableSets(study, token);
-            }
-
-            for (SampleVariantStats sampleStats : stats) {
-                AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(sampleStats, VARIABLE_SET_ID);
-                catalogManager.getSampleManager()
-                        .addAnnotationSet(study, sampleStats.getId(), annotationSet, new QueryOptions(), token);
-            }
-        } catch (IOException | CatalogException e) {
-            throw new ToolException(e);
-        }
     }
 
 }

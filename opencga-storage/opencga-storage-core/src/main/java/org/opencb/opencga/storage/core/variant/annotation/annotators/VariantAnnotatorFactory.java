@@ -37,8 +37,8 @@ import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotati
 public final class VariantAnnotatorFactory {
 
     public enum AnnotationEngine {
-        CELLBASE_DB_ADAPTOR,
         CELLBASE_REST,
+        CELLBASE,
         VEP,
         OTHER
     }
@@ -57,26 +57,11 @@ public final class VariantAnnotatorFactory {
 
         AnnotationEngine defaultValue = options.containsKey(VariantStorageOptions.ANNOTATOR_CLASS.key())
                 ? AnnotationEngine.OTHER
-                : AnnotationEngine.CELLBASE_REST;
+                : AnnotationEngine.CELLBASE;
         AnnotationEngine annotationEngine;
         String annotator = options.getString(VariantStorageOptions.ANNOTATOR.key());
         if (StringUtils.isNotBlank(annotator)) {
-            if (annotator.equalsIgnoreCase("cellbase")) {
-                String preferred = configuration.getCellbase().getPreferred();
-                switch (preferred.toLowerCase()) {
-                    case "remote":
-                        annotationEngine = AnnotationEngine.CELLBASE_REST;
-                        break;
-                    case "local":
-                        annotationEngine = AnnotationEngine.CELLBASE_DB_ADAPTOR;
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown cellbase preferred method '"
-                                + preferred + "'");
-                }
-            } else {
-                annotationEngine = AnnotationEngine.valueOf(annotator.toUpperCase());
-            }
+            annotationEngine = AnnotationEngine.valueOf(annotator.toUpperCase());
         } else if (StringUtils.isNotBlank(options.getString(ANNOTATION_SOURCE))) {
             annotationEngine = AnnotationEngine.valueOf(options.getString(ANNOTATION_SOURCE).toUpperCase());
             logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + VariantStorageOptions.ANNOTATOR + "' instead");
@@ -85,14 +70,12 @@ public final class VariantAnnotatorFactory {
         }
 
         switch (annotationEngine) {
-            case CELLBASE_DB_ADAPTOR:
-                return new CellBaseDirectVariantAnnotator(configuration, projectMetadata, options);
             case CELLBASE_REST:
+            case CELLBASE:
                 return new CellBaseRestVariantAnnotator(configuration, projectMetadata, options);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
-            default:
                 String className = options.getString(VariantStorageOptions.ANNOTATOR_CLASS.key());
                 logger.info("Annotating with {} = {}", annotationEngine, className);
                 try {
@@ -108,6 +91,8 @@ public final class VariantAnnotatorFactory {
                     e.printStackTrace();
                     throw new VariantAnnotatorException("Unable to create annotation source from \"" + className + "\"", e);
                 }
+            default:
+                throw new IllegalArgumentException("Unknown annotation engine " + annotationEngine);
         }
 
     }

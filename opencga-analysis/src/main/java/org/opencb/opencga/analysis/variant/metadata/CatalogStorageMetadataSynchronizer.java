@@ -28,12 +28,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileIndex.IndexStatus;
@@ -62,7 +62,7 @@ public class CatalogStorageMetadataSynchronizer {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
-            FileDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key(),
+            FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
             FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
@@ -401,7 +401,7 @@ public class CatalogStorageMetadataSynchronizer {
                         modified = true;
                     }
                     Set<String> storageSamples = fileSamplesMap.get(file.getName());
-                    Set<String> catalogSamples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+                    Set<String> catalogSamples = new HashSet<>(file.getSampleIds());
                     if (storageSamples == null) {
                         storageSamples = new HashSet<>();
                         Integer fileId = metadataManager.getFileId(study.getId(), file.getName());

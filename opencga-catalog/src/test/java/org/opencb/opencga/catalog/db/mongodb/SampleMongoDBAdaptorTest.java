@@ -411,7 +411,7 @@ public class SampleMongoDBAdaptorTest {
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
 
         Sample sample = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first();
-        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLES.key(), sample.getUid()),
+        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sample.getId()),
                 QueryOptions.empty());
 
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(sample);

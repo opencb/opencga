@@ -40,17 +40,14 @@ public class VariantAnnotatorTest {
 
     @Test
     public void testVariantFactory() throws Exception {
-        ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), VariantAnnotatorFactory.AnnotationEngine.CELLBASE_DB_ADAPTOR);
-        VariantAnnotator variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
-        assertThat(variantAnnotator, is(instanceOf(CellBaseDirectVariantAnnotator.class)));
+        ObjectMap options;
+        VariantAnnotator variantAnnotator;
 
         options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
-        storageConfiguration.getCellbase().setPreferred("local");
         variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
-        assertThat(variantAnnotator, is(instanceOf(CellBaseDirectVariantAnnotator.class)));
+        assertThat(variantAnnotator, is(instanceOf(CellBaseRestVariantAnnotator.class)));
 
-        options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase");
-        storageConfiguration.getCellbase().setPreferred("remote");
+        options = new ObjectMap(VariantStorageOptions.ANNOTATOR.key(), "cellbase_rest");
         variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata, options);
         assertThat(variantAnnotator, is(instanceOf(CellBaseRestVariantAnnotator.class)));
 

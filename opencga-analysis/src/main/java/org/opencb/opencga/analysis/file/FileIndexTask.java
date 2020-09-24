@@ -94,7 +94,7 @@ public class FileIndexTask extends OpenCgaTool {
                         FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                         FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
                         FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT.key(),
-                        FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
+                        FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
                         FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true)
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);

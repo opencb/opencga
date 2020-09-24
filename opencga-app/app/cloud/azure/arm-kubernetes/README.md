@@ -168,14 +168,40 @@ You can deploy a custom network cidr by specifying the `networkCIDR` field in th
             },
             "defaultValue": {
                 "vnet": {
-                    "addressPrefixes": "10.0.0.0/16",
+                    "name" : "vnet",
+                    "addressPrefix": "10.0.0.0/16",
                     "subnets": {
-                        "kubernetes": "10.0.0.0/22",
-                        "aci": "10.0.4.0/22",
-                        "hdinsight": "10.0.8.0/24",
-                        "mongo": "10.0.9.0/24",
-                        "solr": "10.0.10.0/24",
-                        "login": "10.0.12.0/24"
+                        "kubernetes" : {
+                            "name" : "kubernetes",
+                            "addressPrefix": "10.0.0.0/22"
+                        },
+                        "aci" : {
+                            "name" : "aci",
+                            "addressPrefix": "10.0.4.0/22"
+                        },
+                        "hdinsight" : {
+                            "name" : "hdinsight",
+                            "addressPrefix": "10.0.8.0/24",
+                            "nsg": {
+                                "name": "nsg-hdi",
+                                "serviceTag" : "HDInsight"
+                            }
+                        },
+                        "mongodb" : {
+                            "name" : "mongodb",
+                            "addressPrefix": "10.0.9.0/24"
+                        },
+                        "solr" : {
+                            "name" : "solr",
+                            "addressPrefix": "10.0.10.0/24"
+                        },
+                        "login" : {
+                            "name" : "login",
+                            "addressPrefix": "10.0.12.0/24",
+                            "nsg": {
+                              "name": "nsg-login"
+                            }
+                        }
                     }
                 },
                 "aks": {
@@ -187,6 +213,17 @@ You can deploy a custom network cidr by specifying the `networkCIDR` field in th
         }
 ```
 
+
+### Kubernetes special address spaces
+The Kubernetes cluster is configured to use the Azure Container Networking Interface (CNI) as its [network plugin](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins). This plugin require some special configuration properties:
+
+- **Service address range (CIDR)** : This range should not be used by any network element on or connected to this virtual network. Service address CIDR must be smaller than /12. You can reuse this range across different AKS clusters.
+ 
+   The service address range is a set of virtual IPs (VIPs) that Kubernetes assigns to internal services in your cluster. Azure Networking has no visibility into the service IP range of the Kubernetes cluster. Because of the lack of visibility into the cluster's service address range, it's possible to later create a new subnet in the cluster virtual network that overlaps with the service address range. If such an overlap occurs, Kubernetes could assign a service an IP that's already in use by another resource in the subnet, causing unpredictable behavior or failures. By ensuring you use an address range outside the cluster's virtual network, you can avoid this overlap risk.
+- **DNS service IP address** : IP address within the Kubernetes service address range that will be used by cluster service discovery (kube-dns). Don't use the first IP address in your address range, such as .1. The first address in your subnet range is used for the kubernetes.default.svc.cluster.local address.
+- **Docker bridge address** : The Docker bridge network address represents the default docker0 bridge network address present in all Docker installations. While docker0 bridge is not used by AKS clusters or the pods themselves, you must set this address to continue to support scenarios such as docker build within the AKS cluster. It is required to select a CIDR for the Docker bridge network address because otherwise Docker will pick a subnet automatically which could conflict with other CIDRs. You must pick an address space that does not collide with the rest of the CIDRs on your networks, including the cluster's service CIDR and pod CIDR. Default of 172.17.0.1/16. You can reuse this range across different AKS clusters.
+
+More information at [Configure Azure CNI](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#plan-ip-addressing-for-your-cluster)
 
 ## Possible further work
 

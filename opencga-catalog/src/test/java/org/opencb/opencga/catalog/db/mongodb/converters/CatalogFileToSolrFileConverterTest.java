@@ -23,7 +23,6 @@ import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileCon
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.time.LocalDate;
@@ -47,7 +46,8 @@ public class CatalogFileToSolrFileConverterTest {
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
                 "test/base", null, "convertorTest", FileInternal.initialize(), 1111L, 2);
-        file.setUid(111).setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2")))
+        file.setUid(111)
+                .setSampleIds(Arrays.asList("1", "2"))
                 .setSoftware(new Software().setName("Software"));
         file.setAnnotationSets(AnnotationHelper.createAnnotation());
 
@@ -73,7 +73,7 @@ public class CatalogFileToSolrFileConverterTest {
         assert (fileSolrModel.isExternal() == file.isExternal());
         assert (fileSolrModel.getSize() == file.getSize());
         assert (fileSolrModel.getSoftwareName().equals(file.getSoftware().getName()));
-        assert (fileSolrModel.getNumSamples() == file.getSamples().size());
+        assert (fileSolrModel.getNumSamples() == file.getSampleIds().size());
 
         assertEquals(Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21), fileSolrModel.getAnnotations().get("annotations__im__vsId.a.ab2.ab2c1.ab2c1d1"));
         assertEquals(Arrays.asList(true, false, false), fileSolrModel.getAnnotations().get("annotations__bm__vsId.a.ab1.ab1c1"));

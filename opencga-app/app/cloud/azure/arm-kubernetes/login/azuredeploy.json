@@ -3,8 +3,11 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "VMName": {
+      "type": "string"
+    },
+    "publicIPAddressDNS": {
       "type": "string",
-      "defaultValue": "[concat(resourceGroup().name, '-login01')]"
+      "defaultValue": "[concat(parameters('VMName'), '-', uniquestring(concat(resourceGroup().id, parameters('VMName'))) )]"
     },
     "VMSize": {
       "type": "string",
@@ -79,8 +82,6 @@
     "diskName": "[concat(parameters('VMName'), '-disk')]",
     "publicIPAddressName": "[concat(parameters('VMName'), '-ip')]",
     "publicIPAddressType": "Dynamic",
-    "publicIPAddressDNS": "[concat(resourceGroup().name, '-', uniquestring(concat(resourceGroup().id, parameters('VMName'))) )]",
-    "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('LogAnalyticsWorkSpaceID'),' -e KEY=',parameters('LogAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
     "cloudInitArray": [
       "#cloud-config",
       "",
@@ -90,8 +91,7 @@
       "runcmd:",
       "- export DEBIAN_FRONTEND='noninteractive'",
       "- curl -fsSL https://get.docker.com/ | sh",
-      "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
-      "[concat('- ', variables('logAnalyticsAgent'))]"
+      "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -"
     ],
     "cloudInit": "[replace(replace(replace(string(variables('cloudInitArray')),'\",\"','\n'),'[\"',''),'\"]','')]"
   },
@@ -104,7 +104,7 @@
       "properties": {
         "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
         "dnsSettings": {
-          "domainNameLabel": "[variables('publicIPAddressDNS')]"
+          "domainNameLabel": "[parameters('publicIPAddressDNS')]"
         }
       }
     },
@@ -211,6 +211,45 @@
               "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
             }
           ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('VMName'),'/CheckCloudInit')]",
+      "apiVersion": "2019-12-01",
+      "dependsOn": [
+        "[parameters('VMName')]"
+      ],
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "commandToExecute": "bash -cex 'until [ -f /var/lib/cloud/instance/boot-finished ]; do echo \"Wait cloud-init\"; sleep 5; done; apt-get install -y jq; jq -e \"[] | length == 0\" /var/lib/cloud/data/result.json'"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('VMName'),'/OMSExtension')]",
+      "apiVersion": "2019-12-01",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('VMName'),'/extensions/CheckCloudInit')]"
+      ],
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publisher": "Microsoft.EnterpriseCloud.Monitoring",
+        "type": "OmsAgentForLinux",
+        "typeHandlerVersion": "1.13",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "workspaceId": "[parameters('LogAnalyticsWorkspaceID')]"
+        },
+        "protectedSettings": {
+          "workspaceKey": "[parameters('LogAnalyticsWorkspaceKey')]"
         }
       }
     }

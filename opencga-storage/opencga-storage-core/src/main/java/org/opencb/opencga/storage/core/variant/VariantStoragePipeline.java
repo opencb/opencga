@@ -454,18 +454,18 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             options.put(VariantStorageOptions.RELEASE.key(), currentRelease);
         }
 
+        if (getOptions().getBoolean(FAMILY.key()) || getOptions().getBoolean(SOMATIC.key())) {
+            if (YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key()) == YesNoAuto.AUTO) {
+                getOptions().put(LOAD_HOM_REF.key(), YesNoAuto.YES);
+            }
+        }
+
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         //Get the studyConfiguration. If there is no StudyMetadata, create a empty one.
         dbAdaptor.getMetadataManager().updateStudyMetadata(studyId, study -> {
             securePreLoad(study, fileMetadata);
             return study;
         });
-
-        if (getOptions().getBoolean(FAMILY.key()) || getOptions().getBoolean(SOMATIC.key())) {
-            if (YesNoAuto.parse(getOptions(), LOAD_HOM_REF.key()) == YesNoAuto.AUTO) {
-                getOptions().put(LOAD_HOM_REF.key(), YesNoAuto.YES);
-            }
-        }
         return input;
     }
 

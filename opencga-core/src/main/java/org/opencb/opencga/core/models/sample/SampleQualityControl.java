@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -25,14 +25,14 @@ import java.util.List;
 public class SampleQualityControl implements Serializable {
 
     List<String> fileIds;
-    List<Comment> comments;
+    List<ClinicalComment> comments;
     List<SampleQualityControlMetrics> metrics;
 
     public SampleQualityControl() {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public SampleQualityControl(List<String> fileIds, List<Comment> comments, List<SampleQualityControlMetrics> metrics) {
+    public SampleQualityControl(List<String> fileIds, List<ClinicalComment> comments, List<SampleQualityControlMetrics> metrics) {
         this.fileIds = fileIds;
         this.comments = comments;
         this.metrics = metrics;
@@ -57,11 +57,11 @@ public class SampleQualityControl implements Serializable {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public SampleQualityControl setComments(List<Comment> comments) {
+    public SampleQualityControl setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }

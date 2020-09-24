@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-import org.opencb.biodata.models.clinical.Comment;
+import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -46,12 +48,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Individual proband;
     private Family family;
 
+    private boolean locked;
+
     private Interpretation interpretation;
     private List<Interpretation> secondaryInterpretations;
 
     private ClinicalConsent consent;
 
-    private ClinicalAnalysisAnalyst analyst;
+    private ClinicalAnalyst analyst;
     private Enums.Priority priority;
     private List<String> flags;
 
@@ -60,8 +64,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String dueDate;
     private int release;
 
-    private List<Comment> comments;
-    private List<Alert> alerts;
+    private List<ClinicalComment> comments;
+    private List<ClinicalAudit> audit;
     private ClinicalAnalysisInternal internal;
     private Map<String, Object> attributes;
 
@@ -71,86 +75,16 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
     }
 
-    public enum FamiliarRelationship {
-        MOTHER("", "mother"),
-        FATHER("", "father"),
-        STEP_MOTHER("", "mother"),
-        STEP_FATHER("", "father"),
-        IDENTICAL_TWIN("", "twin"),
-        FRATERNAL_TWIN("", "twin"),
-        FULL_SIBLING("", "sibling"),
-        HALF_SIBLING("", "sibling"),
-        STEP_SIBLING("", "sibling"),
-        SISTER("", "sister"),
-        BROTHER("", "brother"),
-        STEP_SISTER("", "sister"),
-        STEP_BROTHER("", "brother"),
-        SON("", "son"),
-        DAUGHTER("", "daughter"),
-
-        CHILD_OF_UNKNOWN_SEX("", "child"),
-
-        UNCLE("", "uncle"),
-        AUNT("", "aunt"),
-        MATERNAL_AUNT("", "aunt"),
-        MATERNAL_UNCLE("", "uncle"),
-        PATERNAL_AUNT("", "aunt"),
-        PATERNAL_UNCLE("", "uncle"),
-        NEPHEW("", "nephew"),
-        NIECE("", "niece"),
-        GRANDFATHER("", "grandfather"),
-        GRANDMOTHER("", "grandmother"),
-        MATERNAL_GRANDMOTHER("", "grandmother"),
-        PATERNAL_GRANDMOTHER("", "grandmother"),
-        MATERNAL_GRANDFATHER("", "grandfather"),
-        PATERNAL_GRANDFATHER("", "grandfather"),
-        GREAT_GRANDFATHER("", "great-grandfather"),
-        GREAT_GRANDMOTHER("", "great-grandmother"),
-        DOUBLE_FIRST_COUSING("", "cousin"),
-        COUSIN("", "cousin"),
-        MALE_COUSIN("", "cousin"),
-        FEMALE_COUSIN("", "cousin"),
-        SECOND_COUSIN("", "cousin"),
-        MALE_SECOND_COUSIN("", "cousin"),
-        FEMALE_SECOND_COUSIN("", "cousin"),
-        SPOUSE("", "spouse"),
-        HUSBAND("", "husband"),
-        OTHER("", "other"),
-        UNKNOWN("", "unknown"),
-        UNRELATED("", "unrelated"),
-
-        PROBAND("", "proband");
-
-        private final String snomedCtId;
-        private final String isA;
-
-        FamiliarRelationship(String snomedCtId, String isA) {
-            this.snomedCtId = snomedCtId;
-            this.isA = isA;
-        }
-
-        public String getId() {
-            return this.name();
-        }
-
-        public String getSnomedCtId() {
-            return snomedCtId;
-        }
-
-        public String getIsA() {
-            return isA;
-        }
-    }
-
     public ClinicalAnalysis() {
     }
 
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
-                            ClinicalConsent consent, ClinicalAnalysisAnalyst analyst, Enums.Priority priority, List<String> flags,
-                            String creationDate, String modificationDate, String dueDate, int release, List<Comment> comments,
-                            List<Alert> alerts, ClinicalAnalysisInternal internal, Map<String, Object> attributes, CustomStatus status) {
+                            Family family, boolean locked, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
+                            ClinicalConsent consent, ClinicalAnalyst analyst, Enums.Priority priority, List<String> flags,
+                            String creationDate, String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
+                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes,
+                            CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -158,6 +92,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.files = files;
         this.proband = proband;
         this.family = family;
+        this.locked = locked;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
@@ -169,7 +104,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.dueDate = dueDate;
         this.release = release;
         this.comments = comments;
-        this.alerts = alerts;
+        this.audit = audit;
         this.internal = internal;
         this.attributes = attributes;
         this.status = status;
@@ -186,6 +121,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
+        sb.append(", locked=").append(locked);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
@@ -197,7 +133,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", release=").append(release);
         sb.append(", comments=").append(comments);
-        sb.append(", alerts=").append(alerts);
+        sb.append(", audit=").append(audit);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -280,6 +216,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public ClinicalAnalysis setLocked(boolean locked) {
+        this.locked = locked;
+        return this;
+    }
+
     public Interpretation getInterpretation() {
         return interpretation;
     }
@@ -307,11 +252,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalAnalysisAnalyst getAnalyst() {
+    public ClinicalAnalyst getAnalyst() {
         return analyst;
     }
 
-    public ClinicalAnalysis setAnalyst(ClinicalAnalysisAnalyst analyst) {
+    public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
         this.analyst = analyst;
         return this;
     }
@@ -370,21 +315,21 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public List<Comment> getComments() {
+    public List<ClinicalComment> getComments() {
         return comments;
     }
 
-    public ClinicalAnalysis setComments(List<Comment> comments) {
+    public ClinicalAnalysis setComments(List<ClinicalComment> comments) {
         this.comments = comments;
         return this;
     }
 
-    public List<Alert> getAlerts() {
-        return alerts;
+    public List<ClinicalAudit> getAudit() {
+        return audit;
     }
 
-    public ClinicalAnalysis setAlerts(List<Alert> alerts) {
-        this.alerts = alerts;
+    public ClinicalAnalysis setAudit(List<ClinicalAudit> audit) {
+        this.audit = audit;
         return this;
     }
 

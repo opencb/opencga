@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -71,14 +70,13 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         FileMongoDBAdaptor fileMongoDBAdaptor = factory.getCatalogFileDBAdaptor();
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.add(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                FileDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
+        queryOptions.add(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(), FileDBAdaptor.QueryParams.SAMPLE_IDS.key()));
         //queryOptions.add("nativeQuery", true);
 
         DBIterator<File> fileDBIterator = fileMongoDBAdaptor.iterator(new Query("uid", 1000000154L), queryOptions);
         boolean found = false;
         while (fileDBIterator.hasNext()) {
-            if (fileDBIterator.next().getSamples().size() > 0) {
+            if (fileDBIterator.next().getSampleIds().size() > 0) {
                 System.out.println("found");
                 found = true;
             }
@@ -353,7 +351,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
                 FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT.key(),
-                FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
+                FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_IDS.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
         FileDBAdaptor fileDBAdaptor = factory.getCatalogFileDBAdaptor();

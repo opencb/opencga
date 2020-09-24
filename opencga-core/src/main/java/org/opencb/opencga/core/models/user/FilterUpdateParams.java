@@ -18,11 +18,11 @@ package org.opencb.opencga.core.models.user;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.common.Enums;
 
 public class FilterUpdateParams {
 
-    private File.Bioformat bioformat;
+    private Enums.Resource resource;
     private String description;
     private Query query;
     private QueryOptions options;
@@ -30,8 +30,8 @@ public class FilterUpdateParams {
     public FilterUpdateParams() {
     }
 
-    public FilterUpdateParams(File.Bioformat bioformat, String description, Query query, QueryOptions options) {
-        this.bioformat = bioformat;
+    public FilterUpdateParams(Enums.Resource resource, String description, Query query, QueryOptions options) {
+        this.resource = resource;
         this.description = description;
         this.query = query;
         this.options = options;
@@ -40,7 +40,7 @@ public class FilterUpdateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FilterUpdateParams{");
-        sb.append("bioformat=").append(bioformat);
+        sb.append("resource=").append(resource);
         sb.append(", description='").append(description).append('\'');
         sb.append(", query=").append(query);
         sb.append(", options=").append(options);
@@ -48,12 +48,12 @@ public class FilterUpdateParams {
         return sb.toString();
     }
 
-    public File.Bioformat getBioformat() {
-        return bioformat;
+    public Enums.Resource getResource() {
+        return resource;
     }
 
-    public FilterUpdateParams setBioformat(File.Bioformat bioformat) {
-        this.bioformat = bioformat;
+    public FilterUpdateParams setResource(Enums.Resource resource) {
+        this.resource = resource;
         return this;
     }
 

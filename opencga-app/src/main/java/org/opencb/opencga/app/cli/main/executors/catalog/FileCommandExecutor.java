@@ -221,7 +221,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), commandOptions.description);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.TAGS.key(), commandOptions.tags);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), commandOptions.size);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), commandOptions.samples);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), commandOptions.jobId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), commandOptions.attributes);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.ANNOTATION.key(), commandOptions.annotation);
@@ -304,7 +304,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 .setBioformat(commandOptions.bioformat)
                 .setDescription(commandOptions.description)
                 .setTags(commandOptions.tags)
-                .setSamples(commandOptions.sampleIds);
+                .setSampleIds(commandOptions.sampleIds);
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
