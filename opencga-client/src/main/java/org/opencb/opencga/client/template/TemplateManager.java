@@ -428,7 +428,7 @@ public class TemplateManager {
         } else {
             parentPath = "";
         }
-        logger.info("Process file " + file.getName());
+        logger.info("Process file " + file.getName() + " (URI: " + file.getUri() + ")");
 
         URI fileUri;
         if (file.getUri() == null) {
