@@ -23,6 +23,8 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -50,6 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -319,22 +322,16 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query,
                                                         QueryOptions queryOptions) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
+        Interpretation interpretation = null;
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
             Query tmpQuery = new Query(query);
+            interpretation = getSingleInterpretation(clientSession, tmpQuery, interpretation);
 
-            OpenCGAResult<Interpretation> interpretationDataResult = get(clientSession, tmpQuery, new QueryOptions());
-            if (interpretationDataResult.getNumResults() == 0) {
-                throw new CatalogDBException("Update interpretation: No interpretation found to be updated");
-            }
-            if (interpretationDataResult.getNumResults() > 1) {
-                throw new CatalogDBException("Update interpretation: Cannot set the same id parameter for different interpretations");
-            }
-
-            if (!interpretationDataResult.first().getId().equals(parameters.getString(QueryParams.ID.key()))) {
+            if (!interpretation.getId().equals(parameters.getString(QueryParams.ID.key()))) {
                 // Check that the new clinical analysis id will be unique
-                long studyId = getStudyId(interpretationDataResult.first().getUid());
+                long studyId = getStudyId(interpretation.getUid());
 
                 tmpQuery = new Query()
                         .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
@@ -407,6 +404,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
                 break;
             case ADD:
+                if (parameters.containsKey(QueryParams.PRIMARY_FINDINGS.key())) {
+                    interpretation = getSingleInterpretation(clientSession, query, interpretation);
+                    checkNewFindingsDontExist(interpretation.getPrimaryFindings(),
+                            parameters.getAsList(QueryParams.PRIMARY_FINDINGS.key(), Map.class));
+                }
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
@@ -423,6 +425,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
                 break;
             case ADD:
+                if (parameters.containsKey(QueryParams.SECONDARY_FINDINGS.key())) {
+                    interpretation = getSingleInterpretation(clientSession, query, interpretation);
+                    checkNewFindingsDontExist(interpretation.getSecondaryFindings(),
+                            parameters.getAsList(QueryParams.SECONDARY_FINDINGS.key(), Map.class));
+                }
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
@@ -438,6 +445,36 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         return document;
+    }
+
+    private void checkNewFindingsDontExist(List<ClinicalVariant> currentFindings, List<Map> newFindings)
+            throws CatalogDBException {
+        Set<String> currentVariantIds = currentFindings.stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
+
+        for (Map<String, Object> finding : newFindings) {
+            if (currentVariantIds.contains(String.valueOf(finding.get("id")))) {
+                throw new CatalogDBException("Cannot add new list of findings. Variant '" + finding.get("id")
+                        + "' already found in current list of findings.");
+            }
+        }
+    }
+
+    private Interpretation getSingleInterpretation(ClientSession clientSession, Query query, Interpretation interpretation)
+            throws CatalogDBException {
+        if (interpretation != null) {
+            return interpretation;
+        }
+
+        Query tmpQuery = new Query(query);
+        OpenCGAResult<Interpretation> interpretationDataResult = get(clientSession, tmpQuery, new QueryOptions());
+        if (interpretationDataResult.getNumResults() == 0) {
+            throw new CatalogDBException("No interpretation found.");
+        }
+        if (interpretationDataResult.getNumResults() > 1) {
+            throw new CatalogDBException("More than one interpretation found");
+        }
+
+        return interpretationDataResult.first();
     }
 
     @Override
@@ -464,6 +501,134 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         } catch (CatalogDBException e) {
             logger.error("Could not update interpretation {}: {}", interpretationId, e.getMessage(), e);
             throw new CatalogDBException("Could not update interpretation " + interpretationId + ": " + e.getMessage(), e.getCause());
+        }
+    }
+
+    public OpenCGAResult<Interpretation> merge(long interpretationUid, Interpretation interpretation,
+                                               List<String> clinicalVariantList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        try {
+            return runTransaction(clientSession -> merge(clientSession, interpretationUid, interpretation, clinicalVariantList));
+        } catch (CatalogDBException e) {
+            logger.error("Could not merge interpretation: {}", e.getMessage(), e);
+            throw new CatalogDBException("Could not merge interpretation: " + e.getMessage(), e.getCause());
+        }
+    }
+
+    private OpenCGAResult<Interpretation> merge(ClientSession clientSession, long interpretationUid, Interpretation interpretation2,
+                                                List<String> clinicalVariantList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query(QueryParams.UID.key(), interpretationUid);
+        OpenCGAResult<Interpretation> interpretationResult = get(clientSession, query, QueryOptions.empty());
+        if (interpretationResult.getNumResults() == 0) {
+            throw new CatalogDBException("Interpretation uid '" + interpretationUid + "' not found.");
+        }
+
+        Interpretation interpretation = interpretationResult.first();
+        mergeFindings(interpretation, interpretation2, true, clinicalVariantList);
+        mergeFindings(interpretation, interpretation2, false, clinicalVariantList);
+
+        ObjectMap params = new ObjectMap()
+                .append(QueryParams.PRIMARY_FINDINGS.key(), interpretation.getPrimaryFindings())
+                .append(QueryParams.SECONDARY_FINDINGS.key(), interpretation.getSecondaryFindings())
+                .append(QueryParams.METHODS.key(), interpretation.getMethods());
+
+        ObjectMap actions = new ObjectMap()
+                .append(QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET)
+                .append(QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.SET)
+                .append(QueryParams.METHODS.key(), ParamUtils.UpdateAction.SET);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actions);
+
+        return update(clientSession, interpretation, params, null, options);
+    }
+
+    private void mergeFindings(Interpretation interpretation, Interpretation interpretation2, boolean primaryFindings,
+                               List<String> clinicalVariantList) {
+        List<ClinicalVariant> findings1;
+        List<ClinicalVariant> findings2;
+        if (primaryFindings) {
+            findings1 = interpretation.getPrimaryFindings();
+            findings2 = interpretation2.getPrimaryFindings();
+        } else {
+            findings1 = interpretation.getSecondaryFindings();
+            findings2 = interpretation2.getSecondaryFindings();
+        }
+        // Initialise empty lists to avoid possible NPE
+        findings1 = findings1 != null ? findings1 : Collections.emptyList();
+        findings2 = findings2 != null ? findings2 : Collections.emptyList();
+
+        interpretation.setMethods(interpretation.getMethods() != null ? interpretation.getMethods() : Collections.emptyList());
+        interpretation2.setMethods(interpretation2.getMethods() != null ? interpretation2.getMethods() : Collections.emptyList());
+
+        Set<String> clinicalVariantSet = clinicalVariantList != null ? new HashSet<>(clinicalVariantList) : Collections.emptySet();
+
+        Map<String, InterpretationMethod> interpretationMethodMap = new HashMap<>();
+        for (InterpretationMethod method : interpretation.getMethods()) {
+            interpretationMethodMap.put(method.getName(), method);
+        }
+        Map<String, InterpretationMethod> interpretationMethodMap2 = new HashMap<>();
+        for (InterpretationMethod method : interpretation2.getMethods()) {
+            interpretationMethodMap2.put(method.getName(), method);
+        }
+
+        Map<String, ClinicalVariant> clinicalVariantMap = new HashMap<>();
+        for (ClinicalVariant clinicalVariant : findings1) {
+            clinicalVariantMap.put(clinicalVariant.getId(), clinicalVariant);
+
+            // Also initialise lists to avoid NPE
+            clinicalVariant.setInterpretationMethodNames(clinicalVariant.getInterpretationMethodNames() != null
+                    ? clinicalVariant.getInterpretationMethodNames() : Collections.emptyList());
+            clinicalVariant.setEvidences(clinicalVariant.getEvidences() != null ? clinicalVariant.getEvidences() : Collections.emptyList());
+        }
+        for (ClinicalVariant clinicalVariant : findings2) {
+            if (!clinicalVariantSet.isEmpty() && !clinicalVariantSet.contains(clinicalVariant.getId())) {
+                // Skip this clinical variant
+                continue;
+            }
+
+            // Initialise lists to avoid NPE
+            clinicalVariant.setInterpretationMethodNames(clinicalVariant.getInterpretationMethodNames() != null
+                    ? clinicalVariant.getInterpretationMethodNames() : Collections.emptyList());
+            clinicalVariant.setEvidences(clinicalVariant.getEvidences() != null ? clinicalVariant.getEvidences() : Collections.emptyList());
+
+            // Merge findings
+            if (clinicalVariantMap.containsKey(clinicalVariant.getId())) {
+                ClinicalVariant cv = clinicalVariantMap.get(clinicalVariant.getId());
+                // Add evidences
+                cv.getEvidences().addAll(clinicalVariant.getEvidences());
+
+                // Add new methods
+                Set<String> methodNames = new HashSet<>(cv.getInterpretationMethodNames());
+                for (String interpretationMethodName : clinicalVariant.getInterpretationMethodNames()) {
+                    if (!methodNames.contains(interpretationMethodName)) {
+                        cv.getInterpretationMethodNames().add(interpretationMethodName);
+                    }
+                }
+            } else {
+                // Completely new finding
+                findings1.add(clinicalVariant);
+            }
+
+            for (String interpretationMethodName : clinicalVariant.getInterpretationMethodNames()) {
+                if (!interpretationMethodMap.containsKey(interpretationMethodName)) {
+                    if (!interpretationMethodMap2.containsKey(interpretationMethodName)) {
+                        logger.warn("No information found for interpretation method '" + interpretationMethodName + "'."
+                                + " Creating an empty one.");
+                        InterpretationMethod interpretationMethod = new InterpretationMethod(interpretationMethodName,
+                                Collections.emptyMap(), Collections.emptyList(), Collections.emptyList());
+                        interpretation.getMethods().add(interpretationMethod);
+
+                        // Also add interpretation to map
+                        interpretationMethodMap.put(interpretationMethodName, interpretationMethod);
+                    } else {
+                        // Add interpretation method
+                        interpretation.getMethods().add(interpretationMethodMap2.get(interpretationMethodName));
+
+                        // Also add interpretation to map
+                        interpretationMethodMap.put(interpretationMethodName, interpretationMethodMap2.get(interpretationMethodName));
+                    }
+                }
+            }
         }
     }
 

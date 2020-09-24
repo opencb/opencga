@@ -526,7 +526,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             if (excludeList.contains(userProjectionKey)) {
                 excludeList.remove(userProjectionKey);
                 excludeList.add(realProjectionKey);
-                queryOptions.put(QueryOptions.INCLUDE, excludeList);
+                queryOptions.put(QueryOptions.EXCLUDE, excludeList);
             }
         }
 

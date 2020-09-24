@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -57,7 +58,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc2";
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:" + GitRepositoryState.get().getBuildVersion();
     private VariantStorageManager storageManager;
 
     private File snvsFile;
