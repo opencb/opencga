@@ -6,8 +6,12 @@
   * [Docker](installation/docker.md)
   * [Kubernetes](installation/kubernetes/README.md)
     * [Azure](installation/kubernetes/azure.md)
+    * [Configuration](installation/kubernetes/configuration.md)
   * [Compute Cluster](installation/compute-cluster/README.md)
     * [Server Configuration](installation/compute-cluster/server-configuration.md)
+    * [Building from Source](installation/compute-cluster/building-from-source.md)
+    * [Chosing Variant Storage](installation/compute-cluster/chosing-variant-storage.md)
+    * [Configuration](installation/compute-cluster/configuration.md)
 * [Using OpenCGA](using-opencga/README.md)
   * [RESTful web service API](using-opencga/restful-web-service-api.md)
 * [Case Studies](case-studies/README.md)
@@ -16,15 +20,13 @@
 
 ## Components
 
----
-
-* [Catalog](catalog/README.md)
-  * [Data Management](catalog/data-management.md)
-* [Alignment and Coverage](alignment-and-coverage.md)
-* [Variant Storage Engine](variant-storage/README.md)
+* [Catalog](components/catalog/README.md)
+  * [Data Management](components/catalog/data-management.md)
+* [Alignment and Coverage](components/alignment-and-coverage.md)
+* [Variant Storage Engine](components/variant-storage/README.md)
   * [Variant Data Model](https://docsgb.opencb.org/variant/variant-data-model)
-* [Clinical Interpretation](clinical.md)
-* [Analysis Framework](analysis-framework.md)
+* [Clinical Interpretation](components/clinical.md)
+* [Analysis Framework](components/analysis-framework.md)
 
 ## About
 

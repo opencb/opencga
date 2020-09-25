@@ -203,6 +203,26 @@ migrateCollection("sample", {}, {}, function(bulk, doc) {
     }
 });
 
+migrateCollection("sample", {"qualityControl.metrics.variantStats.stats.mendelianErrorCount": {$exists: true}}, {}, function(bulk, doc) {
+    for (var metric of doc.qualityControl.metrics) {
+        for (variantStat of metric.variantStats) {
+            var count = variantStat.stats.mendelianErrorCount;
+            // We take the first of the values and Check if the value is already an instance of map
+            var value = count[Object.keys(count)[0]];
+            if (typeof value === 'object') {
+                return;
+            }
+
+            // We need to migrate the value
+            variantStat.stats.mendelianErrorCount = {
+                "ALL": variantStat.stats.mendelianErrorCount
+            };
+        }
+    }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": {"qualityControl": doc.qualityControl}});
+});
+
 // Add new Variant permission
 migrateCollection("study", {}, {}, function(bulk, doc) {
     if (isNotEmptyArray(doc._acl)) {
