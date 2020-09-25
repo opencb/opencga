@@ -18,8 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
