@@ -46,6 +46,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Individual proband;
     private Family family;
 
+    private Map<String, FamiliarRelationship> roleToProband;
+    private ClinicalAnalysisQc qualityControl;
+
     private Interpretation interpretation;
     private List<Interpretation> secondaryInterpretations;
 
@@ -322,6 +325,24 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setPriority(Enums.Priority priority) {
         this.priority = priority;
+        return this;
+    }
+
+    public Map<String, FamiliarRelationship> getRoleToProband() {
+        return roleToProband;
+    }
+
+    public ClinicalAnalysis setRoleToProband(Map<String, FamiliarRelationship> roleToProband) {
+        this.roleToProband = roleToProband;
+        return this;
+    }
+
+    public ClinicalAnalysisQc getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalAnalysis setQualityControl(ClinicalAnalysisQc qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
