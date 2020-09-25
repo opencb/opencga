@@ -233,6 +233,7 @@
                                     <arg value="${app.dir}/completion"/>
                                     <arg value="${app.dir}/examples"/>
                                     <arg value="${app.dir}/migration"/>
+                                    <arg value="${app.dir}/monitor"/>
                                     <arg value="${app.dir}/tools"/>
                                     <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>

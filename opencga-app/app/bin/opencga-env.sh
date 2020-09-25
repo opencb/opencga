@@ -7,6 +7,11 @@ export JAVA_OPTS="${JAVA_OPTS} -Dlog4j.configuration=file:${BASEDIR}/conf/log4j.
 
 # export OPENCGA_HOME=${BASEDIR}
 
+## TODO We must make sure we load any existing JAR file, only one can exist.
+if [ -e "${BASEDIR}/monitor/dd-java-agent.jar" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -javaagent:${BASEDIR}/monitor/dd-java-agent.jar"
+fi
+
 phoenix=""
 if `command -v phoenix_utils.py > /dev/null 2>&1`; then
     phoenix=$(phoenix_utils.py | grep phoenix_client_jar | cut -f 2 -d " ")
