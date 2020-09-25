@@ -33,10 +33,18 @@ if [ -n "$OPENCGA_LOG_DIR" ]; then
     export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.dir=${OPENCGA_LOG_DIR}"
 fi
 
+MONITOR_AGENT=""
+## TODO We must make sure we load any existing JAR file, only one can exist.
+if [ -e "${BASEDIR}/monitor/dd-java-agent.jar" ]; then
+    MONITOR_AGENT="-javaagent:${BASEDIR}/monitor/dd-java-agent.jar"
+fi
+
 # Log files disabled by default
 export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.file.enabled=false"
 #Set log4j properties file
 export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/${OPENCGA_LOG4J_CONFIGURATION_FILE}"
+export JAVA_OPTS="${JAVA_OPTS} ${MONITOR_AGENT}"
+#export JAVA_OPTS="${JAVA_OPTS} -Ddd.logs.injection=true -Ddd.agent.host=datadog-agent -Ddd.agent.port=8126 -javaagent:${BASEDIR}/misc/dd-java-agent.jar"
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
 

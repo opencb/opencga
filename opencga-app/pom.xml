@@ -254,6 +254,7 @@
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
                                     <arg value="${app.dir}/misc"/>
+                                    <arg value="${app.dir}/monitor"/>
                                     <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
