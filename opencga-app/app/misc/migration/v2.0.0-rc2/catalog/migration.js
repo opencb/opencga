@@ -320,7 +320,7 @@ db.clinical.update({}, {"$unset": {
     }}
 );
 
-migrateCollection("interpretation", {"modificationDate": {"$exists": false}}, {'creationDate': 1}, function(bulk, doc) {
+migrateCollection("interpretation", {}, {'creationDate': 1}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": { "modificationDate": doc.creationDate }});
 });
 
@@ -362,6 +362,10 @@ migrateCollection("interpretation", {"_lastOfVersion": {"$exists": false}}, {uid
     bulk.find({"_id": doc._id}).updateOne({"$set": set});
 });
 
+migrateCollection("interpretation", {"version": {"$type": "double"}}, {version: 1}, function(bulk, doc) {
+    bulk.find({"_id": doc._id}).updateOne({"$set": {"version": NumberInt(doc.version)}});
+});
+
 // # 1649
 migrateCollection("clinical", {"interpretation.version": {"$exists": false}}, {interpretation: 1, secondaryInterpretations: 1}, function(bulk, doc) {
     var set = {};
@@ -369,13 +373,13 @@ migrateCollection("clinical", {"interpretation.version": {"$exists": false}}, {i
     if (isNotUndefinedOrNull(doc.interpretation) && isNotUndefinedOrNull(doc.interpretation.uid)) {
         set['interpretation'] = {
             'uid': doc.interpretation.uid,
-            'version': 1
+            'version': NumberInt(1)
         };
     }
 
     if (isNotEmptyArray(doc.secondaryInterpretations)) {
         doc.secondaryInterpretations.forEach(function (interpretation) {
-            interpretation['version'] = 1;
+            interpretation['version'] = NumberInt(1);
         });
         set['secondaryInterpretations'] = doc.secondaryInterpretations;
     }
