@@ -24,10 +24,12 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 16/06/16.
@@ -64,9 +66,9 @@ public class MonitorService {
     }
 
     private void init(String token) throws CatalogException {
-        System.setProperty("opencga.log.name", "opencga-master");
+        System.setProperty("opencga.log.file.name", "opencga-master");
         System.setProperty("opencga.log.file.enable", "true");
-        Configurator.reconfigure();
+        Configurator.reconfigure(Paths.get(appHome, "conf", "log4j2.service.xml").toUri());
 
         logger = LoggerFactory.getLogger(this.getClass());
 

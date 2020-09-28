@@ -2,14 +2,16 @@
 <Configuration status="WARN">
     <!--
      | Accepted System Properties
-     |   app.home                 :  Property set by Appassembler script pointing to the OPENCGA_HOME dir
-     |   opencga.log.name         :
+     |   app.home                 : Property set by Appassembler script pointing to the OPENCGA_HOME dir
+     |   opencga.log.level        : Console log level. Default "info"
+     |   opencga.log.file.name    : Console log file name.
      |   opencga.log.file.enabled : Indicate if file logs should be enabled. Default : false
      |   opencga.log.dir          : Logs dir location. Default : app.home/logs
     -->
     <Properties>
-        <Property name="name">${sys:opencga.log.name:-opencga-server}</Property>
+        <Property name="name">${sys:opencga.log.file.name:-opencga-service}</Property>
         <Property name="baseDir">${sys:app.home:-${log4j:configParentLocation}/../}</Property>
+        <Property name="logLevel">${sys:opencga.log.level:-info}</Property>
         <Property name="logDir">${sys:opencga.log.dir:-${baseDir}/logs}</Property>
         <Property name="logFile">${name}.${hostName}.log</Property>
         <Property name="logFileArchive">${name}.${hostName}.%i.log.gz</Property>
@@ -17,7 +19,7 @@
     <Appenders>
         <Console name="Console" target="SYSTEM_ERR">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n"/>
-            <ThresholdFilter level="${sys:opencga.log.level:-info}" onMatch="ACCEPT" onMismatch="DENY"/>
+            <ThresholdFilter level="${logLevel}" onMatch="ACCEPT" onMismatch="DENY"/>
         </Console>
 
         <RollingFile name="RollingFileJson"
@@ -32,7 +34,7 @@
 <!--                <OnStartupTriggeringPolicy />-->
 <!--                <TimeBasedTriggeringPolicy />-->
             </Policies>
-            <DefaultRolloverStrategy max="20"/>
+            <DefaultRolloverStrategy max="100"/>
 
             <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true"/>
             <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>

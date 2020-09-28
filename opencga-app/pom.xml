@@ -309,8 +309,8 @@
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
-                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.client.xml"/>
-                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.server.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.service.xml"/>
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j2.internal.xml"/>
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>

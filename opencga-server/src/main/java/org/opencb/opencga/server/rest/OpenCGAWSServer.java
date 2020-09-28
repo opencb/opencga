@@ -66,6 +66,7 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -244,11 +245,7 @@ public class OpenCGAWSServer {
         if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             loadOpenCGAConfiguration(configDirPath);
-
-            String logDir = initLogger();
-            if (StringUtils.isNotEmpty(logDir)) {
-                logger.info("|  * Server logDir: " + logDir);
-            }
+            initLogger(configDirPath);
             initOpenCGAObjects();
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirPath.toString() + "'";
@@ -298,23 +295,28 @@ public class OpenCGAWSServer {
         }
     }
 
-    private static String initLogger() {
+    private static void initLogger(java.nio.file.Path configDirPath) {
         String logDir = System.getProperty("opencga.log.dir");
         if (StringUtils.isBlank(logDir)) {
             logDir = configuration.getLogDir();
+        } else {
+            configuration.setLogDir(logDir);
         }
         if (StringUtils.isBlank(logDir)) {
-            return null;
+            return;
         }
         if (StringUtils.isNotBlank(configuration.getLogLevel())) {
             Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
             System.setProperty("opencga.log.level", level.name());
         }
-        System.setProperty("opencga.log.name", "opencga-rest");
+        System.setProperty("opencga.log.file.name", "opencga-rest");
         System.setProperty("opencga.log.file.enabled", "true");
         System.setProperty("opencga.log.dir", logDir);
-        Configurator.reconfigure();
-        return logDir;
+
+        URI log4jconfFile = configDirPath.resolve("log4j2.service.xml").toUri();
+        Configurator.reconfigure(log4jconfFile);
+        logger.info("|  * Log configuration file: '{}'", log4jconfFile.getPath());
+        logger.info("|  * Log dir: '{}'", logDir);
     }
 
     static void shutdown() {

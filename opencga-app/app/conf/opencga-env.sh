@@ -12,7 +12,7 @@ if [ -z "$JAVA_HEAP" ]; then
   case `basename $PRG` in
   "opencga-admin.sh")
     JAVA_HEAP="8192m"
-    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.server.xml
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
     OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
   "opencga-internal.sh")
@@ -23,7 +23,7 @@ if [ -z "$JAVA_HEAP" ]; then
 #  "opencga.sh")
   *)
     JAVA_HEAP="2048m"
-    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.client.xml
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
     OPENCGA_LOG_DIR=""
     ;;
   esac
@@ -39,8 +39,6 @@ if [ -e "${BASEDIR}/monitor/dd-java-agent.jar" ]; then
     MONITOR_AGENT="-javaagent:${BASEDIR}/monitor/dd-java-agent.jar"
 fi
 
-# Log files disabled by default
-export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.file.enabled=false"
 #Set log4j properties file
 export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/${OPENCGA_LOG4J_CONFIGURATION_FILE}"
 export JAVA_OPTS="${JAVA_OPTS} ${MONITOR_AGENT}"
