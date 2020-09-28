@@ -19,7 +19,8 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -133,8 +134,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
 
     public MongoDBVariantStorageEngine() {
         //Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
 
     @Override

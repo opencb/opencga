@@ -18,7 +18,8 @@ package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.*;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,11 +90,12 @@ public abstract class CommandExecutor {
         // This small hack allow to configure the appropriate Logger level from the command line, this is done
         // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
-        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
 //        rootLogger.setLevel(Level.toLevel(logLevel));
 
-        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-        stderr.setThreshold(Level.toLevel(logLevel));
+//        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+//        stderr.setThreshold(Level.toLevel(logLevel));
+        Configurator.setRootLevel(Level.toLevel(logLevel));
 
         logger = LoggerFactory.getLogger(this.getClass().toString());
         this.logLevel = logLevel;
@@ -173,16 +175,16 @@ public abstract class CommandExecutor {
 
         // If user has set up a logFile we redirect logs to it
         if (this.configuration.getLogFile() != null && !this.configuration.getLogFile().isEmpty()) {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
 
             // If a log file is used then console log is removed
-            rootLogger.removeAppender("stderr");
+//            rootLogger.removeAppender("stderr");
 
             // Creating a RollingFileAppender to output the log
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
-                    + "%m%n"), this.configuration.getLogFile(), true);
-            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
-            rootLogger.addAppender(rollingFileAppender);
+//            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
+//                    + "%m%n"), this.configuration.getLogFile(), true);
+//            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
+//            rootLogger.addAppender(rollingFileAppender);
         }
 
         logger.debug("Loading configuration from '{}'", loadedConfigurationFile);

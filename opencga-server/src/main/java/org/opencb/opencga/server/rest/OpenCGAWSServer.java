@@ -26,10 +26,15 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.builder.api.AppenderComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ComponentBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilder;
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory;
+import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -57,8 +62,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -138,10 +143,9 @@ public class OpenCGAWSServer {
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
 
-
         //Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
 
 
@@ -219,7 +223,7 @@ public class OpenCGAWSServer {
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
-            initLogger(configDirPath.getParent().resolve("logs"));
+            initLogger(configDirPath.getParent());
         } else {
             logger.error("No valid configuration directory provided: '{}'");
         }
@@ -258,20 +262,57 @@ public class OpenCGAWSServer {
         }
     }
 
-    private void initLogger(java.nio.file.Path logs) {
-        try {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
-            String logFile = logs.resolve("server.log").toString();
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
-            rollingFileAppender.setThreshold(Level.DEBUG);
-            rollingFileAppender.setMaxFileSize("20MB");
-            rollingFileAppender.setMaxBackupIndex(10);
-            rootLogger.setLevel(Level.TRACE);
-            rootLogger.addAppender(rollingFileAppender);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private static String initLogger(java.nio.file.Path installationPath) {
+        String logDir = System.getProperty("opencga.log.dir");
+        java.nio.file.Path logPath;
+        if (!StringUtils.isBlank(logDir)) {
+            logPath = Paths.get(logDir);
+        } else {
+            logPath = installationPath.resolve("logs");
         }
+
+        Level level = Level.DEBUG;
+        if (StringUtils.isNotBlank(configuration.getLogLevel())) {
+            level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
+        }
+
+        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
+        ConfigurationBuilder<BuiltConfiguration> configurationBuilder = ConfigurationBuilderFactory.newConfigurationBuilder();
+
+        ComponentBuilder triggeringPolicy = configurationBuilder.newComponent("Policies")
+                .addComponent(configurationBuilder.newComponent("SizeBasedTriggeringPolicy").addAttribute("size", "100MB"));
+        ComponentBuilder rolloverStrategy = configurationBuilder.newComponent("DirectWriteRolloverStrategy")
+                .addAttribute("maxFiles", 10);
+
+        String logFile = logPath.resolve("server.log").toString();
+
+        AppenderComponentBuilder appender = configurationBuilder.newAppender("rolling", "RollingFile")
+                .addAttribute("filePattern", logFile + ".%i")
+                .addAttribute("append", true)
+                .addComponent(triggeringPolicy)
+                .addComponent(rolloverStrategy)
+                .add(configurationBuilder.newLayout("JSONLayout")
+                        .addAttribute("compact", true)
+                        .addAttribute("eventEol", true)
+                        .addAttribute("properties", true)
+                        .addAttribute("stacktraceAsString", true)
+                );
+        configurationBuilder.add(appender);
+
+        appender = configurationBuilder.newAppender("stdout", "CONSOLE").
+                addAttribute("target", ConsoleAppender.Target.SYSTEM_ERR);
+        appender.add(configurationBuilder.newLayout("PatternLayout").
+                addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n"));
+        appender.add(configurationBuilder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.DENY)
+                .addAttribute("level", level));
+        configurationBuilder.add(appender);
+
+        configurationBuilder.add(configurationBuilder.newRootLogger(Level.DEBUG)
+                .add(configurationBuilder.newAppenderRef("rolling"))
+                .add(configurationBuilder.newAppenderRef("stdout")));
+
+        Configurator.reconfigure(configurationBuilder.build());
+        return logDir;
     }
 
     private void parseParams() throws VersionException {

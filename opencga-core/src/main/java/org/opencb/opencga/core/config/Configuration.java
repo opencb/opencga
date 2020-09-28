@@ -33,7 +33,7 @@ import java.util.Map;
 public class Configuration {
 
     private String logLevel;
-    private String logFile;
+    private String logDir;
 
     private boolean openRegister;
     private int userDefaultQuota;
@@ -93,7 +93,7 @@ public class Configuration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Configuration{");
         sb.append("logLevel='").append(logLevel).append('\'');
-        sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", logDir='").append(logDir).append('\'');
         sb.append(", openRegister=").append(openRegister);
         sb.append(", userDefaultQuota=").append(userDefaultQuota);
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
@@ -122,12 +122,12 @@ public class Configuration {
         return this;
     }
 
-    public String getLogFile() {
-        return logFile;
+    public String getLogDir() {
+        return logDir;
     }
 
-    public Configuration setLogFile(String logFile) {
-        this.logFile = logFile;
+    public Configuration setLogDir(String logDir) {
+        this.logDir = logDir;
         return this;
     }
 

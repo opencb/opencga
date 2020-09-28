@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 
 # Variable BASEDIR is defined by the main script
-
-#Set log4j properties file
-export JAVA_OPTS="${JAVA_OPTS} -Dlog4j.configuration=file:${BASEDIR}/conf/log4j.properties"
-
 # export OPENCGA_HOME=${BASEDIR}
 
 ## TODO We must make sure we load any existing JAR file, only one can exist.
 if [ -e "${BASEDIR}/monitor/dd-java-agent.jar" ]; then
     export JAVA_OPTS="${JAVA_OPTS} -javaagent:${BASEDIR}/monitor/dd-java-agent.jar"
 fi
+
+#Set log4j properties file
+export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/log4j2.xml"
 
 phoenix=""
 if `command -v phoenix_utils.py > /dev/null 2>&1`; then

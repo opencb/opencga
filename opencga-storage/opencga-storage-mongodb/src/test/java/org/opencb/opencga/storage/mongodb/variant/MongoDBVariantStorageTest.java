@@ -16,9 +16,8 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
@@ -101,13 +100,13 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
     }
 
     default void logLevel(String level) {
-        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-        stderr.setThreshold(Level.toLevel(level));
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.update").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.command").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.query").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.getmore").setLevel(Level.WARN);
+//        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
+        Configurator.setRootLevel(Level.toLevel(level));
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.protocol.update", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.protocol.command", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.protocol.query", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.protocol.getmore", Level.WARN);
     }
 }

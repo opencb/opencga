@@ -1,6 +1,6 @@
 ---
 logLevel: "INFO"
-logFile: null
+logDir: ${OPENCGA.INSTALLATION.DIR}/logs
 
 openRegister: false
 userDefaultQuota: 200000

@@ -17,8 +17,8 @@ import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationProvider;
@@ -129,9 +129,9 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         }
 
         // Disable Azure loggers
-        Logger.getLogger(AuthenticationContext.class).setLevel(Level.OFF);
-        Logger.getLogger("com.microsoft.aad.adal4j.UserDiscoveryRequest").setLevel(Level.WARN);
-        Logger.getLogger("com.microsoft.aad.adal4j.AuthenticationAuthority").setLevel(Level.WARN);
+        Configurator.setLevel(AuthenticationContext.class.getName(), Level.OFF);
+        Configurator.setLevel("com.microsoft.aad.adal4j.UserDiscoveryRequest", Level.WARN);
+        Configurator.setLevel("com.microsoft.aad.adal4j.AuthenticationAuthority", Level.WARN);
     }
 
     private OIDCProviderMetadata getProviderMetadata(String host) throws IOException, ParseException {
