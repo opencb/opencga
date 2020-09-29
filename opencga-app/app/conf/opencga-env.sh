@@ -29,22 +29,26 @@ if [ -z "$JAVA_HEAP" ]; then
   esac
 fi
 
-if [ -n "$OPENCGA_LOG_DIR" ]; then
-    export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.dir=${OPENCGA_LOG_DIR}"
-fi
-
-MONITOR_AGENT=""
-## TODO We must make sure we load any existing JAR file, only one can exist.
-if [ -e "${BASEDIR}/monitor/dd-java-agent.jar" ]; then
-    MONITOR_AGENT="-javaagent:${BASEDIR}/monitor/dd-java-agent.jar"
-fi
 
 #Set log4j properties file
 export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/${OPENCGA_LOG4J_CONFIGURATION_FILE}"
-export JAVA_OPTS="${JAVA_OPTS} ${MONITOR_AGENT}"
-#export JAVA_OPTS="${JAVA_OPTS} -Ddd.logs.injection=true -Ddd.agent.host=datadog-agent -Ddd.agent.port=8126 -javaagent:${BASEDIR}/misc/dd-java-agent.jar"
+if [ -n "$OPENCGA_LOG_DIR" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.dir=${OPENCGA_LOG_DIR}"
+fi
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
+
+# Configure JavaAgent
+JAVA_AGENT=""
+AGENTS_NUM="$(find "${BASEDIR}/monitor/" -name '*.jar' 2> /dev/null | wc -l)"
+if [ "$AGENTS_NUM" -eq 1 ]; then
+  JAVA_AGENT="$(find "${BASEDIR}/monitor/" -name '*.jar')"
+  export JAVA_OPTS="${JAVA_OPTS} -javaagent:${JAVA_AGENT}"
+elif [ "$AGENTS_NUM" -gt 1 ]; then
+  echo "ERROR - Multiple java agents found!" 1>&2
+  exit 2
+fi
+
 
 export COLUMNS=`tput cols 2> /dev/null`
 export LINES=`tput lines 2> /dev/null`
