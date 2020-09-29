@@ -79,7 +79,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-rc2";
-    private static final Pattern CNV_PATTERN = Pattern.compile("^(INFO:[a-zA-Z\\\\.]+)([ ]*[\\+\\-*\\\\][ ]*)(INFO:[a-zA-Z\\\\.]+)$");
+    public static final Pattern CNV_PATTERN = Pattern.compile("^(INFO:[a-zA-Z\\\\.]+)((([ ])*([\\+\\-*\\\\])+([ ])*(INFO:[a-zA-Z\\\\.]+))*)$");
 
     private VariantStorageManager storageManager;
 
@@ -110,7 +110,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         if (MapUtils.isNotEmpty(getCircosParams().getQuery())) {
             query.putAll(getCircosParams().getQuery());
         }
-        query.put(STUDY.key(), getStudy());
+
+        logger.info("getCircosParams().getQuery() = " + getCircosParams().getQuery());
+        logger.info("getStudy() = " + getStudy());
+        //query.put(STUDY.key(), getStudy());
 
         // Error management
         errors = new HashMap<>();
@@ -196,7 +199,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         try {
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tref\talt");
+            pw.println("chromosome\tchromStart\tchromEnd\tref\talt");
 
             // Create variant query
             Query variantQuery = new Query(query);
@@ -271,7 +274,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             File trackFile = getTrackFilename(track.getType().name());
 
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tref\talt\tlogDistPrev\tcolor");
+            pw.println("chromosome\tchromStart\tchromEnd\tref\talt\tlogDistPrev\tcolor");
 
             pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
 
@@ -345,7 +348,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             File trackFile = getTrackFilename(track.getType().name());
 
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tdata\tcolor");
+            pw.println("chromosome\tchromStart\tchromEnd\tdata\tcolor");
 
             pwOut = new PrintWriter(new File(trackFile.getAbsoluteFile() + ".discarded"));
 
@@ -366,8 +369,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             Matcher matcher = CNV_PATTERN.matcher(track.getData());
             if (matcher.find()) {
                 infoName1 = matcher.group(1);
-                operator = matcher.group(2);
-                infoName2 = matcher.group(3);
+                operator = matcher.group(5);
+                infoName2 = matcher.group(7);
             } else {
                 throw new ToolException("Invalid format in field 'data' in CNV track: " + track.getData());
             }
@@ -398,23 +401,22 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         }
                     }
 
-                    Number data;
-                    switch (operator) {
-                        case "+":
-                            data = Double.parseDouble(strScore1) + Double.parseDouble(strScore2);
-                            break;
-                        case "-":
-                            data = Double.parseDouble(strScore1) - Double.parseDouble(strScore2);
-                            break;
-                        case "*":
-                            data = Double.parseDouble(strScore1) * Double.parseDouble(strScore2);
-                            break;
-                        case "/":
-                            data = Double.parseDouble(strScore1) / Double.parseDouble(strScore2);
-                            break;
-                        default:
-                            data = Double.parseDouble(strScore1);
-                            break;
+                    Number data = Double.parseDouble(strScore1);
+                    if (operator != null) {
+                        switch (operator) {
+                            case "+":
+                                data = Double.parseDouble(strScore1) + Double.parseDouble(strScore2);
+                                break;
+                            case "-":
+                                data = Double.parseDouble(strScore1) - Double.parseDouble(strScore2);
+                                break;
+                            case "*":
+                                data = Double.parseDouble(strScore1) * Double.parseDouble(strScore2);
+                                break;
+                            case "/":
+                                data = Double.parseDouble(strScore1) / Double.parseDouble(strScore2);
+                                break;
+                        }
                     }
                     pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + data + "\t"
                             + getColorByRange((double) data, colors));
@@ -449,7 +451,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         try {
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd");
+            pw.println("chromosome\tchromStart\tchromEnd");
 
             Query variantQuery = new Query(query);
             if (MapUtils.isNotEmpty(track.getQuery())) {
@@ -481,8 +483,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             }
 
             // Call CellBase in order to get gene information
-            CellBaseClient cellBaseClient = storageManager.getCellBaseUtils(study, getToken()).getCellBaseClient();
-            queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
+            CellBaseClient cellBaseClient = storageManager.getCellBaseUtils(variantQuery.getString(STUDY.key()), getToken())
+                    .getCellBaseClient();
+            queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,chromosome,start,end");
             QueryResponse<Gene> geneResponse = cellBaseClient.getGeneClient().get(new ArrayList<>(geneIds), queryOptions);
 
             // Write gene info in track file
@@ -494,6 +497,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             track.setFile(trackFile.getAbsolutePath());
 
         } catch (CatalogException | StorageEngineException | IOException e) {
+            e.printStackTrace();
             errors.put(track.getType().name(), e.getMessage());
             return false;
         } finally {
@@ -535,7 +539,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tcoverage" + colorLabel);
+            pw.println("chromosome\tchromStart\tchromEnd\tcoverage" + colorLabel);
 
             List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
 
@@ -545,12 +549,21 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             for (Region region : regions) {
                 OpenCGAResult<RegionCoverage> coverageResult = alignmentStorageManager.coverageQuery(study, inputFile, region, 0,
                         Integer.MAX_VALUE, windowSize, getToken());
+
+
+
                 for (RegionCoverage regionCoverage : coverageResult.getResults()) {
                     if (regionCoverage.getValues() != null && regionCoverage.getValues().length > 0) {
                         int start = regionCoverage.getStart();
-                        int end = regionCoverage.getEnd();
+                        int end = start + regionCoverage.getWindowSize() - 1;
+                        if (end > regionCoverage.getEnd()) {
+                            end = regionCoverage.getEnd();
+                        }
                         for (double coverageValue : regionCoverage.getValues()) {
                             if (colors != null) {
+                                System.out.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
+                                        + "\t" + getColorByRange(coverageValue, colors));
+
                                 pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
                                         + "\t" + getColorByRange(coverageValue, colors));
                             } else {
@@ -558,6 +571,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             }
                             start += regionCoverage.getWindowSize();
                             end += regionCoverage.getWindowSize();
+                            if (end > regionCoverage.getEnd()) {
+                                end = regionCoverage.getEnd();
+                            }
                         }
                     }
                 }
@@ -610,7 +626,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("Chromosome\tchromStart\tchromEnd\tratio" + colorLabel);
+            pw.println("chromosome\tchromStart\tchromEnd\tratio" + colorLabel);
 
 
             List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
@@ -646,9 +662,15 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     for (RegionCoverage regionCoverage : ratioResult.getResults()) {
                         if (regionCoverage.getValues() != null && regionCoverage.getValues().length > 0) {
                             int start = regionCoverage.getStart();
-                            int end = regionCoverage.getEnd();
+                            int end = start + regionCoverage.getWindowSize() - 1;
+                            if (end > regionCoverage.getEnd()) {
+                                end = regionCoverage.getEnd();
+                            }
                             for (double coverageValue : regionCoverage.getValues()) {
                                 if (colors != null) {
+                                    System.out.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
+                                            + "\t" + getColorByRange(coverageValue, colors));
+
                                     pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
                                             + "\t" + getColorByRange(coverageValue, colors));
                                 } else {
@@ -656,6 +678,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                                 }
                                 start += regionCoverage.getWindowSize();
                                 end += regionCoverage.getWindowSize();
+                                if (end > regionCoverage.getEnd()) {
+                                    end = regionCoverage.getEnd();
+                                }
                             }
                         }
                     }
@@ -790,7 +815,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     }
 
     private File getTrackFilename(String name) {
-        return getOutDir().resolve(name + System.currentTimeMillis() + ".tsv").toFile();
+        return getOutDir().resolve(name + "." + System.currentTimeMillis() + ".tsv").toFile();
     }
 
     private int computeWindowSize() {
@@ -932,5 +957,4 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         }
         return colors.get(prev);
     }
-
 }

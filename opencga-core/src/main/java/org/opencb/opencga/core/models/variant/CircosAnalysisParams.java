@@ -33,6 +33,9 @@ public class CircosAnalysisParams extends ToolParams {
             + "general query, the list of tracks and the display options. Supported track types are: SNV, INDEL, CNV, INSERTION, DELETION, "
             + "REARRANGEMENT, RAINPLOT, GENE, COVERAGE, COVERAGE_RATIO";
 
+    public CircosAnalysisParams() {
+    }
+
     public CircosAnalysisParams(String title, Map<String, String> query, List<CircosTrack> tracks, Map<String, String> display,
                                 String outdir) {
         this.title = title;

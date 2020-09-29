@@ -30,25 +30,7 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.GatkRunParams;
-import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
-import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
-import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
-import org.opencb.opencga.core.models.variant.PlinkRunParams;
-import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
-import org.opencb.opencga.core.models.variant.RvtestsRunParams;
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
-import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -187,32 +169,24 @@ public class VariantClient extends AbstractParentClient {
         return execute("analysis", null, "variant/annotation", null, "query", params, GET, VariantAnnotation.class);
     }
 
+
     /**
-     * Generate a Circos plot for a given sample. Use context index.
-     * @param params Map containing any of the following optional parameters.
-     *       study: Filter variants from the given studies, these can be either the numeric ID or the alias with the format
-     *            user@project:study.
-     *       sample: Sample name.
-     *       ct: List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578.
-     *       biotype: List of biotypes, e.g. protein_coding.
-     *       filter: Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.:
-     *            PASS,LowGQX.
-     *       qual: Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4.
-     *       region: List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.:
-     *            2,3:100000-200000.
-     *       gene: List of genes, most gene IDs are accepted (HGNC, Ensembl gene, ...). This is an alias to 'xref' parameter.
-     *       panel: Filter by genes from the given disease panel.
-     *       plotCopyNumber: Plot copy-number track.
-     *       plotIndels: Plot INDELs track.
-     *       plotRearrangements: Plot rearrangements track.
-     *       density: Density plot: LOW, MEDIUM or HIGH.
+     * Circos plot.
+     *
+     * @param data Circos params
+     * @param params Other params
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<String> circos(ObjectMap params) throws ClientException {
+    public RestResponse<Job> runCircos(CircosAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "variant", null, "circos", params, GET, String.class);
+        params.put("body", data);
+        return execute("analysis", null, "variant/circos", null, "run", params, POST, Job.class);
     }
+//    public RestResponse<String> circos(ObjectMap params) throws ClientException {
+//        params = params != null ? params : new ObjectMap();
+//        return execute("analysis", null, "variant", null, "circos", params, GET, String.class);
+//    }
 
     /**
      * Delete cohort variant stats from a cohort.

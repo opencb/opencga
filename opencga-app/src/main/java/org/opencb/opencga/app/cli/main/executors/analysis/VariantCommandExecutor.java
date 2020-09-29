@@ -21,6 +21,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tools.ant.util.FileUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
@@ -52,9 +53,7 @@ import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -782,14 +781,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
         CircosAnalysisParams circosParams;
         try {
-            circosParams = JacksonUtils.getDefaultObjectMapper().readerFor(CircosAnalysisParams.class)
-                    .readValue(configFile.getAbsolutePath());
-        } catch (JsonProcessingException e) {
+            FileInputStream fis = new FileInputStream(configFile);
+            byte[] data = new byte[(int) configFile.length()];
+            fis.read(data);
+            fis.close();
+
+            String str = new String(data, "UTF-8").replace("\t", "");
+            System.out.println(str);
+            circosParams = JacksonUtils.getDefaultObjectMapper().readerFor(CircosAnalysisParams.class).readValue(str);
+        } catch (IOException e) {
             throw new ClientException(e);
         }
 
-        return null;
-//        return openCGAClient.getVariantClient().runCircos(circosParams, getParams(variantCommandOptions.gatkCommandOptions.study));
+        return openCGAClient.getVariantClient().runCircos(circosParams, getParams(variantCommandOptions.gatkCommandOptions.study));
     }
 
     private ObjectMap getParams(String study) {
