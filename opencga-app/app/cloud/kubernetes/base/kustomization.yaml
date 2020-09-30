@@ -19,7 +19,6 @@ configMapGenerator:
   files:
   - ../../../conf/storage-configuration.yml
   - ../../../conf/opencga-env.sh
-  - ../../../conf/log4j.properties
   - ../../../conf/configuration.yml
   - ../../../conf/client-configuration.yml
   - ../../../conf/hadoop/hadoop-ssh.sh

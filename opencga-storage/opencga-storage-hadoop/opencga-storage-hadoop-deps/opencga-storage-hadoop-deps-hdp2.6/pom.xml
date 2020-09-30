@@ -95,6 +95,16 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-azure-datalake</artifactId>
             <version>${hadoop.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
 <!--            <optional>true</optional>-->
         </dependency>
 
