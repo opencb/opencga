@@ -207,16 +207,21 @@ migrateCollection("sample", {"qualityControl.metrics.variantStats.stats.mendelia
     for (var metric of doc.qualityControl.metrics) {
         for (variantStat of metric.variantStats) {
             var count = variantStat.stats.mendelianErrorCount;
-            // We take the first of the values and Check if the value is already an instance of map
-            var value = count[Object.keys(count)[0]];
-            if (typeof value === 'object') {
-                return;
-            }
+            if (isNotUndefinedOrNull(count)) {
+                var keys = Object.keys(count);
+                if (isNotEmptyArray(keys)) {
+                    // We take the first of the values and Check if the value is already an instance of map
+                    var value = count[keys[0]];
+                    if (typeof value === 'object') {
+                        return;
+                    }
 
-            // We need to migrate the value
-            variantStat.stats.mendelianErrorCount = {
-                "ALL": variantStat.stats.mendelianErrorCount
-            };
+                    // We need to migrate the value
+                    variantStat.stats.mendelianErrorCount = {
+                        "ALL": variantStat.stats.mendelianErrorCount
+                    };
+                }
+            }
         }
     }
 
