@@ -18,7 +18,6 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -34,7 +33,6 @@ public class ClinicalUpdateParams {
     private String id;
     private String description;
     private ClinicalAnalysis.Type type;
-
     private DisorderReferenceParam disorder;
 
     private List<FileReferenceParam> files;
@@ -50,8 +48,7 @@ public class ClinicalUpdateParams {
     private ClinicalConsent consent;
 
     private String dueDate;
-    private List<ClinicalComment> comments;
-    private List<Alert> alerts;
+    private List<ClinicalCommentParam> comments;
     private Enums.Priority priority;
     private List<String> flags;
 
@@ -64,8 +61,8 @@ public class ClinicalUpdateParams {
     public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                 List<FileReferenceParam> files, Boolean locked,  ClinicalAnalystParam analyst,
                                 ClinicalAnalysisInternal internal, ClinicalAnalysisQcUpdateParams qualityControl, ClinicalConsent consent,
-                                String dueDate, List<ClinicalComment> comments, List<Alert> alerts, Enums.Priority priority,
-                                List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
+                                String dueDate, List<ClinicalCommentParam> comments, Enums.Priority priority, List<String> flags,
+                                Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -78,7 +75,6 @@ public class ClinicalUpdateParams {
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
-        this.alerts = alerts;
         this.priority = priority;
         this.flags = flags;
         this.attributes = attributes;
@@ -105,7 +101,6 @@ public class ClinicalUpdateParams {
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
-        sb.append(", alerts=").append(alerts);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
@@ -220,21 +215,12 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public List<ClinicalComment> getComments() {
+    public List<ClinicalCommentParam> getComments() {
         return comments;
     }
 
-    public ClinicalUpdateParams setComments(List<ClinicalComment> comments) {
+    public ClinicalUpdateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
-        return this;
-    }
-
-    public List<Alert> getAlerts() {
-        return alerts;
-    }
-
-    public ClinicalUpdateParams setAlerts(List<Alert> alerts) {
-        this.alerts = alerts;
         return this;
     }
 

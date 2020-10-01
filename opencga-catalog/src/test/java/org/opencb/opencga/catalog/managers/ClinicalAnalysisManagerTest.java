@@ -175,6 +175,103 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void createClinicalWithComments() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setComments(Collections.singletonList(new ClinicalComment("", "My first comment", Arrays.asList("tag1", "tag2"), "")))
+                .setProband(individual);
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(1, clinical.first().getComments().size());
+        assertEquals("user", clinical.first().getComments().get(0).getAuthor());
+        assertEquals("My first comment", clinical.first().getComments().get(0).getMessage());
+        assertEquals(2, clinical.first().getComments().get(0).getTags().size());
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(0).getDate()));
+    }
+
+    @Test
+    public void updateClinicalComments() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setComments(Collections.singletonList(new ClinicalComment("", "My first comment", Arrays.asList("tag1", "tag2"), "")))
+                .setProband(individual);
+
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        List<ClinicalCommentParam> commentParamList = new ArrayList<>();
+        commentParamList.add(new ClinicalCommentParam("My second comment", Arrays.asList("myTag")));
+        commentParamList.add(new ClinicalCommentParam("My third comment", Arrays.asList("myTag2")));
+
+        ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalUpdateParams()
+                .setComments(commentParamList), options, sessionIdUser);
+
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(),
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(3, clinical.first().getComments().size());
+        assertEquals("user", clinical.first().getComments().get(1).getAuthor());
+        assertEquals("My second comment", clinical.first().getComments().get(1).getMessage());
+        assertEquals(1, clinical.first().getComments().get(1).getTags().size());
+        assertEquals("myTag", clinical.first().getComments().get(1).getTags().get(0));
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(1).getDate()));
+
+        assertEquals("user", clinical.first().getComments().get(2).getAuthor());
+        assertEquals("My third comment", clinical.first().getComments().get(2).getMessage());
+        assertEquals(1, clinical.first().getComments().get(2).getTags().size());
+        assertEquals("myTag2", clinical.first().getComments().get(2).getTags().get(0));
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(2).getDate()));
+
+        // Remove first comment
+        commentParamList = Arrays.asList(
+                ClinicalCommentParam.of(clinical.first().getComments().get(0)),
+                ClinicalCommentParam.of(clinical.first().getComments().get(2))
+        );
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalUpdateParams()
+                .setComments(commentParamList), options, sessionIdUser);
+
+        clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(1, clinical.first().getComments().size());
+        assertEquals("user", clinical.first().getComments().get(0).getAuthor());
+        assertEquals("My second comment", clinical.first().getComments().get(0).getMessage());
+        assertEquals(1, clinical.first().getComments().get(0).getTags().size());
+        assertEquals("myTag", clinical.first().getComments().get(0).getTags().get(0));
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(0).getDate()));
+
+        commentParamList = Arrays.asList(
+                ClinicalCommentParam.of(clinical.first().getComments().get(0))
+        );
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalUpdateParams()
+                .setComments(commentParamList), options, sessionIdUser);
+
+        clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(0, clinical.first().getComments().size());
+    }
+
+    @Test
     public void assignPermissions() throws CatalogException {
         ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, false).first();
         catalogManager.getUserManager().create("external", "User Name", "external@mail.com", PASSWORD, "", null, Account.AccountType.GUEST, null);

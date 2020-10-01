@@ -23,6 +23,7 @@ import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -40,10 +41,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisStatus;
-import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -213,11 +211,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        String[] acceptedListParams = {QueryParams.FLAGS.key()};
-        filterStringListParams(parameters, document.getSet(), acceptedListParams);
-
-        String[] acceptedObjectParams = {QueryParams.FILES.key(), QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
-                QueryParams.PROBAND.key(), QueryParams.COMMENTS.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(),
+        String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(),
+                QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(),
                 QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
@@ -234,11 +229,58 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         clinicalConverter.validateFamilyToUpdate(document.getSet());
         clinicalConverter.validateProbandToUpdate(document.getSet());
 
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+
+        String[] objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
+        ParamUtils.BasicUpdateAction basicOperation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
+                ParamUtils.BasicUpdateAction.ADD);
+        switch (basicOperation) {
+            case REMOVE:
+                fixCommentsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                break;
+            case ADD:
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+            default:
+                throw new IllegalStateException("Unknown operation " + basicOperation);
+        }
+
+        objectAcceptedParams = new String[]{QueryParams.FILES.key()};
+        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.FILES.key(), ParamUtils.UpdateAction.ADD);
+        switch (operation) {
+            case SET:
+                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                break;
+            case REMOVE:
+                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                break;
+            case ADD:
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+            default:
+                throw new IllegalStateException("Unknown operation " + basicOperation);
+        }
+
+        objectAcceptedParams = new String[]{FLAGS.key()};
+        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.FLAGS.key(), ParamUtils.UpdateAction.ADD);
+        switch (operation) {
+            case SET:
+                filterStringListParams(parameters, document.getSet(), objectAcceptedParams);
+                break;
+            case REMOVE:
+                filterStringListParams(parameters, document.getPullAll(), objectAcceptedParams);
+                break;
+            case ADD:
+                filterStringListParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                break;
+            default:
+                throw new IllegalStateException("Unknown operation " + basicOperation);
+        }
+
         // Secondary interpretations
         if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
-            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                    ParamUtils.UpdateAction.ADD);
+            operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD);
             String[] secondaryInterpretationParams = {QueryParams.SECONDARY_INTERPRETATIONS.key()};
             switch (operation) {
                 case SET:
@@ -267,6 +309,20 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         return document;
+    }
+
+    private void fixCommentsForRemoval(ObjectMap parameters) {
+        if (parameters.get(COMMENTS.key()) == null) {
+            return;
+        }
+
+        List<ClinicalCommentParam> commentParamList = new LinkedList<>();
+        for (Object comment : parameters.getAsList(COMMENTS.key())) {
+            if (comment instanceof ClinicalComment) {
+                commentParamList.add(ClinicalCommentParam.of((ClinicalComment) comment));
+            }
+        }
+        parameters.put(COMMENTS.key(), commentParamList);
     }
 
     @Override

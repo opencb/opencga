@@ -30,6 +30,7 @@ import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationA
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -143,8 +144,30 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response update(
             @ApiParam(value = "Comma separated list of clinical analysis IDs") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("commentsAction") ParamUtils.BasicUpdateAction commentsAction,
+            @ApiParam(value = "Action to be performed if the array of flags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("flagsAction") ParamUtils.UpdateAction flagsAction,
+            @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("filesAction") ParamUtils.UpdateAction filesAction,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalUpdateParams params) {
         try {
+            if (commentsAction == null) {
+                commentsAction = ParamUtils.BasicUpdateAction.ADD;
+            }
+            if (flagsAction == null) {
+                flagsAction = ParamUtils.UpdateAction.ADD;
+            }
+            if (filesAction == null) {
+                filesAction = ParamUtils.UpdateAction.ADD;
+            }
+
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), flagsAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), filesAction);
+            queryOptions.put(Constants.ACTIONS, actionMap);
+
             return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);

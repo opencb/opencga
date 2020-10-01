@@ -17,8 +17,6 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.biodata.models.clinical.ClinicalAudit;
-import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.EntryParam;
@@ -51,8 +49,7 @@ public class ClinicalAnalysisCreateParams {
     private ClinicalConsent consent;
 
     private String dueDate;
-    private List<ClinicalComment> comments;
-    private List<ClinicalAudit> audit;
+    private List<ClinicalCommentParam> comments;
     private Enums.Priority priority;
     private List<String> flags;
 
@@ -65,7 +62,7 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, EntryParam interpretation,
-                                        ClinicalConsent consent, String dueDate, List<ClinicalComment> comments, List<ClinicalAudit> audit,
+                                        ClinicalConsent consent, String dueDate, List<ClinicalCommentParam> comments,
                                         Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
                                         CustomStatusParams status) {
         this.id = id;
@@ -81,7 +78,6 @@ public class ClinicalAnalysisCreateParams {
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
-        this.audit = audit;
         this.priority = priority;
         this.flags = flags;
         this.attributes = attributes;
@@ -102,7 +98,10 @@ public class ClinicalAnalysisCreateParams {
                         ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
                         : null,
                 clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
-                clinicalAnalysis.getComments(), clinicalAnalysis.getAudit(), clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
+                clinicalAnalysis.getComments() != null
+                        ? clinicalAnalysis.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
+                        : null,
+                clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
                 clinicalAnalysis.getAttributes(), CustomStatusParams.of(clinicalAnalysis.getStatus()));
     }
 
@@ -122,7 +121,6 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
-        sb.append(", audit=").append(audit);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
@@ -174,8 +172,9 @@ public class ClinicalAnalysisCreateParams {
 
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f, false,
                 primaryInterpretation, new LinkedList<>(), consent, new ClinicalAnalyst(assignee, assignee, "", "",
-                TimeUtils.getTime()), priority, flags, null, null,  dueDate, 1, comments, audit, internal, attributes,
-                status != null ? status.toCustomStatus() : null);
+                TimeUtils.getTime()), priority, flags, null, null,  dueDate, 1,
+                comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
+                new LinkedList<>(), internal, attributes, status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -286,21 +285,12 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public List<ClinicalComment> getComments() {
+    public List<ClinicalCommentParam> getComments() {
         return comments;
     }
 
-    public ClinicalAnalysisCreateParams setComments(List<ClinicalComment> comments) {
+    public ClinicalAnalysisCreateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
-        return this;
-    }
-
-    public List<ClinicalAudit> getAudit() {
-        return audit;
-    }
-
-    public ClinicalAnalysisCreateParams setAudit(List<ClinicalAudit> audit) {
-        this.audit = audit;
         return this;
     }
 
