@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
@@ -211,6 +212,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                     .search(studyFqn,
                             new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
                             new QueryOptions(), getToken()).getResults().iterator();
+            Set<String> missingSamples = new HashSet<>(samplesResult);
             while (it.hasNext()) {
                 Individual individual = it.next();
                 List<Sample> samples = individual.getSamples().stream()
@@ -223,6 +225,25 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                             .setSex(individual.getSex())
                             .setDisorders(getIds(individual.getDisorders()))
                             .setPhenotypes(getIds(individual.getPhenotypes()))
+                            .setSample(new SampleEligibilityAnalysisResult.SampleSummary()
+                                    .setId(sample.getId())
+                                    .setCreationDate(sample.getCreationDate())
+                                    .setSomatic(sample.isSomatic()))
+                    );
+                }
+            }
+            if (!missingSamples.isEmpty()) {
+                logger.warn("Individual not found for {} samples", missingSamples.size());
+                List<Sample> results = catalogManager.getSampleManager()
+                        .get(studyFqn, new ArrayList<>(missingSamples), new QueryOptions(), getToken())
+                        .getResults();
+                for (Sample sample : results) {
+                    analysisResult.getIndividuals().add(new SampleEligibilityAnalysisResult.ElectedIndividual()
+                            .setName(sample.getId())
+                            .setId(sample.getId())
+                            .setSex(IndividualProperty.Sex.UNKNOWN)
+                            .setDisorders(Collections.emptyList())
+                            .setPhenotypes(Collections.emptyList())
                             .setSample(new SampleEligibilityAnalysisResult.SampleSummary()
                                     .setId(sample.getId())
                                     .setCreationDate(sample.getCreationDate())
