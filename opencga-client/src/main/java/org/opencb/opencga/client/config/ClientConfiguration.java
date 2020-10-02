@@ -132,6 +132,19 @@ public class ClientConfiguration {
         return this;
     }
 
+    @Deprecated
+    public String getLogFile() {
+        return null;
+    }
+
+    @Deprecated
+    public ClientConfiguration setLogFile(String none) {
+        if (none != null) {
+            logger.warn("Deprecated option 'client-configuration.yml#logFile'");
+        }
+        return this;
+    }
+
     public String getVersion() {
         return version;
     }
