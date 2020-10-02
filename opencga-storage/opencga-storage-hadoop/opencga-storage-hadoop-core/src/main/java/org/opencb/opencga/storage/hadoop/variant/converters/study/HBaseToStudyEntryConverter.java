@@ -146,6 +146,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                                 .getStudy(sampleColumn.getStudyId())
                                 .getMultiFileSamples()
                                 .get(sampleColumn.getSampleId());
+                        if (multiFiles == null) {
+                            multiFiles = Collections.emptyList();
+                        }
                     }
                     if (!multiFiles.isEmpty()) {
                         if (sampleColumn.getFileId() == null) {

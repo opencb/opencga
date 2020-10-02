@@ -238,6 +238,12 @@ public abstract class VariantStatisticsManager {
     public static Query buildInputQuery(VariantStorageMetadataManager metadataManager, StudyMetadata study,
                                         Collection<?> cohorts, boolean overwrite, boolean updateStats,
                                         ObjectMap options) {
+        return buildInputQuery(metadataManager, study, cohorts, overwrite, updateStats, options, getAggregation(study, options));
+    }
+
+    public static Query buildInputQuery(VariantStorageMetadataManager metadataManager, StudyMetadata study,
+                                        Collection<?> cohorts, boolean overwrite, boolean updateStats,
+                                        ObjectMap options, Aggregation aggregation) {
         int studyId = study.getId();
         Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyId)
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), studyId);
@@ -260,7 +266,7 @@ public abstract class VariantStatisticsManager {
         }
 
         readerQuery.put(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
-        if (isAggregated(study, options) || sampleIds.isEmpty()) {
+        if (AggregationUtils.isAggregated(aggregation) || sampleIds.isEmpty()) {
             readerQuery.put(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL);
         }
         readerQuery.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
