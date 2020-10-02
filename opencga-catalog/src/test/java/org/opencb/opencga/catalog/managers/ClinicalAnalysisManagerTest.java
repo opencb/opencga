@@ -25,6 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
@@ -613,6 +614,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNotNull(ca.getInterpretation());
+        assertEquals(5, ca.getAudit().size());
+        assertEquals(ClinicalAudit.Action.CREATE_INTERPRETATION, ca.getAudit().get(4).getAction());
         assertEquals("interpretation1", ca.getInterpretation().getId());
         assertEquals(3, ca.getSecondaryInterpretations().size());
         assertEquals("interpretation2", ca.getSecondaryInterpretations().get(0).getId());
@@ -625,6 +628,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, result.getNumUpdated());
 
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(6, ca.getAudit().size());
+        assertEquals(ClinicalAudit.Action.UPDATE_INTERPRETATION, ca.getAudit().get(5).getAction());
         assertNotNull(ca.getInterpretation().getAnalyst());
         assertEquals("user2", ca.getInterpretation().getAnalyst().getId());
         assertEquals(2, ca.getInterpretation().getVersion());
@@ -637,6 +642,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, result.getNumUpdated());
 
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(7, ca.getAudit().size());
+        assertEquals(ClinicalAudit.Action.UPDATE_INTERPRETATION, ca.getAudit().get(6).getAction());
         assertEquals("my description", ca.getSecondaryInterpretations().get(1).getDescription());
         assertEquals(2, ca.getSecondaryInterpretations().get(1).getVersion());
 
@@ -649,6 +656,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getInterpretationManager().delete(STUDY, ca.getId(), Collections.singletonList("interpretation1"), sessionIdUser);
 
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(10, ca.getAudit().size());
+        assertEquals(ClinicalAudit.Action.UPDATE_INTERPRETATION, ca.getAudit().get(7).getAction());
+        assertEquals(ClinicalAudit.Action.SWAP_INTERPRETATION, ca.getAudit().get(8).getAction());
+        assertEquals(ClinicalAudit.Action.DELETE_INTERPRETATION, ca.getAudit().get(9).getAction());
         assertNotNull(ca.getInterpretation());
         assertEquals("interpretation3", ca.getInterpretation().getId());
         assertEquals(2, ca.getInterpretation().getVersion());
@@ -664,6 +675,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNotNull(ca.getInterpretation());
+        assertEquals(12, ca.getAudit().size());
+        assertEquals(ClinicalAudit.Action.UPDATE_INTERPRETATION, ca.getAudit().get(10).getAction());
+        assertEquals(ClinicalAudit.Action.SWAP_INTERPRETATION, ca.getAudit().get(11).getAction());
         assertEquals("interpretation4", ca.getInterpretation().getId());
         assertEquals(1, ca.getInterpretation().getVersion());
         assertEquals(2, ca.getSecondaryInterpretations().size());

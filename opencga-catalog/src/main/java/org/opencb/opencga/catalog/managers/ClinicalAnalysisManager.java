@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.commons.datastore.core.Event;
@@ -495,7 +496,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         clinicalAnalysis.getId(), userId);
             }
 
-            OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, options);
+            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_CLINICAL_ANALYSIS,
+                    "Create ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
+            OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, Collections.singletonList(clinicalAudit),
+                    options);
 
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1028,7 +1032,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
         }
 
-        return clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, options);
+        ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_CLINICAL_ANALYSIS,
+                "Update ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
+        return clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, Collections.singletonList(clinicalAudit), options);
     }
 
     /**
