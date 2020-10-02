@@ -222,15 +222,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)") @QueryParam("release") String release,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "body") IndividualUpdateParams updateParams) {
+            @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             queryOptions.put(Constants.REFRESH, refresh);
@@ -264,15 +264,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals") String individualStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
-            @ApiParam(value = "body") IndividualUpdateParams updateParams) {
+            @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
         try {
             queryOptions.put(Constants.REFRESH, refresh);
             queryOptions.remove("updateSampleVersion");
