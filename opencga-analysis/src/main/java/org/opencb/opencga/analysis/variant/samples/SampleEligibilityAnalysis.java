@@ -219,6 +219,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                         .filter(s -> samplesResult.contains(s.getId()))
                         .collect(Collectors.toList());
                 for (Sample sample : samples) {
+                    missingSamples.remove(sample.getId());
                     analysisResult.getIndividuals().add(new SampleEligibilityAnalysisResult.ElectedIndividual()
                             .setName(individual.getName())
                             .setId(individual.getId())
