@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
@@ -48,6 +49,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -240,7 +242,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Family id") @QueryParam("family") String family,
             @ApiParam(value = "Proband id") @QueryParam("proband") String proband,
             @ApiParam(value = "Sample id associated to the proband or any member of a family") @QueryParam("sample") String sample,
-            @ApiParam(value = "Proband id or any member id of a family") @QueryParam("member") String member,
+            @ApiParam(value = "Proband id or any member id of a family", hidden = true) @QueryParam("member") String member,
+            @ApiParam(value = "Proband id or any member id of a family") @QueryParam("individual") String individual,
             @ApiParam(value = "Clinical analyst assignee") @QueryParam("analystAssignee") String assignee,
             @ApiParam(value = "Disorder ID or name") @QueryParam("disorder") String disorder,
             @ApiParam(value = "Flags") @QueryParam("flags") String flags,
@@ -248,10 +251,17 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes) {
         try {
+            List<Event> events = new LinkedList<>();
+
             query.remove(ParamConstants.STUDY_PARAM);
+            if (StringUtils.isNotEmpty(member) && StringUtils.isEmpty(individual)) {
+                query.remove("member");
+                events.add(new Event(Event.Type.WARNING, "member", "Use of 'member' query parameter is deprecated. Use 'individual' instead."));
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), member);
+            }
 
             DataResult<ClinicalAnalysis> queryResult = clinicalManager.search(studyStr, query, queryOptions, token);
-            return createOkResponse(queryResult);
+            return createOkResponse(queryResult, events);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

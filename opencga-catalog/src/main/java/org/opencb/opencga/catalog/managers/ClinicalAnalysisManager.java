@@ -1125,16 +1125,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), -1);
             }
         }
-        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key())) {
-            List<String> members = query.getAsStringList(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key());
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key())) {
+            List<String> members = query.getAsStringList(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key());
             InternalGetDataResult<Individual> result = catalogManager.getIndividualManager().internalGet(study.getUid(),
                     members, IndividualManager.INCLUDE_INDIVIDUAL_IDS, user, true);
             if (result.getNumResults() > 0) {
-                query.put(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(),
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(),
                         result.getResults().stream().map(Individual::getUid).collect(Collectors.toList()));
             } else {
                 // We won't return any results
-                query.put(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), -1);
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), -1);
             }
         }
         if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {

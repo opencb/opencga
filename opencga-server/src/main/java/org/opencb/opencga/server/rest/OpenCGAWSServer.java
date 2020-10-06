@@ -559,10 +559,15 @@ public class OpenCGAWSServer {
     //    protected <T> Response createOkResponse(OpenCGAResult<T> result)
     //    protected <T> Response createOkResponse(List<OpenCGAResult<T>> results)
     protected Response createOkResponse(Object obj) {
+        return createOkResponse(obj, Collections.emptyList());
+    }
+
+    protected Response createOkResponse(Object obj, List<Event> events) {
         RestResponse queryResponse = new RestResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
+        queryResponse.setEvents(events);
 
         // Guarantee that the RestResponse object contains a list of results
         List<OpenCGAResult<?>> list = new ArrayList<>();
