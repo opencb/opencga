@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -253,6 +254,9 @@ public class OpenCGAWSServer {
             throw new IllegalStateException(errorMessage);
         }
 
+        logger.info("| OpenCGA REST successfully started!");
+        logger.info("| - Version " + GitRepositoryState.get().getBuildVersion());
+        logger.info("| - Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
         logger.info("========================================================================\n");
     }
 
@@ -297,26 +301,36 @@ public class OpenCGAWSServer {
 
     private static void initLogger(java.nio.file.Path configDirPath) {
         String logDir = System.getProperty("opencga.log.dir");
+        boolean logFileEnabled;
         if (StringUtils.isBlank(logDir)) {
             logDir = configuration.getLogDir();
         } else {
             configuration.setLogDir(logDir);
         }
-        if (StringUtils.isBlank(logDir)) {
-            return;
-        }
+
         if (StringUtils.isNotBlank(configuration.getLogLevel())) {
             Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
             System.setProperty("opencga.log.level", level.name());
         }
-        System.setProperty("opencga.log.file.name", "opencga-rest");
-        System.setProperty("opencga.log.file.enabled", "true");
-        System.setProperty("opencga.log.dir", logDir);
+
+        if (StringUtils.isBlank(logDir) || logDir.equalsIgnoreCase("null")) {
+            logFileEnabled = false;
+        } else {
+            logFileEnabled = true;
+            System.setProperty("opencga.log.file.name", "opencga-rest");
+            System.setProperty("opencga.log.dir", logDir);
+        }
+        System.setProperty("opencga.log.file.enabled", Boolean.toString(logFileEnabled));
 
         URI log4jconfFile = configDirPath.resolve("log4j2.service.xml").toUri();
         Configurator.reconfigure(log4jconfFile);
+
         logger.info("|  * Log configuration file: '{}'", log4jconfFile.getPath());
-        logger.info("|  * Log dir: '{}'", logDir);
+        if (logFileEnabled) {
+            logger.info("|  * Log dir: '{}'", logDir);
+        } else {
+            logger.info("|  * Do not write logs to file");
+        }
     }
 
     static void shutdown() {
