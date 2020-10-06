@@ -66,6 +66,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.variant.avro.VariantType.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
@@ -223,7 +224,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             }
 
             // Set color if necessary
-            if (!track.getDisplay().containsKey("color") || StringUtils.isEmpty(track.getDisplay().get("color"))) {
+            if (!track.getDisplay().containsKey("color") || StringUtils.isEmpty((String) track.getDisplay().get("color"))) {
                 String color;
                 switch (track.getType()) {
                     case SNV:
@@ -292,8 +293,19 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             logger.info(track.getType().name() + " track, query: " + rainplotQuery.toJson());
             logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
 
-            // Get colors
-            Map<String, String> colors = getRainplotColors();
+            // Colors management
+            String defaultColor;
+            Map<String, String> colors;
+            if (track.getDisplay().containsKey("color")) {
+                defaultColor = (String) track.getDisplay().get("color");
+            } else {
+                defaultColor = "gray";
+            }
+            if (track.getDisplay().containsKey("mapColor")) {
+                colors = (Map<String, String>) track.getDisplay().get("mapColor");
+            } else {
+                colors = getRainplotDefaultColors();
+            }
 
             VariantDBIterator iterator = storageManager.iterator(rainplotQuery, queryOptions, getToken());
 
@@ -313,7 +325,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     if (colors.containsKey(key)) {
                         color = colors.get(key);
                     } else {
-                        color = "grey";
+                        color = defaultColor;
                     }
                     pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
                             + v.getAlternate() + "\t" + Math.log10(v.getStart() - prevStart) + "\t" + color);
@@ -380,8 +392,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             logger.info(track.getType().name() + " track, query: " + cnvQuery.toJson());
             logger.info(track.getType().name() + " track, query options: " + queryOptions.toJson());
 
-            // Get colors
-            Map<Double, String> colors = getCnvColors();
+            // Colors management
+            Map<Double, String> colors;
+            if (track.getDisplay().containsKey("mapColor")) {
+                colors = convertToDoubleMap((Map<String, Object>) track.getDisplay().get("mapColor"));
+            } else {
+                colors = getCnvDefaultColors();
+            }
 
             VariantDBIterator iterator = storageManager.iterator(cnvQuery, queryOptions, getToken());
             while (iterator.hasNext()) {
@@ -493,6 +510,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 pw.println("chr" + gene.getChromosome() + "\t" + gene.getStart() + "\t" + gene.getEnd());
             }
 
+            if (!track.getDisplay().containsKey("color")) {
+                track.getDisplay().put("color", "orange");
+            }
+
             // Set track file
             track.setFile(trackFile.getAbsolutePath());
 
@@ -521,13 +542,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         try {
             // Color management
-            String colorLabel;
-            Map<Double, String> colors = null;
-            if (!track.getDisplay().containsKey("color") || StringUtils.isEmpty(track.getDisplay().get("color"))) {
-                colors = getCoverageColors();
-                colorLabel = "";
+            Map<Double, String> colors;
+            if (track.getDisplay().containsKey("mapColor")) {
+                colors = convertToDoubleMap((Map<String, Object>) track.getDisplay().get("mapColor"));
             } else {
-                colorLabel = "\tcolor";
+                colors = getCoverageDefaultColors();
             }
 
             AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
@@ -539,7 +558,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("chromosome\tchromStart\tchromEnd\tcoverage" + colorLabel);
+            pw.println("chromosome\tchromStart\tchromEnd\tcoverage\tcolor");
 
             List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
 
@@ -551,7 +570,6 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         Integer.MAX_VALUE, windowSize, getToken());
 
 
-
                 for (RegionCoverage regionCoverage : coverageResult.getResults()) {
                     if (regionCoverage.getValues() != null && regionCoverage.getValues().length > 0) {
                         int start = regionCoverage.getStart();
@@ -560,15 +578,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             end = regionCoverage.getEnd();
                         }
                         for (double coverageValue : regionCoverage.getValues()) {
-                            if (colors != null) {
-                                System.out.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
-                                        + "\t" + getColorByRange(coverageValue, colors));
-
-                                pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
-                                        + "\t" + getColorByRange(coverageValue, colors));
-                            } else {
-                                pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue);
-                            }
+                            pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
+                                    + "\t" + getColorByRange(coverageValue, colors));
                             start += regionCoverage.getWindowSize();
                             end += regionCoverage.getWindowSize();
                             if (end > regionCoverage.getEnd()) {
@@ -606,13 +617,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         try {
             // Color management
-            String colorLabel;
-            Map<Double, String> colors = null;
-            if (!track.getDisplay().containsKey("color") || StringUtils.isEmpty(track.getDisplay().get("color"))) {
-                colors = getCoverageRatioColors();
-                colorLabel = "";
+            Map<Double, String> colors;
+            if (track.getDisplay().containsKey("mapColor")) {
+                colors = convertToDoubleMap((Map<String, Object>) track.getDisplay().get("mapColor"));
             } else {
-                colorLabel = "\tcolor";
+                colors = getCoverageRatioDefaultColors();
             }
 
             AlignmentStorageManager alignmentStorageManager = getAlignmentStorageManager();
@@ -626,7 +635,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             File trackFile = getTrackFilename(track.getType().name());
             pw = new PrintWriter(trackFile);
-            pw.println("chromosome\tchromStart\tchromEnd\tratio" + colorLabel);
+            pw.println("chromosome\tchromStart\tchromEnd\tratio\tcolor");
 
 
             List<Region> regions = getRegionsFromQuery(trackQuery, alignmentStorageManager);
@@ -667,15 +676,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                                 end = regionCoverage.getEnd();
                             }
                             for (double coverageValue : regionCoverage.getValues()) {
-                                if (colors != null) {
-                                    System.out.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
-                                            + "\t" + getColorByRange(coverageValue, colors));
-
-                                    pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
-                                            + "\t" + getColorByRange(coverageValue, colors));
-                                } else {
-                                    pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue);
-                                }
+                                pw.println("chr" + regionCoverage.getChromosome() + "\t" + start + "\t" + end + "\t" + coverageValue
+                                        + "\t" + getColorByRange(coverageValue, colors));
                                 start += regionCoverage.getWindowSize();
                                 end += regionCoverage.getWindowSize();
                                 if (end > regionCoverage.getEnd()) {
@@ -870,7 +872,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         return outRegions;
     }
 
-    private Map<String, String> getRainplotColors() {
+    private Map<String, String> getRainplotDefaultColors() {
         Map<String, String> colors = new HashMap<>();
 
         colors.put("CA", "royalblue");
@@ -901,7 +903,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         return colors;
     }
 
-    private Map<Double, String> getCnvColors() {
+    private Map<Double, String> getCnvDefaultColors() {
         Map<Double, String> colors = new LinkedHashMap<>();
 
         colors.put(0d, "lightcoral");
@@ -916,30 +918,20 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         return colors;
     }
 
-    private Map<Double, String> getCoverageColors() {
+    private Map<Double, String> getCoverageDefaultColors() {
         Map<Double, String> colors = new LinkedHashMap<>();
 
-        colors.put(0d, "lightcoral");
-        colors.put(10d, "lightgrey");
-        colors.put(20d, "olivedrab1");
-        colors.put(30d, "olivedrab2");
-        colors.put(40d, "olivedrab3");
-        colors.put(50d, "olivedrab4");
-        colors.put(75d, "darkgreen");
-        colors.put(100d, "dodgerblue2");
+        colors.put(0d, "red");
+        colors.put(20d, "green");
 
         return colors;
     }
 
-    private Map<Double, String> getCoverageRatioColors() {
+    private Map<Double, String> getCoverageRatioDefaultColors() {
         Map<Double, String> colors = new LinkedHashMap<>();
 
-        colors.put(0.25d, "olivedrab1");
-        colors.put(0.50d, "olivedrab2");
-        colors.put(0.75d, "olivedrab3");
-        colors.put(1d, "olivedrab4");
-        colors.put(1.5d, "darkgreen");
-        colors.put(2d, "dodgerblue2");
+        colors.put(0d, "red");
+        colors.put(1d, "blue");
 
         return colors;
     }
@@ -956,5 +948,16 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             prev = curr;
         }
         return colors.get(prev);
+    }
+
+    private Map<Double, String> convertToDoubleMap(Map<String, Object> in) {
+        Map<Double, String> out = new LinkedHashMap<>();
+
+        List<Double> ranges = in.keySet().stream().map(e -> Double.parseDouble(e)).collect(Collectors.toList());
+        Collections.sort(ranges);
+        for (Double range : ranges) {
+            out.put(range, (String) in.get(String.valueOf(range)));
+        }
+        return out;
     }
 }

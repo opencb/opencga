@@ -13,7 +13,7 @@ public class CircosTrack {
     private String file;
     private String data;
     private int position;
-    private Map<String, String> display;
+    private Map<String, Object> display;
 
     public enum TrackType {
         SNV, INDEL, CNV, INSERTION, DELETION, REARRANGEMENT, RAINPLOT, GENE, COVERAGE, COVERAGE_RATIO
@@ -22,7 +22,8 @@ public class CircosTrack {
     public CircosTrack() {
     }
 
-    public CircosTrack(String id, TrackType type, Map<String, String> query, List<String> include, String file, int position, Map<String, String> display) {
+    public CircosTrack(String id, TrackType type, Map<String, String> query, List<String> include, String file, int position,
+                       Map<String, Object> display) {
         this.id = id;
         this.type = type;
         this.query = query;
@@ -110,11 +111,11 @@ public class CircosTrack {
         return this;
     }
 
-    public Map<String, String> getDisplay() {
+    public Map<String, Object> getDisplay() {
         return display;
     }
 
-    public CircosTrack setDisplay(Map<String, String> display) {
+    public CircosTrack setDisplay(Map<String, Object> display) {
         this.display = display;
         return this;
     }
