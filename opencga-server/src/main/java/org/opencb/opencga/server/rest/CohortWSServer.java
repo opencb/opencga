@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CohortManager;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -75,7 +76,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             }
 
             if (ListUtils.isNotEmpty(cohortParams.getSamples())) {
-                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, cohortParams.getSamples(), null, token);
+                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, cohortParams.getSamples(),
+                        SampleManager.INCLUDE_SAMPLE_IDS, token);
                 List<Sample> sampleList = queryResult.getResults();
                 Cohort cohort = new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList,
                         cohortParams.getAnnotationSets(), 1,
@@ -263,6 +265,8 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts") String cohorts,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "body") CohortUpdateParams params) {
@@ -272,8 +276,12 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.UpdateAction.ADD;
             }
+            if (samplesAction == null) {
+                samplesAction = ParamUtils.UpdateAction.ADD;
+            }
 
             actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), samplesAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             List<String> cohortIds = getIdList(cohorts);
