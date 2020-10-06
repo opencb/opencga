@@ -221,6 +221,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc1/", "opencga_catalog_v1.4.2_to_v2.0.0-rc1.js");
 
                 String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                token = catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
                 // Create default project and study for administrator #1491
                 catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
@@ -266,6 +267,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         if (!skipRc2) {
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
                 String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
 
                 logger.info("Starting Catalog migration for 2.0.0 RC2");
                 runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc2/", "opencga_catalog_v2.0.0-rc1_to_v2.0.0-rc2.js");

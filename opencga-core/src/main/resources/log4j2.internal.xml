@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_ERR">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n"/>
+            <ThresholdFilter level="${sys:opencga.log.level:-info}" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+
+<!--        <File name="FileJson" fileName="${opencga.log.dir}/${opencga.log.file:-}" immediateFlush="true">-->
+<!--            <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true"/>-->
+<!--        </File>-->
+    </Appenders>
+    <Loggers>
+        <Root level="DEBUG">
+            <AppenderRef ref="Console" />
+<!--            <AppenderRef ref="RollingFileJson" />-->
+        </Root>
+        <Logger name="org.mongodb.driver.cluster" level="WARN"/>
+        <Logger name="org.mongodb.driver.connection" level="WARN"/>
+    </Loggers>
+</Configuration>

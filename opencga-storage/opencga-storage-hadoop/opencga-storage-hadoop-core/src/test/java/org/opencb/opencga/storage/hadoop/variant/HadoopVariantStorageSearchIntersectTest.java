@@ -16,9 +16,8 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.ClassRule;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.storage.core.variant.VariantStorageSearchIntersectTest;
@@ -44,8 +43,9 @@ public class HadoopVariantStorageSearchIntersectTest extends VariantStorageSearc
                 VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) dbAdaptor), newOutputUri(getClass().getName()));
             }
         }
-        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-        stderr.setThreshold(Level.DEBUG);
+//        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
+//        stderr.setThreshold(Level.DEBUG);
+        Configurator.setRootLevel(Level.DEBUG);
     }
 
 }

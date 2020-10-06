@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -217,7 +218,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
             validateNewInterpretation(study, interpretation, clinicalAnalysis.getId(), userId);
 
-            OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs);
+            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
+                    "Create interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
+            OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs,
+                    Collections.singletonList(clinicalAudit));
             OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
                     QueryOptions.empty());
             queryResult.setTime(result.getTime() + queryResult.getTime());
@@ -311,7 +315,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     Collections.emptyList(), TimeUtils.getTime(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                     new ObjectMap());
 
-            OpenCGAResult result = update(study, clinicalResult.first().getInterpretation(), params, null, options, userId);
+            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CLEAR_INTERPRETATION,
+                    "Clear interpretation '" + clinicalResult.first().getInterpretation().getId() + "'", TimeUtils.getTime());
+            OpenCGAResult result = update(study, clinicalResult.first().getInterpretation(), params,
+                    Collections.singletonList(clinicalAudit), null, options, userId);
 
             auditManager.audit(userId, Enums.Action.CLEAR, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -383,8 +390,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             interpretation2.setPrimaryFindings(ParamUtils.defaultObject(interpretation2.getPrimaryFindings(), Collections.emptyList()));
             interpretation2.setSecondaryFindings(ParamUtils.defaultObject(interpretation2.getSecondaryFindings(), Collections.emptyList()));
 
+            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.MERGE_INTERPRETATION,
+                    "Merge interpretation '" + interpretation2.getId() + "' in interpretation '" + interpretation.getId() + "'",
+                    TimeUtils.getTime());
             OpenCGAResult<Interpretation> mergeResult = interpretationDBAdaptor.merge(interpretation.getUid(), interpretation2,
-                    clinicalVariantList);
+                    Collections.singletonList(clinicalAudit), clinicalVariantList);
             auditManager.audit(userId, Enums.Action.MERGE, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return mergeResult;
@@ -443,8 +453,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             interpretation2.setPrimaryFindings(ParamUtils.defaultObject(interpretation2.getPrimaryFindings(), Collections.emptyList()));
             interpretation2.setSecondaryFindings(ParamUtils.defaultObject(interpretation2.getSecondaryFindings(), Collections.emptyList()));
 
+            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.MERGE_INTERPRETATION,
+                    "Merge external interpretation in interpretation '" + interpretation.getId() + "'",
+                    TimeUtils.getTime());
             OpenCGAResult<Interpretation> mergeResult = interpretationDBAdaptor.merge(interpretation.getUid(), interpretation2,
-                    clinicalVariantList);
+                    Collections.singletonList(clinicalAudit), clinicalVariantList);
             auditManager.audit(userId, Enums.Action.MERGE, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return mergeResult;
@@ -505,7 +518,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         while (iterator.hasNext()) {
             Interpretation interpretation = iterator.next();
             try {
-                OpenCGAResult writeResult = update(study, interpretation, updateParams, as, options, userId);
+                List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
+                        "Update interpretation '" + interpretation.getId() + "'", TimeUtils.getTime()));
+                if (as != null) {
+                    clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
+                            "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
+                }
+                OpenCGAResult writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -575,7 +595,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             interpretationId = interpretation.getId();
             interpretationUuid = interpretation.getUuid();
 
-            OpenCGAResult writeResult = update(study, interpretation, updateParams, as, options, userId);
+            List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+            clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
+                    "Update interpretation '" + interpretation.getId() + "'", TimeUtils.getTime()));
+            if (as != null) {
+                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
+                        "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
+            }
+            OpenCGAResult writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
             result.append(writeResult);
 
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
@@ -665,7 +692,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 interpretationId = interpretation.getId();
                 interpretationUuid = interpretation.getUuid();
 
-                OpenCGAResult writeResult = update(study, interpretation, updateParams, as, options, userId);
+                List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_INTERPRETATION,
+                        "Update interpretation '" + interpretation.getId() + "'", TimeUtils.getTime()));
+                if (as != null) {
+                    clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.SWAP_INTERPRETATION,
+                            "Swap interpretation '" + interpretation.getId() + "' to " + as, TimeUtils.getTime()));
+                }
+                OpenCGAResult writeResult = update(study, interpretation, updateParams, clinicalAuditList, as, options, userId);
                 result.append(writeResult);
 
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
@@ -686,7 +720,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     private OpenCGAResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams,
-                                 ParamUtils.SaveInterpretationAs as, QueryOptions options, String userId) throws CatalogException {
+                                 List<ClinicalAudit> clinicalAuditList,  ParamUtils.SaveInterpretationAs as, QueryOptions options,
+                                 String userId) throws CatalogException {
         // Check if user has permissions to write clinical analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
@@ -732,7 +767,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     InterpretationDBAdaptor.QueryParams.ID.key());
         }
 
-        return interpretationDBAdaptor.update(interpretation.getUid(), parameters, as, options);
+        return interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as, options);
     }
 
     @Override
@@ -856,7 +891,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 // Check if the interpretation can be deleted
                 // checkCanBeDeleted(study.getUid(), interpretation, params.getBoolean(Constants.FORCE, false));
 
-                result.append(interpretationDBAdaptor.delete(interpretation));
+                ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_INTERPRETATION,
+                        "Delete interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
+                result.append(interpretationDBAdaptor.delete(interpretation, Collections.singletonList(clinicalAudit)));
 
                 auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
                         interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,

@@ -25,6 +25,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import java.util.List;
 
@@ -230,6 +231,12 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--sex"}, description = "Sex")
         public IndividualProperty.Sex sex = IndividualProperty.Sex.UNKNOWN;
+
+        @Parameter(names = {"--samples"}, description = "Modify list of samples")
+        public List<String> samples;
+
+        @Parameter(names = {"--samples-action"}, description = ParamConstants.SAMPLES_ACTION_DESCRIPTION)
+        public ParamUtils.UpdateAction sampleAction = ParamUtils.UpdateAction.ADD;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;

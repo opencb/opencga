@@ -11,8 +11,10 @@ import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
+import org.opencb.opencga.storage.core.metadata.models.SampleVariantStatsMixin;
 import org.opencb.opencga.storage.core.utils.iterators.IteratorWithClosable;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
@@ -59,9 +61,11 @@ public abstract class AbstractHBaseDBAdaptor {
         HBaseVariantTableNameGenerator.checkValidMetaTableName(metaTableName);
         new GenomeHelper(configuration);
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
-        this.objectMapper = new ObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper = new ObjectMapper();
         objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.addMixIn(SampleVariantStats.class, SampleVariantStatsMixin.class);
         if (hBaseManager == null) {
             this.hBaseManager = new HBaseManager(configuration);
         } else {

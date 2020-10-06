@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -28,6 +30,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -67,7 +70,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
-        MEMBER("member", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
+        INDIVIDUAL("individual", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
 
         FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_ID("family.id", TEXT, ""),
@@ -86,6 +89,8 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         INTERPRETATION_ID("interpretation.id", TEXT, ""),
         SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
         SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
+
+        AUDIT("audit", TEXT_ARRAY, ""),
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
@@ -154,7 +159,14 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options)
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<ClinicalAnalysis> update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList,
+                                           QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options)

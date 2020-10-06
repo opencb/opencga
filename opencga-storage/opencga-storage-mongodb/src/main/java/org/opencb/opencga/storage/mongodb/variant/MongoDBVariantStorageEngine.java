@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.log4j.Level;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -89,9 +88,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private VariantStorageMetadataManager metadataManager;
 
     public MongoDBVariantStorageEngine() {
-        //Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
     }
 
     @Override
