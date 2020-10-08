@@ -51,7 +51,7 @@ public class CatalogSolrManager implements AutoCloseable {
     private int insertBatchSize;
     private String DATABASE_PREFIX;
 
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 2000;
     public static final String COHORT_SOLR_COLLECTION = "catalog-cohort";
     public static final String FILE_SOLR_COLLECTION = "catalog-file";
     public static final String FAMILY_SOLR_COLLECTION = "catalog-family";

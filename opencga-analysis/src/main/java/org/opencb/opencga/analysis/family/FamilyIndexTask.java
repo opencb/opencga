@@ -75,7 +75,6 @@ public class FamilyIndexTask extends OpenCgaTool {
 
             indexFamily(catalogSolrManager, study);
         }
-
     }
 
     private void indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
