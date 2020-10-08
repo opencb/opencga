@@ -39,7 +39,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
@@ -302,7 +302,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().size());   // proband version
 
         // LOCK CLINICAL ANALYSIS
-        catalogManager.getClinicalAnalysisManager().update(STUDY, "clinical", new ClinicalUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, "clinical", new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
         assertTrue(clinicalResult.isLocked());

@@ -216,7 +216,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
 
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(),
@@ -243,7 +243,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
 
         clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
@@ -261,7 +261,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalUpdateParams()
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                 .setComments(commentParamList), options, sessionIdUser);
 
         clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
@@ -371,7 +371,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void updateClinicalAnalysisTest() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
-        ClinicalUpdateParams updateParams = new ClinicalUpdateParams()
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDescription("My description")
                 .setPriority(Enums.Priority.URGENT);
 
@@ -873,7 +873,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void updateDisorder() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
-        ClinicalUpdateParams updateParams = new ClinicalUpdateParams()
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDisorder(new DisorderReferenceParam("dis1"));
 
         catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
@@ -884,7 +884,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("dis1", result1.first().getDisorder().getId());
         assertEquals("OT", result1.first().getDisorder().getSource());
 
-        updateParams = new ClinicalUpdateParams()
+        updateParams = new ClinicalAnalysisUpdateParams()
                 .setDisorder(new DisorderReferenceParam("non_existing"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("proband disorders");

@@ -130,7 +130,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalUpdateParams params) {
+                    ClinicalAnalysisUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(clinicalManager.update(studyStr, query, params, true, queryOptions, token));
@@ -152,7 +152,7 @@ public class ClinicalWebService extends AnalysisWebService {
                 @QueryParam("flagsAction") ParamUtils.UpdateAction flagsAction,
             @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("filesAction") ParamUtils.UpdateAction filesAction,
-            @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalUpdateParams params) {
+            @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalAnalysisUpdateParams params) {
         try {
             if (commentsAction == null) {
                 commentsAction = ParamUtils.BasicUpdateAction.ADD;
@@ -456,39 +456,6 @@ public class ClinicalWebService extends AnalysisWebService {
             return createErrorResponse(e);
         }
     }
-
-    @POST
-    @Path("/{clinicalAnalysis}/qualityControl/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update quality control fields of clinical analysis", response = ClinicalAnalysisQc.class)
-    public Response updateQualityControl(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(name = "body", value = "JSON containing quality control information", required = true)
-                    ClinicalAnalysisQcUpdateParams params) {
-        try {
-            return createOkResponse(catalogManager.getClinicalAnalysisManager().update(studyStr, clinicalId,
-                    new ClinicalUpdateParams().setQualityControl(params), queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-//    @POST
-//    @Path("/{clinicalAnalysis}/report/update")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "Update report fields of clinical analysis", response = .class)
-//    public Response updateReport(
-//            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-//            @ApiParam(name = "body", value = "JSON containing quality control information", required = true)
-//                    InterpretationUpdateParams params) {
-//        try {
-//            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, params, queryOptions, token));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @POST
     @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")

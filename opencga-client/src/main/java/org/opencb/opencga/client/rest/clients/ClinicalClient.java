@@ -27,7 +27,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQc;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQcUpdateParams;
-import org.opencb.opencga.core.models.clinical.ClinicalUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.InterpretationMergeParams;
@@ -370,7 +370,7 @@ public class ClinicalClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ClinicalAnalysis> update(String clinicalAnalyses, ClinicalUpdateParams data, ObjectMap params)
+    public RestResponse<ClinicalAnalysis> update(String clinicalAnalyses, ClinicalAnalysisUpdateParams data, ObjectMap params)
             throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);

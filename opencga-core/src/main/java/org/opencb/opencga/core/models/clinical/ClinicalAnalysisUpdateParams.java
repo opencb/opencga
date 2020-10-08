@@ -28,7 +28,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-public class ClinicalUpdateParams {
+public class ClinicalAnalysisUpdateParams {
 
     private String id;
     private String description;
@@ -43,8 +43,6 @@ public class ClinicalUpdateParams {
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
 
-    private ClinicalAnalysisQcUpdateParams qualityControl;
-
     private ClinicalConsent consent;
 
     private String dueDate;
@@ -55,14 +53,14 @@ public class ClinicalUpdateParams {
     private Map<String, Object> attributes;
     private CustomStatusParams status;
 
-    public ClinicalUpdateParams() {
+    public ClinicalAnalysisUpdateParams() {
     }
 
-    public ClinicalUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                List<FileReferenceParam> files, Boolean locked,  ClinicalAnalystParam analyst,
-                                ClinicalAnalysisInternal internal, ClinicalAnalysisQcUpdateParams qualityControl, ClinicalConsent consent,
-                                String dueDate, List<ClinicalCommentParam> comments, Enums.Priority priority, List<String> flags,
-                                Map<String, Object> attributes, CustomStatusParams status) {
+    public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
+                                        List<FileReferenceParam> files, Boolean locked, ClinicalAnalystParam analyst,
+                                        ClinicalAnalysisInternal internal, ClinicalConsent consent, String dueDate,
+                                        List<ClinicalCommentParam> comments, Enums.Priority priority, List<String> flags,
+                                        Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -71,7 +69,6 @@ public class ClinicalUpdateParams {
         this.locked = locked;
         this.analyst = analyst;
         this.internal = internal;
-        this.qualityControl = qualityControl;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -97,7 +94,6 @@ public class ClinicalUpdateParams {
         sb.append(", locked=").append(locked);
         sb.append(", analyst=").append(analyst);
         sb.append(", internal=").append(internal);
-        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -129,7 +125,7 @@ public class ClinicalUpdateParams {
         return id;
     }
 
-    public ClinicalUpdateParams setId(String id) {
+    public ClinicalAnalysisUpdateParams setId(String id) {
         this.id = id;
         return this;
     }
@@ -138,7 +134,7 @@ public class ClinicalUpdateParams {
         return description;
     }
 
-    public ClinicalUpdateParams setDescription(String description) {
+    public ClinicalAnalysisUpdateParams setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -147,7 +143,7 @@ public class ClinicalUpdateParams {
         return type;
     }
 
-    public ClinicalUpdateParams setType(ClinicalAnalysis.Type type) {
+    public ClinicalAnalysisUpdateParams setType(ClinicalAnalysis.Type type) {
         this.type = type;
         return this;
     }
@@ -156,7 +152,7 @@ public class ClinicalUpdateParams {
         return disorder;
     }
 
-    public ClinicalUpdateParams setDisorder(DisorderReferenceParam disorder) {
+    public ClinicalAnalysisUpdateParams setDisorder(DisorderReferenceParam disorder) {
         this.disorder = disorder;
         return this;
     }
@@ -165,7 +161,7 @@ public class ClinicalUpdateParams {
         return files;
     }
 
-    public ClinicalUpdateParams setFiles(List<FileReferenceParam> files) {
+    public ClinicalAnalysisUpdateParams setFiles(List<FileReferenceParam> files) {
         this.files = files;
         return this;
     }
@@ -174,7 +170,7 @@ public class ClinicalUpdateParams {
         return locked;
     }
 
-    public ClinicalUpdateParams setLocked(Boolean locked) {
+    public ClinicalAnalysisUpdateParams setLocked(Boolean locked) {
         this.locked = locked;
         return this;
     }
@@ -183,17 +179,8 @@ public class ClinicalUpdateParams {
         return analyst;
     }
 
-    public ClinicalUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
+    public ClinicalAnalysisUpdateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
-        return this;
-    }
-
-    public ClinicalAnalysisQcUpdateParams getQualityControl() {
-        return qualityControl;
-    }
-
-    public ClinicalUpdateParams setQualityControl(ClinicalAnalysisQcUpdateParams qualityControl) {
-        this.qualityControl = qualityControl;
         return this;
     }
 
@@ -201,7 +188,7 @@ public class ClinicalUpdateParams {
         return consent;
     }
 
-    public ClinicalUpdateParams setConsent(ClinicalConsent consent) {
+    public ClinicalAnalysisUpdateParams setConsent(ClinicalConsent consent) {
         this.consent = consent;
         return this;
     }
@@ -210,7 +197,7 @@ public class ClinicalUpdateParams {
         return dueDate;
     }
 
-    public ClinicalUpdateParams setDueDate(String dueDate) {
+    public ClinicalAnalysisUpdateParams setDueDate(String dueDate) {
         this.dueDate = dueDate;
         return this;
     }
@@ -219,7 +206,7 @@ public class ClinicalUpdateParams {
         return comments;
     }
 
-    public ClinicalUpdateParams setComments(List<ClinicalCommentParam> comments) {
+    public ClinicalAnalysisUpdateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
         return this;
     }
@@ -228,7 +215,7 @@ public class ClinicalUpdateParams {
         return priority;
     }
 
-    public ClinicalUpdateParams setPriority(Enums.Priority priority) {
+    public ClinicalAnalysisUpdateParams setPriority(Enums.Priority priority) {
         this.priority = priority;
         return this;
     }
@@ -237,7 +224,7 @@ public class ClinicalUpdateParams {
         return flags;
     }
 
-    public ClinicalUpdateParams setFlags(List<String> flags) {
+    public ClinicalAnalysisUpdateParams setFlags(List<String> flags) {
         this.flags = flags;
         return this;
     }
@@ -246,7 +233,7 @@ public class ClinicalUpdateParams {
         return attributes;
     }
 
-    public ClinicalUpdateParams setAttributes(Map<String, Object> attributes) {
+    public ClinicalAnalysisUpdateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }
@@ -255,7 +242,7 @@ public class ClinicalUpdateParams {
         return internal;
     }
 
-    public ClinicalUpdateParams setInternal(ClinicalAnalysisInternal internal) {
+    public ClinicalAnalysisUpdateParams setInternal(ClinicalAnalysisInternal internal) {
         this.internal = internal;
         return this;
     }
@@ -264,7 +251,7 @@ public class ClinicalUpdateParams {
         return status;
     }
 
-    public ClinicalUpdateParams setStatus(CustomStatusParams status) {
+    public ClinicalAnalysisUpdateParams setStatus(CustomStatusParams status) {
         this.status = status;
         return this;
     }
