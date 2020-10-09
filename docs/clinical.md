@@ -1,2 +1,0 @@
-# Clinical Interpretation
-
