@@ -34,7 +34,6 @@ import java.util.Map;
 public class ClientConfiguration {
 
     private String logLevel;
-    private String logFile;
 
     private String version;
     private int cliSessionDuration;
@@ -115,7 +114,6 @@ public class ClientConfiguration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClientConfiguration{");
         sb.append("logLevel='").append(logLevel).append('\'');
-        sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", sessionDuration=").append(cliSessionDuration);
         sb.append(", rest=").append(rest);
@@ -134,12 +132,16 @@ public class ClientConfiguration {
         return this;
     }
 
+    @Deprecated
     public String getLogFile() {
-        return logFile;
+        return null;
     }
 
-    public ClientConfiguration setLogFile(String logFile) {
-        this.logFile = logFile;
+    @Deprecated
+    public ClientConfiguration setLogFile(String none) {
+        if (none != null) {
+            logger.warn("Deprecated option 'client-configuration.yml#logFile'");
+        }
         return this;
     }
 

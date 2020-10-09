@@ -1,6 +1,5 @@
 ---
 logLevel: "INFO"
-logFile: null
 
 # Number of seconds that session remains open without any activity [10 min]
 cliSessionDuration: 600

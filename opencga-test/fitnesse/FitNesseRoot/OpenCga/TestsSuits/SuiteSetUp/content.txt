@@ -1,6 +1,6 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
-!define OPENCGA_VERSION {opencga-2.0.0-rc2}
+!define OPENCGA_VERSION {opencga-2.0.0-dev}
 !define OPENCGA_VERSION {opencga}
 !define TEST_HOST {172.17.0.2:9090}
 !define VERSION {v1}

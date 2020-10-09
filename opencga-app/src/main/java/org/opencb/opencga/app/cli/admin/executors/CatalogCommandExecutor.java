@@ -19,8 +19,6 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -33,9 +31,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by imedina on 02/03/15.
@@ -140,26 +136,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 commandOptions.email, commandOptions.organization);
     }
 
-    /**
-     * Checks if the database exists.
-     *
-     * @return true if exists.
-     */
-    private boolean checkDatabaseExists(String database) {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new ArrayList<>();
-        for (String host : configuration.getCatalog().getDatabase().getHosts()) {
-            if (host.contains(":")) {
-                String[] split = host.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(host, 27017));
-            }
-        }
-        MongoDataStoreManager mongoDataStoreManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        return mongoDataStoreManager.exists(database);
-    }
-
     private void delete() throws CatalogException, URISyntaxException {
         validateConfiguration(catalogCommandOptions.deleteCatalogCommandOptions);
 
@@ -167,9 +143,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         String token = catalogManager.getUserManager()
                 .loginAsAdmin(catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword).getToken();
 
-        if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
-            throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
-        }
         logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
                 .getHosts());
         catalogManager.deleteCatalogDB(token);
@@ -181,10 +154,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         String token = catalogManager.getUserManager()
                 .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword).getToken();
-
-        if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
-            throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
-        }
 
         logger.info("\nChecking and installing non-existing indexes in {} in {}\n",
                 catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase().getHosts());

@@ -10,26 +10,45 @@
 # Increase Java Heap if needed
 if [ -z "$JAVA_HEAP" ]; then
   case `basename $PRG` in
-  "opencga.sh")
-    JAVA_HEAP="2048m"
-    ;;
   "opencga-admin.sh")
     JAVA_HEAP="8192m"
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
+    OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
   "opencga-internal.sh")
     JAVA_HEAP="12288m"
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.internal.xml
+    OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
+#  "opencga.sh")
   *)
     JAVA_HEAP="2048m"
+    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
+    OPENCGA_LOG_DIR=""
     ;;
   esac
 fi
 
 
 #Set log4j properties file
-export JAVA_OPTS="${JAVA_OPTS} -Dlog4j.configuration=file:${BASEDIR}/conf/log4j.properties"
+export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/${OPENCGA_LOG4J_CONFIGURATION_FILE}"
+if [ -n "$OPENCGA_LOG_DIR" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.dir=${OPENCGA_LOG_DIR}"
+fi
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"
+
+# Configure JavaAgent
+JAVA_AGENT=""
+AGENTS_NUM="$(find "${BASEDIR}/monitor/" -name '*.jar' 2> /dev/null | wc -l)"
+if [ "$AGENTS_NUM" -eq 1 ]; then
+  JAVA_AGENT="$(find "${BASEDIR}/monitor/" -name '*.jar')"
+  export JAVA_OPTS="${JAVA_OPTS} -javaagent:${JAVA_AGENT}"
+elif [ "$AGENTS_NUM" -gt 1 ]; then
+  echo "ERROR - Multiple java agents found!" 1>&2
+  exit 2
+fi
+
 
 export COLUMNS=`tput cols 2> /dev/null`
 export LINES=`tput lines 2> /dev/null`

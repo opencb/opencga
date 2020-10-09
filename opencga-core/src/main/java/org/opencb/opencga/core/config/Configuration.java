@@ -32,7 +32,7 @@ import java.util.*;
 public class Configuration {
 
     private String logLevel;
-    private String logFile;
+    private String logDir;
 
     private boolean openRegister;
 
@@ -120,61 +120,65 @@ public class Configuration {
         for (String variable : envVariables.keySet()) {
             if (variable.startsWith("OPENCGA_")) {
                 logger.debug("Overwriting environment parameter '{}'", variable);
+                String value = envVariables.get(variable);
                 switch (variable) {
+                    case "OPENCGA_LOG_DIR":
+                        configuration.setLogDir(value);
+                        break;
                     case "OPENCGA_DB_PREFIX":
-                        configuration.setDatabasePrefix(envVariables.get(variable));
+                        configuration.setDatabasePrefix(value);
                         break;
                     case "OPENCGA_USER_WORKSPACE":
-                        configuration.setWorkspace(envVariables.get(variable));
+                        configuration.setWorkspace(value);
                         break;
                     case "OPENCGA_MONITOR_PORT":
-                        configuration.getMonitor().setPort(Integer.parseInt(envVariables.get(variable)));
+                        configuration.getMonitor().setPort(Integer.parseInt(value));
                         break;
                     case "OPENCGA_EXECUTION_MODE":
                     case "OPENCGA_EXECUTION_ID":
-                        configuration.getAnalysis().getExecution().setId(envVariables.get(variable));
+                        configuration.getAnalysis().getExecution().setId(value);
                         break;
                     case "OPENCGA_MAIL_HOST":
-                        configuration.getEmail().setHost(envVariables.get(variable));
+                        configuration.getEmail().setHost(value);
                         break;
                     case "OPENCGA_MAIL_PORT":
-                        configuration.getEmail().setPort(envVariables.get(variable));
+                        configuration.getEmail().setPort(value);
                         break;
                     case "OPENCGA_MAIL_USER":
-                        configuration.getEmail().setUser(envVariables.get(variable));
+                        configuration.getEmail().setUser(value);
                         break;
                     case "OPENCGA_MAIL_PASSWORD":
-                        configuration.getEmail().setPassword(envVariables.get(variable));
+                        configuration.getEmail().setPassword(value);
                         break;
                     case "OPENCGA_CATALOG_DB_HOSTS":
-                        configuration.getCatalog().getDatabase().setHosts(Arrays.asList(envVariables.get(variable).split(",")));
+                        configuration.getCatalog().getDatabase().setHosts(Arrays.asList(value.split(",")));
                         break;
                     case "OPENCGA_CATALOG_DB_USER":
-                        configuration.getCatalog().getDatabase().setUser(envVariables.get(variable));
+                        configuration.getCatalog().getDatabase().setUser(value);
                         break;
                     case "OPENCGA_CATALOG_DB_PASSWORD":
-                        configuration.getCatalog().getDatabase().setPassword(envVariables.get(variable));
+                        configuration.getCatalog().getDatabase().setPassword(value);
                         break;
                     case "OPENCGA_CATALOG_DB_AUTHENTICATION_DATABASE":
-                        configuration.getCatalog().getDatabase().getOptions().put("authenticationDatabase", envVariables.get(variable));
+                        configuration.getCatalog().getDatabase().getOptions().put("authenticationDatabase", value);
                         break;
                     case "OPENCGA_CATALOG_DB_CONNECTIONS_PER_HOST":
-                        configuration.getCatalog().getDatabase().getOptions().put("connectionsPerHost", envVariables.get(variable));
+                        configuration.getCatalog().getDatabase().getOptions().put("connectionsPerHost", value);
                         break;
                     case "OPENCGA_CATALOG_SEARCH_HOST":
-                        configuration.getCatalog().getSearchEngine().setHosts(Collections.singletonList(envVariables.get(variable)));
+                        configuration.getCatalog().getSearchEngine().setHosts(Collections.singletonList(value));
                         break;
                     case "OPENCGA_CATALOG_SEARCH_TIMEOUT":
-                        configuration.getCatalog().getSearchEngine().getOptions().put("timeout", envVariables.get(variable));
+                        configuration.getCatalog().getSearchEngine().getOptions().put("timeout", value);
                         break;
                     case "OPENCGA_CATALOG_SEARCH_BATCH":
-                        configuration.getCatalog().getSearchEngine().getOptions().put("insertBatchSize", envVariables.get(variable));
+                        configuration.getCatalog().getSearchEngine().getOptions().put("insertBatchSize", value);
                         break;
                     case "OPENCGA_SERVER_REST_PORT":
-                        configuration.getServer().getRest().setPort(Integer.parseInt(envVariables.get(variable)));
+                        configuration.getServer().getRest().setPort(Integer.parseInt(value));
                         break;
                     case "OPENCGA_SERVER_GRPC_PORT":
-                        configuration.getServer().getGrpc().setPort(Integer.parseInt(envVariables.get(variable)));
+                        configuration.getServer().getGrpc().setPort(Integer.parseInt(value));
                         break;
                     default:
                         break;
@@ -187,7 +191,7 @@ public class Configuration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Configuration{");
         sb.append("logLevel='").append(logLevel).append('\'');
-        sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", logDir='").append(logDir).append('\'');
         sb.append(", openRegister=").append(openRegister);
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", workspace='").append(workspace).append('\'');
@@ -213,12 +217,25 @@ public class Configuration {
         return this;
     }
 
-    public String getLogFile() {
-        return logFile;
+    public String getLogDir() {
+        return logDir;
     }
 
+    public Configuration setLogDir(String logDir) {
+        this.logDir = logDir;
+        return this;
+    }
+
+    @Deprecated
+    public String getLogFile() {
+        return null;
+    }
+
+    @Deprecated
     public Configuration setLogFile(String logFile) {
-        this.logFile = logFile;
+        if (logFile != null) {
+            logger.warn("Deprecated option 'configuration.yml#logFile'");
+        }
         return this;
     }
 

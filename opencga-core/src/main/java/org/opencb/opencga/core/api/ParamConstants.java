@@ -73,6 +73,7 @@ public class ParamConstants {
     public static final String DISORDERS_PARAM = "disorders";
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
 
+    public static final String BODY_PARAM = "body";
     // ---------------------------------------------
 
     public static final String USER_DESCRIPTION = "User ID";
@@ -151,6 +152,8 @@ public class ParamConstants {
             + "sample to be deleted should be also deleted.";
     public static final String SAMPLE_FORCE_DELETE_DESCRIPTION = "Force the deletion of samples even if they are associated to files, "
             + "individuals or cohorts.";
+    public static final String SAMPLES_ACTION_PARAM = "samplesAction";
+    public static final String SAMPLES_ACTION_DESCRIPTION = "Action to be performed if the array of samples is being updated.";
 
     // ---------------------------------------------
 

@@ -526,7 +526,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             if (excludeList.contains(userProjectionKey)) {
                 excludeList.remove(userProjectionKey);
                 excludeList.add(realProjectionKey);
-                queryOptions.put(QueryOptions.INCLUDE, excludeList);
+                queryOptions.put(QueryOptions.EXCLUDE, excludeList);
             }
         }
 
@@ -650,7 +650,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 for (Map.Entry<String, Object> entry : pull.entrySet()) {
                     if (entry.getValue() instanceof Collection) {
                         // We need to pull all the elements of the array
-                        entry.setValue(new Document("$in", entry.getValue()));
+                        entry.setValue(new Document("$or", entry.getValue()));
                     }
                 }
                 update.put("$pull", pull);

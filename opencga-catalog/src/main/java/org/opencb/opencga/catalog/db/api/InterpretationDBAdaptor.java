@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -121,16 +123,33 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
 
     OpenCGAResult nativeInsert(Map<String, Object> interpretation, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action)
+    OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action,
+                         List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult update(long uid, ObjectMap parameters, ParamUtils.SaveInterpretationAs action, QueryOptions queryOptions)
+    OpenCGAResult update(long uid, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, ParamUtils.SaveInterpretationAs action,
+                         QueryOptions queryOptions) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Interpretation> update(long id, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Interpretation> update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList,
+                                         QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Interpretation> merge(long interpretationUid, Interpretation interpretation, List<ClinicalAudit> clinicalAuditList,
+                                        List<String> clinicalVariantList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException;
+
+    OpenCGAResult<Interpretation> delete(Interpretation interpretation, List<ClinicalAudit> clinicalAuditList) throws CatalogDBException;
+
+    OpenCGAResult<Interpretation> delete(Query query, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long interpretationId) throws CatalogDBException;
 
