@@ -64,9 +64,6 @@ public class GeneralCliOptions {
         @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace' [info]")
         public String logLevel;
 
-        @Parameter(names = {"--log-file"}, description = "Set the file to write the log")
-        public String logFile;
-
         @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains configuration.yml, "
                 + "storage-configuration.yml and client-configuration.yml files.")
         public String conf;

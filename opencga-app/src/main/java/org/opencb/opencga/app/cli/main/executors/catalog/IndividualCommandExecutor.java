@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
@@ -186,6 +187,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 .setMother(commandOptions.motherId)
                 .setDateOfBirth(commandOptions.dateOfBirth)
                 .setSex(commandOptions.sex)
+                .setSamples(commandOptions.samples)
                 .setEthnicity(commandOptions.ethnicity)
                 .setKaryotypicSex(commandOptions.karyotypicSex)
                 .setLifeStatus(commandOptions.lifeStatus)
@@ -198,6 +200,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
+        params.putIfNotEmpty(ParamConstants.SAMPLES_ACTION_PARAM, commandOptions.sampleAction.name());
 
         return openCGAClient.getIndividualClient().update(commandOptions.individual, updateParams, params);
     }

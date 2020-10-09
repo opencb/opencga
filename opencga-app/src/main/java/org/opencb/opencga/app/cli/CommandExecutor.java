@@ -21,10 +21,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -111,9 +109,6 @@ public abstract class CommandExecutor {
                 if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
                     this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
                 }
-                if (StringUtils.isNotEmpty(this.clientConfiguration.getLogFile())) {
-                    this.configuration.setLogFile(this.clientConfiguration.getLogFile());
-                }
             }
 
             // Do not change the order here, we can only configure logger after loading the configuration files,
@@ -156,37 +151,15 @@ public abstract class CommandExecutor {
     public abstract void execute() throws Exception;
 
     private void configureLogger() throws IOException {
-        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-
-        // Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
-
         // Command line parameters have preference over configuration file
         // We overwrite logLevel configuration param with command line value
         if (StringUtils.isNotEmpty(this.logLevel)) {
             this.configuration.setLogLevel(this.logLevel);
         }
 
-        // We overwrite logFile configuration param with command line value
-        if (StringUtils.isNotEmpty(this.options.logFile)) {
-            this.configuration.setLogFile(this.options.logFile);
-        }
-
         Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
-        rootLogger.setLevel(level);
-
-        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
-        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-        if (StringUtils.isEmpty(this.configuration.getLogFile())) {
-            stderr.setThreshold(level);
-        } else {
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
-            rootLogger.addAppender(rollingFileAppender);
-            rollingFileAppender.setThreshold(level);
-            rollingFileAppender.setMaxFileSize("100MB");
-            rollingFileAppender.setMaxBackupIndex(10);
-        }
+        System.setProperty("opencga.log.level", level.name());
+        Configurator.reconfigure();
     }
 
 

@@ -7,6 +7,7 @@ import com.mongodb.WriteConcern;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -15,6 +16,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
+import org.opencb.opencga.storage.core.metadata.models.SampleVariantStatsMixin;
 import org.opencb.opencga.storage.mongodb.utils.MongoLockManager;
 
 import java.util.ArrayList;
@@ -46,6 +48,7 @@ public class AbstractMongoDBAdaptor<T> {
         this.collection = getCollection(this.collectionName);
         converter = new GenericDocumentComplexConverter<>(clazz);
         converter.getObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        converter.getObjectMapper().addMixIn(SampleVariantStats.class, SampleVariantStatsMixin.class);
         mongoLock = new MongoLockManager(collection, "_lock");
     }
 

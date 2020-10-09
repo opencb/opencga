@@ -65,7 +65,7 @@ public class FamilyIndexTask extends OpenCgaTool {
         }
 
         // Create solr collections if they don't exist
-        catalogSolrManager.createSolrCollections();
+        catalogSolrManager.createSolrCollections(CatalogSolrManager.FAMILY_SOLR_COLLECTION);
 
         for (Study study : studyDataResult.getResults()) {
             Map<String, Set<String>> studyAcls = SolrConverterUtil
@@ -75,7 +75,6 @@ public class FamilyIndexTask extends OpenCgaTool {
 
             indexFamily(catalogSolrManager, study);
         }
-
     }
 
     private void indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
