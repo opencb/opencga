@@ -119,9 +119,9 @@ class PythonClientGenerator(RestClientGenerator):
         # Call arguments
         call_args = []
         if self.category:
-            call_args.append('category=\'{}\''.format(self.to_snake_case(self.category)))
+            call_args.append('category=\'{}\''.format(self.category))
         if self.action:
-            call_args.append('resource=\'{}\''.format(self.to_snake_case(self.action)))
+            call_args.append('resource=\'{}\''.format(self.action))
         if self.id1:
             call_args.append('query_id={}'.format(self.to_snake_case(self.id1)))
         if self.subcategory:
