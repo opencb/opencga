@@ -73,6 +73,9 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
+    METADATA_LOCK_DURATION("metadata.lock.duration", 5000),
+    METADATA_LOCK_TIMEOUT("metadata.lock.timeout", 60000),
+
     QUERY_DEFAULT_TIMEOUT("query.timeout.default", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
     QUERY_MAX_TIMEOUT("query.timeout.max", 30000),         // Max allowed timeout for DBAdaptor operations
     QUERY_LIMIT_DEFAULT("query.limit.default", 1000),
