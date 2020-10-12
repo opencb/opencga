@@ -63,7 +63,7 @@ public class JobIndexTask extends OpenCgaTool {
         }
 
         // Create solr collections if they don't exist
-        catalogSolrManager.createSolrCollections();
+        catalogSolrManager.createSolrCollections(CatalogSolrManager.JOB_SOLR_COLLECTION);
 
         for (Study study : studyDataResult.getResults()) {
             Map<String, Set<String>> studyAcls = SolrConverterUtil

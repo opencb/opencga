@@ -219,6 +219,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setInternal(ParamUtils.defaultObject(individual.getInternal(), IndividualInternal::new));
         individual.getInternal().setStatus(new Status());
         individual.setCreationDate(TimeUtils.getTime());
+        individual.setModificationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
         individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));

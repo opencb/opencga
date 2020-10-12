@@ -764,13 +764,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return finalMember;
     }
 
-    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalUpdateParams updateParams, QueryOptions options,
-                                                  String token) throws CatalogException {
+    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalAnalysisUpdateParams updateParams,
+                                                  QueryOptions options, String token) throws CatalogException {
         return update(studyStr, query, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalUpdateParams updateParams, boolean ignoreException,
-                                                  QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, Query query, ClinicalAnalysisUpdateParams updateParams,
+                                                  boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -828,7 +828,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return endResult(result, ignoreException);
     }
 
-    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, String clinicalId, ClinicalUpdateParams updateParams,
+    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, String clinicalId, ClinicalAnalysisUpdateParams updateParams,
                                                   QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
@@ -893,12 +893,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
      */
-    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalUpdateParams updateParams,
+    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalAnalysisUpdateParams updateParams,
                                                   QueryOptions options, String token) throws CatalogException {
         return update(studyStr, clinicalIds, updateParams, false, options, token);
     }
 
-    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalUpdateParams updateParams,
+    public OpenCGAResult<ClinicalAnalysis> update(String studyStr, List<String> clinicalIds, ClinicalAnalysisUpdateParams updateParams,
                                                   boolean ignoreException, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
@@ -957,8 +957,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return endResult(result, ignoreException);
     }
 
-    private OpenCGAResult<ClinicalAnalysis> update(Study study, ClinicalAnalysis clinicalAnalysis, ClinicalUpdateParams updateParams,
-                                                   String userId, QueryOptions options) throws CatalogException {
+    private OpenCGAResult<ClinicalAnalysis> update(Study study, ClinicalAnalysis clinicalAnalysis,
+                                                   ClinicalAnalysisUpdateParams updateParams, String userId, QueryOptions options)
+            throws CatalogException {
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
@@ -1125,16 +1126,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 query.put(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), -1);
             }
         }
-        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key())) {
-            List<String> members = query.getAsStringList(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key());
+        if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key())) {
+            List<String> members = query.getAsStringList(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key());
             InternalGetDataResult<Individual> result = catalogManager.getIndividualManager().internalGet(study.getUid(),
                     members, IndividualManager.INCLUDE_INDIVIDUAL_IDS, user, true);
             if (result.getNumResults() > 0) {
-                query.put(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(),
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(),
                         result.getResults().stream().map(Individual::getUid).collect(Collectors.toList()));
             } else {
                 // We won't return any results
-                query.put(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), -1);
+                query.put(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), -1);
             }
         }
         if (query.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key())) {

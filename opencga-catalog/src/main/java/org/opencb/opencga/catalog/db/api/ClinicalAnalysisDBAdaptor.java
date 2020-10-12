@@ -70,7 +70,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
-        MEMBER("member", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
+        INDIVIDUAL("individual", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
 
         FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_ID("family.id", TEXT, ""),

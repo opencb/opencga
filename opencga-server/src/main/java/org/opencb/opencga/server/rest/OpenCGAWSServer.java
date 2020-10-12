@@ -26,6 +26,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.glassfish.jersey.server.ParamException;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
@@ -82,9 +83,9 @@ import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObje
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
-    @DefaultValue("v2")
+    @DefaultValue(CURRENT_VERSION)
     @PathParam("apiVersion")
-    @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = "v2", defaultValue = "v2")
+    @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = CURRENT_VERSION, defaultValue = CURRENT_VERSION)
     protected String apiVersion;
     protected String exclude;
     protected String include;
@@ -135,6 +136,7 @@ public class OpenCGAWSServer {
     private static final int DEFAULT_LIMIT = AbstractManager.DEFAULT_LIMIT;
     private static final int MAX_LIMIT = AbstractManager.MAX_LIMIT;
     private static final int MAX_ID_SIZE = 100;
+    static final String CURRENT_VERSION = "v2";
 
     public static String errorMessage;
 
@@ -186,11 +188,7 @@ public class OpenCGAWSServer {
 //                    + "or properly defined.");
 //        }
 
-        try {
-            verifyHeaders(httpHeaders);
-        } catch (CatalogAuthenticationException e) {
-            throw new IllegalStateException(e);
-        }
+        verifyHeaders(httpHeaders);
 
         query = new Query();
         queryOptions = new QueryOptions();
@@ -364,7 +362,7 @@ public class OpenCGAWSServer {
                 logger.warn("Setting 'apiVersion' from UriInfo object");
                 this.apiVersion = uriInfo.getPathParameters().getFirst("apiVersion");
             } else {
-                throw new VersionException("Version not valid: '" + apiVersion + "'");
+                throw new ParamException.PathParamException(new Throwable("Version not valid: '" + apiVersion + "'"), "apiVersion", "v2");
             }
         }
 
@@ -441,7 +439,15 @@ public class OpenCGAWSServer {
             }
         }
 
-        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : (count ? 0 : DEFAULT_LIMIT));
+        if (limit > MAX_LIMIT) {
+            throw new ParamException.QueryParamException(new Throwable("'limit' value cannot be higher than '" + MAX_LIMIT + "'."),
+                    "limit", "0");
+        }
+        if (limit < 0) {
+            throw new ParamException.QueryParamException(new Throwable("'limit' must be a positive value lower or equal to '"
+                    + MAX_LIMIT + "'."), "limit", "0");
+        }
+        queryOptions.put(QueryOptions.LIMIT, multivaluedMap.containsKey(QueryOptions.LIMIT) ? limit : DEFAULT_LIMIT);
         query.remove("sid");
 
 //      Exceptions
@@ -527,6 +533,12 @@ public class OpenCGAWSServer {
         return response;
     }
 
+    static Response createBadRequestResponse(String errorMessage, RestResponse dataResponse) {
+        addErrorEvent(dataResponse, errorMessage);
+        Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.BAD_REQUEST).build();
+        return response;
+    }
+
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
             Response response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
@@ -541,7 +553,7 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
-    private <T> void addErrorEvent(RestResponse<T> response, String message) {
+    static <T> void addErrorEvent(RestResponse<T> response, String message) {
         if (response.getEvents() == null) {
             response.setEvents(new ArrayList<>());
         }
@@ -560,10 +572,15 @@ public class OpenCGAWSServer {
     //    protected <T> Response createOkResponse(OpenCGAResult<T> result)
     //    protected <T> Response createOkResponse(List<OpenCGAResult<T>> results)
     protected Response createOkResponse(Object obj) {
+        return createOkResponse(obj, Collections.emptyList());
+    }
+
+    protected Response createOkResponse(Object obj, List<Event> events) {
         RestResponse queryResponse = new RestResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
+        queryResponse.setEvents(events);
 
         // Guarantee that the RestResponse object contains a list of results
         List<OpenCGAResult<?>> list = new ArrayList<>();
@@ -621,11 +638,15 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    private void logResponse(Response.StatusType statusInfo) {
-        logResponse(statusInfo, null);
+    void logResponse(Response.StatusType statusInfo) {
+        logResponse(statusInfo, null, startTime, requestDescription);
     }
 
-    private void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
+    void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
+        logResponse(statusInfo, queryResponse, startTime, requestDescription);
+    }
+
+    static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime, String requestDescription) {
         StringBuilder sb = new StringBuilder();
         try {
             boolean ok;
@@ -664,17 +685,16 @@ public class OpenCGAWSServer {
         }
     }
 
-    protected Response createJsonResponse(RestResponse queryResponse) {
+    static Response createJsonResponse(RestResponse queryResponse) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
-//            e.printStackTrace();
             logger.error("Error parsing queryResponse object", e);
-            return createErrorResponse("", "Error parsing RestResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            throw new WebApplicationException("Error parsing queryResponse object", e);
         }
     }
 
-    protected Response buildResponse(Response.ResponseBuilder responseBuilder) {
+    protected static Response buildResponse(Response.ResponseBuilder responseBuilder) {
         return responseBuilder
                 .header("Access-Control-Allow-Origin", "*")
                 .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
@@ -683,12 +703,13 @@ public class OpenCGAWSServer {
                 .build();
     }
 
-    private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogAuthenticationException {
+    private void verifyHeaders(HttpHeaders httpHeaders) {
         List<String> authorization = httpHeaders.getRequestHeader("Authorization");
         if (authorization != null && authorization.get(0).length() > 7) {
             String token = authorization.get(0);
             if (!token.startsWith("Bearer ")) {
-                throw new CatalogAuthenticationException("Authorization header must start with Bearer JWToken");
+                throw new ParamException.HeaderParamException(new Throwable("Authorization header must start with Bearer JWToken"),
+                        "Bearer", "");
             }
             this.token = token.substring("Bearer".length()).trim();
         }

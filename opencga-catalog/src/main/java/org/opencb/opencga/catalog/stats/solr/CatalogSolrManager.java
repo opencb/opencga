@@ -51,7 +51,7 @@ public class CatalogSolrManager implements AutoCloseable {
     private int insertBatchSize;
     private String DATABASE_PREFIX;
 
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+    public static final int DEFAULT_INSERT_BATCH_SIZE = 2000;
     public static final String COHORT_SOLR_COLLECTION = "catalog-cohort";
     public static final String FILE_SOLR_COLLECTION = "catalog-file";
     public static final String FAMILY_SOLR_COLLECTION = "catalog-family";
@@ -114,27 +114,29 @@ public class CatalogSolrManager implements AutoCloseable {
         return solrManager.existsCollection(collectionName);
     }
 
-    public void createSolrCollections() {
+    public void createSolrCollections(String solrCollection) throws CatalogException {
+        if (!CONFIGS_COLLECTION.containsKey(DATABASE_PREFIX + solrCollection)) {
+            throw new CatalogException("Cannot create solr collection '" + solrCollection + "'. Solr collection does not exist.");
+        }
+
         if (catalogManager.getConfiguration().getCatalog().getSearchEngine().getOptions().getOrDefault("mode", "cloud").equals("cloud")) {
-            createCatalogSolrCollections();
+            createCatalogSolrCollections(solrCollection);
         } else {
-            createCatalogSolrCores();
+            createCatalogSolrCores(solrCollection);
         }
     }
 
-    private void createCatalogSolrCollections() {
-        for (String key : CONFIGS_COLLECTION.keySet()) {
-            if (!existsCollection(key)) {
-                createCollection(key, CONFIGS_COLLECTION.get(key));
-            }
+    private void createCatalogSolrCollections(String solrCollection) {
+        String key = DATABASE_PREFIX + solrCollection;
+        if (!existsCollection(key)) {
+            createCollection(key, CONFIGS_COLLECTION.get(key));
         }
     }
 
-    private void createCatalogSolrCores() {
-        for (String key : CONFIGS_COLLECTION.keySet()) {
-            if (!existsCore(key)) {
-                createCore(key, CONFIGS_COLLECTION.get(key));
-            }
+    private void createCatalogSolrCores(String solrCollection) {
+        String key = DATABASE_PREFIX + solrCollection;
+        if (!existsCore(key)) {
+            createCore(key, CONFIGS_COLLECTION.get(key));
         }
     }
 

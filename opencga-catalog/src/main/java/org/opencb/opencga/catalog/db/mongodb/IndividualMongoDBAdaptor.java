@@ -626,7 +626,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         // We only need to focus on locked clinical analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.MEMBER.key(), individual.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), individual.getUid())
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
 
         OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
