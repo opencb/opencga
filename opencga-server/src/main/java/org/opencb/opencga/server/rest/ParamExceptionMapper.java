@@ -18,7 +18,7 @@ import java.util.Collections;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
-@Provider
+//@Provider
 public class ParamExceptionMapper implements ExceptionMapper<WebApplicationException> {
 
     @Context
