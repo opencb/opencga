@@ -27,6 +27,7 @@ import org.opencb.biodata.tools.variant.VariantDeduplicationTask;
 import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -183,7 +184,6 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         Thread hook = getMetadataManager().buildShutdownHook(OPERATION_NAME, getStudyId(), taskId);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            String table = getArchiveTable();
             String fileName = UriUtils.fileName(inputUri);
 
             VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(inputUri);
@@ -198,7 +198,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     progressLogger.setApproximateTotalCount(fileMetadata.getStats().getVariantCount());
                 }
 
-                loadFromProto(inputUri, outdir, table, helper, progressLogger);
+                loadFromProto(inputUri, outdir, helper, progressLogger);
             } else {
                 ProgressLogger progressLogger;
                 if (fileMetadata.getStats() != null) {
@@ -208,7 +208,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     progressLogger = new ProgressLogger("Loaded variants for file \"" + fileName + "\" :");
                 }
 
-                loadFromAvro(inputUri, outdir, table, helper, progressLogger);
+                loadFromAvro(inputUri, outdir, helper, progressLogger);
             }
             logger.info("File \"{}\" loaded in {}", Paths.get(inputUri).getFileName(), TimeUtils.durationToString(stopWatch));
 
@@ -224,12 +224,12 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
 
-    protected void loadFromProto(URI input, URI outdir, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
+    protected void loadFromProto(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
         long counter = 0;
 
 
-        VariantHBaseArchiveDataWriter archiveWriter = newArchiveDBWriter(table, helper);
+        VariantHBaseArchiveDataWriter archiveWriter = newArchiveDBWriter(getArchiveTable(), helper);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(helper.getStudyMetadata());
         VariantHadoopDBWriter variantsWriter = newVariantHadoopDBWriter();
         List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(getStudyId(), getFileId()).getSamples());
@@ -296,13 +296,19 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         }
     }
 
-    protected void loadFromAvro(URI input, URI outdir, String table, ArchiveTableHelper helper, ProgressLogger progressLogger)
+    protected void loadFromAvro(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
             throws StorageEngineException {
-        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
-        int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
-        VariantReader variantReader = variantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
+        if (YesNoAuto.parse(getOptions(), LOAD_ARCHIVE.key()) == YesNoAuto.NO) {
+            loadFromAvroWithoutArchive(input, outdir, helper, progressLogger);
+        } else {
+            loadFromAvroWithArchive(input, outdir, helper, progressLogger);
+        }
+    }
+
+    protected void loadFromAvroWithArchive(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
+            throws StorageEngineException {
         int studyId = helper.getStudyId();
-        int fileId = Integer.valueOf(helper.getFileMetadata().getId());
+        int fileId = Integer.parseInt(helper.getFileMetadata().getId());
 
         // Config
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
@@ -311,6 +317,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 .setReadQueuePutTimeout(1000).build();
 
         // Reader
+        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
+        int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
+        VariantReader variantReader = variantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
         AbstractDuplicatedVariantsResolver resolver = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
                 .getResolver(UriUtils.fileName(input), outdir);
         VariantDeduplicationTask dedupTask = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
@@ -319,7 +328,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 helper.getChunkSize(), variantReader.then(dedupTask), studyId, fileId, sliceBufferSize, progressLogger);
 
         // Archive Writer
-        VariantHBaseArchiveDataWriter archiveWriter = newArchiveDBWriter(table, helper);
+        VariantHBaseArchiveDataWriter archiveWriter = newArchiveDBWriter(getArchiveTable(), helper);
         // Variants Writer
         VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();
         // Sample Index Writer
@@ -329,6 +338,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         // TaskMetadata
         String archiveFields = options.getString(ARCHIVE_FIELDS.key());
         String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER.key());
+        // TODO: Move "SampleIndexDBLoader" to Write step so we can increase the number of threads
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
                 null, archiveFields, nonRefFilter);
 
@@ -340,22 +350,74 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             throw new StorageEngineException("Error loading file " + input, e);
         }
 
-        logLoadResults(variantReader.getVariantFileMetadata(),
-                resolver.getDuplicatedVariants(),
-                resolver.getDuplicatedLocus(),
-                resolver.getDiscardedVariants(), hadoopDBWriter.getSkippedRefBlock() + resolver.getExtraRefBlockDiscardedVariants(),
-                hadoopDBWriter.getLoadedVariants(), hadoopDBWriter.getSkippedRefVariants());
-        getLoadStats().put("duplicatedVariants", resolver.getDuplicatedVariants());
-        getLoadStats().put("duplicatedLocus", resolver.getDuplicatedLocus());
-        getLoadStats().put("discardedVariants", resolver.getDiscardedVariants());
+        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
         if (sampleIndexDBLoader != null) {
             // Update list of loaded genotypes
             this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
         }
     }
 
+    protected void loadFromAvroWithoutArchive(URI input, URI outdir, ArchiveTableHelper helper, ProgressLogger progressLogger)
+            throws StorageEngineException {
+
+        int studyId = helper.getStudyId();
+        int fileId = Integer.parseInt(helper.getFileMetadata().getId());
+
+
+        // Reader
+        boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
+        VariantReader variantReader = variantReaderUtils.getVariantReader(input, helper.getStudyMetadata(), stdin);
+        AbstractDuplicatedVariantsResolver resolver = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
+                .getResolver(UriUtils.fileName(input), outdir);
+        VariantDeduplicationTask dedupTask = new DuplicatedVariantsResolverFactory(getOptions(), ioConnectorProvider)
+                .getTask(resolver);
+        DataReader<Variant> reader = variantReader.then(dedupTask);
+
+        // Variants Writer
+        VariantHadoopDBWriter hadoopDBWriter = newVariantHadoopDBWriter();
+        // Sample Index Writer
+        List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
+        SampleIndexDBLoader sampleIndexDBLoader = newSampleIndexDBLoader(helper, sampleIds);
+
+        // Config
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(options.getInt(LOAD_THREADS.key(), LOAD_THREADS.defaultValue()))
+                .setBatchSize(options.getInt(LOAD_BATCH_SIZE.key(), LOAD_BATCH_SIZE.defaultValue()))
+                .setSorted(true)
+                .setReadQueuePutTimeout(1000).build();
+        ParallelTaskRunner<Variant, Variant> ptr =
+                new ParallelTaskRunner<>(reader, hadoopDBWriter.asTask(), sampleIndexDBLoader, config);
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            throw new StorageEngineException("Error loading file " + input, e);
+        }
+
+        logLoadResults(variantReader.getVariantFileMetadata(), resolver, hadoopDBWriter);
+        if (sampleIndexDBLoader != null) {
+            // Update list of loaded genotypes
+            this.loadedGenotypes = sampleIndexDBLoader.getLoadedGenotypes();
+        }
+    }
+
+    private void logLoadResults(VariantFileMetadata variantFileMetadata,
+                                AbstractDuplicatedVariantsResolver resolver,
+                                VariantHadoopDBWriter hadoopDBWriter) {
+        logLoadResults(variantFileMetadata,
+                resolver.getDuplicatedVariants(),
+                resolver.getDuplicatedLocus(),
+                resolver.getDiscardedVariants(),
+                hadoopDBWriter.getSkippedRefBlock() + resolver.getExtraRefBlockDiscardedVariants(),
+                hadoopDBWriter.getLoadedVariants(),
+                hadoopDBWriter.getSkippedRefVariants());
+    }
+
     private void logLoadResults(VariantFileMetadata variantFileMetadata, int duplicatedVariants, int duplicatedLocus, int discardedVariants,
                                 int skipped, int loadedVariants, int skippedRefVariants) {
+        getLoadStats().put("duplicatedVariants", duplicatedVariants);
+        getLoadStats().put("duplicatedLocus", duplicatedLocus);
+        getLoadStats().put("discardedVariants", discardedVariants);
+
         // TODO: Check if the expectedCount matches with the count from HBase?
         // @see this.checkLoadedVariants
         logger.info("============================================================");
@@ -462,17 +524,15 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         GroupedVariantsTask(VariantHBaseArchiveDataWriter archiveWriter, VariantHadoopDBWriter hadoopDBWriter,
                             SampleIndexDBLoader sampleIndexDBLoader, ProgressLogger progressLogger, String fields, String nonRefFilter) {
             this.converterTask = new VariantToVcfSliceConverterTask(progressLogger, fields, nonRefFilter);
-            this.archiveWriter = archiveWriter;
+            this.archiveWriter = Objects.requireNonNull(archiveWriter);
             this.hadoopDBWriter = Objects.requireNonNull(hadoopDBWriter);
             this.sampleIndexDBLoader = sampleIndexDBLoader;
         }
 
         @Override
         public void pre() throws Exception {
-            if (archiveWriter != null) {
-                archiveWriter.open();
-                archiveWriter.pre();
-            }
+            archiveWriter.open();
+            archiveWriter.pre();
 
             hadoopDBWriter.open();
             hadoopDBWriter.pre();
@@ -495,19 +555,17 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                     sampleIndexDBLoader.write(variants);
                 }
             }
-            if (archiveWriter != null) {
-                List<VcfSlice> slices = converterTask.apply(batch);
-                archiveWriter.write(slices);
-            }
+
+            List<VcfSlice> slices = converterTask.apply(batch);
+            archiveWriter.write(slices);
+
             return null;
         }
 
         @Override
         public void post() throws Exception {
-            if (archiveWriter != null) {
-                archiveWriter.post();
-                archiveWriter.close();
-            }
+            archiveWriter.post();
+            archiveWriter.close();
 
             hadoopDBWriter.post();
             hadoopDBWriter.close();
