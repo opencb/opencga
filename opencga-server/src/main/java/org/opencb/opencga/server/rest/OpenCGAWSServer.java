@@ -67,6 +67,7 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -616,7 +617,7 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2));
     }
 
-    protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
+    protected Response createOkResponse(InputStream o1, MediaType o2, String fileName) {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
@@ -627,10 +628,13 @@ public class OpenCGAWSServer {
     private void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
         StringBuilder sb = new StringBuilder();
         try {
+            boolean ok;
             if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
                 sb.append("OK");
+                ok = true;
             } else {
                 sb.append("ERROR");
+                ok = false;
             }
             sb.append(" [").append(statusInfo.getStatusCode()).append(']');
 
@@ -649,7 +653,11 @@ public class OpenCGAWSServer {
                 }
             }
             sb.append(", ").append(requestDescription);
-            logger.info(sb.toString());
+            if (ok) {
+                logger.info(sb.toString());
+            } else {
+                logger.error(sb.toString());
+            }
         } catch (RuntimeException e) {
             logger.warn("Error logging response", e);
             logger.info(sb.toString()); // Print incomplete response
