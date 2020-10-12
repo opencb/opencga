@@ -480,6 +480,11 @@
             <version>${hadoop.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.wildfly.openssl</groupId>
+            <artifactId>wildfly-openssl</artifactId>
+            <version>1.0.4.Final</version>
+        </dependency>
     </dependencies>
 
 
