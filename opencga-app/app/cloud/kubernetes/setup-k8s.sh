@@ -11,6 +11,7 @@ function printUsage() {
   echo "   * -c     --context                   Kubernetes context"
   echo "     -n     --namespace                 Kubernetes namespace"
   echo "   * -f     --values                    Helm values file"
+  echo "            --what                      What to deploy. [nginx, iva, opencga, all]. Default: all"
   echo "     -h     --help                      Print this help"
   echo "            --verbose                   Verbose mode. Print debugging messages about the progress."
   echo ""
@@ -39,6 +40,7 @@ function requiredFile() {
 #K8S_CONTEXT
 #K8S_NAMESPACE
 #HELM_VALUES_FILE
+WHAT=ALL
 
 
 while [[ $# -gt 0 ]]
@@ -62,6 +64,11 @@ case $key in
     ;;
     -f|--values)
     HELM_VALUES_FILE="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    --what)
+    WHAT="${value^^}" # Upper case
     shift # past argument
     shift # past value
     ;;
@@ -137,11 +144,17 @@ echo "# Deploy kubernetes"
 echo "# Configuring context $K8S_CONTEXT"
 configureContext
 
-echo "# Deploy NGINX"
-deployNginx
+if [[ "$WHAT" = "NGINX" || "$WHAT" = "ALL" ]]; then
+  echo "# Deploy NGINX"
+  deployNginx
+fi
 
-echo "# Deploy OpenCGA"
-deployOpenCGA
+if [[ "$WHAT" = "OPENCGA" || "$WHAT" = "ALL" ]]; then
+  echo "# Deploy OpenCGA"
+  deployOpenCGA
+fi
 
-echo "# Deploy IVA"
-deployIVA
+if [[ "$WHAT" = "IVA" || "$WHAT" = "ALL" ]]; then
+  echo "# Deploy IVA"
+  deployIVA
+fi
