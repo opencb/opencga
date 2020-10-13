@@ -10,8 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created on 31/01/18.
@@ -52,7 +51,7 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
         return true;
     }
 
-    protected void mutate(List<M> mutations) throws IOException {
+    protected final synchronized void mutate(List<M> mutations) throws IOException {
         try {
             mutator.mutate(mutations);
         } catch (IllegalArgumentException e) {
@@ -82,7 +81,7 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
         }
     }
 
-    public void flush() {
+    public final synchronized void flush() {
         try {
             mutator.flush();
         } catch (IOException e) {

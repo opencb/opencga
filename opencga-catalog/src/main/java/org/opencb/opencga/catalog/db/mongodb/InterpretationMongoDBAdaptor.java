@@ -56,6 +56,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements InterpretationDBAdaptor {
@@ -377,24 +378,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
-                ParamUtils.UpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                break;
+        ParamUtils.BasicUpdateAction commentsOperation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
+                ParamUtils.BasicUpdateAction.ADD);
+        switch (commentsOperation) {
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixCommentsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + commentsOperation);
         }
 
         objectAcceptedParams = new String[]{QueryParams.METHODS.key()};
-        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
+        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -1025,6 +1024,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case ANALYST:
+                    case ANALYST_ID:
+                        addAutoOrQuery(QueryParams.ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case PRIMARY_FINDINGS:
+                    case PRIMARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.PRIMARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case SECONDARY_FINDINGS:
+                    case SECONDARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.SECONDARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(),
+                                andBsonList);
+                        break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
@@ -1033,11 +1045,16 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
                                 QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
+                    case METHODS:
+                    case METHODS_NAME:
+                        addAutoOrQuery(QueryParams.METHODS_NAME.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
                     case RELEASE:
                     case VERSION:
+                    case STATUS:
                     case CLINICAL_ANALYSIS_ID:
                     case DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

@@ -325,7 +325,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             try {
                 if (species.equals("hsapiens")) {
                     List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
-                    phoenixHelper.addMissingColumns(jdbcConnection, variantsTableName, columns, true);
+                    phoenixHelper.addMissingColumns(jdbcConnection, variantsTableName, columns);
                 }
             } catch (SQLException e) {
                 throw new StorageEngineException("Unable to register population frequency columns in Phoenix", e);

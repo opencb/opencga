@@ -2,22 +2,86 @@
 
 set -e
 
-function requiredFile() {
-  if [ ! -f $1 ]; then
-    echo "Missing file $1"
+function printUsage() {
+  echo ""
+  echo "Usage:   $(basename $0) --subscription <subscriotion_name> [options]"
+  echo ""
+  echo "Options:"
+  echo "   * -s     --subscription              Subscription name or subscription id"
+  echo "     --aof  --azure-output-file         Azure deployment output file"
+  echo "     --hf   --helm-file                 Helm values file. Used when calling to 'setup-k8s.sh' "
+  echo "     -h     --help                      Print this help"
+  echo ""
+}
+
+function requiredParam() {
+  key=$1
+  value=$2
+  if [ -z "${value}" ]; then
+    echo "Missing param $key"
+    printUsage
     exit 1
   fi
 }
 
-if [[ "$#" -ne 2 ]]; then
-  echo "Usage: $0 <subscription_name> <deployment-output.json>"
-  exit 1
+function requiredFile() {
+  key=$1
+  file=$2
+  if [ ! -f "${file}" ]; then
+    echo "Missing file ${key} : '${file}'"
+    printUsage
+    exit 1
+  fi
+}
+
+
+#subscriptionName
+#deploymentOut
+#userHelmValues
+
+while [[ $# -gt 0 ]]
+do
+key="$1"
+value="$2"
+case $key in
+    -h|--help)
+    printUsage
+    exit 0
+    ;;
+    -s|--subscription)
+    subscriptionName="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    --aof|--azure-output-file)
+    deploymentOut="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    --hf|--helm-file)
+    userHelmValues="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    *)    # unknown option
+    echo "Unknown option $key"
+    printUsage
+    exit 1
+    ;;
+esac
+done
+
+
+requiredParam "--subscription" "$subscriptionName"
+requiredFile "--azure-output-file" "$deploymentOut"
+
+if [ -n "$userHelmValues" ]; then
+  requiredFile "--helm-file" "${userHelmValues}"
+  userHelmValues=$(realpath "${userHelmValues}")
 fi
 
-subscriptionName=$1
-deploymentOut=$2
-requiredFile $deploymentOut
 deploymentOut=$(realpath "${deploymentOut}")
+helmValues="$(dirname "${deploymentOut}")/deployment-values-$(date "+%Y%m%d%H%M%S").yaml"
 
 # Don't move the PWD until we found out the realpath. It could be a relative path.
 cd "$(dirname "$0")"
@@ -31,88 +95,113 @@ function getParameter() {
   jq -r '.properties.parameters.'${1}'.value' ${deploymentOut}
 }
 
-function getHelmParam() {
-  # Commas must be scaped when passed as helm parameter
-  getOutput ${1} | sed 's/,/\\,/g'
+function configureContext() {
+  K8S_CONTEXT="$(getParameter clusterName)"
+
+  az account set --subscription "${subscriptionName}"
+  az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")" --overwrite-existing --context "$K8S_CONTEXT"
 }
 
-clusterName="$(getParameter clusterName)"
-echo "# Deploy kubernetes"
-echo "# Configuring context $clusterName"
+function generateHelmValuesFile() {
 
-az account set --subscription "${subscriptionName}"
-# deploy opencga
-az aks get-credentials -n "$(getOutput "aksClusterName")" -g "$(getOutput "aksResourceGroupName")" --overwrite-existing --context "$clusterName"
+  ## Generate helm values file
+  cat >> "${helmValues}" << EOF
+# $(date "+%Y%m%d%H%M%S")
+# Auto generated file from deployment output ${deploymentOut}
 
-kubectl config use-context "$clusterName"
+solr:
+  hosts: "$(getOutput "solrHostsCSV")"
 
-K8S_NAMESPACE="$clusterName"
-# Create a namespace for opencga
-if ! kubectl get namespace $K8S_NAMESPACE; then
-    kubectl create namespace $K8S_NAMESPACE
-fi
+hadoop:
+  sshDns: "$(getOutput "hdInsightSshDns")"
+  sshUsername: "$(getOutput "hdInsightSshUsername")"
+  sshPassword: "$(getOutput "hdInsightSshPassword")"
 
-kubectl config set-context --current --namespace=$K8S_NAMESPACE
+azureStorageAccount:
+  name: "$(getOutput "storageAccountName")"
+  key: "$(getOutput "storageAccountKey")"
 
-# Use Helm to deploy an NGINX ingress controller
-## Deploy in the same namespace
+opencga:
+  host: "http://opencga.$(getOutput "privateDnsZonesName")/opencga"
+  admin:
+    password: "$(getOutput "openCgaAdminPassword")"
 
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
-helm repo update
+catalog:
+  database:
+    hosts: "$(getOutput "mongoDbHostsCSV")"
+    user: "$(getOutput "mongoDbUser")"
+    password: "$(getOutput "mongoDbPassword")"
 
-helm upgrade opencga-nginx stable/nginx-ingress \
-    --namespace ${K8S_NAMESPACE} --version 1.27.0 \
-    -f ../../kubernetes/charts/nginx/values.yaml \
-    --install --wait --timeout 10m
+analysis:
+  execution:
+    options:
+      k8s:
+        masterNode: "https://$(getOutput "aksApiServerAddress"):443"
+        namespace:  "$K8S_NAMESPACE"
+  index:
+    variant:
+      maxConcurrentJobs: "100"
 
-## Register manually the nginx external IP for ingress
-EXTERNAL_IP=$(kubectl get services opencga-nginx-nginx-ingress-controller -o "jsonpath={.status.loadBalancer.ingress[0].ip}")
-ACTUAL_IP=$(az network private-dns record-set a show --resource-group $(getOutput "aksResourceGroupName") --zone-name $(getOutput "privateDnsZonesName") --name opencga 2> /dev/null | jq .aRecords[].ipv4Address -r)
-if [ ! $ACTUAL_IP = "" ] && [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
-  echo "Delete outdated A record: opencga.$(getOutput "privateDnsZonesName") : ${ACTUAL_IP}"
-  az network private-dns record-set a delete          \
-    --resource-group $(getOutput "aksResourceGroupName")  \
-    --zone-name "$(getOutput "privateDnsZonesName")"   \
-    --name opencga
-fi
+rest:
+  ingress:
+    host: "opencga.$(getOutput "privateDnsZonesName")"
 
-if [ $ACTUAL_IP = "" ] || [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
-  echo "Create A record: opencga.$(getOutput "privateDnsZonesName") : ${EXTERNAL_IP}"
-  az network private-dns record-set a add-record          \
-    --resource-group $(getOutput "aksResourceGroupName")  \
-    --zone-name "$(getOutput "privateDnsZonesName")"   \
-    --record-set-name opencga                             \
-    --ipv4-address ${EXTERNAL_IP}
-fi
+iva:
+  ingress:
+    host: "opencga.$(getOutput "privateDnsZonesName")"
 
-if ! kubectl get secret azure-files-secret -n ${K8S_NAMESPACE} &> /dev/null ; then
-   kubectl create secret generic azure-files-secret -n ${K8S_NAMESPACE} \
-       --from-literal=azurestorageaccountname=$(getOutput "storageAccountName") \
-       --from-literal=azurestorageaccountkey=$(getOutput "storageAccountKey")
-fi
+EOF
 
-if ! kubectl get secret opencga-secrets -n ${K8S_NAMESPACE} &> /dev/null ; then
-   kubectl create secret generic opencga-secrets -n ${K8S_NAMESPACE} \
-       --from-literal=openCgaAdminPassword=$(getOutput "openCgaAdminPassword") \
-       --from-literal=hdInsightSshPassword=$(getOutput "hdInsightSshPassword") \
-       --from-literal=mongoDbPassword=$(getOutput "mongoDbPassword")
-fi
+  if [ -n "${userHelmValues}" ]; then
+    allHelmValues="${helmValues},${userHelmValues}"
+  else
+    allHelmValues="${helmValues}"
+  fi
 
-helm upgrade opencga ../../kubernetes/charts/opencga \
-    --set hadoop.sshDns=$(getHelmParam "hdInsightSshDns")  \
-    --set hadoop.sshUsername=$(getHelmParam "hdInsightSshUsername") \
-    --set catalog.database.hosts=$(getHelmParam "mongoDbHostsCSV")  \
-    --set catalog.database.user=$(getHelmParam "mongoDbUser")  \
-    --set solr.hosts=$(getHelmParam "solrHostsCSV") \
-    --set analysis.execution.options.k8s.masterNode=https://$(getHelmParam "aksApiServerAddress"):443 \
-    --set analysis.execution.options.k8s.namespace=$K8S_NAMESPACE \
-    --set analysis.index.variant.maxConcurrentJobs="100" \
-    --set rest.ingress.host="opencga.$(getHelmParam "privateDnsZonesName")" \
-    --install --wait -n $K8S_NAMESPACE --timeout 10m
+}
+
+function registerIngressDomainName() {
+  ## Register manually the nginx external IP for ingress
+  EXTERNAL_IP=$(kubectl get services \
+             --context "${K8S_CONTEXT}" \
+             -o "jsonpath={.status.loadBalancer.ingress[0].ip}" \
+             opencga-nginx-nginx-ingress-controller)
+
+  ACTUAL_IP=$(az network private-dns record-set a show \
+             --subscription "${subscriptionName}" \
+             --resource-group $(getOutput "aksResourceGroupName") \
+             --zone-name $(getOutput "privateDnsZonesName")       \
+             --name opencga 2> /dev/null | jq .aRecords[].ipv4Address -r)
+
+  if [ ! $ACTUAL_IP = "" ] && [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
+    echo "Delete outdated A record: opencga.$(getOutput "privateDnsZonesName") : ${ACTUAL_IP}"
+    az network private-dns record-set a delete              \
+      --subscription "${subscriptionName}"                  \
+      --resource-group $(getOutput "aksResourceGroupName")  \
+      --zone-name "$(getOutput "privateDnsZonesName")"      \
+      --name opencga
+  fi
+
+  if [ $ACTUAL_IP = "" ] || [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
+    echo "Create A record: opencga.$(getOutput "privateDnsZonesName") : ${EXTERNAL_IP}"
+    az network private-dns record-set a add-record          \
+      --subscription "${subscriptionName}"                  \
+      --resource-group $(getOutput "aksResourceGroupName")  \
+      --zone-name "$(getOutput "privateDnsZonesName")"      \
+      --record-set-name opencga                             \
+      --ipv4-address ${EXTERNAL_IP}
+  fi
+}
 
 
-helm upgrade iva ../../kubernetes/charts/iva \
-    --set opencga.host="http://opencga.$(getHelmParam "privateDnsZonesName")/opencga" \
-    --set iva.ingress.host="opencga.$(getHelmParam "privateDnsZonesName")" \
-    --install --wait -n $K8S_NAMESPACE --timeout 10m
+echo "# Configure K8s context"
+configureContext
 
+echo "# Generate helm values file ${helmValues}"
+generateHelmValuesFile
+
+echo "setup-k8s.sh --context \"${K8S_CONTEXT}\" --values \"${allHelmValues}\""
+../../kubernetes/setup-k8s.sh --context "${K8S_CONTEXT}" --values "${allHelmValues}"
+
+echo "# Register Ingress domain name (if needed)"
+registerIngressDomainName

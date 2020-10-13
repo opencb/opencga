@@ -9,6 +9,7 @@ catalog:
   database:
     hosts: "FILL_ME"
     user: "FILL_ME"
+    password: "FILL_ME"
 
 cellbase:
   host: "FILL_ME"
@@ -30,6 +31,15 @@ solr:
 hadoop:
   sshDns: "FILL_ME"
   sshUsername: "FILL_ME"
+  sshPassword: "FILL_ME"
+
+opencga:
+  admin:
+    password: "FILL_ME"
+
+azureStorageAccount:
+  name: "FILL_ME"
+  key: "FILL_ME"
 
 clusterRoleBinding:
   name: fabric8-rbac

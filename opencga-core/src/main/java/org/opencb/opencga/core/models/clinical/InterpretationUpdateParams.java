@@ -37,7 +37,7 @@ public class InterpretationUpdateParams {
     private String creationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
-    private List<ClinicalComment> comments;
+    private List<ClinicalCommentParam> comments;
     private Map<String, Object> attributes;
 
     public InterpretationUpdateParams() {
@@ -45,13 +45,13 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
                                       String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes) {
         this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, comments, attributes);
     }
 
     public InterpretationUpdateParams(String id, String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
                                       String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.analyst = analyst;
@@ -147,11 +147,11 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public List<ClinicalComment> getComments() {
+    public List<ClinicalCommentParam> getComments() {
         return comments;
     }
 
-    public InterpretationUpdateParams setComments(List<ClinicalComment> comments) {
+    public InterpretationUpdateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
         return this;
     }

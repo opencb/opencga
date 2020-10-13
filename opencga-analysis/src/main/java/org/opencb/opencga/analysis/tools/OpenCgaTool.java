@@ -27,6 +27,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -75,6 +76,8 @@ public abstract class OpenCgaTool {
 
     private final ToolExecutorFactory toolExecutorFactory;
     private final Logger privateLogger;
+
+    protected MemoryUsageMonitor memoryUsageMonitor;
 
     private ExecutionResultManager erm;
 
@@ -168,6 +171,9 @@ public abstract class OpenCgaTool {
         if (this.getClass().getAnnotation(Tool.class) == null) {
             throw new ToolException("Missing @" + Tool.class.getSimpleName() + " annotation in " + this.getClass());
         }
+        if (configuration.getAnalysis().getExecution().getOptions().getBoolean("memoryMonitor", false)) {
+            startMemoryMonitor();
+        }
         erm = new ExecutionResultManager(getId(), outDir);
         erm.init(params, executorParams);
         Thread hook = new Thread(() -> {
@@ -243,7 +249,7 @@ public abstract class OpenCgaTool {
             deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
             result = erm.close(exception);
-
+            stopMemoryMonitor();
             privateLogger.info("------- Tool '" + getId() + "' executed in "
                     + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
         }
@@ -257,6 +263,20 @@ public abstract class OpenCgaTool {
             String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
             privateLogger.warn(warningMessage, e);
             erm.addWarning(warningMessage);
+        }
+    }
+
+    private void startMemoryMonitor() {
+        if (memoryUsageMonitor == null) {
+            memoryUsageMonitor = new MemoryUsageMonitor();
+            memoryUsageMonitor.start();
+        }
+    }
+
+    private void stopMemoryMonitor() {
+        if (memoryUsageMonitor != null) {
+            memoryUsageMonitor.stop();
+            memoryUsageMonitor = null;
         }
     }
 

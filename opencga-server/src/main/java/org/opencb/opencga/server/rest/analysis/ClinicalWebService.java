@@ -43,6 +43,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -362,8 +363,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.",
                     allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
-            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,SET,REMOVE",
-                    defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.UpdateAction commentsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE",
+                    defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.BasicUpdateAction commentsAction,
             @ApiParam(value = "Save interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("saveAs") ParamUtils.SaveInterpretationAs saveAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretationId") String interpretationId,
@@ -377,7 +378,7 @@ public class ClinicalWebService extends AnalysisWebService {
                 secondaryFindingsAction = ParamUtils.UpdateAction.ADD;
             }
             if (commentsAction == null) {
-                commentsAction = ParamUtils.UpdateAction.ADD;
+                commentsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             if (methodsAction == null) {
                 methodsAction = ParamUtils.UpdateAction.ADD;
@@ -457,27 +458,51 @@ public class ClinicalWebService extends AnalysisWebService {
         }
     }
 
-    @POST
-    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update comments of an Interpretation",
-            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
-    public Response commentsUpdate(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
-            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
-            @ApiParam(name = "body", value = "JSON containing a list of comments", required = true)
-                    List<ClinicalComment> comments) {
+//    @POST
+//    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update comments of an Interpretation",
+//            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
+//    public Response commentsUpdate(
+//            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
+//            @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
+//            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
+//            @ApiParam(name = "body", value = "JSON containing a list of comments", required = true)
+//                    List<ClinicalComment> comments) {
+//        try {
+//            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
+//
+//            Map<String, Object> actionMap = new HashMap<>();
+//            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
+//            queryOptions.put(Constants.ACTIONS, actionMap);
+//
+//            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, updateParams, null, queryOptions,
+//                    token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+
+    @GET
+    @Path("/interpretation/{interpretations}/info")
+    @ApiOperation(value = "Clinical interpretation information", response = Interpretation.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query")
+    })
+    public Response interpretationInfo(
+            @ApiParam(value = ParamConstants.INTERPRETATION_DESCRIPTION) @PathParam(value = "interpretations") String interpretations,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Interpretation version") @QueryParam("version") Integer version,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
-            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove("interpretations");
 
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, updateParams, null, queryOptions,
-                    token));
+            List<String> interpretationList = getIdList(interpretations);
+            DataResult<Interpretation> interpretationOpenCGAResult = catalogInterpretationManager.get(studyStr, interpretationList, query, queryOptions, true, token);
+            return createOkResponse(interpretationOpenCGAResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -485,7 +510,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @GET
     @Path("/interpretation/search")
-    @ApiOperation(value = "Clinical interpretation analysis", response = Interpretation.class)
+    @ApiOperation(value = "Search clinical interpretations", response = Interpretation.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -493,17 +518,22 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query")
     })
-    public Response aggregationStats(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = "Interpretation ID") @QueryParam("id") String id,
-                                     @ApiParam(value = "Description") @QueryParam("description") String description,
-                                     @ApiParam(value = "Software") @QueryParam("software") String software,
-                                     @ApiParam(value = "Analyst") @QueryParam("analyst") String analyst,
-                                     @ApiParam(value = "Comments") @QueryParam("comment") String comments,
-                                     @ApiParam(value = "Status") @QueryParam("status") String status,
-                                     @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
-                                     @ApiParam(value = "Version") @QueryParam("version") String version,
-                                     @ApiParam(value = "List of panels") @QueryParam("panel") String panel) {
-        return Response.ok().build();
+    public Response interpretationSearch(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Interpretation ID") @QueryParam("id") String id,
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Clinical analyst ID") @QueryParam("analyst") String clinicalAnalyst,
+            @ApiParam(value = "Interpretation method name") @QueryParam("methods") String methods,
+            @ApiParam(value = "Primary finding IDs") @QueryParam("primaryFindings") String primaryFindings,
+            @ApiParam(value = "Secondary finding IDs") @QueryParam("secondaryFindings") String secondaryFindings,
+            @ApiParam(value = "Interpretation status") @QueryParam("status") String status,
+            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date") @QueryParam("modificationDate") String modificationDate) {
+        try {
+            return createOkResponse(catalogInterpretationManager.search(studyStr, query, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
 

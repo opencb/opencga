@@ -21,6 +21,11 @@ public class MongoDBVariantStorageMetadataDBAdaptorFactory implements VariantSto
     }
 
     @Override
+    public ObjectMap getConfiguration() {
+        return options;
+    }
+
+    @Override
     public ProjectMetadataAdaptor buildProjectMetadataDBAdaptor() {
         return new MongoDBProjectMetadataDBAdaptor(db, options.getString(
                 MongoDBVariantStorageOptions.COLLECTION_PROJECT.key(),

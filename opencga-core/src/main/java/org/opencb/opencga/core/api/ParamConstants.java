@@ -186,6 +186,10 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
+
+    // ---------------------------------------------
+
     public static final String PANEL_SOURCE = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
             + "sources are 'panelapp' and 'genecensus'";

@@ -67,7 +67,7 @@ public class HadoopVariantScoreLoader extends VariantScoreLoader {
 
                 PhoenixHelper phoenixHelper = new PhoenixHelper(dbAdaptor.getConfiguration());
                 phoenixHelper.addMissingColumns(connection, variantTable, Collections.singleton(column),
-                        true, VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
+                        VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
             } catch (SQLException e) {
                 throw Throwables.propagate(e);
             }
