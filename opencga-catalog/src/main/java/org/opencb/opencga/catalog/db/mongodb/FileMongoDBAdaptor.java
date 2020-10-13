@@ -154,14 +154,14 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             }
 
             // ------------ PROCESS EXISTING SAMPLES --------------
-            int batchSize = 100;
-            List<List<Sample>> sampleUidList = new ArrayList<>((existingSamples.size() / batchSize) + 1);
+            int batchSize = 1000;
+            List<List<Sample>> sampleListList = new ArrayList<>((existingSamples.size() / batchSize) + 1);
             // Create batches
             List<Sample> currentList = null;
             for (int i = 0; i < existingSamples.size(); i++) {
-                if (i % 100 == 0) {
+                if (i % batchSize == 0) {
                     currentList = new ArrayList<>(batchSize);
-                    sampleUidList.add(currentList);
+                    sampleListList.add(currentList);
                 }
 
                 currentList.add(existingSamples.get(i));
@@ -172,7 +172,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
             UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
                     .updateFileReferences(params, sampleUpdateOptions);
-            for (List<Sample> sampleList : sampleUidList) {
+            for (List<Sample> sampleList : sampleListList) {
                 logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
 
                 // Update list of fileIds from sample
