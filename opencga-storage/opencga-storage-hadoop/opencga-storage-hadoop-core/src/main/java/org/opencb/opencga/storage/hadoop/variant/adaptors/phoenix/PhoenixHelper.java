@@ -186,24 +186,26 @@ public class PhoenixHelper {
         execute(con, buildDropTable(tableName, tableType, ifExists, cascade));
     }
 
-    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall, PTableType tableType)
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType)
             throws SQLException {
-        Set<String> columns = getColumns(con, tableName, tableType).stream().map(Column::column).collect(Collectors.toSet());
+        Set<String> columns = getColumns(con, tableName, tableType).stream()
+                .map(Column::column)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         Set<Column> missingColumns = newColumns.stream()
                 .filter(column -> !columns.contains(column.column()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         if (!missingColumns.isEmpty()) {
             logger.info("Adding missing columns: " + missingColumns);
-            if (oneCall) {
-                String sql = buildAlterAddColumns(tableName, missingColumns, true, tableType);
+            List<Column> missingColumnsList = new ArrayList<>(missingColumns);
+            // Run alter table in batches
+            int batchSize = 5000;
+            int numBatches = missingColumnsList.size() / batchSize + 1;
+            for (int batch = 0; batch < numBatches; batch++) {
+                String sql = buildAlterAddColumns(tableName,
+                        missingColumnsList.subList(batch * batchSize, Math.min(missingColumnsList.size(),
+                                (batch + 1) * batchSize)), true, tableType);
                 logger.info(sql);
                 execute(con, sql);
-            } else {
-                for (Column column : missingColumns) {
-                    String sql = buildAlterAddColumn(tableName, column.column(), column.sqlType(), true, tableType);
-                    logger.info(sql);
-                    execute(con, sql);
-                }
             }
         }
     }
