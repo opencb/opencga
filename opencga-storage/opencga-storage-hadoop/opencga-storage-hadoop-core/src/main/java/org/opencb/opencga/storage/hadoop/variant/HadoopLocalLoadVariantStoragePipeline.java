@@ -383,7 +383,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(options.getInt(LOAD_THREADS.key(), LOAD_THREADS.defaultValue()))
                 .setBatchSize(options.getInt(LOAD_BATCH_SIZE.key(), LOAD_BATCH_SIZE.defaultValue()))
-                .setSorted(true)
+                .setSorted(sampleIndexDBLoader != null)
                 .setReadQueuePutTimeout(1000).build();
         ParallelTaskRunner<Variant, Variant> ptr =
                 new ParallelTaskRunner<>(reader, hadoopDBWriter.asTask(), sampleIndexDBLoader, config);
