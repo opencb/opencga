@@ -379,6 +379,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         List<Integer> sampleIds = new ArrayList<>(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
         SampleIndexDBLoader sampleIndexDBLoader = newSampleIndexDBLoader(helper, sampleIds);
 
+        Task<Variant, Variant> progressLoggerTask = progressLogger
+                .asTask(variant -> "up to position " + variant.getChromosome() + ":" + variant.getStart());
+
         // Config
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(options.getInt(LOAD_THREADS.key(), LOAD_THREADS.defaultValue()))
@@ -386,7 +389,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 .setSorted(sampleIndexDBLoader != null)
                 .setReadQueuePutTimeout(1000).build();
         ParallelTaskRunner<Variant, Variant> ptr =
-                new ParallelTaskRunner<>(reader, hadoopDBWriter.asTask(), sampleIndexDBLoader, config);
+                new ParallelTaskRunner<>(reader, hadoopDBWriter.asTask().then(progressLoggerTask), sampleIndexDBLoader, config);
         try {
             ptr.run();
         } catch (ExecutionException e) {
