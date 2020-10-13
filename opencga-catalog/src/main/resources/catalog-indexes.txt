@@ -169,6 +169,10 @@
 {"collection": "interpretation", "fields": {"studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"analyst.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"method.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"clinicalAnalysisId": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"status": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"primaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"secondaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}

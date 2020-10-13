@@ -1025,6 +1025,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case ANALYST:
+                    case ANALYST_ID:
+                        addAutoOrQuery(QueryParams.ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case PRIMARY_FINDINGS:
+                    case PRIMARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.PRIMARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case SECONDARY_FINDINGS:
+                    case SECONDARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.SECONDARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(),
+                                andBsonList);
+                        break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
@@ -1033,11 +1046,16 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
                                 QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
+                    case METHODS:
+                    case METHODS_NAME:
+                        addAutoOrQuery(QueryParams.METHODS_NAME.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
                     case RELEASE:
                     case VERSION:
+                    case STATUS:
                     case CLINICAL_ANALYSIS_ID:
                     case DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
