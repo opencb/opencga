@@ -18,7 +18,6 @@ package org.opencb.opencga.server;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.opencb.opencga.server.rest.AdminRestWebService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -95,8 +94,8 @@ public class RestServer extends AbstractStorageServer {
             }
         }).start();
 
-        // AdminWSServer server needs a reference to this class to cll to .stop()
-        AdminRestWebService.setServer(this);
+//        // AdminWSServer server needs a reference to this class to cll to .stop()
+//        AdminRestWebService.setServer(this);
     }
 
     @Override

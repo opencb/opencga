@@ -122,7 +122,7 @@ public class OpenCGAWSServer {
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
-    protected static AtomicBoolean initialized;
+    public static AtomicBoolean initialized;
 
     protected static java.nio.file.Path opencgaHome;
 
@@ -175,6 +175,12 @@ public class OpenCGAWSServer {
             }
         }
 
+        // take the time for calculating the whole duration of the call
+        startTime = System.currentTimeMillis();
+
+        // Add session attributes. Used by the ParamExceptionMapper
+        httpServletRequest.getSession().setAttribute("startTime", startTime);
+
         // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
@@ -194,8 +200,9 @@ public class OpenCGAWSServer {
         queryOptions = new QueryOptions();
 
         parseParams();
-        // take the time for calculating the whole duration of the call
-        startTime = System.currentTimeMillis();
+
+        // Add session attributes. Used by the ParamExceptionMapper
+        httpServletRequest.getSession().setAttribute("requestDescription", requestDescription);
     }
 
     private void init() {
@@ -496,6 +503,10 @@ public class OpenCGAWSServer {
     }
 
     protected Response createErrorResponse(Throwable e) {
+        return createErrorResponse(e, startTime, apiVersion, requestDescription, params);
+    }
+
+    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription, ObjectMap params) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
@@ -509,15 +520,21 @@ public class OpenCGAWSServer {
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
         queryResponse.setResponses(Arrays.asList(result));
 
-        Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
-        if (e instanceof CatalogAuthorizationException) {
+        Response.StatusType errorStatus;
+        if (e instanceof WebApplicationException
+                && ((WebApplicationException) e).getResponse() != null
+                && ((WebApplicationException) e).getResponse().getStatusInfo() != null) {
+            errorStatus = ((WebApplicationException) e).getResponse().getStatusInfo();
+        } else if (e instanceof CatalogAuthorizationException) {
             errorStatus = Response.Status.FORBIDDEN;
         } else if (e instanceof CatalogAuthenticationException) {
             errorStatus = Response.Status.UNAUTHORIZED;
+        } else {
+            errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
         }
 
         Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
-        logResponse(response.getStatusInfo(), queryResponse);
+        logResponse(response.getStatusInfo(), queryResponse, startTime, requestDescription);
         return response;
     }
 
@@ -530,12 +547,6 @@ public class OpenCGAWSServer {
 
         Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
         logResponse(response.getStatusInfo(), dataResponse);
-        return response;
-    }
-
-    static Response createBadRequestResponse(String errorMessage, RestResponse dataResponse) {
-        addErrorEvent(dataResponse, errorMessage);
-        Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.BAD_REQUEST).build();
         return response;
     }
 
@@ -560,12 +571,18 @@ public class OpenCGAWSServer {
         response.getEvents().add(new Event(Event.Type.ERROR, message));
     }
 
-    private <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
+    private static <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
         if (response.getEvents() == null) {
             response.setEvents(new ArrayList<>());
         }
+        String message;
+        if (e instanceof ParamException.QueryParamException && e.getCause() != null) {
+            message = e.getCause().getMessage();
+        } else {
+            message = e.getMessage();
+        }
         response.getEvents().add(
-                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), e.getMessage()));
+                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), message));
     }
 
     // TODO: Change signature
