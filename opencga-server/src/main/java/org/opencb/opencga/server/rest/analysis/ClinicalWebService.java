@@ -363,8 +363,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.",
                     allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
-            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,SET,REMOVE",
-                    defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.UpdateAction commentsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE",
+                    defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.BasicUpdateAction commentsAction,
             @ApiParam(value = "Save interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("saveAs") ParamUtils.SaveInterpretationAs saveAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretationId") String interpretationId,
@@ -378,7 +378,7 @@ public class ClinicalWebService extends AnalysisWebService {
                 secondaryFindingsAction = ParamUtils.UpdateAction.ADD;
             }
             if (commentsAction == null) {
-                commentsAction = ParamUtils.UpdateAction.ADD;
+                commentsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             if (methodsAction == null) {
                 methodsAction = ParamUtils.UpdateAction.ADD;
@@ -458,31 +458,31 @@ public class ClinicalWebService extends AnalysisWebService {
         }
     }
 
-    @POST
-    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update comments of an Interpretation",
-            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
-    public Response commentsUpdate(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
-            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
-            @ApiParam(name = "body", value = "JSON containing a list of comments", required = true)
-                    List<ClinicalComment> comments) {
-        try {
-            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
-
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, updateParams, null, queryOptions,
-                    token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update comments of an Interpretation",
+//            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class, hidden = true)
+//    public Response commentsUpdate(
+//            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
+//            @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
+//            @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
+//            @ApiParam(name = "body", value = "JSON containing a list of comments", required = true)
+//                    List<ClinicalComment> comments) {
+//        try {
+//            InterpretationUpdateParams updateParams = new InterpretationUpdateParams().setComments(comments);
+//
+//            Map<String, Object> actionMap = new HashMap<>();
+//            actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), action.name());
+//            queryOptions.put(Constants.ACTIONS, actionMap);
+//
+//            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, updateParams, null, queryOptions,
+//                    token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/interpretation/{interpretations}/info")

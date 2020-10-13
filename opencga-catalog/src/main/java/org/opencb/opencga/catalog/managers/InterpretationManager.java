@@ -21,6 +21,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -52,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
@@ -261,6 +263,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
         interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
+
+        if (!interpretation.getComments().isEmpty()) {
+            // Fill author and date
+            for (ClinicalComment comment : interpretation.getComments()) {
+                comment.setAuthor(userId);
+                comment.setDate(TimeUtils.getTime());
+            }
+        }
 
         // Analyst
         QueryOptions userInclude = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.ID.key(),
@@ -735,6 +745,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
             }
+        }
+
+        if (updateParams != null && updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {
+            List<ClinicalComment> comments = updateParams.getComments().stream()
+                    .map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(), TimeUtils.getTime()))
+                    .collect(Collectors.toList());
+            parameters.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), comments);
         }
 
         if (parameters.get(InterpretationDBAdaptor.QueryParams.ANALYST.key()) != null) {

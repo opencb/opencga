@@ -336,7 +336,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return document;
     }
 
-    private void fixCommentsForRemoval(ObjectMap parameters) {
+    static void fixCommentsForRemoval(ObjectMap parameters) {
         if (parameters.get(COMMENTS.key()) == null) {
             return;
         }

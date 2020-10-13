@@ -56,6 +56,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements InterpretationDBAdaptor {
@@ -377,24 +378,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
-                ParamUtils.UpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                break;
+        ParamUtils.BasicUpdateAction commentsOperation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
+                ParamUtils.BasicUpdateAction.ADD);
+        switch (commentsOperation) {
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixCommentsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + commentsOperation);
         }
 
         objectAcceptedParams = new String[]{QueryParams.METHODS.key()};
-        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
+        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
