@@ -57,6 +57,7 @@ public class RestServer extends AbstractStorageServer {
         String opencgaVersion = warPath.get().toFile().getName().replace(".war", "");
         webapp.setContextPath("/" + opencgaVersion);
         webapp.setWar(warPath.get().toString());
+        webapp.setClassLoader(this.getClass().getClassLoader());
         webapp.setInitParameter("OPENCGA_HOME", opencgaHome.toFile().toString());
         webapp.getServletContext().setAttribute("OPENCGA_HOME", opencgaHome.toFile().toString());
 //        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
