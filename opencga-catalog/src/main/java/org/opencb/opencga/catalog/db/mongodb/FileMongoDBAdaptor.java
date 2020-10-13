@@ -143,6 +143,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         // First we check if we need to create any samples and update current list of samples with the ones created
         List<Sample> samples = new ArrayList<>(existingSamples.size() + nonExistingSamples.size());
         if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
+            // ------------ PROCESS NON-EXISTING SAMPLES --------------
             for (Sample sample : nonExistingSamples) {
                 logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
 
@@ -152,25 +153,39 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 samples.add(newSample);
             }
 
-            // Process existing samples
-            for (Sample sample : existingSamples) {
-                logger.debug("Sample '{}' was already registered. Updating list of fileIds...", sample.getId());
+            // ------------ PROCESS EXISTING SAMPLES --------------
+            int batchSize = 100;
+            List<List<Sample>> sampleUidList = new ArrayList<>((existingSamples.size() / batchSize) + 1);
+            // Create batches
+            List<Sample> currentList = null;
+            for (int i = 0; i < existingSamples.size(); i++) {
+                if (i % 100 == 0) {
+                    currentList = new ArrayList<>(batchSize);
+                    sampleUidList.add(currentList);
+                }
+
+                currentList.add(existingSamples.get(i));
+            }
+
+            ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
+            ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
+            QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+            UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
+                    .updateFileReferences(params, sampleUpdateOptions);
+            for (List<Sample> sampleList : sampleUidList) {
+                logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
 
                 // Update list of fileIds from sample
                 Query query = new Query()
                         .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                        .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid());
-                ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
-                QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
-                UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
-                        .updateFileReferences(params, sampleUpdateOptions);
+                        .append(SampleDBAdaptor.QueryParams.UID.key(),
+                                sampleList.stream().map(Sample::getUid).collect(Collectors.toList()));
                 dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession,
                         dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null),
-                        sampleUpdateDocument.toFinalUpdateDocument(), null);
+                        sampleUpdateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
 
                 // Add sample to sampleList
-                samples.add(sample);
+                samples.addAll(sampleList);
             }
         }
 
