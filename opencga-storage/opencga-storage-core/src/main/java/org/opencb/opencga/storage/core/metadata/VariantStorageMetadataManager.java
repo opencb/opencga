@@ -97,9 +97,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         this.cohortDBAdaptor = dbAdaptorFactory.buildCohortMetadataDBAdaptor();
         this.taskDBAdaptor = dbAdaptorFactory.buildTaskDBAdaptor();
         lockDuration = dbAdaptorFactory.getConfiguration()
-                .get(VariantStorageOptions.METADATA_LOCK_DURATION.key(), VariantStorageOptions.METADATA_LOCK_DURATION.defaultValue());
+                .getInt(VariantStorageOptions.METADATA_LOCK_DURATION.key(), VariantStorageOptions.METADATA_LOCK_DURATION.defaultValue());
         lockTimeout = dbAdaptorFactory.getConfiguration()
-                .get(VariantStorageOptions.METADATA_LOCK_TIMEOUT.key(), VariantStorageOptions.METADATA_LOCK_TIMEOUT.defaultValue());
+                .getInt(VariantStorageOptions.METADATA_LOCK_TIMEOUT.key(), VariantStorageOptions.METADATA_LOCK_TIMEOUT.defaultValue());
         sampleIdCache = new MetadataCache<>(sampleDBAdaptor::getSampleId);
         sampleNameCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
