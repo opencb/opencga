@@ -428,6 +428,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return input;
     }
 
+    /**
+     * PreLoad step for modify the StudyMetadata and register the file to be loaded.
+     * This step is executed inside a study lock.
+     *
+     * @param input         input
+     * @param output        output
+     * @throws StorageEngineException  If any condition is wrong
+     */
     @Override
     public URI preLoad(URI input, URI output) throws StorageEngineException {
         getOrCreateStudyMetadata();
@@ -461,6 +469,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
+
+        preLoadRegisterAndValidateFile(studyId, fileMetadata);
+
         //Get the studyConfiguration. If there is no StudyMetadata, create a empty one.
         dbAdaptor.getMetadataManager().updateStudyMetadata(studyId, study -> {
             securePreLoad(study, fileMetadata);
@@ -469,8 +480,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return input;
     }
 
+    protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        int fileId = getMetadataManager().registerFile(studyId, fileMetadata);
+        setFileId(fileId);
+    }
+
     /**
-     * PreLoad step for modify the StudyMetadata and register the file to be loaded.
+     * Secure preLoad step for modify the StudyMetadata.
      * This step is executed inside a study lock.
      *
      * @param studyMetadata         StudyMetadata
@@ -478,19 +494,9 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      * @throws StorageEngineException  If any condition is wrong
      */
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        /*
-         * Before load file, check and add fileName to the StudyMetadata.
-         * FileName is read from the VariantFileMetadata
-         * Will fail if:
-         *     fileId was already in the studyConfiguration.indexedFiles
-         */
-        int studyId = studyMetadata.getId();
-        int fileId = getMetadataManager().registerFile(studyId, fileMetadata);
-        setFileId(fileId);
-
-        final boolean excludeGenotypes = options.getBoolean(
-                VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
+//        final boolean excludeGenotypes = options.getBoolean(
+//                VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+//                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
 //        if (getMetadataManager().getIndexedFiles(studyId).isEmpty()) {
 //            // First indexed file
 //            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyMetadata.attributes
@@ -601,6 +607,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     }
 
     protected final URI postLoad(URI input, URI output, List<Integer> fileIds) throws StorageEngineException {
+        int studyId = getStudyId();
         List<Integer> finalFileIds;
         if (fileIds == null || fileIds.isEmpty()) {
             finalFileIds = Collections.singletonList(getFileId());
@@ -611,36 +618,30 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // Check loaded variants BEFORE updating the StudyMetadata
         checkLoadedVariants(finalFileIds, getStudyMetadata());
 
+        // Update the cohort ALL. Invalidate if needed
+        String defaultCohortName = StudyEntry.DEFAULT_COHORT;
+
+        // Register or update default cohort
+        Set<Integer> samples = new HashSet<>();
+        for (Integer fileId : finalFileIds) {
+            samples.addAll(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
+        }
+        getMetadataManager().addSamplesToCohort(studyId, defaultCohortName, samples);
+
+        logger.info("Add " + samples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
+
+        // Update indexed files
+        getMetadataManager().addIndexedFiles(studyId, finalFileIds);
+
         //Update StudyMetadata
-        getMetadataManager().updateStudyMetadata(getStudyId(), sm -> {
+        getMetadataManager().updateStudyMetadata(studyId, sm -> {
             securePostLoad(finalFileIds, sm);
-            finalSecurePostLoad(finalFileIds, sm);
             return sm;
         });
         return input;
     }
 
     protected void securePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
-    }
-
-    private void finalSecurePostLoad(List<Integer> fileIds, StudyMetadata studyMetadata) throws StorageEngineException {
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-        int studyId = studyMetadata.getId();
-
-        // Update the cohort ALL. Invalidate if needed
-        String defaultCohortName = StudyEntry.DEFAULT_COHORT;
-
-        // Register or update default cohort
-        Set<Integer> samples = new HashSet<>();
-        for (Integer fileId : fileIds) {
-            samples.addAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
-        }
-        metadataManager.addSamplesToCohort(studyId, defaultCohortName, samples);
-
-        logger.info("Add " + samples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
-
-        // Update indexed files
-        metadataManager.addIndexedFiles(studyId, fileIds);
     }
 
     @Override

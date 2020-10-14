@@ -87,12 +87,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     @Override
-    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        super.securePreLoad(studyMetadata, fileMetadata);
+    protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        super.preLoadRegisterAndValidateFile(studyId, fileMetadata);
 
         Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
         Set<Integer> processedSamples = new LinkedHashSet<>();
-        int studyId = getStudyId();
         VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
         for (String sample : fileMetadata.getSampleIds()) {
             Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
@@ -145,6 +144,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                         sampleMetadata -> sampleMetadata.setSplitData(splitData));
             }
         }
+    }
+
+    @Override
+    protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
+        super.securePreLoad(studyMetadata, fileMetadata);
+
+        int studyId = getStudyId();
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
         boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
