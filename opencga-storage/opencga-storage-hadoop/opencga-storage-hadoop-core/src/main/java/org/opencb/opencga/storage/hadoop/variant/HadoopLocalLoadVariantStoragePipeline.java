@@ -92,6 +92,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
         Set<Integer> processedSamples = new LinkedHashSet<>();
+        Set<Integer> samplesWithoutSplitData = new LinkedHashSet<>();
         VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
         for (String sample : fileMetadata.getSampleIds()) {
             Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
@@ -112,6 +113,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                         || sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
                     processedSamples.add(sampleMetadata.getId());
                 }
+            }
+
+            if (splitData != null && splitData != sampleMetadata.getSplitData()) {
+                samplesWithoutSplitData.add(sampleId);
             }
         }
 
@@ -135,8 +140,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
         if (splitData != null) {
             // Register loadSplitData
-            for (String sample : fileMetadata.getSampleIds()) {
-                Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
+            for (Integer sampleId : samplesWithoutSplitData) {
                 getMetadataManager().updateSampleMetadata(studyId, sampleId,
                         sampleMetadata -> sampleMetadata.setSplitData(splitData));
             }
