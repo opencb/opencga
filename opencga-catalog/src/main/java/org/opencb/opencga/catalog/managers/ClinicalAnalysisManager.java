@@ -415,7 +415,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 clinicalAnalysis.setProband(proband);
 
                 // Validate the proband has a disorder
-                validateDisorder(clinicalAnalysis);
+//                validateDisorder(clinicalAnalysis);
             } else {
                 OpenCGAResult<Individual> individualOpenCGAResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
                         clinicalAnalysis.getProband().getId(), new Query(), new QueryOptions(), userId);
