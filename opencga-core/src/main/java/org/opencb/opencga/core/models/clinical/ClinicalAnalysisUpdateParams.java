@@ -32,7 +32,6 @@ public class ClinicalAnalysisUpdateParams {
 
     private String id;
     private String description;
-    private ClinicalAnalysis.Type type;
     private DisorderReferenceParam disorder;
 
     private List<FileReferenceParam> files;
@@ -56,14 +55,13 @@ public class ClinicalAnalysisUpdateParams {
     public ClinicalAnalysisUpdateParams() {
     }
 
-    public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                        List<FileReferenceParam> files, Boolean locked, ClinicalAnalystParam analyst,
-                                        ClinicalAnalysisInternal internal, ClinicalConsent consent, String dueDate,
-                                        List<ClinicalCommentParam> comments, Enums.Priority priority, List<String> flags,
-                                        Map<String, Object> attributes, CustomStatusParams status) {
+    public ClinicalAnalysisUpdateParams(String id, String description, DisorderReferenceParam disorder, List<FileReferenceParam> files,
+                                        Boolean locked, ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
+                                        ClinicalConsent consent, String dueDate, List<ClinicalCommentParam> comments,
+                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
+                                        CustomStatusParams status) {
         this.id = id;
         this.description = description;
-        this.type = type;
         this.disorder = disorder;
         this.files = files;
         this.locked = locked;
@@ -88,7 +86,6 @@ public class ClinicalAnalysisUpdateParams {
         final StringBuilder sb = new StringBuilder("ClinicalUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
         sb.append(", locked=").append(locked);
@@ -136,15 +133,6 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public ClinicalAnalysis.Type getType() {
-        return type;
-    }
-
-    public ClinicalAnalysisUpdateParams setType(ClinicalAnalysis.Type type) {
-        this.type = type;
         return this;
     }
 
