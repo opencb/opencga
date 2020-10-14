@@ -981,7 +981,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             newCohort = false;
         }
 
-        // First register cohort in samples
+        // Discard already added samples
+        if (!newCohort && addSamples) {
+            // Remove already added samples
+            CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
+
+            Set<Integer> samplesToAdd = new HashSet<>(sampleIds);
+            samplesToAdd.removeAll(cohortMetadata.getSamples());
+            if (samplesToAdd.isEmpty()) {
+                // All samples already in cohort! Nothing to do
+                return cohortMetadata;
+            } else {
+                sampleIds = samplesToAdd;
+            }
+        }
+
+        // Register cohort in samples
         for (Integer sampleId : sampleIds) {
             Integer finalCohortId = cohortId;
             if (secondaryIndexCohort) {
@@ -1016,9 +1031,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         List<Integer> fileIds = new ArrayList<>(getFileIdsFromSampleIds(studyId, sampleIds));
 
         // Then, add samples to the cohort
+        Collection<Integer> finalSampleIds = sampleIds;
         return updateCohortMetadata(studyId, cohortId,
                 cohort -> {
-                    List<Integer> sampleIdsList = new ArrayList<>(sampleIds);
+                    List<Integer> sampleIdsList = new ArrayList<>(finalSampleIds);
                     sampleIdsList.sort(Integer::compareTo);
 
                     List<Integer> oldSamples = cohort.getSamples();
@@ -1027,9 +1043,9 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     final List<Integer> newSamples;
                     final List<Integer> newFiles;
                     if (addSamples) {
-                        Set<Integer> allSamples = new HashSet<>(oldSamples.size() + sampleIds.size());
+                        Set<Integer> allSamples = new HashSet<>(oldSamples.size() + finalSampleIds.size());
                         allSamples.addAll(oldSamples);
-                        allSamples.addAll(sampleIds);
+                        allSamples.addAll(finalSampleIds);
                         newSamples = new ArrayList<>(allSamples);
 
                         Set<Integer> allFiles = new HashSet<>(oldFiles.size() + fileIds.size());
