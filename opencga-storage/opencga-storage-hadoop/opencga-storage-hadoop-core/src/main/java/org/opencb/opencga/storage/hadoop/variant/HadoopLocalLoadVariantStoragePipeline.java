@@ -103,17 +103,14 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                             + " with existing " + sampleMetadata.getSplitData());
                 }
             }
-            for (Integer fileId : sampleMetadata.getFiles()) {
-                if (fileId != getFileId()) {
-                    if (getMetadataManager().getFileMetadata(studyId, fileId).getIndexStatus() != TaskMetadata.Status.NONE) {
-                        alreadyIndexedSamples.add(sample);
-                        if (sampleMetadata.isAnnotated()
-                                || SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata) == TaskMetadata.Status.READY
-                                || sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY
-                                || sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
-                            processedSamples.add(sampleMetadata.getId());
-                        }
-                    }
+
+            if (sampleMetadata.isIndexed()) {
+                alreadyIndexedSamples.add(sample);
+                if (sampleMetadata.isAnnotated()
+                        || SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata) == TaskMetadata.Status.READY
+                        || sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY
+                        || sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
+                    processedSamples.add(sampleMetadata.getId());
                 }
             }
         }
