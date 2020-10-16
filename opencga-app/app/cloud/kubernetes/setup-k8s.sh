@@ -5,13 +5,20 @@ set -e
 
 function printUsage() {
   echo ""
+  echo "Deploy required Helm charts for a fully working OpenCGA installation"
+  echo " - opencga-nginx"
+  echo " - opencga"
+  echo " - iva"
+  echo ""
   echo "Usage:   $(basename $0) --context <context> [options]"
   echo ""
   echo "Options:"
   echo "   * -c     --context                   Kubernetes context"
   echo "     -n     --namespace                 Kubernetes namespace"
   echo "   * -f     --values                    Helm values file"
+  echo "            --name-suffix               Helm deployment name suffix. e.g. '-test' : opencga-nginx-test, opencga-test, iva-test"
   echo "            --what                      What to deploy. [nginx, iva, opencga, all]. Default: all"
+  echo "            --dry-run                   Simulate an installation."
   echo "     -h     --help                      Print this help"
   echo "            --verbose                   Verbose mode. Print debugging messages about the progress."
   echo ""
@@ -31,7 +38,7 @@ function requiredFile() {
   key=$1
   file=$2
   if [ ! -f "${file}" ]; then
-    echo "Missing file ${key} : '${file}'"
+    echo "Missing file ${key} : '${file}' : No such file"
     printUsage
     exit 1
   fi
@@ -41,6 +48,8 @@ function requiredFile() {
 #K8S_NAMESPACE
 #HELM_VALUES_FILE
 WHAT=ALL
+#NAME_SUFFIX
+#HELM_OPTS
 
 
 while [[ $# -gt 0 ]]
@@ -72,8 +81,18 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    --name-suffix)
+    NAME_SUFFIX="${value}"
+    shift # past argument
+    shift # past value
+    ;;
     --verbose)
     set -x
+    HELM_OPTS="${HELM_OPTS} --debug "
+    shift # past argument
+    ;;
+    --dry-run)
+    HELM_OPTS="${HELM_OPTS} --dry-run "
     shift # past argument
     ;;
     *)    # unknown option
@@ -120,23 +139,29 @@ function deployNginx() {
   helm repo add stable https://kubernetes-charts.storage.googleapis.com/
   helm repo update
 
-  helm upgrade opencga-nginx stable/nginx-ingress \
+  NAME="opencga-nginx${NAME_SUFFIX}"
+  echo "# Deploy NGINX ${NAME}"
+  helm upgrade ${NAME} stable/nginx-ingress \
       --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}" --version 1.27.0 \
       -f charts/nginx/values.yaml \
       --values "${HELM_VALUES_FILE}" \
-      --install --wait --timeout 10m
+      --install --wait --timeout 10m ${HELM_OPTS}
 }
 
 function deployOpenCGA() {
-  helm upgrade opencga charts/opencga \
+  NAME="opencga${NAME_SUFFIX}"
+  echo "# Deploy OpenCGA ${NAME}"
+  helm upgrade ${NAME} charts/opencga \
       --values "${HELM_VALUES_FILE}" \
-      --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m
+      --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
 }
 
 function deployIVA() {
-  helm upgrade iva charts/iva \
+  NAME="iva${NAME_SUFFIX}"
+  echo "# Deploy IVA ${NAME}"
+  helm upgrade ${NAME} charts/iva \
       --values "${HELM_VALUES_FILE}" \
-      --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m
+      --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
 }
 
 
@@ -145,16 +170,13 @@ echo "# Configuring context $K8S_CONTEXT"
 configureContext
 
 if [[ "$WHAT" = "NGINX" || "$WHAT" = "ALL" ]]; then
-  echo "# Deploy NGINX"
   deployNginx
 fi
 
 if [[ "$WHAT" = "OPENCGA" || "$WHAT" = "ALL" ]]; then
-  echo "# Deploy OpenCGA"
   deployOpenCGA
 fi
 
 if [[ "$WHAT" = "IVA" || "$WHAT" = "ALL" ]]; then
-  echo "# Deploy IVA"
   deployIVA
 fi

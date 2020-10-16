@@ -33,7 +33,7 @@ spec:
         - name:  "INIT_OPENCGA_PASS"
           valueFrom:
             secretKeyRef:
-              name: opencga-secrets
+              name: {{ .Values.opencga.secretsName }}
               key: openCgaAdminPassword
         - name:  "INIT_HEALTH_CHECK_INTERVAL"
           value: "30"
@@ -46,7 +46,7 @@ spec:
         - name: "INIT_HADOOP_SSH_PASS"
           valueFrom:
             secretKeyRef:
-              name: opencga-secrets
+              name: {{ .Values.opencga.secretsName }}
               key: hdInsightSshPassword
         - name: "INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
           value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/" 
@@ -69,7 +69,7 @@ spec:
         - name: "INIT_CATALOG_DATABASE_PASSWORD"
           valueFrom:
             secretKeyRef:
-              name: opencga-secrets
+              name: {{ .Values.opencga.secretsName }}
               key: mongoDbPassword
         - name: "INIT_CATALOG_SEARCH_HOSTS"
         {{- if .Values.deploySolr }}
@@ -127,7 +127,7 @@ spec:
           - name:  "PASSWORD"
             valueFrom:
               secretKeyRef:
-                name: opencga-secrets
+                name: {{ .Values.opencga.secretsName }}
                 key: openCgaAdminPassword
           resources:
             {{- toYaml .Values.master.resources | nindent 12 }}

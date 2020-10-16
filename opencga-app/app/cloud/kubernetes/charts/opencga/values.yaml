@@ -34,10 +34,13 @@ hadoop:
   sshPassword: "FILL_ME"
 
 opencga:
+  secretsName: "opencga-secrets"
   admin:
     password: "FILL_ME"
 
+# https://docs.microsoft.com/en-gb/azure/aks/azure-files-volume
 azureStorageAccount:
+  enabled: true
   name: "FILL_ME"
   key: "FILL_ME"
 

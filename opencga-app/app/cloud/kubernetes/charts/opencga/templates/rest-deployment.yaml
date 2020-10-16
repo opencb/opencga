@@ -34,7 +34,7 @@ spec:
           - name:  "PASSWORD"
             valueFrom:
               secretKeyRef:
-                name: opencga-secrets
+                name: {{ .Values.opencga.secretsName }}
                 key: openCgaAdminPassword
           - name: DOCKER_HOST
             value: tcp://localhost:2375

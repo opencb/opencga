@@ -28,7 +28,7 @@ function requiredFile() {
   key=$1
   file=$2
   if [ ! -f "${file}" ]; then
-    echo "Missing file ${key} : '${file}'"
+    echo "Missing file ${key} : '${file}' : No such file or directory"
     printUsage
     exit 1
   fi
