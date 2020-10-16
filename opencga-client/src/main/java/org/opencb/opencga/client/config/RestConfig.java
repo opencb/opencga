@@ -24,6 +24,7 @@ public class RestConfig {
     private String host;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
+    private int timeout;
     private QueryRestConfig query;
 
     public RestConfig() {
@@ -70,6 +71,15 @@ public class RestConfig {
 
     public RestConfig setTlsAllowInvalidCertificates(boolean tlsAllowInvalidCertificates) {
         this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
+        return this;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public RestConfig setTimeout(int timeout) {
+        this.timeout = timeout;
         return this;
     }
 
