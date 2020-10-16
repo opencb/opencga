@@ -16,26 +16,27 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-
+import io.swagger.annotations.ApiParam;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.monitor.HealthCheckDependencies;
+import org.opencb.opencga.core.models.monitor.HealthCheckDependency;
+import org.opencb.opencga.core.models.monitor.HealthCheckResponse;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 05/05/17.
@@ -80,16 +81,33 @@ public class MetaWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/status")
-    @ApiOperation(httpMethod = "GET", value = "Database status.")
-    public Response status() {
+    @Path("/health")
+    @ApiOperation(httpMethod = "GET", value = "Reports on the overall system status based on the status of such things "
+            + "as database connections and the ability to access other APIs.", response = HealthCheckResponse.class)
+    public Response status(
+            @ApiParam(value = "API token for health check. When passed all of the dependencies and their status will be displayed. "
+                    + "The dependencies will be checked if this parameter is not used, but they won't be part of the response.")
+                @QueryParam("token") String token) {
+        try {
+            if (StringUtils.isEmpty(sessionId) && StringUtils.isNotEmpty(token)) {
+                sessionId = token;
+            }
 
-        QueryResult queryResult = new QueryResult();
-        queryResult.setId("Status");
-        queryResult.setDbTime(0);
-        queryResult.setResult(Arrays.asList(catalogManager.getDatabaseStatus()));
-        return createOkResponse(queryResult);
+            HealthCheckResponse healthCheckResponse = catalogManager.healthCheck(httpServletRequest.getRequestURI(), sessionId);
+            if (healthCheckResponse.getStatus() == HealthCheckResponse.Status.OK) {
+                return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(healthCheckResponse), MediaType.APPLICATION_JSON_TYPE));
+            } else {
+                return buildResponse(
+                        Response.ok(jsonObjectWriter.writeValueAsString(healthCheckResponse), MediaType.APPLICATION_JSON_TYPE)
+                                .status(Response.Status.SERVICE_UNAVAILABLE)
+                );
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
+/*name: token
+          description: API token for health check. When passed all of the dependencies and their status will be displayed. The dependencies will be checked if this parameter is not used, but they won't be part of the response.
 
-
+* */
 }

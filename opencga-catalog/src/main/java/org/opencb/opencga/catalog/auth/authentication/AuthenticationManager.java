@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.AuthenticationResponse;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.monitor.AuthenticationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,5 +141,7 @@ public abstract class AuthenticationManager {
     public String createNonExpiringToken(String userId) {
         return jwtManager.createJWTToken(userId, Collections.emptyMap(), 0L);
     }
+
+    public abstract void healthCheck(AuthenticationStatus healthCheckDependency);
 
 }

@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -30,10 +32,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.monitor.HealthCheckDependencies;
+import org.opencb.opencga.core.models.monitor.HealthCheckDependency;
+import org.opencb.opencga.core.models.monitor.HealthCheckResponse;
 
 import javax.naming.NamingException;
 import java.io.ByteArrayInputStream;
@@ -251,6 +257,11 @@ public class CatalogManagerTest extends GenericTest {
 
     public CatalogManager getTestCatalogManager() {
         return catalogManager;
+    }
+
+    @Test
+    public void testHealth() throws JsonProcessingException, CatalogException {
+        System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(catalogManager.healthCheck("url", "")));
     }
 
     @Test

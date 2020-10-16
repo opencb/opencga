@@ -16,14 +16,15 @@
 
 package org.opencb.opencga.catalog.db;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.core.config.Admin;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.monitor.DatastoreStatus;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -62,7 +63,7 @@ public interface DBAdaptorFactory {
 
     String getCatalogDatabase(String prefix);
 
-    ObjectMap getDatabaseStatus();
+    List<DatastoreStatus> getDatabaseStatus();
 
     /**
      * Removes the catalog database.

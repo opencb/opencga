@@ -68,7 +68,10 @@ public class LDAPUtils {
         return dctx;
     }
 
-    private static boolean isConnectionAlive() {
+    public static boolean isConnectionAlive() {
+        if (dctx == null) {
+            return false;
+        }
         try {
             dctx.getAttributes("");
             return true;

@@ -37,6 +37,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.monitor.AuthenticationStatus;
+import org.opencb.opencga.core.models.monitor.HealthCheckResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -946,6 +948,18 @@ public class UserManager extends AbstractManager {
                 userQueryResult.getErrorMsg(), Arrays.asList(configs.get(name)));
     }
 
+    public AuthenticationStatus checkAuthenticationHealth(AuthenticationOrigin authenticationOrigin) {
+        if (!authenticationManagerMap.containsKey(authenticationOrigin.getId())) {
+            return new AuthenticationStatus(authenticationOrigin.getId(), authenticationOrigin.getType().name(),
+                    authenticationOrigin.getHost(), HealthCheckResponse.Status.NOT_CONFIGURED, "Authentication origin not configured.");
+        }
+
+        AuthenticationStatus status = new AuthenticationStatus(authenticationOrigin.getId(), authenticationOrigin.getType().name(),
+                "", HealthCheckResponse.Status.NOT_CONFIGURED, "");
+
+        authenticationManagerMap.get(authenticationOrigin.getId()).healthCheck(status);
+        return status;
+    }
 
     private User.Filter getFilter(String userId, String name) throws CatalogException {
         Query query = new Query()

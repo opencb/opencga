@@ -16,31 +16,34 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DuplicateKeyException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.config.Admin;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Metadata;
+import org.opencb.opencga.core.models.monitor.DatastoreStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
@@ -49,6 +52,11 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocum
  */
 public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
+    public static final String HEALTH_REPL_MEMBERS = "members";
+    public static final String HEALTH_REPL_NAME = "name";
+    public static final String HEALTH_REPL_STATE_STR = "stateStr";
+    public static final String HEALTH_REPL_HEALTH = "health";
+    public static final String HEALTH_REPL_SET = "set";
     private final List<String> COLLECTIONS_LIST = Arrays.asList(
             "user",
             "study",
@@ -193,7 +201,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDataStore mongoDataStore = mongoManager.get(database, this.configuration);
         if (!mongoDataStore.getCollectionNames().isEmpty()) {
             throw new CatalogException("Database " + database + " already exists with the following collections: "
-                + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
+                    + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
         }
         COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
         metaDBAdaptor.createIndexes();
@@ -206,15 +214,78 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public ObjectMap getDatabaseStatus() {
-        Document dbStatus = mongoManager.get(database, this.configuration).getServerStatus();
+    public List<DatastoreStatus> getDatabaseStatus() {
+        MongoDataStore mongoDataStore = mongoManager.get(database, this.configuration);
+
+        List<DatastoreStatus> statusList;
+
         try {
-            ObjectMap map = new ObjectMap(new ObjectMapper().writeValueAsString(dbStatus));
-            return new ObjectMap("ok", map.getInt("ok", 0) > 0);
-        } catch (JsonProcessingException e) {
-            logger.error(e.getMessage(), e);
-            return new ObjectMap();
+            if (mongoDataStore.isReplSet()) {
+                // This mongoDatastore object is not valid for a RS since will be used to run replSetGetStatus which
+                // can only be run against the "admin" database
+                statusList = getReplSetStatus();
+            } else {
+                statusList = getSingleMachineDBStatus();
+            }
+        } catch (Exception e) {
+            statusList = new ArrayList<>(this.mongoManager.getDataStoreServerAddresses().size());
+            for (DataStoreServerAddress dataStoreServerAddress : this.mongoManager.getDataStoreServerAddresses()) {
+                statusList.add(new DatastoreStatus("UNKNOWN", dataStoreServerAddress.getHost() + ":" + dataStoreServerAddress.getPort(),
+                        "UNKNOWN", DatastoreStatus.Status.DOWN, "", e.getMessage()));
+            }
         }
+
+        return statusList;
+    }
+
+    private List<DatastoreStatus> getReplSetStatus() {
+        MongoDataStore mongoDataStore = mongoManager.get("admin", this.configuration);
+        Document statusDocument = mongoDataStore.getReplSetStatus();
+        List<DatastoreStatus> datastoreStatusList = new LinkedList<>();
+
+        String repset = (String) statusDocument.get(HEALTH_REPL_SET);
+        for (Map memberStatus : (List<Map>) statusDocument.get(HEALTH_REPL_MEMBERS)) {
+            DatastoreStatus datastoreStatus = new DatastoreStatus();
+            datastoreStatus.setReplicaSet(repset);
+            datastoreStatus.setHost(String.valueOf(memberStatus.get(HEALTH_REPL_NAME)));
+            datastoreStatus.setRole(String.valueOf(memberStatus.get(HEALTH_REPL_STATE_STR)));
+            datastoreStatus.setStatus((Double) memberStatus.get(HEALTH_REPL_HEALTH) > 0
+                    ? DatastoreStatus.Status.UP : DatastoreStatus.Status.DOWN);
+            // Per-machine response time is measured by doing ping to the machine. it's not possible to create a connection
+            // to one single machine in the rep set
+            datastoreStatus.setResponseTime(getPingResponseTime(datastoreStatus.getHost()));
+            datastoreStatusList.add(datastoreStatus);
+        }
+        return datastoreStatusList;
+    }
+
+    private List<DatastoreStatus> getSingleMachineDBStatus() {
+        List<DatastoreStatus> statusList = new ArrayList<>(1);
+
+        DatastoreStatus datastoreStatus = new DatastoreStatus();
+        datastoreStatus.setStatus(DatastoreStatus.Status.UP);
+        datastoreStatus.setResponseTime(metaCollection.count(new Document()).getDbTime() + " ms");
+        statusList.add(datastoreStatus);
+
+        return statusList;
+    }
+
+    private String getPingResponseTime(String memberName) {
+        try {
+            StopWatch uptime = new StopWatch();
+            uptime.start();
+            InetAddress address = InetAddress.getByName(memberName);
+            boolean chkConnection = address.isReachable(1000);
+            if (chkConnection) {
+                return TimeUnit.NANOSECONDS.toMillis(uptime.getNanoTime()) + "ms";
+            }
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     @Override

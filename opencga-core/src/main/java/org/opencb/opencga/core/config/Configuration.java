@@ -47,6 +47,7 @@ public class Configuration {
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
+    private Health health;
 
     private Map<String, Map<String, List<HookConfiguration>>> hooks;
 
@@ -104,6 +105,7 @@ public class Configuration {
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
+        sb.append(", health=").append(health);
         sb.append(", hooks=").append(hooks);
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
@@ -209,6 +211,15 @@ public class Configuration {
 
     public Configuration setExecution(Execution execution) {
         this.execution = execution;
+        return this;
+    }
+
+    public Health getHealth() {
+        return health;
+    }
+
+    public Configuration setHealth(Health health) {
+        this.health = health;
         return this;
     }
 

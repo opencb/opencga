@@ -86,7 +86,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    protected void checkDirectoryUri(URI param, boolean writable) throws CatalogIOException {
+    public void checkDirectoryUri(URI param, boolean writable) throws CatalogIOException {
 
     }
 

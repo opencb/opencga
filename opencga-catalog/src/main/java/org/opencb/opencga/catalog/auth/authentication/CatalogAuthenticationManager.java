@@ -31,6 +31,8 @@ import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.AuthenticationResponse;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.monitor.AuthenticationStatus;
+import org.opencb.opencga.core.models.monitor.HealthCheckResponse;
 import org.slf4j.LoggerFactory;
 
 import java.security.Key;
@@ -150,6 +152,11 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     @Override
     public String createToken(String userId) {
         return jwtManager.createJWTToken(userId, expiration);
+    }
+
+    @Override
+    public void healthCheck(AuthenticationStatus authenticationStatus) {
+        authenticationStatus.setStatus(HealthCheckResponse.Status.OK);
     }
 
     @Override

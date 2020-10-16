@@ -33,4 +33,6 @@ public interface MetaDBAdaptor {
 
     void updateAdmin(Admin admin) throws  CatalogDBException;
 
+
+
 }

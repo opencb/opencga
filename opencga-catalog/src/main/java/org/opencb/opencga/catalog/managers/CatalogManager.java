@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.utils.CollectionUtils;
@@ -33,9 +32,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
+import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.UriCheck;
+import org.opencb.opencga.core.models.monitor.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +46,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -130,10 +134,6 @@ public class CatalogManager implements AutoCloseable {
         this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateAdmin(admin);
     }
 
-    public ObjectMap getDatabaseStatus() {
-        return catalogDBAdaptorFactory.getDatabaseStatus();
-    }
-
     /**
      * Checks if the database exists.
      *
@@ -214,6 +214,161 @@ public class CatalogManager implements AutoCloseable {
         }
         folder.delete();
     }
+
+    public HealthCheckResponse healthCheck(String url, String token) throws CatalogException {
+        // Only check token if present
+        if (StringUtils.isNotEmpty(token)) {
+            String user = userManager.getUserId(token);
+            if (!ADMIN.equals(user)) {
+                throw new CatalogAuthorizationException("Only admin user can run health check operation");
+            }
+        }
+
+        List<HealthCheckDependency> datastores = new LinkedList<>();
+        List<HealthCheckDependency> apis = new LinkedList<>();
+
+        // ---- DBs -----
+        // Mongo
+        List<DatastoreStatus> databaseStatus = catalogDBAdaptorFactory.getDatabaseStatus();
+        long count = databaseStatus.stream().filter(d -> d.getStatus() == DatastoreStatus.Status.UP).count();
+        HealthCheckResponse.Status status = count > 0
+                ? (count == databaseStatus.size()
+                ? HealthCheckResponse.Status.OK
+                : HealthCheckResponse.Status.DEGRADED)
+                : HealthCheckResponse.Status.DOWN;
+        datastores.add(new HealthCheckDependency("", status, "DATABASE", "MongoDB", databaseStatus));
+
+        // --- File system ----
+        List<UriStatus> uriHealthCheckList = new LinkedList<>();
+        uriHealthCheckList.add(checkUriDependency(configuration.getDataDir(), UriCheck.Permission.WRITE));
+        if (configuration.getHealth() != null && configuration.getHealth().getUris() != null) {
+            for (UriCheck uriCheck : configuration.getHealth().getUris()) {
+                uriHealthCheckList.add(checkUriDependency(uriCheck.getPath(), uriCheck.getPermission()));
+            }
+        }
+
+        count = uriHealthCheckList.stream().filter(d -> d.getStatus() == HealthCheckResponse.Status.OK).count();
+        status = count > 0
+                ? (count == uriHealthCheckList.size()
+                ? HealthCheckResponse.Status.OK
+                : HealthCheckResponse.Status.DEGRADED)
+                : HealthCheckResponse.Status.DOWN;
+        datastores.add(new HealthCheckDependency("", status, "FILE_SYSTEM", "File mounts", uriHealthCheckList));
+
+        // --- APIs ----
+        List<AuthenticationStatus> authenticationStatusList = new LinkedList<>();
+        if (this.configuration.getAuthentication() != null && this.configuration.getAuthentication().getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : this.configuration.getAuthentication().getAuthenticationOrigins()) {
+                authenticationStatusList.add(userManager.checkAuthenticationHealth(authenticationOrigin));
+            }
+        }
+        count = authenticationStatusList.stream().filter(d -> d.getStatus() == HealthCheckResponse.Status.OK).count();
+        status = count > 0
+                ? (count == authenticationStatusList.size()
+                ? HealthCheckResponse.Status.OK
+                : HealthCheckResponse.Status.DEGRADED)
+                : HealthCheckResponse.Status.DOWN;
+        apis.add(new HealthCheckDependency("", status, "AUTHENTICATION_ORIGINS", "Authentication origins", authenticationStatusList));
+
+        HealthCheckDependencies healthCheckDependencies = new HealthCheckDependencies(datastores, apis);
+
+        // Generate HealthCheckResponse
+        List<String> availableComponents = new ArrayList<>();
+        List<String> unavailableComponents = new ArrayList<>();
+
+        status = HealthCheckResponse.Status.NOT_CONFIGURED;
+        for (HealthCheckDependency datastore : healthCheckDependencies.getDatastores()) {
+            if (datastore.getStatus() == HealthCheckResponse.Status.OK) {
+                availableComponents.add(datastore.getDescription());
+            } else {
+                unavailableComponents.add(datastore.getDescription());
+            }
+            if (datastore.getDescription().equals("MongoDB")) {
+                status = datastore.getStatus();
+            }
+        }
+
+        for (HealthCheckDependency api : healthCheckDependencies.getApis()) {
+            if (api.getStatus() == HealthCheckResponse.Status.OK) {
+                availableComponents.add(api.getDescription());
+            } else {
+                unavailableComponents.add(api.getDescription());
+            }
+        }
+
+        if (status == HealthCheckResponse.Status.OK && !unavailableComponents.isEmpty()) {
+            status = HealthCheckResponse.Status.DEGRADED;
+        }
+
+        if (StringUtils.isEmpty(token)) {
+            return new HealthCheckResponse("OpenCGA", url, TimeUtils.getTime(), new HealthCheckDependencies(), status, availableComponents,
+                    unavailableComponents);
+        } else {
+            return new HealthCheckResponse("OpenCGA", url, TimeUtils.getTime(), healthCheckDependencies, status, availableComponents,
+                    unavailableComponents);
+        }
+    }
+
+    private UriStatus checkUriDependency(String path, UriCheck.Permission permission) {
+        UriStatus dependency = new UriStatus(path, permission, HealthCheckResponse.Status.NOT_CONFIGURED, null);
+        CatalogIOManager ioManager;
+        URI uri;
+        try {
+            uri = UriUtils.createUri(path);
+            ioManager = catalogIOManagerFactory.get(uri);
+        } catch (URISyntaxException | CatalogIOException e) {
+            dependency.setStatus(HealthCheckResponse.Status.DOWN);
+            dependency.setException(e.getMessage());
+            logger.error(path + ": " + e.getMessage(), e);
+            return dependency;
+        }
+
+        try {
+            ioManager.checkDirectoryUri(uri, permission == UriCheck.Permission.WRITE);
+        } catch (CatalogIOException e) {
+            dependency.setStatus(HealthCheckResponse.Status.DEGRADED);
+            dependency.setException(e.getMessage());
+            logger.error(path + ": " + e.getMessage(), e);
+            return dependency;
+        }
+
+        dependency.setStatus(HealthCheckResponse.Status.OK);
+
+        return dependency;
+    }
+
+//    private UriStatus checkUriDependency(String path, UriCheck.Permission permission) {
+//        HealthCheckDependency dependency = new HealthCheckDependency(, path, "File system", "File system dependency");
+//        CatalogIOManager ioManager;
+//        URI uri;
+//        try {
+//            uri = UriUtils.createUri(path);
+//            ioManager = catalogIOManagerFactory.get(uri);
+//        } catch (URISyntaxException | CatalogIOException e) {
+//            dependency.setStatus(HealthCheckResponse.Status.DOWN);
+//            dependency.setAdditionalProperties(new ObjectMap()
+//                    .append("exception", e.getMessage())
+//                    .append("permission", permission));
+//            logger.error(path + ": " + e.getMessage(), e);
+//            return dependency;
+//        }
+//
+//        try {
+//            ioManager.checkDirectoryUri(uri, permission == UriCheck.Permission.WRITE);
+//        } catch (CatalogIOException e) {
+//            dependency.setStatus(HealthCheckResponse.Status.DEGRADED);
+//            dependency.setAdditionalProperties(new ObjectMap()
+//                    .append("exception", e.getMessage())
+//                    .append("permission", permission));
+//            logger.error(path + ": " + e.getMessage(), e);
+//            return dependency;
+//        }
+//
+//        dependency.setStatus(HealthCheckResponse.Status.OK);
+//        dependency.setAdditionalProperties(new ObjectMap("permission", permission));
+//
+//        return dependency;
+//    }
 
     public CatalogIOManagerFactory getCatalogIOManagerFactory() {
         return catalogIOManagerFactory;

@@ -131,7 +131,7 @@ public abstract class CatalogIOManager {
 
     protected abstract void checkUriScheme(URI uri) throws CatalogIOException;
 
-    protected abstract void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException;
+    public abstract void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException;
 
     public abstract boolean exists(URI uri);
 

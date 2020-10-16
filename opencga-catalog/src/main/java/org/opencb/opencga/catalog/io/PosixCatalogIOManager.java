@@ -98,7 +98,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    protected void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException {
+    public void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException {
         if (uri == null) {
             throw new CatalogIOException("URI is null");
         } else {

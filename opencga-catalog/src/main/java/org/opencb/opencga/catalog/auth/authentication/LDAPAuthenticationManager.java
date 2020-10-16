@@ -24,6 +24,8 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.AuthenticationResponse;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.monitor.AuthenticationStatus;
+import org.opencb.opencga.core.models.monitor.HealthCheckResponse;
 import org.slf4j.LoggerFactory;
 
 import javax.naming.Context;
@@ -194,6 +196,15 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     @Override
     public String createToken(String userId) {
         return jwtManager.createJWTToken(userId, expiration);
+    }
+
+    @Override
+    public void healthCheck(AuthenticationStatus authenticationStatus) {
+        if (LDAPUtils.isConnectionAlive()) {
+            authenticationStatus.setStatus(HealthCheckResponse.Status.OK);
+        } else {
+            authenticationStatus.setStatus(HealthCheckResponse.Status.DOWN);
+        }
     }
 
 }
