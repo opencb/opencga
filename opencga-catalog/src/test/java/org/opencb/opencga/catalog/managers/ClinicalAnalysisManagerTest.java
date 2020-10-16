@@ -926,8 +926,11 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         createDummyEnvironment(false, false);
 
         OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY,
-                new Query(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), "^chil"), QueryOptions.empty(), sessionIdUser);
+                new Query(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), "^chil"),
+                new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key()), sessionIdUser);
         assertEquals(2, search.getNumResults());
+        assertTrue(StringUtils.isNotEmpty(search.first().getProband().getId()));
+        assertTrue(StringUtils.isEmpty(search.first().getProband().getName()));
     }
 
     @Test

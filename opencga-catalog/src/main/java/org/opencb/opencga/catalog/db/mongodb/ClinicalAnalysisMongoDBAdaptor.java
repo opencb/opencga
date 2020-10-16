@@ -535,6 +535,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = removeInnerProjections(qOptions, PROBAND.key());
+        qOptions = removeInnerProjections(qOptions, FAMILY.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATION.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.SECONDARY_INTERPRETATIONS.key());
 
