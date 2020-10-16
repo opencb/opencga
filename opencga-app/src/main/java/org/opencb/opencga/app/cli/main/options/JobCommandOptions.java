@@ -166,6 +166,12 @@ public class JobCommandOptions {
         @Parameter(names = {"--modification-date"}, description = ParamConstants.MODIFICATION_DATE_DESCRIPTION, arity = 1)
         public String modificationDate;
 
+        @Parameter(names = {"--execution-start"}, description = ParamConstants.JOB_EXECUTION_START_DESCRIPTION, arity = 1)
+        public String executionStart;
+
+        @Parameter(names = {"--execution-end"}, description = ParamConstants.JOB_EXECUTION_END_DESCRIPTION, arity = 1)
+        public String executionEnd;
+
         @Parameter(names = {"--visited"}, description = ParamConstants.JOB_VISITED_DESCRIPTION, arity = 0)
         public Boolean visited;
 
