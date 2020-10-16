@@ -147,6 +147,8 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ParamConstants.ACL_PARAM, commandOptions.acl);
         params.putIfNotEmpty(ParamConstants.JOB_INPUT_FILES_PARAM, commandOptions.inputFiles);
         params.putIfNotEmpty(ParamConstants.JOB_OUTPUT_FILES_PARAM, commandOptions.outputFiles);
+        params.putIfNotEmpty(ParamConstants.JOB_EXECUTION_START_PARAM, commandOptions.executionStart);
+        params.putIfNotEmpty(ParamConstants.JOB_EXECUTION_END_PARAM, commandOptions.executionEnd);
         params.putAll(commandOptions.commonOptions.params);
 
         params.putIfNotNull(ParamConstants.RELEASE_PARAM, commandOptions.release);

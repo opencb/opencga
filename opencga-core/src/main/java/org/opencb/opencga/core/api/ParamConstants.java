@@ -230,6 +230,10 @@ public class ParamConstants {
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
     public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as output.";
+    public static final String JOB_EXECUTION_START_PARAM = "execution.start";
+    public static final String JOB_EXECUTION_START_DESCRIPTION = "Execution start date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String JOB_EXECUTION_END_PARAM = "execution.end";
+    public static final String JOB_EXECUTION_END_DESCRIPTION = "Execution end date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
 
     // ---------------------------------------------
 

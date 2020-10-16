@@ -127,6 +127,8 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         TAGS("tags", TEXT_ARRAY, ""),
 
         EXECUTION("execution", OBJECT, ""),
+        EXECUTION_START("execution.start", DATE, ""),
+        EXECUTION_END("execution.end", DATE, ""),
 
         STDOUT("stdout", OBJECT, ""),
         STDERR("stderr", OBJECT, ""),

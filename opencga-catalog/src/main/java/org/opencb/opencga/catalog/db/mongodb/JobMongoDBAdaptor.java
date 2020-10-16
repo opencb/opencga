@@ -869,7 +869,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case START_TIME:
                     case END_TIME:
                     case OUTPUT_ERROR:
-                    case EXECUTION:
+                    case EXECUTION_START:
+                    case EXECUTION_END:
                     case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
