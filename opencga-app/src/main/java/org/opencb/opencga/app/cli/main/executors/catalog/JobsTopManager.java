@@ -5,12 +5,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
-import org.opencb.opencga.app.cli.main.io.Table.TableColumnSchema;
+import org.opencb.opencga.app.cli.main.io.TextOutputWriter;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
@@ -20,18 +19,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.app.cli.main.executors.catalog.JobsTopManager.Columns.*;
+import static org.opencb.opencga.app.cli.main.io.TextOutputWriter.JobColumns.*;
 
 public class JobsTopManager {
 
-    private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(DATE_PATTERN);
     public static final int MAX_ERRORS = 4;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -47,25 +43,15 @@ public class JobsTopManager {
     private final Table<Job> jobTable;
     private PrintStream bufferStream;
 
-    public enum Columns {
-        ID,
-        TOOL_ID,
-        STATUS,
-        STUDY,
-        SUBMISSION,
-        PRIORITY,
-        RUNNING_TIME,
-        START,
-        END
-    }
-
     public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay, boolean plain) {
-        this(openCGAClient, query, Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END), iterations,
-                jobsLimit, delay, plain);
+        this(openCGAClient, query, iterations, jobsLimit, delay, plain, parseColumns(null));
     }
 
-    public JobsTopManager(OpenCGAClient openCGAClient, Query query, List<Columns> columns, Integer iterations, Integer jobsLimit, long delay,
-                          boolean plain) {
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay, boolean plain, String columns) {
+        this(openCGAClient, query, iterations, jobsLimit, delay, plain, parseColumns(columns));
+    }
+
+    public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay, boolean plain, List<TextOutputWriter.JobColumns> columns) {
         this.openCGAClient = openCGAClient;
         this.baseQuery = new Query(query)
             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
@@ -86,60 +72,28 @@ public class JobsTopManager {
         this.delay = delay < 0 ? 2 : delay;
         this.plain = plain;
 
-        List<TableColumnSchema<Job>> tableColumnList = new ArrayList<>(columns.size());
-        for (Columns column : columns) {
-            switch (column) {
-                case ID:
-                    tableColumnList.add(new TableColumnSchema<>("ID", Job::getId, 50));
-                    break;
-                case TOOL_ID:
-                    tableColumnList.add(new TableColumnSchema<>("Tool id", job -> job.getTool().getId()));
-                    break;
-                case STATUS:
-                    tableColumnList.add(new TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName()));
-                    break;
-                case STUDY:
-                    tableColumnList.add(new TableColumnSchema<>("Study", job -> {
-                        String id = job.getStudy().getId();
-                        if (id.contains(":")) {
-                            return id.split(":")[1];
-                        } else {
-                            return id;
-                        }
-                    }, 25));
-                    break;
-                case SUBMISSION:
-                    tableColumnList.add(new TableColumnSchema<>("Submission date", job -> job.getCreationDate() != null
-                            ? SIMPLE_DATE_FORMAT.format(TimeUtils.toDate(job.getCreationDate())) : ""));
-                    break;
-                case PRIORITY:
-                    tableColumnList.add(new TableColumnSchema<>("Priority", job -> job.getPriority() != null
-                            ? job.getPriority().name() : ""));
-                    break;
-                case RUNNING_TIME:
-                    tableColumnList.add(new TableColumnSchema<>("Running time", JobsTopManager::getDurationString));
-                    break;
-                case START:
-                    tableColumnList.add(new TableColumnSchema<>("Start", job -> getStart(job) != null
-                            ? SIMPLE_DATE_FORMAT.format(getStart(job)) : ""));
-                    break;
-                case END:
-                    tableColumnList.add(new TableColumnSchema<>("End", job -> getEnd(job) != null
-                            ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : ""));
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown column " + column);
-            }
-        }
-
         buffer.reset();
         bufferStream = new PrintStream(buffer);
 
         Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter(bufferStream);
         jobTable = new Table<>(tablePrinter);
-        jobTable.addColumns(tableColumnList);
+        for (TextOutputWriter.JobColumns column : columns) {
+            jobTable.addColumn(column.getColumnSchema());
+        }
         jobTable.setMultiLine(false);
 
+    }
+
+    private static List<TextOutputWriter.JobColumns> parseColumns(String columnsStr) {
+        if (StringUtils.isBlank(columnsStr) || columnsStr.equalsIgnoreCase("default")) {
+            return Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END);
+        } else {
+            List<TextOutputWriter.JobColumns> columns = new LinkedList<>();
+            for (String c : columnsStr.split(",")) {
+                columns.add(TextOutputWriter.JobColumns.valueOf(c.toUpperCase()));
+            }
+            return columns;
+        }
     }
 
     public void run() throws ClientException, InterruptedException {
@@ -181,7 +135,7 @@ public class JobsTopManager {
         jobTable.restoreCursorPosition();
         jobTable.println("OpenCGA jobs TOP");
         jobTable.println("  Version " + GitRepositoryState.get().getBuildVersion());
-        jobTable.println("  " + SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
+        jobTable.println("  " + TextOutputWriter.SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
         jobTable.println();
         jobTable.print(Enums.ExecutionStatus.RUNNING + ": " + top.getStats().getRunning() + ", ");
         jobTable.print(Enums.ExecutionStatus.QUEUED + ": " + top.getStats().getQueued() + ", ");
@@ -256,49 +210,6 @@ public class JobsTopManager {
         }
         return jobList;
 
-    }
-
-    private static Date getStart(Job job) {
-        return job.getExecution() == null ? null : job.getExecution().getStart();
-    }
-
-    private static Date getEnd(Job job) {
-        if (job.getExecution() == null) {
-            return null;
-        } else {
-            if (job.getExecution().getEnd() != null) {
-                return job.getExecution().getEnd();
-            } else {
-                if (job.getInternal() != null && job.getInternal().getStatus() != null) {
-                    if (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getName())
-                            && StringUtils.isNotEmpty(job.getInternal().getStatus().getDate())) {
-                        return TimeUtils.toDate(job.getInternal().getStatus().getDate());
-                    }
-                }
-                return null;
-            }
-        }
-    }
-
-    private static String getDurationString(Job job) {
-        long durationInMillis = getDurationInMillis(getStart(job), getEnd(job));
-        if (durationInMillis > 0) {
-            return TimeUtils.durationToStringSimple(durationInMillis);
-        } else {
-            return "";
-        }
-    }
-
-    private static long getDurationInMillis(Date start, Date end) {
-        long durationInMillis = -1;
-        if (start != null) {
-            if (end == null) {
-                durationInMillis = Instant.now().toEpochMilli() - start.getTime();
-            } else {
-                durationInMillis = end.getTime() - start.getTime();
-            }
-        }
-        return durationInMillis;
     }
 
 }

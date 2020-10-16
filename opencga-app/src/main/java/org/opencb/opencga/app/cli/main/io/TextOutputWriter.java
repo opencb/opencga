@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -37,9 +38,9 @@ import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
@@ -48,6 +49,9 @@ import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
  * Created by pfurio on 28/11/16.
  */
 public class TextOutputWriter extends AbstractOutputWriter {
+
+    public static final String SIMPLE_DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(SIMPLE_DATE_PATTERN);
 
     private Table.PrinterType tableType;
 
@@ -337,17 +341,113 @@ public class TextOutputWriter extends AbstractOutputWriter {
 //    }
 
     private void printJob(List<DataResult<Job>> queryResultList) {
+        List<JobColumns> jobColumns = Arrays.asList(
+                JobColumns.ID,
+                JobColumns.TOOL_ID,
+                JobColumns.SUBMISSION,
+                JobColumns.STATUS,
+                JobColumns.EVENTS,
+                JobColumns.START,
+                JobColumns.RUNNING_TIME,
+                JobColumns.INPUT,
+                JobColumns.OUTPUT
+        );
         new Table<Job>(tableType)
-                .addColumn("ID", Job::getId, 50)
-                .addColumn("TOOL_ID", j -> j.getTool().getId())
-                .addColumn("CREATION_DATE", Job::getCreationDate)
-                .addColumn("STATUS", j -> j.getInternal().getStatus().getName())
-                .addColumnNumber("WARNS", j -> j.getExecution().getEvents().stream().filter(e -> e.getType().equals(Event.Type.WARNING)).count())
-                .addColumnNumber("ERRORS", j -> j.getExecution().getEvents().stream().filter(e -> e.getType().equals(Event.Type.ERROR   )).count())
-                .addColumn("INPUT", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)
-                .addColumn("OUTPUT", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)
-                .addColumn("OUTPUT_DIRECTORY", j -> j.getOutDir().getPath(), 45)
+                .addColumns(jobColumns.stream().map(JobColumns::getColumnSchema).collect(Collectors.toList()))
                 .printTable(unwind(queryResultList));
+    }
+
+    public interface TableSchema<T> {
+        Table.TableColumnSchema<T> getColumnSchema();
+    }
+
+    public enum JobColumns implements TableSchema<Job> {
+        ID(new Table.TableColumnSchema<>("ID", Job::getId, 50)),
+        TOOL_ID(new Table.TableColumnSchema<>("Tool id", job -> job.getTool().getId())),
+        STATUS(new Table.TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName())),
+        EVENTS(new Table.TableColumnSchema<>("Events", j -> {
+            Map<Event.Type, Long> map = j.getExecution().getEvents().stream()
+                    .collect(Collectors.groupingBy(Event::getType, Collectors.counting()));
+            if (map.isEmpty()) {
+                return null;
+            } else {
+                return map.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue()).collect(Collectors.joining(", "));
+            }
+        })),
+        STUDY(new Table.TableColumnSchema<>("Study", job -> {
+            String id = job.getStudy().getId();
+            if (id.contains(":")) {
+                return id.split(":")[1];
+            } else {
+                return id;
+            }
+        }, 25)),
+        SUBMISSION(new Table.TableColumnSchema<>("Submission date", job -> job.getCreationDate() != null
+                ? SIMPLE_DATE_FORMAT.format(TimeUtils.toDate(job.getCreationDate())) : "")),
+        PRIORITY(new Table.TableColumnSchema<>("Priority", job -> job.getPriority() != null
+                ? job.getPriority().name() : "")),
+        RUNNING_TIME(new Table.TableColumnSchema<>("Running time", JobColumns::getDurationString)),
+        START(new Table.TableColumnSchema<>("Start", job -> getStart(job) != null
+                ? SIMPLE_DATE_FORMAT.format(getStart(job)) : "")),
+        END(new Table.TableColumnSchema<>("End", job -> getEnd(job) != null
+                ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : "")),
+        INPUT(new Table.TableColumnSchema<>("Input",  j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+        OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+        OUTPUT_DIRECTORY(new Table.TableColumnSchema<>("Output directory", j -> j.getOutDir().getPath(), 45));
+
+        private final Table.TableColumnSchema<Job> columnSchema;
+
+        JobColumns(Table.TableColumnSchema<Job> columnSchema) {
+            this.columnSchema = columnSchema;
+        }
+
+        @Override
+        public Table.TableColumnSchema<Job> getColumnSchema() {
+            return columnSchema;
+        }
+
+        private static Date getStart(Job job) {
+            return job.getExecution() == null ? null : job.getExecution().getStart();
+        }
+
+        private static Date getEnd(Job job) {
+            if (job.getExecution() == null) {
+                return null;
+            } else {
+                if (job.getExecution().getEnd() != null) {
+                    return job.getExecution().getEnd();
+                } else {
+                    if (job.getInternal() != null && job.getInternal().getStatus() != null) {
+                        if (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getName())
+                                && StringUtils.isNotEmpty(job.getInternal().getStatus().getDate())) {
+                            return TimeUtils.toDate(job.getInternal().getStatus().getDate());
+                        }
+                    }
+                    return null;
+                }
+            }
+        }
+
+        private static String getDurationString(Job job) {
+            long durationInMillis = getDurationInMillis(getStart(job), getEnd(job));
+            if (durationInMillis > 0) {
+                return TimeUtils.durationToStringSimple(durationInMillis);
+            } else {
+                return "";
+            }
+        }
+
+        private static long getDurationInMillis(Date start, Date end) {
+            long durationInMillis = -1;
+            if (start != null) {
+                if (end == null) {
+                    durationInMillis = Instant.now().toEpochMilli() - start.getTime();
+                } else {
+                    durationInMillis = end.getTime() - start.getTime();
+                }
+            }
+            return durationInMillis;
+        }
     }
 
     private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {

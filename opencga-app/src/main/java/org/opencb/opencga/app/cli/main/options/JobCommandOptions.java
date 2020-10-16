@@ -205,6 +205,10 @@ public class JobCommandOptions {
         @Parameter(names = {"--plain"}, description = "Plain representation, without dependencies.", arity = 0)
         public boolean plain;
 
+        @Parameter(names = {"--columns"}, description = "Output columns to print." +
+                " [ID, TOOL_ID, STATUS, EVENTS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END, INPUT, OUTPUT, OUTPUT_DIRECTORY]")
+        public String columns;
+
         @Parameter(names = { "--iterations"}, description = "Exit after N iterations", arity = 1)
         public Integer iterations;
 
