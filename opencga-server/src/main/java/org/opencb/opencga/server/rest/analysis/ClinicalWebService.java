@@ -494,7 +494,9 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response interpretationInfo(
             @ApiParam(value = ParamConstants.INTERPRETATION_DESCRIPTION) @PathParam(value = "interpretations") String interpretations,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Interpretation version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Interpretation version. Not supported if multiple interpretation ids are provided.") @QueryParam("version") String version,
+            @ApiParam(value = "Fetch all versions of an interpretation. Not supported if multiple interpretation ids are provided.")
+                @QueryParam(Constants.ALL_VERSIONS) Boolean allVersions,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);

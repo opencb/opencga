@@ -446,20 +446,23 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
         List<Integer> versionList = query.getAsIntegerList(VERSION);
 
-        if (versionList.size() > 1 && versionList.size() != idList.size()) {
+        if (versionList.size() > 1 && idList.size() > 1 && versionList.size() != idList.size()) {
             throw new CatalogDBException("The size of the array of versions should match the size of the array of ids to be queried");
         }
 
-        List<Bson> samplesQuery = new ArrayList<>();
-        for (int i = 0; i < idList.size(); i++) {
-            samplesQuery.add(new Document()
-                    .append(idQueried, idList.get(i))
-                    .append(VERSION, versionList.get(i))
-            );
+        List<Bson> bsonQuery = new ArrayList<>();
+        for (int i = 0; i < versionList.size(); i++) {
+            Document docQuery = new Document(VERSION, versionList.get(i));
+            if (idList.size() == 1) {
+                docQuery.put(idQueried, idList.get(0));
+            } else {
+                docQuery.put(idQueried, idList.get(i));
+            }
+            bsonQuery.add(docQuery);
         }
 
-        if (!samplesQuery.isEmpty()) {
-            bsonQueryList.add(Filters.or(samplesQuery));
+        if (!bsonQuery.isEmpty()) {
+            bsonQueryList.add(Filters.or(bsonQuery));
 
             query.remove(idQueried);
             query.remove(VERSION);

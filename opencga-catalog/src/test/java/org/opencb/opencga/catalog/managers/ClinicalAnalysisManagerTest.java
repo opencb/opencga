@@ -668,6 +668,45 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void searchInterpretationVersion() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = new Interpretation().setId("interpretation1");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.PRIMARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam("user2"));
+        OpenCGAResult<Interpretation> result = catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1",
+                params, null, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumUpdated());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, InterpretationDBAdaptor.QueryParams.VERSION.key());
+        result = catalogManager.getInterpretationManager().get(STUDY, Collections.singletonList("interpretation1"),
+                new Query(Constants.ALL_VERSIONS, true), options, false, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+
+        result = catalogManager.getInterpretationManager().get(STUDY, Collections.singletonList("interpretation1"),
+                new Query(InterpretationDBAdaptor.QueryParams.VERSION.key(), "1,2"), options, false, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+
+        try {
+            catalogManager.getInterpretationManager().get(STUDY, Arrays.asList("interpretation1", "interpretation2"),
+                    new Query(Constants.ALL_VERSIONS, true), options, false, sessionIdUser);
+            fail("The previous call should fail because it should not be possible to fetch all versions of multiple interpretations");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("multiple"));
+        }
+
+        try {
+            catalogManager.getInterpretationManager().get(STUDY, Arrays.asList("interpretation1", "interpretation2"),
+                    new Query(InterpretationDBAdaptor.QueryParams.VERSION.key(), "1"), options, false, sessionIdUser);
+            fail("The previous call should fail users cannot fetch a concrete version for multiple interpretations");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("multiple"));
+        }
+    }
+
+    @Test
     public void updateInterpretationTest() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 

@@ -137,6 +137,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
+        boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
+                || queryCopy.containsKey(InterpretationDBAdaptor.QueryParams.VERSION.key());
+        if (versioned && uniqueList.size() > 1) {
+            throw new CatalogException("Only one interpretation allowed when requesting multiple versions");
+        }
+
         Function<Interpretation, String> interpretationStringFunction = Interpretation::getId;
         InterpretationDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
@@ -159,27 +165,48 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
-        if (interpretationDataResult.getNumResults() != uniqueList.size() && !ignoreException) {
+        if (!versioned && interpretationDataResult.getNumResults() != uniqueList.size() && !ignoreException) {
             throw CatalogException.notFound("interpretations",
                     getMissingFields(uniqueList, interpretationDataResult.getResults(), interpretationStringFunction));
         }
 
-        ArrayList<Interpretation> interpretationList = new ArrayList<>(interpretationDataResult.getResults());
-        Iterator<Interpretation> iterator = interpretationList.iterator();
-        while (iterator.hasNext()) {
-            Interpretation interpretation = iterator.next();
-            // Check if the user has access to the corresponding clinical analysis
-            try {
-                catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
-                        interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
-            } catch (CatalogAuthorizationException e) {
-                if (ignoreException) {
-                    // Remove interpretation. User will not have permissions
-                    iterator.remove();
-                } else {
-                    throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the"
-                            + " interpretations", e);
+        List<Interpretation> interpretationList;
+
+        // Check permissions
+        if (!versioned) {
+            interpretationList = new ArrayList<>(interpretationDataResult.getResults());
+            Iterator<Interpretation> iterator = interpretationList.iterator();
+            while (iterator.hasNext()) {
+                Interpretation interpretation = iterator.next();
+                // Check if the user has access to the corresponding clinical analysis
+                try {
+                    catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
+                            interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
+                } catch (CatalogAuthorizationException e) {
+                    if (ignoreException) {
+                        // Remove interpretation. User will not have permissions
+                        iterator.remove();
+                    } else {
+                        throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the"
+                                + " interpretations", e);
+                    }
                 }
+            }
+        } else {
+            if (interpretationDataResult.getNumResults() > 0) {
+                interpretationList = interpretationDataResult.getResults();
+                Interpretation interpretation = interpretationDataResult.first();
+                try {
+                    catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
+                            interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
+                } catch (CatalogAuthorizationException e) {
+                    if (!ignoreException) {
+                        throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the"
+                                + " interpretations", e);
+                    }
+                }
+            } else {
+                interpretationList = Collections.emptyList();
             }
         }
 
@@ -187,7 +214,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretationDataResult.setNumResults(interpretationList.size());
         interpretationDataResult.setNumMatches(interpretationList.size());
 
-        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, ignoreException, false);
+        return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, ignoreException, versioned);
     }
 
     @Override
