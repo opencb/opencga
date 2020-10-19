@@ -61,3 +61,55 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+
+{{- define "opencga.defaultConf.name" -}}
+{{ include "opencga.fullname" . }}-default-conf
+{{- end -}}
+
+{{- define "opencga.secretName" -}}
+{{- if .Values.opencga.secretName -}}
+{{ .Values.opencga.secretName }}
+{{- else -}}
+{{ include "opencga.fullname" . }}-secret
+{{- end -}}
+{{- end -}}
+
+{{- define "clusterRoleBinding.name" -}}
+{{ include "opencga.fullname" . }}-fabric8-rbac
+{{- end -}}
+
+
+{{- define "pvConf" -}}
+pv-{{ include "opencga.fullname" . }}-conf
+{{- end -}}
+{{- define "pvSessions" -}}
+pv-{{ include "opencga.fullname" . }}-sessions
+{{- end -}}
+{{- define "pvVariants" -}}
+pv-{{ include "opencga.fullname" . }}-variants
+{{- end -}}
+{{- define "pvAnalysisconf" -}}
+pv-{{ include "opencga.fullname" . }}-analysisconf
+{{- end -}}
+
+
+{{- define "pvcStorageClassName" -}}
+{{- if .Values.azureStorageAccount.enabled -}}
+azurefile
+{{- end -}}
+{{- end -}}
+
+{{- define "pvcConf" -}}
+pvc-{{ include "opencga.fullname" . }}-conf
+{{- end -}}
+{{- define "pvcSessions" -}}
+pvc-{{ include "opencga.fullname" . }}-sessions
+{{- end -}}
+{{- define "pvcVariants" -}}
+pvc-{{ include "opencga.fullname" . }}-variants
+{{- end -}}
+{{- define "pvcAnalysisconf" -}}
+pvc-{{ include "opencga.fullname" . }}-analysisconf
+{{- end -}}
+

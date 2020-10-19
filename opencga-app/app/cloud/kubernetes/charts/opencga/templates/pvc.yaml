@@ -1,0 +1,52 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "pvcConf" . | quote }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: {{ include "pvConf" . | quote }}
+  storageClassName: {{ include "pvcStorageClassName" . }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "pvcAnalysisconf" . | quote }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
+  volumeName: {{ include "pvAnalysisconf" . | quote }}
+  storageClassName: {{ include "pvcStorageClassName" . }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "pvcSessions" . | quote }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  volumeName: {{ include "pvSessions" . | quote }}
+  storageClassName: {{ include "pvcStorageClassName" . }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "pvcVariants" . | quote }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  volumeName: {{ include "pvVariants" . | quote }}
+  storageClassName: {{ include "pvcStorageClassName" . }}
+---
