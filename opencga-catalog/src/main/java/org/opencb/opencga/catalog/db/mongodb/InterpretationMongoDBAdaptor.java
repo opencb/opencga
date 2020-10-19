@@ -997,6 +997,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         queryCopy.remove(SampleDBAdaptor.QueryParams.DELETED.key());
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
 
+        if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
+            queryCopy.put(Constants.ALL_VERSIONS, true);
+            queryCopy.remove(QueryParams.VERSION.key());
+        }
+
         boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {

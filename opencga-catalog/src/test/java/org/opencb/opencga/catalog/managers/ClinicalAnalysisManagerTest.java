@@ -723,6 +723,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Query(InterpretationDBAdaptor.QueryParams.VERSION.key(), "1,2"), options, false, sessionIdUser);
         assertEquals(2, result.getNumResults());
 
+        result = catalogManager.getInterpretationManager().get(STUDY, Collections.singletonList("interpretation1"),
+                new Query(InterpretationDBAdaptor.QueryParams.VERSION.key(), "All"), options, false, sessionIdUser);
+        assertEquals(2, result.getNumResults());
+
         try {
             catalogManager.getInterpretationManager().get(STUDY, Arrays.asList("interpretation1", "interpretation2"),
                     new Query(Constants.ALL_VERSIONS, true), options, false, sessionIdUser);
