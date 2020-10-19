@@ -521,7 +521,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
-    public void clearInterpretation() throws CatalogException {
+    public void clearPrimaryInterpretation() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 
         Interpretation interpretation = new Interpretation()
@@ -543,7 +543,41 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, interpretationResult.getSecondaryFindings().size());
         assertEquals(1, interpretationResult.getComments().size());
 
-        catalogManager.getInterpretationManager().clear(STUDY, ca.getId(), sessionIdUser);
+        catalogManager.getInterpretationManager().clear(STUDY, ca.getId(), Collections.singletonList("interpretation1"), sessionIdUser);
+        interpretationResult = catalogManager.getInterpretationManager().get(STUDY, "interpretation1", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals("interpretation1", interpretationResult.getId());
+        assertEquals(2, interpretationResult.getVersion());
+        assertEquals("", interpretationResult.getDescription());
+        assertEquals(0, interpretationResult.getMethods().size());
+        assertEquals(0, interpretationResult.getPrimaryFindings().size());
+        assertEquals(0, interpretationResult.getSecondaryFindings().size());
+        assertEquals(1, interpretationResult.getComments().size());
+    }
+
+    @Test
+    public void clearSecondaryInterpretation() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = new Interpretation()
+                .setId("interpretation1")
+                .setDescription("description")
+                .setMethods(Collections.singletonList(new InterpretationMethod("name", Collections.emptyMap(), Collections.emptyList(), Collections.emptyList())))
+                .setPrimaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1", 1, 2, "ref", "alt", "+", null, 1, null, null, null))))
+                .setSecondaryFindings(Collections.singletonList(new ClinicalVariant(new VariantAvro("id", Collections.emptyList(), "chr1", 1, 2, "ref", "alt", "+", null, 1, null, null, null))))
+                .setComments(Collections.singletonList(new ClinicalComment("me", "message", null, TimeUtils.getTime())));
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        Interpretation interpretationResult = catalogManager.getInterpretationManager().get(STUDY, "interpretation1", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals("interpretation1", interpretationResult.getId());
+        assertEquals(1, interpretationResult.getVersion());
+        assertEquals("description", interpretationResult.getDescription());
+        assertEquals(1, interpretationResult.getMethods().size());
+        assertEquals(1, interpretationResult.getPrimaryFindings().size());
+        assertEquals(1, interpretationResult.getSecondaryFindings().size());
+        assertEquals(1, interpretationResult.getComments().size());
+
+        catalogManager.getInterpretationManager().clear(STUDY, ca.getId(), Collections.singletonList("interpretation1"), sessionIdUser);
         interpretationResult = catalogManager.getInterpretationManager().get(STUDY, "interpretation1", QueryOptions.empty(), sessionIdUser).first();
         assertEquals("interpretation1", interpretationResult.getId());
         assertEquals(2, interpretationResult.getVersion());

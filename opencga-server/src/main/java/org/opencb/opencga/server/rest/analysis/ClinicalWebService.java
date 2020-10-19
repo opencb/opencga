@@ -445,14 +445,15 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/interpretation/clear")
+    @Path("/{clinicalAnalysis}/interpretation/{interpretations}/clear")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Clear the fields of the main interpretation of the Clinical Analysis", response = Interpretation.class)
     public Response clearInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Interpretation IDs of the Clinical Analysis") @PathParam("interpretations") String interpretations,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId) {
         try {
-            return createOkResponse(catalogInterpretationManager.clear(studyStr, clinicalId, token));
+            return createOkResponse(catalogInterpretationManager.clear(studyStr, clinicalId, getIdList(interpretations), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

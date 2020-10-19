@@ -716,7 +716,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         ObjectMap params;
         QueryOptions options = new QueryOptions();
 
-        if (ca.getInterpretation().getUid() == interpretation.getUid()) {
+        if (ca.getInterpretation() != null && ca.getInterpretation().getUid() == interpretation.getUid()) {
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
         } else {
             ObjectMap actions = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
