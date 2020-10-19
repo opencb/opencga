@@ -320,6 +320,28 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return new OpenCGAResult<>(aggregate);
     }
 
+    protected QueryOptions filterQueryOptions(QueryOptions options, List<String> keys) {
+        if (options == null) {
+            return null;
+        }
+
+        QueryOptions queryOptions = new QueryOptions(options);
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            Set<String> includeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+            includeList.addAll(keys);
+            queryOptions.put(QueryOptions.INCLUDE, new ArrayList<>(includeList));
+        }
+        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            Set<String> excludeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+            excludeList.removeAll(keys);
+            queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeList));
+        }
+
+        return queryOptions;
+    }
+
+
     /**
      * Create a date projection if included in the includeGroupByFields, removes the date fields from includeGroupByFields and
      * add them to groupByFields if not there.

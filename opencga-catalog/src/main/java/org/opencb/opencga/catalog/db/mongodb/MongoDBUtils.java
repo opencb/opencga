@@ -34,9 +34,12 @@ import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.user.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -68,6 +71,8 @@ class MongoDBUtils {
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
     private static Map<Class, ObjectReader> jsonReaderMap;
+
+    protected static Logger logger = LoggerFactory.getLogger(MongoDBUtils.class);
 
     static {
         jsonObjectMapper = getDefaultObjectMapper();
@@ -370,7 +375,7 @@ class MongoDBUtils {
                         filteredParams.put(s, document);
                     }
                 } catch (CatalogDBException e) {
-                    e.printStackTrace();
+                    logger.warn("Skipping key '" + s + "': " + e.getMessage(), e);
                 }
             }
         }

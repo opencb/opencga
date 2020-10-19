@@ -530,6 +530,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date") @QueryParam("modificationDate") String modificationDate) {
         try {
+            query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(catalogInterpretationManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);

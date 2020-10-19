@@ -948,6 +948,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             qOptions = new QueryOptions();
         }
 
+        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
+                QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
+
         logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return interpretationCollection.iterator(clientSession, bson, null, null, qOptions);
