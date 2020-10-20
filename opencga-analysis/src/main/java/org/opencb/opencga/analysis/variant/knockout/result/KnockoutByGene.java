@@ -16,44 +16,92 @@
 
 package org.opencb.opencga.analysis.variant.knockout.result;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.GeneAnnotation;
 
 import java.util.*;
 
 public class KnockoutByGene {
 
-    private Gene gene = new Gene();
+    private String id;
+    private String name;
+    private String chromosome;
+    private int start;
+    private int end;
+    private String strand;
+    private String biotype;
+    private GeneAnnotation annotation;
+
     private List<KnockoutSample> samples = new LinkedList<>();
 
-    public Gene getGene() {
-        return gene;
-    }
-
-    public KnockoutByGene setGene(Gene gene) {
-        this.gene = gene;
-        return this;
-    }
-
-    @JsonIgnore
     public String getId() {
-        return getGene().getId();
+        return id;
     }
 
-    @JsonIgnore
     public KnockoutByGene setId(String id) {
-        this.getGene().setId(id);
+        this.id = id;
         return this;
     }
 
-    @JsonIgnore
     public String getName() {
-        return getGene().getName();
+        return name;
     }
 
-    @JsonIgnore
     public KnockoutByGene setName(String name) {
-        this.getGene().setName(name);
+        this.name = name;
+        return this;
+    }
+
+    public String getChromosome() {
+        return chromosome;
+    }
+
+    public KnockoutByGene setChromosome(String chromosome) {
+        this.chromosome = chromosome;
+        return this;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public KnockoutByGene setStart(int start) {
+        this.start = start;
+        return this;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public KnockoutByGene setEnd(int end) {
+        this.end = end;
+        return this;
+    }
+
+    public String getStrand() {
+        return strand;
+    }
+
+    public KnockoutByGene setStrand(String strand) {
+        this.strand = strand;
+        return this;
+    }
+
+    public String getBiotype() {
+        return biotype;
+    }
+
+    public KnockoutByGene setBiotype(String biotype) {
+        this.biotype = biotype;
+        return this;
+    }
+
+    public GeneAnnotation getAnnotation() {
+        return annotation;
+    }
+
+    public KnockoutByGene setAnnotation(GeneAnnotation annotation) {
+        this.annotation = annotation;
         return this;
     }
 

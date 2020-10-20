@@ -28,15 +28,14 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByGene;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample.KnockoutGene;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual.KnockoutGene;
 import org.opencb.opencga.analysis.variant.knockout.result.KnockoutTranscript;
 import org.opencb.opencga.analysis.variant.knockout.result.KnockoutVariant;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -168,9 +167,9 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 if (knockoutGenes.isEmpty()) {
                     logger.info("No results for sample {}", sample);
                 } else {
-                    KnockoutBySample.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutGenes.values());
-                    writeSampleFile(new KnockoutBySample()
-                            .setSample(new Sample().setId(sample))
+                    KnockoutByIndividual.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutGenes.values());
+                    writeSampleFile(new KnockoutByIndividual()
+                            .setSampleId(sample)
                             .setStats(stats)
                             .setGenes(knockoutGenes.values()));
                 }
@@ -186,13 +185,13 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             for (String sample : getSamples()) {
                 Path fileName = getSampleFileName(sample);
                 if (Files.exists(fileName)) {
-                    KnockoutBySample bySample = readSampleFile(sample);
+                    KnockoutByIndividual bySample = readSampleFile(sample);
                     for (KnockoutGene gene : bySample.getGenes()) {
                         KnockoutByGene byGene = byGeneMap.computeIfAbsent(gene.getName(),
                                 id -> new KnockoutByGene().setId(gene.getId()).setName(gene.getName()).setSamples(new LinkedList<>()));
 
                         KnockoutByGene.KnockoutSample knockoutSample = new KnockoutByGene.KnockoutSample()
-                                .setId(bySample.getSample().getId())
+                                .setId(bySample.getSampleId())
                                 .setTranscripts(gene.getTranscripts());
                         byGene.getSamples().add(knockoutSample);
                     }
@@ -664,14 +663,14 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         }
 
         private void transposeGeneToSampleOutputFiles() throws IOException {
-            Map<String, KnockoutBySample> bySampleMap = new HashMap<>();
+            Map<String, KnockoutByIndividual> bySampleMap = new HashMap<>();
             for (String gene : Iterables.concat(getOtherGenes(), getProteinCodingGenes())) {
                 Path fileName = getGeneFileName(gene);
                 if (Files.exists(fileName)) {
                     KnockoutByGene byGene = readGeneFile(gene);
                     for (KnockoutByGene.KnockoutSample sample : byGene.getSamples()) {
-                        KnockoutBySample bySample = bySampleMap
-                                .computeIfAbsent(sample.getId(), s -> new KnockoutBySample().setSample(new Sample().setId(s)));
+                        KnockoutByIndividual bySample = bySampleMap
+                                .computeIfAbsent(sample.getId(), s -> new KnockoutByIndividual().setSampleId(s));
 
                         bySample.getGene(gene).addTranscripts(sample.getTranscripts());
 
@@ -679,11 +678,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 }
             }
 //            buildGeneKnockoutBySample(sample, knockoutGenes);
-            for (Map.Entry<String, KnockoutBySample> entry : bySampleMap.entrySet()) {
-                KnockoutBySample knockoutBySample = entry.getValue();
-                KnockoutBySample.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutBySample.getGenes());
-                knockoutBySample.setStats(stats);
-                writeSampleFile(knockoutBySample);
+            for (Map.Entry<String, KnockoutByIndividual> entry : bySampleMap.entrySet()) {
+                KnockoutByIndividual knockoutByIndividual = entry.getValue();
+                KnockoutByIndividual.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutByIndividual.getGenes());
+                knockoutByIndividual.setStats(stats);
+                writeSampleFile(knockoutByIndividual);
             }
         }
     }

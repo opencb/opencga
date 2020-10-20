@@ -41,6 +41,9 @@ import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysisResultReader;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByGene;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
@@ -88,6 +91,7 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -1315,6 +1319,26 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @GET
+    @Path("/knockout/gene/query")
+    @ApiOperation(value = KnockoutAnalysis.DESCRIPTION, response = KnockoutByGene.class)
+    public Response knockoutByGeneQuery(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId) {
+        return run(() -> new KnockoutAnalysisResultReader(catalogManager)
+                .readKnockoutByGeneFromJob(study, jobId, limit, (int) skip, p -> true, token));
+    }
+
+    @GET
+    @Path("/knockout/individual/query")
+    @ApiOperation(value = KnockoutAnalysis.DESCRIPTION, response = KnockoutByIndividual.class)
+    public Response knockoutByIndividualQuery(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId) {
+        return run(() -> new KnockoutAnalysisResultReader(catalogManager)
+                .readKnockoutByIndividualFromJob(study, jobId, limit, (int) skip, p -> true, token));
+    }
+
     @POST
     @Path("/circos/run")
     @ApiOperation(value = CircosAnalysis.DESCRIPTION, response = String.class)
@@ -1353,7 +1377,7 @@ public class VariantWebService extends AnalysisWebService {
                 byte[] bytes = new byte[(int) imgFile.length()];
                 fileInputStreamReader.read(bytes);
 
-                String img = new String(Base64.getEncoder().encode(bytes), "UTF-8");
+                String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
 
                 watch.stop();
                 OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,

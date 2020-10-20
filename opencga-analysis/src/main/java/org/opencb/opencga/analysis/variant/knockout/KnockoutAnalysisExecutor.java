@@ -18,8 +18,8 @@ package org.opencb.opencga.analysis.variant.knockout;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByGene;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample.KnockoutGene;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual.KnockoutGene;
 import org.opencb.opencga.analysis.variant.knockout.result.KnockoutVariant;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -176,8 +176,8 @@ public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return Paths.get(geneFileNamePattern.replace("{gene}", gene));
     }
 
-    protected KnockoutBySample.GeneKnockoutBySampleStats getGeneKnockoutBySampleStats(Collection<KnockoutGene> knockoutGenes) {
-        KnockoutBySample.GeneKnockoutBySampleStats stats = new KnockoutBySample.GeneKnockoutBySampleStats()
+    protected KnockoutByIndividual.GeneKnockoutBySampleStats getGeneKnockoutBySampleStats(Collection<KnockoutGene> knockoutGenes) {
+        KnockoutByIndividual.GeneKnockoutBySampleStats stats = new KnockoutByIndividual.GeneKnockoutBySampleStats()
                 .setNumGenes(knockoutGenes.size())
                 .setNumTranscripts(knockoutGenes.stream().mapToInt(g -> g.getTranscripts().size()).sum());
         for (KnockoutVariant.KnockoutType type : KnockoutVariant.KnockoutType.values()) {
@@ -192,15 +192,15 @@ public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return stats;
     }
 
-    protected void writeSampleFile(KnockoutBySample knockoutBySample) throws IOException {
-        File file = getSampleFileName(knockoutBySample.getSample().getId()).toFile();
-        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(KnockoutBySample.class).withDefaultPrettyPrinter();
-        writer.writeValue(file, knockoutBySample);
+    protected void writeSampleFile(KnockoutByIndividual knockoutByIndividual) throws IOException {
+        File file = getSampleFileName(knockoutByIndividual.getSampleId()).toFile();
+        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(KnockoutByIndividual.class).withDefaultPrettyPrinter();
+        writer.writeValue(file, knockoutByIndividual);
     }
 
-    protected KnockoutBySample readSampleFile(String sample) throws IOException {
+    protected KnockoutByIndividual readSampleFile(String sample) throws IOException {
         File file = getSampleFileName(sample).toFile();
-        return JacksonUtils.getDefaultObjectMapper().readValue(file, KnockoutBySample.class);
+        return JacksonUtils.getDefaultObjectMapper().readValue(file, KnockoutByIndividual.class);
     }
 
     protected void writeGeneFile(KnockoutByGene knockoutByGene) throws IOException {
