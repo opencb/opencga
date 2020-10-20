@@ -35,7 +35,7 @@ import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
+public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),

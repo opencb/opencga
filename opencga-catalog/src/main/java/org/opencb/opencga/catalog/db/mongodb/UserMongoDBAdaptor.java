@@ -289,12 +289,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user)
-            throws CatalogDBException {
-        throw new NotImplementedException("Count not implemented for users");
-    }
-
-    @Override
     public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
         Bson bsonDocument = parseQuery(query);
         return new OpenCGAResult(userCollection.distinct(field, bsonDocument));
@@ -328,11 +322,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult<User> get(long studyUid, Query query, QueryOptions options, String user) throws CatalogDBException {
-        throw new NotImplementedException("Get not implemented for user");
-    }
-
-    @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
             query.append(QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
@@ -356,12 +345,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         return new OpenCGAResult(queryResult);
-    }
-
-    @Override
-    public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        throw new NotImplementedException("Get not implemented for user");
     }
 
     @Override
@@ -554,18 +537,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public DBIterator<User> iterator(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return null;
-    }
-
-    @Override
-    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return null;
-    }
-
-    @Override
     public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return rank(userCollection, bsonQuery, field, "name", numResults, asc);
@@ -581,12 +552,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(userCollection, bsonQuery, fields, "name", options);
-    }
-
-    @Override
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return null;
     }
 
     @Override
