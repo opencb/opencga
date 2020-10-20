@@ -333,15 +333,15 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response create(
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Save interpretation as", allowableValues = "PRIMARY,SECONDARY", defaultValue = "SECONDARY")
-                @QueryParam("saveAs") ParamUtils.SaveInterpretationAs saveAs,
+            @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY", defaultValue = "SECONDARY")
+                @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationCreateParams params) {
         try {
-            if (saveAs == null) {
-                saveAs = ParamUtils.SaveInterpretationAs.SECONDARY;
+            if (setAs == null) {
+                setAs = ParamUtils.SaveInterpretationAs.SECONDARY;
             }
-            return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalId, params.toClinicalInterpretation(), saveAs,
+            return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalId, params.toClinicalInterpretation(), setAs,
                     queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -365,7 +365,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
             @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE",
                     defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.BasicUpdateAction commentsAction,
-            @ApiParam(value = "Save interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("saveAs") ParamUtils.SaveInterpretationAs saveAs,
+            @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretationId") String interpretationId,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
@@ -391,7 +391,7 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), methodsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, params, saveAs, queryOptions, token));
+            return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, params, setAs, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -445,14 +445,15 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/interpretation/clear")
+    @Path("/{clinicalAnalysis}/interpretation/{interpretations}/clear")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Clear the fields of the main interpretation of the Clinical Analysis", response = Interpretation.class)
     public Response clearInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Interpretation IDs of the Clinical Analysis") @PathParam("interpretations") String interpretations,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId) {
         try {
-            return createOkResponse(catalogInterpretationManager.clear(studyStr, clinicalId, token));
+            return createOkResponse(catalogInterpretationManager.clear(studyStr, clinicalId, getIdList(interpretations), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -494,7 +495,8 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response interpretationInfo(
             @ApiParam(value = ParamConstants.INTERPRETATION_DESCRIPTION) @PathParam(value = "interpretations") String interpretations,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Interpretation version") @QueryParam("version") Integer version,
+            @ApiParam(value = "Comma separated list of interpretation versions. 'all' to get all the interpretation versions. "
+                    + "Not supported if multiple interpretation ids are provided.") @QueryParam("version") String version,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -530,6 +532,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Modification date") @QueryParam("modificationDate") String modificationDate) {
         try {
+            query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(catalogInterpretationManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);

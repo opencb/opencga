@@ -716,7 +716,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         ObjectMap params;
         QueryOptions options = new QueryOptions();
 
-        if (ca.getInterpretation().getUid() == interpretation.getUid()) {
+        if (ca.getInterpretation() != null && ca.getInterpretation().getUid() == interpretation.getUid()) {
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
         } else {
             ObjectMap actions = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
@@ -948,6 +948,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             qOptions = new QueryOptions();
         }
 
+        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
+                QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
+
         logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return interpretationCollection.iterator(clientSession, bson, null, null, qOptions);
@@ -993,6 +996,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         Query queryCopy = new Query(query);
         queryCopy.remove(SampleDBAdaptor.QueryParams.DELETED.key());
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
+
+        if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
+            queryCopy.put(Constants.ALL_VERSIONS, true);
+            queryCopy.remove(QueryParams.VERSION.key());
+        }
 
         boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
 
