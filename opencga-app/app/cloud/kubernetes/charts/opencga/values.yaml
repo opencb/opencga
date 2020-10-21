@@ -34,34 +34,31 @@ hadoop:
   sshPassword: "FILL_ME"
 
 opencga:
-  secretsName: "opencga-secrets"
+#  secretName: {{ include "opencga.fullname" . }}-secret
   admin:
     password: "FILL_ME"
 
 # https://docs.microsoft.com/en-gb/azure/aks/azure-files-volume
 azureStorageAccount:
   enabled: true
+  secretName: azure-files-secret
   name: "FILL_ME"
   key: "FILL_ME"
-
-clusterRoleBinding:
-  name: fabric8-rbac
+  volumes:
+    conf:
+      shareName: conf
+    analysisconf:
+      shareName: analysisconf
+    sessions:
+      shareName: sessions
+    variants:
+      shareName: variants
 
 blobfuse:
   enabled: false
 
-defaultConf:
-  name: "default-conf"
-
-volumes:
-  conf:
-    shareName: conf
-  analysisconf:
-    shareName: analysisconf
-  sessions:
-    shareName: sessions
-  variants:
-    shareName: variants
+nameOverride: ""
+fullnameOverride: ""
 
 rest:
   name: rest
@@ -73,8 +70,6 @@ rest:
     pullPolicy: Always
 
   imagePullSecrets: []
-  nameOverride: ""
-  fullnameOverride: ""
 
   serviceAccount:
     # Specifies whether a service account should be created

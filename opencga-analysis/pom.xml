@@ -84,6 +84,13 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <!-- Need dependency for running hadoop tests. -->
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>

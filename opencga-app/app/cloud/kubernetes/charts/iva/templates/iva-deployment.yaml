@@ -52,7 +52,7 @@ spec:
           name: ivaconf
       volumes:
       - azureFile:
-          secretName: azure-files-secret
+          secretName: {{ .Values.azureStorageAccount.secretName }}
           shareName: {{ .Values.iva.volumes.ivaconf.shareName }}
         name: ivaconf
       {{- with .Values.iva.nodeSelector }}

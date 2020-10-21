@@ -191,25 +191,17 @@ analysis:
           mountPath: /opt/opencga/analysis
       k8s.volumes:
         - name: conf
-          azureFile:
-            secretName: azure-files-secret
-            shareName: conf
-            readOnly: true
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-conf"
         - name: sessions
-          azureFile:
-            secretName: azure-files-secret
-            shareName: sessions
-            readOnly: false
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-sessions"
         - name: variants
-          azureFile:
-            secretName: azure-files-secret
-            shareName: variants
-            readOnly: false
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-variants"
         - name: analysisconf
-          azureFile:
-            secretName: azure-files-secret
-            shareName: analysisconf
-            readOnly: false
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-analysisconf"
 
   # List of analysis frameworks
   frameworks:
