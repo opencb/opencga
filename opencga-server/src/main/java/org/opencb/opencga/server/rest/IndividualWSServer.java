@@ -217,7 +217,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus") String affectationStatus,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)

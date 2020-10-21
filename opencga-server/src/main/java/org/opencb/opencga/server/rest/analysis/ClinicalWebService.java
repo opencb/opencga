@@ -386,7 +386,7 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/interpretation/{interpretationId}/update")
+    @Path("/{clinicalAnalysis}/interpretation/{interpretation}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update interpretation fields", response = Interpretation.class)
     public Response updateInterpretation(
@@ -404,7 +404,7 @@ public class ClinicalWebService extends AnalysisWebService {
                     defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.BasicUpdateAction commentsAction,
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(value = "Interpretation ID") @PathParam("interpretationId") String interpretationId,
+            @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
         try {
@@ -435,13 +435,13 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/{clinicalAnalysis}/interpretation/{interpretationId}/merge")
+    @Path("/{clinicalAnalysis}/interpretation/{interpretation}/merge")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Merge interpretation", response = Interpretation.class)
     public Response mergeInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(value = "Interpretation ID where it will be merged") @PathParam("interpretationId") String interpretationId,
+            @ApiParam(value = "Interpretation ID where it will be merged") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = "Secondary Interpretation ID to merge from") @QueryParam("secondaryInterpretationId") String secondaryInterpretationId,
             @ApiParam(value = "Comma separated list of findings to merge. If not provided, all findings will be merged.")
                 @QueryParam("findings") String findings,
