@@ -167,7 +167,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 if (knockoutGenes.isEmpty()) {
                     logger.info("No results for sample {}", sample);
                 } else {
-                    KnockoutByIndividual.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutGenes.values());
+                    KnockoutByIndividual.GeneKnockoutByIndividualStats stats = getGeneKnockoutBySampleStats(knockoutGenes.values());
                     writeSampleFile(new KnockoutByIndividual()
                             .setSampleId(sample)
                             .setStats(stats)
@@ -185,15 +185,16 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             for (String sample : getSamples()) {
                 Path fileName = getSampleFileName(sample);
                 if (Files.exists(fileName)) {
-                    KnockoutByIndividual bySample = readSampleFile(sample);
-                    for (KnockoutGene gene : bySample.getGenes()) {
+                    KnockoutByIndividual byIndividual = readSampleFile(sample);
+                    for (KnockoutGene gene : byIndividual.getGenes()) {
                         KnockoutByGene byGene = byGeneMap.computeIfAbsent(gene.getName(),
-                                id -> new KnockoutByGene().setId(gene.getId()).setName(gene.getName()).setSamples(new LinkedList<>()));
+                                id -> new KnockoutByGene().setId(gene.getId()).setName(gene.getName()).setIndividuals(new LinkedList<>()));
 
-                        KnockoutByGene.KnockoutSample knockoutSample = new KnockoutByGene.KnockoutSample()
-                                .setId(bySample.getSampleId())
+                        KnockoutByGene.KnockoutIndividual knockoutIndividual = new KnockoutByGene.KnockoutIndividual()
+                                .setId(byIndividual.getId())
+                                .setSampleId(byIndividual.getSampleId())
                                 .setTranscripts(gene.getTranscripts());
-                        byGene.getSamples().add(knockoutSample);
+                        byGene.getIndividuals().add(knockoutIndividual);
                     }
                 }
             }
@@ -455,10 +456,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         if (GenotypeClass.MAIN_ALT.test(genotype)) {
                             if (GenotypeClass.HOM_ALT.test(genotype)) {
                                 FileEntry fileEntry = studyEntry.getFiles().get(sampleEntry.getFileIndex());
-                                KnockoutByGene.KnockoutSample knockoutSample = knockout.getSample(sample);
-                                knockoutSample.setId(sample);
+                                KnockoutByGene.KnockoutIndividual knockoutIndividual = knockout.getIndividualBySampleId(sample);
+//                                knockoutIndividual.setId(sample);
+                                knockoutIndividual.setSampleId(sample);
                                 for (ConsequenceType ct : cts) {
-                                    KnockoutTranscript knockoutTranscript = knockoutSample.getTranscript(ct.getEnsemblTranscriptId());
+                                    KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
                                     knockoutTranscript.setBiotype(ct.getBiotype());
                                     knockoutTranscript.addVariant(new KnockoutVariant(
                                             variant.toString(), genotype,
@@ -525,10 +527,10 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     SampleEntry sampleEntry = studyEntry.getSample(0);
                     FileEntry fileEntry = studyEntry.getFiles().get(sampleEntry.getFileIndex());
 
-                    KnockoutByGene.KnockoutSample sample = knockoutByGene.getSample(sampleId);
+                    KnockoutByGene.KnockoutIndividual knockoutIndividual = knockoutByGene.getIndividualBySampleId(sampleId);
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(ct, ctFilter, biotypeFilter, knockoutByGene.getName()::equals)) {
-                            KnockoutTranscript knockoutTranscript = sample.getTranscript(ct.getEnsemblTranscriptId());
+                            KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
                             knockoutTranscript.setBiotype(ct.getBiotype());
                             knockoutTranscript.addVariant(new KnockoutVariant(
                                     variant.toString(), sampleEntry.getData().get(0),
@@ -574,11 +576,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         variants.put(secVar.toString(), new KnockoutVariant());
                     }
                 } else {
-                    KnockoutByGene.KnockoutSample sample = knockout.getSample(sampleId);
+                    KnockoutByGene.KnockoutIndividual knockoutIndividual = knockout.getIndividualBySampleId(sampleId);
                     // The variant was already seen. i.e. there was a variant with this variant as secondary alternate
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(ct, ctFilter, biotypeFilter, knockout.getName()::equals)) {
-                            KnockoutTranscript knockoutTranscript = sample.getTranscript(ct.getEnsemblTranscriptId());
+                            KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
                             knockoutTranscript.setBiotype(ct.getBiotype());
 
                             String gt = sampleEntry.getData().get(0);
@@ -609,7 +611,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
                     .append(VariantQueryParam.TYPE.key(), VariantType.DELETION);
 
-            KnockoutByGene.KnockoutSample sample = knockout.getSample(sampleId);
+            KnockoutByGene.KnockoutIndividual knockoutIndividual = knockout.getIndividualBySampleId(sampleId);
 
             iterate(query, svVariant -> {
                 Set<String> transcripts = new HashSet<>(svVariant.getAnnotation().getConsequenceTypes().size());
@@ -635,7 +637,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(ct, ctFilter, biotypeFilter, knockout.getName()::equals)) {
                             if (transcripts.contains(ct.getEnsemblTranscriptId())) {
-                                KnockoutTranscript knockoutTranscript = sample.getTranscript(ct.getEnsemblTranscriptId());
+                                KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
                                 knockoutTranscript.setBiotype(ct.getBiotype());
 
                                 StudyEntry studyEntry = variant.getStudies().get(0);
@@ -668,7 +670,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 Path fileName = getGeneFileName(gene);
                 if (Files.exists(fileName)) {
                     KnockoutByGene byGene = readGeneFile(gene);
-                    for (KnockoutByGene.KnockoutSample sample : byGene.getSamples()) {
+                    for (KnockoutByGene.KnockoutIndividual sample : byGene.getIndividuals()) {
                         KnockoutByIndividual bySample = bySampleMap
                                 .computeIfAbsent(sample.getId(), s -> new KnockoutByIndividual().setSampleId(s));
 
@@ -680,7 +682,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
 //            buildGeneKnockoutBySample(sample, knockoutGenes);
             for (Map.Entry<String, KnockoutByIndividual> entry : bySampleMap.entrySet()) {
                 KnockoutByIndividual knockoutByIndividual = entry.getValue();
-                KnockoutByIndividual.GeneKnockoutBySampleStats stats = getGeneKnockoutBySampleStats(knockoutByIndividual.getGenes());
+                KnockoutByIndividual.GeneKnockoutByIndividualStats stats = getGeneKnockoutBySampleStats(knockoutByIndividual.getGenes());
                 knockoutByIndividual.setStats(stats);
                 writeSampleFile(knockoutByIndividual);
             }

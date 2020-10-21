@@ -220,6 +220,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         });
 
         step("add-metadata-to-output-files", () -> {
+            Map<String, String> sampleIdToIndividualIdMap = new HashMap<>();
             ObjectReader reader = JacksonUtils.getDefaultObjectMapper().readerFor(KnockoutByIndividual.class);
             try (SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
 //                    .writerWithDefaultPrettyPrinter()
@@ -240,16 +241,14 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                                     getToken())
                             .first();
                     if (individual != null) {
-                        if (individual.getFather() != null && individual.getFather().getId() == null) {
-                            individual.setFather(null);
-                        }
-                        if (individual.getMother() != null && individual.getMother().getId() == null) {
-                            individual.setMother(null);
-                        }
+                        sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), individual.getId());
                         knockoutByIndividual.setId(individual.getId());
                         knockoutByIndividual.setSex(individual.getSex());
                         knockoutByIndividual.setDisorders(individual.getDisorders());
                         knockoutByIndividual.setPhenotypes(individual.getPhenotypes());
+                    } else {
+                        // Empty value for missing individuals
+                        sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), "");
                     }
                     writer.write(knockoutByIndividual);
                 }
@@ -275,6 +274,30 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     knockoutByGene.setStrand(gene.getStrand());
                     knockoutByGene.setBiotype(gene.getBiotype());
                     knockoutByGene.setAnnotation(gene.getAnnotation());
+                    for (KnockoutByGene.KnockoutIndividual individual : knockoutByGene.getIndividuals()) {
+                        if (individual.getId() == null) {
+                            String individualId = sampleIdToIndividualIdMap.get(individual.getSampleId());
+                            if (individualId == null) {
+                                Individual individualObj = catalogManager
+                                        .getIndividualManager()
+                                        .search(studyFqn,
+                                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSampleId()),
+                                                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
+                                                getToken())
+                                        .first();
+                                if (individualObj == null) {
+                                    // Empty value for missing individuals
+                                    individualId = "";
+                                } else {
+                                    individualId = individualObj.getId();
+                                }
+                                sampleIdToIndividualIdMap.put(individual.getSampleId(), individualId);
+                            }
+                            if (!individualId.isEmpty()) {
+                                individual.setId(individualId);
+                            }
+                        }
+                    }
                     writer.write(knockoutByGene);
                 }
             }

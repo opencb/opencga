@@ -31,7 +31,7 @@ public class KnockoutByIndividual {
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
-    private GeneKnockoutBySampleStats stats;
+    private GeneKnockoutByIndividualStats stats;
 
     private Map<String, KnockoutGene> genesMap = new HashMap<>();
 
@@ -80,11 +80,11 @@ public class KnockoutByIndividual {
         return this;
     }
 
-    public GeneKnockoutBySampleStats getStats() {
+    public GeneKnockoutByIndividualStats getStats() {
         return stats;
     }
 
-    public KnockoutByIndividual setStats(GeneKnockoutBySampleStats stats) {
+    public KnockoutByIndividual setStats(GeneKnockoutByIndividualStats stats) {
         this.stats = stats;
         return this;
     }
@@ -109,12 +109,12 @@ public class KnockoutByIndividual {
         return this;
     }
 
-    public static class GeneKnockoutBySampleStats {
+    public static class GeneKnockoutByIndividualStats {
         private int numGenes;
         private int numTranscripts;
         private Map<KnockoutVariant.KnockoutType, Long> byType;
 
-        public GeneKnockoutBySampleStats() {
+        public GeneKnockoutByIndividualStats() {
             byType = new EnumMap<>(KnockoutVariant.KnockoutType.class);
         }
 
@@ -122,7 +122,7 @@ public class KnockoutByIndividual {
             return numGenes;
         }
 
-        public GeneKnockoutBySampleStats setNumGenes(int numGenes) {
+        public GeneKnockoutByIndividualStats setNumGenes(int numGenes) {
             this.numGenes = numGenes;
             return this;
         }
@@ -131,7 +131,7 @@ public class KnockoutByIndividual {
             return numTranscripts;
         }
 
-        public GeneKnockoutBySampleStats setNumTranscripts(int numTranscripts) {
+        public GeneKnockoutByIndividualStats setNumTranscripts(int numTranscripts) {
             this.numTranscripts = numTranscripts;
             return this;
         }
@@ -140,7 +140,7 @@ public class KnockoutByIndividual {
             return byType;
         }
 
-        public GeneKnockoutBySampleStats setByType(Map<KnockoutVariant.KnockoutType, Long> byType) {
+        public GeneKnockoutByIndividualStats setByType(Map<KnockoutVariant.KnockoutType, Long> byType) {
             this.byType = byType;
             return this;
         }

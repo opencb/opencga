@@ -1324,9 +1324,9 @@ public class VariantWebService extends AnalysisWebService {
     @ApiOperation(value = KnockoutAnalysis.DESCRIPTION, response = KnockoutByGene.class)
     public Response knockoutByGeneQuery(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId) {
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
         return run(() -> new KnockoutAnalysisResultReader(catalogManager)
-                .readKnockoutByGeneFromJob(study, jobId, limit, (int) skip, p -> true, token));
+                .readKnockoutByGeneFromJob(study, job, limit, (int) skip, p -> true, token));
     }
 
     @GET
@@ -1334,9 +1334,9 @@ public class VariantWebService extends AnalysisWebService {
     @ApiOperation(value = KnockoutAnalysis.DESCRIPTION, response = KnockoutByIndividual.class)
     public Response knockoutByIndividualQuery(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId) {
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
         return run(() -> new KnockoutAnalysisResultReader(catalogManager)
-                .readKnockoutByIndividualFromJob(study, jobId, limit, (int) skip, p -> true, token));
+                .readKnockoutByIndividualFromJob(study, job, limit, (int) skip, p -> true, token));
     }
 
     @POST

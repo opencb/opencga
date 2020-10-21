@@ -176,8 +176,8 @@ public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return Paths.get(geneFileNamePattern.replace("{gene}", gene));
     }
 
-    protected KnockoutByIndividual.GeneKnockoutBySampleStats getGeneKnockoutBySampleStats(Collection<KnockoutGene> knockoutGenes) {
-        KnockoutByIndividual.GeneKnockoutBySampleStats stats = new KnockoutByIndividual.GeneKnockoutBySampleStats()
+    protected KnockoutByIndividual.GeneKnockoutByIndividualStats getGeneKnockoutBySampleStats(Collection<KnockoutGene> knockoutGenes) {
+        KnockoutByIndividual.GeneKnockoutByIndividualStats stats = new KnockoutByIndividual.GeneKnockoutByIndividualStats()
                 .setNumGenes(knockoutGenes.size())
                 .setNumTranscripts(knockoutGenes.stream().mapToInt(g -> g.getTranscripts().size()).sum());
         for (KnockoutVariant.KnockoutType type : KnockoutVariant.KnockoutType.values()) {

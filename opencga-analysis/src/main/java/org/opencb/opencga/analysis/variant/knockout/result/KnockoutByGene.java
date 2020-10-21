@@ -31,7 +31,7 @@ public class KnockoutByGene {
     private String biotype;
     private GeneAnnotation annotation;
 
-    private List<KnockoutSample> samples = new LinkedList<>();
+    private List<KnockoutIndividual> individuals = new LinkedList<>();
 
     public String getId() {
         return id;
@@ -105,42 +105,52 @@ public class KnockoutByGene {
         return this;
     }
 
-    public KnockoutSample getSample(String sample) {
-        for (KnockoutSample s : samples) {
-            if (s.getId().equals(sample)) {
+    public KnockoutIndividual getIndividualBySampleId(String sample) {
+        for (KnockoutIndividual s : individuals) {
+            if (s.getSampleId().equals(sample)) {
                 return s;
             }
         }
-        KnockoutSample knockoutSample = new KnockoutSample().setId(sample);
-        samples.add(knockoutSample);
-        return knockoutSample;
+        KnockoutIndividual knockoutIndividual = new KnockoutIndividual().setSampleId(sample);
+        individuals.add(knockoutIndividual);
+        return knockoutIndividual;
     }
 
-    public List<KnockoutSample> getSamples() {
-        return samples;
+    public List<KnockoutIndividual> getIndividuals() {
+        return individuals;
     }
 
-    public KnockoutByGene setSamples(List<KnockoutSample> samples) {
-        this.samples = samples;
+    public KnockoutByGene setIndividuals(List<KnockoutIndividual> individuals) {
+        this.individuals = individuals;
         return this;
     }
 
-    public KnockoutByGene addSample(KnockoutSample sample) {
-        this.samples.add(sample);
+    public KnockoutByGene addIndividual(KnockoutIndividual individual) {
+        this.individuals.add(individual);
         return this;
     }
 
 
-    public static class KnockoutSample {
+    public static class KnockoutIndividual {
         private String id;
+        private String sampleId;
         private Map<String, KnockoutTranscript> transcriptsMap = new HashMap<>(); // Internal only
 
         public String getId() {
             return id;
         }
 
-        public KnockoutSample setId(String id) {
+        public KnockoutIndividual setId(String id) {
             this.id = id;
+            return this;
+        }
+
+        public String getSampleId() {
+            return sampleId;
+        }
+
+        public KnockoutIndividual setSampleId(String sampleId) {
+            this.sampleId = sampleId;
             return this;
         }
 
@@ -152,7 +162,7 @@ public class KnockoutByGene {
             return transcriptsMap.values();
         }
 
-        public KnockoutSample setTranscripts(Collection<KnockoutTranscript> transcripts) {
+        public KnockoutIndividual setTranscripts(Collection<KnockoutTranscript> transcripts) {
             if (transcripts == null) {
                 transcriptsMap = null;
             } else {
