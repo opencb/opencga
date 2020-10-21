@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
@@ -578,6 +579,20 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         Query intersectQuery = new Query(query);
         intersectQuery.put(VariantQueryParam.STUDY.key(), String.join(VariantQueryUtils.AND, studyIds));
         return get(intersectQuery, queryOptions, token);
+    }
+
+    public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery, String token)
+            throws CatalogException, IOException, StorageEngineException {
+        Query query = inputQuery == null ? new Query() : new Query(inputQuery);
+        query.put(STUDY.key(), studyStr);
+        query.put(SAMPLE.key(), sample);
+
+       return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
+            logger.debug("getSampleStats {}", query);
+            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(studyStr, sample, query);
+            logger.debug("getFacets in {}ms", result.getTime());
+            return result;
+        });
     }
 
     public DataResult<Variant> getSampleData(String variant, String study, QueryOptions inputOptions, String token)

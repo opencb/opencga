@@ -5,14 +5,14 @@ import org.opencb.commons.datastore.core.FacetField;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class FieldVariantAccumulator<T> {
-    private FieldVariantAccumulator<T> nestedFieldAccumulator;
+public abstract class FacetFieldAccumulator<T> {
+    private FacetFieldAccumulator<T> nestedFieldAccumulator;
 
-    protected FieldVariantAccumulator(FieldVariantAccumulator<T> nestedFieldAccumulator) {
+    protected FacetFieldAccumulator(FacetFieldAccumulator<T> nestedFieldAccumulator) {
         this.nestedFieldAccumulator = nestedFieldAccumulator;
     }
 
-    public FieldVariantAccumulator<T> setNestedFieldAccumulator(FieldVariantAccumulator<T> nestedFieldAccumulator) {
+    public FacetFieldAccumulator<T> setNestedFieldAccumulator(FacetFieldAccumulator<T> nestedFieldAccumulator) {
         this.nestedFieldAccumulator = nestedFieldAccumulator;
         return this;
     }
@@ -57,22 +57,22 @@ public abstract class FieldVariantAccumulator<T> {
 
     protected abstract List<FacetField.Bucket> prepareBuckets1();
 
-    public void cleanEmptyBuckets(FacetField field) {
+    public void evaluate(FacetField field) {
         field.getBuckets().removeIf(bucket -> bucket.getCount() == 0);
         if (nestedFieldAccumulator != null) {
             for (FacetField.Bucket bucket : field.getBuckets()) {
-                nestedFieldAccumulator.cleanEmptyBuckets(bucket.getFacetFields().get(0));
+                nestedFieldAccumulator.evaluate(bucket.getFacetFields().get(0));
             }
         }
     }
 
     /**
-     * Accumulate variant in the given field.
+     * Accumulate T in the given field.
      * @param field   Field
-     * @param variant Variant
+     * @param t       element
      */
-    public final void accumulate(FacetField field, T variant) {
-        List<FacetField.Bucket> buckets = getBuckets(field, variant);
+    public final void accumulate(FacetField field, T t) {
+        List<FacetField.Bucket> buckets = getBuckets(field, t);
         if (buckets == null || buckets.isEmpty()) {
             return;
         }
@@ -80,10 +80,10 @@ public abstract class FieldVariantAccumulator<T> {
         for (FacetField.Bucket bucket : buckets) {
             bucket.addCount(1);
             if (nestedFieldAccumulator != null) {
-                nestedFieldAccumulator.accumulate(bucket.getFacetFields().get(0), variant);
+                nestedFieldAccumulator.accumulate(bucket.getFacetFields().get(0), t);
             }
         }
     }
 
-    protected abstract List<FacetField.Bucket> getBuckets(FacetField field, T variant);
+    protected abstract List<FacetField.Bucket> getBuckets(FacetField field, T t);
 }

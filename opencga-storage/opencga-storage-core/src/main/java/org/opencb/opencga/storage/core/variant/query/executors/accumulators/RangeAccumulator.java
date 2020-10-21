@@ -8,14 +8,14 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 
-public class RangeAccumulator<T, N extends Number & Comparable<N>> extends FieldVariantAccumulator<T> {
+public class RangeAccumulator<T, N extends Number & Comparable<N>> extends FacetFieldAccumulator<T> {
 
     private final ToIntFunction<T> getRangeIdx;
     private final String name;
     private final List<Range<N>> ranges;
 
     public static <T, N extends Number & Comparable<N>> RangeAccumulator<T, N> fromValue(
-            Function<T, N> getValue, String name, List<Range<N>> ranges, FieldVariantAccumulator<T> nestedFieldAccumulator) {
+            Function<T, N> getValue, String name, List<Range<N>> ranges, FacetFieldAccumulator<T> nestedFieldAccumulator) {
         ToIntFunction<T> getRangeIdx = (T t) -> {
             N number = getValue.apply(t);
             if (number == null) {
@@ -34,12 +34,12 @@ public class RangeAccumulator<T, N extends Number & Comparable<N>> extends Field
     }
 
     public static <T, N extends Number & Comparable<N>> RangeAccumulator<T, N> fromIndex(
-            ToIntFunction<T> getRangeIdx, String name, List<Range<N>> ranges, FieldVariantAccumulator<T> nestedFieldAccumulator) {
+            ToIntFunction<T> getRangeIdx, String name, List<Range<N>> ranges, FacetFieldAccumulator<T> nestedFieldAccumulator) {
         return new RangeAccumulator<>(getRangeIdx, name, ranges, nestedFieldAccumulator);
     }
 
     protected RangeAccumulator(ToIntFunction<T> getRangeIdx, String name, List<Range<N>> ranges,
-                            FieldVariantAccumulator<T> nestedFieldAccumulator) {
+                            FacetFieldAccumulator<T> nestedFieldAccumulator) {
         super(nestedFieldAccumulator);
         this.getRangeIdx = getRangeIdx;
         this.name = name;
@@ -61,8 +61,8 @@ public class RangeAccumulator<T, N extends Number & Comparable<N>> extends Field
     }
 
     @Override
-    protected List<FacetField.Bucket> getBuckets(FacetField field, T variant) {
-        int idx = getRangeIdx.applyAsInt(variant);
+    protected List<FacetField.Bucket> getBuckets(FacetField field, T t) {
+        int idx = getRangeIdx.applyAsInt(t);
         if (idx >= 0) {
             return Collections.singletonList(field.getBuckets().get(idx));
         }

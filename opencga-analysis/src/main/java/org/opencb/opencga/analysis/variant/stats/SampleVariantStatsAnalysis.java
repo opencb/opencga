@@ -40,8 +40,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-variant-stats";
     public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
-    @Deprecated
-    public static final String VARIABLE_SET_ID = "opencga_sample_variant_stats";
     private String study;
 
     private final SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams();

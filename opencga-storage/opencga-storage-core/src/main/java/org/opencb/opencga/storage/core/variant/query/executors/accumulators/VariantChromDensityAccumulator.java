@@ -7,7 +7,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 public class VariantChromDensityAccumulator<T> extends ChromDensityAccumulator<Variant> {
 
     public VariantChromDensityAccumulator(VariantStorageMetadataManager metadataManager, Region region,
-                                             FieldVariantAccumulator<Variant> nestedFieldAccumulator, int step) {
+                                          FacetFieldAccumulator<Variant> nestedFieldAccumulator, int step) {
         super(metadataManager, region, nestedFieldAccumulator, step, Variant::getStart);
     }
 }
