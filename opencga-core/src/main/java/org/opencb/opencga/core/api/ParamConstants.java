@@ -68,6 +68,9 @@ public class ParamConstants {
     public static final String SNAPSHOT_PARAM = "snapshot";
     public static final String SNAPSHOT_DESCRIPTION = "Snapshot value (Latest version of the entry in the specified release)";
 
+    public static final String DISTINCT_FIELD_PARAM = "field";
+    public static final String DISTINCT_FIELD_DESCRIPTION = "Field for which to obtain the distinct values";
+
     public static final String PHENOTYPES_PARAM = "phenotypes";
     public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names";
     public static final String DISORDERS_PARAM = "disorders";

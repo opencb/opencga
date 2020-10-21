@@ -353,6 +353,40 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/distinct")
+    @ApiOperation(value = "File distinct method")
+    public Response distinct(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @DefaultValue("") @QueryParam("path") String path,
+            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @DefaultValue("") @QueryParam("type") String type,
+            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @DefaultValue("") @QueryParam("directory") String directory,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @DefaultValue("") @QueryParam("description") String description,
+            @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
+            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @DefaultValue("") @QueryParam("size") String size,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sampleIds") String samples,
+            @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam("attributes") String attributes,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(fileManager.distinct(studyStr, field, query, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{folder}/list")
     @ApiOperation(value = "List all the files inside the folder", response = File.class)
     @ApiImplicitParams({

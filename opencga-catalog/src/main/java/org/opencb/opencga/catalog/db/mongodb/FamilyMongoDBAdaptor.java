@@ -236,13 +236,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bson = parseQuery(query);
-        return new OpenCGAResult(familyCollection.distinct(field, bson));
-    }
-
-    @Override
     public OpenCGAResult stats(Query query) {
         return null;
     }
@@ -893,6 +886,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         Bson bsonQuery = parseQuery(query, user);
         return groupBy(familyCollection, bsonQuery, fields, QueryParams.ID.key(), options);
+    }
+
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        return new OpenCGAResult<>(familyCollection.distinct(field, bson, clazz));
     }
 
     @Override

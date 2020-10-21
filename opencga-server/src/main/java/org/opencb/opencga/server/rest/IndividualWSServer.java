@@ -194,6 +194,53 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/distinct")
+    @ApiOperation(value = "Individual distinct method")
+    public Response distinct(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                    + "alias") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
+            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+            @ApiParam(value = "father", required = false) @QueryParam("father") String father,
+            @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
+            @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
+            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") String karyotypicSex,
+            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
+            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus") String affectationStatus,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
+            @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
+            @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+            @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+            @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
+            @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of individuals in the specified release)") @QueryParam("snapshot") int snapshot,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(individualManager.distinct(studyStr, field, query, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)

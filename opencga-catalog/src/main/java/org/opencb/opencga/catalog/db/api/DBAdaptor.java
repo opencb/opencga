@@ -51,14 +51,6 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    default OpenCGAResult<T> distinct(String field) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return distinct(new Query(), field);
-    }
-
-    OpenCGAResult<T> distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-
     default OpenCGAResult<T> stats() {
         return stats(new Query());
     }

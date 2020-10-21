@@ -193,6 +193,41 @@ public class PanelWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/distinct")
+    @ApiOperation(value = "Panel distinct method")
+    public Response distinct(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
+            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
+            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+            @ApiParam(value = "Panel author") @QueryParam("author") String author,
+            @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
+            @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
+            @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
+            @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
+                    int snapshot,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(panelManager.distinct(studyStr, field, query, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @DELETE
     @Path("/{panels}/delete")
     @ApiOperation(value = "Delete existing panels", response = Panel.class)

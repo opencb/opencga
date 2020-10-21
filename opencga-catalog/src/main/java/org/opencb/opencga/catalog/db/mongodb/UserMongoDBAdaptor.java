@@ -289,12 +289,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query);
-        return new OpenCGAResult(userCollection.distinct(field, bsonDocument));
-    }
-
-    @Override
     public OpenCGAResult stats(Query query) {
         return null;
     }

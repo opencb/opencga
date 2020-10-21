@@ -148,6 +148,24 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void distinctTest() throws CatalogException {
+        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.ID.key(), null, token);
+        assertEquals(String.class.getName(), distinct.getResultType());
+        assertEquals(9, distinct.getNumResults());
+        assertEquals(9, distinct.getResults().size());
+
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.UID.key(), null, token);
+        assertEquals(Long.class.getName(), distinct.getResultType());
+        assertEquals(9, distinct.getNumResults());
+        assertEquals(9, distinct.getResults().size());
+
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.SOMATIC.key(), null, token);
+        assertEquals(Boolean.class.getName(), distinct.getResultType());
+        assertEquals(1, distinct.getNumResults());
+        assertEquals(1, distinct.getResults().size());
+    }
+
+    @Test
     public void updateProcessingField() throws CatalogException {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);

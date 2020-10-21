@@ -269,6 +269,43 @@ public class ClinicalWebService extends AnalysisWebService {
     }
 
     @GET
+    @Path("/distinct")
+    @ApiOperation(value = "Clinical Analysis distinct method")
+    public Response distinct(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis ID") @QueryParam("id") String id,
+            @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
+            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
+            @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
+            @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
+            @ApiParam(value = "Description") @QueryParam("description") String description,
+            @ApiParam(value = "Family id") @QueryParam("family") String family,
+            @ApiParam(value = "Proband id") @QueryParam("proband") String proband,
+            @ApiParam(value = "Sample id associated to the proband or any member of a family") @QueryParam("sample") String sample,
+            @ApiParam(value = "Proband id or any member id of a family", hidden = true) @QueryParam("member") String member,
+            @ApiParam(value = "Proband id or any member id of a family") @QueryParam("individual") String individual,
+            @ApiParam(value = "Clinical analyst assignee") @QueryParam("analystAssignee") String assignee,
+            @ApiParam(value = "Disorder ID or name") @QueryParam("disorder") String disorder,
+            @ApiParam(value = "Flags") @QueryParam("flags") String flags,
+            @ApiParam(value = "Release value") @QueryParam("release") String release,
+            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(clinicalManager.distinct(studyStr, field, query, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{clinicalAnalyses}/acl")
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
             response = Map.class)
@@ -539,6 +576,29 @@ public class ClinicalWebService extends AnalysisWebService {
         }
     }
 
+    @GET
+    @Path("/interpretation/distinct")
+    @ApiOperation(value = "Interpretation distinct method")
+    public Response interpretationDistinct(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Interpretation ID") @QueryParam("id") String id,
+            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Clinical analyst ID") @QueryParam("analyst") String clinicalAnalyst,
+            @ApiParam(value = "Interpretation method name") @QueryParam("methods") String methods,
+            @ApiParam(value = "Primary finding IDs") @QueryParam("primaryFindings") String primaryFindings,
+            @ApiParam(value = "Secondary finding IDs") @QueryParam("secondaryFindings") String secondaryFindings,
+            @ApiParam(value = "Interpretation status") @QueryParam("status") String status,
+            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = "Modification date") @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(catalogInterpretationManager.distinct(studyStr, field, query, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     //-------------------------------------------------------------------------
     // C L I N I C A L      V A R I A N T S
