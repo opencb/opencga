@@ -245,6 +245,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     TimeUtils.getTime(TimeUtils.add1MonthtoDate(TimeUtils.getDate()))));
             clinicalAnalysis.setComments(ParamUtils.defaultObject(clinicalAnalysis.getComments(), Collections.emptyList()));
             clinicalAnalysis.setAudit(ParamUtils.defaultObject(clinicalAnalysis.getAudit(), Collections.emptyList()));
+            clinicalAnalysis.setQualityControl(ParamUtils.defaultObject(clinicalAnalysis.getQualityControl(),
+                    ClinicalAnalysisQualityControl::new));
+
+            clinicalAnalysis.getQualityControl().setUser(userId);
+            clinicalAnalysis.getQualityControl().setDate(TimeUtils.getDate());
 
             if (!clinicalAnalysis.getComments().isEmpty()) {
                 // Fill author and date
@@ -960,6 +965,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     private OpenCGAResult<ClinicalAnalysis> update(Study study, ClinicalAnalysis clinicalAnalysis,
                                                    ClinicalAnalysisUpdateParams updateParams, String userId, QueryOptions options)
             throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
@@ -1004,6 +1011,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 parameters.put(InterpretationDBAdaptor.QueryParams.ANALYST.key(), new ClinicalAnalyst("", "", "", userId,
                         TimeUtils.getTime()));
             }
+        }
+        if (parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key()) != null) {
+            ClinicalAnalysisQualityControl qualityControl = updateParams.getQualityControl().toClinicalQualityControl();
+            qualityControl.setUser(userId);
+            qualityControl.setDate(TimeUtils.getDate());
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key(), qualityControl);
         }
 
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {

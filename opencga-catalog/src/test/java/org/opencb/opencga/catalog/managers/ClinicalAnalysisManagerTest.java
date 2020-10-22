@@ -158,6 +158,40 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void createAndUpdateClinicalAnalysisWithQualityControl() throws CatalogException {
+        Individual individual = new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2")));
+        catalogManager.getIndividualManager().create(STUDY, individual, null, sessionIdUser);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
+                .setDescription("My description").setType(ClinicalAnalysis.Type.SINGLE)
+                .setQualityControl(new ClinicalAnalysisQualityControl(ClinicalAnalysisQualityControl.QualityControlSummary.BAD, "my comment", null, null))
+                .setProband(individual);
+
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, false, QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(ClinicalAnalysisQualityControl.QualityControlSummary.BAD, ca.getQualityControl().getSummary());
+        assertEquals("my comment", ca.getQualityControl().getComment());
+        assertEquals("user", ca.getQualityControl().getUser());
+        assertNotNull(ca.getQualityControl().getDate());
+
+        Date date = ca.getQualityControl().getDate();
+
+        ClinicalAnalysisQualityControlUpdateParam qualityControlUpdateParam =
+                new ClinicalAnalysisQualityControlUpdateParam(ClinicalAnalysisQualityControl.QualityControlSummary.EXCELLENT, "other");
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams().setQualityControl(qualityControlUpdateParam);
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), updateParams, null, sessionIdUser);
+        ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), null, sessionIdUser).first();
+
+        assertEquals(ClinicalAnalysisQualityControl.QualityControlSummary.EXCELLENT, ca.getQualityControl().getSummary());
+        assertEquals("other", ca.getQualityControl().getComment());
+        assertEquals("user", ca.getQualityControl().getUser());
+        assertNotNull(ca.getQualityControl().getDate());
+        assertNotEquals(date, ca.getQualityControl().getDate());
+    }
+
+    @Test
     public void createSingleClinicalAnalysisTestWithoutDisorder() throws CatalogException {
         Individual individual = new Individual()
                 .setId("proband")
@@ -958,7 +992,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         // We update interpretation 1 so a new version is generated
         catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1", new InterpretationUpdateParams()
-                        .setDescription("my description"), null, QueryOptions.empty(), sessionIdUser);
+                .setDescription("my description"), null, QueryOptions.empty(), sessionIdUser);
 
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertNotNull(ca.getInterpretation());

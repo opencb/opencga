@@ -64,6 +64,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private String dueDate;
     private int release;
 
+    private ClinicalAnalysisQualityControl qualityControl;
+
     private List<ClinicalComment> comments;
     private List<ClinicalAudit> audit;
     private ClinicalAnalysisInternal internal;
@@ -83,8 +85,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
                             Family family, boolean locked, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
                             ClinicalConsent consent, ClinicalAnalyst analyst, Enums.Priority priority, List<String> flags,
                             String creationDate, String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
-                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes,
-                            CustomStatus status) {
+                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
+                            Map<String, Object> attributes, CustomStatus status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -102,6 +104,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.dueDate = dueDate;
+        this.qualityControl = qualityControl;
         this.release = release;
         this.comments = comments;
         this.audit = audit;
@@ -131,6 +134,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
+        sb.append(", qualityControl='").append(qualityControl).append('\'');
         sb.append(", release=").append(release);
         sb.append(", comments=").append(comments);
         sb.append(", audit=").append(audit);
@@ -330,6 +334,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setAudit(List<ClinicalAudit> audit) {
         this.audit = audit;
+        return this;
+    }
+
+    public ClinicalAnalysisQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalAnalysis setQualityControl(ClinicalAnalysisQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
