@@ -118,6 +118,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
+import static org.opencb.opencga.core.api.ParamConstants.JOB_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 
 /**
  * Created by imedina on 16/06/16.
@@ -125,7 +127,6 @@ import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
-    public static final String JOB_ID_PARAM = "job-id";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private String internalCli;
@@ -432,7 +433,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return abortJob(job, "Missing mandatory 'studyUuid' field");
         }
 
-        if (StringUtils.isEmpty(job.getTool().getId()) || !TOOL_CLI_MAP.containsKey(job.getTool().getId())) {
+        if (StringUtils.isEmpty(job.getTool().getId())) {
             return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
         }
 
@@ -529,14 +530,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
         params.put(OUTDIR_PARAM, outDirPath.toAbsolutePath().toString());
-        params.put(JOB_ID_PARAM, job.getId());
+        params.put(JOB_PARAM, job.getId());
 
         // Define where the stdout and stderr will be stored
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));
         Path stdout = outDirPath.resolve(getLogFileName(job));
 
         // Create cli
-        String commandLine = buildCli(internalCli, job.getTool().getId(), params);
+        String commandLine = buildCli(internalCli, job);
         String authenticatedCommandLine = commandLine + " --token " + userToken;
         String shadedCommandLine = commandLine + " --token " + REDACTED_TOKEN;
 
@@ -657,10 +658,23 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return folder;
     }
 
-    public static String buildCli(String internalCli, String toolId, Map<String, Object> params) {
+    public static String buildCli(String internalCli, Job job) {
+        String toolId = job.getTool().getId();
+        String internalCommand = TOOL_CLI_MAP.get(toolId);
+        if (StringUtils.isEmpty(internalCommand)) {
+            ObjectMap params = new ObjectMap()
+                    .append(JOB_PARAM, job.getId())
+                    .append(STUDY_PARAM, job.getStudy().getId());
+            return buildCli(internalCli, "tools execute-job", params);
+        } else {
+            return buildCli(internalCli, internalCommand, job.getParams());
+        }
+    }
+
+    public static String buildCli(String internalCli, String internalCommand, Map<String, Object> params) {
         StringBuilder cliBuilder = new StringBuilder()
                 .append(internalCli)
-                .append(" ").append(TOOL_CLI_MAP.get(toolId));
+                .append(" ").append(internalCommand);
         for (Map.Entry<String, Object> entry : params.entrySet()) {
             String key = entry.getKey();
             String param = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key);

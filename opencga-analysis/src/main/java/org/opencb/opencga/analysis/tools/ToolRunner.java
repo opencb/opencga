@@ -52,16 +52,15 @@ public class ToolRunner {
 
     /**
      * Execute a command tool.
+     * @param study Study containing the job
      * @param jobId jobId of the job containing the relevant information.
      * @param token session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(String jobId, String token) throws CatalogException, ToolException {
+    public ExecutionResult execute(String study, String jobId, String token) throws CatalogException, ToolException {
         // We get the job information.
-        Query query = new Query();
-        query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);
-        Job job = catalogManager.getJobManager().search(null, query, QueryOptions.empty(), token).first();
+        Job job = catalogManager.getJobManager().get(study, jobId, QueryOptions.empty(), token).first();
 
         return execute(job.getTool().getId(), new ObjectMap(job.getParams()), Paths.get(job.getOutDir().getUri()), jobId, token);
     }

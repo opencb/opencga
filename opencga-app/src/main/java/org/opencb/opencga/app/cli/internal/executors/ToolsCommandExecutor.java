@@ -57,7 +57,7 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
 
     private void executeJob() throws CatalogException, ToolException {
         ToolsCommandOptions.ExecuteJobCommandOptions cliOptions = this.toolCommandOptions.executeJobCommandOptions;
-        toolRunner.execute(cliOptions.job, token);
+        toolRunner.execute(cliOptions.study, cliOptions.job, token);
     }
 
     private void listTools() {
