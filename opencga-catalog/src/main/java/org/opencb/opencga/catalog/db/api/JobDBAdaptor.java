@@ -36,7 +36,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface JobDBAdaptor extends DBAdaptor<Job> {
+public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
 
     default boolean exists(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), jobId)).getNumMatches() > 0;

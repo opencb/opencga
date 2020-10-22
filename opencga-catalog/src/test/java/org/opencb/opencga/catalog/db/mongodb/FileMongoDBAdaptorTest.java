@@ -220,24 +220,20 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void testDistinct() throws Exception {
+        long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-//        List<String> distinctOwners = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.OWNER_ID.key()).getResults();
-        List<String> distinctTypes = catalogFileDBAdaptor.distinct(new Query(), FileDBAdaptor.QueryParams.TYPE.key()).getResults();
-//        assertEquals(Arrays.asList("imedina", "pfurio"), distinctOwners);
+        List<String> distinctTypes = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.TYPE.key(), null, user3.getId(),
+                String.class).getResults();
         assertEquals(Arrays.asList("DIRECTORY","FILE"), distinctTypes);
 
-        List<Long> pfurioStudies = Arrays.asList(9L, 14L);
-        List<String> distinctFormats = catalogFileDBAdaptor.distinct(
-                new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), pfurioStudies),
-                FileDBAdaptor.QueryParams.FORMAT.key()).getResults();
-        assertTrue(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM").containsAll(distinctFormats));
+        List<String> distinctFormats = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.FORMAT.key(), null, user3.getId(),
+                String.class).getResults();
+        assertTrue(Arrays.asList("PLAIN").containsAll(distinctFormats));
 
-        distinctFormats = catalogFileDBAdaptor.distinct(new Query(),
-                FileDBAdaptor.QueryParams.FORMAT.key()).getResults();
-        Collections.sort(distinctFormats);
-        List<String> expected = Arrays.asList("PLAIN", "UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM");
-        Collections.sort(expected);
-        assertEquals(expected, distinctFormats);
+        studyUid = user4.getProjects().get(0).getStudies().get(0).getUid();
+        distinctFormats = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.FORMAT.key(), null, user4.getId(),
+                String.class).getResults();
+        assertTrue(Arrays.asList("BAM", "COMMA_SEPARATED_VALUES", "UNKNOWN").containsAll(distinctFormats));
     }
 
     @Test

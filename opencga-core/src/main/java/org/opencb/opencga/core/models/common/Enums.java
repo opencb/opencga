@@ -113,6 +113,7 @@ public final class Enums {
         INFO,
         SEARCH,
         COUNT,
+        DISTINCT,
         DELETE,
         DOWNLOAD,
         VIEW_LOG,

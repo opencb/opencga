@@ -204,6 +204,18 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     public abstract OpenCGAResult<R> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
+     * Fetch a list containing all the distinct values of the key {@code field}.
+     *
+     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param field The field for which to return distinct values.
+     * @param query Query object.
+     * @param token Token of the user logged in.
+     * @return The list of distinct values.
+     * @throws CatalogException CatalogException.
+     */
+    public abstract OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException;
+
+    /**
      * Count matching entries in catalog.
      *
      * @param studyId  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].

@@ -210,13 +210,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonDocument = parseQuery(query, QueryOptions.empty());
-        return new OpenCGAResult(jobCollection.distinct(field, bsonDocument));
-    }
-
-    @Override
     public OpenCGAResult stats(Query query) {
         return null;
     }
@@ -692,6 +685,16 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         Bson bsonQuery = parseQuery(query, options, user);
         return groupBy(jobCollection, bsonQuery, fields, QueryParams.ID.key(), fixOptions(options));
+    }
+
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, null, userId);
+
+        return new OpenCGAResult(jobCollection.distinct(field, bson, clazz));
     }
 
     @Override

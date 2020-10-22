@@ -42,7 +42,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
-        UID("uid", INTEGER, ""),
+        UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
         PROCESSING("processing", TEXT_ARRAY, ""),
         COLLECTION("collection", TEXT_ARRAY, ""),

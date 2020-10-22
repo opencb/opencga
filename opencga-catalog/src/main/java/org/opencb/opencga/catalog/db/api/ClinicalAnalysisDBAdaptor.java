@@ -38,7 +38,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 05/06/17.
  */
-public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
+public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysis> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),

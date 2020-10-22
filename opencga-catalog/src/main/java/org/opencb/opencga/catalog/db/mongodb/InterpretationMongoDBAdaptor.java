@@ -279,11 +279,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
-        return null;
-    }
-
-    @Override
     public OpenCGAResult stats(Query query) {
         return null;
     }
@@ -978,6 +973,15 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
+    }
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery);
+
+        return new OpenCGAResult<>(interpretationCollection.distinct(field, bson, clazz));
     }
 
     @Override
