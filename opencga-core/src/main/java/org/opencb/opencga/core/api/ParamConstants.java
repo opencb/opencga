@@ -125,6 +125,7 @@ public class ParamConstants {
     public static final String FILE_SIZE_DESCRIPTION = "File size";
     public static final String FILE_FOLDER = "folder";
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
+    public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
 
     // ---------------------------------------------
 

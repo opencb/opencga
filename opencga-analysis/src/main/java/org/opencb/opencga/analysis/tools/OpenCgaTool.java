@@ -462,6 +462,10 @@ public abstract class OpenCgaTool {
             throw new ToolException("Error moving file from " + source + " to " + destiny, e);
         }
         // Add only if move is successful
+        addGeneratedFile(file);
+    }
+
+    protected final void addGeneratedFile(File file) throws ToolException {
         erm.addExternalFile(file.getUri());
     }
 

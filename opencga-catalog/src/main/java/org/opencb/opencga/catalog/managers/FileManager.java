@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -3237,7 +3238,8 @@ public class FileManager extends AnnotationSetManager<File> {
             QueryOptions queryOptions = new QueryOptions()
                     .append(QueryOptions.LIMIT, 100);
 
-            return fileDBAdaptor.get(query, queryOptions);
+            return fileDBAdaptor.get(query, queryOptions)
+                    .addEvent(new Event(Event.Type.INFO, ParamConstants.FILE_ALREADY_LINKED));
         }
 
         // Check if the uri was linked to other path
