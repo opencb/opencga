@@ -79,7 +79,7 @@ public class KnockoutAnalysisResultReader {
         try (InputStream is = catalogManager.getFileManager().download(study, fileId, token);
              MappingIterator<T> iterator = reader.readValues(is)) {
             Iterator<T> filtered = Iterators.filter(iterator, filter::test);
-            int numMatches = Iterators.advance(iterator, skip);
+            int numMatches = Iterators.advance(filtered, skip);
             List<T> values = new ArrayList<>(Math.min(limit, 1000));
             for (int i = 0; i < limit && filtered.hasNext(); i++) {
                 values.add(filtered.next());

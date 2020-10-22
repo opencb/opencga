@@ -397,7 +397,7 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), Integer.parseInt(value));
                     break;
                 case QueryOptions.SKIP:
-                    int skip = Integer.parseInt(value);
+                    skip = Integer.parseInt(value);
                     queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
                     break;
                 case QueryOptions.SORT:
@@ -446,15 +446,16 @@ public class OpenCGAWSServer {
             }
         }
 
-        if (limit > MAX_LIMIT) {
+        if (!multivaluedMap.containsKey(QueryOptions.LIMIT)) {
+            limit = DEFAULT_LIMIT;
+        } else if (limit > MAX_LIMIT) {
             throw new ParamException.QueryParamException(new Throwable("'limit' value cannot be higher than '" + MAX_LIMIT + "'."),
                     "limit", "0");
-        }
-        if (limit < 0) {
+        } else if (limit < 0) {
             throw new ParamException.QueryParamException(new Throwable("'limit' must be a positive value lower or equal to '"
                     + MAX_LIMIT + "'."), "limit", "0");
         }
-        queryOptions.put(QueryOptions.LIMIT, multivaluedMap.containsKey(QueryOptions.LIMIT) ? limit : DEFAULT_LIMIT);
+        queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
 
 //      Exceptions

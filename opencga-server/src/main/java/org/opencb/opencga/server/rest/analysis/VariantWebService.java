@@ -1331,7 +1331,11 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/knockout/gene/query")
-    @ApiOperation(value = KnockoutAnalysis.DESCRIPTION, response = KnockoutByGene.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+    })
+    @ApiOperation(value = "Fetch values from KnockoutAnalysis result, by genes", response = KnockoutByGene.class)
     public Response knockoutByGeneQuery(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
@@ -1341,7 +1345,11 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/knockout/individual/query")
-    @ApiOperation(value = KnockoutAnalysis.DESCRIPTION, response = KnockoutByIndividual.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+    })
+    @ApiOperation(value = "Fetch values from KnockoutAnalysis result, by individuals", response = KnockoutByIndividual.class)
     public Response knockoutByIndividualQuery(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
