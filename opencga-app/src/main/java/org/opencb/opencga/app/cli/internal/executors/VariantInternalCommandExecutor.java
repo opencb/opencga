@@ -131,7 +131,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(variantCommandOptions.jCommander);
         configure();
 
-        token = getSessionId(variantCommandOptions.commonCommandOptions);
         jobId = variantCommandOptions.internalJobOptions.jobId;
 
         switch (subCommandString) {

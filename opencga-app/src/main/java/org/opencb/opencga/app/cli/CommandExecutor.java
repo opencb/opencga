@@ -53,9 +53,7 @@ public abstract class CommandExecutor {
     protected String appHome;
     protected String conf;
 
-    @Deprecated
     protected String userId;
-    @Deprecated
     protected String token;
     @Nullable
     protected CliSession cliSession;
@@ -119,7 +117,9 @@ public abstract class CommandExecutor {
             loadCliSessionFile();
             privateLogger.debug("CLI session file is: {}", this.cliSession);
 
-            if (cliSession != null) {
+            if (StringUtils.isNotBlank(options.token)) {
+                this.token = options.token;
+            } else if (cliSession != null) {
                 this.token = cliSession.getToken();
                 this.userId = cliSession.getUser();
             }
@@ -137,16 +137,6 @@ public abstract class CommandExecutor {
 //            }
 //        }));
     }
-
-    @Deprecated
-    protected String getSessionId(GeneralCliOptions.CommonCommandOptions commonOptions) {
-        if (StringUtils.isBlank(commonOptions.token) && cliSession != null) {
-            return cliSession.getToken();
-        } else {
-            return commonOptions.token;
-        }
-    }
-
 
     public abstract void execute() throws Exception;
 
