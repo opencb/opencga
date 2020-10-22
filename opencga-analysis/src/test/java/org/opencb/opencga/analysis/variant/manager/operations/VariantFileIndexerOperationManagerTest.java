@@ -425,7 +425,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
     @Test
     public void testIndexMalformed() throws Exception {
-        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()), "");
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_malformed_file"));
         VariantIndexParams params = new VariantIndexParams();
@@ -434,7 +434,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
-                , outDir, sessionId);
+                , outDir, null, sessionId);
 
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found malformed variants"));
@@ -443,7 +443,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
     @Test
     public void testIndexDuplicated() throws Exception {
-        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()), "");
+        ToolRunner toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantManager.getStorageConfiguration()));
 
         Path outDir = Paths.get(opencga.createTmpOutdir("_duplicated_file"));
         VariantIndexParams params = new VariantIndexParams();
@@ -452,7 +452,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
-                , outDir, sessionId);
+                , outDir, null, sessionId);
 
         assertEquals(Event.Type.WARNING, er.getEvents().get(0).getType());
         assertThat(er.getEvents().get(0).getMessage(), CoreMatchers.containsString("Found duplicated variants"));
