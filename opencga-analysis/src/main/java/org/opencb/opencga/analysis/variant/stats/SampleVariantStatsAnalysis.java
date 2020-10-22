@@ -26,6 +26,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -40,8 +41,8 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-variant-stats";
     public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
-    private String study;
 
+    @ToolParams
     private final SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams();
     private ArrayList<String> checkedSamplesList;
     private Path outputFile;
@@ -49,8 +50,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     @Override
     protected void check() throws Exception {
         super.check();
-        toolParams.updateParams(params);
-        study = getStudyFqn();
         setUpStorageEngineExecutor(study);
         Set<String> allSamples = new HashSet<>();
 

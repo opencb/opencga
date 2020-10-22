@@ -35,6 +35,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -46,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -234,6 +236,7 @@ public abstract class OpenCgaTool {
                 }
             }
             try {
+                privateCheck();
                 check();
                 erm.setSteps(getSteps());
                 run();
@@ -277,6 +280,13 @@ public abstract class OpenCgaTool {
         if (memoryUsageMonitor != null) {
             memoryUsageMonitor.stop();
             memoryUsageMonitor = null;
+        }
+    }
+
+    private void privateCheck() throws Exception {
+        ToolParams toolParams = findToolParams();
+        if (toolParams != null) {
+            toolParams.updateParams(getParams());
         }
     }
 
@@ -342,24 +352,39 @@ public abstract class OpenCgaTool {
         return token;
     }
 
-    public Path getOpencgaHome() {
+    public final Path getOpencgaHome() {
         return Paths.get(opencgaHome);
     }
 
-    public String getJobId() {
+    public final String getJobId() {
         return jobId;
     }
 
-    public CatalogManager getCatalogManager() {
+    public final CatalogManager getCatalogManager() {
         return catalogManager;
     }
 
-    public VariantStorageManager getVariantStorageManager() {
+    public final VariantStorageManager getVariantStorageManager() {
         return variantStorageManager;
     }
 
-    public ObjectMap getParams() {
+    public final ObjectMap getParams() {
         return params;
+    }
+
+    public ToolParams findToolParams() throws ToolException {
+        for (Field field : getClass().getDeclaredFields()) {
+            if (field.isAnnotationPresent(org.opencb.opencga.core.tools.annotations.ToolParams.class)
+                    && ToolParams.class.isAssignableFrom(field.getType())) {
+                field.setAccessible(true);
+                try {
+                    return (ToolParams) field.get(this);
+                } catch (IllegalAccessException e) {
+                    throw new ToolException("Unexpected error reading ToolParams");
+                }
+            }
+        }
+        return null;
     }
 
     public final OpenCgaTool addSource(ToolExecutor.Source source) {
@@ -513,10 +538,6 @@ public abstract class OpenCgaTool {
      */
     private void loadStorageConfiguration() throws IOException {
         this.storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
-    }
-
-    public ExecutionResultManager getErm() {
-        return erm;
     }
 
     // TODO can this method be removed?
