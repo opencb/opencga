@@ -1336,6 +1336,37 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testDistinctDisorders() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("i1")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder1")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i2")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i3")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i4")
+                .setDisorders(Collections.singletonList(new Disorder().setId("adisorder2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(studyFqn,
+                IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), token);
+        assertEquals(3, result.getNumResults());
+
+        result = catalogManager.getIndividualManager().distinct(studyFqn, IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(),
+                new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "~^disor"), token);
+        assertEquals(2, result.getNumResults());
+    }
+
+    @Test
     public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
         Sample sample = new Sample().setId("sample1");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
