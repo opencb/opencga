@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -37,6 +38,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
 
     protected CatalogManager catalogManager;
     protected StorageEngineFactory storageEngineFactory;
+    protected ToolRunner toolRunner;
 
     public InternalCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         super(options);
@@ -50,6 +52,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
         // Creating StorageManagerFactory
         storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
+        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
     }
 
     protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {

@@ -70,7 +70,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
 
     @Override
     protected void check() throws Exception {
-        this.clinicalInterpretationManager = getClinicalInterpretationManager(opencgaHome);
+        this.clinicalInterpretationManager = getClinicalInterpretationManager(getOpencgaHome().toString());
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels, Query query,

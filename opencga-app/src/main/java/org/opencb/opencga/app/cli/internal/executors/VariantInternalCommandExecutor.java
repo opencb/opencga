@@ -32,7 +32,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
-import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
@@ -117,7 +116,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
-    private ToolRunner toolRunner;
     private String jobId;
 
     public VariantInternalCommandExecutor(VariantCommandOptions variantCommandOptions) {
@@ -135,7 +133,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         token = getSessionId(variantCommandOptions.commonCommandOptions);
         jobId = variantCommandOptions.internalJobOptions.jobId;
-        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
 
         switch (subCommandString) {
             case VARIANT_DELETE_COMMAND:
@@ -876,7 +873,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setVariantStatsQuery(variantStatsQuery)
                 .setSignatureId(cliOptions.signatureId)
                 .setSignatureQuery(signatureQuery)
-                .setGenesForCoverageStats(genesForCoverageStats).toString();
+                .setGenesForCoverageStats(genesForCoverageStats);
 
         sampleQcAnalysis.start();
     }

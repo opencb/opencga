@@ -62,8 +62,8 @@ public abstract class OpenCgaTool {
     protected StorageConfiguration storageConfiguration;
     protected VariantStorageManager variantStorageManager;
 
-    protected String jobId;
-    protected String opencgaHome;
+    private String jobId;
+    private String opencgaHome;
     protected String token;
 
     protected final ObjectMap params;
@@ -77,7 +77,7 @@ public abstract class OpenCgaTool {
     private final ToolExecutorFactory toolExecutorFactory;
     private final Logger privateLogger;
 
-    protected MemoryUsageMonitor memoryUsageMonitor;
+    private MemoryUsageMonitor memoryUsageMonitor;
 
     private ExecutionResultManager erm;
 
@@ -340,6 +340,14 @@ public abstract class OpenCgaTool {
 
     public final String getToken() {
         return token;
+    }
+
+    public Path getOpencgaHome() {
+        return Paths.get(opencgaHome);
+    }
+
+    public String getJobId() {
+        return jobId;
     }
 
     public CatalogManager getCatalogManager() {
