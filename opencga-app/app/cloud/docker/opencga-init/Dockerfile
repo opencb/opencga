@@ -6,7 +6,7 @@ FROM $ORG/opencga-base:$TAG
 ARG INIT_PATH=cloud/docker/opencga-init/
 
 # Install local dependencies
-RUN apk add python3 py3-pip && \
+RUN apk add python3 py3-pip mongodb && \
     pip3 install --upgrade pip setuptools
 
 # Mount volume to copy config into
