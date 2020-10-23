@@ -60,6 +60,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        QUALITY_CONTROL("qualityControl", OBJECT, ""),
         CONSENT("consent", TEXT_ARRAY, ""),
         PRIORITY("priority", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),

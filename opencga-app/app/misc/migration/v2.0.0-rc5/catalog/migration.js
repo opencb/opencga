@@ -10,3 +10,16 @@ db.interpretation.createIndex({"id": 1, "version": 1, "studyUid": 1}, {"unique":
 db.interpretation.dropIndex({"uuid": 1})
 db.interpretation.dropIndex({"uid": 1})
 db.interpretation.dropIndex({"id": 1, "studyUid": 1})
+
+// # 1668
+migrateCollection("clinical", {"qualityControl": {"$exists": false}}, {"_creationDate": 1}, function(bulk, doc) {
+    bulk.find({"_id": doc._id}).updateOne({"$set": {
+            "qualityControl": {
+                "summary": "UNKNOWN",
+                "comment": "",
+                "user": "",
+                "date": doc._creationDate
+            }
+        }
+    });
+});

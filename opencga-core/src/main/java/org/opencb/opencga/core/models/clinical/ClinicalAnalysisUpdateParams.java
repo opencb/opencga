@@ -41,6 +41,7 @@ public class ClinicalAnalysisUpdateParams {
 //    private FamilyParam family
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
+    private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsent consent;
 
@@ -57,9 +58,9 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams(String id, String description, DisorderReferenceParam disorder, List<FileReferenceParam> files,
                                         Boolean locked, ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
-                                        ClinicalConsent consent, String dueDate, List<ClinicalCommentParam> comments,
-                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
-                                        CustomStatusParams status) {
+                                        ClinicalConsent consent, String dueDate, ClinicalAnalysisQualityControlUpdateParam qualityControl,
+                                        List<ClinicalCommentParam> comments, Enums.Priority priority, List<String> flags,
+                                        Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.disorder = disorder;
@@ -72,6 +73,7 @@ public class ClinicalAnalysisUpdateParams {
         this.comments = comments;
         this.priority = priority;
         this.flags = flags;
+        this.qualityControl = qualityControl;
         this.attributes = attributes;
         this.status = status;
     }
@@ -96,6 +98,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
         sb.append('}');
@@ -187,6 +190,15 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setDueDate(String dueDate) {
         this.dueDate = dueDate;
+        return this;
+    }
+
+    public ClinicalAnalysisQualityControlUpdateParam getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalAnalysisUpdateParams setQualityControl(ClinicalAnalysisQualityControlUpdateParam qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

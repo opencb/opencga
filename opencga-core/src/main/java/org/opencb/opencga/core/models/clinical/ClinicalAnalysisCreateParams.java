@@ -45,6 +45,7 @@ public class ClinicalAnalysisCreateParams {
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisInternal internal;
     private EntryParam interpretation;
+    private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsent consent;
 
@@ -63,8 +64,8 @@ public class ClinicalAnalysisCreateParams {
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, EntryParam interpretation,
                                         ClinicalConsent consent, String dueDate, List<ClinicalCommentParam> comments,
-                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
-                                        CustomStatusParams status) {
+                                        ClinicalAnalysisQualityControlUpdateParam qualityControl,  Enums.Priority priority,
+                                        List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -78,6 +79,7 @@ public class ClinicalAnalysisCreateParams {
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
+        this.qualityControl = qualityControl;
         this.priority = priority;
         this.flags = flags;
         this.attributes = attributes;
@@ -101,6 +103,9 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getComments() != null
                         ? clinicalAnalysis.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
+                clinicalAnalysis.getQualityControl() != null
+                        ? ClinicalAnalysisQualityControlUpdateParam.of(clinicalAnalysis.getQualityControl())
+                        : null,
                 clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
                 clinicalAnalysis.getAttributes(), CustomStatusParams.of(clinicalAnalysis.getStatus()));
     }
@@ -122,6 +127,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -174,7 +180,8 @@ public class ClinicalAnalysisCreateParams {
                 primaryInterpretation, new LinkedList<>(), consent, new ClinicalAnalyst(assignee, assignee, "", "",
                 TimeUtils.getTime()), priority, flags, null, null,  dueDate, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                new LinkedList<>(), internal, attributes, status != null ? status.toCustomStatus() : null);
+                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), internal, attributes,
+                status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -291,6 +298,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
+        return this;
+    }
+
+    public ClinicalAnalysisQualityControlUpdateParam getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalAnalysisCreateParams setQualityControl(ClinicalAnalysisQualityControlUpdateParam qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 
