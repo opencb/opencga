@@ -128,7 +128,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
         }
 
-        long jobUid = getNewUid(clientSession);
+        long jobUid = getNewUid();
         job.setUid(jobUid);
         job.setStudyUid(studyId);
         if (StringUtils.isEmpty(job.getUuid())) {

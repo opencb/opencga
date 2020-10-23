@@ -114,7 +114,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     long insert(ClientSession clientSession, long studyId, Cohort cohort, List<VariableSet> variableSetList) throws CatalogDBException {
         checkCohortIdExists(clientSession, studyId, cohort.getId());
 
-        long newId = getNewUid(clientSession);
+        long newId = getNewUid();
         cohort.setUid(newId);
         cohort.setStudyUid(studyId);
         if (StringUtils.isEmpty(cohort.getUuid())) {
