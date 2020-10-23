@@ -630,7 +630,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throw CatalogDBException.alreadyExists("ClinicalAnalysis", "id", clinicalAnalysis.getId());
         }
 
-        long clinicalUid = getNewUid(clientSession);
+        long clinicalUid = getNewUid();
 
         clinicalAnalysis.setAudit(clinicalAudit);
 

@@ -171,7 +171,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         //Set new ID
-        long studyUid = getNewUid(clientSession);
+        long studyUid = getNewUid();
         study.setUid(studyUid);
 
         if (StringUtils.isEmpty(study.getUuid())) {

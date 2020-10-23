@@ -129,7 +129,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     Document getPanelDocumentForInsertion(ClientSession clientSession, Panel panel, long studyUid) {
         //new Panel Id
-        long panelUid = getNewUid(clientSession);
+        long panelUid = getNewUid();
         panel.setUid(panelUid);
         panel.setStudyUid(studyUid);
         if (StringUtils.isEmpty(panel.getUuid())) {
