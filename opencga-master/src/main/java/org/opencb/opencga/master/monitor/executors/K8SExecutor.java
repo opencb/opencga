@@ -25,6 +25,7 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
@@ -32,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -83,7 +86,7 @@ public class K8SExecutor implements BatchExecutor {
     private final KubernetesClient kubernetesClient;
     private static Logger logger = LoggerFactory.getLogger(K8SExecutor.class);
 
-    private final Map<String, String> jobStatusCache = new ConcurrentHashMap<>();
+    private final Map<String, Pair<Instant, String>> jobStatusCache = new ConcurrentHashMap<>();
     private final Watch podsWatcher;
     private final Watch jobsWatcher;
 
@@ -135,7 +138,7 @@ public class K8SExecutor implements BatchExecutor {
                     jobStatusCache.remove(k8sJobName);
                 } else {
                     String status = getStatusFromK8sJob(k8Job, k8sJobName);
-                    jobStatusCache.put(k8sJobName, status);
+                    jobStatusCache.put(k8sJobName, Pair.of(Instant.now(), status));
                 }
             }
 
@@ -160,7 +163,7 @@ public class K8SExecutor implements BatchExecutor {
                     jobStatusCache.remove(k8jobName);
                 } else {
                     String status = getStatusFromPod(pod);
-                    jobStatusCache.put(k8jobName, status);
+                    jobStatusCache.put(k8jobName, Pair.of(Instant.now(), status));
                 }
             }
 
@@ -215,7 +218,7 @@ public class K8SExecutor implements BatchExecutor {
         if (shouldAddDockerDaemon(queue)) {
             k8sJob.getSpec().getTemplate().getSpec().getContainers().add(dockerDaemonSidecar);
         }
-        jobStatusCache.put(jobName, Enums.ExecutionStatus.QUEUED);
+        jobStatusCache.put(jobName, Pair.of(Instant.now(), Enums.ExecutionStatus.QUEUED));
         getKubernetesClient().batch().jobs().inNamespace(namespace).create(k8sJob);
     }
 
@@ -259,7 +262,22 @@ public class K8SExecutor implements BatchExecutor {
     @Override
     public String getStatus(String jobId) {
         String k8sJobName = buildJobName(jobId);
-        String status = jobStatusCache.compute(k8sJobName, (k, v) -> v == null ? getStatusForce(k) : v);
+        String status = jobStatusCache.compute(k8sJobName, (k, v) -> {
+            if (v == null) {
+                logger.warn("Missing job " + k8sJobName + " in cache. Fetch JOB info");
+                return Pair.of(Instant.now(), getStatusForce(k));
+            } else if (v.getKey().until(Instant.now(), ChronoUnit.MINUTES) > 10) {
+                String newStatus = getStatusForce(k);
+                String oldStatus = v.getValue();
+                if (!oldStatus.equals(newStatus)) {
+                    logger.warn("Update job " + k8sJobName + " from status cache. Change from " + oldStatus + " to " + newStatus);
+                } else {
+                    logger.debug("Update job " + k8sJobName + " from status cache. Status unchanged");
+                }
+                return Pair.of(Instant.now(), newStatus);
+            }
+            return v;
+        }).getValue();
         logger.debug("Get status from job " + k8sJobName + ". Cache size: " + jobStatusCache.size() + " . Status: " + status);
         return status;
     }
@@ -285,7 +303,6 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private String getStatusForce(String k8sJobName) {
-        logger.warn("Missing job " + k8sJobName + " in cache. Fetch JOB info");
         Job k8Job = getKubernetesClient()
                 .batch()
                 .jobs()
