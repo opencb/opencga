@@ -14,6 +14,7 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
@@ -47,13 +48,13 @@ public class SampleVariantStatsAggregationQuery {
         }
 
         query.put(STUDY.key(), studyStr);
+        query.remove(SAMPLE.key());
         Future<DataResult<FacetField>> submit = THREAD_POOL.submit(() -> {
             DataResult<FacetField> result = engine.facet(
                     new Query(query)
                             .append(SAMPLE.key(), sample),
                     new QueryOptions(QueryOptions.FACET,
                             "chromosome;genotype;type;type[INDEL]>>length;titv;biotype;consequenceType;clinicalSignificance;depth;filter"));
-
             return result;
         });
         Future<DataResult<FacetField>> submitME = THREAD_POOL.submit(() -> {
@@ -223,7 +224,7 @@ public class SampleVariantStatsAggregationQuery {
         int numVariants = stats.getVariantCount();
         int numHet = 0;
         for (Map.Entry<String, Integer> entry : stats.getGenotypeCount().entrySet()) {
-            if (Genotype.isHet(entry.getKey())) {
+            if (GenotypeClass.HET.test(entry.getKey())) {
                 numHet += entry.getValue();
             }
         }

@@ -589,7 +589,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
        return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
             logger.debug("getSampleStats {}", query);
-            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(studyStr, sample, query);
+            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(
+                    query.getString(STUDY.key()),
+                    query.getString(SAMPLE.key()),
+                    query);
             logger.debug("getFacets in {}ms", result.getTime());
             return result;
         });
