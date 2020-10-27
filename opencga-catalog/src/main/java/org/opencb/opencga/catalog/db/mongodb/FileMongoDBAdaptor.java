@@ -140,53 +140,65 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             nonExistingSamples = Collections.emptyList();
         }
 
-        // First we check if we need to create any samples and update current list of samples with the ones created
         List<Sample> samples = new ArrayList<>(existingSamples.size() + nonExistingSamples.size());
-        if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
-            // ------------ PROCESS NON-EXISTING SAMPLES --------------
-            for (Sample sample : nonExistingSamples) {
-                logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
+        if (existingSamples.size() + nonExistingSamples.size() < 5000) {
+            // First we check if we need to create any samples and update current list of samples with the ones created
+            if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
+                // ------------ PROCESS NON-EXISTING SAMPLES --------------
+                for (Sample sample : nonExistingSamples) {
+                    logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
 
-                // Sample needs to be created
-                sample.setFileIds(Collections.singletonList(file.getId()));
-                Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample, variableSetList);
-                samples.add(newSample);
-            }
-
-            // ------------ PROCESS EXISTING SAMPLES --------------
-            int batchSize = 1000;
-            List<List<Sample>> sampleListList = new ArrayList<>((existingSamples.size() / batchSize) + 1);
-            // Create batches
-            List<Sample> currentList = null;
-            for (int i = 0; i < existingSamples.size(); i++) {
-                if (i % batchSize == 0) {
-                    currentList = new ArrayList<>(batchSize);
-                    sampleListList.add(currentList);
+                    // Sample needs to be created
+                    sample.setFileIds(Collections.singletonList(file.getId()));
+                    Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample, variableSetList);
+                    samples.add(newSample);
                 }
 
-                currentList.add(existingSamples.get(i));
+                // ------------ PROCESS EXISTING SAMPLES --------------
+                int batchSize = 1000;
+                List<List<Sample>> sampleListList = new ArrayList<>((existingSamples.size() / batchSize) + 1);
+                // Create batches
+                List<Sample> currentList = null;
+                for (int i = 0; i < existingSamples.size(); i++) {
+                    if (i % batchSize == 0) {
+                        currentList = new ArrayList<>(batchSize);
+                        sampleListList.add(currentList);
+                    }
+
+                    currentList.add(existingSamples.get(i));
+                }
+
+                ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
+                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
+                QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+                UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
+                        .updateFileReferences(params, sampleUpdateOptions);
+                for (List<Sample> sampleList : sampleListList) {
+                    logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
+
+                    // Update list of fileIds from sample
+                    Query query = new Query()
+                            .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                            .append(SampleDBAdaptor.QueryParams.UID.key(),
+                                    sampleList.stream().map(Sample::getUid).collect(Collectors.toList()));
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession,
+                            dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null),
+                            sampleUpdateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
+
+                    // Add sample to sampleList
+                    samples.addAll(sampleList);
+                }
             }
+        } else {
+            // We add an additional tag because we will need to process the samples in a task afterwards
+            List<String> tags = file.getTags() != null ? new ArrayList<>(file.getTags()) : new ArrayList<>(1);
+            tags.add("OPENCGA_SAMPLES_NOT_PROCESSED");
+            file.setTags(tags);
 
-            ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-            ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
-            QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
-            UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
-                    .updateFileReferences(params, sampleUpdateOptions);
-            for (List<Sample> sampleList : sampleListList) {
-                logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
-
-                // Update list of fileIds from sample
-                Query query = new Query()
-                        .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                        .append(SampleDBAdaptor.QueryParams.UID.key(),
-                                sampleList.stream().map(Sample::getUid).collect(Collectors.toList()));
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession,
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null),
-                        sampleUpdateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
-
-                // Add sample to sampleList
-                samples.addAll(sampleList);
-            }
+            Map<String, Object> attributes = file.getAttributes() != null ? new HashMap<>(file.getAttributes()) : new HashMap<>();
+            attributes.put("OPENCGA_NON_EXISTING_SAMPLES", fileConverter.convertSamples(nonExistingSamples, false));
+            attributes.put("OPENCGA_EXISTING_SAMPLES", fileConverter.convertSamples(existingSamples, false));
+            file.setAttributes(attributes);
         }
 
         //new file uid
