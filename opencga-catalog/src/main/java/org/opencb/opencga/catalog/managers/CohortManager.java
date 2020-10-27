@@ -91,35 +91,35 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return Enums.Resource.COHORT;
     }
 
-    @Override
-    OpenCGAResult<Cohort> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(CohortDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(CohortDBAdaptor.QueryParams.ID.key(), entry);
-        }
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
-        OpenCGAResult<Cohort> cohortDataResult = cohortDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (cohortDataResult.getNumResults() == 0) {
-            cohortDataResult = cohortDBAdaptor.get(queryCopy, queryOptions);
-            if (cohortDataResult.getNumResults() == 0) {
-                throw new CatalogException("Cohort '" + entry + "' not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the cohort " + entry);
-            }
-        } else if (cohortDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one cohort found based on " + entry);
-        } else {
-            return cohortDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Cohort> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(CohortDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(CohortDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+//
+//        OpenCGAResult<Cohort> cohortDataResult = cohortDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (cohortDataResult.getNumResults() == 0) {
+//            cohortDataResult = cohortDBAdaptor.get(queryCopy, queryOptions);
+//            if (cohortDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Cohort '" + entry + "' not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the cohort " + entry);
+//            }
+//        } else if (cohortDataResult.getNumResults() > 1) {
+//            throw new CatalogException("More than one cohort found based on " + entry);
+//        } else {
+//            return cohortDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Cohort> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,

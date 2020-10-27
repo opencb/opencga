@@ -105,36 +105,36 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return Enums.Resource.CLINICAL_ANALYSIS;
     }
 
-    @Override
-    OpenCGAResult<ClinicalAnalysis> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
-        }
-
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (analysisDataResult.getNumResults() == 0) {
-            analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions);
-            if (analysisDataResult.getNumResults() == 0) {
-                throw new CatalogException("Clinical Analysis '" + entry + "' not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. '" + user + "' is not allowed to see the Clinical Analysis '"
-                        + entry + "'.");
-            }
-        } else if (analysisDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one clinical analysis found based on '" + entry + "'.");
-        } else {
-            return analysisDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<ClinicalAnalysis> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//
+//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+//        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (analysisDataResult.getNumResults() == 0) {
+//            analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions);
+//            if (analysisDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Clinical Analysis '" + entry + "' not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. '" + user + "' is not allowed to see the Clinical Analysis '"
+//                        + entry + "'.");
+//            }
+//        } else if (analysisDataResult.getNumResults() > 1) {
+//            throw new CatalogException("More than one clinical analysis found based on '" + entry + "'.");
+//        } else {
+//            return analysisDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, @Nullable Query query,

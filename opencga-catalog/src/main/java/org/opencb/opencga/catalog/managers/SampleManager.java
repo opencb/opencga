@@ -90,38 +90,38 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return Enums.Resource.SAMPLE;
     }
 
-    @Override
-    OpenCGAResult<Sample> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
-        }
-
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//               SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
-//               SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
-//                SampleDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (sampleDataResult.getNumResults() == 0) {
-            sampleDataResult = sampleDBAdaptor.get(queryCopy, queryOptions);
-            if (sampleDataResult.getNumResults() == 0) {
-                throw new CatalogException("Sample " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the sample " + entry);
-            }
-        } else if (sampleDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
-            throw new CatalogException("More than one sample found based on " + entry);
-        } else {
-            return sampleDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Sample> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//
+//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+////               SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
+////               SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+////                SampleDBAdaptor.QueryParams.STATUS.key()));
+//        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (sampleDataResult.getNumResults() == 0) {
+//            sampleDataResult = sampleDBAdaptor.get(queryCopy, queryOptions);
+//            if (sampleDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Sample " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the sample " + entry);
+//            }
+//        } else if (sampleDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
+//            throw new CatalogException("More than one sample found based on " + entry);
+//        } else {
+//            return sampleDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Sample> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,

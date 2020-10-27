@@ -113,33 +113,33 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return Enums.Resource.INDIVIDUAL;
     }
 
-    @Override
-    OpenCGAResult<Individual> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
-        }
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (individualDataResult.getNumResults() == 0) {
-            individualDataResult = individualDBAdaptor.get(queryCopy, queryOptions);
-            if (individualDataResult.getNumResults() == 0) {
-                throw new CatalogException("Individual " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the individual " + entry);
-            }
-        } else if (individualDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
-            throw new CatalogException("More than one individual found based on " + entry);
-        } else {
-            return individualDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Individual> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+//        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (individualDataResult.getNumResults() == 0) {
+//            individualDataResult = individualDBAdaptor.get(queryCopy, queryOptions);
+//            if (individualDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Individual " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the individual " + entry);
+//            }
+//        } else if (individualDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
+//            throw new CatalogException("More than one individual found based on " + entry);
+//        } else {
+//            return individualDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Individual> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,

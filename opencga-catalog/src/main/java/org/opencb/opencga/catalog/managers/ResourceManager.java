@@ -58,8 +58,11 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         return internalGet(studyUid, entry, null, options, user);
     }
 
-    abstract OpenCGAResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException;
+    OpenCGAResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
+        return internalGet(studyUid, Collections.singletonList(entry), query, options, user, false);
+    }
 
     InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean ignoreException)
             throws CatalogException {

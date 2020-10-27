@@ -80,50 +80,50 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return Enums.Resource.INTERPRETATION;
     }
 
-    @Override
-    OpenCGAResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
-        }
-
-        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
-//                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-//                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (interpretationDataResult.getNumResults() == 0) {
-            interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
-            if (interpretationDataResult.getNumResults() == 0) {
-                throw new CatalogException("Interpretation " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-                        + entry);
-            }
-        } else if (interpretationDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one interpretation found based on " + entry);
-        } else {
-            // We perform this query to check permissions because interpretations doesn't have ACLs
-            try {
-                catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
-                        interpretationDataResult.first().getClinicalAnalysisId(),
-                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
-            } catch (CatalogException e) {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-                        + entry);
-            }
-
-            return interpretationDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//
+//        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
+//
+////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+////                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
+////                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
+////                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
+//        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (interpretationDataResult.getNumResults() == 0) {
+//            interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
+//            if (interpretationDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Interpretation " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
+//                        + entry);
+//            }
+//        } else if (interpretationDataResult.getNumResults() > 1) {
+//            throw new CatalogException("More than one interpretation found based on " + entry);
+//        } else {
+//            // We perform this query to check permissions because interpretations doesn't have ACLs
+//            try {
+//                catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
+//                        interpretationDataResult.first().getClinicalAnalysisId(),
+//                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
+//            } catch (CatalogException e) {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
+//                        + entry);
+//            }
+//
+//            return interpretationDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,

@@ -374,12 +374,12 @@ public class FileManagerTest extends AbstractManagerTest {
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
         assertEquals(1, file.getSampleIds().size());
         assertEquals("NA19661", file.getSampleIds().get(0));
-        assertNull(file.getPath());
+        assertNull(file.getCreationDate());
 
         file = fileManager.get(studyFqn, link.first().getId(),
                 new QueryOptions(QueryOptions.EXCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
         assertTrue(file.getSampleIds().isEmpty());
-        assertNotNull(file.getPath());
+        assertNotNull(file.getCreationDate());
     }
 
     @Test
@@ -1003,9 +1003,9 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(1, result.getNumResults());
 
         //Get all files in data recursively
-        query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "data/.*");
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(5, result.getNumResults());
+//        query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "~data/.*");
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(5, result.getNumResults());
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE");
         result = fileManager.search(studyFqn, query, null, token);

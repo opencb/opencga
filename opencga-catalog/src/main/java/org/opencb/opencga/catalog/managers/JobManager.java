@@ -93,35 +93,35 @@ public class JobManager extends ResourceManager<Job> {
         return Enums.Resource.JOB;
     }
 
-    @Override
-    OpenCGAResult<Job> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
-        }
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
-//                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(studyUid, queryCopy, options, user);
-        if (jobDataResult.getNumResults() == 0) {
-            jobDataResult = jobDBAdaptor.get(queryCopy, options);
-            if (jobDataResult.getNumResults() == 0) {
-                throw new CatalogException("Job " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the job " + entry);
-            }
-        } else if (jobDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one job found based on " + entry);
-        } else {
-            return jobDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Job> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+////                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
+////                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
+//        OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(studyUid, queryCopy, options, user);
+//        if (jobDataResult.getNumResults() == 0) {
+//            jobDataResult = jobDBAdaptor.get(queryCopy, options);
+//            if (jobDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Job " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the job " + entry);
+//            }
+//        } else if (jobDataResult.getNumResults() > 1) {
+//            throw new CatalogException("More than one job found based on " + entry);
+//        } else {
+//            return jobDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Job> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options, String user,

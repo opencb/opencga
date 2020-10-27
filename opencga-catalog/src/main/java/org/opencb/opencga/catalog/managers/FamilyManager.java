@@ -98,36 +98,36 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         return Enums.Resource.FAMILY;
     }
 
-    @Override
-    OpenCGAResult<Family> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(FamilyDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(FamilyDBAdaptor.QueryParams.ID.key(), entry);
-        }
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//               FamilyDBAdaptor.QueryParams.UUID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
-//               FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
-//                FamilyDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(studyUid, queryCopy, options, user);
-        if (familyDataResult.getNumResults() == 0) {
-            familyDataResult = familyDBAdaptor.get(queryCopy, options);
-            if (familyDataResult.getNumResults() == 0) {
-                throw new CatalogException("Family " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the family " + entry);
-            }
-        } else if (familyDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
-            throw new CatalogException("More than one family found based on " + entry);
-        } else {
-            return familyDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Family> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(FamilyDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(FamilyDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+////               FamilyDBAdaptor.QueryParams.UUID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+////               FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
+////                FamilyDBAdaptor.QueryParams.STATUS.key()));
+//        OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(studyUid, queryCopy, options, user);
+//        if (familyDataResult.getNumResults() == 0) {
+//            familyDataResult = familyDBAdaptor.get(queryCopy, options);
+//            if (familyDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Family " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the family " + entry);
+//            }
+//        } else if (familyDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
+//            throw new CatalogException("More than one family found based on " + entry);
+//        } else {
+//            return familyDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Family> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,

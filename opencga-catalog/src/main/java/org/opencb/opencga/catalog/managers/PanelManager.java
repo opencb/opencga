@@ -89,33 +89,33 @@ public class PanelManager extends ResourceManager<Panel> {
         return Enums.Resource.DISEASE_PANEL;
     }
 
-    @Override
-    OpenCGAResult<Panel> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
-        }
-        OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (panelDataResult.getNumResults() == 0) {
-            panelDataResult = panelDBAdaptor.get(queryCopy, queryOptions);
-            if (panelDataResult.getNumResults() == 0) {
-                throw new CatalogException("Panel " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the panel " + entry);
-            }
-        } else if (panelDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
-            throw new CatalogException("More than one panel found based on " + entry);
-        } else {
-            return panelDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Panel> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//        OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (panelDataResult.getNumResults() == 0) {
+//            panelDataResult = panelDBAdaptor.get(queryCopy, queryOptions);
+//            if (panelDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Panel " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the panel " + entry);
+//            }
+//        } else if (panelDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
+//            throw new CatalogException("More than one panel found based on " + entry);
+//        } else {
+//            return panelDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Panel> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
