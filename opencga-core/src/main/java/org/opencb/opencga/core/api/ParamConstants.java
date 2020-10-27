@@ -143,7 +143,8 @@ public class ParamConstants {
     public static final String SAMPLE_SOMATIC_PARAM = "somatic";
     public static final String SAMPLE_SOMATIC_DESCRIPTION = "Somatic sample";
     public static final String SAMPLE_VERSION_PARAM = "version";
-    public static final String SAMPLE_VERSION_DESCRIPTION = "Sample version";
+    public static final String SAMPLE_VERSION_DESCRIPTION = "Comma separated list of sample versions. 'all' to get all the sample versions."
+            + " Not supported if multiple sample ids are provided";
 
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_PARAM = "includeIndividual";
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION = "Include Individual object as an attribute";

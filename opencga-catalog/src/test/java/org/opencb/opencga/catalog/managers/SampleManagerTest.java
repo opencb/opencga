@@ -103,6 +103,16 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("description", sampleDataResult.getResults().get(2).getDescription());
         assertEquals("new description", sampleDataResult.getResults().get(3).getDescription());
 
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.VERSION.key(), "all");
+        sampleDataResult = catalogManager.getSampleManager().get(studyFqn, Collections.singletonList("testSample"),
+                query, null, false, token);
+        assertEquals(4, sampleDataResult.getNumResults());
+        assertEquals("description", sampleDataResult.getResults().get(0).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(1).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(2).getDescription());
+        assertEquals("new description", sampleDataResult.getResults().get(3).getDescription());
+
         // We want the last version of release 1
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.ID.key(), "testSample")

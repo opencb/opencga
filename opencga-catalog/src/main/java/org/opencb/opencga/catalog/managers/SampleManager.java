@@ -136,6 +136,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
+        boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
+                || queryCopy.containsKey(SampleDBAdaptor.QueryParams.VERSION.key());
+        if (versioned && uniqueList.size() > 1) {
+            throw new CatalogException("Only one sample allowed when requesting multiple versions");
+        }
+
         Function<Sample, String> sampleStringFunction = Sample::getId;
         SampleDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
@@ -159,8 +165,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || sampleDataResult.getNumResults() >= uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException,
-                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
+            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException, versioned);
         }
         // Query without adding the user check
         OpenCGAResult<Sample> resultsNoCheck = sampleDBAdaptor.get(queryCopy, queryOptions);
