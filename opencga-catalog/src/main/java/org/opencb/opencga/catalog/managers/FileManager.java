@@ -1373,6 +1373,9 @@ public class FileManager extends AnnotationSetManager<File> {
                 if (auxPath.startsWith("/")) {
                     auxPath = auxPath.substring(1);
                 }
+                if (FileDBAdaptor.QueryParams.DIRECTORY.key().equals(key) && !auxPath.endsWith("/")) {
+                    auxPath = auxPath + "/";
+                }
                 finalPathList.add(auxPath);
             }
 
