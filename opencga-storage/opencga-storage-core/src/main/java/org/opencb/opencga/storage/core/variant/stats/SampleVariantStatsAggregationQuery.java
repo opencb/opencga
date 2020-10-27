@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -40,7 +41,13 @@ public class SampleVariantStatsAggregationQuery {
     }
 
 
-    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query inputQuery) {
+    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query inputQuery) throws StorageEngineException {
+
+        if (StringUtils.isEmpty(sample)) {
+            throw new VariantQueryException("Missing sample");
+        }
+        int studyId = engine.getMetadataManager().getStudyId(studyStr);
+        int sampleId = engine.getMetadataManager().getSampleId(studyId, sample);
 
         Query query;
         if (inputQuery == null) {
@@ -60,8 +67,6 @@ public class SampleVariantStatsAggregationQuery {
             return result;
         });
         Future<DataResult<FacetField>> submitME = THREAD_POOL.submit(() -> {
-            int studyId = engine.getMetadataManager().getStudyId(studyStr);
-            int sampleId = engine.getMetadataManager().getSampleId(studyId, sample);
             SampleMetadata sampleMetadata = engine.getMetadataManager().getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
                 DataResult<FacetField> result = engine.facet(

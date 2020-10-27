@@ -678,7 +678,7 @@ public class VariantWebService extends AnalysisWebService {
     public Response sampleStatsQuery(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                                      @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
         return run(() -> {
-            Query query = getVariantQuery(queryOptions);
+            Query query = getVariantQuery();
             return variantManager.getSampleStats(studyStr, sample, query, token);
         });
     }
@@ -1424,6 +1424,11 @@ public class VariantWebService extends AnalysisWebService {
 //            return createErrorResponse(e);
 //        }
 //    }
+
+    protected Query getVariantQuery() {
+        QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+        return getVariantQuery(queryOptions);
+    }
 
     // FIXME This method must be deleted once deprecated params are not supported any more
     static Query getVariantQuery(QueryOptions queryOptions) {
