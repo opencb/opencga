@@ -18,16 +18,19 @@ package org.opencb.opencga.storage.core.variant.search;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +47,7 @@ public class VariantSearchUtils {
 
     public static final String FIELD_SEPARATOR = "__";
 
-    public static final Set<VariantQueryParam> UNSUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(
+    public static final Set<QueryParam> UNSUPPORTED_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.FILE,
                     VariantQueryParam.FILTER,
                     VariantQueryParam.QUAL,
@@ -52,13 +55,16 @@ public class VariantSearchUtils {
                     VariantQueryParam.FILE_DATA,
                     VariantQueryParam.GENOTYPE,
                     VariantQueryParam.SAMPLE,
+                    SAMPLE_MENDELIAN_ERROR,
+                    SAMPLE_DE_NOVO,
+                    SAMPLE_COMPOUND_HETEROZYGOUS,
                     VariantQueryParam.COHORT,
                     VariantQueryParam.STATS_MGF,
                     VariantQueryParam.MISSING_ALLELES,
                     VariantQueryParam.MISSING_GENOTYPES,
                     VariantQueryParam.ANNOT_DRUG)));
 
-    public static final Set<VariantQueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
+    public static final Set<QueryParam> UNSUPPORTED_MODIFIERS = Collections.unmodifiableSet(new HashSet<>(
             Arrays.asList(VariantQueryParam.INCLUDE_FILE,
                     VariantQueryParam.INCLUDE_SAMPLE,
                     VariantQueryParam.INCLUDE_SAMPLE_ID,
@@ -79,7 +85,7 @@ public class VariantSearchUtils {
     private static final Set<String> ACCEPTED_FORMAT_FILTERS = Collections.singleton("DP");
 
     public static boolean isQueryCovered(Query query) {
-        for (VariantQueryParam nonCoveredParam : UNSUPPORTED_QUERY_PARAMS) {
+        for (QueryParam nonCoveredParam : UNSUPPORTED_QUERY_PARAMS) {
             if (isValidParam(query, nonCoveredParam)) {
                 return false;
             }
