@@ -13,6 +13,9 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -38,7 +41,13 @@ public class SampleVariantStatsAggregationQuery {
     }
 
 
-    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query inputQuery) {
+    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query inputQuery) throws StorageEngineException {
+
+        if (StringUtils.isEmpty(sample)) {
+            throw new VariantQueryException("Missing sample");
+        }
+        int studyId = engine.getMetadataManager().getStudyId(studyStr);
+        int sampleId = engine.getMetadataManager().getSampleId(studyId, sample);
 
         Query query;
         if (inputQuery == null) {
@@ -58,13 +67,17 @@ public class SampleVariantStatsAggregationQuery {
             return result;
         });
         Future<DataResult<FacetField>> submitME = THREAD_POOL.submit(() -> {
-            DataResult<FacetField> result = engine.facet(
-                    new Query(query)
-                            .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sample),
-                    new QueryOptions(QueryOptions.FACET,
-                            "chromosome>>mendelianError"));
-
-            return result;
+            SampleMetadata sampleMetadata = engine.getMetadataManager().getSampleMetadata(studyId, sampleId);
+            if (sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
+                DataResult<FacetField> result = engine.facet(
+                        new Query(query)
+                                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sample),
+                        new QueryOptions(QueryOptions.FACET,
+                                "chromosome>>mendelianError"));
+                return result;
+            } else {
+                return null;
+            }
         });
 
         SampleVariantStats stats = new SampleVariantStats(
@@ -238,6 +251,10 @@ public class SampleVariantStatsAggregationQuery {
     }
 
     private void processMendelianErrorResult(DataResult<FacetField> facetFieldDataResult, SampleVariantStats stats) {
+        if (facetFieldDataResult == null) {
+            // Nothing to do!
+            return;
+        }
         for (FacetField facetField : facetFieldDataResult.getResults()) {
             switch (facetField.getName()) {
                 case "chromosome":

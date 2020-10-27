@@ -1099,7 +1099,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
 
-    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query query) {
+    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query query) throws StorageEngineException {
         return new SampleVariantStatsAggregationQuery(this).sampleStatsQuery(studyStr, sample, query);
     }
 
