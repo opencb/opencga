@@ -362,7 +362,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     public enum JobColumns implements TableSchema<Job> {
-        ID(new Table.TableColumnSchema<>("ID", Job::getId, 50)),
+        ID(new Table.TableColumnSchema<>("ID", Job::getId, 60)),
         TOOL_ID(new Table.TableColumnSchema<>("Tool id", job -> job.getTool().getId())),
         STATUS(new Table.TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName())),
         EVENTS(new Table.TableColumnSchema<>("Events", j -> {

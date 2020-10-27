@@ -43,7 +43,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
 
     @ToolParams
-    private final SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams();
+    protected SampleVariantStatsAnalysisParams toolParams;
     private ArrayList<String> checkedSamplesList;
     private Path outputFile;
 
