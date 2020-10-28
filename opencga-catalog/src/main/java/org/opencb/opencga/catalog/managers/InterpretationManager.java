@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -856,13 +857,21 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         for (Interpretation interpretation : queryResult.getResults()) {
             if (StringUtils.isNotEmpty(interpretation.getClinicalAnalysisId())) {
                 try {
-                    catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
-                            interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
-                            userId);
+                    catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), interpretation.getClinicalAnalysisId(),
+                            ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
                     results.add(interpretation);
                 } catch (CatalogException e) {
-                    logger.debug("Removing interpretation " + interpretation.getUuid() + " from results. User " + userId + " does not have "
-                            + "proper permissions");
+                    // Maybe the clinical analysis was deleted
+                    Query clinicalQuery = new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true);
+
+                    try {
+                        catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), interpretation.getClinicalAnalysisId(),
+                                clinicalQuery, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
+                        results.add(interpretation);
+                    } catch (CatalogException e1) {
+                        logger.debug("Removing interpretation " + interpretation.getUuid() + " from results. User " + userId
+                                + " does not have proper permissions");
+                    }
                 }
             }
         }

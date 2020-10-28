@@ -81,16 +81,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.FILES.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.FILES.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key()));
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -1290,7 +1291,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 // Check if the ClinicalAnalysis can be deleted
                 checkClinicalAnalysisCanBeDeleted(clinicalAnalysis);
 
-                result.append(clinicalDBAdaptor.delete(clinicalAnalysis));
+                ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_CLINICAL_ANALYSIS,
+                        "Delete Clinical Analysis '" + clinicalId + "'", TimeUtils.getTime());
+
+                result.append(clinicalDBAdaptor.delete(clinicalAnalysis, Collections.singletonList(clinicalAudit)));
 
                 auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -1312,8 +1316,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void checkClinicalAnalysisCanBeDeleted(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
-        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-            throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
+//        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+//            throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
+//        }
+        if (clinicalAnalysis.isLocked()) {
+            throw new CatalogException("Deleting a locked Clinical Analysis is forbidden. Unlock it first.");
         }
     }
 
@@ -1373,7 +1380,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 // Check if the sample can be deleted
                 checkClinicalAnalysisCanBeDeleted(clinicalAnalysis);
 
-                result.append(clinicalDBAdaptor.delete(clinicalAnalysis));
+                ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_CLINICAL_ANALYSIS,
+                        "Delete Clinical Analysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
+
+                result.append(clinicalDBAdaptor.delete(clinicalAnalysis, Collections.singletonList(clinicalAudit)));
 
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,

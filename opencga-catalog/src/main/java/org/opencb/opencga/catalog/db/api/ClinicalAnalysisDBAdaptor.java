@@ -88,8 +88,10 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         PROBAND_SAMPLES_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATION("interpretation", TEXT, ""),
         INTERPRETATION_ID("interpretation.id", TEXT, ""),
+        INTERPRETATION_UID("interpretation.uid", LONG, ""),
         SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
         SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
+        SECONDARY_INTERPRETATIONS_UID("secondaryInterpretations.uid", LONG, ""),
 
         AUDIT("audit", TEXT_ARRAY, ""),
 
@@ -175,6 +177,12 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
 
     OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<?> delete(ClinicalAnalysis id, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+     OpenCGAResult<ClinicalAnalysis> delete(Query query, List<ClinicalAudit> clinicalAuditList)
+             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 
