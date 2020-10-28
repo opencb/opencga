@@ -269,6 +269,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 }
 
                 List<Variant> variants = converter.convert(slice);
+                variants = VariantHadoopDBWriter.filterVariantsNotFromThisSlice(slice.getPosition(), variants);
                 variantsWriter.write(variants);
                 if (sampleIndexDBLoader != null) {
                     sampleIndexDBLoader.write(variants);
@@ -558,7 +559,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         @Override
         public List<Object> apply(List<ImmutablePair<Long, List<Variant>>> batch) {
             for (ImmutablePair<Long, List<Variant>> pair : batch) {
-                List<Variant> variants = pair.getRight();
+                List<Variant> variants = VariantHadoopDBWriter.filterVariantsNotFromThisSlice(pair.getKey(), pair.getValue());
                 hadoopDBWriter.write(variants);
 
                 if (sampleIndexDBLoader != null) {
