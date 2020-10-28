@@ -17,7 +17,7 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -25,7 +25,7 @@ import org.opencb.opencga.core.models.file.File;
 
 import java.nio.file.Path;
 
-public abstract class OperationTool extends OpenCgaToolScopeStudy {
+public abstract class OperationTool extends OpenCgaTool {
 
     public static final String KEEP_INTERMEDIATE_FILES = "keepIntermediateFiles";
 
@@ -55,6 +55,11 @@ public abstract class OperationTool extends OpenCgaToolScopeStudy {
     protected final String getProjectFqn() throws CatalogException {
         return catalogManager.getProjectManager().get(params.getString(ParamConstants.PROJECT_PARAM),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()), token).first().getFqn();
+    }
+
+    protected final String getStudyFqn() throws CatalogException {
+        String userId = getCatalogManager().getUserManager().getUserId(getToken());
+        return getCatalogManager().getStudyManager().resolveId(getParams().getString(ParamConstants.STUDY_PARAM), userId).getFqn();
     }
 
     private static boolean isVcfFormat(File.Format format) {

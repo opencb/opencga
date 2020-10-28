@@ -109,6 +109,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -813,9 +814,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (resultJson != null && Files.exists(resultJson)) {
             ExecutionResult execution = readExecutionResult(resultJson);
             if (execution != null) {
-                long lastStatusUpdate = execution.getStatus().getDate().getTime();
-                long fileAgeInMillis = Instant.now().toEpochMilli() - lastStatusUpdate;
-                if (TimeUnit.MILLISECONDS.toMinutes(fileAgeInMillis) > EXECUTION_RESULT_FILE_EXPIRATION_MINUTES) {
+                Instant lastStatusUpdate = execution.getStatus().getDate().toInstant();
+                if (lastStatusUpdate.until(Instant.now(), ChronoUnit.MINUTES) > EXECUTION_RESULT_FILE_EXPIRATION_MINUTES) {
                     logger.warn("Ignoring file '" + resultJson + "'. The file is more than "
                             + EXECUTION_RESULT_FILE_EXPIRATION_MINUTES + " minutes old");
                 } else {
