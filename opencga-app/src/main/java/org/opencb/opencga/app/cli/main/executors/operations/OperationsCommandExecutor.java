@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.main.executors.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
@@ -130,7 +131,8 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 cliOptions.genericVariantAnnotateOptions.region,
                 cliOptions.genericVariantAnnotateOptions.create,
                 cliOptions.genericVariantAnnotateOptions.load,
-                cliOptions.genericVariantAnnotateOptions.customName
+                cliOptions.genericVariantAnnotateOptions.customName,
+                YesNoAuto.parse(cliOptions.genericVariantAnnotateOptions.sampleIndexAnnotation)
         );
         return openCGAClient.getVariantOperationClient().indexVariantAnnotation(body, params);
     }

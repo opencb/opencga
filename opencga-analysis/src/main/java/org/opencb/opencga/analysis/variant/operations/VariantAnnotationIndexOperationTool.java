@@ -20,8 +20,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -38,12 +38,9 @@ public class VariantAnnotationIndexOperationTool extends OperationTool {
     public static final String DESCRIPTION = "Create and load variant annotations into the database";
     private List<String> studies;
     private String projectStr;
-    private VariantAnnotationIndexParams annotationParams;
 
-    public VariantAnnotationIndexOperationTool setAnnotationParams(VariantAnnotationIndexParams annotationParams) {
-        this.annotationParams = annotationParams;
-        return this;
-    }
+    @ToolParams
+    protected VariantAnnotationIndexParams annotationParams;
 
     @Override
     protected void check() throws Exception {
@@ -51,15 +48,12 @@ public class VariantAnnotationIndexOperationTool extends OperationTool {
         studies = studies == null ? params.getAsStringList(VariantQueryParam.STUDY.key()) : studies;
         projectStr = params.getString(VariantCatalogQueryUtils.PROJECT.key(), projectStr);
 
-        if (annotationParams == null) {
-            annotationParams = ToolParams.fromParams(VariantAnnotationIndexParams.class, params);
-        }
-
         params.putIfNotEmpty(VariantStorageOptions.ANNOTATOR.key(), annotationParams.getAnnotator());
         params.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotationParams.getCustomName());
         params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), annotationParams.isOverwriteAnnotations());
         params.put(DefaultVariantAnnotationManager.FILE_NAME, annotationParams.getOutputFileName());
         params.put(VariantQueryParam.REGION.key(), annotationParams.getRegion());
+        params.put(VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key(), annotationParams.getSampleIndexAnnotation());
     }
 
     @Override

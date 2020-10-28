@@ -560,6 +560,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
         public String customName = null;
 
+        @Parameter(names = {"--sample-index-annotation"}, description = "Annotate sample index. (yes, no, auto)")
+        public String sampleIndexAnnotation;
+
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public VariantAnnotatorFactory.AnnotationEngine annotator;
 

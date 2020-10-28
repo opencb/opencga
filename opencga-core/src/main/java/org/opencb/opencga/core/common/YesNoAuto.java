@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.common;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
@@ -18,6 +19,7 @@ public enum YesNoAuto {
         return parse(map.get(key));
     }
 
+    @JsonCreator
     public static YesNoAuto parse(Object value) {
         if (value == null) {
             return AUTO;
@@ -47,14 +49,22 @@ public enum YesNoAuto {
         }
     }
 
+    public boolean booleanValue(boolean defaultValue) {
+        return booleanValue(Boolean.valueOf(defaultValue));
+    }
+
     public Boolean booleanValue() {
+        return booleanValue(null);
+    }
+
+    private Boolean booleanValue(Boolean defaultValue) {
         switch (this) {
             case YES:
                 return true;
             case NO:
                 return false;
             case AUTO:
-                return null;
+                return defaultValue;
             default:
                 throw new IllegalArgumentException("Unknown option " + this);
         }

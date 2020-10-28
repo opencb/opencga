@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -220,9 +221,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
 
-        boolean skipSampleIndexAnnotation = params.getBoolean("skipSampleIndexAnnotation");
+        boolean sampleIndex = YesNoAuto.parse(params, VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key()).booleanValue(true);
 
-        if (skipSampleIndexAnnotation) {
+        if (!sampleIndex) {
             logger.info("Skip Sample Index Annotation");
             // Nothing to do!
             return;
