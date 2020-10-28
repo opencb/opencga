@@ -32,10 +32,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
-import org.opencb.opencga.core.models.cohort.CohortCreateParams;
-import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
+import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
@@ -126,19 +123,44 @@ public class CohortWSServer extends OpenCGAWSServer {
             "or providing a categorical variable (both variableSet and variable). " +
             "If none of this is given, an empty cohort will be created.", response = Cohort.class)
     public Response createCohort(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
-            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, hidden = true) @QueryParam("variableSetId") String variableSetId,
-            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION) @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "Variable name") @QueryParam("variable") String variableName,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @Deprecated
+            @ApiParam(value = "Deprecated: Use /generate web service and filter by annotation") @QueryParam("variableSet") String variableSet,
+            @Deprecated
+            @ApiParam(value = "Deprecated: Use /generate web service and filter by annotation") @QueryParam("variable") String variableName,
             @ApiParam(value = "JSON containing cohort information", required = true) CohortCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new CohortCreateParams());
-            if (StringUtils.isNotEmpty(variableSetId)) {
-                variableSet = variableSetId;
-            }
-
             return createCohort(studyStr, variableSet, params, variableName);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/generate")
+    @ApiOperation(value = "Create a cohort based on a sample query", response = Cohort.class)
+    public Response generateCohort(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            /* Sample search query params */
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
+            @ApiParam(value = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM) String individual,
+            @ApiParam(value = ParamConstants.SAMPLE_FILE_IDS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_FILE_IDS_PARAM) String fileIds,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
+            /* End Sample search query params */
+            @ApiParam(value = "JSON containing cohort information", required = true) CohortGenerateParams params) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            return createOkResponse(cohortManager.generate(studyStr, query, params.toCohort(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -1286,6 +1286,26 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getCohortManager().getSamples(studyId, "MyCohort,MyCohort", token);
     }
 
+    @Test
+    public void generateCohortFromSampleQuery() throws CatalogException, IOException {
+        String studyId = "user@1000G:phase1";
+
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                token).first();
+
+        Query query = new Query();
+        Cohort myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort"), null, token).first();
+        assertEquals(12, myCohort.getSamples().size());
+
+        query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
+        myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort2"), null, token).first();
+        assertEquals(3, myCohort.getSamples().size());
+    }
+
     /**
      * Individual methods
      * ***************************
