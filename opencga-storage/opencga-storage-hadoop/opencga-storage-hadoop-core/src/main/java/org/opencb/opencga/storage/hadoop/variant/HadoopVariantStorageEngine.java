@@ -443,13 +443,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 
-//        boolean pendingVariants = !overwrite;
-        boolean pendingVariants = true;
-
-        if (pendingVariants) {
-            new SecondaryIndexPendingVariantsManager(getDBAdaptor())
-                    .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
-        }
+        new SecondaryIndexPendingVariantsManager(getDBAdaptor())
+                .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
 
         return super.secondaryIndex(query, queryOptions, overwrite);
     }
