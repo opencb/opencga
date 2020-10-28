@@ -93,7 +93,7 @@ variant:
     annotator.cellbase.exclude: "expression"
     annotator.cellbase.useCache: true
     annotator.cellbase.impreciseVariants: true          # Imprecise variants supported by cellbase
-    annotator.cellbase.starAlternate: false             # Variants with start "*" alternate supported by cellbase
+    annotator.cellbase.starAlternate: false             # Variants with stat "*" alternate supported by cellbase
     annotator.cellbase.variantLengthThreshold: 10000    # Variants length threshold
 
     query.timeout.default: 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.

@@ -140,7 +140,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
             skipVariant |= !supportStarAlternate && variant.getAlternate().equals("*");
             if (skipVariant) {
 //                logger.info("Skip variant! {}", genomicVariant);
-                logger.info("Skip variant! {}", variant.getChromosome() + ":" + variant.getStart() + ":"
+                logger.info("Skip variant! {}", variant.getChromosome() + ":" + variant.getStart() + "-" + variant.getEnd() + ":"
                         + (variant.getReference().length() > 10
                         ? variant.getReference().substring(0, 10) + "...[" + variant.getReference().length() + "]"
                         : variant.getReference()) + ":"
