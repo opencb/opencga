@@ -372,14 +372,19 @@ public abstract class OpenCgaTool {
         return params;
     }
 
-    public ToolParams findToolParams() throws ToolException {
+    private ToolParams findToolParams() throws ToolException {
         for (Field field : getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(org.opencb.opencga.core.tools.annotations.ToolParams.class)
                     && ToolParams.class.isAssignableFrom(field.getType())) {
-                field.setAccessible(true);
                 try {
-                    return (ToolParams) field.get(this);
-                } catch (IllegalAccessException e) {
+                    field.setAccessible(true);
+                    ToolParams toolParams = (ToolParams) field.get(this);
+                    if (toolParams == null) {
+                        toolParams = (ToolParams) field.getType().newInstance();
+                        field.set(this, toolParams);
+                    }
+                    return toolParams;
+                } catch (IllegalAccessException | InstantiationException e) {
                     throw new ToolException("Unexpected error reading ToolParams");
                 }
             }
@@ -440,6 +445,10 @@ public abstract class OpenCgaTool {
 
     protected final void addEvent(Event.Type type, String message) throws ToolException {
         erm.addEvent(type, message);
+    }
+
+    protected final void addInfo(String message) throws ToolException {
+        erm.addEvent(Event.Type.INFO, message);
     }
 
     protected final void addWarning(String warning) throws ToolException {

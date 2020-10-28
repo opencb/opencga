@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.VARIANT_ID;
@@ -53,8 +54,10 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     protected final String assembly;
     protected final String cellbaseVersion;
     protected final QueryOptions queryOptions;
-    protected final boolean impreciseVariants;
+    protected final boolean supportImpreciseVariants;
+    protected final boolean supportStarAlternate;
     protected final int variantLengthThreshold;
+    protected final Function<Variant, String> variantSerializer;
 
     public AbstractCellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap params)
             throws VariantAnnotatorException {
@@ -77,8 +80,20 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         variantLengthThreshold = params.getInt(
                 VariantStorageOptions.ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD.key(),
                 VariantStorageOptions.ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD.defaultValue());
-        impreciseVariants = params.getBoolean(VariantStorageOptions.ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS.key(), true);
+        supportImpreciseVariants = params.getBoolean(VariantStorageOptions.ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS.key(),
+                VariantStorageOptions.ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS.defaultValue());
+        supportStarAlternate = params.getBoolean(VariantStorageOptions.ANNOTATOR_CELLBASE_STAR_ALTERNATE.key(),
+                VariantStorageOptions.ANNOTATOR_CELLBASE_STAR_ALTERNATE.defaultValue());
 
+        if (supportImpreciseVariants) {
+            // If the cellbase sever supports imprecise variants, use the original toString, which adds the CIPOS and CIEND
+            variantSerializer = Variant::toString;
+        } else {
+            variantSerializer = variant -> variant.getChromosome()
+                    + ':' + variant.getStart()
+                    + ':' + (variant.getReference().isEmpty() ? "-" : variant.getReference())
+                    + ':' + (variant.getAlternate().isEmpty() ? "-" : variant.getAlternate());
+        }
         checkNotNull(cellbaseVersion, "cellbase version");
         checkNotNull(species, "species");
         checkNotNull(assembly, "assembly");
@@ -102,25 +117,28 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
 
     @Override
     public final List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
-        List<Variant> nonStructuralVariations = filterStructuralVariants(variants);
+        List<Variant> filteredVariants = filterVariants(variants);
         StopWatch stopWatch = StopWatch.createStarted();
-        List<QueryResult<VariantAnnotation>> queryResults = annotateFiltered(nonStructuralVariations);
+        List<QueryResult<VariantAnnotation>> queryResults = annotateFiltered(filteredVariants);
         stopWatch.stop();
         if (stopWatch.getTime(TimeUnit.SECONDS) > SLOW_CELLBASE_SECONDS) {
             logger.warn("Slow annotation from CellBase."
                     + " Annotating " + variants.size() + " variants took " + TimeUtils.durationToString(stopWatch));
         }
-        return getVariantAnnotationList(nonStructuralVariations, queryResults);
+        return getVariantAnnotationList(filteredVariants, queryResults);
     }
 
     protected abstract List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException;
 
-    private List<Variant> filterStructuralVariants(List<Variant> variants) {
+    private List<Variant> filterVariants(List<Variant> variants) {
         List<Variant> nonStructuralVariants = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
             // If Variant is SV some work is needed
             // TODO:Manage larger SV variants
-            if (variant.getAlternate().length() + variant.getReference().length() > variantLengthThreshold) {
+            int length = Math.max(variant.getLength(), variant.getAlternate().length() + variant.getReference().length());
+            boolean skipVariant = length > variantLengthThreshold;
+            skipVariant |= !supportStarAlternate && variant.getAlternate().equals("*");
+            if (skipVariant) {
 //                logger.info("Skip variant! {}", genomicVariant);
                 logger.info("Skip variant! {}", variant.getChromosome() + ":" + variant.getStart() + ":"
                         + (variant.getReference().length() > 10
@@ -147,7 +165,9 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                 // Check that the skipped variant matches with the expected variant
                 if (queryResult.getResult().isEmpty()) {
                     Variant variant = iterator.next();
-                    if (variant.toString().equals(queryResult.getId()) || variant.toStringSimple().equals(queryResult.getId())) {
+                    if (variantSerializer.apply(variant).equals(queryResult.getId())
+                            || variant.toString().equals(queryResult.getId())
+                            || variant.toStringSimple().equals(queryResult.getId())) {
                         logger.warn("Skip annotation for variant " + variant);
                     } else {
                         Variant variantId = new Variant(queryResult.getId());
