@@ -1742,14 +1742,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         try {
             DataResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
-                    new ObjectMap(), token);
+                    new QueryOptions(), token);
             fail("Expected fail");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("found in the families"));
         }
 
         DataResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
-                new ObjectMap(Constants.FORCE, true), token);
+                new QueryOptions(Constants.FORCE, true), token);
         assertEquals(1, writeResult.getNumDeleted());
 
         Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), token).first();

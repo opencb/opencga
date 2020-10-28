@@ -138,7 +138,7 @@ public class FileDeleteTask extends OpenCgaTool {
                     File file = iterator.next();
                     try {
                         logger.info("Deleting file '{}'...", file.getPath());
-                        ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, skipTrash);
+                        QueryOptions params = new QueryOptions(Constants.SKIP_TRASH, skipTrash);
                         fileManager.delete(studyFqn, Collections.singletonList(file.getUuid()), params, token);
                     } catch (Exception e) {
                         logger.error("Error deleting file '{}': {}", file.getPath(), e.getMessage(), e);

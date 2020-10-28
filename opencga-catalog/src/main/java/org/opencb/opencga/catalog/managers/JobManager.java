@@ -645,8 +645,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> jobIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, jobIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> jobIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, jobIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> jobIds, ObjectMap params, boolean ignoreException, String token)
@@ -716,8 +716,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyId, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyId, query, params, false, token);
+    public OpenCGAResult delete(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyId, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyId, Query query, ObjectMap params, boolean ignoreException, String token)

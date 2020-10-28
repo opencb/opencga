@@ -649,8 +649,8 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> panelIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, panelIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> panelIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, panelIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> panelIds, ObjectMap params, boolean ignoreException, String token)
@@ -726,8 +726,8 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)

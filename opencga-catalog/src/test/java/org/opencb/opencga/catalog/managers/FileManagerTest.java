@@ -1573,7 +1573,7 @@ public class FileManagerTest extends AbstractManagerTest {
         setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*"));
 
         // Now we delete the files
-        ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, true);
+        QueryOptions params = new QueryOptions(Constants.SKIP_TRASH, true);
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), params, token);
 
         Query query = new Query()
@@ -1729,7 +1729,7 @@ public class FileManagerTest extends AbstractManagerTest {
         // We remove the file to start again
         Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
         setToPendingDelete(studyFqn, query);
-        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), token);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), token);
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), token).getNumResults());
         Files.copy(sourcePath, copy);
 
@@ -1742,7 +1742,7 @@ public class FileManagerTest extends AbstractManagerTest {
         // We remove the file to start again
         query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
         setToPendingDelete(studyFqn, query);
-        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), token);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), token);
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), token).getNumResults());
         Files.copy(sourcePath, copy);
 
@@ -1755,7 +1755,7 @@ public class FileManagerTest extends AbstractManagerTest {
         // We remove the file to start again
         query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
         setToPendingDelete(studyFqn, query);
-        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), token);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), token);
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), token).getNumResults());
         Files.copy(sourcePath, copy);
 

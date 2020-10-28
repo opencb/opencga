@@ -229,19 +229,19 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      */
     public abstract OpenCGAResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
-    public abstract OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException;
+    public abstract OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Delete all entries matching the query.
      *
      * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query Query object.
-     * @param params Map containing additional parameters to be considered for the deletion.
+     * @param options Map containing additional parameters to be considered for the deletion.
      * @param token Session id of the user logged in.
      * @throws CatalogException if the study or the user do not exist.
      * @return A OpenCGAResult object containing the number of matching elements, deleted and elements that could not be deleted.
      */
-    public abstract OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException;
+    public abstract OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

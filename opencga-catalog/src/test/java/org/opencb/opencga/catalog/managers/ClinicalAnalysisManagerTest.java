@@ -1081,7 +1081,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
                 QueryOptions.empty(), sessionIdUser);
 
-        OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
+        try {
+            catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
+            fail("It should not allow deleting Clinical Analyses with interpretations");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("interpretation"));
+        }
+
+        OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()),
+                new QueryOptions(Constants.FORCE, true), sessionIdUser);
         assertEquals(1, delete.getNumDeleted());
 
         OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
@@ -1108,9 +1116,21 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("locked");
-        catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
+        try {
+            catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
+            fail("It should not allow deleting locked Clinical Analyses");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("locked"));
+        }
+
+        OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()),
+                new QueryOptions(Constants.FORCE, true), sessionIdUser);
+        assertEquals(1, delete.getNumDeleted());
+
+        OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
+                Collections.singletonList(ca.getId()), new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true),
+                new QueryOptions(), false, sessionIdUser);
+        assertEquals(1, clinicalResult.getNumResults());
     }
 
     @Test

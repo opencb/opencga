@@ -368,8 +368,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> sampleIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, sampleIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> sampleIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, sampleIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> sampleIds, ObjectMap params, boolean ignoreException, String token)
@@ -446,8 +446,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)

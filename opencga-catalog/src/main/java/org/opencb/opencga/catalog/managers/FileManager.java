@@ -1363,8 +1363,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, fileIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> fileIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, fileIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, boolean ignoreException, String token)
@@ -1432,8 +1432,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)

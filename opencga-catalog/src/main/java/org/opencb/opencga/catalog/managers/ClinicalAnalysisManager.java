@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -1234,12 +1235,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, clinicalAnalysisIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, QueryOptions options, String token)
+            throws CatalogException {
+        return delete(studyStr, clinicalAnalysisIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, ObjectMap params, boolean ignoreException, String token)
-            throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, QueryOptions options, boolean ignoreException,
+                                String token) throws CatalogException {
         if (CollectionUtils.isEmpty(clinicalAnalysisIds)) {
             throw new CatalogException("Missing list of Clinical Analysis ids");
         }
@@ -1252,9 +1254,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysisIds", clinicalAnalysisIds)
-                .append("params", params)
+                .append("options", options)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         boolean checkPermissions;
         try {
@@ -1289,7 +1293,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 }
 
                 // Check if the ClinicalAnalysis can be deleted
-                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis);
+                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis, options);
 
                 ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_CLINICAL_ANALYSIS,
                         "Delete Clinical Analysis '" + clinicalId + "'", TimeUtils.getTime());
@@ -1315,24 +1319,27 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return endResult(result, ignoreException);
     }
 
-    private void checkClinicalAnalysisCanBeDeleted(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
-//        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-//            throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
-//        }
+    private void checkClinicalAnalysisCanBeDeleted(ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogException {
+        if (options.getBoolean(Constants.FORCE)) {
+            return;
+        }
+        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+            throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
+        }
         if (clinicalAnalysis.isLocked()) {
-            throw new CatalogException("Deleting a locked Clinical Analysis is forbidden. Unlock it first.");
+            throw new CatalogException("Deleting a locked Clinical Analysis is forbidden.");
         }
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, boolean ignoreException, String token)
             throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        params = ParamUtils.defaultObject(params, ObjectMap::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         OpenCGAResult result = OpenCGAResult.empty();
 
@@ -1344,7 +1351,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", new Query(query))
-                .append("params", params)
+                .append("options", options)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
@@ -1378,7 +1385,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 }
 
                 // Check if the sample can be deleted
-                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis);
+                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis, options);
 
                 ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_CLINICAL_ANALYSIS,
                         "Delete Clinical Analysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());

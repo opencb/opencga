@@ -411,8 +411,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> familyIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, familyIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> familyIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, familyIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> familyIds, ObjectMap params, boolean ignoreException, String token)
@@ -484,8 +484,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)

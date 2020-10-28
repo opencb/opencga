@@ -182,6 +182,7 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = "Delete clinical analyses", response = ClinicalAnalysis.class)
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Force deletion if the ClinicalAnalysis contains interpretations or is locked", defaultValue = "false") @QueryParam(Constants.FORCE) boolean force,
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @PathParam(ParamConstants.CLINICAL_ANALYSES_PARAM) String clinicalAnalyses) {
         try {
             return createOkResponse(clinicalManager.delete(studyStr, getIdList(clinicalAnalyses), queryOptions, true, token));

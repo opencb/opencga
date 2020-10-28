@@ -436,8 +436,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> cohortIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, cohortIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> cohortIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, cohortIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> cohortIds, ObjectMap params, boolean ignoreException, String token)
@@ -510,8 +510,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
