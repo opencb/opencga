@@ -169,6 +169,7 @@ public class MongoDBAdaptorTest extends GenericTest {
 
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
         catalogDBAdaptor.installCatalogDB(configuration);
+        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes(true);
 //        catalogDBAdaptor.initializeCatalogDB(new Admin());
 
         /**

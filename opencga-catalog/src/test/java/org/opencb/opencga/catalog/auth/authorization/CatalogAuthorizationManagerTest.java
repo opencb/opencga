@@ -127,7 +127,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         CatalogManagerExternalResource.clearCatalog(configuration);
 
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", false);
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", true);
         fileManager = catalogManager.getFileManager();
 
         catalogManager.getUserManager().create(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null, Account.AccountType.FULL, null);
