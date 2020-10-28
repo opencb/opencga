@@ -43,7 +43,6 @@ public class ClinicalAnalysisCreateParams {
     private ProbandParam proband;
     private FamilyParam family;
     private ClinicalAnalystParam analyst;
-    private ClinicalAnalysisInternal internal;
     private EntryParam interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
@@ -62,7 +61,7 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, EntryParam interpretation,
+                                        ClinicalAnalystParam analyst, EntryParam interpretation,
                                         ClinicalConsent consent, String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl,  Enums.Priority priority,
                                         List<String> flags, Map<String, Object> attributes, CustomStatusParams status) {
@@ -74,7 +73,6 @@ public class ClinicalAnalysisCreateParams {
         this.proband = proband;
         this.family = family;
         this.analyst = analyst;
-        this.internal = internal;
         this.interpretation = interpretation;
         this.consent = consent;
         this.dueDate = dueDate;
@@ -95,7 +93,6 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
-                clinicalAnalysis.getInternal(),
                 clinicalAnalysis.getInterpretation() != null
                         ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
                         : null,
@@ -121,7 +118,6 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", analyst=").append(analyst);
-        sb.append(", internal=").append(internal);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
@@ -180,7 +176,7 @@ public class ClinicalAnalysisCreateParams {
                 primaryInterpretation, new LinkedList<>(), consent, new ClinicalAnalyst(assignee, assignee, "", "",
                 TimeUtils.getTime()), priority, flags, null, null,  dueDate, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), internal, attributes,
+                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null, attributes,
                 status != null ? status.toCustomStatus() : null);
     }
 
@@ -253,15 +249,6 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
-        return this;
-    }
-
-    public ClinicalAnalysisInternal getInternal() {
-        return internal;
-    }
-
-    public ClinicalAnalysisCreateParams setInternal(ClinicalAnalysisInternal internal) {
-        this.internal = internal;
         return this;
     }
 

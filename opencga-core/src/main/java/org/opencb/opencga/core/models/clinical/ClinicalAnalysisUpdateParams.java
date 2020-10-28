@@ -40,7 +40,6 @@ public class ClinicalAnalysisUpdateParams {
 //    private ProbandParam proband;
 //    private FamilyParam family
     private ClinicalAnalystParam analyst;
-    private ClinicalAnalysisInternal internal;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsent consent;
@@ -57,17 +56,16 @@ public class ClinicalAnalysisUpdateParams {
     }
 
     public ClinicalAnalysisUpdateParams(String id, String description, DisorderReferenceParam disorder, List<FileReferenceParam> files,
-                                        Boolean locked, ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal,
-                                        ClinicalConsent consent, String dueDate, ClinicalAnalysisQualityControlUpdateParam qualityControl,
-                                        List<ClinicalCommentParam> comments, Enums.Priority priority, List<String> flags,
-                                        Map<String, Object> attributes, CustomStatusParams status) {
+                                        Boolean locked, ClinicalAnalystParam analyst, ClinicalConsent consent, String dueDate,
+                                        ClinicalAnalysisQualityControlUpdateParam qualityControl, List<ClinicalCommentParam> comments,
+                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
+                                        CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.disorder = disorder;
         this.files = files;
         this.locked = locked;
         this.analyst = analyst;
-        this.internal = internal;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
@@ -92,7 +90,6 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", files=").append(files);
         sb.append(", locked=").append(locked);
         sb.append(", analyst=").append(analyst);
-        sb.append(", internal=").append(internal);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
@@ -235,15 +232,6 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-        return this;
-    }
-
-    public ClinicalAnalysisInternal getInternal() {
-        return internal;
-    }
-
-    public ClinicalAnalysisUpdateParams setInternal(ClinicalAnalysisInternal internal) {
-        this.internal = internal;
         return this;
     }
 
