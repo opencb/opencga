@@ -76,7 +76,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response infoFamily(
             @ApiParam(value = ParamConstants.FAMILIES_DESCRIPTION, required = true) @PathParam("families") String familyStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Family version") @QueryParam("version") Integer version,
+            @ApiParam(value = ParamConstants.FAMILY_VERSION_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_VERSION_PARAM) String version,
             @ApiParam(value = "Boolean to retrieve deleted families", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);

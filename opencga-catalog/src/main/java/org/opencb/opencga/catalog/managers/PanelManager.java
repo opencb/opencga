@@ -28,10 +28,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -89,34 +86,6 @@ public class PanelManager extends ResourceManager<Panel> {
         return Enums.Resource.DISEASE_PANEL;
     }
 
-//    @Override
-//    OpenCGAResult<Panel> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-//            throws CatalogException {
-//        ParamUtils.checkIsSingleID(entry);
-//        Query queryCopy = query == null ? new Query() : new Query(query);
-//        queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-//
-//        if (UuidUtils.isOpenCgaUuid(entry)) {
-//            queryCopy.put(PanelDBAdaptor.QueryParams.UUID.key(), entry);
-//        } else {
-//            queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
-//        }
-//        OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-//        if (panelDataResult.getNumResults() == 0) {
-//            panelDataResult = panelDBAdaptor.get(queryCopy, queryOptions);
-//            if (panelDataResult.getNumResults() == 0) {
-//                throw new CatalogException("Panel " + entry + " not found");
-//            } else {
-//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the panel " + entry);
-//            }
-//        } else if (panelDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
-//            throw new CatalogException("More than one panel found based on " + entry);
-//        } else {
-//            return panelDataResult;
-//        }
-//    }
-
     @Override
     InternalGetDataResult<Panel> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                              String user, boolean ignoreException) throws CatalogException {
@@ -128,6 +97,12 @@ public class PanelManager extends ResourceManager<Panel> {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
+                || queryCopy.containsKey(PanelDBAdaptor.QueryParams.VERSION.key());
+        if (versioned && uniqueList.size() > 1) {
+            throw new CatalogException("Only one panel allowed when requesting multiple versions");
+        }
 
         Function<Panel, String> panelStringFunction = Panel::getId;
         PanelDBAdaptor.QueryParams idQueryParam = null;
@@ -151,8 +126,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (ignoreException || panelDataResult.getNumResults() >= uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, panelStringFunction, panelDataResult, ignoreException,
-                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
+            return keepOriginalOrder(uniqueList, panelStringFunction, panelDataResult, ignoreException, versioned);
         }
         // Query without adding the user check
         OpenCGAResult<Panel> resultsNoCheck = panelDBAdaptor.get(queryCopy, queryOptions);

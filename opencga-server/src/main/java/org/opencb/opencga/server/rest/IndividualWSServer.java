@@ -84,7 +84,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response infoIndividual(
             @ApiParam(value = ParamConstants.INDIVIDUALS_DESCRIPTION, required = true) @PathParam("individuals") String individualStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Individual version") @QueryParam("version") Integer version,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_VERSION_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_VERSION_PARAM) String version,
             @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);

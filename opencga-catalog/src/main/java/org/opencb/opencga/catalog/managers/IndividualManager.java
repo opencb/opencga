@@ -153,6 +153,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
+        boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
+                || queryCopy.containsKey(IndividualDBAdaptor.QueryParams.VERSION.key());
+        if (versioned && uniqueList.size() > 1) {
+            throw new CatalogException("Only one individual allowed when requesting multiple versions");
+        }
+
         Function<Individual, String> individualStringFunction = Individual::getId;
         IndividualDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
@@ -176,8 +182,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || individualDataResult.getNumResults() >= uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, individualStringFunction, individualDataResult, ignoreException,
-                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
+            return keepOriginalOrder(uniqueList, individualStringFunction, individualDataResult, ignoreException, versioned);
         }
         // Query without adding the user check
         OpenCGAResult<Individual> resultsNoCheck = individualDBAdaptor.get(queryCopy, queryOptions);

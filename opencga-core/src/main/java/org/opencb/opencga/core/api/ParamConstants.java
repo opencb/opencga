@@ -164,12 +164,18 @@ public class ParamConstants {
 
     public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual names or IDs" + UP_TO_100;
     public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or UUID";
+    public static final String INDIVIDUAL_VERSION_PARAM = "version";
+    public static final String INDIVIDUAL_VERSION_DESCRIPTION = "Comma separated list of individual versions. 'all' to get all the "
+            + "individual versions. Not supported if multiple individual ids are provided";
 
     // ---------------------------------------------
 
     public static final String FAMILIES_DESCRIPTION = "Comma separated list of family IDs or names" + UP_TO_100;
     public static final String FAMILY_UPDATE_ROLES_PARAM = "updateRoles";
     public static final String FAMILY_UPDATE_ROLES_DESCRIPTION = "Update the member roles within the family";
+    public static final String FAMILY_VERSION_PARAM = "version";
+    public static final String FAMILY_VERSION_DESCRIPTION = "Comma separated list of family versions. 'all' to get all the "
+            + "family versions. Not supported if multiple family ids are provided";
 
     // ---------------------------------------------
 
@@ -204,6 +210,9 @@ public class ParamConstants {
             + "'source' will be allowed.";
 
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
+    public static final String PANEL_VERSION_PARAM = "version";
+    public static final String PANEL_VERSION_DESCRIPTION = "Comma separated list of panel versions. 'all' to get all the "
+            + "panel versions. Not supported if multiple panel ids are provided";
 
     // ---------------------------------------------
 

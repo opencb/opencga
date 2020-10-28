@@ -136,7 +136,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     public Response info(
             @ApiParam(value = ParamConstants.PANELS_DESCRIPTION) @PathParam(value = "panels") String panelStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
+            @ApiParam(value = ParamConstants.PANEL_VERSION_DESCRIPTION) @QueryParam(ParamConstants.PANEL_VERSION_PARAM) String version,
             @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
