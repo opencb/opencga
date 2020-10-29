@@ -665,22 +665,23 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         }
 
         private void transposeGeneToSampleOutputFiles() throws IOException {
-            Map<String, KnockoutByIndividual> bySampleMap = new HashMap<>();
+            Map<String, KnockoutByIndividual> byIndividualMap = new HashMap<>();
             for (String gene : Iterables.concat(getOtherGenes(), getProteinCodingGenes())) {
                 Path fileName = getGeneFileName(gene);
                 if (Files.exists(fileName)) {
                     KnockoutByGene byGene = readGeneFile(gene);
                     for (KnockoutByGene.KnockoutIndividual sample : byGene.getIndividuals()) {
-                        KnockoutByIndividual bySample = bySampleMap
-                                .computeIfAbsent(sample.getId(), s -> new KnockoutByIndividual().setSampleId(s));
+                        KnockoutByIndividual byIndividual = byIndividualMap
+                                .computeIfAbsent(sample.getSampleId(), s -> new KnockoutByIndividual())
+                                .setSampleId(sample.getSampleId());
 
-                        bySample.getGene(gene).addTranscripts(sample.getTranscripts());
+                        byIndividual.getGene(gene).addTranscripts(sample.getTranscripts());
 
                     }
                 }
             }
 //            buildGeneKnockoutBySample(sample, knockoutGenes);
-            for (Map.Entry<String, KnockoutByIndividual> entry : bySampleMap.entrySet()) {
+            for (Map.Entry<String, KnockoutByIndividual> entry : byIndividualMap.entrySet()) {
                 KnockoutByIndividual knockoutByIndividual = entry.getValue();
                 KnockoutByIndividual.GeneKnockoutByIndividualStats stats = getGeneKnockoutBySampleStats(knockoutByIndividual.getGenes());
                 knockoutByIndividual.setStats(stats);

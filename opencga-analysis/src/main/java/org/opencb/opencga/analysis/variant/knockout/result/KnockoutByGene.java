@@ -106,6 +106,7 @@ public class KnockoutByGene {
     }
 
     public KnockoutIndividual getIndividualBySampleId(String sample) {
+        Objects.requireNonNull(sample);
         for (KnockoutIndividual s : individuals) {
             if (s.getSampleId().equals(sample)) {
                 return s;
@@ -135,6 +136,9 @@ public class KnockoutByGene {
         private String id;
         private String sampleId;
         private Map<String, KnockoutTranscript> transcriptsMap = new HashMap<>(); // Internal only
+
+        public KnockoutIndividual() {
+        }
 
         public String getId() {
             return id;

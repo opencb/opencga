@@ -160,6 +160,9 @@ public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
     }
 
     public Path getSampleFileName(String sample) {
+        if (sample == null) {
+            Objects.requireNonNull(sample);
+        }
         return Paths.get(sampleFileNamePattern.replace("{sample}", sample));
     }
 
