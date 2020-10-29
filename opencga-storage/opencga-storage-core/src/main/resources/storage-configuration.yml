@@ -146,6 +146,7 @@ variant:
         storage.hadoop.variant.table.compression: "snappy"           # Allowed values: none, snappy, gz
         storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit: 15
         storage.hadoop.sampleIndex.table.compression: "snappy"       # Allowed values: none, snappy, gz
+        storage.hadoop.sampleIndex.build.maxSamplesPerMR: 5000
         storage.hadoop.sampleIndex.annotation.maxSamplesPerMR: 5000
         storage.hadoop.annotationIndex.table.compression: "snappy"   # Allowed values: none, snappy, gz
         storage.hadoop.pendingAnnotation.table.compression: "snappy" # Allowed values: none, snappy, gz

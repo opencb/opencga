@@ -472,6 +472,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--annotate"}, description = "Annotate sample index", arity = 0)
         public boolean annotate;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite existing values", arity = 0)
+        public boolean overwrite;
     }
 
     @Parameters(commandNames = {FAMILY_INDEX_COMMAND}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)
