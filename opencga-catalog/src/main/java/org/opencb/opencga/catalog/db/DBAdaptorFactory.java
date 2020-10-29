@@ -46,9 +46,10 @@ public interface DBAdaptorFactory {
     /**
      * Creates the indexes needed to make queries faster.
      *
-      * @throws CatalogDBException if there is any problem creating the indexes.
+     * @param uniqueIndexesOnly boolean indicating whether to index unique indexes only.
+     * @throws CatalogDBException if there is any problem creating the indexes.
      */
-    void createIndexes() throws CatalogDBException;
+    void createIndexes(boolean uniqueIndexesOnly) throws CatalogDBException;
 
     String getCatalogDatabase(String prefix);
 

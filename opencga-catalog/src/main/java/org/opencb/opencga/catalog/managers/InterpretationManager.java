@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -80,50 +81,50 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return Enums.Resource.INTERPRETATION;
     }
 
-    @Override
-    OpenCGAResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
-        }
-
-        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
-//                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-//                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (interpretationDataResult.getNumResults() == 0) {
-            interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
-            if (interpretationDataResult.getNumResults() == 0) {
-                throw new CatalogException("Interpretation " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-                        + entry);
-            }
-        } else if (interpretationDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one interpretation found based on " + entry);
-        } else {
-            // We perform this query to check permissions because interpretations doesn't have ACLs
-            try {
-                catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
-                        interpretationDataResult.first().getClinicalAnalysisId(),
-                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
-            } catch (CatalogException e) {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-                        + entry);
-            }
-
-            return interpretationDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//
+//        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
+//
+////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+////                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
+////                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
+////                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
+//        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (interpretationDataResult.getNumResults() == 0) {
+//            interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
+//            if (interpretationDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Interpretation " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
+//                        + entry);
+//            }
+//        } else if (interpretationDataResult.getNumResults() > 1) {
+//            throw new CatalogException("More than one interpretation found based on " + entry);
+//        } else {
+//            // We perform this query to check permissions because interpretations doesn't have ACLs
+//            try {
+//                catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
+//                        interpretationDataResult.first().getClinicalAnalysisId(),
+//                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
+//            } catch (CatalogException e) {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
+//                        + entry);
+//            }
+//
+//            return interpretationDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
@@ -856,13 +857,21 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         for (Interpretation interpretation : queryResult.getResults()) {
             if (StringUtils.isNotEmpty(interpretation.getClinicalAnalysisId())) {
                 try {
-                    catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
-                            interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
-                            userId);
+                    catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), interpretation.getClinicalAnalysisId(),
+                            ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
                     results.add(interpretation);
                 } catch (CatalogException e) {
-                    logger.debug("Removing interpretation " + interpretation.getUuid() + " from results. User " + userId + " does not have "
-                            + "proper permissions");
+                    // Maybe the clinical analysis was deleted
+                    Query clinicalQuery = new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true);
+
+                    try {
+                        catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), interpretation.getClinicalAnalysisId(),
+                                clinicalQuery, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
+                        results.add(interpretation);
+                    } catch (CatalogException e1) {
+                        logger.debug("Removing interpretation " + interpretation.getUuid() + " from results. User " + userId
+                                + " does not have proper permissions");
+                    }
                 }
             }
         }
@@ -914,7 +923,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException {
         throw new NotImplementedException("Use other implemented delete method");
     }
 
@@ -1013,7 +1022,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         throw new NotImplementedException("Use other delete implementation");
     }
 //

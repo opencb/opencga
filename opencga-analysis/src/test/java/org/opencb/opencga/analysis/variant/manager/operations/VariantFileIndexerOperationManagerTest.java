@@ -228,11 +228,11 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         File transformedFile = transformFile(inputFile, queryOptions);
 
         catalogManager.getFileManager().delete(studyFqn,
-                new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new ObjectMap(Constants.SKIP_TRASH, true),
+                new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new QueryOptions(Constants.SKIP_TRASH, true),
                         sessionId);
         catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.NAME.key(),
                 VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName())),
-                new ObjectMap(Constants.SKIP_TRASH, true), sessionId);
+                new QueryOptions(Constants.SKIP_TRASH, true), sessionId);
 
         indexFile(inputFile, queryOptions, outputId);
     }

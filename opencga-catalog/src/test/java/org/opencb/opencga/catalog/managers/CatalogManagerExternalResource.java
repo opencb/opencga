@@ -73,7 +73,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
             Files.createDirectory(opencgaHome);
         }
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", false);
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", true);
         catalogManager.close();
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside

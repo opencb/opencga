@@ -101,7 +101,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
         Individual relFather = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
-                .setSamples(Arrays.asList(new Sample().setId("sample1")));
+                .setSamples(Collections.singletonList(new Sample().setId("sample1")));
         Individual relMother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "", null)))
                 .setSamples(Arrays.asList(new Sample().setId("sample3")));
 
@@ -1062,6 +1062,78 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void deleteClinicalAnalysisWithInterpretations() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = new Interpretation().setId("interpretation1");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.PRIMARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        interpretation.setId("interpretation2");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        interpretation.setId("interpretation3");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        interpretation.setId("interpretation4");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        try {
+            catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
+            fail("It should not allow deleting Clinical Analyses with interpretations");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("interpretation"));
+        }
+
+        OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()),
+                new QueryOptions(Constants.FORCE, true), sessionIdUser);
+        assertEquals(1, delete.getNumDeleted());
+
+        OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
+                Collections.singletonList(ca.getId()),
+                new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true), new QueryOptions(), false, sessionIdUser);
+        assertEquals(1, clinicalResult.getNumResults());
+
+        assertEquals(0, catalogManager.getInterpretationManager().search(STUDY,
+                new Query(InterpretationDBAdaptor.QueryParams.ID.key(), Arrays.asList("interpretation1", "interpretation2",
+                        "interpretation3", "interpretation4")), QueryOptions.empty(), sessionIdUser).getNumResults());
+
+        // Old interpretations were deleted
+        assertEquals(4, catalogManager.getInterpretationManager().search(STUDY, new Query()
+                .append(InterpretationDBAdaptor.QueryParams.ID.key(),  Arrays.asList("interpretation1", "interpretation2",
+                        "interpretation3", "interpretation4"))
+                .append(InterpretationDBAdaptor.QueryParams.DELETED.key(), true), QueryOptions.empty(), sessionIdUser)
+                .getNumResults());
+    }
+
+    @Test
+    public void deleteLockedClinicalAnalysis() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, ca.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
+                QueryOptions.empty(), sessionIdUser);
+
+        try {
+            catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
+            fail("It should not allow deleting locked Clinical Analyses");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("locked"));
+        }
+
+        OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()),
+                new QueryOptions(Constants.FORCE, true), sessionIdUser);
+        assertEquals(1, delete.getNumDeleted());
+
+        OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
+                Collections.singletonList(ca.getId()), new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true),
+                new QueryOptions(), false, sessionIdUser);
+        assertEquals(1, clinicalResult.getNumResults());
+    }
+
+    @Test
     public void updateDisorder() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1081,20 +1153,6 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("proband disorders");
         catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
-                sessionIdUser);
-    }
-
-    @Test
-    public void deleteClinicalAnalysisWithInterpretation() throws CatalogException {
-        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
-        Interpretation interpretation = new Interpretation();
-        interpretation.setId("myInterpretation");
-        catalogManager.getInterpretationManager().create(STUDY, dummyEnvironment.first().getId(), interpretation,
-                ParamUtils.SaveInterpretationAs.PRIMARY, new QueryOptions(), sessionIdUser);
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("forbidden");
-        catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(dummyEnvironment.first().getId()), null,
                 sessionIdUser);
     }
 

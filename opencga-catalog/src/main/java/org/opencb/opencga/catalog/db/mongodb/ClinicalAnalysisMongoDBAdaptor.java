@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisCatalogMongoDBIterator;
@@ -38,6 +39,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -351,18 +353,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult delete(ClinicalAnalysis clinicalAnalysis)
-            throws CatalogParameterException, CatalogAuthorizationException, CatalogDBException {
+    public OpenCGAResult<?> delete(ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
-            Query query = new Query()
-                    .append(QueryParams.UID.key(), clinicalAnalysis.getUid())
-                    .append(QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid());
-            OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
-            if (result.getNumResults() == 0) {
-                throw new CatalogDBException("Could not find Clinical Analysis '" + clinicalAnalysis.getId() + "' with uid '"
-                        + clinicalAnalysis.getUid() + "'.");
-            }
-            return runTransaction(clientSession -> privateDelete(clientSession, result.first()));
+            return runTransaction(clientSession -> privateDelete(clientSession, clinicalAnalysis, clinicalAuditList));
         } catch (CatalogDBException e) {
             logger.error("Could not delete Clinical Analysis {}: {}", clinicalAnalysis.getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not delete Clinical Analysis " + clinicalAnalysis.getId() + ": " + e.getMessage(),
@@ -371,19 +365,19 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        DBIterator<Document> iterator = nativeIterator(query, new QueryOptions());
+    public OpenCGAResult<ClinicalAnalysis> delete(Query query, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        DBIterator<ClinicalAnalysis> iterator = iterator(query, ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATION_IDS);
 
         OpenCGAResult<ClinicalAnalysis> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
-            Document clinicalAnalysis = iterator.next();
-            String clinicalAnalysisId = clinicalAnalysis.getString(QueryParams.ID.key());
+            ClinicalAnalysis clinicalAnalysis = iterator.next();
 
             try {
-                result.append(runTransaction(clientSession -> privateDelete(clientSession, clinicalAnalysis)));
+                result.append(runTransaction(clientSession -> privateDelete(clientSession, clinicalAnalysis, clinicalAuditList)));
             } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
-                logger.error("Could not delete Clinical Analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
-                result.getEvents().add(new Event(Event.Type.ERROR, clinicalAnalysisId, e.getMessage()));
+                logger.error("Could not delete Clinical Analysis {}: {}", clinicalAnalysis.getId(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
             }
         }
@@ -391,32 +385,101 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return result;
     }
 
-    OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document clinicalDocument)
+    @Override
+    public OpenCGAResult delete(ClinicalAnalysis clinicalAnalysis)
+            throws CatalogParameterException, CatalogAuthorizationException, CatalogDBException {
+        throw new NotImplementedException("Use other delete method passing ClinicalAudit");
+    }
+
+    @Override
+    public OpenCGAResult delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        throw new NotImplementedException("Use other delete method passing ClinicalAudit");
+    }
+
+    OpenCGAResult<?> privateDelete(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
-        String clinicalId = clinicalDocument.getString(QueryParams.ID.key());
-        long clinicalUid = clinicalDocument.getLong(PRIVATE_UID);
-        long studyUid = clinicalDocument.getLong(PRIVATE_STUDY_UID);
+        // Check and delete any associated interpretation
+        if (clinicalAnalysis.getInterpretation() != null && clinicalAnalysis.getInterpretation().getUid() > 0) {
+            Query query = new Query()
+                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid())
+                    .append(InterpretationDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getInterpretation().getUid());
+
+            OpenCGAResult<Interpretation> result = dbAdaptorFactory.getInterpretationDBAdaptor().get(clientSession, query,
+                    QueryOptions.empty());
+            if (result.getNumResults() == 0) {
+                throw new CatalogDBException("Internal error: Interpretation '" + clinicalAnalysis.getInterpretation().getId()
+                        + "' not found.");
+            }
+
+            ClinicalAudit clinicalAudit = new ClinicalAudit(clinicalAuditList.get(0).getAuthor(),
+                    ClinicalAudit.Action.DELETE_INTERPRETATION, "Delete interpretation '" + result.first().getId() + "'",
+                    TimeUtils.getTime());
+
+            // Delete primary interpretation
+            dbAdaptorFactory.getInterpretationDBAdaptor().delete(clientSession, result.first(), Collections.singletonList(clinicalAudit),
+                    clinicalAnalysis);
+        }
+
+        if (clinicalAnalysis.getSecondaryInterpretations() != null && !clinicalAnalysis.getSecondaryInterpretations().isEmpty()) {
+            for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                Query query = new Query()
+                        .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid())
+                        .append(InterpretationDBAdaptor.QueryParams.UID.key(), interpretation.getUid());
+                OpenCGAResult<Interpretation> result = dbAdaptorFactory.getInterpretationDBAdaptor().get(clientSession, query,
+                        QueryOptions.empty());
+                if (result.getNumResults() == 0) {
+                    throw new CatalogDBException("Internal error: Interpretation '" + interpretation.getId() + "' not found.");
+                }
+
+                ClinicalAudit clinicalAudit = new ClinicalAudit(clinicalAuditList.get(0).getAuthor(),
+                        ClinicalAudit.Action.DELETE_INTERPRETATION, "Delete interpretation '" + result.first().getId() + "'",
+                        TimeUtils.getTime());
+
+                // Delete secondary interpretation
+                dbAdaptorFactory.getInterpretationDBAdaptor().delete(clientSession, result.first(),
+                        Collections.singletonList(clinicalAudit), clinicalAnalysis);
+            }
+        }
+
+        Query query = new Query()
+                .append(STUDY_UID.key(), clinicalAnalysis.getStudyUid())
+                .append(UID.key(), clinicalAnalysis.getUid());
+        OpenCGAResult<Document> result = nativeGet(clientSession, query, QueryOptions.empty());
+        if (result.getNumResults() == 0) {
+            throw new CatalogDBException("Internal error: Clinical Analysis '" + clinicalAnalysis.getId() + "' not found.");
+        }
+
+        String clinicalId = result.first().getString(QueryParams.ID.key());
+        long clinicalUid = result.first().getLong(PRIVATE_UID);
+        long studyUid = result.first().getLong(PRIVATE_STUDY_UID);
 
         logger.debug("Deleting Clinical Analysis {} ({})", clinicalId, clinicalUid);
 
         // Delete any documents that might have been already deleted with that id
-        Bson query = new Document()
+        Bson bsonQuery = new Document()
                 .append(QueryParams.ID.key(), clinicalId)
                 .append(PRIVATE_STUDY_UID, studyUid);
-        deletedClinicalCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
+        deletedClinicalCollection.remove(clientSession, bsonQuery, new QueryOptions(MongoDBCollection.MULTI, true));
 
         // Set status to DELETED
-        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), clinicalDocument);
+        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), result.first());
+
+        // Add audit
+        List<Document> auditList = result.first().getList(AUDIT.key(), Document.class);
+        for (ClinicalAudit clinicalAudit : clinicalAuditList) {
+            auditList.add(getMongoDBDocument(clinicalAudit, "ClinicalAudit"));
+        }
+        result.first().put(AUDIT.key(), auditList);
 
         // Insert the document in the DELETE collection
-        deletedClinicalCollection.insert(clientSession, clinicalDocument, null);
+        deletedClinicalCollection.insert(clientSession, result.first(), null);
         logger.debug("Inserted Clinical Analysis uid '{}' in DELETE collection", clinicalUid);
 
         // Remove the document from the main Clinical collection
-        query = parseQuery(new Query(QueryParams.UID.key(), clinicalUid));
-        DataResult remove = clinicalCollection.remove(clientSession, query, null);
+        bsonQuery = parseQuery(new Query(QueryParams.UID.key(), clinicalUid));
+        DataResult<?> remove = clinicalCollection.remove(clientSession, bsonQuery, null);
         if (remove.getNumMatches() == 0) {
             throw new CatalogDBException("Clinical Analysis " + clinicalId + " not found");
         }
@@ -453,16 +516,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options)
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return nativeGet(null, query, options);
+    }
+
+    private OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
 
     @Override
-    public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Document> nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
@@ -483,13 +551,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options)
+    public DBIterator<Document> nativeIterator(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return nativeIterator(null, query, options);
+    }
+
+    private DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, queryOptions);
     }
 
     @Override
@@ -511,9 +584,9 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, studyUid, user, options);
     }
 
-    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return getMongoCursor(null, query, options, null);
+        return getMongoCursor(clientSession, query, options, null);
     }
 
     private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options, String user)

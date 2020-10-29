@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -81,16 +82,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.FILES.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.FILES.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key()));
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
@@ -105,36 +107,36 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return Enums.Resource.CLINICAL_ANALYSIS;
     }
 
-    @Override
-    OpenCGAResult<ClinicalAnalysis> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
-        }
-
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (analysisDataResult.getNumResults() == 0) {
-            analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions);
-            if (analysisDataResult.getNumResults() == 0) {
-                throw new CatalogException("Clinical Analysis '" + entry + "' not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. '" + user + "' is not allowed to see the Clinical Analysis '"
-                        + entry + "'.");
-            }
-        } else if (analysisDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one clinical analysis found based on '" + entry + "'.");
-        } else {
-            return analysisDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<ClinicalAnalysis> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//
+//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+//        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (analysisDataResult.getNumResults() == 0) {
+//            analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions);
+//            if (analysisDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Clinical Analysis '" + entry + "' not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. '" + user + "' is not allowed to see the Clinical Analysis '"
+//                        + entry + "'.");
+//            }
+//        } else if (analysisDataResult.getNumResults() > 1) {
+//            throw new CatalogException("More than one clinical analysis found based on '" + entry + "'.");
+//        } else {
+//            return analysisDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<ClinicalAnalysis> internalGet(long studyUid, List<String> entryList, @Nullable Query query,
@@ -1233,12 +1235,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, clinicalAnalysisIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, QueryOptions options, String token)
+            throws CatalogException {
+        return delete(studyStr, clinicalAnalysisIds, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, ObjectMap params, boolean ignoreException, String token)
-            throws CatalogException {
+    public OpenCGAResult delete(String studyStr, List<String> clinicalAnalysisIds, QueryOptions options, boolean ignoreException,
+                                String token) throws CatalogException {
         if (CollectionUtils.isEmpty(clinicalAnalysisIds)) {
             throw new CatalogException("Missing list of Clinical Analysis ids");
         }
@@ -1251,9 +1254,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysisIds", clinicalAnalysisIds)
-                .append("params", params)
+                .append("options", options)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         boolean checkPermissions;
         try {
@@ -1288,9 +1293,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 }
 
                 // Check if the ClinicalAnalysis can be deleted
-                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis);
+                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis, options);
 
-                result.append(clinicalDBAdaptor.delete(clinicalAnalysis));
+                ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_CLINICAL_ANALYSIS,
+                        "Delete Clinical Analysis '" + clinicalId + "'", TimeUtils.getTime());
+
+                result.append(clinicalDBAdaptor.delete(clinicalAnalysis, Collections.singletonList(clinicalAudit)));
 
                 auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -1311,21 +1319,27 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         return endResult(result, ignoreException);
     }
 
-    private void checkClinicalAnalysisCanBeDeleted(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
+    private void checkClinicalAnalysisCanBeDeleted(ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogException {
+        if (options.getBoolean(Constants.FORCE)) {
+            return;
+        }
         if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
             throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
+        }
+        if (clinicalAnalysis.isLocked()) {
+            throw new CatalogException("Deleting a locked Clinical Analysis is forbidden.");
         }
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, boolean ignoreException, String token)
             throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
-        params = ParamUtils.defaultObject(params, ObjectMap::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         OpenCGAResult result = OpenCGAResult.empty();
 
@@ -1337,7 +1351,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", new Query(query))
-                .append("params", params)
+                .append("options", options)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
 
@@ -1371,9 +1385,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 }
 
                 // Check if the sample can be deleted
-                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis);
+                checkClinicalAnalysisCanBeDeleted(clinicalAnalysis, options);
 
-                result.append(clinicalDBAdaptor.delete(clinicalAnalysis));
+                ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.DELETE_CLINICAL_ANALYSIS,
+                        "Delete Clinical Analysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
+
+                result.append(clinicalDBAdaptor.delete(clinicalAnalysis, Collections.singletonList(clinicalAudit)));
 
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,

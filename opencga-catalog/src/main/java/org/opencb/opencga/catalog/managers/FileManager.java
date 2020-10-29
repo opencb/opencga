@@ -142,67 +142,13 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    OpenCGAResult<File> internalGet(long studyUid, String fileName, @Nullable Query query, QueryOptions options, String user)
+    OpenCGAResult<File> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         // We make this comparison because in File, the absence of a fileName means the user is actually looking for the / directory
-        if (StringUtils.isNotEmpty(fileName) || fileName == null) {
-            ParamUtils.checkIsSingleID(fileName);
+        if (StringUtils.isNotEmpty(entry) || entry == null) {
+            ParamUtils.checkIsSingleID(entry);
         }
-
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
-        FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.PATH;
-        if (UuidUtils.isOpenCgaUuid(fileName)) {
-            queryParam = FileDBAdaptor.QueryParams.UUID;
-        } else {
-            fileName = fileName.replace(":", "/");
-            if (fileName.startsWith("/")) {
-                fileName = fileName.substring(1);
-            }
-        }
-
-        // We search the file
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(queryParam.key(), fileName);
-        OpenCGAResult<File> pathDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (pathDataResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one file id found based on " + fileName);
-        } else if (pathDataResult.getNumResults() == 1) {
-            return pathDataResult;
-        }
-
-        if (queryParam == FileDBAdaptor.QueryParams.PATH && !fileName.contains("/")) {
-            queryParam = FileDBAdaptor.QueryParams.NAME;
-
-            // We search as a fileName as well
-            queryCopy = query == null ? new Query() : new Query(query);
-            queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
-            OpenCGAResult<File> nameDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-            if (nameDataResult.getNumResults() > 1) {
-                throw new CatalogException("Error: More than one file id found based on " + fileName);
-            } else if (nameDataResult.getNumResults() == 1) {
-                return nameDataResult;
-            }
-        }
-
-        // The file could not be found or the user does not have permissions to see it
-        // Check if the file can be found without adding the user restriction
-        OpenCGAResult<File> resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
-        if (resultsNoCheck.getNumResults() == 1) {
-            throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the file " + fileName);
-        }
-        if (queryParam == FileDBAdaptor.QueryParams.NAME) {
-            // The last search was performed by name but we can also search by path just in case
-            queryCopy.put(FileDBAdaptor.QueryParams.PATH.key(), fileName);
-            resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
-            if (resultsNoCheck.getNumResults() == 1) {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the file " + fileName);
-            }
-        }
-
-        throw new CatalogException("File " + fileName + " not found");
+        return internalGet(studyUid, Collections.singletonList(entry), query, options, user, false);
     }
 
     @Override
@@ -1417,8 +1363,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, fileIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> fileIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, fileIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, boolean ignoreException, String token)
@@ -1486,8 +1432,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)

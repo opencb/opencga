@@ -79,7 +79,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         return result.getResults().get(0).getLong(field);
     }
 
-    public void createIndexes() {
+    public void createIndexes(boolean uniqueIndexesOnly) {
         InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
         ObjectMapper objectMapper = getDefaultObjectMapper();
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
@@ -96,7 +96,10 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
                 Map<String, ObjectMap> myIndexes = new HashMap<>();
                 myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
                 myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
-                indexes.get(collection).add(myIndexes);
+
+                if (!uniqueIndexesOnly || myIndexes.get("options").getBoolean("unique")) {
+                    indexes.get(collection).add(myIndexes);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

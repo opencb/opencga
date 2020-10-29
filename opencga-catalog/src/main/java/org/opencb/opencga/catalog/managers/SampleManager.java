@@ -91,39 +91,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    OpenCGAResult<Sample> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(SampleDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(SampleDBAdaptor.QueryParams.ID.key(), entry);
-        }
-
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//               SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
-//               SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
-//                SampleDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (sampleDataResult.getNumResults() == 0) {
-            sampleDataResult = sampleDBAdaptor.get(queryCopy, queryOptions);
-            if (sampleDataResult.getNumResults() == 0) {
-                throw new CatalogException("Sample " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the sample " + entry);
-            }
-        } else if (sampleDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
-            throw new CatalogException("More than one sample found based on " + entry);
-        } else {
-            return sampleDataResult;
-        }
-    }
-
-    @Override
     InternalGetDataResult<Sample> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                               String user, boolean ignoreException) throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
@@ -135,6 +102,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
+                || queryCopy.containsKey(SampleDBAdaptor.QueryParams.VERSION.key());
+        if (versioned && uniqueList.size() > 1) {
+            throw new CatalogException("Only one sample allowed when requesting multiple versions");
+        }
 
         Function<Sample, String> sampleStringFunction = Sample::getId;
         SampleDBAdaptor.QueryParams idQueryParam = null;
@@ -159,8 +132,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || sampleDataResult.getNumResults() >= uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException,
-                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
+            return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException, versioned);
         }
         // Query without adding the user check
         OpenCGAResult<Sample> resultsNoCheck = sampleDBAdaptor.get(queryCopy, queryOptions);
@@ -350,7 +322,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
-    private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+    void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
 //        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
 //        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
@@ -396,8 +368,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> sampleIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, sampleIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> sampleIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, sampleIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> sampleIds, ObjectMap params, boolean ignoreException, String token)
@@ -474,8 +446,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)

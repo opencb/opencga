@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -266,7 +265,7 @@ public class FileScanner {
                         catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(), sessionId);
 
                         // Delete completely the file/folder !
-                        catalogManager.getFileManager().delete(study.getFqn(), tmpQuery, new ObjectMap(Constants.SKIP_TRASH, true),
+                        catalogManager.getFileManager().delete(study.getFqn(), tmpQuery, new QueryOptions(Constants.SKIP_TRASH, true),
                                 sessionId);
                         overwrite = false;
                         break;
