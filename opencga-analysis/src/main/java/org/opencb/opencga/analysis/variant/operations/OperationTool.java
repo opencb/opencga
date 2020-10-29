@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.nio.file.Path;
 
@@ -36,6 +38,17 @@ public abstract class OperationTool extends OpenCgaTool {
         super.check();
         if (keepIntermediateFiles == null) {
             keepIntermediateFiles = params.getBoolean(KEEP_INTERMEDIATE_FILES);
+        }
+        if (StringUtils.isNotBlank(getParams().getString(ParamConstants.PROJECT_PARAM))) {
+            getParams().put(ParamConstants.PROJECT_PARAM, getProjectFqn());
+        }
+        if (StringUtils.isNotBlank(getParams().getString(ParamConstants.STUDY_PARAM))) {
+            String study = getParams().getString(ParamConstants.STUDY_PARAM);
+            if (VariantQueryUtils.isNegated(study) || study.contains(VariantQueryUtils.AND) || study.contains(VariantQueryUtils.OR)) {
+                // Ignore query-like study
+            } else {
+                getParams().put(ParamConstants.STUDY_PARAM, getStudyFqn());
+            }
         }
     }
 
@@ -59,7 +72,23 @@ public abstract class OperationTool extends OpenCgaTool {
 
     protected final String getStudyFqn() throws CatalogException {
         String userId = getCatalogManager().getUserManager().getUserId(getToken());
-        return getCatalogManager().getStudyManager().resolveId(getParams().getString(ParamConstants.STUDY_PARAM), userId).getFqn();
+        String study = getParams().getString(ParamConstants.STUDY_PARAM);
+        try {
+            return getCatalogManager().getStudyManager().resolveId(study, userId).getFqn();
+        } catch (CatalogException e) {
+            String project = params.getString(ParamConstants.PROJECT_PARAM);
+            if (StringUtils.isNotEmpty(project) && !study.contains(":")) {
+                study = project + ":" + study;
+                try {
+                    return getCatalogManager().getStudyManager().resolveId(study, userId).getFqn();
+                } catch (Exception e2) {
+                    e.addSuppressed(e2);
+                    throw e;
+                }
+            } else {
+                throw e;
+            }
+        }
     }
 
     private static boolean isVcfFormat(File.Format format) {
