@@ -86,11 +86,13 @@ public class FileMetadataReader {
                 if (updateParams.getSampleIds() != null && !updateParams.getSampleIds().isEmpty()) {
                     // Check and create missing samples
                     List<String> missingSamples = new LinkedList<>(updateParams.getSampleIds());
-                    for (Sample sample : catalogManager.getSampleManager().search(studyId,
-                            new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSampleIds()), new QueryOptions(), token)
-                            .getResults()) {
-                        missingSamples.remove(sample.getId());
-                    }
+                    catalogManager.getSampleManager()
+                            .iterator(studyId,
+                                    new Query(SampleDBAdaptor.QueryParams.ID.key(), updateParams.getSampleIds()),
+                                    new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
+                            .forEachRemaining(sample -> {
+                                missingSamples.remove(sample.getId());
+                            });
                     if (!missingSamples.isEmpty()) {
                         for (String missingSample : missingSamples) {
                             catalogManager.getSampleManager().create(studyId, new Sample().setId(missingSample), new QueryOptions(), token);
@@ -98,9 +100,28 @@ public class FileMetadataReader {
                     }
                 }
 
-                catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
-                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")),
-                        token);
+                int samplesBatchSize = 4000;
+                if (updateParams.getSampleIds() != null && updateParams.getSampleIds().size() > samplesBatchSize) {
+                    // Update sampleIds in batches
+                    List<String> sampleIds = updateParams.getSampleIds();
+                    updateParams.setSampleIds(null);
+                    int numMatches = 1 + sampleIds.size() / samplesBatchSize;
+                    for (int i = 0; i < numMatches; i++) {
+                        List<String> subList = sampleIds.subList(
+                                i * samplesBatchSize,
+                                Math.min((i + 1) * samplesBatchSize, sampleIds.size()));
+                        FileUpdateParams partialUpdate = new FileUpdateParams().setSampleIds(subList);
+                        catalogManager.getFileManager().update(studyId, file.getUuid(), partialUpdate,
+                                new QueryOptions(Constants.ACTIONS,
+                                        Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), token);
+                    }
+
+                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(), token);
+                } else {
+                    catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
+                            new QueryOptions(Constants.ACTIONS,
+                                    Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), token);
+                }
                 return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }
         } catch (JsonProcessingException e) {
