@@ -16,6 +16,7 @@ function printUsage() {
   echo "   * -c     --context                   Kubernetes context"
   echo "     -n     --namespace                 Kubernetes namespace"
   echo "   * -f     --values                    Helm values file"
+  echo "     -o     --outdir                    Output directory where to write the generated manifests. Default: \$PWD"
   echo "            --name-suffix               Helm deployment name suffix. e.g. '-test' : opencga-nginx-test, opencga-test, iva-test"
   echo "            --what                      What to deploy. [nginx, iva, opencga, all]. Default: all"
   echo "            --dry-run                   Simulate an installation."
@@ -44,12 +45,24 @@ function requiredFile() {
   fi
 }
 
+function requiredDirectory() {
+  key=$1
+  dir=$2
+  if [ ! -d "${dir}" ]; then
+    echo "Missing directory ${key} : '${dir}' : No such directory"
+    printUsage
+    exit 1
+  fi
+}
+
 #K8S_CONTEXT
 #K8S_NAMESPACE
 #HELM_VALUES_FILE
 WHAT=ALL
+DRY_RUN=false
 #NAME_SUFFIX
 #HELM_OPTS
+OUTPUT_DIR="$(pwd)"
 
 
 while [[ $# -gt 0 ]]
@@ -76,6 +89,11 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -o|--outdir)
+    OUTPUT_DIR="$value"
+    shift # past argument
+    shift # past value
+    ;;
     --what)
     WHAT="${value^^}" # Upper case
     shift # past argument
@@ -92,6 +110,7 @@ case $key in
     shift # past argument
     ;;
     --dry-run)
+    DRY_RUN=true
     HELM_OPTS="${HELM_OPTS} --dry-run "
     shift # past argument
     ;;
@@ -106,6 +125,9 @@ done
 K8S_NAMESPACE="${K8S_NAMESPACE:-$K8S_CONTEXT}"
 requiredParam "--context" "${K8S_CONTEXT}"
 requiredParam "--values" "${HELM_VALUES_FILE}"
+requiredDirectory "--outdir" "${OUTPUT_DIR}"
+
+OUTPUT_DIR=$(realpath "${OUTPUT_DIR}")
 
 for f in $(echo "${HELM_VALUES_FILE}" | tr "," "\n"); do
   requiredFile "--values" "${f}"
@@ -151,9 +173,12 @@ function deployNginx() {
 function deployOpenCGA() {
   NAME="opencga${NAME_SUFFIX}"
   echo "# Deploy OpenCGA ${NAME}"
-  helm upgrade ${NAME} charts/opencga \
+  helm upgrade "${NAME}" charts/opencga \
       --values "${HELM_VALUES_FILE}" \
       --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
+  if [ $DRY_RUN == "false" ]; then
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" > "${OUTPUT_DIR}/helm-${NAME}-manifest-$(date "+%Y%m%d%H%M%S").yaml"
+  fi
 }
 
 function deployIVA() {
@@ -162,6 +187,9 @@ function deployIVA() {
   helm upgrade ${NAME} charts/iva \
       --values "${HELM_VALUES_FILE}" \
       --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
+  if [ $DRY_RUN == "false" ]; then
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" > "${OUTPUT_DIR}/helm-${NAME}-manifest-$(date "+%Y%m%d%H%M%S").yaml"
+  fi
 }
 
 

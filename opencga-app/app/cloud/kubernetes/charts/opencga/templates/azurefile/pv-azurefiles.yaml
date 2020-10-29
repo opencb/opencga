@@ -62,20 +62,4 @@ spec:
     secretName: {{ .Values.azureStorageAccount.secretName }}
     shareName: {{ .Values.azureStorageAccount.volumes.variants.shareName }}
     readOnly: false
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: "pv-test"
-spec:
-  capacity:
-    storage: 100Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: "azurefile"
-  azureFile:
-    secretName: {{ .Values.azureStorageAccount.secretName }}
-    shareName: test
-    readOnly: false
 {{- end }}
