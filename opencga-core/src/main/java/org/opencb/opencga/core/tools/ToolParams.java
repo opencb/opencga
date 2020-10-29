@@ -119,7 +119,8 @@ public abstract class ToolParams {
                     if (value.equals("true")) {
                         map.put(key, "");
                     }
-                } else if (fieldClass != null && Map.class.isAssignableFrom(fieldClass) || ToolParams.class.isAssignableFrom(fieldClass)) {
+                } else if (fieldClass != null
+                        && (Map.class.isAssignableFrom(fieldClass) || ToolParams.class.isAssignableFrom(fieldClass))) {
                     map.put(key, params.getMap(key));
                 } else {
                     map.put(key, value);
