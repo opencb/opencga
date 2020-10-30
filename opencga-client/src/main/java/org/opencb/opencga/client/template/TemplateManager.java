@@ -474,7 +474,8 @@ public class TemplateManager {
 
     private boolean isVcf(File file) {
         String path = getFilePath(file);
-        return path.endsWith(".vcf.gz") || path.endsWith(".vcf") || path.endsWith(".gvcf");
+        return path.endsWith(".vcf.gz") || path.endsWith(".vcf")
+                || path.endsWith(".gvcf.gz") || path.endsWith(".gvcf");
     }
 
     private String indexVcf(Study study, String file, List<String> jobDependsOn) throws ClientException {
