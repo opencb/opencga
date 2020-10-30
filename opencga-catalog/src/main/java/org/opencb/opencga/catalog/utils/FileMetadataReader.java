@@ -111,16 +111,22 @@ public class FileMetadataReader {
                                 i * samplesBatchSize,
                                 Math.min((i + 1) * samplesBatchSize, sampleIds.size()));
                         FileUpdateParams partialUpdate = new FileUpdateParams().setSampleIds(subList);
+
+                        // SET for the first batch, then ADD
+                        ParamUtils.UpdateAction action = i == 0
+                                ? ParamUtils.UpdateAction.SET
+                                : ParamUtils.UpdateAction.ADD;
                         catalogManager.getFileManager().update(studyId, file.getUuid(), partialUpdate,
                                 new QueryOptions(Constants.ACTIONS,
-                                        Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), token);
+                                        Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), action.toString())), token);
                     }
 
                     catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams, QueryOptions.empty(), token);
                 } else {
                     catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
                             new QueryOptions(Constants.ACTIONS,
-                                    Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), token);
+                                    Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
+                                            ParamUtils.UpdateAction.SET.toString())), token);
                 }
                 return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }
