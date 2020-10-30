@@ -49,22 +49,30 @@ public enum YesNoAuto {
         }
     }
 
-    public boolean booleanValue(boolean defaultValue) {
-        return booleanValue(Boolean.valueOf(defaultValue));
+    public boolean yesOrAuto() {
+        return this == YES || this == AUTO;
+    }
+
+    public boolean noOrAuto() {
+        return this == YES || this == AUTO;
+    }
+
+    public boolean booleanValue(boolean valueIfAuto) {
+        return booleanValue(Boolean.valueOf(valueIfAuto));
     }
 
     public Boolean booleanValue() {
         return booleanValue(null);
     }
 
-    private Boolean booleanValue(Boolean defaultValue) {
+    private Boolean booleanValue(Boolean valueIfAuto) {
         switch (this) {
             case YES:
                 return true;
             case NO:
                 return false;
             case AUTO:
-                return defaultValue;
+                return valueIfAuto;
             default:
                 throw new IllegalArgumentException("Unknown option " + this);
         }

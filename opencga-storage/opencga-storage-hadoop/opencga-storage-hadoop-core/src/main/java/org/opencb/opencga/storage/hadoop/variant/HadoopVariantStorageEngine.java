@@ -317,17 +317,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-
-        options.put(SampleIndexDriver.SAMPLES, samples);
-        int studyId = getMetadataManager().getStudyId(study);
-        getMRExecutor().run(SampleIndexDriver.class,
-                FamilyIndexDriver.buildArgs(
-                        getArchiveTableName(studyId),
-                        getVariantTableName(),
-                        studyId,
-                        null,
-                        options), options,
-                "Build sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
+        new SampleIndexLoader(getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+                .buildSampleIndex(study, samples, options);
     }
 
 

@@ -237,8 +237,8 @@ public class OperationsCommandOptions {
         @Parameter(names = {"--annotate"}, description = "Annotate sample index", arity = 0)
         public boolean annotate;
 
-//        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
-//        public boolean overwrite = false;
+        @Parameter(names = {"--overwrite"}, description = "Overwrite existing values", arity = 0)
+        public boolean overwrite;
     }
 
     @Parameters(commandNames = {VARIANT_FAMILY_GENOTYPE_INDEX}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)

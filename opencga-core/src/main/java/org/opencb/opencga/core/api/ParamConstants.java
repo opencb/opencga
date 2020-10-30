@@ -77,6 +77,9 @@ public class ParamConstants {
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
 
     public static final String BODY_PARAM = "body";
+
+    public static final String OVERWRITE = "overwrite";
+    public static final String FORCE = "force";
     // ---------------------------------------------
 
     public static final String USER_DESCRIPTION = "User ID";

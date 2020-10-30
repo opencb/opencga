@@ -108,7 +108,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             if (sampleMetadata.isIndexed()) {
                 alreadyIndexedSamples.add(sample);
                 if (sampleMetadata.isAnnotated()
-                        || SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata) == TaskMetadata.Status.READY
+                        || SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata) == TaskMetadata.Status.READY
                         || sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY
                         || sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
                     processedSamples.add(sampleMetadata.getId());
@@ -127,10 +127,10 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 String fileName = Paths.get(fileMetadata.getPath()).getFileName().toString();
                 throw StorageEngineException.alreadyLoadedSamples(fileName, new ArrayList<>(alreadyIndexedSamples));
             }
-            for (Integer annotatedSample : processedSamples) {
-                getMetadataManager().updateSampleMetadata(studyId, annotatedSample, sampleMetadata -> {
+            for (Integer sampleId : processedSamples) {
+                getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                     sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
-                    SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.NONE);
+                    SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.NONE);
                     sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE);
                     sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
                     return sampleMetadata;
@@ -491,7 +491,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
     private SampleIndexDBLoader newSampleIndexDBLoader(ArchiveTableHelper helper, List<Integer> sampleIds) throws StorageEngineException {
         YesNoAuto loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key());
-        if (loadSampleIndex == YesNoAuto.NO || sampleIds.isEmpty()) {
+        if (!loadSampleIndex.yesOrAuto() || sampleIds.isEmpty()) {
             return null;
         }
         SampleIndexDBLoader sampleIndexDBLoader;

@@ -474,7 +474,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantSampleIndexParams params = new VariantSampleIndexParams(
                 cliOptions.sample,
                 cliOptions.buildIndex,
-                cliOptions.annotate
+                cliOptions.annotate,
+                cliOptions.overwrite
         );
 
         toolRunner.execute(VariantSampleIndexOperationTool.class,

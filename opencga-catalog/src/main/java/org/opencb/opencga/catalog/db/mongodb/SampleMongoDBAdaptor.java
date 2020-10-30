@@ -617,18 +617,20 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             if (!fileIdList.isEmpty()) {
                 Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-                String operation = (String) actionMap.getOrDefault(QueryParams.FILE_IDS.key(), "ADD");
+                ParamUtils.UpdateAction operation =
+                        ParamUtils.UpdateAction.from(actionMap, QueryParams.FILE_IDS.key(), ParamUtils.UpdateAction.ADD);
                 switch (operation) {
-                    case "SET":
+                    case SET:
                         document.getSet().put(QueryParams.FILE_IDS.key(), fileIdList);
                         break;
-                    case "REMOVE":
+                    case REMOVE:
                         document.getPullAll().put(QueryParams.FILE_IDS.key(), fileIdList);
                         break;
-                    case "ADD":
-                    default:
+                    case ADD:
                         document.getAddToSet().put(QueryParams.FILE_IDS.key(), fileIdList);
                         break;
+                    default:
+                        throw new IllegalArgumentException("Unknown update action " + operation);
                 }
             }
         }

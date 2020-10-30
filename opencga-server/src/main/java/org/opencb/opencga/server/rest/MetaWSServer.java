@@ -43,7 +43,9 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by pfurio on 05/05/17.
@@ -58,11 +60,12 @@ public class MetaWSServer extends OpenCGAWSServer {
     private final String SOLR = "Solr";
     private final String VARIANT_STORAGE = "VariantStorage";
     private final String CATALOG_MONGO_DB = "CatalogMongoDB";
-    private static String healthCheckErrorMessage = null;
-    private static LocalTime lastAccess = LocalTime.now();
-    private static HashMap<String, String> healthCheckResults = new HashMap<>();
+    private static final AtomicReference<String> healthCheckErrorMessage = new AtomicReference<>();
+    private static final AtomicReference<LocalTime> lastAccess = new AtomicReference<>(LocalTime.now());
+    private static final Map<String, String> healthCheckResults = new ConcurrentHashMap<>();
 
-    public MetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public MetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
@@ -109,15 +112,13 @@ public class MetaWSServer extends OpenCGAWSServer {
         OpenCGAResult<Map<String, String>> queryResult = new OpenCGAResult<>();
         StopWatch stopWatch = StopWatch.createStarted();
 
-        long elapsedTime = Duration.between(lastAccess, LocalTime.now()).getSeconds();
-
-        if (!isHealthy() || elapsedTime > configuration.getHealthCheck().getInterval()) {
+        if (shouldUpdateStatus()) {
             logger.debug("Update HealthCheck cache status");
             updateHealthCheck();
         } else {
-            logger.debug("HealthCheck results from cache at " + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.WARNING, "HealthCheck results from cache at "
-                    + lastAccess.format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
+            logger.debug("HealthCheck results from cache at " + lastAccess.get().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.INFO, "HealthCheck results from cache at "
+                    + lastAccess.get().format(DateTimeFormatter.ofPattern("HH:mm:ss")))));
         }
 
         queryResult.setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
@@ -128,15 +129,32 @@ public class MetaWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } else {
             logger.error("HealthCheck : " + healthCheckResults.toString());
-            return createErrorResponse(healthCheckErrorMessage, queryResult);
+            return createErrorResponse(healthCheckErrorMessage.get(), queryResult);
         }
     }
 
+    private boolean shouldUpdateStatus() {
+        if (!isHealthy()) {
+            // Always update if not healthy
+            return true;
+        }
+        // If healthy, only update every "healthCheck.interval" seconds
+        long elapsedTime = Duration.between(lastAccess.get(), LocalTime.now()).getSeconds();
+        return elapsedTime > configuration.getHealthCheck().getInterval();
+    }
+
     private synchronized void updateHealthCheck() {
+        if (!shouldUpdateStatus()) {
+            // Skip update!
+            return;
+        }
         String storageEngineId;
         StringBuilder errorMsg = new StringBuilder();
 
         Map<String, String> newHealthCheckResults = new HashMap<>();
+        newHealthCheckResults.put(CATALOG_MONGO_DB, "");
+        newHealthCheckResults.put(VARIANT_STORAGE, "");
+        newHealthCheckResults.put(SOLR, "");
 
         try {
             if (catalogManager.getDatabaseStatus()) {
@@ -182,13 +200,13 @@ public class MetaWSServer extends OpenCGAWSServer {
         }
 
         if (errorMsg.length() == 0) {
-            healthCheckErrorMessage = null;
+            healthCheckErrorMessage.set(null);
         } else {
-            healthCheckErrorMessage = errorMsg.toString();
+            healthCheckErrorMessage.set(errorMsg.toString());
         }
-        healthCheckResults.clear();
+
         healthCheckResults.putAll(newHealthCheckResults);
-        lastAccess = LocalTime.now();
+        lastAccess.set(LocalTime.now());
     }
 
     @GET

@@ -410,7 +410,8 @@ public class CatalogStorageMetadataSynchronizer {
                         }
                     }
                     if (!storageSamples.equals(catalogSamples)) {
-                        logger.warn("File samples does not match between catalog and storage. Update variant file metadata");
+                        logger.warn("File samples does not match between catalog and storage for file '{}'. "
+                                + "Update catalog variant file metadata", file.getPath());
                         file = catalogManager.getFileManager().get(study.getName(), file.getId(), new QueryOptions(), sessionId).first();
                         new FileMetadataReader(catalogManager).updateMetadataInformation(study.getName(), file, sessionId);
                     }

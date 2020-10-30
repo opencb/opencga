@@ -388,7 +388,7 @@ public class SampleIndexQueryParser {
             for (String sample : samplesMap.keySet()) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                if (!SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata).equals(TaskMetadata.Status.READY)) {
+                if (!SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata).equals(TaskMetadata.Status.READY)) {
                     allSamplesAnnotated = false;
                     break;
                 }

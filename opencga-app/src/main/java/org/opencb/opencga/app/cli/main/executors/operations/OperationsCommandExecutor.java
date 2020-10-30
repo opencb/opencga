@@ -204,7 +204,8 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 new VariantSampleIndexParams(
                         cliOptions.sample,
                         cliOptions.buildIndex,
-                        cliOptions.annotate
+                        cliOptions.annotate,
+                        cliOptions.overwrite
                 ), params);
     }
 
