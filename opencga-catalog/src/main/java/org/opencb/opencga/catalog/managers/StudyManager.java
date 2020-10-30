@@ -54,6 +54,8 @@ import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
+import org.opencb.opencga.core.models.study.configuration.ClinicalStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
@@ -293,7 +295,7 @@ public class StudyManager extends AbstractManager {
             Study study = new Study(id, name, alias, creationDate, description, notification, 0,
                     Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())), files,
                     null, null, new LinkedList<>(), null, null, null, null, null, null, null, project.getCurrentRelease(),
-                    status, internal, attributes);
+                    status, internal, new StudyConfiguration(ClinicalStudyConfiguration.defaultConfiguration()), attributes);
 
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 

@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -203,7 +202,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         FileInternal.initialize(), 1000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        null, null, 1, new CustomStatus(), new StudyInternal(new Status()), Collections.emptyMap()), null);
+                        null, null, 1, new CustomStatus(), new StudyInternal(new Status()), null, Collections.emptyMap()), null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
                 new UserQuota(-1, -1, -1, -1), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
@@ -224,7 +223,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
-                        new StudyInternal(new Status()), Collections.emptyMap()), null);
+                        new StudyInternal(new Status()), null, Collections.emptyMap()), null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("mineco", "MINECO", "mineco", "", "", null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
@@ -236,7 +235,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
-                        new StudyInternal(new Status()), Collections.emptyMap()), null);
+                        new StudyInternal(new Status()), null, Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);
