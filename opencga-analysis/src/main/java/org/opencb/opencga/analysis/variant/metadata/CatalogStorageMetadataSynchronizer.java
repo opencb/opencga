@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.variant.metadata;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.mongodb.MongoCursorNotFoundException;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -62,6 +63,7 @@ public class CatalogStorageMetadataSynchronizer {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
+            FileDBAdaptor.QueryParams.URI.key(),
             FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
             FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
@@ -373,52 +375,35 @@ public class CatalogStorageMetadataSynchronizer {
         }
 
         if (!indexedFiles.isEmpty()) {
-            List<String> list = new ArrayList<>();
+            List<String> indexedFilesUris = new ArrayList<>();
             for (Integer fileId : indexedFiles) {
                 String path = filePathMap.get(fileId);
-                list.add(toUri(path));
+                indexedFilesUris.add(toUri(path));
             }
-            Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), list);
-            try (DBIterator<File> iterator = catalogManager.getFileManager()
-                    .iterator(study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
-                int numFiles = 0;
-                while (iterator.hasNext()) {
-                    numFiles++;
-                    File file = iterator.next();
-                    String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null
-                            ? IndexStatus.NONE
-                            : file.getInternal().getIndex().getStatus().getName();
-                    if (!status.equals(IndexStatus.READY)) {
-                        final FileIndex index;
-                        index = file.getInternal().getIndex() == null ? new FileIndex() : file.getInternal().getIndex();
-                        if (index.getStatus() == null) {
-                            index.setStatus(new IndexStatus());
-                        }
-                        logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, IndexStatus.READY);
-                        index.getStatus().setName(IndexStatus.READY);
-                        catalogManager.getFileManager()
-                                .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
-                        modified = true;
+            int numFiles = 0;
+            while (!indexedFilesUris.isEmpty()) {
+                Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), indexedFilesUris);
+                int numPendingFiles = indexedFilesUris.size();
+                try (DBIterator<File> iterator = catalogManager.getFileManager()
+                        .iterator(study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
+                    while (iterator.hasNext()) {
+                        File file = iterator.next();
+                        modified = synchronizeIndexedFile(study, sessionId, modified, fileSamplesMap, file);
+
+                        // Remove processed file from list of uris
+                        indexedFilesUris.remove(file.getUri().toString());
+                        numFiles++;
                     }
-                    Set<String> storageSamples = fileSamplesMap.get(file.getName());
-                    Set<String> catalogSamples = new HashSet<>(file.getSampleIds());
-                    if (storageSamples == null) {
-                        storageSamples = new HashSet<>();
-                        Integer fileId = metadataManager.getFileId(study.getId(), file.getName());
-                        for (Integer sampleId : metadataManager.getSampleIdsFromFileId(study.getId(), fileId)) {
-                            storageSamples.add(metadataManager.getSampleName(study.getId(), sampleId));
-                        }
+                } catch (MongoCursorNotFoundException e) {
+                    if (numPendingFiles == indexedFilesUris.size()) {
+                        // No files where processed in this loop. Do not continue.
+                        throw e;
                     }
-                    if (!storageSamples.equals(catalogSamples)) {
-                        logger.warn("File samples does not match between catalog and storage for file '{}'. "
-                                + "Update catalog variant file metadata", file.getPath());
-                        file = catalogManager.getFileManager().get(study.getName(), file.getId(), new QueryOptions(), sessionId).first();
-                        new FileMetadataReader(catalogManager).updateMetadataInformation(study.getName(), file, sessionId);
-                    }
+                    logger.warn("Catch exception " + e.toString() + ". Continue");
                 }
-                if (numFiles != indexedFiles.size()) {
-                    logger.warn("Some files were not found in catalog given their file uri");
-                }
+            }
+            if (numFiles != indexedFiles.size()) {
+                logger.warn("Some files were not found in catalog given their file uri");
             }
         }
 
@@ -532,6 +517,40 @@ public class CatalogStorageMetadataSynchronizer {
                     modified = true;
                 }
             }
+        }
+        return modified;
+    }
+
+    private boolean synchronizeIndexedFile(StudyMetadata study, String sessionId, boolean modified, Map<String, Set<String>> fileSamplesMap, File file) throws CatalogException {
+        String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null
+                ? IndexStatus.NONE
+                : file.getInternal().getIndex().getStatus().getName();
+        if (!status.equals(IndexStatus.READY)) {
+            final FileIndex index;
+            index = file.getInternal().getIndex() == null ? new FileIndex() : file.getInternal().getIndex();
+            if (index.getStatus() == null) {
+                index.setStatus(new IndexStatus());
+            }
+            logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, IndexStatus.READY);
+            index.getStatus().setName(IndexStatus.READY);
+            catalogManager.getFileManager()
+                    .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
+            modified = true;
+        }
+        Set<String> storageSamples = fileSamplesMap.get(file.getName());
+        Set<String> catalogSamples = new HashSet<>(file.getSampleIds());
+        if (storageSamples == null) {
+            storageSamples = new HashSet<>();
+            Integer fileId = metadataManager.getFileId(study.getId(), file.getName());
+            for (Integer sampleId : metadataManager.getSampleIdsFromFileId(study.getId(), fileId)) {
+                storageSamples.add(metadataManager.getSampleName(study.getId(), sampleId));
+            }
+        }
+        if (!storageSamples.equals(catalogSamples)) {
+            logger.warn("File samples does not match between catalog and storage for file '{}'. "
+                    + "Update catalog variant file metadata", file.getPath());
+            file = catalogManager.getFileManager().get(study.getName(), file.getId(), new QueryOptions(), sessionId).first();
+            new FileMetadataReader(catalogManager).updateMetadataInformation(study.getName(), file, sessionId);
         }
         return modified;
     }

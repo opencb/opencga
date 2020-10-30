@@ -8,6 +8,7 @@ public class VariantFileIndexJobLauncherParams extends ToolParams {
     private String name;
     private String directory;
     private boolean resumeFailed;
+    private boolean ignoreFailed;
     private int maxJobs = -1;
     private VariantIndexParams indexParams = new VariantIndexParams();
 
@@ -29,12 +30,21 @@ public class VariantFileIndexJobLauncherParams extends ToolParams {
         return this;
     }
 
-    public boolean getResumeFailed() {
+    public boolean isResumeFailed() {
         return resumeFailed;
     }
 
     public VariantFileIndexJobLauncherParams setResumeFailed(boolean resumeFailed) {
         this.resumeFailed = resumeFailed;
+        return this;
+    }
+
+    public boolean isIgnoreFailed() {
+        return ignoreFailed;
+    }
+
+    public VariantFileIndexJobLauncherParams setIgnoreFailed(boolean ignoreFailed) {
+        this.ignoreFailed = ignoreFailed;
         return this;
     }
 

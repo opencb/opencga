@@ -748,6 +748,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         storageEngineFactory.close();
     }
 
+    public Boolean synchronizeCatalogStudyFromStorage(String study, String token)
+            throws CatalogException, StorageEngineException {
+        return secureOperation("synchronizeCatalogStudyFromStorage", study, new ObjectMap() ,token, engine -> {
+            return new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager())
+                    .synchronizeCatalogStudyFromStorage(study, token);
+        });
+    }
+
     // Permission related methods
 
     private interface VariantReadOperation<R> {
