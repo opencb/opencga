@@ -422,7 +422,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 clinicalAnalysis.setProband(proband);
 
                 // Validate the proband has a disorder
-//                validateDisorder(clinicalAnalysis);
+                validateDisorder(clinicalAnalysis);
             } else {
                 OpenCGAResult<Individual> individualOpenCGAResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
                         clinicalAnalysis.getProband().getId(), new Query(), new QueryOptions(), userId);
@@ -524,13 +524,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     }
 
     private void validateDisorder(ClinicalAnalysis clinicalAnalysis) throws CatalogException {
-        if (clinicalAnalysis.getProband() == null) {
-            throw new CatalogException("Missing proband");
-        }
-        if (clinicalAnalysis.getProband().getDisorders() == null || clinicalAnalysis.getProband().getDisorders().isEmpty()) {
-            throw new CatalogException("Missing list of proband disorders");
-        }
         if (clinicalAnalysis.getDisorder() != null && StringUtils.isNotEmpty(clinicalAnalysis.getDisorder().getId())) {
+            if (clinicalAnalysis.getProband() == null) {
+                throw new CatalogException("Missing proband");
+            }
+            if (clinicalAnalysis.getProband().getDisorders() == null || clinicalAnalysis.getProband().getDisorders().isEmpty()) {
+                throw new CatalogException("Missing list of proband disorders");
+            }
+
             boolean found = false;
             for (Disorder disorder : clinicalAnalysis.getProband().getDisorders()) {
                 if (clinicalAnalysis.getDisorder().getId().equals(disorder.getId())) {
