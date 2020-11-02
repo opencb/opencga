@@ -306,7 +306,7 @@ db.individual.find({"_lastOfVersion": true, "samples" : { "$exists": true, "$ne"
 
 // # Add fileIds to samples
 var sampleFileMap = {};
-db.file.find({samples:{$ne:[]}}, {id:1, samples:1}).forEach(function(doc) {
+db.file.find({samples:{$exists: true, $ne:[]}}, {id:1, samples:1}).forEach(function(doc) {
     doc.samples.forEach(function(sample) {
         var sampleUid = Number(sample['uid']);
         if (!(sampleUid in sampleFileMap)) {
