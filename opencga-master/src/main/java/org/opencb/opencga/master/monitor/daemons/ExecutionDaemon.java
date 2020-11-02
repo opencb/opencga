@@ -160,6 +160,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(FetchAndRegisterTask.ID, "files fetch");
             put(FileIndexTask.ID, "files secondary-index");
             put(FileTsvAnnotationLoader.ID, "files tsv-load");
+            put(PostLinkSampleAssociation.ID, "files postlink");
 
             put(SampleIndexTask.ID, "samples secondary-index");
             put(SampleTsvAnnotationLoader.ID, "samples tsv-load");

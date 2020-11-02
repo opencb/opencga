@@ -3759,4 +3759,13 @@ public class FileManager extends AnnotationSetManager<File> {
 
         return fileDataResult.getNumMatches() > 0 ? CheckPath.DIRECTORY_EXISTS : CheckPath.FREE_PATH;
     }
+
+    public int getFileSampleLinkThreshold() {
+        return fileDBAdaptor.getFileSampleLinkThreshold();
+    }
+
+    public void setFileSampleLinkThreshold(int numSamples) {
+        fileDBAdaptor.setFileSampleLinkThreshold(numSamples);
+    }
+
 }

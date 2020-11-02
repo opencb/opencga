@@ -80,6 +80,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public static final String REVERSE_NAME = "_reverse";
     public static final String PRIVATE_SAMPLES = "_samples";
 
+    private int fileSampleLinkThreshold = 5000;
+
     /***
      * CatalogMongoFileDBAdaptor constructor.
      *
@@ -141,7 +143,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         List<Sample> samples = new ArrayList<>(existingSamples.size() + nonExistingSamples.size());
-        if (existingSamples.size() + nonExistingSamples.size() < 5000) {
+        if (existingSamples.size() + nonExistingSamples.size() < fileSampleLinkThreshold) {
             // First we check if we need to create any samples and update current list of samples with the ones created
             if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
                 // ------------ PROCESS NON-EXISTING SAMPLES --------------
@@ -192,12 +194,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         } else {
             // We add an additional tag because we will need to process the samples in a task afterwards
             List<String> tags = file.getTags() != null ? new ArrayList<>(file.getTags()) : new ArrayList<>(1);
-            tags.add("OPENCGA_SAMPLES_NOT_PROCESSED");
+            tags.add(ParamConstants.FILE_SAMPLES_NOT_PROCESSED);
             file.setTags(tags);
 
             Map<String, Object> attributes = file.getAttributes() != null ? new HashMap<>(file.getAttributes()) : new HashMap<>();
-            attributes.put("OPENCGA_NON_EXISTING_SAMPLES", fileConverter.convertSamples(nonExistingSamples, false));
-            attributes.put("OPENCGA_EXISTING_SAMPLES", fileConverter.convertSamples(existingSamples, false));
+            attributes.put(ParamConstants.FILE_NON_EXISTING_SAMPLES, fileConverter.convertSamples(nonExistingSamples, false));
+            attributes.put(ParamConstants.FILE_EXISTING_SAMPLES, fileConverter.convertSamples(existingSamples, false));
             file.setAttributes(attributes);
         }
 
@@ -664,7 +666,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
-        // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
         String[] acceptedObjectParams = {QueryParams.INTERNAL_INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key(),
                 QueryParams.STATUS.key()};
@@ -769,6 +770,16 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         return result;
+    }
+
+    @Override
+    public int getFileSampleLinkThreshold() {
+        return fileSampleLinkThreshold;
+    }
+
+    @Override
+    public void setFileSampleLinkThreshold(int numSamples) {
+        this.fileSampleLinkThreshold = numSamples;
     }
 
     OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document fileDocument, String status)

@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import com.microsoft.graph.models.extensions.Post;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -16,6 +17,7 @@ public class FileCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
+    public PostlinkCommandOptions postlinkCommandOptions;
     public SecondaryIndex secondaryIndex;
     public TsvLoad tsvLoad;
 
@@ -31,6 +33,7 @@ public class FileCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
+        this.postlinkCommandOptions = new PostlinkCommandOptions();
         this.secondaryIndex = new SecondaryIndex();
         this.tsvLoad = new TsvLoad();
     }
@@ -74,6 +77,23 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--files"}, description = "Comma separated list of files", required = true, arity = 1)
         public String files;
+
+        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
+                arity = 1)
+        public String outDir;
+    }
+
+    @Parameters(commandNames = {"postlink"}, commandDescription = "Postlink sample association")
+    public class PostlinkCommandOptions {
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
+                arity = 1)
+        public String studyId;
 
         @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
                 arity = 1)

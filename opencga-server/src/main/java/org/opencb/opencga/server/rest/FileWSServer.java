@@ -22,10 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
-import org.opencb.opencga.analysis.file.FileDeleteTask;
-import org.opencb.opencga.analysis.file.FileLinkTask;
-import org.opencb.opencga.analysis.file.FileTsvAnnotationLoader;
+import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -41,6 +38,7 @@ import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.ToolParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -660,6 +658,19 @@ public class FileWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @POST
+    @Path("/postlink/run")
+    @ApiOperation(value = "Associate non-registered samples for files with high volumes of samples.", response = Job.class)
+    public Response postlink(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(name = "body", value = "File parameters", required = true) ToolParams params) {
+        return submitJob(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
     }
 
     @POST

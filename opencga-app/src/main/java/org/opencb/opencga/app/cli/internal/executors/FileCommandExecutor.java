@@ -34,6 +34,9 @@ public class FileCommandExecutor extends InternalCommandExecutor {
             case "fetch":
                 fetch();
                 break;
+            case "postlink":
+                postlink();
+                break;
             case "secondary-index":
                 secondaryIndex();
                 break;
@@ -76,6 +79,19 @@ public class FileCommandExecutor extends InternalCommandExecutor {
 
         unlink.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
         unlink.start();
+    }
+
+    private void postlink() throws ToolException {
+        FileCommandOptions.PostlinkCommandOptions options = fileCommandOptions.postlinkCommandOptions;
+
+        Path outDir = Paths.get(options.outDir);
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        // Prepare analysis parameters and config
+        PostLinkSampleAssociation postlink = new PostLinkSampleAssociation();
+        postlink.setStudy(options.studyId);;
+        postlink.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
+        postlink.start();
     }
 
     private void fetch() throws ToolException {
