@@ -24,6 +24,7 @@ public class FileInternal {
     private FileStatus status;
     private FileIndex index;
     private Map<String, String> sampleMap;
+    private MissingSamples missingSamples;
 
     public FileInternal() {
     }
@@ -32,14 +33,15 @@ public class FileInternal {
         this.sampleMap = sampleMap;
     }
 
-    public FileInternal(FileStatus status, FileIndex index, Map<String, String> sampleMap) {
+    public FileInternal(FileStatus status, FileIndex index, Map<String, String> sampleMap, MissingSamples missingSamples) {
         this.status = status;
         this.index = index;
         this.sampleMap = sampleMap;
+        this.missingSamples = missingSamples;
     }
 
     public static FileInternal initialize() {
-        return new FileInternal(new FileStatus(FileStatus.READY), FileIndex.initialize(), new HashMap<>());
+        return new FileInternal(new FileStatus(FileStatus.READY), FileIndex.initialize(), new HashMap<>(), MissingSamples.initialize());
     }
 
     @Override
@@ -48,6 +50,7 @@ public class FileInternal {
         sb.append("status=").append(status);
         sb.append(", index=").append(index);
         sb.append(", sampleMap=").append(sampleMap);
+        sb.append(", missingSamples=").append(missingSamples);
         sb.append('}');
         return sb.toString();
     }
@@ -76,6 +79,15 @@ public class FileInternal {
 
     public FileInternal setSampleMap(Map<String, String> sampleMap) {
         this.sampleMap = sampleMap;
+        return this;
+    }
+
+    public MissingSamples getMissingSamples() {
+        return missingSamples;
+    }
+
+    public FileInternal setMissingSamples(MissingSamples missingSamples) {
+        this.missingSamples = missingSamples;
         return this;
     }
 }

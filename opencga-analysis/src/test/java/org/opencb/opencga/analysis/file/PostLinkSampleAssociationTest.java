@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -51,9 +52,8 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
-        assertTrue(link.first().getTags().contains(ParamConstants.FILE_SAMPLES_NOT_PROCESSED));
-        assertTrue(link.first().getAttributes().containsKey(ParamConstants.FILE_EXISTING_SAMPLES));
-        assertTrue(link.first().getAttributes().containsKey(ParamConstants.FILE_NON_EXISTING_SAMPLES));
+        assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getName());
+        assertFalse(link.first().getInternal().getMissingSamples().getNonExisting().isEmpty());
 
         Query query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), link.first().getId());
         OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
@@ -68,16 +68,16 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         PostLinkSampleAssociation postLinkSampleAssociation = new PostLinkSampleAssociation();
         postLinkSampleAssociation.setUp(opencga.getOpencgaHome().toString(), null, outDir, token);
         postLinkSampleAssociation.setStudy(studyFqn);
-        postLinkSampleAssociation.run();
+        postLinkSampleAssociation.start();
         System.out.println(link);
 
         File file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
 
         assertEquals(4, file.getSampleIds().size());
         assertTrue(file.getSampleIds().containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
-        assertFalse(file.getTags().contains(ParamConstants.FILE_SAMPLES_NOT_PROCESSED));
-//        assertTrue(((List) file.getAttributes().get(ParamConstants.FILE_EXISTING_SAMPLES)).isEmpty());
-//        assertTrue(((List) file.getAttributes().get(ParamConstants.FILE_NON_EXISTING_SAMPLES)).isEmpty());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertTrue(file.getInternal().getMissingSamples().getNonExisting().isEmpty());
+        assertTrue(file.getInternal().getMissingSamples().getExisting().isEmpty());
 
         query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
         search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);

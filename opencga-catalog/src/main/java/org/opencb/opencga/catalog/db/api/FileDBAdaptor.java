@@ -82,6 +82,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
+        INTERNAL("internal", OBJECT, ""),
         INTERNAL_INDEX("internal.index", TEXT_ARRAY, ""),
         INTERNAL_INDEX_USER_ID("internal.index.userId", TEXT, ""),
         INTERNAL_INDEX_CREATION_DATE("internal.index.creationDate", TEXT, ""),
@@ -90,6 +91,9 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         INTERNAL_INDEX_JOB_ID("internal.index.jobId", TEXT, ""),
         INTERNAL_INDEX_TRANSFORMED_FILE("internal.index.transformedFile", TEXT_ARRAY, ""),
         INTERNAL_INDEX_RELEASE("internal.index.release", INTEGER, ""),
+        INTERNAL_MISSING_SAMPLES("internal.missingSamples", OBJECT, ""),
+        INTERNAL_MISSING_SAMPLES_EXISTING("internal.missingSamples.existing", TEXT_ARRAY, ""),
+        INTERNAL_MISSING_SAMPLES_NON_EXISTING("internal.missingSamples.nonExisting", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
