@@ -100,7 +100,7 @@ public class FileMetadataReader {
                     }
                 }
 
-                int samplesBatchSize = 4000;
+                int samplesBatchSize = 1000;
                 if (updateParams.getSampleIds() != null && updateParams.getSampleIds().size() > samplesBatchSize) {
                     // Update sampleIds in batches
                     List<String> sampleIds = updateParams.getSampleIds();

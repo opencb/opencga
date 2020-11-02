@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
@@ -12,12 +12,13 @@ public class VariantStorageMetadataSynchronizeOperationTool extends OperationToo
     public static final String DESCRIPTION = "Synchronize catalog with variant storage metadata";
 
     @ToolParams
-    protected final VariantFileIndexJobLauncherParams toolParams = new VariantFileIndexJobLauncherParams();
+    protected final VariantStorageMetadataSynchronizeParams toolParams = new VariantStorageMetadataSynchronizeParams();
 
     @Override
     protected void run() throws Exception {
         step(()-> {
-            Boolean modified = getVariantStorageManager().synchronizeCatalogStudyFromStorage(getStudyFqn(), getToken());
+            Boolean modified = getVariantStorageManager()
+                    .synchronizeCatalogStudyFromStorage(getStudyFqn(), toolParams.getFiles(), getToken());
             addAttribute("modified", modified);
         });
     }

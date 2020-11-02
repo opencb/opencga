@@ -90,6 +90,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.*;
+import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.FILE_GET_QUERY_OPTIONS;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -748,11 +749,17 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         storageEngineFactory.close();
     }
 
-    public Boolean synchronizeCatalogStudyFromStorage(String study, String token)
+    public Boolean synchronizeCatalogStudyFromStorage(String study, List<String> files, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation("synchronizeCatalogStudyFromStorage", study, new ObjectMap() ,token, engine -> {
-            return new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager())
-                    .synchronizeCatalogStudyFromStorage(study, token);
+            CatalogStorageMetadataSynchronizer synchronizer =
+                    new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager());
+            if (CollectionUtils.isEmpty(files)) {
+                return synchronizer.synchronizeCatalogStudyFromStorage(study, token);
+            } else {
+                List<File> filesFromCatalog = catalogManager.getFileManager().get(study, files, FILE_GET_QUERY_OPTIONS, token).getResults();
+                return synchronizer.synchronizeCatalogFilesFromStorage(study, filesFromCatalog, token, FILE_GET_QUERY_OPTIONS);
+            }
         });
     }
 
