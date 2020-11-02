@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.variant.operations;
 
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -30,10 +31,21 @@ import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.*;
 public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
 
     public static final String ID = "variant-index-job-launcher";
-    public static final String DESCRIPTION = "";
+    public static final String DESCRIPTION = "Detect non-indexed VCF files in the study, and submit a job for indexing them.";
 
     @ToolParams
     protected final VariantFileIndexJobLauncherParams toolParams = new VariantFileIndexJobLauncherParams();
+
+    @Override
+    protected void check() throws Exception {
+        super.check();
+        if (StringUtils.isNotEmpty(toolParams.getDirectory())) {
+            String directory = toolParams.getDirectory();
+            if (!directory.startsWith("~") && !directory.endsWith("/")) {
+                toolParams.setDirectory(directory + "/");
+            }
+        }
+    }
 
     @Override
     protected void run() throws Exception {
@@ -49,6 +61,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                 FileDBAdaptor.QueryParams.INTERNAL_INDEX.key()));
 
         int submittedJobs = 0;
+        int filesPerJob = 1;
         int maxJobs = Integer.MAX_VALUE;
         if (toolParams.getMaxJobs() > 0) {
             maxJobs = toolParams.getMaxJobs();
@@ -62,7 +75,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                 File file = dbIterator.next();
                 scannedFiles++;
                 String indexStatus = getIndexStatus(file);
-                OpenCGAResult<Job> search = getCatalogManager()
+                OpenCGAResult<Job> jobsFromFile = getCatalogManager()
                         .getJobManager()
                         .search(getStudy(),
                                 new Query()
@@ -76,13 +89,17 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                                 new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key()),
                                 getToken());
 
-                if (search.getResults().isEmpty()) {
+                if (jobsFromFile.getResults().isEmpty()) {
                     // The file is not indexed and it's not in any pending job.
                     VariantIndexParams indexParams = new VariantIndexParams();
                     indexParams.updateParams(toolParams.getIndexParams().toParams());
                     indexParams.setFile(file.getPath());
                     if (!indexStatus.equals(FileIndex.IndexStatus.NONE)) {
-                        if (toolParams.getResumeFailed()) {
+                        if (toolParams.isIgnoreFailed()) {
+                            logger.info("Skip file '{}' in status {}. ", file.getId(), indexStatus);
+                            continue;
+                        }
+                        if (toolParams.isResumeFailed()) {
                             indexParams.setResume(true);
                         }
                     }
@@ -93,12 +110,12 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                     logger.info("Create variant-index job '{}' for file '{}'{}",
                             job.getId(),
                             file.getId(),
-                            indexParams.isResume() ? ", RESUME=TRUE" : "");
+                            indexParams.isResume() ? (" with resume=true from indexStatus=" + indexStatus) : "");
                     submittedJobs++;
                 } else {
                     logger.info("Skip file '{}' as it's already being loaded by job {}",
                             file.getId(),
-                            search.getResults().stream().map(Job::getId).collect(Collectors.toList()));
+                            jobsFromFile.getResults().stream().map(Job::getId).collect(Collectors.toList()));
                 }
             }
         }

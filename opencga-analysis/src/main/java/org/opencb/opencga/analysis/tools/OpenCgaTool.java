@@ -194,7 +194,9 @@ public abstract class OpenCgaTool {
                     if (exception == null) {
                         exception = new RuntimeException("Unexpected system shutdown");
                     }
-                    erm.close(exception);
+                    ExecutionResult result = erm.close(exception);
+                    privateLogger.info("------- Tool '" + getId() + "' executed in "
+                            + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
                 } catch (ToolException e) {
                     privateLogger.error("Error closing ExecutionResult", e);
                 }

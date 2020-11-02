@@ -49,8 +49,20 @@ public enum YesNoAuto {
         }
     }
 
+    public YesNoAuto orElse(YesNoAuto defaultValue) {
+        return this == AUTO ? defaultValue : this;
+    }
+
+    public YesNoAuto orYes() {
+        return orElse(YES);
+    }
+
     public boolean yesOrAuto() {
         return this == YES || this == AUTO;
+    }
+
+    public YesNoAuto orNo() {
+        return orElse(NO);
     }
 
     public boolean noOrAuto() {

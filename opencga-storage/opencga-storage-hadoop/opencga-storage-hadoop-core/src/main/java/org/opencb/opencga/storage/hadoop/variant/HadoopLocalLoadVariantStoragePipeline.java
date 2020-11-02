@@ -36,6 +36,7 @@ import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -89,6 +90,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     @Override
     protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata fileMetadata) throws StorageEngineException {
         super.preLoadRegisterAndValidateFile(studyId, fileMetadata);
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
 
         Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
         Set<Integer> processedSamples = new LinkedHashSet<>();
@@ -108,6 +110,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             if (sampleMetadata.isIndexed()) {
                 alreadyIndexedSamples.add(sample);
                 if (sampleMetadata.isAnnotated()
+                        || !loadSampleIndex && SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata) == TaskMetadata.Status.READY
                         || SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata) == TaskMetadata.Status.READY
                         || sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY
                         || sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
@@ -129,6 +132,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             }
             for (Integer sampleId : processedSamples) {
                 getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                    if (!loadSampleIndex) {
+                        SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.NONE);
+                    }
                     sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
                     SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.NONE);
                     sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE);
@@ -465,9 +471,23 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     public URI postLoad(URI input, URI output) throws StorageEngineException {
         URI uri = super.postLoad(input, output);
 
-        // Mark the load task as READY
-        getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.READY);
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
 
+        // Mark the load task as READY
+        metadataManager.setStatus(getStudyId(), taskId, TaskMetadata.Status.READY);
+
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        if (loadSampleIndex) {
+            for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
+                // Worth to check first to avoid too many updates in scenarios like 1000G
+                SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
+                if (SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata) !=  TaskMetadata.Status.READY) {
+                    metadataManager.updateSampleMetadata(getStudyId(), sampleId, s -> {
+                        return SampleIndexDBAdaptor.setSampleIndexStatus(s, TaskMetadata.Status.READY);
+                    });
+                }
+            }
+        }
         return uri;
     }
 
@@ -490,8 +510,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     private SampleIndexDBLoader newSampleIndexDBLoader(ArchiveTableHelper helper, List<Integer> sampleIds) throws StorageEngineException {
-        YesNoAuto loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key());
-        if (!loadSampleIndex.yesOrAuto() || sampleIds.isEmpty()) {
+        boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        if (!loadSampleIndex || sampleIds.isEmpty()) {
             return null;
         }
         SampleIndexDBLoader sampleIndexDBLoader;
