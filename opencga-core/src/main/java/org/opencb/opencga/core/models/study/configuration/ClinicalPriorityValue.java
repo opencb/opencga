@@ -4,15 +4,23 @@ public class ClinicalPriorityValue {
 
     private String id;
     private String description;
+    /**
+     * Highest priority: 1
+     */
     private int rank;
+    /**
+     * Flag indicating the default priority that will be applied when empty.
+     */
+    private boolean defaultPriority;
 
     public ClinicalPriorityValue() {
     }
 
-    public ClinicalPriorityValue(String id, String description, int rank) {
+    public ClinicalPriorityValue(String id, String description, int rank, boolean defaultPriority) {
         this.id = id;
         this.description = description;
         this.rank = rank;
+        this.defaultPriority = defaultPriority;
     }
 
     @Override
@@ -21,6 +29,7 @@ public class ClinicalPriorityValue {
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", rank=").append(rank);
+        sb.append(", defaultPriority=").append(defaultPriority);
         sb.append('}');
         return sb.toString();
     }
@@ -49,6 +58,15 @@ public class ClinicalPriorityValue {
 
     public ClinicalPriorityValue setRank(int rank) {
         this.rank = rank;
+        return this;
+    }
+
+    public boolean isDefaultPriority() {
+        return defaultPriority;
+    }
+
+    public ClinicalPriorityValue setDefaultPriority(boolean defaultPriority) {
+        this.defaultPriority = defaultPriority;
         return this;
     }
 }

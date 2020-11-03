@@ -1,18 +1,26 @@
 package org.opencb.opencga.core.models.study.configuration;
 
-public class ClinicalConsent {
+public class ClinicalConsentParam {
 
     private String id;
     private String name;
     private String description;
+    private Value value;
 
-    public ClinicalConsent() {
+    public enum Value {
+        YES,
+        NO,
+        UNKNOWN
     }
 
-    public ClinicalConsent(String id, String name, String description) {
+    public ClinicalConsentParam() {
+    }
+
+    public ClinicalConsentParam(String id, String name, String description, Value value) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.value = value;
     }
 
     @Override
@@ -21,6 +29,7 @@ public class ClinicalConsent {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", value=").append(value);
         sb.append('}');
         return sb.toString();
     }
@@ -29,7 +38,7 @@ public class ClinicalConsent {
         return id;
     }
 
-    public ClinicalConsent setId(String id) {
+    public ClinicalConsentParam setId(String id) {
         this.id = id;
         return this;
     }
@@ -38,7 +47,7 @@ public class ClinicalConsent {
         return name;
     }
 
-    public ClinicalConsent setName(String name) {
+    public ClinicalConsentParam setName(String name) {
         this.name = name;
         return this;
     }
@@ -47,8 +56,17 @@ public class ClinicalConsent {
         return description;
     }
 
-    public ClinicalConsent setDescription(String description) {
+    public ClinicalConsentParam setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public Value getValue() {
+        return value;
+    }
+
+    public ClinicalConsentParam setValue(Value value) {
+        this.value = value;
         return this;
     }
 }

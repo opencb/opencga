@@ -2,12 +2,12 @@ package org.opencb.opencga.core.models.study.configuration;
 
 public class StudyConfiguration {
 
-    private ClinicalStudyConfiguration clinical;
+    private ClinicalAnalysisStudyConfiguration clinical;
 
     public StudyConfiguration() {
     }
 
-    public StudyConfiguration(ClinicalStudyConfiguration clinical) {
+    public StudyConfiguration(ClinicalAnalysisStudyConfiguration clinical) {
         this.clinical = clinical;
     }
 
@@ -19,11 +19,11 @@ public class StudyConfiguration {
         return sb.toString();
     }
 
-    public ClinicalStudyConfiguration getClinical() {
+    public ClinicalAnalysisStudyConfiguration getClinical() {
         return clinical;
     }
 
-    public StudyConfiguration setClinical(ClinicalStudyConfiguration clinical) {
+    public StudyConfiguration setClinical(ClinicalAnalysisStudyConfiguration clinical) {
         this.clinical = clinical;
         return this;
     }

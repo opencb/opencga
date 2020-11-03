@@ -9,31 +9,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ClinicalStudyConfiguration {
+public class ClinicalAnalysisStudyConfiguration {
 
     private Map<ClinicalAnalysis.Type, List<StatusValue>> status;
-    private Map<ClinicalAnalysis.Type, List<StatusValue>> interpretationStatus;
-
+    private InterpretationStudyConfiguration interpretation;
     private List<ClinicalPriorityValue> priorities;
     private Map<ClinicalAnalysis.Type, List<FlagValue>> flags;
-    private List<ClinicalConsent> consents;
+    private ClinicalConsentConfiguration consent;
 
 
-    public ClinicalStudyConfiguration() {
+    public ClinicalAnalysisStudyConfiguration() {
     }
 
-    public ClinicalStudyConfiguration(Map<ClinicalAnalysis.Type, List<StatusValue>> status,
-                                      Map<ClinicalAnalysis.Type, List<StatusValue>> interpretationStatus,
-                                      List<ClinicalPriorityValue> priorities, Map<ClinicalAnalysis.Type, List<FlagValue>> flags,
-                                      List<ClinicalConsent> consents) {
+    public ClinicalAnalysisStudyConfiguration(Map<ClinicalAnalysis.Type, List<StatusValue>> status,
+                                              InterpretationStudyConfiguration interpretation, List<ClinicalPriorityValue> priorities,
+                                              Map<ClinicalAnalysis.Type, List<FlagValue>> flags, ClinicalConsentConfiguration consent) {
         this.status = status;
-        this.interpretationStatus = interpretationStatus;
+        this.interpretation = interpretation;
         this.priorities = priorities;
         this.flags = flags;
-        this.consents = consents;
+        this.consent = consent;
     }
 
-    public static ClinicalStudyConfiguration defaultConfiguration() {
+    public static ClinicalAnalysisStudyConfiguration defaultConfiguration() {
         Map<ClinicalAnalysis.Type, List<StatusValue>> status = new HashMap<>();
         Map<ClinicalAnalysis.Type, List<StatusValue>> interpretationStatus = new HashMap<>();
         List<ClinicalPriorityValue> priorities = new ArrayList<>(5);
@@ -61,11 +59,11 @@ public class ClinicalStudyConfiguration {
         interpretationStatus.put(ClinicalAnalysis.Type.COHORT, interpretationStatusList);
         interpretationStatus.put(ClinicalAnalysis.Type.SINGLE, interpretationStatusList);
 
-        priorities.add(new ClinicalPriorityValue("URGENT", "Highest priority of all", 1));
-        priorities.add(new ClinicalPriorityValue("HIGH", "Second highest priority of all", 2));
-        priorities.add(new ClinicalPriorityValue("MEDIUM", "Intermediate priority", 3));
-        priorities.add(new ClinicalPriorityValue("LOW", "Low priority", 4));
-        priorities.add(new ClinicalPriorityValue("UNKNOWN", "Unknown priority. Treated as the lowest priority of all.", 5));
+        priorities.add(new ClinicalPriorityValue("URGENT", "Highest priority of all", 1, false));
+        priorities.add(new ClinicalPriorityValue("HIGH", "Second highest priority of all", 2, false));
+        priorities.add(new ClinicalPriorityValue("MEDIUM", "Intermediate priority", 3, false));
+        priorities.add(new ClinicalPriorityValue("LOW", "Low priority", 4, false));
+        priorities.add(new ClinicalPriorityValue("UNKNOWN", "Unknown priority. Treated as the lowest priority of all.", 5, true));
 
         List<FlagValue> flagValueList = new ArrayList<>(7);
         flagValueList.add(new FlagValue("MIXED_CHEMISTRIES", ""));
@@ -81,22 +79,23 @@ public class ClinicalStudyConfiguration {
         flags.put(ClinicalAnalysis.Type.COHORT, flagValueList);
         flags.put(ClinicalAnalysis.Type.SINGLE, flagValueList);
 
-        clinicalConsentList.add(new ClinicalConsent("PRIMARY_FINDINGS", "Primary findings", "", ClinicalConsent.Value.UNKNOWN));
-        clinicalConsentList.add(new ClinicalConsent("SECONDARY_FINDINGS", "Secondary findings", "", ClinicalConsent.Value.UNKNOWN));
-        clinicalConsentList.add(new ClinicalConsent("CARRIER_FINDINGS", "Carrier findings", "", ClinicalConsent.Value.UNKNOWN));
-        clinicalConsentList.add(new ClinicalConsent("RESEARCH_FINDINGS", "Research findings", "", ClinicalConsent.Value.UNKNOWN));
+        clinicalConsentList.add(new ClinicalConsent("PRIMARY_FINDINGS", "Primary findings", ""));
+        clinicalConsentList.add(new ClinicalConsent("SECONDARY_FINDINGS", "Secondary findings", ""));
+        clinicalConsentList.add(new ClinicalConsent("CARRIER_FINDINGS", "Carrier findings", ""));
+        clinicalConsentList.add(new ClinicalConsent("RESEARCH_FINDINGS", "Research findings", ""));
 
-        return new ClinicalStudyConfiguration(status, interpretationStatus, priorities, flags, clinicalConsentList);
+        return new ClinicalAnalysisStudyConfiguration(status, new InterpretationStudyConfiguration(interpretationStatus), priorities, flags,
+                new ClinicalConsentConfiguration(clinicalConsentList));
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClinicalStudyConfiguration{");
+        final StringBuilder sb = new StringBuilder("ClinicalAnalysisStudyConfiguration{");
         sb.append("status=").append(status);
-        sb.append(", interpretationStatus=").append(interpretationStatus);
+        sb.append(", interpretation=").append(interpretation);
         sb.append(", priorities=").append(priorities);
         sb.append(", flags=").append(flags);
-        sb.append(", consents=").append(consents);
+        sb.append(", consent=").append(consent);
         sb.append('}');
         return sb.toString();
     }
@@ -105,17 +104,17 @@ public class ClinicalStudyConfiguration {
         return status;
     }
 
-    public ClinicalStudyConfiguration setStatus(Map<ClinicalAnalysis.Type, List<StatusValue>> status) {
+    public ClinicalAnalysisStudyConfiguration setStatus(Map<ClinicalAnalysis.Type, List<StatusValue>> status) {
         this.status = status;
         return this;
     }
 
-    public Map<ClinicalAnalysis.Type, List<StatusValue>> getInterpretationStatus() {
-        return interpretationStatus;
+    public InterpretationStudyConfiguration getInterpretation() {
+        return interpretation;
     }
 
-    public ClinicalStudyConfiguration setInterpretationStatus(Map<ClinicalAnalysis.Type, List<StatusValue>> interpretationStatus) {
-        this.interpretationStatus = interpretationStatus;
+    public ClinicalAnalysisStudyConfiguration setInterpretation(InterpretationStudyConfiguration interpretation) {
+        this.interpretation = interpretation;
         return this;
     }
 
@@ -123,7 +122,7 @@ public class ClinicalStudyConfiguration {
         return priorities;
     }
 
-    public ClinicalStudyConfiguration setPriorities(List<ClinicalPriorityValue> priorities) {
+    public ClinicalAnalysisStudyConfiguration setPriorities(List<ClinicalPriorityValue> priorities) {
         this.priorities = priorities;
         return this;
     }
@@ -132,17 +131,17 @@ public class ClinicalStudyConfiguration {
         return flags;
     }
 
-    public ClinicalStudyConfiguration setFlags(Map<ClinicalAnalysis.Type, List<FlagValue>> flags) {
+    public ClinicalAnalysisStudyConfiguration setFlags(Map<ClinicalAnalysis.Type, List<FlagValue>> flags) {
         this.flags = flags;
         return this;
     }
 
-    public List<ClinicalConsent> getConsents() {
-        return consents;
+    public ClinicalConsentConfiguration getConsent() {
+        return consent;
     }
 
-    public ClinicalStudyConfiguration setConsents(List<ClinicalConsent> consents) {
-        this.consents = consents;
+    public ClinicalAnalysisStudyConfiguration setConsent(ClinicalConsentConfiguration consent) {
+        this.consent = consent;
         return this;
     }
 }

@@ -485,7 +485,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setDescription("My description")
-                .setPriority(Enums.Priority.URGENT);
+                .setPriority(new PriorityParam("URGENT"));
 
         OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
                 updateParams, QueryOptions.empty(), sessionIdUser);

@@ -30,7 +30,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.configuration.ClinicalStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 import java.net.URI;
@@ -80,7 +80,7 @@ public class Study extends PrivateFields {
         this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new HashMap<>(), uri, release, new CustomStatus(), internal,
-                new StudyConfiguration(new ClinicalStudyConfiguration()), new HashMap<>());
+                new StudyConfiguration(new ClinicalAnalysisStudyConfiguration()), new HashMap<>());
     }
 
     public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,

@@ -21,6 +21,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.*;
@@ -923,16 +924,17 @@ public class ClinicalInterpretationManager extends StorageManager {
     public List<ClinicalVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
                                                       String studyId, ClinicalVariantCreator creator, String sessionId)
             throws StorageEngineException, ToolException, CatalogException, IOException {
-        List<ClinicalVariant> secondaryFindings = null;
-        if (clinicalAnalysis.getConsent() != null
-                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-            List<Variant> variants = getSecondaryFindings(sampleNames.get(0), clinicalAnalysis.getId(), studyId,
-                    sessionId);
-            if (CollectionUtils.isNotEmpty(variants)) {
-                secondaryFindings = creator.createSecondaryFindings(variants);
-            }
-        }
-        return secondaryFindings;
+        throw new NotImplementedException("Secondary findings does not exist");
+//        List<ClinicalVariant> secondaryFindings = null;
+//        if (clinicalAnalysis.getConsent() != null
+//                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
+//            List<Variant> variants = getSecondaryFindings(sampleNames.get(0), clinicalAnalysis.getId(), studyId,
+//                    sessionId);
+//            if (CollectionUtils.isNotEmpty(variants)) {
+//                secondaryFindings = creator.createSecondaryFindings(variants);
+//            }
+//        }
+//        return secondaryFindings;
     }
 
 //    public List<ReportedLowCoverage> getReportedLowCoverage(int maxCoverage, ClinicalAnalysis clinicalAnalysis,

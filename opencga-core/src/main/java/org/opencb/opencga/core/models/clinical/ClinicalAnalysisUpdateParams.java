@@ -19,9 +19,9 @@ package org.opencb.opencga.core.models.clinical;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
 import java.util.List;
 import java.util.Map;
@@ -42,24 +42,24 @@ public class ClinicalAnalysisUpdateParams {
     private ClinicalAnalystParam analyst;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
-    private ClinicalConsent consent;
+    private ClinicalConsentAnnotationParam consent;
 
     private String dueDate;
     private List<ClinicalCommentParam> comments;
-    private Enums.Priority priority;
-    private List<String> flags;
+    private PriorityParam priority; // id
+    private List<FlagValueParam> flags; // id
 
     private Map<String, Object> attributes;
-    private CustomStatusParams status;
+    private StatusParam status;
 
     public ClinicalAnalysisUpdateParams() {
     }
 
     public ClinicalAnalysisUpdateParams(String id, String description, DisorderReferenceParam disorder, List<FileReferenceParam> files,
-                                        Boolean locked, ClinicalAnalystParam analyst, ClinicalConsent consent, String dueDate,
-                                        ClinicalAnalysisQualityControlUpdateParam qualityControl, List<ClinicalCommentParam> comments,
-                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
-                                        CustomStatusParams status) {
+                                        Boolean locked, ClinicalAnalystParam analyst, ClinicalConsentAnnotationParam consent,
+                                        String dueDate, ClinicalAnalysisQualityControlUpdateParam qualityControl,
+                                        List<ClinicalCommentParam> comments, PriorityParam priority, List<FlagValueParam> flags,
+                                        Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.disorder = disorder;
@@ -172,11 +172,11 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public ClinicalConsent getConsent() {
+    public ClinicalConsentAnnotationParam getConsent() {
         return consent;
     }
 
-    public ClinicalAnalysisUpdateParams setConsent(ClinicalConsent consent) {
+    public ClinicalAnalysisUpdateParams setConsent(ClinicalConsentAnnotationParam consent) {
         this.consent = consent;
         return this;
     }
@@ -208,20 +208,20 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public Enums.Priority getPriority() {
+    public PriorityParam getPriority() {
         return priority;
     }
 
-    public ClinicalAnalysisUpdateParams setPriority(Enums.Priority priority) {
+    public ClinicalAnalysisUpdateParams setPriority(PriorityParam priority) {
         this.priority = priority;
         return this;
     }
 
-    public List<String> getFlags() {
+    public List<FlagValueParam> getFlags() {
         return flags;
     }
 
-    public ClinicalAnalysisUpdateParams setFlags(List<String> flags) {
+    public ClinicalAnalysisUpdateParams setFlags(List<FlagValueParam> flags) {
         this.flags = flags;
         return this;
     }
@@ -235,11 +235,11 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParam getStatus() {
         return status;
     }
 
-    public ClinicalAnalysisUpdateParams setStatus(CustomStatusParams status) {
+    public ClinicalAnalysisUpdateParams setStatus(StatusParam status) {
         this.status = status;
         return this;
     }
