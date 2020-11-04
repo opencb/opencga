@@ -47,6 +47,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.FlagAnnotation;
+import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -283,7 +285,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFlagsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
@@ -345,6 +348,20 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
         parameters.put(COMMENTS.key(), commentParamList);
+    }
+
+    static void fixFlagsForRemoval(ObjectMap parameters) {
+        if (parameters.get(FLAGS.key()) == null) {
+            return;
+        }
+
+        List<FlagValueParam> flagParamList = new LinkedList<>();
+        for (Object comment : parameters.getAsList(FLAGS.key())) {
+            if (comment instanceof FlagAnnotation) {
+                flagParamList.add(FlagValueParam.of((FlagAnnotation) comment));
+            }
+        }
+        parameters.put(FLAGS.key(), flagParamList);
     }
 
     @Override

@@ -557,15 +557,51 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         FlagValue flag1 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(1);
         FlagValue flag2 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(3);
+        FlagValue flag3 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(4);
+
+        ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.UpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
                 .setFlags(Arrays.asList(new FlagValueParam(flag1.getId()), new FlagValueParam(flag2.getId())));
         OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
-                updateParams, QueryOptions.empty(), sessionIdUser);
+                updateParams, options, sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        updateParams = new ClinicalAnalysisUpdateParams()
+                .setFlags(Collections.singletonList(new FlagValueParam(flag3.getId())));
+        update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, options, sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
         ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(),
                 sessionIdUser).first();
+        assertEquals(3, ca.getFlags().size());
+        assertEquals(flag1.getId(), ca.getFlags().get(0).getId());
+        assertEquals(flag1.getDescription(), ca.getFlags().get(0).getDescription());
+        assertNotNull(ca.getFlags().get(0).getDate());
+
+        assertEquals(flag2.getId(), ca.getFlags().get(1).getId());
+        assertEquals(flag2.getDescription(), ca.getFlags().get(1).getDescription());
+        assertNotNull(ca.getFlags().get(1).getDate());
+
+        assertEquals(flag3.getId(), ca.getFlags().get(2).getId());
+        assertEquals(flag3.getDescription(), ca.getFlags().get(2).getDescription());
+        assertNotNull(ca.getFlags().get(2).getDate());
+
+        // Set other flags
+        flag1 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(0);
+        flag2 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(2);
+
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.UpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        updateParams = new ClinicalAnalysisUpdateParams()
+                .setFlags(Arrays.asList(new FlagValueParam(flag1.getId()), new FlagValueParam(flag2.getId())));
+        update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, options,
+                sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(), sessionIdUser).first();
         assertEquals(2, ca.getFlags().size());
         assertEquals(flag1.getId(), ca.getFlags().get(0).getId());
         assertEquals(flag1.getDescription(), ca.getFlags().get(0).getDescription());
@@ -574,6 +610,22 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(flag2.getId(), ca.getFlags().get(1).getId());
         assertEquals(flag2.getDescription(), ca.getFlags().get(1).getDescription());
         assertNotNull(ca.getFlags().get(1).getDate());
+
+        // Remove flag1
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.UpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        updateParams = new ClinicalAnalysisUpdateParams()
+                .setFlags(Collections.singletonList(new FlagValueParam(flag1.getId())));
+        update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, options,
+                sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, ca.getFlags().size());
+        assertEquals(flag2.getId(), ca.getFlags().get(0).getId());
+        assertEquals(flag2.getDescription(), ca.getFlags().get(0).getDescription());
+        assertNotNull(ca.getFlags().get(0).getDate());
     }
 
     @Test
