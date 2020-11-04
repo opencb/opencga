@@ -3,6 +3,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -28,6 +29,9 @@ import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -192,12 +196,19 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         boolean skipRc1 = false;
         boolean skipRc2 = false;
+        boolean skipRc5 = false;
         switch (options.what) {
             case RC1:
                 skipRc2 = true;
+                skipRc5 = true;
                 break;
             case RC2:
                 skipRc1 = true;
+                skipRc5 = true;
+                break;
+            case RC5:
+                skipRc1 = true;
+                skipRc2 = true;
                 break;
             case ALL:
             default:
@@ -209,6 +220,11 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
 
         if (!skipRc1) {
+            if (StringUtils.isEmpty(options.jobFolder)) {
+                logger.error("Missing mandatory --job-directory parameter.");
+                return;
+            }
+
             String cypheredPassword = CryptoUtils.sha1(options.commonOptions.adminPassword);
             Document document = new Document("admin.password", cypheredPassword);
             if (metaCollection.count(document).getNumMatches() == 0) {
@@ -279,6 +295,28 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                         for (Study study : project.getStudies()) {
                             logger.info("Updating family roles from study {}", study.getFqn());
                             catalogManager.getFamilyManager().update(study.getFqn(), new Query(), null, familyUpdateOptions, adminToken);
+                        }
+                    }
+                }
+            }
+        }
+        if (!skipRc5) {
+            try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+                String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
+
+                logger.info("Starting Catalog migration for 2.0.0 RC5");
+                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc5/", "opencga_catalog_v2.0.0-rc2_to_v2.0.0-rc5.js");
+
+                StudyUpdateParams updateParams = new StudyUpdateParams()
+                        .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
+
+                // Create default study configuration
+                for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            logger.info("Updating study configuration from study {}", study.getFqn());
+                            catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), adminToken);
                         }
                     }
                 }
