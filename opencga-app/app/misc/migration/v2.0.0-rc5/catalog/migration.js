@@ -77,6 +77,17 @@ if (getLatestUpdate() < 3) {
 
         bulk.find({"_id": doc._id}).updateOne({"$set": updateParams});
     });
+
+    // Change indexes
+    db.clinical.dropIndex("flags_1_studyUid_1");
+    db.clinical.dropIndex("priority_1_studyUid_1");
+    db.interpretation.dropIndex("status_1_studyUid_1");
+
+    db.clinical.createIndex({"status.id": 1, "studyUid": 1}, {"background": true});
+    db.clinical.createIndex({"priority.id": 1, "studyUid": 1}, {"background": true});
+    db.clinical.createIndex({"flags.id": 1, "studyUid": 1}, {"background": true});
+    db.interpretation.createIndex({"status.id": 1, "studyUid": 1}, {"background": true});
+
     setLatestUpdate(3);
 } else {
     print("\nSkipping migration 3...");
