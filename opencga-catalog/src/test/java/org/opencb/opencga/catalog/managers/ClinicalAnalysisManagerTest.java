@@ -43,9 +43,15 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.FlagValue;
+import org.opencb.opencga.core.models.common.StatusParam;
+import org.opencb.opencga.core.models.common.StatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.configuration.*;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -494,7 +500,138 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(),
                 sessionIdUser).first();
         assertEquals("My description", ca.getDescription());
-        assertEquals(Enums.Priority.URGENT, ca.getPriority());
+        assertEquals("URGENT", ca.getPriority().getId());
+    }
+
+    @Test
+    public void updateCustomStatusTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
+        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
+
+        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setStatus(new StatusParam(status.getId()));
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
+                updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(),
+                sessionIdUser).first();
+        assertEquals(status.getId(), ca.getStatus().getId());
+        assertEquals(status.getDescription(), ca.getStatus().getDescription());
+        assertNotNull(ca.getStatus().getDate());
+    }
+
+    @Test
+    public void updateCustomPriorityTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
+        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
+
+        ClinicalPriorityValue priority = configuration.getPriorities().get(1);
+
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setPriority(new PriorityParam(priority.getId()));
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
+                updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(),
+                sessionIdUser).first();
+        assertEquals(priority.getId(), ca.getPriority().getId());
+        assertEquals(priority.getDescription(), ca.getPriority().getDescription());
+        assertEquals(priority.getRank(), ca.getPriority().getRank());
+        assertNotNull(ca.getPriority().getDate());
+    }
+
+    @Test
+    public void updateCustomFlagTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
+        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
+
+        FlagValue flag1 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(1);
+        FlagValue flag2 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(3);
+
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setFlags(Arrays.asList(new FlagValueParam(flag1.getId()), new FlagValueParam(flag2.getId())));
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
+                updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(),
+                sessionIdUser).first();
+        assertEquals(2, ca.getFlags().size());
+        assertEquals(flag1.getId(), ca.getFlags().get(0).getId());
+        assertEquals(flag1.getDescription(), ca.getFlags().get(0).getDescription());
+        assertNotNull(ca.getFlags().get(0).getDate());
+
+        assertEquals(flag2.getId(), ca.getFlags().get(1).getId());
+        assertEquals(flag2.getDescription(), ca.getFlags().get(1).getDescription());
+        assertNotNull(ca.getFlags().get(1).getDate());
+    }
+
+    @Test
+    public void updateCustomConsentTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
+        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
+
+        List<ClinicalConsent> consents = configuration.getConsent().getConsents();
+        Map<String, ClinicalConsent> consentMap = new HashMap<>();
+        for (ClinicalConsent consent : consents) {
+            consentMap.put(consent.getId(), consent);
+        }
+
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setConsent(new ClinicalConsentAnnotationParam(Collections.singletonList(
+                        new ClinicalConsentAnnotationParam.ClinicalConsentParam(consents.get(1).getId(), ClinicalConsentParam.Value.YES))));
+        OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
+                updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(),
+                sessionIdUser).first();
+        assertEquals(consents.size(), ca.getConsent().getConsents().size());
+        assertNotNull(ca.getConsent().getDate());
+
+        for (ClinicalConsentParam consent : ca.getConsent().getConsents()) {
+            assertTrue(consentMap.containsKey(consent.getId()));
+            assertEquals(consentMap.get(consent.getId()).getDescription(), consent.getDescription());
+            assertEquals(consentMap.get(consent.getId()).getName(), consent.getName());
+            if (consent.getId().equals(consents.get(1).getId())) {
+                assertEquals(ClinicalConsentParam.Value.YES, consent.getValue());
+            } else {
+                assertEquals(ClinicalConsentParam.Value.UNKNOWN, consent.getValue());
+            }
+        }
+    }
+
+    @Test
+    public void updateInterpretationCustomStatusTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
+        InterpretationStudyConfiguration configuration = study.getConfiguration().getClinical().getInterpretation();
+
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, true);
+        StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
+
+        InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
+                .setStatus(new StatusParam(status.getId()));
+        OpenCGAResult<Interpretation> update = catalogManager.getInterpretationManager().update(STUDY, dummyEnvironment.first().getId(),
+                dummyEnvironment.first().getInterpretation().getId(), updateParams, null, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, update.getNumUpdated());
+
+        Interpretation interpretation = catalogManager.getInterpretationManager().get(STUDY,
+                dummyEnvironment.first().getInterpretation().getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(status.getId(), interpretation.getStatus().getId());
+        assertEquals(status.getDescription(), interpretation.getStatus().getDescription());
+        assertNotNull(interpretation.getStatus().getDate());
     }
 
     @Test

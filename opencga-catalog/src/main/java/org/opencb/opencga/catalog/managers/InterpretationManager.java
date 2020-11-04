@@ -357,7 +357,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public OpenCGAResult<Interpretation> clear(String studyStr, String clinicalAnalysisId, List<String> interpretationList, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -877,7 +877,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.STATUS.key())) {
             interpretation.setStatus(updateParams.getStatus().toCustomStatus());
             validateCustomStatusParameters(clinicalAnalysis, interpretation, interpretationConfiguration);
-            parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), updateParams.getStatus().toCustomStatus());
+            parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), interpretation.getStatus());
         }
 
         return interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as, options);

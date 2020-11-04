@@ -426,6 +426,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         CONFIGURATION("configuration", OBJECT, ""),
+        CONFIGURATION_CLINICAL("configuration.clinical", OBJECT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),

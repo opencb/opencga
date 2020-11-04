@@ -53,20 +53,22 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS("status", OBJECT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         QUALITY_CONTROL("qualityControl", OBJECT, ""),
-        CONSENT("consent", TEXT_ARRAY, ""),
-        PRIORITY("priority", TEXT, ""),
+        CONSENT("consent", OBJECT, ""),
+        PRIORITY("priority", OBJECT, ""),
+        PRIORITY_ID("priority.id", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
         ANALYST_ID("analyst.id", TEXT, ""),
         ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
-        FLAGS("flags", TEXT_ARRAY, ""),
+        FLAGS("flags", OBJECT, ""),
+        FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
         LOCKED("locked", BOOLEAN, ""),
 

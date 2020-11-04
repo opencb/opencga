@@ -82,23 +82,25 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
     public static final QueryOptions INCLUDE_CLINICAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final QueryOptions INCLUDE_CATALOG_DATA = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.FILES.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
     public static final QueryOptions INCLUDE_CLINICAL_INTERPRETATIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -565,7 +567,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     private void validateCustomConsentParameters(ClinicalAnalysis clinicalAnalysis,
                                                  ClinicalAnalysisStudyConfiguration clinicalConfiguration) throws CatalogException {
         // Consent definition
-        if (clinicalConfiguration.getConsent() == null || CollectionUtils.isEmpty(clinicalAnalysis.getConsent().getConsents())) {
+        if (clinicalConfiguration.getConsent() == null || CollectionUtils.isEmpty(clinicalConfiguration.getConsent().getConsents())) {
             throw new CatalogException("Missing consent configuration in study. Please add a valid set of consents to the study"
                     + " configuration.");
         }
@@ -1208,23 +1210,22 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.PRIORITY.key())) {
             clinicalAnalysis.setPriority(updateParams.getPriority().toClinicalPriorityAnnotation());
             validateCustomPriorityParameters(clinicalAnalysis, clinicalConfiguration);
-            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PRIORITY.key(), updateParams.getPriority().toClinicalPriorityAnnotation());
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PRIORITY.key(), clinicalAnalysis.getPriority());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key())) {
             clinicalAnalysis.setFlags(updateParams.getFlags().stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()));
             validateCustomFlagParameters(clinicalAnalysis, clinicalConfiguration);
-            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(),
-                    updateParams.getFlags().stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()));
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), clinicalAnalysis.getFlags());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key())) {
             clinicalAnalysis.setConsent(updateParams.getConsent().toClinicalConsentAnnotation());
             validateCustomConsentParameters(clinicalAnalysis, clinicalConfiguration);
-            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key(), updateParams.getConsent().toClinicalConsentAnnotation());
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key(), clinicalAnalysis.getConsent());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
             clinicalAnalysis.setStatus(updateParams.getStatus().toCustomStatus());
             validateCustomStatusParameters(clinicalAnalysis, clinicalConfiguration);
-            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), updateParams.getStatus().toCustomStatus());
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), clinicalAnalysis.getStatus());
         }
 
         ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_CLINICAL_ANALYSIS,
