@@ -48,7 +48,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
-import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
