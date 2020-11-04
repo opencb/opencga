@@ -39,8 +39,10 @@ if (getLatestUpdate() < 2) {
 // # 1673
 if (getLatestUpdate() < 3) {
     print("\nStarting migration 3...");
+
     // The clinical configuration will be autocompleted during migration by Java
     db.study.update({"configuration": {"$exists": false}}, {"$set": {"configuration": {"clinical": {}}}}, {"multi": true});
+
     migrateCollection("clinical", {"consent.consents": {"$exists": false}}, {"creationDate": 1, "priority": 1, "status": 1}, function (bulk, doc) {
         var clinicalParams = {
             "consent": {
@@ -62,6 +64,18 @@ if (getLatestUpdate() < 3) {
         };
 
         bulk.find({"_id": doc._id}).updateOne({"$set": clinicalParams});
+    });
+
+    migrateCollection("interpretation", {"status.id": {"$exists": false}}, {"status": 1, "creationDate": 1}, function (bulk, doc) {
+        var updateParams = {
+            "status": {
+                "id": doc.status,
+                "description": "",
+                "date": doc.creationDate
+            }
+        };
+
+        bulk.find({"_id": doc._id}).updateOne({"$set": updateParams});
     });
     setLatestUpdate(3);
 } else {
