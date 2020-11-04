@@ -313,10 +313,11 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
                 // Create default study configuration
                 for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                    String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
                     if (project.getStudies() != null) {
                         for (Study study : project.getStudies()) {
                             logger.info("Updating study configuration from study {}", study.getFqn());
-                            catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), adminToken);
+                            catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
                         }
                     }
                 }
