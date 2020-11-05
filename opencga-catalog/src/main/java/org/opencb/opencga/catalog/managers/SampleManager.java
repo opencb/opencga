@@ -17,8 +17,11 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
@@ -1275,17 +1278,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return aclResultList;
     }
 
-    private List<Long> getIndividualsUidsFromSampleUids(long studyUid, List<Long> sampleUids) throws CatalogException {
-        // Look for all the individuals owning the samples
-        Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
-
-        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(query, IndividualManager.INCLUDE_INDIVIDUAL_IDS);
-
-        return individualDataResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList());
-    }
-
     public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
             throws CatalogException, IOException {
         String userId = userManager.getUserId(token);
@@ -1325,4 +1317,74 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
     }
 
+    private List<Long> getIndividualsUidsFromSampleUids(long studyUid, List<Long> sampleUids) throws CatalogException {
+        // Look for all the individuals owning the samples
+        Query query = new Query()
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids);
+
+        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(query, IndividualManager.INCLUDE_INDIVIDUAL_IDS);
+
+        return individualDataResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList());
+    }
+
+    private void fixUpdateParams(SampleUpdateParams sampleUpdateParams) {
+        if (sampleUpdateParams.getQualityControl() == null
+                || CollectionUtils.isEmpty(sampleUpdateParams.getQualityControl().getMetrics())) {
+            return;
+        }
+
+        String variableSetId = "opencga_sample_variant_stats";
+        List<AnnotationSet> annotationSetList = new LinkedList<>();
+        for (SampleQualityControlMetrics metric : sampleUpdateParams.getQualityControl().getMetrics()) {
+            if (CollectionUtils.isNotEmpty(metric.getVariantStats())) {
+                for (SampleQcVariantStats variantStat : metric.getVariantStats()) {
+                    SampleVariantStats stats = variantStat.getStats();
+                    if (stats != null) {
+                        Map<String, Integer> indelLengthCount = new HashMap<>();
+                        if (stats.getIndelLengthCount() != null) {
+                            indelLengthCount.put("lt5", stats.getIndelLengthCount().getLt5());
+                            indelLengthCount.put("lt10", stats.getIndelLengthCount().getLt10());
+                            indelLengthCount.put("lt15", stats.getIndelLengthCount().getLt15());
+                            indelLengthCount.put("lt20", stats.getIndelLengthCount().getLt20());
+                            indelLengthCount.put("gte20", stats.getIndelLengthCount().getGte20());
+                        }
+
+                        Map<String, Integer> depthCount = new HashMap<>();
+                        if (stats.getDepthCount() != null) {
+                            depthCount.put("na", stats.getDepthCount().getNa());
+                            depthCount.put("lt5", stats.getDepthCount().getLt5());
+                            depthCount.put("lt10", stats.getDepthCount().getLt10());
+                            depthCount.put("lt15", stats.getDepthCount().getLt15());
+                            depthCount.put("lt20", stats.getDepthCount().getLt20());
+                            depthCount.put("gte20", stats.getDepthCount().getGte20());
+                        }
+
+                        Map<String, Object> annotations = new HashMap<>();
+                        annotations.put("variantCount", stats.getVariantCount());
+                        annotations.put("chromosomeCount", stats.getChromosomeCount());
+                        annotations.put("typeCount", stats.getTypeCount());
+                        annotations.put("genotypeCount", stats.getGenotypeCount());
+                        annotations.put("indelLengthCount", indelLengthCount);
+                        annotations.put("filterCount", stats.getFilterCount());
+                        annotations.put("tiTvRatio", stats.getTiTvRatio());
+                        annotations.put("qualityAvg", stats.getQualityAvg());
+                        annotations.put("qualityStdDev", stats.getQualityStdDev());
+                        annotations.put("heterozygosityRate", stats.getHeterozygosityRate());
+                        annotations.put("consequenceTypeCount", stats.getConsequenceTypeCount());
+                        annotations.put("biotypeCount", stats.getBiotypeCount());
+                        annotations.put("clinicalSignificanceCount", stats.getClinicalSignificanceCount());
+                        annotations.put("mendelianErrorCount", stats.getMendelianErrorCount());
+                        annotations.put("depthCount", depthCount);
+
+                        annotationSetList.add(new AnnotationSet(variableSetId + "__" + variantStat.getId(), variableSetId, annotations));
+                    }
+                }
+            }
+        }
+
+        if (!annotationSetList.isEmpty()) {
+            sampleUpdateParams.setAnnotationSets(annotationSetList);
+        }
+    }
 }

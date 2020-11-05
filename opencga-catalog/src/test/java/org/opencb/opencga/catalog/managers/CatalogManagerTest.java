@@ -346,7 +346,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testModifyStudy() throws Exception {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        String studyId =  catalogManager.getStudyManager().get(query, null, token).first().getId();
+        String studyId =  catalogManager.getStudyManager().search(query, null, token).first().getId();
 
         String newName = "Phase 1 " + RandomStringUtils.randomAlphanumeric(20);
         String newDescription = RandomStringUtils.randomAlphanumeric(500);
@@ -382,27 +382,27 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null, null, null, token).first().getId();
 
-        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
+        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
                 .collect(Collectors.toSet()));
 
 //        catalogManager.getStudyManager().createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
         catalogManager.getStudyManager().updateGroup(study_4, "admins", ParamUtils.UpdateAction.SET,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
-        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
+        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, token).getResults().stream().map(Study::getId)
                 .collect(Collectors.toSet()));
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")),
-                catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, token)
+                catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, token)
                         .getResults().stream().map(Study::getId).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")),
-                catalogManager.getStudyManager().get(new Query(), null, token).getResults().stream().map(Study::getId)
+                catalogManager.getStudyManager().search(new Query(), null, token).getResults().stream().map(Study::getId)
                         .collect(Collectors.toSet()));
-        assertEquals(new HashSet<>(Arrays.asList("study_1", "study_2", "study_3", "study_4")), catalogManager.getStudyManager().get(new
+        assertEquals(new HashSet<>(Arrays.asList("study_1", "study_2", "study_3", "study_4")), catalogManager.getStudyManager().search(new
                 Query(StudyDBAdaptor.QueryParams.ID.key(), "~^study"), null, token).getResults().stream()
                 .map(Study::getId).collect(Collectors.toSet()));
-        assertEquals(Collections.singleton("s1"), catalogManager.getStudyManager().get(new Query(), null, sessionIdUser2).getResults()
+        assertEquals(Collections.singleton("s1"), catalogManager.getStudyManager().search(new Query(), null, sessionIdUser2).getResults()
                 .stream()
                 .map(Study::getId).collect(Collectors.toSet()));
     }
@@ -681,7 +681,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateJob() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        String studyId = catalogManager.getStudyManager().get(query, null, token).first().getId();
+        String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
 
         catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), token);
         catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), token);
@@ -722,7 +722,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testGetAllJobs() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        String studyId = catalogManager.getStudyManager().get(query, null, token).first().getId();
+        String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
 
         catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, token);
 
@@ -737,7 +737,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testJobsTop() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        List<Study> studies = catalogManager.getStudyManager().get(query, null, token).getResults();
+        List<Study> studies = catalogManager.getStudyManager().search(query, null, token).getResults();
         System.out.println(studies.size());
 
         for (int i = 99; i > 0; i--) {

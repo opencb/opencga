@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -116,7 +117,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getProjectIdByStudyUid(studyId);
     }
 
-    public List<Study> resolveIds(List<String> studyList, String userId) throws CatalogException {
+    List<Study> resolveIds(List<String> studyList, String userId) throws CatalogException {
         if (studyList == null || studyList.isEmpty() || (studyList.size() == 1 && studyList.get(0).endsWith("*"))) {
             String studyStr = "*";
             if (studyList != null && !studyList.isEmpty()) {
@@ -133,11 +134,11 @@ public class StudyManager extends AbstractManager {
         return returnList;
     }
 
-    public Study resolveId(String studyStr, String userId) throws CatalogException {
+    Study resolveId(String studyStr, String userId) throws CatalogException {
         return resolveId(studyStr, userId, null);
     }
 
-    public Study resolveId(String studyStr, String userId, QueryOptions options) throws CatalogException {
+    Study resolveId(String studyStr, String userId, QueryOptions options) throws CatalogException {
         OpenCGAResult<Study> studyDataResult = smartResolutor(studyStr, userId, options);
 
         if (studyDataResult.getNumResults() > 1) {
@@ -444,7 +445,7 @@ public class StudyManager extends AbstractManager {
             }
             auditManager.auditInfo(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return studyDataResult;
+            return filterResults(studyDataResult);
         } catch (CatalogException e) {
             auditManager.auditInfo(userId, Enums.Resource.STUDY, studyStr, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -471,7 +472,7 @@ public class StudyManager extends AbstractManager {
                 }
             }
         }
-        return result;
+        return filterResults(result);
     }
 
     /**
@@ -484,7 +485,7 @@ public class StudyManager extends AbstractManager {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Study> get(String projectStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public OpenCGAResult<Study> search(String projectStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(projectStr, "project");
         ParamUtils.defaultObject(query, Query::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
@@ -506,7 +507,7 @@ public class StudyManager extends AbstractManager {
         query.putIfNotNull(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), auxProject);
         query.putIfNotNull(StudyDBAdaptor.QueryParams.OWNER.key(), auxOwner);
 
-        return get(query, options, sessionId);
+        return search(query, options, sessionId);
     }
 
     /**
@@ -518,7 +519,7 @@ public class StudyManager extends AbstractManager {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Study> get(Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Study> search(Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
@@ -538,12 +539,25 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, qOptions, userId);
             auditManager.auditSearch(userId, Enums.Resource.STUDY, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return studyDataResult;
+            return filterResults(studyDataResult);
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, Enums.Resource.STUDY, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    private OpenCGAResult<Study> filterResults(OpenCGAResult<Study> result) {
+        if (CollectionUtils.isEmpty(result.getResults())) {
+            return result;
+        }
+        for (Study studyResult : result.getResults()) {
+            // Filter out internal variable sets
+            if (CollectionUtils.isNotEmpty(studyResult.getVariableSets())) {
+                studyResult.getVariableSets().removeIf(VariableSet::isInternal);
+            }
+        }
+        return result;
     }
 
     /**

@@ -23,6 +23,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -104,7 +105,7 @@ public class CatalogUtils {
         if (isValidParam(query, VariantCatalogQueryUtils.PROJECT)) {
             String project = query.getString(VariantCatalogQueryUtils.PROJECT.key());
             return catalogManager.getStudyManager()
-                    .get(project, new Query(), new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
+                    .search(project, new Query(), new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)
@@ -119,14 +120,13 @@ public class CatalogUtils {
                         Collections.singleton(VariantField.STUDIES));
             } else {
                 // Get all studies from user.
-                String userId = catalogManager.getUserManager().getUserId(sessionId);
-                return catalogManager.getStudyManager().resolveIds(Collections.emptyList(), userId)
+                return catalogManager.getStudyManager().search(new Query(), StudyManager.INCLUDE_STUDY_ID, sessionId).getResults()
                         .stream()
                         .map(Study::getFqn)
                         .collect(Collectors.toList());
             }
         }
-        return catalogManager.getStudyManager().resolveIds(studies, catalogManager.getUserManager().getUserId(sessionId))
+        return catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_ID, false, sessionId).getResults()
                 .stream()
                 .map(Study::getFqn)
                 .collect(Collectors.toList());

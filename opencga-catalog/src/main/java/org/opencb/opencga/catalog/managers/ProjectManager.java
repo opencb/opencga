@@ -489,7 +489,7 @@ public class ProjectManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Project project = resolveId(projectStr, userId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(query, new QueryOptions(QueryOptions.INCLUDE,
+        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(query, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.ID.key())), sessionId);
 
         Map<String, Object> result = new HashMap<>();

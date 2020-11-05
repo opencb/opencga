@@ -56,7 +56,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
     }
 
     protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {
-        return catalogManager.getStudyManager().get(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies" +
+        return catalogManager.getStudyManager().search(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies" +
                 ".alias"), sessionId)
                 .getResults()
                 .stream()

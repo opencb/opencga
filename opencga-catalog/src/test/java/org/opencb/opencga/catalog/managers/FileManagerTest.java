@@ -591,7 +591,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFolder() throws Exception {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user2");
-        Study study = catalogManager.getStudyManager().get(query, QueryOptions.empty(), sessionIdUser2).first();
+        Study study = catalogManager.getStudyManager().search(query, QueryOptions.empty(), sessionIdUser2).first();
         Set<String> paths = fileManager.search(study.getFqn(), new Query("type", File.Type.DIRECTORY), new
                 QueryOptions(), sessionIdUser2)
                 .getResults().stream().map(File::getPath).collect(Collectors.toSet());

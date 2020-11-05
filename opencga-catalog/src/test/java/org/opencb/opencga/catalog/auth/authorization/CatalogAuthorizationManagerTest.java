@@ -439,7 +439,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 studyAdmin1SessionId);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), group, new StudyAclParams("", "admin"), SET, ownerSessionId);
 
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, studyAdminUser1);
+        Study study = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), studyAdmin1SessionId).first();
         DataResult<Map<String, List<String>>> studyAcls = catalogManager.getAuthorizationManager().getStudyAcl(studyAdminUser1,
                 study.getUid(), group);
         assertEquals(1, studyAcls.getNumResults());
