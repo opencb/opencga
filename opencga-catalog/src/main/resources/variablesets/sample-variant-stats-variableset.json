@@ -231,7 +231,23 @@
     "description" : "Variants count group by clinical significance. e.g. benign, likely_benign, likely_pathogenic, pathogenic, uncertain_significance  ....  Each counter is increased at most one per variant. If multiple variant traits have the same clinical significance, it will count as one.",
     "variableSet" : null,
     "attributes" : null
-  } ],
+  }, {
+    "id" : "depthCount",
+    "name" : "depthCount",
+    "category" : "",
+    "type" : "MAP_INTEGER",
+    "defaultValue" : null,
+    "required" : false,
+    "multiValue" : false,
+    "allowedValues" : null,
+    "allowedKeys" : ["na","lt20", "lt5", "gte20", "lt10", "lt15"],
+    "rank" : 15,
+    "dependsOn" : null,
+    "description" : "Depth count",
+    "variableSet" : null,
+    "attributes" : null
+  }
+  ],
   "entities" : [ "SAMPLE" ],
   "release" : 0,
   "attributes" : {

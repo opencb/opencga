@@ -1361,6 +1361,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         }
 
                         Map<String, Object> annotations = new HashMap<>();
+                        annotations.put("id", variantStat.getId());
                         annotations.put("variantCount", stats.getVariantCount());
                         annotations.put("chromosomeCount", stats.getChromosomeCount());
                         annotations.put("typeCount", stats.getTypeCount());
