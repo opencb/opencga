@@ -12,7 +12,7 @@ catalog:
     password: "FILL_ME"
 
 cellbase:
-  host: "FILL_ME"
+  host: "http://bioinfo.hpc.cam.ac.uk/cellbase"
 
 analysis:
   index:
