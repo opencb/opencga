@@ -28,6 +28,16 @@ function migrateCollection(collection, query, projection, migrateFunc) {
     migrateCollectionDifferentCollection(collection, collection, query, projection, migrateFunc);
 }
 
+function runUpdate(updateCount, migrateFunction) {
+    if (getLatestUpdate() < updateCount) {
+        print("Starting migration " + updateCount + "...");
+        migrateFunction();
+        setLatestUpdate(updateCount);
+    } else {
+        print("Skipping migration " + updateCount + "...");
+    }
+}
+
 function isNotUndefinedOrNull(obj) {
     return typeof obj !== 'undefined' && obj !== null;
 }
