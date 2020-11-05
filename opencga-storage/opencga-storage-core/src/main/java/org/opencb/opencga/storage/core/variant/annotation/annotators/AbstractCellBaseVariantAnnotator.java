@@ -136,9 +136,9 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
             // If Variant is SV some work is needed
             // TODO:Manage larger SV variants
             int length = Math.max(variant.getLength(), variant.getAlternate().length() + variant.getReference().length());
-            boolean skipVariant = length > variantLengthThreshold;
-            skipVariant |= !supportStarAlternate && variant.getAlternate().equals("*");
-            if (skipVariant) {
+            boolean skipLength = length > variantLengthThreshold;
+            boolean skipStarAlternate = !supportStarAlternate && variant.getAlternate().equals("*");
+            if (skipLength) {
 //                logger.info("Skip variant! {}", genomicVariant);
                 logger.info("Skip variant! {}", variant.getChromosome() + ":" + variant.getStart() + "-" + variant.getEnd() + ":"
                         + (variant.getReference().length() > 10
@@ -148,6 +148,8 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                         ? variant.getAlternate().substring(0, 10) + "...[" + variant.getAlternate().length() + "]"
                         : variant.getAlternate())
                 );
+                logger.debug("Skip variant! {}", variant);
+            } else if (skipStarAlternate) {
                 logger.debug("Skip variant! {}", variant);
             } else {
                 nonStructuralVariants.add(variant);
