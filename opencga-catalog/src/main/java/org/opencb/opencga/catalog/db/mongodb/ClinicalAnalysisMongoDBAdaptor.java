@@ -47,6 +47,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -222,11 +223,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedBooleanParams = {LOCKED.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.PRIORITY.key(), QueryParams.DUE_DATE.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
-                QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(),
+                QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
                 QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
@@ -280,13 +281,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.FLAGS.key(), ParamUtils.UpdateAction.ADD);
         switch (operation) {
             case SET:
-                filterStringListParams(parameters, document.getSet(), objectAcceptedParams);
+                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
             case REMOVE:
-                filterStringListParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFlagsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
-                filterStringListParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
                 throw new IllegalStateException("Unknown operation " + basicOperation);
@@ -345,6 +347,20 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
         parameters.put(COMMENTS.key(), commentParamList);
+    }
+
+    static void fixFlagsForRemoval(ObjectMap parameters) {
+        if (parameters.get(FLAGS.key()) == null) {
+            return;
+        }
+
+        List<FlagValueParam> flagParamList = new LinkedList<>();
+        for (Object comment : parameters.getAsList(FLAGS.key())) {
+            if (comment instanceof FlagAnnotation) {
+                flagParamList.add(FlagValueParam.of((FlagAnnotation) comment));
+            }
+        }
+        parameters.put(FLAGS.key(), flagParamList);
     }
 
     @Override
@@ -864,8 +880,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         andBsonList.add(Filters.or(queryList));
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(STATUS_NAME.key(), queryParam.key(), queryCopy, STATUS_NAME.type(), andBsonList);
+                    case STATUS_ID:
+                        addAutoOrQuery(STATUS_ID.key(), queryParam.key(), queryCopy, STATUS_ID.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
@@ -884,14 +900,21 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         break;
                     case ANALYST:
                     case ANALYST_ID:
-                        addAutoOrQuery(ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(ANALYST_ID.key(), queryParam.key(), queryCopy, ANALYST_ID.type(), andBsonList);
+                        break;
+                    case FLAGS:
+                    case FLAGS_ID:
+                        addAutoOrQuery(FLAGS_ID.key(), queryParam.key(), queryCopy, FLAGS_ID.type(), andBsonList);
+                        break;
+                    case PRIORITY:
+                    case PRIORITY_ID:
+                        addAutoOrQuery(PRIORITY_ID.key(), queryParam.key(), queryCopy, PRIORITY_ID.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
                     case TYPE:
                     case DUE_DATE:
-                    case PRIORITY:
                     case LOCKED:
                     case PROBAND_SAMPLES_ID:
                     case PROBAND_SAMPLES_UID:
@@ -899,7 +922,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case DESCRIPTION:
                     case RELEASE:
                     case INTERNAL_STATUS_DATE:
-                    case FLAGS:
                     case ACL:
                     case ACL_MEMBER:
                     case ACL_PERMISSIONS:

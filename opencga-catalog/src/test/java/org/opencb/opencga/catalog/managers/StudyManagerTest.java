@@ -20,10 +20,14 @@ import org.apache.avro.Schema;
 import org.apache.solr.common.StringUtils;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
@@ -31,7 +35,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class StudyManagerTest extends AbstractManagerTest {
 
@@ -84,5 +88,29 @@ public class StudyManagerTest extends AbstractManagerTest {
             }
             variable.setVariableSet(new LinkedHashSet<>(l));
         }
+    }
+
+    @Test
+    public void updateClinicalConfiguration() throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+                null, null, null, new QueryOptions(), token).first();
+        assertNotNull(study.getConfiguration());
+        assertNotNull(study.getConfiguration().getClinical());
+        assertFalse(study.getConfiguration().getClinical().getPriorities().isEmpty());
+        assertFalse(study.getConfiguration().getClinical().getFlags().isEmpty());
+        assertFalse(study.getConfiguration().getClinical().getStatus().isEmpty());
+
+        ClinicalAnalysisStudyConfiguration configuration = new ClinicalAnalysisStudyConfiguration(Collections.emptyMap(), null,
+                Collections.emptyList(), Collections.emptyMap(), null);
+        StudyUpdateParams updateParams = new StudyUpdateParams()
+                .setConfiguration(new StudyConfiguration(configuration));
+        catalogManager.getStudyManager().update("newStudy", updateParams, QueryOptions.empty(), token);
+
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        assertNotNull(study.getConfiguration());
+        assertNotNull(study.getConfiguration().getClinical());
+        assertTrue(study.getConfiguration().getClinical().getPriorities().isEmpty());
+        assertTrue(study.getConfiguration().getClinical().getFlags().isEmpty());
+        assertTrue(study.getConfiguration().getClinical().getStatus().isEmpty());
     }
 }

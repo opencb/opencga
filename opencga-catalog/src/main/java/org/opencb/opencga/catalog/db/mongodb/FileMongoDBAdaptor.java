@@ -192,15 +192,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 }
             }
         } else {
-            // We add an additional tag because we will need to process the samples in a task afterwards
-            List<String> tags = file.getTags() != null ? new ArrayList<>(file.getTags()) : new ArrayList<>(1);
-            tags.add(ParamConstants.FILE_SAMPLES_NOT_PROCESSED);
-            file.setTags(tags);
-
-            Map<String, Object> attributes = file.getAttributes() != null ? new HashMap<>(file.getAttributes()) : new HashMap<>();
-            attributes.put(ParamConstants.FILE_NON_EXISTING_SAMPLES, fileConverter.convertSamples(nonExistingSamples, false));
-            attributes.put(ParamConstants.FILE_EXISTING_SAMPLES, fileConverter.convertSamples(existingSamples, false));
-            file.setAttributes(attributes);
+            // We change the internal status of the file
+            file.getInternal().setStatus(new FileStatus(FileStatus.MISSING_SAMPLES,
+                    nonExistingSamples.size() + existingSamples.size() + " missing samples"));
+            file.getInternal().setMissingSamples(new MissingSamples(
+                    existingSamples.stream().map(Sample::getId).collect(Collectors.toList()),
+                    nonExistingSamples.stream().map(Sample::getId).collect(Collectors.toList())));
         }
 
         //new file uid
@@ -668,7 +665,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         String[] acceptedObjectParams = {QueryParams.INTERNAL_INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key(),
-                QueryParams.STATUS.key()};
+                QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());

@@ -676,8 +676,8 @@ public class FileManager extends AnnotationSetManager<File> {
             if (parents) {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
-                        new FileInternal(new FileStatus(FileStatus.READY), new FileIndex(), Collections.emptyMap()), 0,
-                        Collections.emptyList(), null, "", Collections.emptyMap(), Collections.emptyMap());
+                        new FileInternal(new FileStatus(FileStatus.READY), new FileIndex(), Collections.emptyMap(), new MissingSamples()),
+                        0, Collections.emptyList(), null, "", Collections.emptyMap(), Collections.emptyMap());
                 validateNewFile(study, parentFile, sessionId, false);
                 parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, sessionId)
                         .first().getUid();

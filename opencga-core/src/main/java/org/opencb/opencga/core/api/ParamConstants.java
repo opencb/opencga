@@ -130,14 +130,6 @@ public class ParamConstants {
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
     public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
 
-    /**
-     * Used when a file is linked and its samples are not associated because their number is too high. This string is added to the list
-     * of tags.
-     */
-    public static final String FILE_SAMPLES_NOT_PROCESSED = "OPENCGA_SAMPLES_NOT_PROCESSED";
-    public static final String FILE_NON_EXISTING_SAMPLES = "OPENCGA_NON_EXISTING_SAMPLES";
-    public static final String FILE_EXISTING_SAMPLES = "OPENCGA_EXISTING_SAMPLES";
-
     // ---------------------------------------------
 
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";

@@ -17,11 +17,13 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -45,7 +47,10 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParam;
+import org.opencb.opencga.core.models.common.StatusValue;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -229,7 +234,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             throws CatalogException {
         // We check if the user can create interpretations in the clinical analysis
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -246,7 +251,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
                     userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-            validateNewInterpretation(study, interpretation, clinicalAnalysis.getId(), userId);
+            validateNewInterpretation(study, interpretation, clinicalAnalysis, userId);
 
             ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
                     "Create interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
@@ -267,14 +272,20 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
     }
 
-    void validateNewInterpretation(Study study, Interpretation interpretation, String clinicalAnalysisId, String userId)
+    void validateNewInterpretation(Study study, Interpretation interpretation, ClinicalAnalysis clinicalAnalysis, String userId)
             throws CatalogException {
+        if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null
+                || study.getConfiguration().getClinical().getInterpretation() == null) {
+            throw new CatalogException("Unexpected error: InterpretationConfiguration is null");
+        }
+        InterpretationStudyConfiguration interpretationConfiguration = study.getConfiguration().getClinical().getInterpretation();
+
         ParamUtils.checkObj(interpretation, "Interpretation");
-        ParamUtils.checkParameter(clinicalAnalysisId, "ClinicalAnalysisId");
+        ParamUtils.checkParameter(clinicalAnalysis.getId(), "ClinicalAnalysisId");
 
         ParamUtils.checkAlias(interpretation.getId(), "id");
 
-        interpretation.setClinicalAnalysisId(clinicalAnalysisId);
+        interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
         interpretation.setCreationDate(TimeUtils.getTime());
         interpretation.setModificationDate(TimeUtils.getTime());
@@ -286,11 +297,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setPrimaryFindings(ParamUtils.defaultObject(interpretation.getPrimaryFindings(), Collections.emptyList()));
         interpretation.setSecondaryFindings(ParamUtils.defaultObject(interpretation.getSecondaryFindings(), Collections.emptyList()));
         interpretation.setComments(ParamUtils.defaultObject(interpretation.getComments(), Collections.emptyList()));
-        interpretation.setStatus(ParamUtils.defaultString(interpretation.getStatus(), ""));
+        interpretation.setStatus(ParamUtils.defaultObject(interpretation.getStatus(), Status::new));
         interpretation.setRelease(studyManager.getCurrentRelease(study));
         interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
         interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
+
+        // Validate custom status
+        validateCustomStatusParameters(clinicalAnalysis, interpretation, interpretationConfiguration);
 
         if (!interpretation.getComments().isEmpty()) {
             // Fill author and date
@@ -317,10 +331,33 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
     }
 
+    private void validateCustomStatusParameters(ClinicalAnalysis clinicalAnalysis, Interpretation interpretation,
+                                                InterpretationStudyConfiguration interpretationConfiguration) throws CatalogException {
+        // Status
+        if (interpretationConfiguration.getStatus() == null
+                || CollectionUtils.isEmpty(interpretationConfiguration.getStatus().get(clinicalAnalysis.getType()))) {
+            throw new CatalogException("Missing status configuration in study for type '" + clinicalAnalysis.getType()
+                    + "'. Please add a proper set of valid statuses.");
+        }
+        if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
+            Map<String, StatusValue> statusMap = new HashMap<>();
+            for (StatusValue status : interpretationConfiguration.getStatus().get(clinicalAnalysis.getType())) {
+                statusMap.put(status.getId(), status);
+            }
+            if (!statusMap.containsKey(interpretation.getStatus().getId())) {
+                throw new CatalogException("Unknown status '" + interpretation.getStatus().getId() + "'. The list of valid statuses is: '"
+                        + String.join(",", statusMap.keySet()) + "'");
+            }
+            StatusValue statusValue = statusMap.get(interpretation.getStatus().getId());
+            interpretation.getStatus().setDescription(statusValue.getDescription());
+            interpretation.getStatus().setDate(TimeUtils.getTime());
+        }
+    }
+
     public OpenCGAResult<Interpretation> clear(String studyStr, String clinicalAnalysisId, List<String> interpretationList, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -364,7 +401,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
                         Collections.emptyList(), TimeUtils.getTime(), Collections.emptyList(), Collections.emptyList(),
-                        Collections.emptyList(), new ObjectMap());
+                        Collections.emptyList(), new ObjectMap(), new StatusParam());
 
                 ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CLEAR_INTERPRETATION,
                         "Clear interpretation '" + interpretationId + "'", TimeUtils.getTime());
@@ -538,7 +575,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -609,7 +646,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -706,7 +743,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -779,6 +816,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     private OpenCGAResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams,
                                  List<ClinicalAudit> clinicalAuditList,  ParamUtils.SaveInterpretationAs as, QueryOptions options,
                                  String userId) throws CatalogException {
+        if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null
+                || study.getConfiguration().getClinical().getInterpretation() == null) {
+            throw new CatalogException("Unexpected error: InterpretationConfiguration is null");
+        }
+        InterpretationStudyConfiguration interpretationConfiguration = study.getConfiguration().getClinical().getInterpretation();
+
         // Check if user has permissions to write clinical analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
@@ -829,6 +872,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkAlias(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
                     InterpretationDBAdaptor.QueryParams.ID.key());
+        }
+
+        if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.STATUS.key())) {
+            interpretation.setStatus(updateParams.getStatus().toCustomStatus());
+            validateCustomStatusParameters(clinicalAnalysis, interpretation, interpretationConfiguration);
+            parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), interpretation.getStatus());
         }
 
         return interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as, options);

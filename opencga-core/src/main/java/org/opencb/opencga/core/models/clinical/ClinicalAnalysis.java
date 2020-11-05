@@ -20,12 +20,16 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotation;
+import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityAnnotation;
 
 import java.util.List;
 import java.util.Map;
@@ -53,11 +57,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Interpretation interpretation;
     private List<Interpretation> secondaryInterpretations;
 
-    private ClinicalConsent consent;
+    private ClinicalConsentAnnotation consent;
 
     private ClinicalAnalyst analyst;
-    private Enums.Priority priority;
-    private List<String> flags;
+    private ClinicalPriorityAnnotation priority;
+    private List<FlagAnnotation> flags;
 
     private String creationDate;
     private String modificationDate;
@@ -71,7 +75,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private ClinicalAnalysisInternal internal;
     private Map<String, Object> attributes;
 
-    private CustomStatus status;
+    private Status status;
 
     public enum Type {
         SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
@@ -83,10 +87,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
                             Family family, boolean locked, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
-                            ClinicalConsent consent, ClinicalAnalyst analyst, Enums.Priority priority, List<String> flags,
-                            String creationDate, String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
-                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
-                            Map<String, Object> attributes, CustomStatus status) {
+                            ClinicalConsentAnnotation consent, ClinicalAnalyst analyst, ClinicalPriorityAnnotation priority,
+                            List<FlagAnnotation> flags, String creationDate, String modificationDate, String dueDate, int release,
+                            List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit,
+                            ClinicalAnalysisInternal internal, Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -247,11 +251,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public ClinicalConsent getConsent() {
+    public ClinicalConsentAnnotation getConsent() {
         return consent;
     }
 
-    public ClinicalAnalysis setConsent(ClinicalConsent consent) {
+    public ClinicalAnalysis setConsent(ClinicalConsentAnnotation consent) {
         this.consent = consent;
         return this;
     }
@@ -265,20 +269,20 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Enums.Priority getPriority() {
+    public ClinicalPriorityAnnotation getPriority() {
         return priority;
     }
 
-    public ClinicalAnalysis setPriority(Enums.Priority priority) {
+    public ClinicalAnalysis setPriority(ClinicalPriorityAnnotation priority) {
         this.priority = priority;
         return this;
     }
 
-    public List<String> getFlags() {
+    public List<FlagAnnotation> getFlags() {
         return flags;
     }
 
-    public ClinicalAnalysis setFlags(List<String> flags) {
+    public ClinicalAnalysis setFlags(List<FlagAnnotation> flags) {
         this.flags = flags;
         return this;
     }
@@ -364,11 +368,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public ClinicalAnalysis setStatus(CustomStatus status) {
+    public ClinicalAnalysis setStatus(Status status) {
         this.status = status;
         return this;
     }

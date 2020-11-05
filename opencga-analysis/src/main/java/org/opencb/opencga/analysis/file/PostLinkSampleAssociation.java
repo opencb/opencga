@@ -11,16 +11,15 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 @Tool(id = PostLinkSampleAssociation.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
         description = PostLinkSampleAssociation.DESCRIPTION)
@@ -33,10 +32,10 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     @Override
     protected void run() throws Exception {
         // Obtain an iterator to get all the files that were link and not associated to any of its samples
-        Query fileQuery = new Query(FileDBAdaptor.QueryParams.TAGS.key(), ParamConstants.FILE_SAMPLES_NOT_PROCESSED);
+        Query fileQuery = new Query(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.MISSING_SAMPLES);
         QueryOptions options = new QueryOptions(FileManager.INCLUDE_FILE_URI_PATH);
         List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
-        includeList.add(FileDBAdaptor.QueryParams.ATTRIBUTES.key());
+        includeList.add(FileDBAdaptor.QueryParams.INTERNAL_MISSING_SAMPLES.key());
         options.put(QueryOptions.INCLUDE, includeList);
         options.put(QueryOptions.LIMIT, 20);
 
@@ -47,72 +46,78 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
             }
 
             for (File file : fileResult.getResults()) {
-                List<String> sampleList = new LinkedList<>();
-
                 // Process samples that need to be created first
-                List<Map<String, Object>> sampleMapList = (List<Map<String, Object>>) file.getAttributes()
-                        .get(ParamConstants.FILE_NON_EXISTING_SAMPLES);
-                for (Map<String, Object> sampleMap : sampleMapList) {
-                    Sample sample = convertToSample(sampleMap);
+                if (file.getInternal() != null && file.getInternal().getMissingSamples() != null) {
+                    List<String> sampleList = new LinkedList<>();
 
-                    Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sample.getId());
-                    OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(study, sampleQuery,
-                            SampleManager.INCLUDE_SAMPLE_IDS, token);
+                    if (file.getInternal().getMissingSamples().getNonExisting() != null) {
+                        for (String sampleId : file.getInternal().getMissingSamples().getNonExisting()) {
+                            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
+                            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(study, sampleQuery,
+                                    SampleManager.INCLUDE_SAMPLE_IDS, token);
 
-                    if (sampleResult.getNumResults() == 1) {
-                        sample = sampleResult.first();
-                    } else {
-                        // Sample still doesn't exist, so we create it
-                        sampleResult = catalogManager.getSampleManager().create(study, sample, QueryOptions.empty(), token);
-                        if (sampleResult.getNumResults() != 1) {
-                            throw new CatalogException("Could not create sample '" + sample.getId() + "'");
+                            if (sampleResult.getNumResults() != 1) {
+                                // Sample still doesn't exist, so we create it
+                                sampleResult = catalogManager.getSampleManager().create(study, new Sample().setId(sampleId),
+                                        QueryOptions.empty(), token);
+                                if (sampleResult.getNumResults() != 1) {
+                                    throw new CatalogException("Could not create sample '" + sampleId + "'");
+                                }
+                            }
+
+                            sampleList.add(sampleId);
                         }
-                        sample = sampleResult.first();
                     }
 
-                    sampleList.add(sample.getId());
-                }
+                    if (file.getInternal().getMissingSamples().getExisting() != null) {
+                        // Process existing samples
+                        sampleList.addAll(file.getInternal().getMissingSamples().getExisting());
+                    }
 
-                // Process existing samples
-                sampleMapList = (List<Map<String, Object>>) file.getAttributes().get(ParamConstants.FILE_EXISTING_SAMPLES);
-                sampleList.addAll(convertToSamples(sampleMapList).stream().map(Sample::getId).collect(Collectors.toList()));
+                    // Create sample batches
+                    int batchSize = 1000;
+                    List<List<String>> sampleListList = new ArrayList<>((sampleList.size() / batchSize) + 1);
+                    // Create batches
+                    List<String> currentList = null;
+                    for (int i = 0; i < sampleList.size(); i++) {
+                        if (i % batchSize == 0) {
+                            currentList = new ArrayList<>(batchSize);
+                            sampleListList.add(currentList);
+                        }
 
-                // Update file
-                Map<String, Object> attributes = file.getAttributes();
-                attributes.remove(ParamConstants.FILE_EXISTING_SAMPLES);
-                attributes.remove(ParamConstants.FILE_NON_EXISTING_SAMPLES);
+                        currentList.add(sampleList.get(i));
+                    }
 
-                FileUpdateParams fileUpdateParams = new FileUpdateParams()
-                        .setSampleIds(sampleList)
-                        .setTags(Collections.singletonList(ParamConstants.FILE_SAMPLES_NOT_PROCESSED))
-                        .setAttributes(attributes);
-                ObjectMap actionMap = new ObjectMap()
-                        .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD)
-                        .append(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.REMOVE);
-                QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
-                OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(study, file.getUuid(), fileUpdateParams,
-                        queryOptions, token);
-                if (fileUpdateResult.getNumUpdated() != 1) {
-                    throw new CatalogException("Could not update file '" + file.getPath() + "'.");
+                    // Update file
+                    ObjectMap actionMap = new ObjectMap()
+                            .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD);
+
+                    for (List<String> auxSampleList : sampleListList) {
+                        FileUpdateParams fileUpdateParams = new FileUpdateParams()
+                                .setSampleIds(auxSampleList)
+                                .setInternal(new SmallFileInternal(new FileStatus(FileStatus.READY), MissingSamples.initialize()));
+
+                        QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+
+                        OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(study, file.getUuid(),
+                                fileUpdateParams, queryOptions, token);
+                        if (fileUpdateResult.getNumUpdated() != 1) {
+                            throw new CatalogException("Could not update sample list of file '" + file.getPath() + "'.");
+                        }
+                    }
+
+                    // Now that all the samples are updated, we update the internal status
+                    FileUpdateParams fileUpdateParams = new FileUpdateParams()
+                            .setInternal(new SmallFileInternal(new FileStatus(FileStatus.READY), MissingSamples.initialize()));
+
+                    OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(study, file.getUuid(), fileUpdateParams,
+                            QueryOptions.empty(), token);
+                    if (fileUpdateResult.getNumUpdated() != 1) {
+                        throw new CatalogException("Could not update internal status of file '" + file.getPath() + "'.");
+                    }
                 }
             }
         }
     }
-
-    private Sample convertToSample(Map<String, Object> sampleMap) {
-        return new Sample()
-                .setUid(Long.valueOf(String.valueOf(sampleMap.get(SampleDBAdaptor.QueryParams.UID.key()))))
-                .setUuid(String.valueOf(sampleMap.get(SampleDBAdaptor.QueryParams.UUID.key())))
-                .setId(String.valueOf(sampleMap.get(SampleDBAdaptor.QueryParams.ID.key())));
-    }
-
-    private List<Sample> convertToSamples(List<Map<String, Object>> sampleMapList) {
-        List<Sample> sampleList = new ArrayList<>(sampleMapList.size());
-        for (Map<String, Object> sampleMap : sampleMapList) {
-            sampleList.add(convertToSample(sampleMap));
-        }
-        return sampleList;
-    }
-
 }
