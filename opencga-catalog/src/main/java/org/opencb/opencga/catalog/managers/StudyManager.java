@@ -366,8 +366,8 @@ public class StudyManager extends AbstractManager {
                 if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
                     logger.debug("Skip already existing variable set " + vs.getId());
                 } else {
-                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
-                            vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
+                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.isInternal(),
+                            vs.getDescription(), vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
                 }
             }
         }
@@ -1094,8 +1094,9 @@ public class StudyManager extends AbstractManager {
      * Variables Methods
      */
     OpenCGAResult<VariableSet> createVariableSet(Study study, String id, String name, Boolean unique, Boolean confidential,
-                                                 String description, Map<String, Object> attributes, List<Variable> variables,
-                                                 List<VariableSet.AnnotableDataModels> entities, String sessionId) throws CatalogException {
+                                                 boolean internal, String description, Map<String, Object> attributes,
+                                                 List<Variable> variables, List<VariableSet.AnnotableDataModels> entities, String sessionId)
+            throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(variables, "Variables from VariableSet");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -1124,7 +1125,7 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Error. Repeated variables");
         }
 
-        VariableSet variableSet = new VariableSet(id, name, unique, confidential, description, variablesSet, entities,
+        VariableSet variableSet = new VariableSet(id, name, unique, confidential, internal, description, variablesSet, entities,
                 getCurrentRelease(study), attributes);
         AnnotationUtils.checkVariableSet(variableSet);
 
@@ -1155,8 +1156,8 @@ public class StudyManager extends AbstractManager {
                 .append("entities", entities)
                 .append("token", token);
         try {
-            OpenCGAResult<VariableSet> queryResult = createVariableSet(study, id, name, unique, confidential, description, attributes,
-                    variables, entities, token);
+            OpenCGAResult<VariableSet> queryResult = createVariableSet(study, id, name, unique, confidential, false, description,
+                    attributes, variables, entities, token);
             auditManager.audit(userId, Enums.Action.ADD_VARIABLE_SET, Enums.Resource.STUDY, queryResult.first().getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;

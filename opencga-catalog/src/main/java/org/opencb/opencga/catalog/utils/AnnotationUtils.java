@@ -432,9 +432,9 @@ public class AnnotationUtils {
                 for (Object object : listValues) {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
                         Map objectMap = (Map) object;
-                        checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, variable.getDescription(),
-                                variable.getVariableSet(), null, 1, null), new AnnotationSet("", variable.getId(), objectMap, null, 1,
-                                null), null, true);
+                        checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, false,
+                                variable.getDescription(), variable.getVariableSet(), null, 1, null),
+                                new AnnotationSet("", variable.getId(), objectMap, null, 1, null), null, true);
                     }
                 }
                 break;
