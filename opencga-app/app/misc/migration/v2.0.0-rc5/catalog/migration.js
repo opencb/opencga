@@ -58,7 +58,7 @@ if (getLatestUpdate() < 3) {
             "flags": [],
             "status": {
                 "id": doc.status.name,
-                "description": doc.status.description,
+                "description": "",
                 "date": doc.status.date
             }
         };
