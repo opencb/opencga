@@ -29,6 +29,14 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Associate samples to files that were linked and could not associate their samples because "
             + "the number of samples contained was too high.";
 
+    private final PostLinkToolParams postLinkParams = new PostLinkToolParams();
+
+    @Override
+    protected void check() throws Exception {
+        postLinkParams.updateParams(params);
+        super.check();
+    }
+
     @Override
     protected void run() throws Exception {
         // Obtain an iterator to get all the files that were link and not associated to any of its samples
