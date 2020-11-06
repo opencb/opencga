@@ -3,7 +3,9 @@ package org.opencb.opencga.app.cli.internal.executors;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.app.cli.internal.options.FileCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.file.PostLinkToolParams;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,13 +87,14 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         FileCommandOptions.PostlinkCommandOptions options = fileCommandOptions.postlinkCommandOptions;
 
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
-        PostLinkSampleAssociation postlink = new PostLinkSampleAssociation();
-        postlink.setStudy(options.studyId);;
-        postlink.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
-        postlink.start();
+        ObjectMap params = new PostLinkToolParams(
+                options.files)
+                .toObjectMap(options.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, options.studyId);
+
+        toolRunner.execute(PostLinkSampleAssociation.class, params, outDir, fileCommandOptions.internalJobOptions.jobId, token);
     }
 
     private void fetch() throws ToolException {

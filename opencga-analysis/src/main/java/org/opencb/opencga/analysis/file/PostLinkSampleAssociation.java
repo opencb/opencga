@@ -15,6 +15,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.PostLinkToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -29,6 +30,14 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     public static final String ID = "postlink";
     public static final String DESCRIPTION = "Associate samples to files that were linked and could not associate their samples because "
             + "the number of samples contained was too high.";
+
+    private final PostLinkToolParams postLinkParams = new PostLinkToolParams();
+
+    @Override
+    protected void check() throws Exception {
+        postLinkParams.updateParams(params);
+        super.check();
+    }
 
     @Override
     protected void run() throws Exception {

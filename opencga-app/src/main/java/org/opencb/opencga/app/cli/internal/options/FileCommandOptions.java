@@ -9,6 +9,8 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
 
+import java.util.List;
+
 @Parameters(commandNames = {"file"}, commandDescription = "Implement several file tasks")
 public class FileCommandOptions {
 
@@ -94,6 +96,9 @@ public class FileCommandOptions {
         @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
                 arity = 1)
         public String studyId;
+
+        @Parameter(names = {"--files"}, description = "List of files to associate samples.", arity = 1)
+        public List<String> files;
 
         @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
                 arity = 1)
