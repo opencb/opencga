@@ -86,24 +86,54 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 sampleMapList = (List<Map<String, Object>>) file.getAttributes().get(ParamConstants.FILE_EXISTING_SAMPLES);
                 sampleList.addAll(convertToSamples(sampleMapList).stream().map(Sample::getId).collect(Collectors.toList()));
 
+                // Create sample batches
+                int batchSize = 1000;
+                List<List<String>> sampleListList = new ArrayList<>((sampleList.size() / batchSize) + 1);
+                // Create batches
+                List<String> currentList = null;
+                for (int i = 0; i < sampleList.size(); i++) {
+                    if (i % batchSize == 0) {
+                        currentList = new ArrayList<>(batchSize);
+                        sampleListList.add(currentList);
+                    }
+
+                    currentList.add(sampleList.get(i));
+                }
+
                 // Update file
+                ObjectMap actionMap = new ObjectMap()
+                        .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD);
+
+                for (List<String> auxSampleList : sampleListList) {
+                    FileUpdateParams fileUpdateParams = new FileUpdateParams()
+                            .setSampleIds(auxSampleList);
+
+                    QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+
+                    OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(study, file.getUuid(),
+                            fileUpdateParams, queryOptions, token);
+                    if (fileUpdateResult.getNumUpdated() != 1) {
+                        throw new CatalogException("Could not update sample list of file '" + file.getPath() + "'.");
+                    }
+                }
+
+                // Now that all the samples are updated, we update the internal status
                 Map<String, Object> attributes = file.getAttributes();
                 attributes.remove(ParamConstants.FILE_EXISTING_SAMPLES);
                 attributes.remove(ParamConstants.FILE_NON_EXISTING_SAMPLES);
 
                 FileUpdateParams fileUpdateParams = new FileUpdateParams()
-                        .setSampleIds(sampleList)
                         .setTags(Collections.singletonList(ParamConstants.FILE_SAMPLES_NOT_PROCESSED))
                         .setAttributes(attributes);
-                ObjectMap actionMap = new ObjectMap()
-                        .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD)
+                actionMap = new ObjectMap()
                         .append(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.REMOVE);
                 QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 OpenCGAResult<File> fileUpdateResult = catalogManager.getFileManager().update(study, file.getUuid(), fileUpdateParams,
                         queryOptions, token);
+
                 if (fileUpdateResult.getNumUpdated() != 1) {
-                    throw new CatalogException("Could not update file '" + file.getPath() + "'.");
+                    throw new CatalogException("Could not update internal status of file '" + file.getPath() + "'.");
                 }
             }
         }
