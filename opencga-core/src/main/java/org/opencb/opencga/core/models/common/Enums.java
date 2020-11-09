@@ -107,12 +107,14 @@ public final class Enums {
 
     public enum Action {
         CREATE,
+        GENERATE,
         CLEAR,
         UPDATE,
         MERGE,
         INFO,
         SEARCH,
         COUNT,
+        DISTINCT,
         DELETE,
         DOWNLOAD,
         VIEW_LOG,
@@ -177,7 +179,8 @@ public final class Enums {
         URGENT(1),
         HIGH(2),
         MEDIUM(3),
-        LOW(4);
+        LOW(4),
+        UNKNOWN(5);
 
         private int value;
 

@@ -67,3 +67,36 @@ function isEmptyArray(arr) {
 function isNotEmptyArray(arr) {
     return typeof arr !== 'undefined' && arr !== null && arr.length > 0;
 }
+
+// Auxiliary methods to write in metadata the latest update run to avoid running the same thing again
+var version = undefined;
+var latestUpdate = undefined;
+
+function setOpenCGAVersion(version) {
+    db.metadata.update({}, {"$set": {"version": version}});
+}
+
+function setLatestUpdate(latestUpdate) {
+    db.metadata.update({}, {"$set": {"_latestUpdate": latestUpdate}});
+}
+
+function getOpenCGAVersion() {
+    if (typeof latestUpdate === "undefined") {
+        var metadata = db.metadata.findOne({}, {"version": 1, "_latestUpdate": 1});
+        version = metadata.version;
+        latestUpdate = metadata._latestUpdate;
+    }
+    return version;
+}
+
+function getLatestUpdate() {
+    if (typeof latestUpdate === "undefined") {
+        var metadata = db.metadata.findOne({}, {"version": 1, "_latestUpdate": 1});
+        version = metadata.version;
+        latestUpdate = metadata._latestUpdate;
+    }
+    if (typeof latestUpdate === "undefined") {
+        latestUpdate = 0;
+    }
+    return latestUpdate;
+}

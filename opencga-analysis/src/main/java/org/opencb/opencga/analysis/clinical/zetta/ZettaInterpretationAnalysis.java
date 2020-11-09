@@ -154,7 +154,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         if (config == null) {
             // Try to load
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            Path configPath = Paths.get(opencgaHome).resolve("analysis/zetta-interpretation.yml");
+            Path configPath = getOpencgaHome().resolve("analysis/zetta-interpretation.yml");
             System.out.println("configPath = " + configPath);
             if (configPath.toFile().exists()) {
                 FileInputStream fis = new FileInputStream(configPath.toFile());

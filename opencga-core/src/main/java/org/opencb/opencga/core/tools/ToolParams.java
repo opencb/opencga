@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.google.common.base.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
@@ -74,6 +75,11 @@ public abstract class ToolParams {
             for (Map.Entry<String, Class<?>> entry : loadPropertiesMap().entrySet()) {
                 if (Collection.class.isAssignableFrom(entry.getValue())) {
                     copy.put(entry.getKey(), copy.getAsStringList(entry.getKey()));
+                } else if (boolean.class == entry.getValue()) {
+                    Object value = copy.get(entry.getKey());
+                    if (value instanceof String && ((String) value).isEmpty()) {
+                        copy.put(entry.getKey(), true);
+                    }
                 }
             }
             objectMapper.updateValue(this, copy);
@@ -84,9 +90,14 @@ public abstract class ToolParams {
         }
     }
 
-    public static <T> T fromParams(Class<T> clazz, Map<String, ?> params) {
-        ObjectMapper objectMapper = getObjectMapper();
-        return objectMapper.convertValue(params, clazz);
+    public static <T extends ToolParams> T fromParams(Class<T> clazz, Map<String, ?> params) {
+        try {
+            T t = clazz.newInstance();
+            t.updateParams(new HashMap<>(params));
+            return t;
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw Throwables.propagate(e);
+        }
     }
 
     private static ObjectMapper getObjectMapper() {
@@ -108,7 +119,8 @@ public abstract class ToolParams {
                     if (value.equals("true")) {
                         map.put(key, "");
                     }
-                } else if (fieldClass != null && Map.class.isAssignableFrom(fieldClass) || ToolParams.class.isAssignableFrom(fieldClass)) {
+                } else if (fieldClass != null
+                        && (Map.class.isAssignableFrom(fieldClass) || ToolParams.class.isAssignableFrom(fieldClass))) {
                     map.put(key, params.getMap(key));
                 } else {
                     map.put(key, value);

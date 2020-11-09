@@ -262,8 +262,14 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     }
 
     public static class JobOptions {
-        @Parameter(names = {"--job-id"}, description = "Job id executing the command line", arity = 1)
+        @Parameter(names = {"--job"}, description = "Job id executing the command line", arity = 1)
         public String jobId;
+
+        @Parameter(names = {"--job-id"}, hidden = true, description = "Deprecated, use --job", arity = 1)
+        @Deprecated
+        public void setJobId(String job) {
+            this.jobId = job;
+        }
     }
 
     /**

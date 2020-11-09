@@ -113,33 +113,33 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         return Enums.Resource.INDIVIDUAL;
     }
 
-    @Override
-    OpenCGAResult<Individual> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
-        }
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (individualDataResult.getNumResults() == 0) {
-            individualDataResult = individualDBAdaptor.get(queryCopy, queryOptions);
-            if (individualDataResult.getNumResults() == 0) {
-                throw new CatalogException("Individual " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the individual " + entry);
-            }
-        } else if (individualDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
-            throw new CatalogException("More than one individual found based on " + entry);
-        } else {
-            return individualDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Individual> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(IndividualDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+//        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+//        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+//        if (individualDataResult.getNumResults() == 0) {
+//            individualDataResult = individualDBAdaptor.get(queryCopy, queryOptions);
+//            if (individualDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Individual " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the individual " + entry);
+//            }
+//        } else if (individualDataResult.getNumResults() > 1 && !queryCopy.getBoolean(Constants.ALL_VERSIONS)) {
+//            throw new CatalogException("More than one individual found based on " + entry);
+//        } else {
+//            return individualDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Individual> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
@@ -152,6 +152,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+
+        boolean versioned = queryCopy.getBoolean(Constants.ALL_VERSIONS)
+                || queryCopy.containsKey(IndividualDBAdaptor.QueryParams.VERSION.key());
+        if (versioned && uniqueList.size() > 1) {
+            throw new CatalogException("Only one individual allowed when requesting multiple versions");
+        }
 
         Function<Individual, String> individualStringFunction = Individual::getId;
         IndividualDBAdaptor.QueryParams idQueryParam = null;
@@ -176,8 +182,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || individualDataResult.getNumResults() >= uniqueList.size()) {
-            return keepOriginalOrder(uniqueList, individualStringFunction, individualDataResult, ignoreException,
-                    queryCopy.getBoolean(Constants.ALL_VERSIONS));
+            return keepOriginalOrder(uniqueList, individualStringFunction, individualDataResult, ignoreException, versioned);
         }
         // Query without adding the user check
         OpenCGAResult<Individual> resultsNoCheck = individualDBAdaptor.get(queryCopy, queryOptions);
@@ -409,6 +414,44 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             return queryResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    @Override
+    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("field", new Query(query))
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            IndividualDBAdaptor.QueryParams param = IndividualDBAdaptor.QueryParams.getParam(field);
+            if (param == null) {
+                throw new CatalogException("Unknown '" + field + "' parameter.");
+            }
+            Class<?> clazz = getTypeClass(param.type());
+
+            fixQuery(study, query, userId);
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, query);
+
+            query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            OpenCGAResult<?> result = individualDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+
+            auditManager.auditDistinct(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditDistinct(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -795,8 +838,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> individualIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, individualIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> individualIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, individualIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> individualIds, ObjectMap params, boolean ignoreException, String token)
@@ -865,8 +908,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)

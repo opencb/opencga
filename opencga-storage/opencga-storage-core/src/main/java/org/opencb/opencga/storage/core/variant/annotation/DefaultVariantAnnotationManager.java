@@ -117,7 +117,9 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             doLoad = true;
         }
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
-        if (!overwrite) {
+        if (overwrite) {
+            query.remove(VariantQueryParam.ANNOTATION_EXISTS.key());
+        } else {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
         int checkpointSize = params.getInt(

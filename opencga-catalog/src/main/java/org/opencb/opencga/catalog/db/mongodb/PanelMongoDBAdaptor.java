@@ -129,7 +129,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     Document getPanelDocumentForInsertion(ClientSession clientSession, Panel panel, long studyUid) {
         //new Panel Id
-        long panelUid = getNewUid(clientSession);
+        long panelUid = getNewUid();
         panel.setUid(panelUid);
         panel.setStudyUid(studyUid);
         if (StringUtils.isEmpty(panel.getUuid())) {
@@ -246,12 +246,6 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Bson bson = parseQuery(query, user);
         logger.debug("Panel count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(panelCollection.count(clientSession, bson));
-    }
-
-    @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return new OpenCGAResult(panelCollection.distinct(field, parseQuery(query)));
     }
 
     @Override
@@ -644,6 +638,16 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        return new OpenCGAResult(panelCollection.distinct(field, bson, clazz));
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);
@@ -711,6 +715,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
+
+        if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
+            queryCopy.put(Constants.ALL_VERSIONS, true);
+            queryCopy.remove(QueryParams.VERSION.key());
+        }
 
         boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
 

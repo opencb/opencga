@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -113,6 +114,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             if (skipDiscoverPendingVariantsToAnnotate(params)) {
                 logger.info("Skip MapReduce to discover variants to annotate.");
             } else {
+                boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
                 ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
                 long lastLoadedFileTs = projectMetadata.getAttributes()
                         .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
@@ -120,13 +122,15 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                         .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
 
                 // Skip MR if no file has been loaded since the last execution
-                if (lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
+                if (!overwrite && lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
                     logger.info("Skip MapReduce to discover variants to annotate. List of pending annotations to annotate is updated");
                 } else {
                     long ts = System.currentTimeMillis();
 
                     // Append all query to params to use the same filter also at the MR
-                    params = new ObjectMap(params).appendAll(query);
+                    params = new ObjectMap(params)
+                            .append(DiscoverPendingVariantsDriver.OVERWRITE, overwrite)
+                            .appendAll(query);
                     mrExecutor.run(DiscoverPendingVariantsDriver.class,
                             DiscoverPendingVariantsDriver.buildArgs(
                                     dbAdaptor.getVariantTable(), AnnotationPendingVariantsDescriptor.class, params),
@@ -167,15 +171,11 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     private boolean skipDiscoverPendingVariantsToAnnotate(ObjectMap params) {
-        // Skip if overwriting annotations, or if specific param
-        return params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false)
-                || params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
+        return params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
     }
 
     private boolean skipPendingVariantsToAnnotateTable(ObjectMap params) {
-        // Skip if overwriting annotations, or if specific param
-        return params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false)
-                || params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
+        return params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
     }
 
     @Override
@@ -221,9 +221,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
 
-        boolean skipSampleIndexAnnotation = params.getBoolean("skipSampleIndexAnnotation");
+        boolean sampleIndex = YesNoAuto.parse(params, VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key()).booleanValue(true);
 
-        if (skipSampleIndexAnnotation) {
+        if (!sampleIndex) {
             logger.info("Skip Sample Index Annotation");
             // Nothing to do!
             return;

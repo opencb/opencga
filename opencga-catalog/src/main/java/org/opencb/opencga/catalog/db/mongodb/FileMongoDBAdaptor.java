@@ -80,6 +80,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public static final String REVERSE_NAME = "_reverse";
     public static final String PRIVATE_SAMPLES = "_samples";
 
+    private int fileSampleLinkThreshold = 5000;
+
     /***
      * CatalogMongoFileDBAdaptor constructor.
      *
@@ -140,42 +142,66 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             nonExistingSamples = Collections.emptyList();
         }
 
-        // First we check if we need to create any samples and update current list of samples with the ones created
         List<Sample> samples = new ArrayList<>(existingSamples.size() + nonExistingSamples.size());
-        if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
-            for (Sample sample : nonExistingSamples) {
-                logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
+        if (existingSamples.size() + nonExistingSamples.size() < fileSampleLinkThreshold) {
+            // First we check if we need to create any samples and update current list of samples with the ones created
+            if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
+                // ------------ PROCESS NON-EXISTING SAMPLES --------------
+                for (Sample sample : nonExistingSamples) {
+                    logger.debug("Sample '{}' needs to be created. Inserting sample...", sample.getId());
 
-                // Sample needs to be created
-                sample.setFileIds(Collections.singletonList(file.getId()));
-                Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample, variableSetList);
-                samples.add(newSample);
-            }
+                    // Sample needs to be created
+                    sample.setFileIds(Collections.singletonList(file.getId()));
+                    Sample newSample = dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(clientSession, studyId, sample, variableSetList);
+                    samples.add(newSample);
+                }
 
-            // Process existing samples
-            for (Sample sample : existingSamples) {
-                logger.debug("Sample '{}' was already registered. Updating list of fileIds...", sample.getId());
+                // ------------ PROCESS EXISTING SAMPLES --------------
+                int batchSize = 1000;
+                List<List<Sample>> sampleListList = new ArrayList<>((existingSamples.size() / batchSize) + 1);
+                // Create batches
+                List<Sample> currentList = null;
+                for (int i = 0; i < existingSamples.size(); i++) {
+                    if (i % batchSize == 0) {
+                        currentList = new ArrayList<>(batchSize);
+                        sampleListList.add(currentList);
+                    }
 
-                // Update list of fileIds from sample
-                Query query = new Query()
-                        .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                        .append(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid());
+                    currentList.add(existingSamples.get(i));
+                }
+
                 ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
                 ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
                 UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
                         .updateFileReferences(params, sampleUpdateOptions);
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession,
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null),
-                        sampleUpdateDocument.toFinalUpdateDocument(), null);
+                for (List<Sample> sampleList : sampleListList) {
+                    logger.debug("Updating list of fileIds in batch of {} samples...", sampleList.size());
 
-                // Add sample to sampleList
-                samples.add(sample);
+                    // Update list of fileIds from sample
+                    Query query = new Query()
+                            .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                            .append(SampleDBAdaptor.QueryParams.UID.key(),
+                                    sampleList.stream().map(Sample::getUid).collect(Collectors.toList()));
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession,
+                            dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null),
+                            sampleUpdateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
+
+                    // Add sample to sampleList
+                    samples.addAll(sampleList);
+                }
             }
+        } else {
+            // We change the internal status of the file
+            file.getInternal().setStatus(new FileStatus(FileStatus.MISSING_SAMPLES,
+                    nonExistingSamples.size() + existingSamples.size() + " missing samples"));
+            file.getInternal().setMissingSamples(new MissingSamples(
+                    existingSamples.stream().map(Sample::getId).collect(Collectors.toList()),
+                    nonExistingSamples.stream().map(Sample::getId).collect(Collectors.toList())));
         }
 
         //new file uid
-        long fileUid = getNewUid(clientSession);
+        long fileUid = getNewUid();
         file.setUid(fileUid);
         file.setStudyUid(studyId);
         if (StringUtils.isEmpty(file.getUuid())) {
@@ -637,10 +663,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
-        // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
         String[] acceptedObjectParams = {QueryParams.INTERNAL_INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key(),
-                QueryParams.STATUS.key()};
+                QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -742,6 +767,16 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         return result;
+    }
+
+    @Override
+    public int getFileSampleLinkThreshold() {
+        return fileSampleLinkThreshold;
+    }
+
+    @Override
+    public void setFileSampleLinkThreshold(int numSamples) {
+        this.fileSampleLinkThreshold = numSamples;
     }
 
     OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document fileDocument, String status)
@@ -935,13 +970,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonDocument = parseQuery(query);
-        return new OpenCGAResult(fileCollection.distinct(field, bsonDocument));
-    }
-
-    @Override
     public OpenCGAResult stats(Query query) {
         return null;
     }
@@ -1131,6 +1159,16 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         Bson bsonQuery = parseQuery(query, user);
         return groupBy(fileCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+    }
+
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        return new OpenCGAResult<>(fileCollection.distinct(field, bson, clazz));
     }
 
     @Override

@@ -68,6 +68,7 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -121,7 +122,7 @@ public class OpenCGAWSServer {
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
-    protected static AtomicBoolean initialized;
+    public static AtomicBoolean initialized;
 
     protected static java.nio.file.Path opencgaHome;
 
@@ -174,6 +175,12 @@ public class OpenCGAWSServer {
             }
         }
 
+        // take the time for calculating the whole duration of the call
+        startTime = System.currentTimeMillis();
+
+        // Add session attributes. Used by the ParamExceptionMapper
+        httpServletRequest.getSession().setAttribute("startTime", startTime);
+
         // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
@@ -193,8 +200,9 @@ public class OpenCGAWSServer {
         queryOptions = new QueryOptions();
 
         parseParams();
-        // take the time for calculating the whole duration of the call
-        startTime = System.currentTimeMillis();
+
+        // Add session attributes. Used by the ParamExceptionMapper
+        httpServletRequest.getSession().setAttribute("requestDescription", requestDescription);
     }
 
     private void init() {
@@ -389,7 +397,7 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), Integer.parseInt(value));
                     break;
                 case QueryOptions.SKIP:
-                    int skip = Integer.parseInt(value);
+                    skip = Integer.parseInt(value);
                     queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
                     break;
                 case QueryOptions.SORT:
@@ -438,15 +446,16 @@ public class OpenCGAWSServer {
             }
         }
 
-        if (limit > MAX_LIMIT) {
+        if (!multivaluedMap.containsKey(QueryOptions.LIMIT)) {
+            limit = DEFAULT_LIMIT;
+        } else if (limit > MAX_LIMIT) {
             throw new ParamException.QueryParamException(new Throwable("'limit' value cannot be higher than '" + MAX_LIMIT + "'."),
                     "limit", "0");
-        }
-        if (limit < 0) {
+        } else if (limit < 0) {
             throw new ParamException.QueryParamException(new Throwable("'limit' must be a positive value lower or equal to '"
                     + MAX_LIMIT + "'."), "limit", "0");
         }
-        queryOptions.put(QueryOptions.LIMIT, multivaluedMap.containsKey(QueryOptions.LIMIT) ? limit : DEFAULT_LIMIT);
+        queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
 
 //      Exceptions
@@ -495,6 +504,10 @@ public class OpenCGAWSServer {
     }
 
     protected Response createErrorResponse(Throwable e) {
+        return createErrorResponse(e, startTime, apiVersion, requestDescription, params);
+    }
+
+    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription, ObjectMap params) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
@@ -508,15 +521,21 @@ public class OpenCGAWSServer {
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
         queryResponse.setResponses(Arrays.asList(result));
 
-        Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
-        if (e instanceof CatalogAuthorizationException) {
+        Response.StatusType errorStatus;
+        if (e instanceof WebApplicationException
+                && ((WebApplicationException) e).getResponse() != null
+                && ((WebApplicationException) e).getResponse().getStatusInfo() != null) {
+            errorStatus = ((WebApplicationException) e).getResponse().getStatusInfo();
+        } else if (e instanceof CatalogAuthorizationException) {
             errorStatus = Response.Status.FORBIDDEN;
         } else if (e instanceof CatalogAuthenticationException) {
             errorStatus = Response.Status.UNAUTHORIZED;
+        } else {
+            errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
         }
 
         Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
-        logResponse(response.getStatusInfo(), queryResponse);
+        logResponse(response.getStatusInfo(), queryResponse, startTime, requestDescription);
         return response;
     }
 
@@ -529,12 +548,6 @@ public class OpenCGAWSServer {
 
         Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
         logResponse(response.getStatusInfo(), dataResponse);
-        return response;
-    }
-
-    static Response createBadRequestResponse(String errorMessage, RestResponse dataResponse) {
-        addErrorEvent(dataResponse, errorMessage);
-        Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.BAD_REQUEST).build();
         return response;
     }
 
@@ -559,12 +572,18 @@ public class OpenCGAWSServer {
         response.getEvents().add(new Event(Event.Type.ERROR, message));
     }
 
-    private <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
+    private static <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
         if (response.getEvents() == null) {
             response.setEvents(new ArrayList<>());
         }
+        String message;
+        if (e instanceof ParamException.QueryParamException && e.getCause() != null) {
+            message = e.getCause().getMessage();
+        } else {
+            message = e.getMessage();
+        }
         response.getEvents().add(
-                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), e.getMessage()));
+                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), message));
     }
 
     // TODO: Change signature
@@ -633,7 +652,7 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2));
     }
 
-    protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
+    protected Response createOkResponse(InputStream o1, MediaType o2, String fileName) {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
@@ -648,10 +667,13 @@ public class OpenCGAWSServer {
     static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime, String requestDescription) {
         StringBuilder sb = new StringBuilder();
         try {
+            boolean ok;
             if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
                 sb.append("OK");
+                ok = true;
             } else {
                 sb.append("ERROR");
+                ok = false;
             }
             sb.append(" [").append(statusInfo.getStatusCode()).append(']');
 
@@ -670,7 +692,11 @@ public class OpenCGAWSServer {
                 }
             }
             sb.append(", ").append(requestDescription);
-            logger.info(sb.toString());
+            if (ok) {
+                logger.info(sb.toString());
+            } else {
+                logger.error(sb.toString());
+            }
         } catch (RuntimeException e) {
             logger.warn("Error logging response", e);
             logger.info(sb.toString()); // Print incomplete response

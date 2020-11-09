@@ -14,6 +14,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.APPROXIMATE_COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
@@ -87,7 +89,7 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
             long totalCount;
             if (variantsFromPrimary.hasNext()) {
                 if (!isValidParam(query, REGION)) {
-                    totalCount = estimateTotalCount(variantsFromPrimary, query);
+                    totalCount = estimateTotalCountFromChr1(variantsFromPrimary, query);
 //                } else if (sampleIndexDBAdaptor.isFastCount(sampleIndexQuery) && sampleIndexQuery.getSamplesMap().size() == 1) {
 //                    StopWatch stopWatch = StopWatch.createStarted();
 //                    Map.Entry<String, List<String>> entry = sampleIndexQuery.getSamplesMap().entrySet().iterator().next();
@@ -104,16 +106,16 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
                 totalCount = variantsFromPrimary.getCount();
             }
             long approxCount;
-            logger.info("numResults = " + numResults);
-            logger.info("numResultsFromPrimary = " + numVariantsFromPrimary);
-            logger.info("totalCountFromPrimary = " + totalCount);
+            logger.info("numResults final = " + numResults);
+            logger.info("numResultsFromPrimary (" + primarySource + ") = " + numVariantsFromPrimary);
+            logger.info("totalCountFromPrimary (" + primarySource + ") = " + totalCount);
 
             // Multiply first to avoid loss of precision
             approxCount = totalCount * numResults / numVariantsFromPrimary;
 
             logger.info("approxCount = " + approxCount);
             result.setApproximateCount(true);
-            result.setNumTotalResults(approxCount);
+            result.setNumMatches(approxCount);
             result.setApproximateCountSamplingSize(numVariantsFromPrimary);
         }
     }
@@ -148,7 +150,7 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
         return samplingSize;
     }
 
-    private long estimateTotalCount(VariantDBIteratorWithCounts variantsFromPrimary, Query query) {
+    private long estimateTotalCountFromChr1(VariantDBIteratorWithCounts variantsFromPrimary, Query query) {
         long totalCount;
         long chr1Count;
         StopWatch stopWatch = StopWatch.createStarted();
@@ -158,28 +160,41 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
             chr1Count = variantsFromPrimary.getChromosomeCount("1");
             boolean partial = false;
             Variant next = null;
+            int chr1CountThreshold = CHR1_COUNT_THRESHOLD;
             while ("1".equals(variantsFromPrimary.getCurrentChromosome()) && variantsFromPrimary.hasNext()) {
                 next = variantsFromPrimary.next();
                 i++;
                 chr1Count++;
-                if (chr1Count > CHR1_COUNT_THRESHOLD) {
-                    if (next.getChromosome().equals("1")) {
-                        partial = true;
+                if (chr1Count > chr1CountThreshold) {
+                    // Try to read chr1 size for at least 250ms
+                    if (stopWatch.getTime(TimeUnit.MILLISECONDS) < 250) {
+                        // If the elapsed time is less than 250ms, increase threshold to keep reading
+                        chr1CountThreshold += 100;
+                    } else {
+                        // If it has been reading for more than 250ms, and has reached the threshold, stop counting.
+                        if (next.getChromosome().equals("1")) {
+                            // Mark partial chr1 count
+                            partial = true;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
             if (partial) {
+                // Estimate chr1 size from partial count
                 chr1Count = ((long) (((float) chr1Count) / next.getStart() * CHR1_LENGTH));
             }
             if (i != 0) {
                 if (partial) {
-                    logger.info("Partial count variants from chr1, up to " + CHR1_COUNT_THRESHOLD + ", using the same iterator over the "
+                    logger.info("Partial count variants from chr1, up to " + chr1CountThreshold + ", using the same iterator over the "
                             + primarySource + " : Read " + i + " extra variants in " + TimeUtils.durationToString(stopWatch));
                 } else {
                     logger.info("Count variants from chr1 using the same iterator over the " + primarySource + " : "
                             + "Read " + i + " extra variants in " + TimeUtils.durationToString(stopWatch));
                 }
+            } else {
+                logger.info("Count variants from chr1 using the same iterator over the " + primarySource + " : "
+                        + "No extra variants read. Full chr1 already scanned.");
             }
         } else {
             query.put(REGION.key(), "1");
@@ -187,8 +202,9 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
             logger.info("Count variants from chr1 in " + primarySource + " : " + TimeUtils.durationToString(stopWatch));
         }
 
-        logger.info("chr1 count = " + chr1Count);
         totalCount = (long) (chr1Count * MAGIC_NUMBER);
+        logger.info("chr1 count = " + chr1Count + ". Total count estimation: " + totalCount
+                + " : " + TimeUtils.durationToString(stopWatch));
         return totalCount;
     }
 }

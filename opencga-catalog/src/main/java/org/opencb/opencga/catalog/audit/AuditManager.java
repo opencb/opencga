@@ -153,6 +153,11 @@ public class AuditManager {
         audit(userId, Enums.Action.COUNT, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
     }
 
+    public void auditDistinct(String userId, Enums.Resource resource, String studyId, String studyUuid, ObjectMap params,
+                            AuditRecord.Status status) {
+        audit(userId, Enums.Action.DISTINCT, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
+    }
+
     public void auditFacet(String userId, Enums.Resource resource, String studyId, String studyUuid, ObjectMap params,
                            AuditRecord.Status status) {
         audit(userId, Enums.Action.FACET, resource, "", "", studyUuid, studyId, params, status, new ObjectMap());

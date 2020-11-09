@@ -21,8 +21,21 @@ import org.opencb.opencga.core.api.ParamConstants;
 
 public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
 
+    protected String study;
+
+    @Override
+    protected void check() throws Exception {
+        super.check();
+        study = getStudyFqn();
+    }
+
     public void setStudy(String study) {
+        this.study = study;
         getParams().put(ParamConstants.STUDY_PARAM, study);
+    }
+
+    public String getStudy() {
+        return study;
     }
 
     protected final String getStudyFqn() throws CatalogException {

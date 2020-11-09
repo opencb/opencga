@@ -147,6 +147,8 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ParamConstants.ACL_PARAM, commandOptions.acl);
         params.putIfNotEmpty(ParamConstants.JOB_INPUT_FILES_PARAM, commandOptions.inputFiles);
         params.putIfNotEmpty(ParamConstants.JOB_OUTPUT_FILES_PARAM, commandOptions.outputFiles);
+        params.putIfNotEmpty(ParamConstants.JOB_EXECUTION_START_PARAM, commandOptions.executionStart);
+        params.putIfNotEmpty(ParamConstants.JOB_EXECUTION_END_PARAM, commandOptions.executionEnd);
         params.putAll(commandOptions.commonOptions.params);
 
         params.putIfNotNull(ParamConstants.RELEASE_PARAM, commandOptions.release);
@@ -174,7 +176,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(ParamConstants.JOB_PRIORITY_PARAM, c.priority);
         query.putAll(c.commonOptions.params);
 
-        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain).run();
+        new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();
     }
 
     private void log() throws Exception {

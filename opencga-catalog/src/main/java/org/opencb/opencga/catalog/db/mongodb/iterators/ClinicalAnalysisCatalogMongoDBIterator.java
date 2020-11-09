@@ -46,6 +46,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private FamilyDBAdaptor familyDBAdaptor;
     private IndividualDBAdaptor individualDBAdaptor;
     private InterpretationDBAdaptor interpretationDBAdaptor;
+    private QueryOptions familyQueryOptions;
+    private QueryOptions individualQueryOptions;
     private QueryOptions interpretationQueryOptions;
 
     private QueryOptions options;
@@ -79,6 +81,8 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
         this.interpretationQueryOptions = createInnerQueryOptions(INTERPRETATION.key(), false);
+        this.familyQueryOptions = createInnerQueryOptions(FAMILY.key(), false);
+        this.individualQueryOptions = createInnerQueryOptions(PROBAND.key(), false);
 
         this.clinicalAnalysisListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
@@ -277,13 +281,12 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 .append(FamilyDBAdaptor.QueryParams.VERSION.key(), familyUidVersions);
 
         List<Document> familyList;
-        QueryOptions options = new QueryOptions();
         try {
             if (user != null) {
                 query.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                familyList = familyDBAdaptor.nativeGet(studyUid, query, options, user).getResults();
+                familyList = familyDBAdaptor.nativeGet(studyUid, query, familyQueryOptions, user).getResults();
             } else {
-                familyList = familyDBAdaptor.nativeGet(query, options).getResults();
+                familyList = familyDBAdaptor.nativeGet(query, familyQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the families associated to the clinical analyses: {}", e.getMessage(), e);
@@ -335,14 +338,12 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), individualUids)
                 .append(IndividualDBAdaptor.QueryParams.VERSION.key(), individualUidVersions);
 
-
-        QueryOptions options = new QueryOptions();
         try {
             if (user != null) {
                 query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                individualList = individualDBAdaptor.nativeGet(studyUid, query, options, user).getResults();
+                individualList = individualDBAdaptor.nativeGet(studyUid, query, individualQueryOptions, user).getResults();
             } else {
-                individualList = individualDBAdaptor.nativeGet(query, options).getResults();
+                individualList = individualDBAdaptor.nativeGet(query, individualQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the individuals associated to the clinical analyses: {}", e.getMessage(), e);
@@ -417,10 +418,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             if (!includeList.isEmpty()) {
                 // If we only have include uid, there is no need for an additional query so we will set current options to native query
                 boolean includeAdditionalFields = includeList.stream().anyMatch(
-                        field -> !field.equals(UID)
+                        field -> !field.equals(UID) && !field.equals(VERSION)
                 );
                 if (includeAdditionalFields) {
                     includeList.add(UID);
+                    includeList.add(VERSION);
                     queryOptions.put(QueryOptions.INCLUDE, includeList);
                 } else {
                     // User wants to include fields already retrieved

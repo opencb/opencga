@@ -129,7 +129,7 @@ public class JobsLog {
                     content = secureOp(() -> openCGAClient.getJobClient().headLog(jobId, params).firstResult());
                 } else {
                     params.append("lines", c.tailLines);
-                    content = secureOp(() -> openCGAClient.getJobClient().headLog(jobId, params).firstResult());
+                    content = secureOp(() -> openCGAClient.getJobClient().tailLog(jobId, params).firstResult());
                 }
             } else {
                 params.put("lines", Math.min(maxLines - printedLines.get(), BATCH_SIZE));

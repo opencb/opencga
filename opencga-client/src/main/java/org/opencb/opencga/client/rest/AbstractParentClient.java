@@ -91,6 +91,9 @@ public abstract class AbstractParentClient {
         jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+        if (configuration.getRest().getTimeout() > 0) {
+            timeout = configuration.getRest().getTimeout();
+        }
         if (configuration.getRest().getQuery().getBatchSize() > 0) {
             batchSize = configuration.getRest().getQuery().getBatchSize();
         }

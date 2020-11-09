@@ -22,9 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
-import org.opencb.opencga.analysis.file.FileDeleteTask;
-import org.opencb.opencga.analysis.file.FileTsvAnnotationLoader;
+import org.opencb.opencga.analysis.file.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -40,6 +38,7 @@ import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.ToolParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -52,6 +51,8 @@ import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.util.*;
+
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 
 @Path("/{apiVersion}/files")
@@ -353,6 +354,40 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/distinct")
+    @ApiOperation(value = "File distinct method")
+    public Response distinct(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @DefaultValue("") @QueryParam("name") String name,
+            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @DefaultValue("") @QueryParam("path") String path,
+            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @DefaultValue("") @QueryParam("type") String type,
+            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @DefaultValue("") @QueryParam("directory") String directory,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @DefaultValue("") @QueryParam("description") String description,
+            @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
+            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @DefaultValue("") @QueryParam("size") String size,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sampleIds") String samples,
+            @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam("attributes") String attributes,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(fileManager.distinct(studyStr, field, query, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{folder}/list")
     @ApiOperation(value = "List all the files inside the folder", response = File.class)
     @ApiImplicitParams({
@@ -625,6 +660,32 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/postlink/run")
+    @ApiOperation(value = "Associate non-registered samples for files with high volumes of samples.", response = Job.class)
+    public Response postlink(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(name = "body", value = "File parameters", required = true) PostLinkToolParams params) {
+        return submitJob(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/link/run")
+    @ApiOperation(value = "Link an external file into catalog asynchronously.", response = Job.class)
+    public Response linkAsync(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(name = "body", value = "File parameters", required = true) FileLinkToolParams params) {
+        return submitJob(FileLinkTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+    }
+
     @DELETE
     @Path("/{files}/unlink")
     @ApiOperation(value = "Unlink linked files and folders", response = Job.class)
@@ -876,7 +937,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FileAclUpdateParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new FileAclUpdateParams());

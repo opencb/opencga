@@ -22,6 +22,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.common.StringUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -162,6 +164,9 @@ public class HBaseLockManager {
             // You win the lock if the first available lock is yours.
         } while (!readToken.equals(token));
 
+        if (stopWatch.getTime(TimeUnit.SECONDS) > 60) {
+            logger.warn("Slow HBase lock for column '" + Bytes.toStringBinary(column) + "': " + TimeUtils.durationToString(stopWatch));
+        }
         logger.debug("Won the lock with token " + token + " (" + token.hashCode() + ") from lock: " + Arrays.toString(lockValue));
         // Overwrite the lock with the winner current lock. Remove previous expired locks
         putCurrentLock(token, lockDuration, row, column);

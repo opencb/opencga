@@ -103,6 +103,16 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("description", sampleDataResult.getResults().get(2).getDescription());
         assertEquals("new description", sampleDataResult.getResults().get(3).getDescription());
 
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.VERSION.key(), "all");
+        sampleDataResult = catalogManager.getSampleManager().get(studyFqn, Collections.singletonList("testSample"),
+                query, null, false, token);
+        assertEquals(4, sampleDataResult.getNumResults());
+        assertEquals("description", sampleDataResult.getResults().get(0).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(1).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(2).getDescription());
+        assertEquals("new description", sampleDataResult.getResults().get(3).getDescription());
+
         // We want the last version of release 1
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.ID.key(), "testSample")
@@ -145,6 +155,24 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> testSample = catalogManager.getSampleManager()
                 .get(studyFqn, Collections.singletonList("testSample"), new Query(Constants.ALL_VERSIONS, true), null, false, token);
         assertEquals(4, testSample.getResults().size());
+    }
+
+    @Test
+    public void distinctTest() throws CatalogException {
+        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.ID.key(), null, token);
+        assertEquals(String.class.getName(), distinct.getResultType());
+        assertEquals(9, distinct.getNumResults());
+        assertEquals(9, distinct.getResults().size());
+
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.UID.key(), null, token);
+        assertEquals(Long.class.getName(), distinct.getResultType());
+        assertEquals(9, distinct.getNumResults());
+        assertEquals(9, distinct.getResults().size());
+
+        distinct = catalogManager.getSampleManager().distinct(studyFqn, SampleDBAdaptor.QueryParams.SOMATIC.key(), null, token);
+        assertEquals(Boolean.class.getName(), distinct.getResultType());
+        assertEquals(1, distinct.getNumResults());
+        assertEquals(1, distinct.getResults().size());
     }
 
     @Test

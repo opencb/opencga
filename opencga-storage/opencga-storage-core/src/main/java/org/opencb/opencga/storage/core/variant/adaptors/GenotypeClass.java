@@ -332,6 +332,9 @@ public enum GenotypeClass implements Predicate<String> {
         if (VariantQueryUtils.isNegated(gt)) {
             throw new IllegalStateException("Unable to parse negated genotype " + gt);
         }
+        if (NONE_GT_VALUE.equals(gt) || NA_GT_VALUE.equals(gt) || UNKNOWN_GENOTYPE.equals(gt)) {
+            return null;
+        }
         Genotype genotype;
         try {
             genotype = new Genotype(gt);

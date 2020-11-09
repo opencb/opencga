@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Created by pfurio on 06/07/16.
  */
-public interface AnnotationSetDBAdaptor<T> extends DBAdaptor<T> {
+public interface AnnotationSetDBAdaptor<T> extends CoreDBAdaptor<T> {
 
     /**
      * Obtains all the annotation sets from id or just the one matching with the annotationSetName if provided.

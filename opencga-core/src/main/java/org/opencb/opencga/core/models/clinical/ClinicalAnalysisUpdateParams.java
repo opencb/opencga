@@ -19,9 +19,9 @@ package org.opencb.opencga.core.models.clinical;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,6 @@ public class ClinicalAnalysisUpdateParams {
 
     private String id;
     private String description;
-    private ClinicalAnalysis.Type type;
     private DisorderReferenceParam disorder;
 
     private List<FileReferenceParam> files;
@@ -41,39 +40,38 @@ public class ClinicalAnalysisUpdateParams {
 //    private ProbandParam proband;
 //    private FamilyParam family
     private ClinicalAnalystParam analyst;
-    private ClinicalAnalysisInternal internal;
+    private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
-    private ClinicalConsent consent;
+    private ClinicalConsentAnnotationParam consent;
 
     private String dueDate;
     private List<ClinicalCommentParam> comments;
-    private Enums.Priority priority;
-    private List<String> flags;
+    private PriorityParam priority; // id
+    private List<FlagValueParam> flags; // id
 
     private Map<String, Object> attributes;
-    private CustomStatusParams status;
+    private StatusParam status;
 
     public ClinicalAnalysisUpdateParams() {
     }
 
-    public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
-                                        List<FileReferenceParam> files, Boolean locked, ClinicalAnalystParam analyst,
-                                        ClinicalAnalysisInternal internal, ClinicalConsent consent, String dueDate,
-                                        List<ClinicalCommentParam> comments, Enums.Priority priority, List<String> flags,
-                                        Map<String, Object> attributes, CustomStatusParams status) {
+    public ClinicalAnalysisUpdateParams(String id, String description, DisorderReferenceParam disorder, List<FileReferenceParam> files,
+                                        Boolean locked, ClinicalAnalystParam analyst, ClinicalConsentAnnotationParam consent,
+                                        String dueDate, ClinicalAnalysisQualityControlUpdateParam qualityControl,
+                                        List<ClinicalCommentParam> comments, PriorityParam priority, List<FlagValueParam> flags,
+                                        Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
-        this.type = type;
         this.disorder = disorder;
         this.files = files;
         this.locked = locked;
         this.analyst = analyst;
-        this.internal = internal;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
         this.priority = priority;
         this.flags = flags;
+        this.qualityControl = qualityControl;
         this.attributes = attributes;
         this.status = status;
     }
@@ -88,17 +86,16 @@ public class ClinicalAnalysisUpdateParams {
         final StringBuilder sb = new StringBuilder("ClinicalUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
         sb.append(", locked=").append(locked);
         sb.append(", analyst=").append(analyst);
-        sb.append(", internal=").append(internal);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
         sb.append('}');
@@ -139,15 +136,6 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public ClinicalAnalysis.Type getType() {
-        return type;
-    }
-
-    public ClinicalAnalysisUpdateParams setType(ClinicalAnalysis.Type type) {
-        this.type = type;
-        return this;
-    }
-
     public DisorderReferenceParam getDisorder() {
         return disorder;
     }
@@ -184,11 +172,11 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public ClinicalConsent getConsent() {
+    public ClinicalConsentAnnotationParam getConsent() {
         return consent;
     }
 
-    public ClinicalAnalysisUpdateParams setConsent(ClinicalConsent consent) {
+    public ClinicalAnalysisUpdateParams setConsent(ClinicalConsentAnnotationParam consent) {
         this.consent = consent;
         return this;
     }
@@ -202,6 +190,15 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
+    public ClinicalAnalysisQualityControlUpdateParam getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalAnalysisUpdateParams setQualityControl(ClinicalAnalysisQualityControlUpdateParam qualityControl) {
+        this.qualityControl = qualityControl;
+        return this;
+    }
+
     public List<ClinicalCommentParam> getComments() {
         return comments;
     }
@@ -211,20 +208,20 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public Enums.Priority getPriority() {
+    public PriorityParam getPriority() {
         return priority;
     }
 
-    public ClinicalAnalysisUpdateParams setPriority(Enums.Priority priority) {
+    public ClinicalAnalysisUpdateParams setPriority(PriorityParam priority) {
         this.priority = priority;
         return this;
     }
 
-    public List<String> getFlags() {
+    public List<FlagValueParam> getFlags() {
         return flags;
     }
 
-    public ClinicalAnalysisUpdateParams setFlags(List<String> flags) {
+    public ClinicalAnalysisUpdateParams setFlags(List<FlagValueParam> flags) {
         this.flags = flags;
         return this;
     }
@@ -238,20 +235,11 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public ClinicalAnalysisInternal getInternal() {
-        return internal;
-    }
-
-    public ClinicalAnalysisUpdateParams setInternal(ClinicalAnalysisInternal internal) {
-        this.internal = internal;
-        return this;
-    }
-
-    public CustomStatusParams getStatus() {
+    public StatusParam getStatus() {
         return status;
     }
 
-    public ClinicalAnalysisUpdateParams setStatus(CustomStatusParams status) {
+    public ClinicalAnalysisUpdateParams setStatus(StatusParam status) {
         this.status = status;
         return this;
     }

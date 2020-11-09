@@ -18,14 +18,14 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.EntryParam;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,28 +43,28 @@ public class ClinicalAnalysisCreateParams {
     private ProbandParam proband;
     private FamilyParam family;
     private ClinicalAnalystParam analyst;
-    private ClinicalAnalysisInternal internal;
     private EntryParam interpretation;
+    private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
-    private ClinicalConsent consent;
+    private ClinicalConsentAnnotationParam consent;
 
     private String dueDate;
     private List<ClinicalCommentParam> comments;
-    private Enums.Priority priority;
-    private List<String> flags;
+    private PriorityParam priority;
+    private List<FlagValueParam> flags;
 
     private Map<String, Object> attributes;
-    private CustomStatusParams status;
+    private StatusParam status;
 
     public ClinicalAnalysisCreateParams() {
     }
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        ClinicalAnalystParam analyst, ClinicalAnalysisInternal internal, EntryParam interpretation,
-                                        ClinicalConsent consent, String dueDate, List<ClinicalCommentParam> comments,
-                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes,
-                                        CustomStatusParams status) {
+                                        ClinicalAnalystParam analyst, EntryParam interpretation,
+                                        ClinicalConsentAnnotationParam consent, String dueDate, List<ClinicalCommentParam> comments,
+                                        ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
+                                        List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -73,11 +73,11 @@ public class ClinicalAnalysisCreateParams {
         this.proband = proband;
         this.family = family;
         this.analyst = analyst;
-        this.internal = internal;
         this.interpretation = interpretation;
         this.consent = consent;
         this.dueDate = dueDate;
         this.comments = comments;
+        this.qualityControl = qualityControl;
         this.priority = priority;
         this.flags = flags;
         this.attributes = attributes;
@@ -93,16 +93,21 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
-                clinicalAnalysis.getInternal(),
                 clinicalAnalysis.getInterpretation() != null
                         ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
                         : null,
-                clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
+                ClinicalConsentAnnotationParam.of(clinicalAnalysis.getConsent()), clinicalAnalysis.getDueDate(),
                 clinicalAnalysis.getComments() != null
                         ? clinicalAnalysis.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
-                clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
-                clinicalAnalysis.getAttributes(), CustomStatusParams.of(clinicalAnalysis.getStatus()));
+                clinicalAnalysis.getQualityControl() != null
+                        ? ClinicalAnalysisQualityControlUpdateParam.of(clinicalAnalysis.getQualityControl())
+                        : null,
+                PriorityParam.of(clinicalAnalysis.getPriority()),
+                clinicalAnalysis.getFlags() != null
+                        ? clinicalAnalysis.getFlags().stream().map(FlagValueParam::of).collect(Collectors.toList())
+                        : null,
+                clinicalAnalysis.getAttributes(), StatusParam.of(clinicalAnalysis.getStatus()));
     }
 
     @Override
@@ -116,12 +121,12 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", analyst=").append(analyst);
-        sb.append(", internal=").append(internal);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", consent=").append(consent);
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -171,10 +176,14 @@ public class ClinicalAnalysisCreateParams {
         }
 
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f, false,
-                primaryInterpretation, new LinkedList<>(), consent, new ClinicalAnalyst(assignee, assignee, "", "",
-                TimeUtils.getTime()), priority, flags, null, null,  dueDate, 1,
+                primaryInterpretation, new LinkedList<>(), consent != null ? consent.toClinicalConsentAnnotation() : null,
+                new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()),
+                priority != null ? priority.toClinicalPriorityAnnotation() : null,
+                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null , null, null,
+                dueDate, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                new LinkedList<>(), internal, attributes, status != null ? status.toCustomStatus() : null);
+                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null, attributes,
+                status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -249,15 +258,6 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public ClinicalAnalysisInternal getInternal() {
-        return internal;
-    }
-
-    public ClinicalAnalysisCreateParams setInternal(ClinicalAnalysisInternal internal) {
-        this.internal = internal;
-        return this;
-    }
-
     public EntryParam getInterpretation() {
         return interpretation;
     }
@@ -267,11 +267,20 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public ClinicalConsent getConsent() {
+    public ClinicalAnalysisQualityControlUpdateParam getQualityControl() {
+        return qualityControl;
+    }
+
+    public ClinicalAnalysisCreateParams setQualityControl(ClinicalAnalysisQualityControlUpdateParam qualityControl) {
+        this.qualityControl = qualityControl;
+        return this;
+    }
+
+    public ClinicalConsentAnnotationParam getConsent() {
         return consent;
     }
 
-    public ClinicalAnalysisCreateParams setConsent(ClinicalConsent consent) {
+    public ClinicalAnalysisCreateParams setConsent(ClinicalConsentAnnotationParam consent) {
         this.consent = consent;
         return this;
     }
@@ -294,20 +303,20 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public Enums.Priority getPriority() {
+    public PriorityParam getPriority() {
         return priority;
     }
 
-    public ClinicalAnalysisCreateParams setPriority(Enums.Priority priority) {
+    public ClinicalAnalysisCreateParams setPriority(PriorityParam priority) {
         this.priority = priority;
         return this;
     }
 
-    public List<String> getFlags() {
+    public List<FlagValueParam> getFlags() {
         return flags;
     }
 
-    public ClinicalAnalysisCreateParams setFlags(List<String> flags) {
+    public ClinicalAnalysisCreateParams setFlags(List<FlagValueParam> flags) {
         this.flags = flags;
         return this;
     }
@@ -321,11 +330,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParam getStatus() {
         return status;
     }
 
-    public ClinicalAnalysisCreateParams setStatus(CustomStatusParams status) {
+    public ClinicalAnalysisCreateParams setStatus(StatusParam status) {
         this.status = status;
         return this;
     }

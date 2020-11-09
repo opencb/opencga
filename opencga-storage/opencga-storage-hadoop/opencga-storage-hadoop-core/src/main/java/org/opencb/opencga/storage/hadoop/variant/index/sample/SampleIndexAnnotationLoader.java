@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR;
 
 /**
@@ -38,8 +39,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class SampleIndexAnnotationLoader {
 
-    public static final String OVERWRITE = "sampleIndex.overwrite";
-    public static final String SAMPLE_INDEX_STATUS = "sampleIndex";
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final MRExecutor mrExecutor;
@@ -93,7 +92,7 @@ public class SampleIndexAnnotationLoader {
         for (Integer sampleId : samples) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.isAnnotated()) {
-                if (sampleMetadata.isReady(SAMPLE_INDEX_STATUS) && !overwrite) {
+                if (SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata).equals(TaskMetadata.Status.READY) && !overwrite) {
                     // SamplesIndex already annotated
                     alreadyAnnotated.add(sampleMetadata.getName());
                 } else {
@@ -350,7 +349,7 @@ public class SampleIndexAnnotationLoader {
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                return SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.READY);
+                return SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.READY);
             });
         }
     }

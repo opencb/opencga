@@ -56,6 +56,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.STATUS_ID;
+import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements InterpretationDBAdaptor {
@@ -207,7 +209,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid(clientSession);
+        long interpretationUid = getNewUid();
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
@@ -275,11 +277,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException {
         return count(query);
-    }
-
-    @Override
-    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
-        return null;
     }
 
     @Override
@@ -372,29 +369,27 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {QueryParams.ANALYST.key()};
+        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
-                ParamUtils.UpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                break;
+        ParamUtils.BasicUpdateAction commentsOperation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
+                ParamUtils.BasicUpdateAction.ADD);
+        switch (commentsOperation) {
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixCommentsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + commentsOperation);
         }
 
         objectAcceptedParams = new String[]{QueryParams.METHODS.key()};
-        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
+        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -717,7 +712,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         ObjectMap params;
         QueryOptions options = new QueryOptions();
 
-        if (ca.getInterpretation().getUid() == interpretation.getUid()) {
+        if (ca.getInterpretation() != null && ca.getInterpretation().getUid() == interpretation.getUid()) {
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
         } else {
             ObjectMap actions = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
@@ -949,6 +944,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             qOptions = new QueryOptions();
         }
 
+        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
+                QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
+
         logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return interpretationCollection.iterator(clientSession, bson, null, null, qOptions);
@@ -977,6 +975,15 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery);
+
+        return new OpenCGAResult<>(interpretationCollection.distinct(field, bson, clazz));
+    }
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
@@ -994,6 +1001,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         Query queryCopy = new Query(query);
         queryCopy.remove(SampleDBAdaptor.QueryParams.DELETED.key());
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
+
+        if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
+            queryCopy.put(Constants.ALL_VERSIONS, true);
+            queryCopy.remove(QueryParams.VERSION.key());
+        }
 
         boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
 
@@ -1025,6 +1037,23 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case ANALYST:
+                    case ANALYST_ID:
+                        addAutoOrQuery(QueryParams.ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case PRIMARY_FINDINGS:
+                    case PRIMARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.PRIMARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case SECONDARY_FINDINGS:
+                    case SECONDARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.SECONDARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(),
+                                andBsonList);
+                        break;
+                    case STATUS:
+                    case STATUS_ID:
+                        addAutoOrQuery(STATUS_ID.key(), queryParam.key(), queryCopy, STATUS_ID.type(), andBsonList);
+                        break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
@@ -1032,6 +1061,10 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                                 Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
                                 QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                        break;
+                    case METHODS:
+                    case METHODS_NAME:
+                        addAutoOrQuery(QueryParams.METHODS_NAME.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:

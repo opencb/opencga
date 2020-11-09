@@ -58,8 +58,11 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         return internalGet(studyUid, entry, null, options, user);
     }
 
-    abstract OpenCGAResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException;
+    OpenCGAResult<R> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+            throws CatalogException {
+        ParamUtils.checkIsSingleID(entry);
+        return internalGet(studyUid, Collections.singletonList(entry), query, options, user, false);
+    }
 
     InternalGetDataResult<R> internalGet(long studyUid, List<String> entryList, QueryOptions options, String user, boolean ignoreException)
             throws CatalogException {
@@ -204,6 +207,18 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
     public abstract OpenCGAResult<R> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
+     * Fetch a list containing all the distinct values of the key {@code field}.
+     *
+     * @param studyId study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param field The field for which to return distinct values.
+     * @param query Query object.
+     * @param token Token of the user logged in.
+     * @return The list of distinct values.
+     * @throws CatalogException CatalogException.
+     */
+    public abstract OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException;
+
+    /**
      * Count matching entries in catalog.
      *
      * @param studyId  study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
@@ -214,19 +229,19 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      */
     public abstract OpenCGAResult<R> count(String studyId, Query query, String token) throws CatalogException;
 
-    public abstract OpenCGAResult delete(String studyStr, List<String> ids, ObjectMap params, String token) throws CatalogException;
+    public abstract OpenCGAResult delete(String studyStr, List<String> ids, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Delete all entries matching the query.
      *
      * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param query Query object.
-     * @param params Map containing additional parameters to be considered for the deletion.
+     * @param options Map containing additional parameters to be considered for the deletion.
      * @param token Session id of the user logged in.
      * @throws CatalogException if the study or the user do not exist.
      * @return A OpenCGAResult object containing the number of matching elements, deleted and elements that could not be deleted.
      */
-    public abstract OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException;
+    public abstract OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

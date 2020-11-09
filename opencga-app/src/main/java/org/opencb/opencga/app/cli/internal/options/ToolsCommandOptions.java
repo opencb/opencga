@@ -34,13 +34,10 @@ public class ToolsCommandOptions {
     }
 
     @Parameters(commandNames = {"execute-job"}, commandDescription = "Execute a tool given a Catalog Job")
-    public class ExecuteJobCommandOptions {
+    public class ExecuteJobCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @ParametersDelegate
-        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"--job"}, description = "Job id containing the information of the job to be executed", required = true,
                 arity = 1)

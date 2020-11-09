@@ -1286,6 +1286,26 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getCohortManager().getSamples(studyId, "MyCohort,MyCohort", token);
     }
 
+    @Test
+    public void generateCohortFromSampleQuery() throws CatalogException, IOException {
+        String studyId = "user@1000G:phase1";
+
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                token).first();
+
+        Query query = new Query();
+        Cohort myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort"), null, token).first();
+        assertEquals(12, myCohort.getSamples().size());
+
+        query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
+        myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort2"), null, token).first();
+        assertEquals(3, myCohort.getSamples().size());
+    }
+
     /**
      * Individual methods
      * ***************************
@@ -1333,6 +1353,37 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 + ":PHEN=CASE"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
+    }
+
+    @Test
+    public void testDistinctDisorders() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("i1")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder1")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i2")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i3")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        individual = new Individual()
+                .setId("i4")
+                .setDisorders(Collections.singletonList(new Disorder().setId("adisorder2")));
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().distinct(studyFqn,
+                IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(), new Query(), token);
+        assertEquals(3, result.getNumResults());
+
+        result = catalogManager.getIndividualManager().distinct(studyFqn, IndividualDBAdaptor.QueryParams.DISORDERS_ID.key(),
+                new Query(IndividualDBAdaptor.QueryParams.DISORDERS.key(), "~^disor"), token);
+        assertEquals(2, result.getNumResults());
     }
 
     @Test
@@ -1691,14 +1742,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         try {
             DataResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
-                    new ObjectMap(), token);
+                    new QueryOptions(), token);
             fail("Expected fail");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("found in the families"));
         }
 
         DataResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"),
-                new ObjectMap(Constants.FORCE, true), token);
+                new QueryOptions(Constants.FORCE, true), token);
         assertEquals(1, writeResult.getNumDeleted());
 
         Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), token).first();

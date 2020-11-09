@@ -100,7 +100,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         params.put("dynamicParam1", dynamic1);
         params.put("dynamicNested2", dynamic1);
-        String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant-index", params);
+        String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant index-run", params);
         assertEquals("opencga-internal.sh variant index-run "
                 + "--key value "
                 + "--camel-case-key value "

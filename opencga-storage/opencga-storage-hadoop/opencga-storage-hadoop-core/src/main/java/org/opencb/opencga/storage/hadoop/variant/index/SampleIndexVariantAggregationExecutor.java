@@ -4,9 +4,13 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
@@ -33,18 +37,16 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             CHROM_DENSITY,
             "chromosome",
             "type",
-            "genotype",
-            "gt",
-            "consequenceType",
-            "ct",
-            "bt",
-            "biotype",
+            "genotype", "gt",
+            "consequenceType", "ct",
+            "biotype", "bt",
             "clinicalSignificance",
-            "dp",
-            "depth",
-            "coverage",
+            "depth", "dp", "coverage",
             "qual",
-            "filter"
+            "mendelianError", "me",
+            "filter",
+            "length",
+            "titv"
     ));
 
 
@@ -74,12 +76,12 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     protected VariantQueryResult<FacetField> aggregation(Query query, QueryOptions options, String facet) throws Exception {
         StopWatch stopWatch = StopWatch.createStarted();
 
-        List<FieldVariantAccumulator<SampleVariantIndexEntry>> accumulators = createAccumulators(query, facet);
+        List<FacetFieldAccumulator<SampleVariantIndexEntry>> accumulators = createAccumulators(query, facet);
         List<FacetField> fields = new ArrayList<>();
 
         try (CloseableIterator<SampleVariantIndexEntry> sampleVariantIndexEntryIterator = sampleIndexDBAdaptor.rawIterator(query)) {
             // Init top level fields
-            for (FieldVariantAccumulator<SampleVariantIndexEntry> accumulator : accumulators) {
+            for (FacetFieldAccumulator<SampleVariantIndexEntry> accumulator : accumulators) {
                 fields.add(accumulator.createField());
             }
 
@@ -90,7 +92,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                 count++;
                 SampleVariantIndexEntry entry = sampleVariantIndexEntryIterator.next();
                 for (int i = 0; i < accumulators.size(); i++) {
-                    FieldVariantAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
+                    FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
                     FacetField field = fields.get(i);
                     accumulator.accumulate(field, entry);
                 }
@@ -99,9 +101,9 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
 
             // Tear down and clean up results.
             for (int i = 0; i < accumulators.size(); i++) {
-                FieldVariantAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
+                FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = accumulators.get(i);
                 FacetField field = fields.get(i);
-                accumulator.cleanEmptyBuckets(field);
+                accumulator.evaluate(field);
             }
 
             return new VariantQueryResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), 1, numMatches, Collections.emptyList(),
@@ -109,46 +111,58 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         }
     }
 
-    private List<FieldVariantAccumulator<SampleVariantIndexEntry>> createAccumulators(Query query, String facet) {
-        List<FieldVariantAccumulator<SampleVariantIndexEntry>> list = new ArrayList<>();
+    private List<FacetFieldAccumulator<SampleVariantIndexEntry>> createAccumulators(Query query, String facet) {
+        List<FacetFieldAccumulator<SampleVariantIndexEntry>> list = new ArrayList<>();
         for (String f : facet.split(FACET_SEPARATOR)) {
             list.add(createAccumulator(query, f));
         }
         return list;
     }
 
-    private FieldVariantAccumulator<SampleVariantIndexEntry> createAccumulator(Query query, String facet) {
+    private FacetFieldAccumulator<SampleVariantIndexEntry> createAccumulator(Query query, String facet) {
         String[] split = facet.split(NESTED_FACET_SEPARATOR);
-        FieldVariantAccumulator<SampleVariantIndexEntry> accumulator = null;
+        FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = null;
         // Reverse traverse
         for (int i = split.length - 1; i >= 0; i--) {
             String facetField = split[i];
-            String fieldKey = facetField.split("\\[")[0];
+            Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facetField);
+            if (!matcher.find()) {
+                throw new VariantQueryException("Malformed aggregation stats query: " + facetField);
+            }
+            String fieldKey = matcher.group(1);
+            String argsStr = matcher.group(2);
+            List<String> args;
+            if (StringUtils.isNotEmpty(argsStr)) {
+                args = Arrays.asList(argsStr.substring(1, argsStr.length() - 1).split(","));
+            } else {
+                args = Collections.emptyList();
+            }
+            String stepStr = matcher.group(3);
+            if (StringUtils.isNotEmpty(stepStr)) {
+                stepStr = stepStr.substring(1);
+            }
 
-            final FieldVariantAccumulator<SampleVariantIndexEntry> thisAccumulator;
+            final FacetFieldAccumulator<SampleVariantIndexEntry> thisAccumulator;
             switch (fieldKey) {
                 case CHROM_DENSITY:
                     int step;
                     Region region = null;
-                    Matcher matcher = CHROM_DENSITY_PATTERN.matcher(facetField);
-                    if (matcher.matches()) {
-                        String regionStr = matcher.group(1);
-                        String stepStr = matcher.group(3);
-
-                        if (!StringUtils.isEmpty(stepStr)) {
-                            step = Integer.parseInt(stepStr);
-                        } else {
-                            step = 1000000;
-                        }
-
-                        // for (String regionStr : regionsStr.split(",")) {
-                        //     regions.add(new Region(regionStr));
-                        // }
-                        region = new Region(regionStr);
-                        query.put(REGION.key(), regionStr);
-                    } else {
+                    if (args.size() != 1) {
                         throw new VariantQueryException("Malformed aggregation stats query: " + facetField);
                     }
+                    if (!StringUtils.isEmpty(stepStr)) {
+                        step = Integer.parseInt(stepStr);
+                    } else {
+                        step = 1000000;
+                    }
+
+                    String regionStr = args.get(0);
+                    // for (String regionStr : regionsStr.split(",")) {
+                    //     regions.add(new Region(regionStr));
+                    // }
+                    region = new Region(regionStr);
+                    query.put(REGION.key(), regionStr);
+
                     thisAccumulator = new ChromDensityAccumulator<>(metadataManager, region, null, step, s -> s.getVariant().getStart());
                     break;
                 case "chromosome":
@@ -156,7 +170,31 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                             VariantField.CHROMOSOME.fieldName());
                     break;
                 case "type":
-                    thisAccumulator = new VariantTypeAccumulator<>(s -> s.getVariant().getType());
+                    List<VariantType> types = new ArrayList<>();
+                    for (String arg : args) {
+                        VariantType type = VariantType.valueOf(arg.toUpperCase());
+                        types.add(type);
+                        types.addAll(Variant.subTypes(type));
+                    }
+                    thisAccumulator = new VariantTypeAccumulator<>(s -> s.getVariant().getType(), types);
+                    break;
+                case "titv":
+                    thisAccumulator = new RatioAccumulator<>(
+                            t -> VariantStats.isTransition(t.getVariant().getReference(), t.getVariant().getAlternate()) ? 1 : 0,
+                            t -> VariantStats.isTransversion(t.getVariant().getReference(), t.getVariant().getAlternate()) ? 1 : 0,
+                            fieldKey
+                    );
+                    break;
+                case "length":
+                    List<Range<Integer>> lengthRanges = Arrays.asList(
+                            new Range<>(1, 5),
+                            new Range<>(5, 10),
+                            new Range<>(10, 20),
+                            new Range<>(20, 50),
+                            new Range<>(50, null)
+                    );
+
+                    thisAccumulator = RangeAccumulator.fromValue(t -> t.getVariant().getLength(), fieldKey, lengthRanges, null);
                     break;
                 case "genotype":
                 case "gt":
@@ -221,6 +259,19 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                                     return Collections.singletonList(VCFConstants.PASSES_FILTERS_v4);
                                 } else {
                                     return Collections.singletonList("other");
+                                }
+                            },
+                            fieldKey);
+                    break;
+                case "mendelianError":
+                case "me":
+                    thisAccumulator = new CategoricalAccumulator<>(
+                            s -> {
+                                Integer meCode = s.getMeCode();
+                                if (meCode == null) {
+                                    return Collections.emptyList();
+                                } else {
+                                    return Collections.singletonList(meCode.toString());
                                 }
                             },
                             fieldKey);

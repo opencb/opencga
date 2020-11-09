@@ -38,7 +38,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 05/06/17.
  */
-public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
+public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysis> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -53,19 +53,22 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS("status", OBJECT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        CONSENT("consent", TEXT_ARRAY, ""),
-        PRIORITY("priority", TEXT, ""),
+        QUALITY_CONTROL("qualityControl", OBJECT, ""),
+        CONSENT("consent", OBJECT, ""),
+        PRIORITY("priority", OBJECT, ""),
+        PRIORITY_ID("priority.id", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
         ANALYST_ID("analyst.id", TEXT, ""),
         ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
-        FLAGS("flags", TEXT_ARRAY, ""),
+        FLAGS("flags", OBJECT, ""),
+        FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
         LOCKED("locked", BOOLEAN, ""),
 
@@ -87,8 +90,10 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         PROBAND_SAMPLES_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATION("interpretation", TEXT, ""),
         INTERPRETATION_ID("interpretation.id", TEXT, ""),
+        INTERPRETATION_UID("interpretation.uid", LONG, ""),
         SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
         SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
+        SECONDARY_INTERPRETATIONS_UID("secondaryInterpretations.uid", LONG, ""),
 
         AUDIT("audit", TEXT_ARRAY, ""),
 
@@ -174,6 +179,12 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<?> delete(ClinicalAnalysis id, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+     OpenCGAResult<ClinicalAnalysis> delete(Query query, List<ClinicalAudit> clinicalAuditList)
+             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 

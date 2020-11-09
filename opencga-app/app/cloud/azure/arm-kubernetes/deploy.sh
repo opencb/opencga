@@ -7,28 +7,96 @@
 
 set -e
 
-if [[ "$#" -ne 2 && "$#" -ne 3 ]]; then
-  echo "Usage: $0 <subscription_name> <main-azuredeploy-parameters-json> [<service-principal-azuredeploy-parameters-json>]"
-  echo " * Execute createsp.sh to obtain the service principal parameters"
-  exit 1
-fi
+function printUsage() {
+  echo ""
+  echo "Usage:   $(basename $0) --subscription <subscriotion_name> [options]"
+  echo ""
+  echo "Options:"
+  echo "   * -s     --subscription              Subscription name or subscription id"
+  echo "     --af   --azure-file                Azure deploy parameters file [azuredeploy.parameters.private.json]"
+  echo "     --spf  --service-principal-file    Azure service principal deploy parameters file. Execute createsp.sh to obtain the service principal parameters"
+  echo "     --hf   --helm-file                 Helm values file. Used when calling to 'setup-k8s.sh' "
+  echo "     -h     --help                      Print this help"
+  echo ""
+}
 
-subscriptionName=$1
-azudeDeployParameters=${2:-azuredeploy.parameters.private.json}
-spAzudeDeployParameters=${3:-$azudeDeployParameters}
-
-function requiredFile() {
-  if [ ! -f $1 ]; then
-    echo "Missing file $1"
+function requiredParam() {
+  key=$1
+  value=$2
+  if [ -z "${value}" ]; then
+    echo "Missing param $key"
+    printUsage
     exit 1
   fi
 }
 
-requiredFile "${azudeDeployParameters}"
-requiredFile "${spAzudeDeployParameters}"
+function requiredFile() {
+  key=$1
+  file=$2
+  if [ ! -f "${file}" ]; then
+    echo "Missing file ${key} : '${file}' : No such file or directory"
+    printUsage
+    exit 1
+  fi
+}
+
+#subscriptionName
+#azudeDeployParameters
+#spAzudeDeployParameters
+#helmDeployParameters
+
+while [[ $# -gt 0 ]]
+do
+key="$1"
+value="$2"
+case $key in
+    -h|--help)
+    printUsage
+    exit 0
+    ;;
+    -s|--subscription)
+    subscriptionName="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    --af|--azure-file)
+    azudeDeployParameters="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    --spf|--service-principal-file)
+    spAzudeDeployParameters="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    --hf|--helm-file)
+    helmDeployParameters="$value"
+    shift # past argument
+    shift # past value
+    ;;
+    *)    # unknown option
+    echo "Unknown option $key"
+    printUsage
+    exit 1
+    ;;
+esac
+done
+
+azudeDeployParameters=${azudeDeployParameters:-azuredeploy.parameters.private.json}
+spAzudeDeployParameters=${spAzudeDeployParameters:-$azudeDeployParameters}
+
+requiredParam "--subscription" "${subscriptionName}"
+requiredFile "--azure-file" "${azudeDeployParameters}"
+requiredFile "--service-principal-file" "${spAzudeDeployParameters}"
 
 azudeDeployParameters=$(realpath "${azudeDeployParameters}")
 spAzudeDeployParameters=$(realpath "${spAzudeDeployParameters}")
+
+if [ -n "$helmDeployParameters" ]; then
+  requiredFile "--helm-file" "${helmDeployParameters}"
+  helmDeployParameters=$(realpath "${helmDeployParameters}")
+fi
+
 
 # Don't move the PWD until we found out the realpath. It could be a relative path.
 cd "$(dirname "$0")"
@@ -120,4 +188,4 @@ function getOutput() {
 # Enable HDInsight monitor
 $(getOutput hdInsightEnableMonitor)
 
-./setup-aks.sh ${subscriptionName} ${deploymentOut}
+./setup-aks.sh --subscription "${subscriptionName}" --azure-output-file "${deploymentOut}" --helm-file "${helmDeployParameters}"

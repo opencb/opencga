@@ -5,8 +5,18 @@
 opencga:
   host: "http://opencga.local/opencga"
 
+cellbase:
+  host: "http://bioinfo.hpc.cam.ac.uk/cellbase"
+
 iva:
   name: iva
+
+  configuration:
+    # Overwrite configuration from image.
+    overwrite: false
+
+  replicaCount: 2
+
   image:
     # TODO: Currently building from beta image. Update once release available.
     repository: opencb/iva-app:2.0.0-beta

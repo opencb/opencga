@@ -41,6 +41,9 @@ import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysisResultReader;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByGene;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
@@ -88,6 +91,7 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -622,10 +626,6 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
     })
     public Response sampleAggregationStats(@ApiParam(value =
@@ -655,42 +655,32 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @GET
-    @Path("/sample/stats/info")
-    @ApiOperation(value = "Read sample variant stats from list of samples.", response = SampleVariantStats.class)
-    public Response sampleStatsInfo(@ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                    @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
+    @Path("/sample/stats/query")
+    @ApiImplicitParams({
+            // Variant filters
+            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
+
+            // Study filters
+            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
+
+            @ApiImplicitParam(name = "sampleData", value = SAMPLE_DATA_DESCR, dataType = "string", paramType = "query"),
+
+            // Annotation filters
+            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
+    })
+    @ApiOperation(value = "Obtain sample variant stats from a sample.", response = SampleVariantStats.class)
+    public Response sampleStatsQuery(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+                                     @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
         return run(() -> {
-            ParamUtils.checkParameter(sample, "sample");
-            ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
-            OpenCGAResult<Sample> result = catalogManager.getSampleManager().get(studyStr, getIdList(sample), new QueryOptions(), token);
-
-            List<SampleVariantStats> stats = new ArrayList<>(result.getNumResults());
-            for (Sample s : result.getResults()) {
-                for (AnnotationSet annotationSet : s.getAnnotationSets()) {
-                    if (annotationSet.getVariableSetId().equals(SampleVariantStatsAnalysis.VARIABLE_SET_ID)) {
-                        stats.add(AvroToAnnotationConverter.convertAnnotationToAvro(annotationSet, SampleVariantStats.class));
-                    }
-                }
-            }
-
-            OpenCGAResult<SampleVariantStats> statsResult = new OpenCGAResult<>();
-            statsResult.setResults(stats);
-            statsResult.setNumMatches(result.getNumMatches());
-            statsResult.setEvents(result.getEvents());
-            statsResult.setTime(result.getTime());
-            statsResult.setNode(result.getNode());
-            return statsResult;
+            Query query = getVariantQuery();
+            return variantManager.getSampleStats(studyStr, sample, query, token);
         });
-    }
-
-    @DELETE
-    @Path("/sample/stats/delete")
-    @ApiOperation(value = "Delete sample variant stats from a sample.", response = SampleVariantStats.class)
-    public Response sampleStatsDelete(@ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                      @ApiParam(value = "Sample") @QueryParam("sample") String sample) {
-        return run(() -> catalogManager
-                .getSampleManager()
-                .removeAnnotationSet(studyStr, sample, SampleVariantStatsAnalysis.VARIABLE_SET_ID, queryOptions, token));
     }
 
     @POST
@@ -777,12 +767,12 @@ public class VariantWebService extends AnalysisWebService {
             // Study filters
             @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
 
-            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "sample", value = SAMPLE_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "genotype", value = GENOTYPE_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "sampleAnnotation", value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "samplesMetadata", value = SAMPLE_METADATA_DESCR, dataType = "boolean", paramType = "query"),
 //            @ApiImplicitParam(name = "unknownGenotype", value = UNKNOWN_GENOTYPE_DESCR, dataType = "string", paramType = "query"),
 
@@ -796,11 +786,11 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "score", value = SCORE_DESCR, dataType = "string", paramType = "query"),
 
-            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
 
             // Annotation filters
             @ApiImplicitParam(name = "annotationExists", value = ANNOT_EXISTS_DESCR, dataType = "boolean", paramType = "query"),
@@ -1315,6 +1305,34 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @GET
+    @Path("/knockout/gene/query")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+    })
+    @ApiOperation(value = "Fetch values from KnockoutAnalysis result, by genes", response = KnockoutByGene.class)
+    public Response knockoutByGeneQuery(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
+        return run(() -> new KnockoutAnalysisResultReader(catalogManager)
+                .readKnockoutByGeneFromJob(study, job, limit, (int) skip, p -> true, token));
+    }
+
+    @GET
+    @Path("/knockout/individual/query")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+    })
+    @ApiOperation(value = "Fetch values from KnockoutAnalysis result, by individuals", response = KnockoutByIndividual.class)
+    public Response knockoutByIndividualQuery(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
+        return run(() -> new KnockoutAnalysisResultReader(catalogManager)
+                .readKnockoutByIndividualFromJob(study, job, limit, (int) skip, p -> true, token));
+    }
+
     @POST
     @Path("/circos/run")
     @ApiOperation(value = CircosAnalysis.DESCRIPTION, response = String.class)
@@ -1353,7 +1371,7 @@ public class VariantWebService extends AnalysisWebService {
                 byte[] bytes = new byte[(int) imgFile.length()];
                 fileInputStreamReader.read(bytes);
 
-                String img = new String(Base64.getEncoder().encode(bytes), "UTF-8");
+                String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
 
                 watch.stop();
                 OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
@@ -1406,6 +1424,11 @@ public class VariantWebService extends AnalysisWebService {
 //            return createErrorResponse(e);
 //        }
 //    }
+
+    protected Query getVariantQuery() {
+        QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+        return getVariantQuery(queryOptions);
+    }
 
     // FIXME This method must be deleted once deprecated params are not supported any more
     static Query getVariantQuery(QueryOptions queryOptions) {

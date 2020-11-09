@@ -155,12 +155,45 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.JOB_INPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_INPUT_FILES_PARAM) String input,
             @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
+            @ApiParam(value = ParamConstants.JOB_EXECUTION_START_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_START_PARAM) String executionStart,
+            @ApiParam(value = ParamConstants.JOB_EXECUTION_END_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_END_PARAM) String executionEnd,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(catalogManager.getJobManager().search(studyStr, query, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/distinct")
+    @ApiOperation(value = "Job distinct method")
+    public Response distinct(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
+            @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String tool,
+            @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
+            @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.JOB_VISITED_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.JOB_VISITED_PARAM) Boolean visited,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
+            @ApiParam(value = ParamConstants.JOB_INPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_INPUT_FILES_PARAM) String input,
+            @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
+            @ApiParam(value = ParamConstants.JOB_EXECUTION_START_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_START_PARAM) String executionStart,
+            @ApiParam(value = ParamConstants.JOB_EXECUTION_END_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_END_PARAM) String executionEnd,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(jobManager.distinct(studyStr, field, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -260,7 +293,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAclUpdateParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new JobAclUpdateParams());

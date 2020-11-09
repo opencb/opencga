@@ -163,7 +163,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             throw CatalogDBException.idNotFound("Individual", individual.getMother().getId());
         }
 
-        long individualUid = getNewUid(clientSession);
+        long individualUid = getNewUid();
 
         individual.setUid(individualUid);
         individual.setStudyUid(studyId);
@@ -268,13 +268,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(individualCollection.count(clientSession, bson));
-    }
-
-    @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bson = parseQuery(query);
-        return new OpenCGAResult(individualCollection.distinct(field, bson));
     }
 
     @Override
@@ -1222,6 +1215,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        return new OpenCGAResult<>(individualCollection.distinct(field, bson, clazz));
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);
@@ -1272,6 +1275,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
+
+        if ("all".equalsIgnoreCase(queryCopy.getString(IndividualDBAdaptor.QueryParams.VERSION.key()))) {
+            queryCopy.put(Constants.ALL_VERSIONS, true);
+            queryCopy.remove(IndividualDBAdaptor.QueryParams.VERSION.key());
+        }
 
         boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
 

@@ -114,7 +114,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     long insert(ClientSession clientSession, long studyId, Cohort cohort, List<VariableSet> variableSetList) throws CatalogDBException {
         checkCohortIdExists(clientSession, studyId, cohort.getId());
 
-        long newId = getNewUid(clientSession);
+        long newId = getNewUid();
         cohort.setUid(newId);
         cohort.setStudyUid(studyId);
         if (StringUtils.isEmpty(cohort.getUuid())) {
@@ -205,13 +205,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Bson bson = parseQuery(query, user);
         logger.debug("Cohort count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(cohortCollection.count(clientSession, bson));
-    }
-
-    @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bson = parseQuery(query);
-        return new OpenCGAResult(cohortCollection.distinct(field, bson));
     }
 
     @Override
@@ -687,6 +680,16 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query, user);
         return groupBy(cohortCollection, bsonQuery, fields, QueryParams.ID.key(), options);
+    }
+
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        return new OpenCGAResult<>(cohortCollection.distinct(field, bson, clazz));
     }
 
     @Override

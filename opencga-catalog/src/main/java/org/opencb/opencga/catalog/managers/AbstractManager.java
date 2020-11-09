@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -307,6 +308,37 @@ public abstract class AbstractManager {
             }
         } else {
             userDBAdaptor.checkId(member);
+        }
+    }
+
+    protected static Class<?> getTypeClass(QueryParam.Type type) {
+        switch (type) {
+            case STRING:
+            case TEXT:
+            case TEXT_ARRAY:
+                return String.class;
+            case INTEGER_ARRAY:
+            case INTEGER:
+                return Integer.class;
+            case DOUBLE:
+            case DECIMAL:
+            case DECIMAL_ARRAY:
+                return Double.class;
+            case LONG:
+            case LONG_ARRAY:
+                return Long.class;
+            case BOOLEAN:
+            case BOOLEAN_ARRAY:
+                return Boolean.class;
+            case MAP:
+                return Map.class;
+            case OBJECT:
+                return Object.class;
+            case DATE:
+            case TIMESTAMP:
+                return Date.class;
+            default:
+                throw new IllegalArgumentException("Unknown or unrecognised type '" + type + "'");
         }
     }
 

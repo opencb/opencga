@@ -67,7 +67,7 @@ public class MonitorService {
 
     private void init(String token) throws CatalogException {
         System.setProperty("opencga.log.file.name", "opencga-master");
-        System.setProperty("opencga.log.file.enable", "true");
+        System.setProperty("opencga.log.file.enabled", "true");
         Configurator.reconfigure(Paths.get(appHome, "conf", "log4j2.service.xml").toUri());
 
         logger = LoggerFactory.getLogger(this.getClass());

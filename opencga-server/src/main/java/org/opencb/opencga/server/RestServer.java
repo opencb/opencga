@@ -18,7 +18,6 @@ package org.opencb.opencga.server;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.opencb.opencga.server.rest.AdminRestWebService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,6 +56,7 @@ public class RestServer extends AbstractStorageServer {
         String opencgaVersion = warPath.get().toFile().getName().replace(".war", "");
         webapp.setContextPath("/" + opencgaVersion);
         webapp.setWar(warPath.get().toString());
+        webapp.setClassLoader(this.getClass().getClassLoader());
         webapp.setInitParameter("OPENCGA_HOME", opencgaHome.toFile().toString());
         webapp.getServletContext().setAttribute("OPENCGA_HOME", opencgaHome.toFile().toString());
 //        webapp.setInitParameter("log4jConfiguration", opencgaHome.resolve("conf/log4j2.server.xml").toString());
@@ -94,8 +94,8 @@ public class RestServer extends AbstractStorageServer {
             }
         }).start();
 
-        // AdminWSServer server needs a reference to this class to cll to .stop()
-        AdminRestWebService.setServer(this);
+//        // AdminWSServer server needs a reference to this class to cll to .stop()
+//        AdminRestWebService.setServer(this);
     }
 
     @Override

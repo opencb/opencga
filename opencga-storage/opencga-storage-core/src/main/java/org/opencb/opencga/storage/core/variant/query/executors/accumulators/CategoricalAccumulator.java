@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-public class CategoricalAccumulator<T> extends FieldVariantAccumulator<T> {
+public class CategoricalAccumulator<T> extends FacetFieldAccumulator<T> {
 
     private final Function<T, Collection<String>> getCategory;
     private final String name;
@@ -18,7 +18,7 @@ public class CategoricalAccumulator<T> extends FieldVariantAccumulator<T> {
     }
 
     public CategoricalAccumulator(Function<T, Collection<String>> getCategory, String name,
-                                  FieldVariantAccumulator<T> nestedFieldAccumulator) {
+                                  FacetFieldAccumulator<T> nestedFieldAccumulator) {
         super(nestedFieldAccumulator);
         this.getCategory = getCategory;
         this.name = name;
@@ -35,8 +35,8 @@ public class CategoricalAccumulator<T> extends FieldVariantAccumulator<T> {
     }
 
     @Override
-    protected List<FacetField.Bucket> getBuckets(FacetField field, T variant) {
-        Collection<String> values = getCategory.apply(variant);
+    protected List<FacetField.Bucket> getBuckets(FacetField field, T t) {
+        Collection<String> values = getCategory.apply(t);
         List<FacetField.Bucket> buckets = new ArrayList<>();
         for (String value : values) {
             FacetField.Bucket bucket = null;

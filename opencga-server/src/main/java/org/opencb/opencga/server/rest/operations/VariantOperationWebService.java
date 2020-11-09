@@ -23,19 +23,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
-import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
@@ -45,10 +41,8 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
@@ -90,6 +84,32 @@ public class VariantOperationWebService extends OpenCGAWSServer {
                     .setNumResults(1)
                     .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
         });
+    }
+
+    @POST
+    @Path("/variant/index/launcher")
+    @ApiOperation(value = VariantFileIndexJobLauncherTool.DESCRIPTION, response = Job.class)
+    public Response variantIndexLauncher(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantFileIndexJobLauncherParams.DESCRIPTION) VariantFileIndexJobLauncherParams params) {
+        return submitOperation(VariantFileIndexJobLauncherTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/variant/metadata/synchronize")
+    @ApiOperation(value = VariantStorageMetadataSynchronizeOperationTool.DESCRIPTION, response = Job.class)
+    public Response variantMetadataSynchronize(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantStorageMetadataSynchronizeParams.DESCRIPTION) VariantStorageMetadataSynchronizeParams params) {
+        return submitOperation(VariantStorageMetadataSynchronizeOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

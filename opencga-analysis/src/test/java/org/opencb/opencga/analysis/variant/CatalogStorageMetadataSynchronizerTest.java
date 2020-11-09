@@ -207,7 +207,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSampleIds(Collections.emptyList()), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), sessionId);
 
         catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams().setSamples(Collections.singletonList("NA12878")), true, new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "REMOVE")), sessionId);
-        catalogManager.getSampleManager().delete(studyId, Collections.singletonList("NA12878"), new ObjectMap(), sessionId);
+        catalogManager.getSampleManager().delete(studyId, Collections.singletonList("NA12878"), new QueryOptions(), sessionId);
 
         assertEquals(0, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
 

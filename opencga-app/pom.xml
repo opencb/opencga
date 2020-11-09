@@ -34,6 +34,7 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
+        <opencga.client.dir>opencga-client-${opencga.version}</opencga.client.dir>
     </properties>
 
     <dependencies>
@@ -261,11 +262,6 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <exec executable="chmod">
-                                    <arg value="+x"/>
-                                    <arg value="${build.dir}/cloud/docker/docker-build.py"/>
-                                </exec>
-
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
@@ -346,6 +342,71 @@
                                     <arg value="-i"/>
                                     <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
                                     <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>opencga-client</id>
+                        <phase>install</phase>
+                        <configuration>
+                            <target>
+                                <echo>Preparing 'opencga-client' folder</echo>
+                                <exec executable="mkdir">
+                                    <arg value="${build.dir}/opencga-client-${opencga.version}"/>
+                                    <arg value="${build.dir}/opencga-client-${opencga.version}/bin"/>
+                                    <arg value="${build.dir}/opencga-client-${opencga.version}/conf"/>
+                                    <arg value="${build.dir}/opencga-client-${opencga.version}/completion"/>
+                                </exec>
+
+                                <echo>Copying files to 'opencga-client' folder</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${build.dir}/libs"/>
+                                    <arg value="${build.dir}/clients/python"/>
+                                    <arg value="${build.dir}/clients/R"/>
+                                    <arg value="${build.dir}/LICENSE"/>
+                                    <arg value="${build.dir}/README.md"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/bin/opencga.sh"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/bin"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/conf/client-configuration.yml"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/conf/client-configuration.yml"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/conf"/>
+                                </exec>
+
+                                <exec executable="cp">
+                                    <arg value="${build.dir}/misc/completion/opencga"/>
+                                    <arg value="${build.dir}/misc/completion/README.md"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}/completion"/>
+                                </exec>
+
+                                <echo>Creating 'opencga-client' tar.gz file</echo>
+                                <exec executable="tar">
+                                    <arg value="-C"/>
+                                    <arg value="${build.dir}"/>
+                                    <arg value="-czvf"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}.tar.gz"/>
+                                    <arg value="${opencga.client.dir}"/>
+                                </exec>
+
+                                <echo>Deleting 'opencga-client' folder</echo>
+                                <exec executable="rm">
+                                    <arg value="-rf"/>
+                                    <arg value="${build.dir}/${opencga.client.dir}"/>
                                 </exec>
                             </target>
                         </configuration>

@@ -93,35 +93,35 @@ public class JobManager extends ResourceManager<Job> {
         return Enums.Resource.JOB;
     }
 
-    @Override
-    OpenCGAResult<Job> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-            throws CatalogException {
-        ParamUtils.checkIsSingleID(entry);
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-
-        if (UuidUtils.isOpenCgaUuid(entry)) {
-            queryCopy.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
-        } else {
-            queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
-        }
-//        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-//                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
-//                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(studyUid, queryCopy, options, user);
-        if (jobDataResult.getNumResults() == 0) {
-            jobDataResult = jobDBAdaptor.get(queryCopy, options);
-            if (jobDataResult.getNumResults() == 0) {
-                throw new CatalogException("Job " + entry + " not found");
-            } else {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the job " + entry);
-            }
-        } else if (jobDataResult.getNumResults() > 1) {
-            throw new CatalogException("More than one job found based on " + entry);
-        } else {
-            return jobDataResult;
-        }
-    }
+//    @Override
+//    OpenCGAResult<Job> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
+//            throws CatalogException {
+//        ParamUtils.checkIsSingleID(entry);
+//        Query queryCopy = query == null ? new Query() : new Query(query);
+//        queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+//
+//        if (UuidUtils.isOpenCgaUuid(entry)) {
+//            queryCopy.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
+//        } else {
+//            queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
+//        }
+////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+////                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
+////                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
+//        OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(studyUid, queryCopy, options, user);
+//        if (jobDataResult.getNumResults() == 0) {
+//            jobDataResult = jobDBAdaptor.get(queryCopy, options);
+//            if (jobDataResult.getNumResults() == 0) {
+//                throw new CatalogException("Job " + entry + " not found");
+//            } else {
+//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the job " + entry);
+//            }
+//        } else if (jobDataResult.getNumResults() > 1) {
+//            throw new CatalogException("More than one job found based on " + entry);
+//        } else {
+//            return jobDataResult;
+//        }
+//    }
 
     @Override
     InternalGetDataResult<Job> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options, String user,
@@ -567,6 +567,41 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
+    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("field", new Query(query))
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            JobDBAdaptor.QueryParams param = JobDBAdaptor.QueryParams.getParam(field);
+            if (param == null) {
+                throw new CatalogException("Unknown '" + field + "' parameter.");
+            }
+            Class<?> clazz = getTypeClass(param.type());
+
+            fixQueryObject(study, query, userId);
+
+            query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            OpenCGAResult<?> result = jobDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+
+            auditManager.auditDistinct(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditDistinct(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    @Override
     public DBIterator<Job> iterator(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -610,8 +645,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> jobIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, jobIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> jobIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, jobIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> jobIds, ObjectMap params, boolean ignoreException, String token)
@@ -681,8 +716,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyId, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyId, query, params, false, token);
+    public OpenCGAResult delete(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyId, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyId, Query query, ObjectMap params, boolean ignoreException, String token)

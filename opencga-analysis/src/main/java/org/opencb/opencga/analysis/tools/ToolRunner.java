@@ -41,31 +41,28 @@ public class ToolRunner {
     private final StorageEngineFactory storageEngineFactory;
     private final String opencgaHome;
     private final ToolFactory toolFactory;
-    private final String jobId;
 
-    public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, String jobId) {
+    public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
 
         this.storageEngineFactory = storageEngineFactory;
         this.toolFactory = new ToolFactory();
-        this.jobId = jobId;
     }
 
     /**
      * Execute a command tool.
+     * @param study Study containing the job
      * @param jobId jobId of the job containing the relevant information.
      * @param token session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(String jobId, String token) throws CatalogException, ToolException {
+    public ExecutionResult execute(String study, String jobId, String token) throws CatalogException, ToolException {
         // We get the job information.
-        Query query = new Query();
-        query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);
-        Job job = catalogManager.getJobManager().search(null, query, QueryOptions.empty(), token).first();
+        Job job = catalogManager.getJobManager().get(study, jobId, QueryOptions.empty(), token).first();
 
-        return execute(job.getTool().getId(), new ObjectMap(job.getParams()), Paths.get(job.getOutDir().getUri()), token);
+        return execute(job.getTool().getId(), new ObjectMap(job.getParams()), Paths.get(job.getOutDir().getUri()), jobId, token);
     }
 
     /**
@@ -77,7 +74,7 @@ public class ToolRunner {
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String token) throws ToolException {
+    public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String jobId, String token) throws ToolException {
         return toolFactory
                 .createTool(toolId)
                 .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
@@ -89,11 +86,12 @@ public class ToolRunner {
      * @param tool Tool class
      * @param params Params for the execution.
      * @param outDir Output directory. Mandatory
+     * @param jobId Job Id (if any)
      * @param token session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String token) throws ToolException {
+    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String jobId, String token) throws ToolException {
         return toolFactory
                 .createTool(tool)
                 .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, jobId, token)
@@ -106,11 +104,12 @@ public class ToolRunner {
      * @param toolParams Specific ToolParams for the execution.
      * @param params Params for the execution.
      * @param outDir Output directory. Mandatory
+     * @param jobId Job Id (if any)
      * @param token session id of the user that will execute the tool.
      * @return Execution result
      * @throws ToolException if the execution fails
      */
-    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ToolParams toolParams, ObjectMap params, Path outDir, String token)
+    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ToolParams toolParams, ObjectMap params, Path outDir, String jobId, String token)
             throws ToolException {
         if (toolParams != null) {
             params = toolParams.toObjectMap(params);

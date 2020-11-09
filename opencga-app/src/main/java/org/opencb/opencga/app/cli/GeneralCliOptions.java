@@ -84,7 +84,7 @@ public class GeneralCliOptions {
 
     public static class StudyOption {
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = ParamConstants.STUDY_DESCRIPTION, arity = 1)
         public String study;
 
     }

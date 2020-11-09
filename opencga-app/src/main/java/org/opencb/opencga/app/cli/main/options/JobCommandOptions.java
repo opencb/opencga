@@ -166,6 +166,12 @@ public class JobCommandOptions {
         @Parameter(names = {"--modification-date"}, description = ParamConstants.MODIFICATION_DATE_DESCRIPTION, arity = 1)
         public String modificationDate;
 
+        @Parameter(names = {"--execution-start"}, description = ParamConstants.JOB_EXECUTION_START_DESCRIPTION, arity = 1)
+        public String executionStart;
+
+        @Parameter(names = {"--execution-end"}, description = ParamConstants.JOB_EXECUTION_END_DESCRIPTION, arity = 1)
+        public String executionEnd;
+
         @Parameter(names = {"--visited"}, description = ParamConstants.JOB_VISITED_DESCRIPTION, arity = 0)
         public Boolean visited;
 
@@ -198,6 +204,10 @@ public class JobCommandOptions {
 
         @Parameter(names = {"--plain"}, description = "Plain representation, without dependencies.", arity = 0)
         public boolean plain;
+
+        @Parameter(names = {"--columns"}, description = "Output columns to print." +
+                " [ID, TOOL_ID, STATUS, EVENTS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END, INPUT, OUTPUT, OUTPUT_DIRECTORY]")
+        public String columns;
 
         @Parameter(names = { "--iterations"}, description = "Exit after N iterations", arity = 1)
         public Integer iterations;

@@ -34,7 +34,7 @@ spec:
           - name:  "PASSWORD"
             valueFrom:
               secretKeyRef:
-                name: opencga-secrets
+                name: {{ include "opencga.secretName" . }}
                 key: openCgaAdminPassword
           - name: DOCKER_HOST
             value: tcp://localhost:2375
@@ -99,25 +99,17 @@ spec:
               mountPath: /tmp/opencga_scratch
       volumes:
       - name: conf
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.conf.shareName }}
-          readOnly: true
+        persistentVolumeClaim:
+          claimName: {{ include "pvcConf" . | quote }}
       - name: sessions
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.sessions.shareName }}
-          readOnly: false
+        persistentVolumeClaim:
+          claimName: {{ include "pvcSessions" . | quote }}
       - name: variants
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.variants.shareName }}
-          readOnly: false
+        persistentVolumeClaim:
+          claimName: {{ include "pvcVariants" . | quote }}
       - name: analysisconf
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.analysisconf.shareName }}
-          readOnly: false
+        persistentVolumeClaim:
+          claimName: {{ include "pvcAnalysisconf" . | quote }}
       - name: docker-graph-storage
         emptyDir: {}
       - name: opencgascratch

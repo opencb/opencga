@@ -17,12 +17,18 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
     private final String genotype;
     private final short fileIndex;
     private final AnnotationIndexEntry annotationIndexEntry;
+    private final Integer meCode;
 
     public SampleVariantIndexEntry(Variant variant, short fileIndex) {
         this(variant, fileIndex, null, null);
     }
 
     public SampleVariantIndexEntry(Variant variant, short fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry) {
+        this(variant, fileIndex, genotype, annotationIndexEntry, null);
+    }
+
+    public SampleVariantIndexEntry(Variant variant, short fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
+                                   Integer meCode) {
         if (CollectionUtils.isEmpty(variant.getImpl().getStudies())) {
             this.variant = variant;
         } else {
@@ -43,6 +49,7 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
         this.fileIndex = fileIndex;
         this.genotype = genotype;
         this.annotationIndexEntry = annotationIndexEntry;
+        this.meCode = meCode;
     }
 
     public Variant getVariant() {
@@ -55,6 +62,10 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
 
     public String getGenotype() {
         return genotype;
+    }
+
+    public Integer getMeCode() {
+        return meCode;
     }
 
     public AnnotationIndexEntry getAnnotationIndexEntry() {

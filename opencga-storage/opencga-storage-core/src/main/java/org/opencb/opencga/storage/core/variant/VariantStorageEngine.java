@@ -22,6 +22,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -64,6 +65,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadList
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.stats.SampleVariantStatsAggregationQuery;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1093,6 +1095,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         query = preProcessQuery(query, QueryOptions.empty());
         VariantQueryExecutor variantQueryExecutor = getVariantQueryExecutor(query, new QueryOptions(QueryOptions.COUNT, true));
         return variantQueryExecutor.count(query);
+    }
+
+
+
+    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query query) throws StorageEngineException {
+        return new SampleVariantStatsAggregationQuery(this).sampleStatsQuery(studyStr, sample, query);
     }
 
     /**

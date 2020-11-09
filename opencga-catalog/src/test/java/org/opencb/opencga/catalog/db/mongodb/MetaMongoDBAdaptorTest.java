@@ -27,7 +27,7 @@ public class MetaMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createIndex() throws Exception {
-        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
+        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes(true);
     }
 
 }

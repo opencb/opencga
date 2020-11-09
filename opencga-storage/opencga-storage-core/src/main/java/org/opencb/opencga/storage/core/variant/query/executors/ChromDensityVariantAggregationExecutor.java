@@ -15,7 +15,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.query.executors.accumulators.FieldVariantAccumulator;
+import org.opencb.opencga.storage.core.variant.query.executors.accumulators.FacetFieldAccumulator;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.VariantChromDensityAccumulator;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.VariantTypeAccumulator;
 import org.slf4j.Logger;
@@ -69,7 +69,7 @@ public class ChromDensityVariantAggregationExecutor extends VariantAggregationEx
 
         String[] split = facet.split(NESTED_FACET_SEPARATOR);
         String chromDensityFacet = split[0];
-        FieldVariantAccumulator<Variant> nestedFieldAccumulator;
+        FacetFieldAccumulator<Variant> nestedFieldAccumulator;
         if (split.length == 2) {
             String nestedFieldName;
             nestedFieldName = split[1];
@@ -135,7 +135,7 @@ public class ChromDensityVariantAggregationExecutor extends VariantAggregationEx
             }
             numMatches += count;
 
-            chromDensityAccumulator.cleanEmptyBuckets(regionField);
+            chromDensityAccumulator.evaluate(regionField);
             regionBuckets.add(new FacetField.Bucket(region.getChromosome(), count, Collections.singletonList(regionField)));
         }
 

@@ -68,7 +68,9 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
         }
 
         long variants = engine.count(new Query()).first();
+        System.out.println("Annotate :: Should annotate nothing");
         Assert.assertEquals(0L, engine.annotate(new Query(), new ObjectMap()));
+        System.out.println("Annotate + Overwrite :: Should annotate everything again");
         Assert.assertEquals(variants, engine.annotate(new Query(), new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)));
     }
 }

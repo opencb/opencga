@@ -56,7 +56,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 /**
@@ -345,11 +345,27 @@ public class FileManagerTest extends AbstractManagerTest {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         DataResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);
         assertEquals(4, link.first().getSampleIds().size());
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "test-name.bam", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(link.first().getId()));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19660", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(link.first().getId()));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19661", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(link.first().getId()));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19685", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(link.first().getId()));
 
         Map<String, Object> actionMap = new HashMap<>();
         actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.SET.name());
         fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Collections.emptyList()),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "test-name.bam", QueryOptions.empty(), token).first().getFileIds(),
+                not(hasItem(link.first().getId())));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19660", QueryOptions.empty(), token).first().getFileIds(),
+                not(hasItem(link.first().getId())));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19661", QueryOptions.empty(), token).first().getFileIds(),
+                not(hasItem(link.first().getId())));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19685", QueryOptions.empty(), token).first().getFileIds(),
+                not(hasItem(link.first().getId())));
 
         File file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
         assertEquals(0, file.getSampleIds().size());
@@ -360,26 +376,44 @@ public class FileManagerTest extends AbstractManagerTest {
 
         file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
         assertEquals(2, file.getSampleIds().size());
-
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19661", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(file.getId()));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19660", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(file.getId()));
 
         actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.REMOVE.name());
-        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Arrays.asList("NA19660")),
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Arrays.asList("NA19661")),
                 new QueryOptions(Constants.ACTIONS, actionMap), token);
 
         file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
         assertEquals(1, file.getSampleIds().size());
+        assertEquals("NA19660", file.getSampleIds().get(0));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19660", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(file.getId()));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19661", QueryOptions.empty(), token).first().getFileIds(),
+                not(hasItem(file.getId())));
+
+        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.SET);
+        fileManager.update(studyFqn, link.first().getId(), new FileUpdateParams().setSampleIds(Arrays.asList("NA19661")),
+                new QueryOptions(Constants.ACTIONS, actionMap), token);
+        file = fileManager.get(studyFqn, link.first().getId(), QueryOptions.empty(), token).first();
+        assertEquals(1, file.getSampleIds().size());
         assertEquals("NA19661", file.getSampleIds().get(0));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19660", QueryOptions.empty(), token).first().getFileIds(),
+                not(hasItem(file.getId())));
+        assertThat(catalogManager.getSampleManager().get(studyFqn, "NA19661", QueryOptions.empty(), token).first().getFileIds(),
+                hasItem(file.getId()));
 
         file = fileManager.get(studyFqn, link.first().getId(),
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
         assertEquals(1, file.getSampleIds().size());
         assertEquals("NA19661", file.getSampleIds().get(0));
-        assertNull(file.getPath());
+        assertNull(file.getCreationDate());
 
         file = fileManager.get(studyFqn, link.first().getId(),
                 new QueryOptions(QueryOptions.EXCLUDE, FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), token).first();
         assertTrue(file.getSampleIds().isEmpty());
-        assertNotNull(file.getPath());
+        assertNotNull(file.getCreationDate());
     }
 
     @Test
@@ -1003,9 +1037,9 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(1, result.getNumResults());
 
         //Get all files in data recursively
-        query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "data/.*");
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(5, result.getNumResults());
+//        query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "~data/.*");
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(5, result.getNumResults());
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE");
         result = fileManager.search(studyFqn, query, null, token);
@@ -1573,7 +1607,7 @@ public class FileManagerTest extends AbstractManagerTest {
         setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*"));
 
         // Now we delete the files
-        ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, true);
+        QueryOptions params = new QueryOptions(Constants.SKIP_TRASH, true);
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), params, token);
 
         Query query = new Query()
@@ -1729,7 +1763,7 @@ public class FileManagerTest extends AbstractManagerTest {
         // We remove the file to start again
         Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
         setToPendingDelete(studyFqn, query);
-        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), token);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), token);
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), token).getNumResults());
         Files.copy(sourcePath, copy);
 
@@ -1742,7 +1776,7 @@ public class FileManagerTest extends AbstractManagerTest {
         // We remove the file to start again
         query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
         setToPendingDelete(studyFqn, query);
-        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), token);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), token);
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), token).getNumResults());
         Files.copy(sourcePath, copy);
 
@@ -1755,7 +1789,7 @@ public class FileManagerTest extends AbstractManagerTest {
         // We remove the file to start again
         query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
         setToPendingDelete(studyFqn, query);
-        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), token);
+        fileManager.delete(studyFqn, query, new QueryOptions(Constants.SKIP_TRASH, true), token);
         assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), token).getNumResults());
         Files.copy(sourcePath, copy);
 

@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
@@ -89,6 +90,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.*;
+import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.FILE_GET_QUERY_OPTIONS;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -580,6 +582,23 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return get(intersectQuery, queryOptions, token);
     }
 
+    public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery, String token)
+            throws CatalogException, IOException, StorageEngineException {
+        Query query = inputQuery == null ? new Query() : new Query(inputQuery);
+        query.put(STUDY.key(), studyStr);
+        query.put(SAMPLE.key(), sample);
+
+       return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
+            logger.debug("getSampleStats {}", query);
+            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(
+                    query.getString(STUDY.key()),
+                    query.getString(SAMPLE.key()),
+                    query);
+            logger.debug("getFacets in {}ms", result.getTime());
+            return result;
+        });
+    }
+
     public DataResult<Variant> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
         QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
@@ -728,6 +747,20 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     @Override
     public void close() throws IOException {
         storageEngineFactory.close();
+    }
+
+    public Boolean synchronizeCatalogStudyFromStorage(String study, List<String> files, String token)
+            throws CatalogException, StorageEngineException {
+        return secureOperation("synchronizeCatalogStudyFromStorage", study, new ObjectMap() ,token, engine -> {
+            CatalogStorageMetadataSynchronizer synchronizer =
+                    new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager());
+            if (CollectionUtils.isEmpty(files)) {
+                return synchronizer.synchronizeCatalogStudyFromStorage(study, token);
+            } else {
+                List<File> filesFromCatalog = catalogManager.getFileManager().get(study, files, FILE_GET_QUERY_OPTIONS, token).getResults();
+                return synchronizer.synchronizeCatalogFilesFromStorage(study, filesFromCatalog, token, FILE_GET_QUERY_OPTIONS);
+            }
+        });
     }
 
     // Permission related methods
