@@ -829,8 +829,20 @@ public class AnnotationUtils {
                         throw new CatalogException("The variable " + variableSetString + " does not exist in the study " + study.getFqn());
                     }
                     if (!variableTypeMap.get(variableSetString).containsKey(key)) {
-                        throw new CatalogException("Variable " + key + " from variableSet " + variableSetString + " does not exist. Cannot "
-                                + "perform query " + annotation);
+                        // Maybe it is a dynamic parameter
+                        for (String tmpKey : variableTypeMap.get(variableSetString).keySet()) {
+                            if (tmpKey.endsWith(".*")) {
+                                // It is a dynamic map
+                                if (key.contains(tmpKey.substring(0, tmpKey.length() - 1))) {
+                                    variableTypeMap.get(variableSetString).put(key, variableTypeMap.get(variableSetString).get(tmpKey));
+                                }
+                            }
+                        }
+
+                        if (!variableTypeMap.get(variableSetString).containsKey(key)) {
+                            throw new CatalogException("Variable " + key + " from variableSet " + variableSetString
+                                    + " does not exist. Cannot perform query " + annotation);
+                        }
                     }
                 }
 
@@ -845,6 +857,7 @@ public class AnnotationUtils {
                 annotationList.add(variableSetString + ":" + key + valueString);
                 queriedVariableTypeMap.put(variableSetString + ":" + key, variableTypeMap.get(variableSetString).get(key));
                 queriedVariableTypeMap.put(variableSetString, variableSetMap.get(variableSetString).getUid());
+                queriedVariableTypeMap.put(variableSetString + "__isInternal", variableSetMap.get(variableSetString).isInternal());
             } else {
                 throw new CatalogException("Annotation format from " + annotation + " not accepted. Supported format contains "
                         + "[variableSet:]variable=value");

@@ -56,9 +56,11 @@ import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -155,6 +157,93 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> testSample = catalogManager.getSampleManager()
                 .get(studyFqn, Collections.singletonList("testSample"), new Query(Constants.ALL_VERSIONS, true), null, false, token);
         assertEquals(4, testSample.getResults().size());
+    }
+
+    @Test
+    public void searchByInternalAnnotationSetTest() throws CatalogException {
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
+        variables.add(new Variable().setId("b").setType(Variable.VariableType.MAP_INTEGER).setAllowedKeys(Arrays.asList("b1", "b2")));
+        VariableSet variableSet = new VariableSet("myInternalVset", "", false, false, true, "", variables, null, 1, null);
+        catalogManager.getStudyManager().createVariableSet(studyFqn, variableSet, token);
+
+        Map<String, Object> annotations = new HashMap<>();
+        annotations.put("a", "hello");
+        annotations.put("b", new ObjectMap("b1", 2).append("b2", 3));
+        AnnotationSet annotationSet = new AnnotationSet("annSet", variableSet.getId(), annotations);
+
+        annotations = new HashMap<>();
+        annotations.put("a", "bye");
+        annotations.put("b", new ObjectMap("b1", 4).append("b2", 5));
+        AnnotationSet annotationSet2 = new AnnotationSet("annSet2", variableSet.getId(), annotations);
+
+        Sample sample = new Sample()
+                .setId("sample")
+                .setAnnotationSets(Arrays.asList(annotationSet, annotationSet2));
+        Sample sampleResult = catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token).first();
+        for (AnnotationSet aSet : sampleResult.getAnnotationSets()) {
+            assertNotEquals(variableSet.getId(), aSet.getVariableSetId());
+        }
+
+        // Create a different sample with different annotations
+        annotations = new HashMap<>();
+        annotations.put("a", "hi");
+        annotations.put("b", new ObjectMap("b1", 12).append("b2", 13));
+        annotationSet = new AnnotationSet("annSet", variableSet.getId(), annotations);
+
+        annotations = new HashMap<>();
+        annotations.put("a", "goodbye");
+        annotations.put("b", new ObjectMap("b1", 14).append("b2", 15));
+        annotationSet2 = new AnnotationSet("annSet2", variableSet.getId(), annotations);
+
+        Sample sample2 = new Sample()
+                .setId("sample2")
+                .setAnnotationSets(Arrays.asList(annotationSet, annotationSet2));
+        sampleResult = catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token).first();
+        for (AnnotationSet aSet : sampleResult.getAnnotationSets()) {
+            assertNotEquals(variableSet.getId(), aSet.getVariableSetId());
+        }
+
+        // Query by one of the annotations
+        Query query = new Query(Constants.ANNOTATION, "myInternalVset:a=hello");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=4");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        query = new Query(Constants.ANNOTATION, "b.b1=14");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample2", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        query = new Query(Constants.ANNOTATION, "a=goodbye");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample2", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        // Update sample annotation to be exactly the same as sample2
+        ObjectMap action = new ObjectMap(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.SET);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
+        catalogManager.getSampleManager().update(studyFqn, sample.getId(),
+                new SampleUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet2)), options, token);
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:a=hello");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=4");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "b.b1=14");
+        assertEquals(2, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertTrue(Arrays.asList("sample", "sample2")
+                .containsAll(catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token)
+                        .getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+
+        query = new Query(Constants.ANNOTATION, "a=goodbye");
+        assertEquals(2, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertTrue(Arrays.asList("sample", "sample2")
+                .containsAll(catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token)
+                        .getResults().stream().map(Sample::getId).collect(Collectors.toList())));
     }
 
     @Test

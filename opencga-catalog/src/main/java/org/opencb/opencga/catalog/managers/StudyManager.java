@@ -367,8 +367,7 @@ public class StudyManager extends AbstractManager {
                 if (study.getVariableSets().stream().anyMatch(tvs -> tvs.getId().equals(vs.getId()))) {
                     logger.debug("Skip already existing variable set " + vs.getId());
                 } else {
-                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.isInternal(),
-                            vs.getDescription(), vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
+                    createVariableSet(study, vs, token);
                 }
             }
         }
@@ -1107,22 +1106,19 @@ public class StudyManager extends AbstractManager {
     /*
      * Variables Methods
      */
-    OpenCGAResult<VariableSet> createVariableSet(Study study, String id, String name, Boolean unique, Boolean confidential,
-                                                 boolean internal, String description, Map<String, Object> attributes,
-                                                 List<Variable> variables, List<VariableSet.AnnotableDataModels> entities, String sessionId)
+    private OpenCGAResult<VariableSet> createVariableSet(Study study, VariableSet variableSet, String token)
             throws CatalogException {
-        ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkObj(variables, "Variables from VariableSet");
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        ParamUtils.checkParameter(variableSet.getId(), "id");
+        ParamUtils.checkObj(variableSet.getVariables(), "Variables from VariableSet");
+        String userId = catalogManager.getUserManager().getUserId(token);
         authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
 
-        unique = ParamUtils.defaultObject(unique, true);
-        confidential = ParamUtils.defaultObject(confidential, false);
-        description = ParamUtils.defaultString(description, "");
-        attributes = ParamUtils.defaultObject(attributes, new HashMap<>());
-        entities = ParamUtils.defaultObject(entities, Collections.emptyList());
+        variableSet.setDescription(ParamUtils.defaultString(variableSet.getDescription(), ""));
+        variableSet.setAttributes(ParamUtils.defaultObject(variableSet.getAttributes(), new HashMap<>()));
+        variableSet.setEntities(ParamUtils.defaultObject(variableSet.getEntities(), Collections.emptyList()));
+        variableSet.setName(ParamUtils.defaultString(variableSet.getName(), variableSet.getId()));
 
-        for (Variable variable : variables) {
+        for (Variable variable : variableSet.getVariables()) {
             ParamUtils.checkParameter(variable.getId(), "variable ID");
             ParamUtils.checkObj(variable.getType(), "variable Type");
             variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.emptyList()));
@@ -1134,49 +1130,39 @@ public class StudyManager extends AbstractManager {
 //            variable.setRank(defaultString(variable.getDescription(), ""));
         }
 
-        Set<Variable> variablesSet = new HashSet<>(variables);
-        if (variablesSet.size() < variables.size()) {
-            throw new CatalogException("Error. Repeated variables");
-        }
-
-        VariableSet variableSet = new VariableSet(id, name, unique, confidential, internal, description, variablesSet, entities,
-                getCurrentRelease(study), attributes);
+        variableSet.setRelease(getCurrentRelease(study));
         AnnotationUtils.checkVariableSet(variableSet);
 
-        OpenCGAResult result = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
+        OpenCGAResult<VariableSet> result = studyDBAdaptor.createVariableSet(study.getUid(), variableSet);
         OpenCGAResult<VariableSet> queryResult = studyDBAdaptor.getVariableSet(study.getUid(), variableSet.getId(), QueryOptions.empty());
 
-        queryResult.setTime(queryResult.getTime() + result.getTime());
-
-        return queryResult;
+        return OpenCGAResult.merge(Arrays.asList(result, queryResult));
     }
 
+    @Deprecated
     public OpenCGAResult<VariableSet> createVariableSet(String studyId, String id, String name, Boolean unique, Boolean confidential,
                                                         String description, Map<String, Object> attributes, List<Variable> variables,
                                                         List<VariableSet.AnnotableDataModels> entities, String token)
             throws CatalogException {
+        return createVariableSet(studyId, new VariableSet(id, name, unique != null ? unique : true,
+                confidential != null ? confidential : false, false, description, new HashSet<>(variables), entities, 1, attributes), token);
+    }
+
+    public OpenCGAResult<VariableSet> createVariableSet(String studyId, VariableSet variableSet, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
-                .append("id", id)
-                .append("name", name)
-                .append("unique", unique)
-                .append("confidential", confidential)
-                .append("description", description)
-                .append("attributes", attributes)
-                .append("variables", variables)
-                .append("entities", entities)
+                .append("variableSet", variableSet)
                 .append("token", token);
         try {
-            OpenCGAResult<VariableSet> queryResult = createVariableSet(study, id, name, unique, confidential, false, description,
-                    attributes, variables, entities, token);
+            OpenCGAResult<VariableSet> queryResult = createVariableSet(study, variableSet, token);
             auditManager.audit(userId, Enums.Action.ADD_VARIABLE_SET, Enums.Resource.STUDY, queryResult.first().getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.ADD_VARIABLE_SET, Enums.Resource.STUDY, id, "", study.getId(),
+            auditManager.audit(userId, Enums.Action.ADD_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
