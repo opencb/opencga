@@ -172,7 +172,15 @@ if args.images is None:
     else:
         images = ["base", "init", "r"]
 else:
-    images = args.images.split(",")
+    imagesUnsorted = args.images.split(",")
+    images = []
+    if "base" in imagesUnsorted:
+        imagesUnsorted.remove("base")
+        images += ["base"]
+    if "init" in imagesUnsorted:
+        imagesUnsorted.remove("init")
+        images += ["init"]
+    images += imagesUnsorted
 
 if "demo" in images and hadoop_flavour is not None:
     error(("opencga-demo image requires storage-mongodb."
