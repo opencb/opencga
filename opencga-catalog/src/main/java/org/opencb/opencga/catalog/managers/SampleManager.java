@@ -243,8 +243,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         Query finalQuery = new Query(query);
         fixQueryObject(study, finalQuery, userId);
-        // Fix query if it contains any annotation
-        AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
         AnnotationUtils.fixQueryOptionAnnotation(options);
         finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -267,9 +265,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("token", token);
         try {
             fixQueryObject(study, query, userId);
-
-            // Fix query if it contains any annotation
-            AnnotationUtils.fixQueryAnnotationSearch(study, query);
             AnnotationUtils.fixQueryOptionAnnotation(options);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -308,8 +303,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             Class<?> clazz = getTypeClass(param.type());
 
             fixQueryObject(study, query, userId);
-            // Fix query if it contains any annotation
-            AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<?> result = sampleDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
@@ -326,7 +319,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+        fixQualityControlQuery(query);
         super.fixQueryObject(query);
+
+        // Fix query if it contains any annotation
+        AnnotationUtils.fixQueryAnnotationSearch(study, query);
+
 //        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
 //        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
 //            OpenCGAResult<Individual> queryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
@@ -351,8 +349,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("query", query)
                 .append("token", token);
         try {
-            // Fix query if it contains any annotation
-            AnnotationUtils.fixQueryAnnotationSearch(study, query);
             fixQueryObject(study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -491,7 +487,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //                params.put(Constants.EMPTY_FILES_ACTION, "NONE");
 //            }
 
-            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -718,8 +713,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         try {
             fixQueryObject(study, finalQuery, userId);
 
-            // Fix query if it contains any annotation
-            AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
             iterator = sampleDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_SAMPLE_IDS, userId);
@@ -882,6 +875,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     private OpenCGAResult update(Study study, Sample sample, SampleUpdateParams updateParams, QueryOptions options, String userId)
             throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        fixQualityControlUpdateParams(updateParams, options);
+
         ObjectMap parameters = new ObjectMap();
 
         if (updateParams != null) {
@@ -891,8 +888,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 throw new CatalogException("Could not parse SampleUpdateParams object: " + e.getMessage(), e);
             }
         }
-
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
@@ -1328,10 +1323,52 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return individualDataResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList());
     }
 
-    private void fixUpdateParams(SampleUpdateParams sampleUpdateParams) {
+    private void fixQualityControlQuery(Query query) {
+        String variableSetId = "opencga_sample_variant_stats";
+        List<String> simpleStatsKeys = Arrays.asList("stats.variantCount", "stats.tiTvRatio", "stats.qualityAvg", "stats.qualityStdDev",
+                "stats.heterozygosityRate");
+
+        List<String> mapStatsKeys = Arrays.asList("stats.chromosomeCount", "stats.typeCount", "stats.genotypeCount", "stats.depthCount",
+                "stats.biotypeCount", "stats.clinicalSignificanceCount", "stats.consequenceTypeCount");
+
+        // Default id
+        String id = query.getString("stats.id", "ALL");
+
+        List<String> annotationList = new LinkedList<>();
+        for (String statsKey : simpleStatsKeys) {
+            String value = query.getString(statsKey);
+            if (StringUtils.isNotEmpty(value)) {
+                if (!value.startsWith("!") && !value.startsWith("=") && !value.startsWith(">") && !value.startsWith("<")) {
+                    value = "=" + value;
+                }
+
+                query.remove(statsKey);
+                annotationList.add(variableSetId + "__" + id + ":" + statsKey.replace("stats.", "") + value);
+            }
+        }
+        for (String statsKey : mapStatsKeys) {
+            String value = query.getString(statsKey);
+            if (StringUtils.isNotEmpty(value)) {
+                query.remove(statsKey);
+                annotationList.add(variableSetId + "__" + id + ":" + statsKey.replace("stats.", "") + "." + value);
+            }
+        }
+
+        if (!annotationList.isEmpty()) {
+            query.remove("stats.id");
+            query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
+        }
+
+    }
+
+    private void fixQualityControlUpdateParams(SampleUpdateParams sampleUpdateParams, QueryOptions options) throws CatalogException {
         if (sampleUpdateParams.getQualityControl() == null
                 || CollectionUtils.isEmpty(sampleUpdateParams.getQualityControl().getMetrics())) {
             return;
+        }
+
+        if (CollectionUtils.isNotEmpty(sampleUpdateParams.getAnnotationSets())) {
+            throw new CatalogException("Cannot update 'qualityControl' and 'annotationSets' at the same time.");
         }
 
         String variableSetId = "opencga_sample_variant_stats";
@@ -1360,23 +1397,23 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                             depthCount.put("gte20", stats.getDepthCount().getGte20());
                         }
 
-                        Map<String, Object> annotations = new HashMap<>();
-                        annotations.put("id", variantStat.getId());
-                        annotations.put("variantCount", stats.getVariantCount());
-                        annotations.put("chromosomeCount", stats.getChromosomeCount());
-                        annotations.put("typeCount", stats.getTypeCount());
-                        annotations.put("genotypeCount", stats.getGenotypeCount());
-                        annotations.put("indelLengthCount", indelLengthCount);
-                        annotations.put("filterCount", stats.getFilterCount());
-                        annotations.put("tiTvRatio", stats.getTiTvRatio());
-                        annotations.put("qualityAvg", stats.getQualityAvg());
-                        annotations.put("qualityStdDev", stats.getQualityStdDev());
-                        annotations.put("heterozygosityRate", stats.getHeterozygosityRate());
-                        annotations.put("consequenceTypeCount", stats.getConsequenceTypeCount());
-                        annotations.put("biotypeCount", stats.getBiotypeCount());
-                        annotations.put("clinicalSignificanceCount", stats.getClinicalSignificanceCount());
-                        annotations.put("mendelianErrorCount", stats.getMendelianErrorCount());
-                        annotations.put("depthCount", depthCount);
+                        ObjectMap annotations = new ObjectMap();
+                        annotations.putIfNotEmpty("id", variantStat.getId());
+                        annotations.putIfNotNull("variantCount", stats.getVariantCount());
+                        annotations.putIfNotNull("chromosomeCount", stats.getChromosomeCount());
+                        annotations.putIfNotNull("typeCount", stats.getTypeCount());
+                        annotations.putIfNotNull("genotypeCount", stats.getGenotypeCount());
+                        annotations.putIfNotNull("indelLengthCount", indelLengthCount);
+                        annotations.putIfNotNull("filterCount", stats.getFilterCount());
+                        annotations.putIfNotNull("tiTvRatio", stats.getTiTvRatio());
+                        annotations.putIfNotNull("qualityAvg", stats.getQualityAvg());
+                        annotations.putIfNotNull("qualityStdDev", stats.getQualityStdDev());
+                        annotations.putIfNotNull("heterozygosityRate", stats.getHeterozygosityRate());
+                        annotations.putIfNotNull("consequenceTypeCount", stats.getConsequenceTypeCount());
+                        annotations.putIfNotNull("biotypeCount", stats.getBiotypeCount());
+                        annotations.putIfNotNull("clinicalSignificanceCount", stats.getClinicalSignificanceCount());
+                        annotations.putIfNotNull("mendelianErrorCount", stats.getMendelianErrorCount());
+                        annotations.putIfNotNull("depthCount", depthCount);
 
                         annotationSetList.add(new AnnotationSet(variableSetId + "__" + variantStat.getId(), variableSetId, annotations));
                     }
@@ -1387,5 +1424,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         if (!annotationSetList.isEmpty()) {
             sampleUpdateParams.setAnnotationSets(annotationSetList);
         }
+
+        // Add SET Action
+        Map<String, Object> map = options.getMap(Constants.ACTIONS);
+        if (map == null) {
+            map = new HashMap<>();
+        }
+        map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.SET);
+        options.put(Constants.ACTIONS, map);
     }
 }
