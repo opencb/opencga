@@ -1362,8 +1362,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     private void fixQualityControlUpdateParams(SampleUpdateParams sampleUpdateParams, QueryOptions options) throws CatalogException {
-        if (sampleUpdateParams.getQualityControl() == null
-                || CollectionUtils.isEmpty(sampleUpdateParams.getQualityControl().getMetrics())) {
+        if (sampleUpdateParams.getQualityControl() == null) {
             return;
         }
 
@@ -1372,6 +1371,22 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         String variableSetId = "opencga_sample_variant_stats";
+
+        if (CollectionUtils.isEmpty(sampleUpdateParams.getQualityControl().getMetrics())) {
+            // Add REMOVE Action
+            Map<String, Object> map = options.getMap(Constants.ACTIONS);
+            if (map == null) {
+                map = new HashMap<>();
+            }
+            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.REMOVE);
+            options.put(Constants.ACTIONS, map);
+
+            // Delete all annotation sets of variable set
+            sampleUpdateParams.setAnnotationSets(Collections.singletonList(new AnnotationSet().setVariableSetId(variableSetId)));
+            return;
+        }
+
+
         List<AnnotationSet> annotationSetList = new LinkedList<>();
         for (SampleQualityControlMetrics metric : sampleUpdateParams.getQualityControl().getMetrics()) {
             if (CollectionUtils.isNotEmpty(metric.getVariantStats())) {
@@ -1421,16 +1436,23 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
 
-        if (!annotationSetList.isEmpty()) {
-            sampleUpdateParams.setAnnotationSets(annotationSetList);
-        }
-
-        // Add SET Action
         Map<String, Object> map = options.getMap(Constants.ACTIONS);
         if (map == null) {
             map = new HashMap<>();
         }
-        map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.SET);
-        options.put(Constants.ACTIONS, map);
+        if (!annotationSetList.isEmpty()) {
+            // Add SET Action
+            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.SET);
+            options.put(Constants.ACTIONS, map);
+
+            sampleUpdateParams.setAnnotationSets(annotationSetList);
+        } else {
+            // Add REMOVE Action
+            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.REMOVE);
+            options.put(Constants.ACTIONS, map);
+
+            // Delete all annotation sets of variable set
+            sampleUpdateParams.setAnnotationSets(Collections.singletonList(new AnnotationSet().setVariableSetId(variableSetId)));
+        }
     }
 }

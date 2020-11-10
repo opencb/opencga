@@ -196,6 +196,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             for (String projection : projectionList) {
                 if (ANNOTATION_SETS.equals(projection)) {
                     finalProjectionList.add(AnnotationSetParams.ANNOTATION_SETS.key());
+                    finalProjectionList.add(AnnotationSetParams.INTERNAL_ANNOTATION_SETS.key());
                 } else if (!projection.startsWith(Constants.ANNOTATION + ".")
                         && !projection.startsWith(Constants.ANNOTATION_SET_NAME + ".")
                         && !projection.startsWith(Constants.VARIABLE_SET + ".")) {
@@ -231,7 +232,9 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             if (includeAnnotation) {
                 // We need to specify we need to include the annotation sets in order to filter them properly afterwards with the converters
                 finalProjectionList.add(AnnotationSetParams.ANNOTATION_SETS.key());
+                finalProjectionList.add(AnnotationSetParams.INTERNAL_ANNOTATION_SETS.key());
                 finalProjectionList.add(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key());
+                finalProjectionList.add(AnnotationSetParams.PRIVATE_INTERNAL_VARIABLE_SET_MAP.key());
             }
 
             if (finalProjectionList.isEmpty()) {
@@ -312,14 +315,21 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                 // 0. Obtain the annotationSet to be removed to know the variableSet being annotated
                 OpenCGAResult<Document> queryResult = nativeGet(new Query(PRIVATE_UID, entryId), new QueryOptions(QueryOptions.INCLUDE,
-                        ANNOTATION_SETS));
+                        Arrays.asList(ANNOTATION_SETS)));
 
                 if (queryResult.getNumResults() != 1) {
                     throw new CatalogDBException("Unexpected error. Could not obtain the entry information. The annotationSet could "
                             + "not be removed.");
                 }
 
+                Map<String, VariableSet> variableSetMap = new HashMap<>();
+                for (VariableSet variableSet : variableSetList) {
+                    variableSetMap.put(variableSet.getId(), variableSet);
+                }
+
                 List<Document> annotationList = (List<Document>) queryResult.first().get(AnnotationSetParams.ANNOTATION_SETS.key());
+                List<Document> internalAnnotationList = (List<Document>) queryResult.first()
+                        .get(AnnotationSetParams.INTERNAL_ANNOTATION_SETS.key());
                 Map<String, String> annotationSetIdVariableSetUidMap = new HashMap<>();
                 // This variable will contain a map of variable set ids pointing to all the annotationSet ids using the variable set
                 Map<String, Set<String>> variableSetAnnotationsets = new HashMap<>();
@@ -336,25 +346,67 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     variableSetAnnotationsets.get(variableSetId).add(annSetId);
                     existingAnnotationSets.add(annSetId);
                 }
+                if (internalAnnotationList != null) {
+                    for (Document document : internalAnnotationList) {
+                        String variableSetId = String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key()));
+                        String annSetId = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
+
+                        annotationSetIdVariableSetUidMap.put(annSetId, variableSetId);
+
+                        if (!variableSetAnnotationsets.containsKey(variableSetId)) {
+                            variableSetAnnotationsets.put(variableSetId, new HashSet<>());
+                        }
+                        variableSetAnnotationsets.get(variableSetId).add(annSetId);
+                        existingAnnotationSets.add(annSetId);
+                    }
+                }
 
                 for (AnnotationSet annotationSet : annotationSetList) {
-                    if (!existingAnnotationSets.contains(annotationSet.getId())) {
-                        throw new CatalogDBException("Could not delete: AnnotationSet " + annotationSet.getId() + " not found");
-                    }
+                    if (StringUtils.isNotEmpty(annotationSet.getId())) {
+                        if (!existingAnnotationSets.contains(annotationSet.getId())) {
+                            throw new CatalogDBException("Could not delete: AnnotationSet " + annotationSet.getId() + " not found");
+                        }
 
-                    // 1. Remove annotationSet
-                    removeAnnotationSet(clientSession, entryId, annotationSet.getId(), isVersioned);
+                        // 1. Remove annotationSet
+                        removeAnnotationSetByAnnotationSetId(clientSession, entryId, annotationSet.getId(), isVersioned);
 
-                    String variableSetId = annotationSetIdVariableSetUidMap.get(annotationSet.getId());
-                    // Remove the annotation set from the variableSetAnnotationsets
-                    variableSetAnnotationsets.get(variableSetId).remove(annotationSet.getId());
+                        String variableSetId = annotationSetIdVariableSetUidMap.get(annotationSet.getId());
+                        // Remove the annotation set from the variableSetAnnotationsets
+                        variableSetAnnotationsets.get(variableSetId).remove(annotationSet.getId());
 
-                    // Only if the variableSet is not being annotated by any annotationSet, we can remove the private variableSetMap
-                    if (variableSetAnnotationsets.get(variableSetId).isEmpty()) {
-                        // 2. Unset variable set map uid - id
-                        Map<String, String> variableSetMapToRemove = new HashMap<>();
-                        variableSetMapToRemove.put(variableSetId, null);
-                        removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned);
+                        // Only if the variableSet is not being annotated by any annotationSet, we can remove the private variableSetMap
+                        if (variableSetAnnotationsets.get(variableSetId).isEmpty()) {
+                            // 2. Unset variable set map uid - id
+                            Map<String, String> variableSetMapToRemove = new HashMap<>();
+                            variableSetMapToRemove.put(variableSetId, null);
+                            removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned);
+                        }
+                    } else if (StringUtils.isNotEmpty(annotationSet.getVariableSetId())) {
+                        VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
+                        if (variableSet == null) {
+                            throw new CatalogDBException("Could not delete AnnotationSet. VariableSet '" + annotationSet.getVariableSetId()
+                                    + "' not found");
+                        }
+
+                        if (variableSetAnnotationsets.containsKey(String.valueOf(variableSet.getUid()))) {
+                            // Only perform the update if variable set is actually present
+
+                            // Private VariableSet to remove
+                            Map<String, String> variableSetMapToRemove = new HashMap<>();
+                            variableSetMapToRemove.put(String.valueOf(variableSet.getUid()), null);
+
+                            if (!variableSet.isInternal()) {
+                                // Remove all annotationSets
+                                removeAnnotationSetByVariableSetId(clientSession, entryId, variableSet.getUid(), isVersioned);
+                                removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned);
+                            } else {
+                                // Remove all annotationSets
+                                removeAnnotationSetByVariableSetId(clientSession, entryId, variableSet.getUid(), isVersioned, true);
+                                removePrivateVariableMap(clientSession, entryId, variableSetMapToRemove, isVersioned, true);
+                            }
+                        }
+                    } else {
+                        throw new CatalogDBException("Could not delete AnnotationSet. AnnotationSet 'id' or 'variableSetId' not defined.");
                     }
                 }
 
@@ -367,7 +419,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             List<Document> annotationDocumentList = getNewAnnotationList(Collections.singletonList(annotationSet), variableSetList);
 
             // 2. Remove all the existing annotations of the annotation set
-            removeAnnotationSet(clientSession, entryId, annotationSet.getId(), isVersioned);
+            removeAnnotationSetByAnnotationSetId(clientSession, entryId, annotationSet.getId(), isVersioned);
 
             // 3. Add new list of annotations
             addNewAnnotations(clientSession, entryId, annotationDocumentList, isVersioned);
@@ -378,6 +430,11 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
     private void removePrivateVariableMap(ClientSession clientSession, long entryId, Map<String, String> privateVariableMapToSet,
                                           boolean isVersioned) throws CatalogDBException {
+        removePrivateVariableMap(clientSession, entryId, privateVariableMapToSet, isVersioned, false);
+    }
+
+    private void removePrivateVariableMap(ClientSession clientSession, long entryId, Map<String, String> privateVariableMapToSet,
+                                          boolean isVersioned, boolean isInternal) throws CatalogDBException {
         Document queryDocument = new Document(PRIVATE_UID, entryId);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
@@ -387,7 +444,12 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             // We only want to remove the private variable map if it is not currently in use by any annotation set
             queryDocument.append(AnnotationSetParams.VARIABLE_SET_ID.key(), new Document("$ne", Long.parseLong(entry.getKey())));
 
-            Bson unset = Updates.unset(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + entry.getKey());
+            Bson unset;
+            if (!isInternal) {
+                unset = Updates.unset(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + entry.getKey());
+            } else {
+                unset = Updates.unset(AnnotationSetParams.PRIVATE_INTERNAL_VARIABLE_SET_MAP.key() + "." + entry.getKey());
+            }
 
             DataResult result = getCollection().update(clientSession, queryDocument, unset, new QueryOptions());
             if (result.getNumUpdated() < 1 && result.getNumMatches() == 1) {
@@ -488,8 +550,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         }
     }
 
-    private void removeAnnotationSet(ClientSession clientSession, long entryId, String annotationSetId, boolean isVersioned)
-            throws CatalogDBException {
+    private void removeAnnotationSetByAnnotationSetId(ClientSession clientSession, long entryId, String annotationSetId,
+                                                      boolean isVersioned) throws CatalogDBException {
         Document queryDocument = new Document(PRIVATE_UID, entryId);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
@@ -500,6 +562,33 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
         DataResult result = getCollection().update(clientSession, queryDocument, pull, new QueryOptions("multi", true));
         if (result.getNumUpdated() < 1) {
+            throw new CatalogDBException("Could not delete the annotation set");
+        }
+    }
+
+    private void removeAnnotationSetByVariableSetId(ClientSession clientSession, long entryId, long variableSetUid, boolean isVersioned)
+            throws CatalogDBException {
+        removeAnnotationSetByVariableSetId(clientSession, entryId, variableSetUid, isVersioned, false);
+    }
+
+    private void removeAnnotationSetByVariableSetId(ClientSession clientSession, long entryId, long variableSetUid, boolean isVersioned,
+                                                    boolean isInternal) throws CatalogDBException {
+        Document queryDocument = new Document(PRIVATE_UID, entryId);
+        if (isVersioned) {
+            queryDocument.append(LAST_OF_VERSION, true);
+        }
+
+        Bson pull;
+        if (!isInternal) {
+            pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(),
+                    new Document(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetUid));
+        } else {
+            pull = Updates.pull(AnnotationSetParams.INTERNAL_ANNOTATION_SETS.key(),
+                    new Document(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetUid));
+        }
+
+        DataResult result = getCollection().update(clientSession, queryDocument, pull, new QueryOptions("multi", true));
+        if (result.getNumMatches() > 0 && result.getNumUpdated() < 1) {
             throw new CatalogDBException("Could not delete the annotation set");
         }
     }

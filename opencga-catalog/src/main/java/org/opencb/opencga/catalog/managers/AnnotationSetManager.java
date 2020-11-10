@@ -285,8 +285,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                         + "Update could not be performed.");
                             }
 
-                            // Check the annotationSet ids are present
-                            if (StringUtils.isEmpty(annotationSet.getId())) {
+                            // Check the annotationSet ids or the variable set ids are present
+                            if (StringUtils.isEmpty(annotationSet.getId()) && StringUtils.isEmpty(annotationSet.getVariableSetId())) {
                                 throw new CatalogException("Cannot remove annotationSet. Mandatory annotationSet id field is empty");
                             }
                         }

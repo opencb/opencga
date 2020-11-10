@@ -346,6 +346,81 @@ public class SampleManagerTest extends AbstractManagerTest {
                 .append("stats.id", "v1")
                 .append("stats.tiTvRatio", 3.5);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        // Update any other sample field to validate it doesn't affect quality control
+        result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setDescription("my description"),
+                QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        // Check same values as before but the results should be now different
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 20);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.variantCount", 10);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 15);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 13.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 15.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 3.5);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        // Remove SampleQcVariantStats values
+        qualityControl = new SampleQualityControl(Arrays.asList("file1", "file2"), null, null);
+
+        // And update sample
+        result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl),
+                QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        // None of the previous queries should give any result
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 20);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.variantCount", 10);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 15);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 13.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 15.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 3.5);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
     }
 
     @Test
