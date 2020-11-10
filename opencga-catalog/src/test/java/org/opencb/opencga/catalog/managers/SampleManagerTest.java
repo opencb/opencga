@@ -372,10 +372,13 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
         assertEquals(1, result.getNumUpdated());
 
-        Query query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:variantCount=20");
+        Query query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats__v1@opencga_sample_variant_stats:variantCount=20");
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
-        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:variantCount=10");
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats__v2@opencga_sample_variant_stats:variantCount=20");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats__v2@opencga_sample_variant_stats:variantCount=10");
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:variantCount=15");

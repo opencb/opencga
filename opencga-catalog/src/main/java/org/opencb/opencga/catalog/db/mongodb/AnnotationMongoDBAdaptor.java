@@ -737,9 +737,10 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                 if (matcher.find()) {
                     // Split the annotation by key - value
-                    String variableSet = matcher.group(1);
-                    String key = matcher.group(2);
-                    String valueString = matcher.group(3);
+                    String annotationSet = matcher.group(1);
+                    String variableSet = matcher.group(2);
+                    String key = matcher.group(3);
+                    String valueString = matcher.group(4);
 
                     if (annotation.startsWith(Constants.ANNOTATION_SET_NAME)) {
                         String operator = getOperator(valueString);
@@ -818,6 +819,10 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     } else {
                         // Annotation...
 
+                        if (StringUtils.isNotEmpty(annotationSet)) {
+                            annotationSet = annotationSet.replace("@", "");
+                        }
+
                         // Remove the : at the end of the variableSet
                         variableSet = variableSet.replace(":", "");
 
@@ -849,6 +854,9 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                         Document queryDocument = new Document()
                                 .append(AnnotationSetParams.ID.key(), key)
                                 .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableTypeMap.getLong(variableSet));
+                        if (StringUtils.isNotEmpty(annotationSet)) {
+                            queryDocument.append(AnnotationSetParams.ANNOTATION_SET_NAME.key, annotationSet);
+                        }
                         queryDocument.putAll(valueList.get(0));
 
                         if (!isInternal) {

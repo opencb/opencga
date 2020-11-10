@@ -1343,14 +1343,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 query.remove(statsKey);
-                annotationList.add(variableSetId + "__" + id + ":" + statsKey.replace("stats.", "") + value);
+                annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + statsKey.replace("stats.", "") + value);
             }
         }
         for (String statsKey : mapStatsKeys) {
             String value = query.getString(statsKey);
             if (StringUtils.isNotEmpty(value)) {
                 query.remove(statsKey);
-                annotationList.add(variableSetId + "__" + id + ":" + statsKey.replace("stats.", "") + "." + value);
+                annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + statsKey.replace("stats.", "") + "." + value);
             }
         }
 

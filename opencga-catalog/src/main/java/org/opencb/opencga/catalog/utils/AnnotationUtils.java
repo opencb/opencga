@@ -46,7 +46,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class AnnotationUtils {
 
-    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^:=^<>~!$]+:)?([^=^<>~!:$]+)([=^<>~!$]+.+)$");
+    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^:=^<>~!@$]+@)?([^:=@^<>~!$]+:)?([^=@^<>~!:$]+)([=^<>~!$]+.+)$");
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
@@ -787,7 +787,7 @@ public class AnnotationUtils {
             if (matcher.find()) {
 
                 if (annotation.startsWith(Constants.VARIABLE_SET)) {
-                    String variableSetString = matcher.group(3);
+                    String variableSetString = matcher.group(4);
                     // Obtain the operator to take it out and get only the actual value
                     String operator = getOperator(variableSetString);
                     variableSetString = variableSetString.replace(operator, "");
@@ -807,9 +807,17 @@ public class AnnotationUtils {
                     continue;
                 }
 
-                String variableSetString = matcher.group(1);
-                String key = matcher.group(2);
-                String valueString = matcher.group(3);
+                String annotationSetString = matcher.group(1);
+                String variableSetString = matcher.group(2);
+                String key = matcher.group(3);
+                String valueString = matcher.group(4);
+
+                if (StringUtils.isNotEmpty(annotationSetString)) {
+                    if (StringUtils.isEmpty(variableSetString)) {
+                        throw new CatalogException("Missing variable set id");
+                    }
+                    annotationSetString = annotationSetString.replace("@", "");
+                }
 
                 if (StringUtils.isEmpty(variableSetString)) {
                     // Obtain the variable set for the annotations
@@ -854,7 +862,11 @@ public class AnnotationUtils {
                     confidentialPermissionChecked = true;
                 }
 
-                annotationList.add(variableSetString + ":" + key + valueString);
+                if (StringUtils.isEmpty(annotationSetString)) {
+                    annotationList.add(variableSetString + ":" + key + valueString);
+                } else {
+                    annotationList.add(annotationSetString + "@" + variableSetString + ":" + key + valueString);
+                }
                 queriedVariableTypeMap.put(variableSetString + ":" + key, variableTypeMap.get(variableSetString).get(key));
                 queriedVariableTypeMap.put(variableSetString, variableSetMap.get(variableSetString).getUid());
                 queriedVariableTypeMap.put(variableSetString + "__isInternal", variableSetMap.get(variableSetString).isInternal());
