@@ -1331,7 +1331,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         List<String> mapStatsKeys = Arrays.asList("stats.chromosomeCount", "stats.typeCount", "stats.genotypeCount", "stats.depthCount",
                 "stats.biotypeCount", "stats.clinicalSignificanceCount", "stats.consequenceTypeCount");
 
-        // Default id
+        // Default annotation set id
         String id = query.getString("stats.id", "ALL");
 
         List<String> annotationList = new LinkedList<>();

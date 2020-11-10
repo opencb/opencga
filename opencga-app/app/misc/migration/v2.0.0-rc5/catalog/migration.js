@@ -89,10 +89,26 @@ runUpdate(updateCount++, function () {
 runUpdate(updateCount++, function () {
     migrateCollection("study", {"variableSets.internal": {"$exists": false}}, {"variableSets": 1}, function(bulk, doc) {
         if (isNotEmptyArray(doc.variableSets)) {
+            var variableSets = [];
+            var variableSetUid = undefined;
             for (var variableSet of doc.variableSets) {
-                variableSet['internal'] = false;
+                if (variableSet.id !== "opencga_sample_variant_stats") {
+                    variableSet['internal'] = false;
+                    variableSets.push(variableSet);
+                } else {
+                    variableSetUid = variableSet.uid;
+                }
             }
-            bulk.find({"_id": doc._id}).updateOne({"$set": {"variableSets": doc.variableSets}});
+
+            if (isNotUndefinedOrNull(variableSetUid)) {
+                // Remove any annotations using the opencga_sample_variant_stats variable set
+                db.sample.update(
+                    {"customAnnotationSets.vs": variableSetUid},
+                    {"$pull": {"customAnnotationSets": {"vs": variableSetUid}}},
+                    {"multi": true});
+            }
+
+            bulk.find({"_id": doc._id}).updateOne({"$set": {"variableSets": variableSets}});
         }
     });
 });
