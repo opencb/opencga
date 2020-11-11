@@ -3,6 +3,7 @@
   "id" : "opencga_cohort_variant_stats",
   "name" : "opencga_cohort_variant_stats",
   "unique" : true,
+  "internal": false,
   "confidential" : false,
   "description" : "OpenCGA cohort variant stats",
   "variables" : [ {

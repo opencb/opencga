@@ -1,5 +1,5 @@
-if (getLatestUpdate() < 1) {
-    print("\nStarting migration 1...");
+var updateCount = 1;
+runUpdate(updateCount++, function () {
     db.interpretation.createIndex({"clinicalAnalysisId": 1, "studyUid": 1}, {"background": true});
     db.interpretation.createIndex({"status": 1, "studyUid": 1}, {"background": true});
     db.interpretation.createIndex({"primaryFindings.id": 1, "studyUid": 1}, {"background": true});
@@ -8,17 +8,13 @@ if (getLatestUpdate() < 1) {
     db.interpretation.createIndex({"uuid": 1, "version": 1}, {"unique": true, "background": true});
     db.interpretation.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": true});
     db.interpretation.createIndex({"id": 1, "version": 1, "studyUid": 1}, {"unique": true, "background": true});
-    db.interpretation.dropIndex({"uuid": 1})
-    db.interpretation.dropIndex({"uid": 1})
-    db.interpretation.dropIndex({"id": 1, "studyUid": 1})
-    setLatestUpdate(1);
-} else {
-    print("\nSkipping migration 1...");
-}
+    db.interpretation.dropIndex({"uuid": 1});
+    db.interpretation.dropIndex({"uid": 1});
+    db.interpretation.dropIndex({"id": 1, "studyUid": 1});
+});
 
 // # 1668
-if (getLatestUpdate() < 2) {
-    print("\nStarting migration 2...");
+runUpdate(updateCount++, function () {
     migrateCollection("clinical", {"qualityControl": {"$exists": false}}, {"_creationDate": 1}, function (bulk, doc) {
         bulk.find({"_id": doc._id}).updateOne({
             "$set": {
@@ -31,19 +27,19 @@ if (getLatestUpdate() < 2) {
             }
         });
     });
-    setLatestUpdate(2);
-} else {
-    print("\nSkipping migration 2...");
-}
+});
 
 // # 1673
-if (getLatestUpdate() < 3) {
-    print("\nStarting migration 3...");
+runUpdate(updateCount++, function () {
 
     // The clinical configuration will be autocompleted during migration by Java
     db.study.update({"configuration": {"$exists": false}}, {"$set": {"configuration": {"clinical": {}}}}, {"multi": true});
 
-    migrateCollection("clinical", {"consent.consents": {"$exists": false}}, {"creationDate": 1, "priority": 1, "status": 1}, function (bulk, doc) {
+    migrateCollection("clinical", {"consent.consents": {"$exists": false}}, {
+        "creationDate": 1,
+        "priority": 1,
+        "status": 1
+    }, function (bulk, doc) {
         var clinicalParams = {
             "consent": {
                 "consents": [],
@@ -87,10 +83,34 @@ if (getLatestUpdate() < 3) {
     db.clinical.createIndex({"priority.id": 1, "studyUid": 1}, {"background": true});
     db.clinical.createIndex({"flags.id": 1, "studyUid": 1}, {"background": true});
     db.interpretation.createIndex({"status.id": 1, "studyUid": 1}, {"background": true});
+});
 
-    setLatestUpdate(3);
-} else {
-    print("\nSkipping migration 3...");
-}
+// # 1674
+runUpdate(updateCount++, function () {
+    migrateCollection("study", {"variableSets.internal": {"$exists": false}}, {"variableSets": 1}, function(bulk, doc) {
+        if (isNotEmptyArray(doc.variableSets)) {
+            var variableSets = [];
+            var variableSetUid = undefined;
+            for (var variableSet of doc.variableSets) {
+                if (variableSet.id !== "opencga_sample_variant_stats") {
+                    variableSet['internal'] = false;
+                    variableSets.push(variableSet);
+                } else {
+                    variableSetUid = variableSet.uid;
+                }
+            }
+
+            if (isNotUndefinedOrNull(variableSetUid)) {
+                // Remove any annotations using the opencga_sample_variant_stats variable set
+                db.sample.update(
+                    {"customAnnotationSets.vs": variableSetUid},
+                    {"$pull": {"customAnnotationSets": {"vs": variableSetUid}}},
+                    {"multi": true});
+            }
+
+            bulk.find({"_id": doc._id}).updateOne({"$set": {"variableSets": variableSets}});
+        }
+    });
+});
 
 // setOpenCGAVersion("2.0.0-rc5")

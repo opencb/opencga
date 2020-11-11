@@ -28,6 +28,7 @@ import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
@@ -88,6 +89,34 @@ public class StudyManagerTest extends AbstractManagerTest {
             }
             variable.setVariableSet(new LinkedHashSet<>(l));
         }
+    }
+
+    @Test
+    public void internalVariableSetTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+                null, null, null, new QueryOptions(), token).first();
+
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
+        variables.add(new Variable().setId("b").setType(Variable.VariableType.MAP_INTEGER).setAllowedKeys(Arrays.asList("b1", "b2")));
+        VariableSet variableSet = new VariableSet("myInternalVset", "", false, false, true, "", variables, null, 1, null);
+
+        OpenCGAResult<VariableSet> result = catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
+        assertEquals(1, result.getNumUpdated());
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.getResults().size());
+
+        // An internal variable set should never be returned
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        for (VariableSet vset : study.getVariableSets()) {
+            assertNotEquals(variableSet.getId(), vset.getId());
+            assertFalse(vset.isInternal());
+        }
+
+        // But if I try to create another one with the same id, it should fail
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("exists");
+        catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
     }
 
     @Test

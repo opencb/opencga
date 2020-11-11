@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -84,8 +85,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
         }
 
         try {
-            String userId = catalogManager.getUserManager().getUserId(token);
-            Study study = catalogManager.getStudyManager().resolveId(studyFqn, userId);
+            Study study = catalogManager.getStudyManager().get(studyFqn, StudyManager.INCLUDE_STUDY_ID, token).first();
 
             OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(studyFqn, path, false, QueryOptions.empty(), token);
             if (parents.getNumResults() == 0) {
@@ -96,6 +96,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
                 throw new CatalogException("Parent path " + parents.first().getPath() + " is external. Cannot download to mounted folders");
             }
 
+            String userId = catalogManager.getUserManager().getUserId(token);
             // Check write permissions over the path
             catalogManager.getAuthorizationManager()
                     .checkFilePermission(study.getUid(), parents.first().getUid(), userId, FileAclEntry.FilePermissions.WRITE);

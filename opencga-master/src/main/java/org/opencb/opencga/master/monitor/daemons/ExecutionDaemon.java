@@ -458,7 +458,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(":"));
             OpenCGAResult<Study> studyResult;
             try {
-                studyResult = catalogManager.getStudyManager().get(projectFqn, new Query(),
+                studyResult = catalogManager.getStudyManager().search(projectFqn, new Query(),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
                                 StudyDBAdaptor.QueryParams.FQN.key())), token);
             } catch (CatalogException e) {

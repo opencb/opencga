@@ -5,6 +5,7 @@
   "entities" : [ "SAMPLE" ],
   "unique" : true,
   "confidential" : false,
+  "internal": false,
   "description" : "OpenCGA variable set for sample quality control (QC)",
   "variables" : [ {
     "id" : "sampleId",

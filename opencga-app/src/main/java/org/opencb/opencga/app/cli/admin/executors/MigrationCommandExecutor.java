@@ -3,7 +3,6 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -23,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.file.FileExperiment;
@@ -30,13 +30,11 @@ import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -316,11 +314,44 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
                     if (project.getStudies() != null) {
                         for (Study study : project.getStudies()) {
-                            logger.info("Updating study configuration from study {}", study.getFqn());
-                            catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
+                            if (study.getConfiguration() == null) {
+                                logger.info("Updating study configuration from study '{}'", study.getFqn());
+                                catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
+                            }
                         }
                     }
                 }
+
+                VariableSet variableSet;
+                try {
+                    InputStream inputStream = this.getClass().getClassLoader()
+                            .getResource("variablesets/sample-variant-stats-variableset.json").openStream();
+                    variableSet = JacksonUtils.getDefaultNonNullObjectMapper().readValue(inputStream, VariableSet.class);
+                } catch (IOException e) {
+                    logger.error("Could not read Variable set 'variablesets/sample-variant-stats-variableset.json'", e);
+                    return;
+                }
+
+                // Create default opencga_sample_variant_stats variable set
+                for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                    String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            boolean variableSetExists = false;
+                            for (VariableSet vs : study.getVariableSets()) {
+                                if ("opencga_sample_variant_stats".equals(vs.getId())) {
+                                    variableSetExists = true;
+                                }
+                                break;
+                            }
+                            if (!variableSetExists) {
+                                logger.info("Creating sample variant stats Variable set for study '{}'", study.getFqn());
+                                catalogManager.getStudyManager().createVariableSet(study.getFqn(), variableSet, token);
+                            }
+                        }
+                    }
+                }
+
             }
         }
     }

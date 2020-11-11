@@ -317,8 +317,8 @@ public class CatalogSampleAnnotationsLoader {
                     null, variableList.size(), null, "", null, null));
         }
 
-        VariableSet variableSet = new VariableSet("", "", false, false, "", new HashSet(variableList),
-                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, null);
+        VariableSet variableSet = new VariableSet("", "", false, false, false, "",
+                new HashSet(variableList), Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, null);
         return variableSet;
     }
 

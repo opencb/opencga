@@ -191,7 +191,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response getAllStudies(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION, required = true) @PathParam(ParamConstants.PROJECT_PARAM) String project) {
         try {
-            return createOkResponse(catalogManager.getStudyManager().get(project, new Query(), queryOptions, token));
+            return createOkResponse(catalogManager.getStudyManager().search(project, new Query(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
