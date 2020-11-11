@@ -527,12 +527,13 @@ public class ProjectManager extends AbstractManager {
                 OpenCGAResult<Integer> queryResult = new OpenCGAResult<>(projectDataResult.getTime() + writeResult.getTime(),
                         Collections.emptyList(), 1, Collections.singletonList(projectDataResult.first().getCurrentRelease()), 1);
 
-                // Upgrade release in sample, family and individuals
+                // Upgrade release in every versioned data model
                 for (Study study : allStudiesInProject) {
                     sampleDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
                     individualDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
                     familyDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
                     panelDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
+                    interpretationDBAdaptor.updateProjectRelease(study.getUid(), queryResult.first());
                 }
 
                 auditManager.audit(userId, Enums.Action.INCREMENT_PROJECT_RELEASE, Enums.Resource.PROJECT, project.getId(),

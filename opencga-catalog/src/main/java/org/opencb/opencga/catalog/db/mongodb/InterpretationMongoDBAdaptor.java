@@ -262,6 +262,21 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
+    public OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyId)
+                .append(QueryParams.SNAPSHOT.key(), release - 1);
+        Bson bson = parseQuery(query);
+
+        Document update = new Document()
+                .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
+
+        QueryOptions queryOptions = new QueryOptions("multi", true);
+
+        return new OpenCGAResult(interpretationCollection.update(bson, update, queryOptions));
+    }
+
+    @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         return count(null, query);
     }

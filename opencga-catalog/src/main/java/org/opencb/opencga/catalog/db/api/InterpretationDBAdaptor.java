@@ -158,4 +158,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
 
     long getStudyId(long interpretationId) throws CatalogDBException;
 
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
 }
