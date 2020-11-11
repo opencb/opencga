@@ -393,6 +393,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             ObjectMap removedSamples = (ObjectMap) updateDocument.getAttributes().getMap("REMOVED_SAMPLES");
             List<Long> setSamples = updateDocument.getAttributes().getAsLongList("SET_SAMPLES");
 
+            if (setSamples.isEmpty() && (addedSamples == null || addedSamples.isEmpty())
+                    && (removedSamples == null || removedSamples.isEmpty())) {
+                throw new CatalogDBException("Internal error: Expected a list of added, removed or set samples");
+            }
+
             Bson sampleBsonQuery = null;
             UpdateDocument sampleUpdate = null;
             ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
@@ -413,6 +418,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 // Replace the id for the new one
                 sampleUpdate = new UpdateDocument();
                 sampleUpdate.getSet().append(SampleDBAdaptor.QueryParams.FILE_IDS.key() + ".$", newFileId);
+
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
+                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
             }
             if (addedSamples != null && !addedSamples.isEmpty()) {
                 Query query = new Query()
@@ -424,6 +432,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
+
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
+                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
             }
             if (removedSamples != null && !removedSamples.isEmpty()) {
                 Query query = new Query()
@@ -435,13 +446,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
-            }
-            if (sampleUpdate == null) {
-                throw new CatalogDBException("Internal error: Expected a list of added, removed or set samples");
-            }
 
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                    sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
+                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+            }
         }
     }
 
