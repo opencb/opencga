@@ -124,6 +124,7 @@ public final class Enums {
         TAIL_CONTENT,
         INDEX,
         CHANGE_PERMISSION,
+        REVERT,
 
         LOGIN,
         REFRESH_TOKEN,

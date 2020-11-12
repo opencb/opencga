@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -881,6 +882,76 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         return interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as, options);
+    }
+
+    public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId, int version,
+                                                String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("clinicalAnalysisId", clinicalAnalysisId)
+                .append("interpretationId", interpretationId)
+                .append("version", version)
+                .append("token", token);
+
+        String interpretationUuid = "";
+        try {
+            OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
+                    clinicalAnalysisId, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
+            if (clinicalResult.getNumResults() == 0) {
+                throw new CatalogException("Could not find ClinicalAnalysis '" + clinicalAnalysisId + "'");
+            }
+            authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalResult.first().getUid(), userId,
+                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+
+            OpenCGAResult<Interpretation> result = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_IDS, userId);
+            if (result.getNumResults() == 0) {
+                throw new CatalogException("Could not find interpretation '" + interpretationId + "'");
+            }
+            Interpretation interpretation = result.first();
+            interpretationId = interpretation.getId();
+            interpretationUuid = interpretation.getUuid();
+
+            if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysisId)) {
+                throw new CatalogException("Interpretation '" + interpretationId + "' does not belong to ClinicalAnalysis '"
+                        + clinicalAnalysisId + "'. It belongs to '" + interpretation.getClinicalAnalysisId() + "'.");
+            }
+
+            if (version <= 0) {
+                throw new CatalogException("Version cannot be 0 or a negative value");
+            }
+
+            if (result.first().getVersion() <= version) {
+                throw new CatalogException("Version cannot be higher than the current latest interpretation version");
+            }
+
+            List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+            clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.REVERT_INTERPRETATION,
+                    "Revert interpretation '" + interpretation.getId() + "' to version '" + version + "'", TimeUtils.getTime()));
+            OpenCGAResult<Interpretation> revert = interpretationDBAdaptor.revert(interpretation.getUid(), version, clinicalAuditList);
+
+            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretation.getId(),
+                    interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return revert;
+        } catch (CatalogDBException e) {
+            logger.error("Could not revert interpretation {}", interpretationId, e);
+            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
+                    interpretationUuid, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            CatalogException exception = new CatalogException("Could not revert interpretation '" + interpretationId + "'");
+            exception.addSuppressed(e);
+            throw exception;
+        } catch (CatalogException e) {
+            logger.error("Could not revert interpretation {}: {}", interpretationId, e.getMessage(), e);
+            auditManager.audit(userId, Enums.Action.REVERT, Enums.Resource.INTERPRETATION, interpretationId,
+                    interpretationUuid, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw new CatalogException("Could not revert interpretation '" + interpretationId + "': " + e.getMessage());
+        }
     }
 
     @Override

@@ -661,6 +661,44 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
+    public OpenCGAResult<Interpretation> revert(long id, int previousVersion, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        try {
+            return runTransaction(clientSession -> {
+                Query query = new Query(QueryParams.UID.key(), id);
+                OpenCGAResult<Document> latestResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+
+                if (latestResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not find latest interpretation '" + id + "'");
+                }
+
+                query = new Query()
+                        .append(QueryParams.UID.key(), id)
+                        .append(QueryParams.VERSION.key(), previousVersion);
+                OpenCGAResult<Document> versionResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+
+                if (versionResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not find version '" + previousVersion + "' of interpretation '" + id + "'");
+                }
+
+                Document latestInterpretation = revertToPreviousVersion(clientSession, interpretationCollection, versionResult.first(),
+                        latestResult.first());
+
+                // Update audit list from ClinicalAnalysis
+                updateClinicalAnalysisInterpretationReference(clientSession,
+                        interpretationConverter.convertToDataModelType(latestInterpretation), clinicalAuditList);
+
+                return OpenCGAResult.empty(Interpretation.class).setNumUpdated(1);
+            });
+        } catch (CatalogDBException e) {
+            logger.error("Could not revert version of interpretation {}: {}", id, e.getMessage(), e);
+            CatalogDBException exception = new CatalogDBException("Could not revert version of interpretation");
+            exception.addSuppressed(e);
+            throw exception;
+        }
+    }
+
+    @Override
     public OpenCGAResult update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException {
         return null;

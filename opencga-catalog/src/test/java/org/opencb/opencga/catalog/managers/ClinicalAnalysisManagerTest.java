@@ -968,6 +968,93 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void revertInterpretationVersion() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = new Interpretation().setId("interpretation1");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.PRIMARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        // version 2
+        InterpretationUpdateParams params = new InterpretationUpdateParams().setAnalyst(new ClinicalAnalystParam("user2"));
+        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1", params, null, QueryOptions.empty(),
+                sessionIdUser);
+
+        // version 3
+        params = new InterpretationUpdateParams().setComments(Collections.singletonList(new ClinicalCommentParam("my first comment", Collections.singletonList("tag1"))));
+        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1", params, null, QueryOptions.empty(),
+                sessionIdUser);
+
+        // version 4
+        params = new InterpretationUpdateParams().setComments(Collections.singletonList(new ClinicalCommentParam("my second comment", Collections.singletonList("tag2"))));
+        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1", params, null, QueryOptions.empty(),
+                sessionIdUser);
+
+        // Current status
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation1", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(4, interpretation.getVersion());
+        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(2, interpretation.getComments().size());
+        assertEquals(1, interpretation.getComments().get(0).getTags().size());
+        assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
+        assertEquals(1, interpretation.getComments().get(1).getTags().size());
+        assertEquals("tag2", interpretation.getComments().get(1).getTags().get(0));
+
+        // TEST REVERT
+        try {
+            catalogManager.getInterpretationManager().revert(STUDY, ca.getId(), "interpretation1", 0, sessionIdUser);
+            fail("A CatalogException should be raised pointing we cannot set to a version equal or inferior to 0");
+        } catch (CatalogException e) {
+        }
+
+        try {
+            catalogManager.getInterpretationManager().revert(STUDY, ca.getId(), "interpretation1", 5, sessionIdUser);
+            fail("A CatalogException should be raised pointing we cannot set to a version above the current one");
+        } catch (CatalogException e) {
+        }
+
+        OpenCGAResult<Interpretation> result = catalogManager.getInterpretationManager().revert(STUDY, ca.getId(), "interpretation1", 2, sessionIdUser);
+        assertEquals(1, result.getNumUpdated());
+
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation1", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(5, interpretation.getVersion());
+        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(0, interpretation.getComments().size());
+
+        result = catalogManager.getInterpretationManager().revert(STUDY, ca.getId(), "interpretation1", 3, sessionIdUser);
+        assertEquals(1, result.getNumUpdated());
+
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation1", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(6, interpretation.getVersion());
+        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(1, interpretation.getComments().size());
+        assertEquals(1, interpretation.getComments().get(0).getTags().size());
+        assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
+
+        result = catalogManager.getInterpretationManager().revert(STUDY, ca.getId(), "interpretation1", 4, sessionIdUser);
+        assertEquals(1, result.getNumUpdated());
+
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation1", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(7, interpretation.getVersion());
+        assertEquals("user2", interpretation.getAnalyst().getId());
+        assertEquals(2, interpretation.getComments().size());
+        assertEquals(1, interpretation.getComments().get(0).getTags().size());
+        assertEquals("tag1", interpretation.getComments().get(0).getTags().get(0));
+        assertEquals(1, interpretation.getComments().get(1).getTags().size());
+        assertEquals("tag2", interpretation.getComments().get(1).getTags().get(0));
+
+        Query query = new Query(Constants.ALL_VERSIONS, true);
+        result = catalogManager.getInterpretationManager().get(STUDY, Collections.singletonList("interpretation1"), query,
+                QueryOptions.empty(), false, sessionIdUser);
+        assertEquals(7, result.getNumResults());
+
+        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(),
+                sessionIdUser).first();
+        assertEquals(8, clinicalAnalysis.getAudit().size());
+        assertEquals(7, clinicalAnalysis.getInterpretation().getVersion());
+    }
+
+    @Test
     public void updateInterpretationTest() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 
