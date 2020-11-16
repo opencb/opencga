@@ -499,7 +499,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, FILE_VARIANT_STATS_VARIABLE_SET);
         catalogManager.getFileManager()
                 .update(studyFqn, inputFile.getPath(), new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet)),
-                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(ANNOTATION_SETS.key(), ParamUtils.UpdateAction.SET)),
+                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.SET)),
                         token);
 
     }

@@ -1044,7 +1044,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 .setInternal(jobInternal);
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.UpdateAction.ADD.name());
+        actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.BasicUpdateAction.ADD.name());
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         Client client = ClientBuilder.newClient();

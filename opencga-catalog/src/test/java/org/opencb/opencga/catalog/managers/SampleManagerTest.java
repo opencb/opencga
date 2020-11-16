@@ -58,7 +58,6 @@ import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -224,7 +223,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("sample2", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
 
         // Update sample annotation to be exactly the same as sample2
-        ObjectMap action = new ObjectMap(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.SET);
+        ObjectMap action = new ObjectMap(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.SET);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
         catalogManager.getSampleManager().update(studyFqn, sample.getId(),
                 new SampleUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet2)), options, token);
@@ -1488,7 +1487,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+        actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -2081,14 +2080,14 @@ public class SampleManagerTest extends AbstractManagerTest {
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
                 Account.AccountType.GUEST, null);
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
         String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), this.token);
         queryResult = catalogManager.getProjectManager().getSharedProjects("*", QueryOptions.empty(), null);
         assertEquals(1, queryResult.getNumResults());
@@ -2096,7 +2095,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void smartResolutorStudyAliasFromAnonymousUser() throws CatalogException {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), token);
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, "*");
         assertTrue(study != null);

@@ -87,51 +87,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return Enums.Resource.INTERPRETATION;
     }
 
-//    @Override
-//    OpenCGAResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-//            throws CatalogException {
-//        ParamUtils.checkIsSingleID(entry);
-//        Query queryCopy = query == null ? new Query() : new Query(query);
-//        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-//
-//        if (UuidUtils.isOpenCgaUuid(entry)) {
-//            queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
-//        } else {
-//            queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
-//        }
-//
-//        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-//
-////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-////                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
-////                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-////                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-//        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-//        if (interpretationDataResult.getNumResults() == 0) {
-//            interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
-//            if (interpretationDataResult.getNumResults() == 0) {
-//                throw new CatalogException("Interpretation " + entry + " not found");
-//            } else {
-//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-//                        + entry);
-//            }
-//        } else if (interpretationDataResult.getNumResults() > 1) {
-//            throw new CatalogException("More than one interpretation found based on " + entry);
-//        } else {
-//            // We perform this query to check permissions because interpretations doesn't have ACLs
-//            try {
-//                catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
-//                        interpretationDataResult.first().getClinicalAnalysisId(),
-//                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
-//            } catch (CatalogException e) {
-//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-//                        + entry);
-//            }
-//
-//            return interpretationDataResult;
-//        }
-//    }
-
     @Override
     InternalGetDataResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                                       String user, boolean ignoreException) throws CatalogException {
@@ -309,9 +264,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         if (!interpretation.getComments().isEmpty()) {
             // Fill author and date
+            Calendar calendar = Calendar.getInstance();
             for (ClinicalComment comment : interpretation.getComments()) {
                 comment.setAuthor(userId);
-                comment.setDate(TimeUtils.getTime());
+
+                comment.setDate(TimeUtils.getTimeMillis(calendar.getTime()));
+                calendar.add(Calendar.MILLISECOND, 1);
             }
         }
 
@@ -395,9 +353,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 interpretationUuid = interpretation.getUuid();
 
                 Map<String, Object> actionMap = new HashMap<>();
-                actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
-                actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
-                actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), ParamUtils.UpdateAction.SET);
+                actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
+                actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
+                actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), ParamUtils.BasicUpdateAction.SET);
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
@@ -823,6 +781,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
         InterpretationStudyConfiguration interpretationConfiguration = study.getConfiguration().getClinical().getInterpretation();
 
+        Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
+
         // Check if user has permissions to write clinical analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
@@ -839,9 +799,33 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (updateParams != null && updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {
-            List<ClinicalComment> comments = updateParams.getComments().stream()
-                    .map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(), TimeUtils.getTime()))
-                    .collect(Collectors.toList());
+            List<ClinicalComment> comments;
+
+            ParamUtils.AddRemoveReplaceAction action = ParamUtils.AddRemoveReplaceAction.from(actionMap,
+                    InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
+
+            switch (action) {
+                case ADD:
+                    // Ensure each comment has a different milisecond
+                    comments = new ArrayList<>(updateParams.getComments().size());
+
+                    Calendar calendar = Calendar.getInstance();
+                    for (ClinicalCommentParam comment : updateParams.getComments()) {
+                        comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(),
+                                TimeUtils.getTimeMillis(calendar.getTime())));
+                        calendar.add(Calendar.MILLISECOND, 1);
+                    }
+                    break;
+                case REMOVE:
+                case REPLACE:
+                    // We keep the date as is in this case
+                    comments = updateParams.getComments().stream().map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(),
+                            c.getDate())).collect(Collectors.toList());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown comments action " + action);
+            }
+
             parameters.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), comments);
         }
 

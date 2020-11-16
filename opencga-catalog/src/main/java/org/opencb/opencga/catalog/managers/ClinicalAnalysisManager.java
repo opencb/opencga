@@ -267,9 +267,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             if (!clinicalAnalysis.getComments().isEmpty()) {
                 // Fill author and date
+                Calendar calendar = Calendar.getInstance();
                 for (ClinicalComment comment : clinicalAnalysis.getComments()) {
                     comment.setAuthor(userId);
-                    comment.setDate(TimeUtils.getTime());
+
+                    comment.setDate(TimeUtils.getTimeMillis(calendar.getTime()));
+                    calendar.add(Calendar.MILLISECOND, 1);
                 }
             }
 
@@ -1137,8 +1140,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse ClinicalUpdateParams object: " + e.getMessage(), e);
             }
+        } else {
+            throw new CatalogException("Empty update parameters. Nothing to update.");
         }
         ParamUtils.checkUpdateParametersMap(parameters);
+
+        Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
         if (StringUtils.isNotEmpty(updateParams.getId())) {
             ParamUtils.checkAlias(updateParams.getId(), "id");
@@ -1148,9 +1155,33 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         if (updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {
-            List<ClinicalComment> comments = updateParams.getComments().stream()
-                    .map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(), TimeUtils.getTime()))
-                    .collect(Collectors.toList());
+            List<ClinicalComment> comments;
+
+            ParamUtils.AddRemoveReplaceAction action = ParamUtils.AddRemoveReplaceAction.from(actionMap,
+                    ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
+
+            switch (action) {
+                case ADD:
+                    // Ensure each comment has a different milisecond
+                    comments = new ArrayList<>(updateParams.getComments().size());
+
+                    Calendar calendar = Calendar.getInstance();
+                    for (ClinicalCommentParam comment : updateParams.getComments()) {
+                        comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(),
+                                TimeUtils.getTimeMillis(calendar.getTime())));
+                        calendar.add(Calendar.MILLISECOND, 1);
+                    }
+                    break;
+                case REMOVE:
+                case REPLACE:
+                    // We keep the date as is in this case
+                    comments = updateParams.getComments().stream().map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(),
+                            c.getDate())).collect(Collectors.toList());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown comments action " + action);
+            }
+
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), comments);
         }
 

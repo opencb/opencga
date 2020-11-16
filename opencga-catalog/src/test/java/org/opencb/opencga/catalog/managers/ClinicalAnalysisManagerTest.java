@@ -42,7 +42,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.StatusValue;
@@ -222,16 +221,25 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("Clinical")
                 .setType(ClinicalAnalysis.Type.SINGLE)
-                .setComments(Collections.singletonList(new ClinicalComment("", "My first comment", Arrays.asList("tag1", "tag2"), "")))
+                .setComments(Arrays.asList(
+                        new ClinicalComment("", "My first comment", Arrays.asList("tag1", "tag2"), ""),
+                        new ClinicalComment("", "My second comment", Arrays.asList("1tag", "2tag"), "")))
                 .setProband(individual);
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
                 QueryOptions.empty(), sessionIdUser);
         assertEquals(1, clinical.getNumResults());
-        assertEquals(1, clinical.first().getComments().size());
+        assertEquals(2, clinical.first().getComments().size());
         assertEquals("user", clinical.first().getComments().get(0).getAuthor());
         assertEquals("My first comment", clinical.first().getComments().get(0).getMessage());
         assertEquals(2, clinical.first().getComments().get(0).getTags().size());
+        assertEquals("user", clinical.first().getComments().get(1).getAuthor());
+        assertEquals("My second comment", clinical.first().getComments().get(1).getMessage());
+        assertEquals(2, clinical.first().getComments().get(1).getTags().size());
         assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(0).getDate()));
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(1).getDate()));
+        assertNotEquals(clinical.first().getComments().get(0).getDate(), clinical.first().getComments().get(1).getDate());
+        assertEquals(Long.parseLong(clinical.first().getComments().get(0).getDate()) + 1,
+                Long.parseLong(clinical.first().getComments().get(1).getDate()));
     }
 
     @Test
@@ -253,7 +261,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         commentParamList.add(new ClinicalCommentParam("My second comment", Arrays.asList("myTag")));
         commentParamList.add(new ClinicalCommentParam("My third comment", Arrays.asList("myTag2")));
 
-        ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.ADD);
+        ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
@@ -275,12 +283,41 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("myTag2", clinical.first().getComments().get(2).getTags().get(0));
         assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(2).getDate()));
 
+        // Replace second and third comment
+        commentParamList = Arrays.asList(
+                new ClinicalCommentParam("My updated second comment", Arrays.asList("myTag", "myOtherTag"),
+                        clinical.first().getComments().get(1).getDate()),
+                new ClinicalCommentParam("My also updated third comment", Arrays.asList("myTag2", "myOtherTag2"),
+                        clinical.first().getComments().get(2).getDate())
+        );
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                .setComments(commentParamList), options, sessionIdUser);
+        clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(3, clinical.first().getComments().size());
+        assertEquals("user", clinical.first().getComments().get(1).getAuthor());
+        assertEquals("My updated second comment", clinical.first().getComments().get(1).getMessage());
+        assertEquals(2, clinical.first().getComments().get(1).getTags().size());
+        assertEquals("myTag", clinical.first().getComments().get(1).getTags().get(0));
+        assertEquals("myOtherTag", clinical.first().getComments().get(1).getTags().get(1));
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(1).getDate()));
+
+        assertEquals("user", clinical.first().getComments().get(2).getAuthor());
+        assertEquals("My also updated third comment", clinical.first().getComments().get(2).getMessage());
+        assertEquals(2, clinical.first().getComments().get(2).getTags().size());
+        assertEquals("myTag2", clinical.first().getComments().get(2).getTags().get(0));
+        assertEquals("myOtherTag2", clinical.first().getComments().get(2).getTags().get(1));
+        assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(2).getDate()));
+
         // Remove first comment
         commentParamList = Arrays.asList(
                 ClinicalCommentParam.of(clinical.first().getComments().get(0)),
                 ClinicalCommentParam.of(clinical.first().getComments().get(2))
         );
-        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
@@ -290,15 +327,16 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, clinical.getNumResults());
         assertEquals(1, clinical.first().getComments().size());
         assertEquals("user", clinical.first().getComments().get(0).getAuthor());
-        assertEquals("My second comment", clinical.first().getComments().get(0).getMessage());
-        assertEquals(1, clinical.first().getComments().get(0).getTags().size());
+        assertEquals("My updated second comment", clinical.first().getComments().get(0).getMessage());
+        assertEquals(2, clinical.first().getComments().get(0).getTags().size());
         assertEquals("myTag", clinical.first().getComments().get(0).getTags().get(0));
+        assertEquals("myOtherTag", clinical.first().getComments().get(0).getTags().get(1));
         assertTrue(StringUtils.isNotEmpty(clinical.first().getComments().get(0).getDate()));
 
         commentParamList = Arrays.asList(
                 ClinicalCommentParam.of(clinical.first().getComments().get(0))
         );
-        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
@@ -324,14 +362,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         .setId("interpretation")
                         .setComments(Collections.singletonList(new ClinicalComment("", "My first comment", Arrays.asList("tag1", "tag2"), "")))
                 );
-
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
         List<ClinicalCommentParam> commentParamList = new ArrayList<>();
         commentParamList.add(new ClinicalCommentParam("My second comment", Arrays.asList("myTag")));
         commentParamList.add(new ClinicalCommentParam("My third comment", Arrays.asList("myTag2")));
 
-        ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.ADD);
+        ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", new InterpretationUpdateParams()
@@ -353,12 +390,41 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("myTag2", interpretation.first().getComments().get(2).getTags().get(0));
         assertTrue(StringUtils.isNotEmpty(interpretation.first().getComments().get(2).getDate()));
 
+        // Replace second and third comment
+        commentParamList = Arrays.asList(
+                new ClinicalCommentParam("My updated second comment", Arrays.asList("myTag", "myOtherTag"),
+                        interpretation.first().getComments().get(1).getDate()),
+                new ClinicalCommentParam("My also updated third comment", Arrays.asList("myTag2", "myOtherTag2"),
+                        interpretation.first().getComments().get(2).getDate())
+        );
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", new InterpretationUpdateParams()
+                .setComments(commentParamList), null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, interpretation.getNumResults());
+        assertEquals(3, interpretation.first().getComments().size());
+        assertEquals("user", interpretation.first().getComments().get(1).getAuthor());
+        assertEquals("My updated second comment", interpretation.first().getComments().get(1).getMessage());
+        assertEquals(2, interpretation.first().getComments().get(1).getTags().size());
+        assertEquals("myTag", interpretation.first().getComments().get(1).getTags().get(0));
+        assertEquals("myOtherTag", interpretation.first().getComments().get(1).getTags().get(1));
+        assertTrue(StringUtils.isNotEmpty(interpretation.first().getComments().get(1).getDate()));
+
+        assertEquals("user", interpretation.first().getComments().get(2).getAuthor());
+        assertEquals("My also updated third comment", interpretation.first().getComments().get(2).getMessage());
+        assertEquals(2, interpretation.first().getComments().get(2).getTags().size());
+        assertEquals("myTag2", interpretation.first().getComments().get(2).getTags().get(0));
+        assertEquals("myOtherTag2", interpretation.first().getComments().get(2).getTags().get(1));
+        assertTrue(StringUtils.isNotEmpty(interpretation.first().getComments().get(2).getDate()));
+
         // Remove first comment
         commentParamList = Arrays.asList(
                 ClinicalCommentParam.of(interpretation.first().getComments().get(0)),
                 ClinicalCommentParam.of(interpretation.first().getComments().get(2))
         );
-        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", new InterpretationUpdateParams()
@@ -368,15 +434,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, interpretation.getNumResults());
         assertEquals(1, interpretation.first().getComments().size());
         assertEquals("user", interpretation.first().getComments().get(0).getAuthor());
-        assertEquals("My second comment", interpretation.first().getComments().get(0).getMessage());
-        assertEquals(1, interpretation.first().getComments().get(0).getTags().size());
+        assertEquals("My updated second comment", interpretation.first().getComments().get(0).getMessage());
+        assertEquals(2, interpretation.first().getComments().get(0).getTags().size());
         assertEquals("myTag", interpretation.first().getComments().get(0).getTags().get(0));
         assertTrue(StringUtils.isNotEmpty(interpretation.first().getComments().get(0).getDate()));
 
         commentParamList = Arrays.asList(
                 ClinicalCommentParam.of(interpretation.first().getComments().get(0))
         );
-        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", new InterpretationUpdateParams()
@@ -559,7 +625,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         FlagValue flag2 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(3);
         FlagValue flag3 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(4);
 
-        ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.UpdateAction.ADD);
+        ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
@@ -592,7 +658,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         flag1 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(0);
         flag2 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(2);
 
-        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.UpdateAction.SET);
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.SET);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         updateParams = new ClinicalAnalysisUpdateParams()
@@ -612,7 +678,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertNotNull(ca.getFlags().get(1).getDate());
 
         // Remove flag1
-        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.UpdateAction.REMOVE);
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         updateParams = new ClinicalAnalysisUpdateParams()

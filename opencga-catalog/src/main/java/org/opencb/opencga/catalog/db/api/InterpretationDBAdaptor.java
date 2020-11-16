@@ -55,6 +55,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         SECONDARY_FINDINGS("secondaryFindings", TEXT_ARRAY, ""),
         SECONDARY_FINDINGS_ID("secondaryFindings.id", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
+        COMMENTS_DATE("comments.date", TEXT_ARRAY, ""),
         STATUS("status", OBJECT, ""),
         STATUS_ID("status.id", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),

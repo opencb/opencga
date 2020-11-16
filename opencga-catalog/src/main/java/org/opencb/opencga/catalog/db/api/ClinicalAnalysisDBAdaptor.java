@@ -82,6 +82,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", INTEGER_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
+        COMMENTS_DATE("comments.date", TEXT, ""),
         ALERTS("alerts", TEXT_ARRAY, ""),
         PROBAND("proband", TEXT_ARRAY, ""),
         PROBAND_ID("proband.id", TEXT, ""),

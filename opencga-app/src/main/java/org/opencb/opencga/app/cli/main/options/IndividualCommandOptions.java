@@ -236,7 +236,7 @@ public class IndividualCommandOptions {
         public List<String> samples;
 
         @Parameter(names = {"--samples-action"}, description = ParamConstants.SAMPLES_ACTION_DESCRIPTION)
-        public ParamUtils.UpdateAction sampleAction = ParamUtils.UpdateAction.ADD;
+        public ParamUtils.BasicUpdateAction sampleAction = ParamUtils.BasicUpdateAction.ADD;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;
@@ -264,7 +264,7 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",
                 arity = 1)
-        public ParamUtils.UpdateAction annotationSetsAction;
+        public ParamUtils.BasicUpdateAction annotationSetsAction;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")

@@ -109,7 +109,8 @@ public interface AuthorizationManager {
 
     void checkSyncGroupPermissions(long studyId, String userId, String group) throws CatalogException;
 
-    void checkUpdateGroupPermissions(long studyId, String userId, String group, ParamUtils.UpdateAction action) throws CatalogException;
+    void checkUpdateGroupPermissions(long studyId, String userId, String group, ParamUtils.BasicUpdateAction action)
+            throws CatalogException;
 
     void checkNotAssigningPermissionsToAdminsGroup(List<String> members) throws CatalogException;
 

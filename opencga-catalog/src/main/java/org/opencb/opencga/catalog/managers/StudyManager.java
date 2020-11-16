@@ -906,8 +906,8 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Group> updateGroup(String studyId, String groupId, ParamUtils.UpdateAction action, GroupUpdateParams updateParams,
-                                            String token) throws CatalogException {
+    public OpenCGAResult<Group> updateGroup(String studyId, String groupId, ParamUtils.BasicUpdateAction action,
+                                            GroupUpdateParams updateParams, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 

@@ -269,14 +269,15 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         if (actionMap.containsKey(ANNOTATION_SETS)) {
             List<AnnotationSet> annotationSetList = (List<AnnotationSet>) parameters.get(ANNOTATION_SETS);
 
-            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap, ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+            ParamUtils.BasicUpdateAction action = ParamUtils.BasicUpdateAction.from(actionMap, ANNOTATION_SETS,
+                    ParamUtils.BasicUpdateAction.ADD);
 
             if (annotationSetList == null) {
                 return OpenCGAResult.empty();
             }
 
             // Create or remove a new annotation set
-            if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
+            if (action == ParamUtils.BasicUpdateAction.ADD || action == ParamUtils.BasicUpdateAction.SET) {
                 // 1. Check the annotation set ids are not in use
                 validateNewAnnotations(clientSession, entryId, annotationSetList, variableSetList, isVersioned);
 
@@ -284,7 +285,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 List<Document> annotationDocumentList = getNewAnnotationList(annotationSetList, variableSetList);
                 List<Document> internalAnnotationDocumentList = getNewAnnotationList(annotationSetList, variableSetList, true);
 
-                if (action == ParamUtils.UpdateAction.SET) {
+                if (action == ParamUtils.BasicUpdateAction.SET) {
                     if (CollectionUtils.isEmpty(internalAnnotationDocumentList)) {
                         // 2.1 Remove all user existing annotations
                         removeAllAnnotationSets(clientSession, entryId, isVersioned);
@@ -310,7 +311,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                             isVersioned, true);
                 }
 
-            } else if (action == ParamUtils.UpdateAction.REMOVE) {
+            } else if (action == ParamUtils.BasicUpdateAction.REMOVE) {
                 // Action = REMOVE
 
                 // 0. Obtain the annotationSet to be removed to know the variableSet being annotated

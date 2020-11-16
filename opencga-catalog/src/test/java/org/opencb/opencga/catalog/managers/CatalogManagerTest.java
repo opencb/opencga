@@ -387,7 +387,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .collect(Collectors.toSet()));
 
 //        catalogManager.getStudyManager().createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
-        catalogManager.getStudyManager().updateGroup(study_4, "admins", ParamUtils.UpdateAction.SET,
+        catalogManager.getStudyManager().updateGroup(study_4, "admins", ParamUtils.BasicUpdateAction.SET,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, token).getResults().stream().map(Study::getId)
@@ -490,7 +490,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         } catch (CatalogException e) {
         }
 
-        catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
 
         List<Study> studies = studyManager.resolveIds(Collections.emptyList(), "*");
@@ -510,7 +510,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", "d", null, null, null, null, null, sessionIdUser2);
-        catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
 
         List<Study> studies = studyManager.resolveIds(Collections.singletonList("phase3"), "*");
@@ -570,7 +570,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
-        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
         assertEquals(3, groupDataResult.first().getUserIds().size());
         assertEquals("@members", groupDataResult.first().getId());
@@ -598,7 +598,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
-        groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.REMOVE,
+        groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.REMOVE,
                 new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
         assertEquals(1, groupDataResult.first().getUserIds().size());
 
@@ -618,7 +618,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
-        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
         assertEquals(3, groupDataResult.first().getUserIds().size());
         assertEquals("@members", groupDataResult.first().getId());
@@ -644,7 +644,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                     SampleAclEntry.SamplePermissions.UPDATE.name())));
         }
 
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.REMOVE,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.REMOVE,
                 new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
 
         String userId1 = catalogManager.getUserManager().getUserId(token);
@@ -800,7 +800,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void submitJobFromAdminsGroup() throws CatalogException {
         // Add user to admins group
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
 
         OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
@@ -1177,7 +1177,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId3.getUid()));
 
         QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
-                ParamUtils.UpdateAction.SET.name()));
+                ParamUtils.BasicUpdateAction.SET.name()));
 
         DataResult<Cohort> result = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(),
                 new CohortUpdateParams()
@@ -1195,7 +1195,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId5.getUid()));
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
-                ParamUtils.UpdateAction.SET.name()));
+                ParamUtils.BasicUpdateAction.SET.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
                         .setSamples(Collections.emptyList()),
@@ -1206,7 +1206,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(0, myModifiedCohort.getSamples().size());
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
-                ParamUtils.UpdateAction.ADD.name()));
+                ParamUtils.BasicUpdateAction.ADD.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
                         .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId())),
@@ -1216,7 +1216,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(2, myModifiedCohort.getSamples().size());
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
-                ParamUtils.UpdateAction.REMOVE.name()));
+                ParamUtils.BasicUpdateAction.REMOVE.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
                         .setSamples(Arrays.asList(sampleId3.getId())),

@@ -183,8 +183,36 @@ public class ParamUtils {
         SECONDARY                   // Add interpretation as a secondary one
     }
 
+    public enum AddRemoveAction {
+        ADD,
+        REMOVE;
+
+        public static AddRemoveAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static AddRemoveAction from(Map<String, ?> map, String key, AddRemoveAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, AddRemoveAction.class);
+        }
+    }
+
+    public enum AddRemoveReplaceAction {
+        ADD,
+        REMOVE,
+        REPLACE;
+
+        public static AddRemoveReplaceAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static AddRemoveReplaceAction from(Map<String, ?> map, String key, AddRemoveReplaceAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, AddRemoveReplaceAction.class);
+        }
+    }
+
     public enum BasicUpdateAction {
         ADD,
+        SET,
         REMOVE;
 
         public static BasicUpdateAction from(Map<String, ?> map, String key) {
@@ -199,7 +227,8 @@ public class ParamUtils {
     public enum UpdateAction {
         ADD,
         SET,
-        REMOVE;
+        REMOVE,
+        REPLACE;
 
         public static UpdateAction from(Map<String, ?> map, String key) {
             return from(map, key, null);
