@@ -52,7 +52,7 @@
         <grpc.version>1.23.0</grpc.version>
         <slf4j.version>1.7.25</slf4j.version>
         <solr.version>8.4.1</solr.version>
-        <jetty.version>9.4.17.v20190418</jetty.version>
+        <jetty.version>9.4.34.v20201102</jetty.version>
         <junit.version>4.12</junit.version>
 
         <opencga.war.name>opencga</opencga.war.name>
