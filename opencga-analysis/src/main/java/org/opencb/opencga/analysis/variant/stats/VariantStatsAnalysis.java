@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -167,8 +168,8 @@ public class VariantStatsAnalysis extends OpenCgaTool {
     @Override
     protected void check() throws Exception {
         super.check();
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(params.getString(ParamConstants.STUDY_PARAM), userId);
+        Study study = catalogManager.getStudyManager().get(params.getString(ParamConstants.STUDY_PARAM), StudyManager.INCLUDE_STUDY_ID,
+                token).first();
         studyFqn = study.getFqn();
 
         toolParams.updateParams(params);

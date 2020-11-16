@@ -176,7 +176,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         try {
             // Fix sample query object and search for samples
             catalogManager.getSampleManager().fixQueryObject(study, sampleQuery, userId);
-            AnnotationUtils.fixQueryAnnotationSearch(study, sampleQuery);
             AnnotationUtils.fixQueryOptionAnnotation(options);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<Sample> result = sampleDBAdaptor.get(study.getUid(), sampleQuery, options, userId);

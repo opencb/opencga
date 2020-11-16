@@ -4,6 +4,7 @@
   "name" : "opencga_file_variant_stats",
   "unique" : true,
   "confidential" : false,
+  "internal": false,
   "description" : "OpenCGA file variant stats",
   "variables" : [ {
     "id" : "variantCount",

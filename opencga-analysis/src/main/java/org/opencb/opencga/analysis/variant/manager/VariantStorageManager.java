@@ -44,6 +44,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
@@ -1060,7 +1061,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private void checkStudyPermissions(String study, String userId, String token) throws CatalogException {
-        long studyUid = catalogManager.getStudyManager().resolveId(study, userId).getUid();
+        long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getUid();
         CatalogAuthorizationException exception = null;
 
         // Check VIEW_AGGREGATED_VARIANTS
@@ -1224,8 +1225,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private String getStudyFqn(String study, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        return catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
     }
 
     private String getProjectId(String projectStr, String study, String token) throws CatalogException {
@@ -1245,7 +1245,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         if (CollectionUtils.isNotEmpty(studies)) {
             // Ensure all studies are valid. Convert to FQN
             studies = catalogManager.getStudyManager()
-                    .resolveIds(studies, catalogManager.getUserManager().getUserId(token))
+                    .get(studies, StudyManager.INCLUDE_STUDY_ID, false, token)
+                    .getResults()
                     .stream()
                     .map(Study::getFqn)
                     .collect(Collectors.toList());

@@ -19,7 +19,6 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
@@ -43,7 +42,6 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.sample.Sample;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -430,6 +428,22 @@ public class ClinicalWebService extends AnalysisWebService {
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, params, setAs, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{clinicalAnalysis}/interpretation/{interpretation}/revert")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Revert to a previous interpretation version", response = Interpretation.class)
+    public Response revertInterpretation(
+            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
+            @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
+            @ApiParam(value = "Version to revert to", required = true) @QueryParam("version") int version) {
+        try {
+            return createOkResponse(catalogInterpretationManager.revert(studyStr, clinicalId, interpretationId, version, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
