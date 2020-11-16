@@ -99,6 +99,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private int release;
     private List<File> filesToIndex;
     private CatalogStorageMetadataSynchronizer synchronizer;
+    private boolean fullSynchronize = false;
 
     public VariantFileIndexerOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine engine) {
         super(variantStorageManager, engine);
@@ -314,7 +315,15 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 if (calculateStats && exception != null) {
                     updateDefaultCohortStatus(studyFqn, prevDefaultCohortStatus, token);
                 }
-                synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, token);
+                if (fullSynchronize) {
+                    synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, token);
+                } else {
+                    List<File> inputFiles = catalogManager.getFileManager().search(studyFqn,
+                            new Query(FileDBAdaptor.QueryParams.URI.key(), fileUris),
+                            new QueryOptions(QueryOptions.INCLUDE, "id,name,path,uri"), token).getResults();
+                    synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token);
+                    synchronizer.synchronizeCohorts(studyFqn, token);
+                }
             }
             variantStorageEngine.close();
         }
