@@ -126,6 +126,8 @@ public class HBaseLockManager {
 
         // Minimum lock duration of 100ms
         lockDuration = Math.max(lockDuration, 100);
+        // Max attempt lock duration of 10s
+        long attemptLockDuration = Math.min(lockDuration, 10000);
 
         String[] lockValue;
         String readToken = "";
@@ -135,7 +137,7 @@ public class HBaseLockManager {
         lockValue = readLockValue(row, column);
         do {
             // If the lock is taken, wait
-            while (isLockTaken(lockValue)) {
+            while (isLockTaken(lockValue) || containsToken(lockValue, token)) {
                 Thread.sleep(100);
                 lockValue = readLockValue(row, column);
                 //Check if the lock is still valid
@@ -149,7 +151,7 @@ public class HBaseLockManager {
             }
 
             // Append token to the lock cell
-            appendToken(token, lockDuration, row, column);
+            appendToken(token, attemptLockDuration, row, column);
 
             lockValue = readLockValue(row, column);
 
@@ -358,6 +360,15 @@ public class HBaseLockManager {
      */
     protected static boolean isLockTaken(String[] lockValue) {
         return getCurrentLockToken(lockValue) != null;
+    }
+
+    private static boolean containsToken(String[] lockValue, String token) {
+        for (String lock : lockValue) {
+            if (readLockToken(lock).equals(token) && !isLockExpired(lock)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     protected static boolean isLockExpired(String lock) {

@@ -50,7 +50,7 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
                     StudyDBAdaptor.QueryParams.UID.key(),
                     StudyDBAdaptor.QueryParams.ID.key(),
                     StudyDBAdaptor.QueryParams.FQN.key()));
-            OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(query, options, token);
+            OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(query, options, token);
 
             for (Study study : studyDataResult.getResults()) {
                 fixStudy(study.getFqn(), true);
