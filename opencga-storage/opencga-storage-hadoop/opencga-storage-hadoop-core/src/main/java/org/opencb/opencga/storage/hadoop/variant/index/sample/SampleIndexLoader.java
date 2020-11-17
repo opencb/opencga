@@ -107,6 +107,8 @@ public class SampleIndexLoader {
 
     private void buildSampleIndexBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
             throws StorageEngineException {
+        options = new ObjectMap(options);
+        options.put(SampleIndexDriver.SAMPLE_IDS, samples);
         mrExecutor.run(SampleIndexDriver.class,
                 SampleIndexDriver.buildArgs(
                         tableNameGenerator.getArchiveTableName(studyId),

@@ -18,7 +18,7 @@ public class VariantStorageMetadataSynchronizeOperationTool extends OperationToo
     protected void run() throws Exception {
         step(()-> {
             Boolean modified = getVariantStorageManager()
-                    .synchronizeCatalogStudyFromStorage(getStudyFqn(), toolParams.getFiles(), getToken());
+                    .synchronizeCatalogStudyFromStorage(toolParams.getStudy(), toolParams.getFiles(), getToken());
             addAttribute("modified", modified);
         });
     }

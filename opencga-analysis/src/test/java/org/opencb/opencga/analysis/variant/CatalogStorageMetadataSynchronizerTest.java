@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.variant;
 
 import org.junit.*;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;

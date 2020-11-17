@@ -83,6 +83,8 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String USER_DESCRIPTION = "User ID";
+    public static final String OPENCGA_USER_ID = "opencga";
+    public static final String ANONYMOUS_USER_ID = "*";
 
     // ---------------------------------------------
 
