@@ -433,7 +433,7 @@ public class AnnotationUtils {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
                         Map objectMap = (Map) object;
                         checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, false,
-                                variable.getDescription(), variable.getVariableSet(), null, 1, null),
+                                        variable.getDescription(), variable.getVariableSet(), null, 1, null),
                                 new AnnotationSet("", variable.getId(), objectMap, null, 1, null), null, true);
                     }
                 }
@@ -838,13 +838,17 @@ public class AnnotationUtils {
                     }
                     if (!variableTypeMap.get(variableSetString).containsKey(key)) {
                         // Maybe it is a dynamic parameter
+                        Map<String, QueryParam.Type> dynamicParams = new HashMap<>();
                         for (String tmpKey : variableTypeMap.get(variableSetString).keySet()) {
                             if (tmpKey.endsWith(".*")) {
                                 // It is a dynamic map
                                 if (key.contains(tmpKey.substring(0, tmpKey.length() - 1))) {
-                                    variableTypeMap.get(variableSetString).put(key, variableTypeMap.get(variableSetString).get(tmpKey));
+                                    dynamicParams.put(key, variableTypeMap.get(variableSetString).get(tmpKey));
                                 }
                             }
+                        }
+                        if (!dynamicParams.isEmpty()) {
+                            variableTypeMap.get(variableSetString).putAll(dynamicParams);
                         }
 
                         if (!variableTypeMap.get(variableSetString).containsKey(key)) {
