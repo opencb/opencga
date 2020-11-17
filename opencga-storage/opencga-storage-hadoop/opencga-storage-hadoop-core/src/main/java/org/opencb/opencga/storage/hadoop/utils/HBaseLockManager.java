@@ -170,16 +170,18 @@ public class HBaseLockManager {
         boolean prevTokenExpired = lockValue != null && lockValue.length > 0;
         boolean slowQuery = stopWatch.getTime(TimeUnit.SECONDS) > 60;
         if (prevTokenExpired || slowQuery) {
-            String msg = "Lock column '" + Bytes.toStringBinary(column) + "'";
+            StringBuilder msg = new StringBuilder("Lock column '").append(Bytes.toStringBinary(column)).append("'");
             if (prevTokenExpired) {
                 long expireDate = parseExpireDate(lockValue);
-                msg += ". Previous token expired " + TimeUtils.durationToString(System.currentTimeMillis() - expireDate) + " ago";
+                msg.append(". Previous token expired ")
+                        .append(TimeUtils.durationToString(System.currentTimeMillis() - expireDate))
+                        .append(" ago");
             }
             if (slowQuery) {
-                msg = ". Slow HBase lock";
+                msg.append(". Slow HBase lock");
             }
-            msg += ". Took: " + TimeUtils.durationToString(stopWatch);
-            logger.warn(msg);
+            msg.append(". Took: ").append(TimeUtils.durationToString(stopWatch));
+            logger.warn(msg.toString());
         }
 
         long tokenHash = token.hashCode();
