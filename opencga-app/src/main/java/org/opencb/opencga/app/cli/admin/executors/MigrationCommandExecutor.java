@@ -194,17 +194,17 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         boolean skipRc1 = false;
         boolean skipRc2 = false;
-        boolean skipRc5 = false;
+        boolean skipFinalRelease = false;
         switch (options.what) {
             case RC1:
                 skipRc2 = true;
-                skipRc5 = true;
+                skipFinalRelease = true;
                 break;
             case RC2:
                 skipRc1 = true;
-                skipRc5 = true;
+                skipFinalRelease = true;
                 break;
-            case RC5:
+            case STABLE:
                 skipRc1 = true;
                 skipRc2 = true;
                 break;
@@ -298,13 +298,13 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 }
             }
         }
-        if (!skipRc5) {
+        if (!skipFinalRelease) {
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
                 String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
                 adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
 
-                logger.info("Starting Catalog migration for 2.0.0 RC5");
-                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc5/", "opencga_catalog_v2.0.0-rc2_to_v2.0.0-rc5.js");
+                logger.info("Starting Catalog migration for stable 2.0.0");
+                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v2.0.0-rc2_to_v2.0.0.js");
 
                 StudyUpdateParams updateParams = new StudyUpdateParams()
                         .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
