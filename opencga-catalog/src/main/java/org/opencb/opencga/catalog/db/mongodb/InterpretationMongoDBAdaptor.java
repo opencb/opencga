@@ -426,13 +426,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         objectAcceptedParams = new String[]{QueryParams.PRIMARY_FINDINGS.key()};
-        operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.ADD);
-        switch (operation) {
+        ParamUtils.UpdateAction findingsOperation = ParamUtils.UpdateAction.from(actionMap, QueryParams.PRIMARY_FINDINGS.key(),
+                ParamUtils.UpdateAction.ADD);
+        switch (findingsOperation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFindingsForRemoval(parameters, QueryParams.PRIMARY_FINDINGS.key());
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                break;
+            case REPLACE:
+                filterReplaceParams(parameters.getAsList(QueryParams.PRIMARY_FINDINGS.key(), Map.class), document,
+                        m -> String.valueOf(m.get("id")), QueryParams.PRIMARY_FINDINGS_ID.key());
                 break;
             case ADD:
                 if (parameters.containsKey(QueryParams.PRIMARY_FINDINGS.key())) {
@@ -443,17 +449,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + findingsOperation);
         }
 
         objectAcceptedParams = new String[]{QueryParams.SECONDARY_FINDINGS.key()};
-        operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.ADD);
-        switch (operation) {
+        findingsOperation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+        switch (findingsOperation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFindingsForRemoval(parameters, QueryParams.SECONDARY_FINDINGS.key());
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                break;
+            case REPLACE:
+                filterReplaceParams(parameters.getAsList(QueryParams.SECONDARY_FINDINGS.key(), Map.class), document,
+                        m -> String.valueOf(m.get("id")), QueryParams.SECONDARY_FINDINGS_ID.key());
                 break;
             case ADD:
                 if (parameters.containsKey(QueryParams.SECONDARY_FINDINGS.key())) {
@@ -464,7 +475,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + findingsOperation);
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -476,6 +487,20 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         return document;
+    }
+
+    static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
+        if (parameters.get(findingsKey) == null) {
+            return;
+        }
+
+        List<Document> findingsParamList = new LinkedList<>();
+        for (Object finding : parameters.getAsList(findingsKey)) {
+            if (finding instanceof Map) {
+                findingsParamList.add(new Document("id", ((Map) finding).get("id")));
+            }
+        }
+        parameters.put(findingsKey, findingsParamList);
     }
 
     private void checkNewFindingsDontExist(List<ClinicalVariant> currentFindings, List<Map> newFindings)

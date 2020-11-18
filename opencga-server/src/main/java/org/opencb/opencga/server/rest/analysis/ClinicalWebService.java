@@ -391,16 +391,16 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response updateInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of primary findings is being updated.",
-                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("primaryFindingsAction") ParamUtils.BasicUpdateAction primaryFindingsAction,
+                    allowableValues = "ADD,SET,REMOVE,REPLACE", defaultValue = "ADD")
+            @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
             @ApiParam(value = "Action to be performed if the array of methods is being updated.",
                     allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("methodsAction") ParamUtils.BasicUpdateAction methodsAction,
             @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.",
-                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("secondaryFindingsAction") ParamUtils.BasicUpdateAction secondaryFindingsAction,
-            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE,REPLACE",
-                    defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
+                    allowableValues = "ADD,SET,REMOVE,REPLACE", defaultValue = "ADD")
+            @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment.",
+                    allowableValues = "ADD,REMOVE,REPLACE", defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
@@ -408,10 +408,10 @@ public class ClinicalWebService extends AnalysisWebService {
                     InterpretationUpdateParams params) {
         try {
             if (primaryFindingsAction == null) {
-                primaryFindingsAction = ParamUtils.BasicUpdateAction.ADD;
+                primaryFindingsAction = ParamUtils.UpdateAction.ADD;
             }
             if (secondaryFindingsAction == null) {
-                secondaryFindingsAction = ParamUtils.BasicUpdateAction.ADD;
+                secondaryFindingsAction = ParamUtils.UpdateAction.ADD;
             }
             if (commentsAction == null) {
                 commentsAction = ParamUtils.AddRemoveReplaceAction.ADD;

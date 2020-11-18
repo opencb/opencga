@@ -27,6 +27,7 @@ import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
@@ -345,6 +346,273 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, clinical.getNumResults());
         assertEquals(0, clinical.first().getComments().size());
+    }
+
+    @Test
+    public void createRepeatedInterpretationPrimaryFindings() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        List<ClinicalVariant> findingList = new ArrayList<>();
+        VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv);
+        findingList.add(cv);
+        variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual)
+                .setInterpretation(new Interpretation()
+                        .setId("interpretation")
+                        .setPrimaryFindings(findingList)
+                );
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("repeated");
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void createRepeatedInterpretationSecondaryFindings() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        List<ClinicalVariant> findingList = new ArrayList<>();
+        VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        ClinicalVariant cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv);
+        findingList.add(cv);
+        variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        cv = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual)
+                .setInterpretation(new Interpretation()
+                        .setId("interpretation")
+                        .setSecondaryFindings(findingList)
+                );
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("repeated");
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void updatePrimaryFindings() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        List<ClinicalVariant> findingList = new ArrayList<>();
+        VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv1);
+        variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv2);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual)
+                .setInterpretation(new Interpretation()
+                        .setId("interpretation")
+                        .setPrimaryFindings(findingList)
+                );
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        Interpretation interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(2, interpretation.getPrimaryFindings().size());
+
+        // Add new finding
+        findingList = new ArrayList<>();
+        variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
+        evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
+        ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv3);
+
+        InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
+                .setPrimaryFindings(findingList);
+        ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, interpretation.getPrimaryFindings().size());
+        assertEquals("method2", interpretation.getPrimaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id3", interpretation.getPrimaryFindings().get(2).getId());
+
+        // Add existing finding
+        cv3.setDiscussion("My discussion");
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+            fail("It should not allow adding an already existing finding");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("repeated"));
+        }
+
+        // Remove findings
+        updateParams = new InterpretationUpdateParams()
+                .setPrimaryFindings(Arrays.asList(cv1, cv3));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, interpretation.getPrimaryFindings().size());
+        assertEquals("method", interpretation.getPrimaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id2", interpretation.getPrimaryFindings().get(0).getId());
+
+        // Set findings
+        updateParams = new InterpretationUpdateParams()
+                .setPrimaryFindings(Arrays.asList(cv1, cv2, cv3));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, interpretation.getPrimaryFindings().size());
+        assertEquals("method", interpretation.getPrimaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id1", interpretation.getPrimaryFindings().get(0).getId());
+        assertEquals("method", interpretation.getPrimaryFindings().get(1).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id2", interpretation.getPrimaryFindings().get(1).getId());
+        assertEquals("method2", interpretation.getPrimaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id3", interpretation.getPrimaryFindings().get(2).getId());
+
+        // Replace findings
+        cv2.setEvidences(Collections.singletonList(new ClinicalVariantEvidence().setInterpretationMethodName("AnotherMethodName")));
+        cv3.setEvidences(Collections.singletonList(new ClinicalVariantEvidence().setInterpretationMethodName("YetAnotherMethodName")));
+
+        updateParams = new InterpretationUpdateParams()
+                .setPrimaryFindings(Arrays.asList(cv2, cv3));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, interpretation.getPrimaryFindings().size());
+        assertEquals("method", interpretation.getPrimaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id1", interpretation.getPrimaryFindings().get(0).getId());
+        assertEquals("AnotherMethodName", interpretation.getPrimaryFindings().get(1).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id2", interpretation.getPrimaryFindings().get(1).getId());
+        assertEquals("YetAnotherMethodName", interpretation.getPrimaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id3", interpretation.getPrimaryFindings().get(2).getId());
+    }
+
+    @Test
+    public void updateSecondaryFindings() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        List<ClinicalVariant> findingList = new ArrayList<>();
+        VariantAvro variantAvro = new VariantAvro("id1", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariantEvidence evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        ClinicalVariant cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv1);
+        variantAvro = new VariantAvro("id2", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        ClinicalVariant cv2 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv2);
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual)
+                .setInterpretation(new Interpretation()
+                        .setId("interpretation")
+                        .setSecondaryFindings(findingList)
+                );
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        Interpretation interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(2, interpretation.getSecondaryFindings().size());
+
+        // Add new finding
+        findingList = new ArrayList<>();
+        variantAvro = new VariantAvro("id3", null, "chr3", 2, 3, "", "", "+", null, 1, null, null, null);
+        evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method2");
+        ClinicalVariant cv3 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+        findingList.add(cv3);
+
+        InterpretationUpdateParams updateParams = new InterpretationUpdateParams()
+                .setSecondaryFindings(findingList);
+        ObjectMap actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, interpretation.getSecondaryFindings().size());
+        assertEquals("method2", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+
+        // Add existing finding
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+            fail("It should not allow adding an already existing finding");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("repeated"));
+        }
+
+        // Remove findings
+        updateParams = new InterpretationUpdateParams()
+                .setSecondaryFindings(Arrays.asList(cv1, cv3));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, interpretation.getSecondaryFindings().size());
+        assertEquals("method", interpretation.getSecondaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id2", interpretation.getSecondaryFindings().get(0).getId());
+
+        // Set findings
+        updateParams = new InterpretationUpdateParams()
+                .setSecondaryFindings(Arrays.asList(cv1, cv2, cv3));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, interpretation.getSecondaryFindings().size());
+        assertEquals("method", interpretation.getSecondaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id1", interpretation.getSecondaryFindings().get(0).getId());
+        assertEquals("method", interpretation.getSecondaryFindings().get(1).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id2", interpretation.getSecondaryFindings().get(1).getId());
+        assertEquals("method2", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+
+        // Replace findings
+        cv2.setEvidences(Collections.singletonList(new ClinicalVariantEvidence().setInterpretationMethodName("AnotherMethodName")));
+        cv3.setEvidences(Collections.singletonList(new ClinicalVariantEvidence().setInterpretationMethodName("YetAnotherMethodName")));
+
+        updateParams = new InterpretationUpdateParams()
+                .setSecondaryFindings(Arrays.asList(cv2, cv3));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, interpretation.getSecondaryFindings().size());
+        assertEquals("method", interpretation.getSecondaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id1", interpretation.getSecondaryFindings().get(0).getId());
+        assertEquals("AnotherMethodName", interpretation.getSecondaryFindings().get(1).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id2", interpretation.getSecondaryFindings().get(1).getId());
+        assertEquals("YetAnotherMethodName", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
+        assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
     }
 
     @Test
@@ -900,7 +1168,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, result.getNumUpdated());
 
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("already found in current list of findings");
+        thrown.expectMessage("repeated");
         catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1", params, null, QueryOptions.empty(), sessionIdUser);
     }
 
