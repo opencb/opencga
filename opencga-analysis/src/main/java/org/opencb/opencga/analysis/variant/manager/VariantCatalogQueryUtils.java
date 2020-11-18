@@ -629,6 +629,17 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                    }
                 }
             }
+            if (!regions.isEmpty()) {
+                if (isValidParam(query, REGION)) {
+                    Set<String> regionsFromQuery = new HashSet<>(query.getAsStringList(REGION.key()));
+                    for (Region region : regions) {
+                        regionsFromQuery.add(region.toString());
+                    }
+                    query.put(REGION.key(), regionsFromQuery);
+                } else {
+                    query.put(REGION.key(), regions);
+                }
+            }
 
             if (isValidParam(query, GENE)) {
                 geneNames.addAll(query.getAsStringList(GENE.key()));
