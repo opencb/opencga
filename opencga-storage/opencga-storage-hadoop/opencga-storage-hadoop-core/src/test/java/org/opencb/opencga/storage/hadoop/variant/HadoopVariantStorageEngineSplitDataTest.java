@@ -3,6 +3,9 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.junit.*;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.IssueEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -25,10 +28,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -55,7 +55,6 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
     @Test
     public void testMultiChromosomeSplitData() throws Exception {
-
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz")),
                 outputUri, true, true, true);
@@ -169,7 +168,9 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         URI outDir = newOutputUri();
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FAMILY.key(), true);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
                 outDir, true, true, true);
 
@@ -184,6 +185,15 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         int studyId = metadataManager.getStudyId(STUDY_NAME);
+
+        Variant v = variantStorageEngine.get(new Query()
+                .append(VariantQueryParam.ID.key(), "22:44681612:A:G")
+                .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true), new QueryOptions()).first();
+        checkIssueEntries_22_44681612_A_G(v);
+
+        v = variantStorageEngine.getSampleData("22:44681612:A:G", STUDY_NAME, new QueryOptions()).first();
+        checkIssueEntries_22_44681612_A_G(v);
+
         Iterator<FileMetadata> it = metadataManager.fileMetadataIterator(studyId);
         while (it.hasNext()) {
             for (Boolean nativeQuery : Arrays.asList(true, false)) {
@@ -209,6 +219,28 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                     }
                 }
             }
+        }
+    }
+
+    private void checkIssueEntries_22_44681612_A_G(Variant v) {
+        assertEquals("22:44681612:A:G", v.getId());
+
+        StudyEntry study = v.getStudies().get(0);
+        FileEntry file = study.getFile(study.getSample("NA19600").getFileIndex());
+        assertEquals("chr22_1-2-DUP.variant-test-file.vcf.gz", file.getFileId());
+        Set<String> uniq = new HashSet<>();
+        for (SampleEntry sample : study.getSamples()) {
+            assertNotNull(sample.getSampleId());
+            assertNotNull(sample.getFileIndex());
+            assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
+                    uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
+        }
+        for (IssueEntry issue : study.getIssues()) {
+            SampleEntry sample = issue.getSample();
+            assertNotNull(sample.getSampleId());
+            assertNotNull(sample.getFileIndex());
+            assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
+                    uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
         }
     }
 

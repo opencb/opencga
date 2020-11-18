@@ -69,8 +69,8 @@ public class VariantQueryProjectionParser {
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
             int studyId = study.getId();
             List<Integer> filesInStudy = study.getFiles();
-            study.setMultiFileSamples(new HashMap<>());
-            Map<Integer, List<Integer>> multiMap = study.getMultiFileSamples();
+            Map<Integer, List<Integer>> multiMap = new HashMap<>();
+            study.setMultiFileSamples(multiMap);
 
             for (Integer sampleId : study.getSamples()) {
                 Set<Integer> filesFromSample = new HashSet<>(metadataManager.getFileIdsFromSampleId(studyId, sampleId));

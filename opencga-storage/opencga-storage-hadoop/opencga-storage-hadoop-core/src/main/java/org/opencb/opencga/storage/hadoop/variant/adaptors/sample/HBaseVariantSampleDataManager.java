@@ -66,6 +66,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
         } else {
             variant = cellBaseUtils.getVariant(variantStr);
         }
+        variant.setId(variant.toString());
 
         int studyId = metadataManager.getStudyId(study);
 
@@ -90,7 +91,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
         try {
             List<Integer> samples = new ArrayList<>(limit);
-            List<Pair<Integer, List<String>>> sampleDataMap = new ArrayList<>(limit);
+            List<VariantRow.SampleColumn> sampleDataMap = new ArrayList<>(limit);
 
             dbAdaptor.getHBaseManager().act(dbAdaptor.getVariantTable(), table -> {
                 // Create one GET for samples
@@ -134,7 +135,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                             .onSample(sampleColumn -> {
                                 if (sampleColumn.getStudyId() == studyId) {
                                     samples.add(sampleColumn.getSampleId());
-                                    sampleDataMap.add(Pair.of(sampleColumn.getSampleId(), sampleColumn.getMutableSampleData()));
+                                    sampleDataMap.add(sampleColumn);
                                 }
                             }).walk();
                 }
