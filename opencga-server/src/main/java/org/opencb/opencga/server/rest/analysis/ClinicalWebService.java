@@ -145,22 +145,22 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response update(
             @ApiParam(value = "Comma separated list of clinical analysis IDs") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("commentsAction") ParamUtils.BasicUpdateAction commentsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE,REPLACE", defaultValue = "ADD")
+                @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
             @ApiParam(value = "Action to be performed if the array of flags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("flagsAction") ParamUtils.UpdateAction flagsAction,
+                @QueryParam("flagsAction") ParamUtils.BasicUpdateAction flagsAction,
             @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("filesAction") ParamUtils.UpdateAction filesAction,
+                @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalAnalysisUpdateParams params) {
         try {
             if (commentsAction == null) {
-                commentsAction = ParamUtils.BasicUpdateAction.ADD;
+                commentsAction = ParamUtils.AddRemoveReplaceAction.ADD;
             }
             if (flagsAction == null) {
-                flagsAction = ParamUtils.UpdateAction.ADD;
+                flagsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             if (filesAction == null) {
-                filesAction = ParamUtils.UpdateAction.ADD;
+                filesAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             Map<String, Object> actionMap = new HashMap<>();
@@ -391,16 +391,16 @@ public class ClinicalWebService extends AnalysisWebService {
     public Response updateInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of primary findings is being updated.",
-                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                    allowableValues = "ADD,SET,REMOVE,REPLACE", defaultValue = "ADD")
             @QueryParam("primaryFindingsAction") ParamUtils.UpdateAction primaryFindingsAction,
             @ApiParam(value = "Action to be performed if the array of methods is being updated.",
                     allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("methodsAction") ParamUtils.UpdateAction methodsAction,
+                @QueryParam("methodsAction") ParamUtils.BasicUpdateAction methodsAction,
             @ApiParam(value = "Action to be performed if the array of secondary findings is being updated.",
-                    allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                    allowableValues = "ADD,SET,REMOVE,REPLACE", defaultValue = "ADD")
             @QueryParam("secondaryFindingsAction") ParamUtils.UpdateAction secondaryFindingsAction,
-            @ApiParam(value = "Action to be performed if the array of comments is being updated.", allowableValues = "ADD,REMOVE",
-                    defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.BasicUpdateAction commentsAction,
+            @ApiParam(value = "Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment.",
+                    allowableValues = "ADD,REMOVE,REPLACE", defaultValue = "ADD") @QueryParam("commentsAction") ParamUtils.AddRemoveReplaceAction commentsAction,
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
@@ -414,10 +414,10 @@ public class ClinicalWebService extends AnalysisWebService {
                 secondaryFindingsAction = ParamUtils.UpdateAction.ADD;
             }
             if (commentsAction == null) {
-                commentsAction = ParamUtils.BasicUpdateAction.ADD;
+                commentsAction = ParamUtils.AddRemoveReplaceAction.ADD;
             }
             if (methodsAction == null) {
-                methodsAction = ParamUtils.UpdateAction.ADD;
+                methodsAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             Map<String, Object> actionMap = new HashMap<>();

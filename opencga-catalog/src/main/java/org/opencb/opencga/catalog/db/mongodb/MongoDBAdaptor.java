@@ -35,6 +35,9 @@ import org.slf4j.Logger;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 
 /**
  * Created by jacobo on 12/09/14.
@@ -558,6 +561,30 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return queryOptions;
     }
 
+    /**
+     * Generate Mongo operation to perform a nested array replacement.
+     *
+     * @param entryList Object list containing the elements to be replaced.
+     * @param document UpdateDocument to be filled in with the corresponding mongo operation.
+     * @param idFunction function to retrieve the identifier of each entry element to be replaced.
+     * @param queryKey mongo key by which we will perform the replacement operation.
+     * @param <T> Type of object.
+     * @throws CatalogDBException if there is any issue converting the object to the Document class.
+     */
+    protected <T> void filterReplaceParams(List<T> entryList, MongoDBAdaptor.UpdateDocument document, Function<T, String> idFunction,
+                                       String queryKey) throws CatalogDBException {
+        if (entryList == null) {
+            return;
+        }
+
+        String updateKey = queryKey.substring(0, queryKey.lastIndexOf("."));
+        for (T entry : entryList) {
+            String id = idFunction.apply(entry);
+            Document entryDocument = new Document("$set", new Document(updateKey + ".$", getMongoDBDocument(entry, "")));
+            document.addNestedUpdateDocument(new MongoDBAdaptor.NestedArrayUpdateDocument(new Query(queryKey, id), entryDocument));
+        }
+    }
+
     protected OpenCGAResult unmarkPermissionRule(MongoDBCollection collection, long studyId, String permissionRuleId) {
         Bson query = new Document()
                 .append(PRIVATE_STUDY_UID, studyId)
@@ -695,12 +722,41 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return dataResult.first();
     }
 
+    public class NestedArrayUpdateDocument {
+        private Query query;
+        private Document set;
+
+        public NestedArrayUpdateDocument(Query query, Document set) {
+            this.query = query;
+            this.set = set;
+        }
+
+        public Query getQuery() {
+            return query;
+        }
+
+        public NestedArrayUpdateDocument setQuery(Query query) {
+            this.query = query;
+            return this;
+        }
+
+        public Document getSet() {
+            return set;
+        }
+
+        public NestedArrayUpdateDocument setSet(Document set) {
+            this.set = set;
+            return this;
+        }
+    }
+
     public class UpdateDocument {
         private Document set;
         private Document addToSet;
         private Document push;
         private Document pull;
         private Document pullAll;
+        private List<NestedArrayUpdateDocument> nestedUpdateList;
 
         private ObjectMap attributes;
 
@@ -710,6 +766,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             this.push = new Document();
             this.pull = new Document();
             this.pullAll = new Document();
+            this.nestedUpdateList = new LinkedList<>();
             this.attributes = new ObjectMap();
         }
 
@@ -794,6 +851,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         public UpdateDocument setPullAll(Document pullAll) {
             this.pullAll = pullAll;
+            return this;
+        }
+
+        public List<NestedArrayUpdateDocument> getNestedUpdateList() {
+            return nestedUpdateList;
+        }
+
+        public UpdateDocument addNestedUpdateDocument(NestedArrayUpdateDocument nestedUpdateDocument) {
+            this.nestedUpdateList.add(nestedUpdateDocument);
             return this;
         }
 

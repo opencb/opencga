@@ -119,7 +119,7 @@ public class CatalogSampleAnnotationsLoader {
         }
 
         QueryOptions options = new QueryOptions()
-                .append(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD));
+                .append(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD));
         auxTime = System.currentTimeMillis();
         for (Individual individual : ped.getIndividuals().values()) {
             Map<String, Object> annotations = getAnnotation(individual, sampleMap, variableSet, ped.getFields());

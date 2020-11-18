@@ -96,7 +96,7 @@ public class AbstractSolrManagerTest extends GenericTest {
         studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null,
                 null, null, null, null, sessionIdOwner).first().getFqn();
 
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("admin1")), sessionIdOwner);
         catalogManager.getStudyManager().createGroup(studyFqn, "@study_allow", Collections.singletonList("user1"), sessionIdAdmin);
         catalogManager.getStudyManager().createGroup(studyFqn, "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);

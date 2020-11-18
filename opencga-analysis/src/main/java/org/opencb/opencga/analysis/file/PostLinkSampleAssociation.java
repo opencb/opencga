@@ -120,7 +120,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
 
                     // Update file
                     ObjectMap actionMap = new ObjectMap()
-                            .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD);
+                            .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);
 
                     for (List<String> auxSampleList : sampleListList) {
                         FileUpdateParams fileUpdateParams = new FileUpdateParams()

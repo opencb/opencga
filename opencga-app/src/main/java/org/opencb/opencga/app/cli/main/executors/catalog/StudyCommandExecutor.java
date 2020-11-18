@@ -244,7 +244,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 .setId(c.groupId)
                 .setUsers(c.users);
 
-        ObjectMap params = new ObjectMap("action", ParamUtils.BasicUpdateAction.ADD);
+        ObjectMap params = new ObjectMap("action", ParamUtils.AddRemoveAction.ADD);
 
         return openCGAClient.getStudyClient().updateGroups(getSingleValidStudy(c.study), createParams, params);
     }
@@ -255,7 +255,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         GroupCreateParams createParams = new GroupCreateParams()
                 .setId(c.groupId);
-        ObjectMap params = new ObjectMap("action", ParamUtils.BasicUpdateAction.REMOVE);
+        ObjectMap params = new ObjectMap("action", ParamUtils.AddRemoveAction.REMOVE);
 
         return openCGAClient.getStudyClient().updateGroups(getSingleValidStudy(c.study), createParams, params);
     }
