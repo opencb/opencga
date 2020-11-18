@@ -38,6 +38,7 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created on 08/09/17.
@@ -47,6 +48,10 @@ import java.util.Collections;
 public class MigrationCommandExecutor extends AdminCommandExecutor {
 
     private final MigrationCommandOptions migrationCommandOptions;
+
+    private int version;
+    private int release;
+    private int lastUpdate;
 
     public MigrationCommandExecutor(MigrationCommandOptions migrationCommandOptions) {
         super(migrationCommandOptions.getCommonOptions());
@@ -303,57 +308,98 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
                 adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
 
-                logger.info("Starting Catalog migration for stable 2.0.0");
-                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v2.0.0-rc2_to_v2.0.0.js");
-
-                StudyUpdateParams updateParams = new StudyUpdateParams()
-                        .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
-
-                // Create default study configuration
-                for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
-                    String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
-                    if (project.getStudies() != null) {
-                        for (Study study : project.getStudies()) {
-                            if (study.getConfiguration() == null) {
-                                logger.info("Updating study configuration from study '{}'", study.getFqn());
-                                catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
-                            }
-                        }
-                    }
-                }
-
-                VariableSet variableSet;
-                try {
-                    InputStream inputStream = this.getClass().getClassLoader()
-                            .getResource("variablesets/sample-variant-stats-variableset.json").openStream();
-                    variableSet = JacksonUtils.getDefaultNonNullObjectMapper().readValue(inputStream, VariableSet.class);
-                } catch (IOException e) {
-                    logger.error("Could not read Variable set 'variablesets/sample-variant-stats-variableset.json'", e);
+                if (!needsMigration(metaCollection, 20000, 5)) {
+                    logger.info("DB already migrated to STABLE version. Nothing to migrate");
                     return;
                 }
 
-                // Create default opencga_sample_variant_stats variable set
-                for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
-                    String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
-                    if (project.getStudies() != null) {
-                        for (Study study : project.getStudies()) {
-                            boolean variableSetExists = false;
-                            for (VariableSet vs : study.getVariableSets()) {
-                                if ("opencga_sample_variant_stats".equals(vs.getId())) {
-                                    variableSetExists = true;
+                logger.info("Starting Catalog migration for stable 2.0.0");
+                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v2.0.0-rc2_to_v2.0.0.js");
+
+                if (needsUpdate(1)) {
+                    StudyUpdateParams updateParams = new StudyUpdateParams()
+                            .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
+
+                    // Create default study configuration
+                    for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                        String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
+                        if (project.getStudies() != null) {
+                            for (Study study : project.getStudies()) {
+                                if (study.getConfiguration() == null) {
+                                    logger.info("Updating study configuration from study '{}'", study.getFqn());
+                                    catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
                                 }
-                                break;
-                            }
-                            if (!variableSetExists) {
-                                logger.info("Creating sample variant stats Variable set for study '{}'", study.getFqn());
-                                catalogManager.getStudyManager().createVariableSet(study.getFqn(), variableSet, token);
                             }
                         }
                     }
+                    updateLastUpdate(metaCollection, 1);
+                }
+
+                if (needsUpdate(2)) {
+                    VariableSet variableSet;
+                    try {
+                        InputStream inputStream = this.getClass().getClassLoader()
+                                .getResource("variablesets/sample-variant-stats-variableset.json").openStream();
+                        variableSet = JacksonUtils.getDefaultNonNullObjectMapper().readValue(inputStream, VariableSet.class);
+                    } catch (IOException e) {
+                        logger.error("Could not read Variable set 'variablesets/sample-variant-stats-variableset.json'", e);
+                        return;
+                    }
+
+                    // Create default opencga_sample_variant_stats variable set
+                    for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                        String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
+                        if (project.getStudies() != null) {
+                            for (Study study : project.getStudies()) {
+                                QueryOptions studyOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET_ID.key());
+                                List<VariableSet> variableSets = factory.getCatalogStudyDBAdaptor().get(study.getUid(), studyOptions).first().getVariableSets();
+
+                                boolean variableSetExists = false;
+                                for (VariableSet vs : variableSets) {
+                                    if ("opencga_sample_variant_stats".equals(vs.getId())) {
+                                        variableSetExists = true;
+                                        break;
+                                    }
+                                }
+                                if (!variableSetExists) {
+                                    logger.info("Creating sample variant stats Variable set for study '{}'", study.getFqn());
+                                    catalogManager.getStudyManager().createVariableSet(study.getFqn(), variableSet, token);
+                                }
+                            }
+                        }
+                    }
+
+                    updateLastUpdate(metaCollection, 2);
                 }
 
             }
         }
+    }
+
+    private boolean needsMigration(MongoDBCollection metaCollection, int version, int release) {
+        // Obtain the latest changes made to the DB
+        Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
+        Object fullVersion = metaDocument.get("_fullVersion");
+        if (fullVersion != null) {
+            this.version = ((Document) fullVersion).getInteger("version");
+            this.release = ((Document) fullVersion).getInteger("release");
+            this.lastUpdate = ((Document) fullVersion).getInteger("lastJavaUpdate");
+        } else {
+            this.version = 20000;
+            this.release = 4;
+            this.lastUpdate = 0;
+        }
+
+        return (this.version < version || (this.version == version && this.release <= release));
+    }
+
+    private boolean needsUpdate(int update) {
+        return this.lastUpdate < update;
+    }
+
+    private void updateLastUpdate(MongoDBCollection metaCollection, int update) {
+        metaCollection.update(new Document(), new Document("$set", new Document("_fullVersion.lastJavaUpdate", update)),
+                QueryOptions.empty());
     }
 
     private void runMigration(CatalogManager catalogManager, String scriptFolder, String scriptFileName)

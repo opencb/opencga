@@ -76,14 +76,14 @@ function setOpenCGAVersion(version, versionInt, release) {
     db.metadata.update({}, {"$set":
             {
                 "version": version,
-                "_fullVersion.version": versionInt,
-                "_fullVersion.release": release
+                "_fullVersion.version": NumberInt(versionInt),
+                "_fullVersion.release": NumberInt(release)
             }
     });
 }
 
 function setLatestUpdate(latestUpdate) {
-    db.metadata.update({}, {"$set": {"_fullVersion.latestUpdate": latestUpdate}});
+    db.metadata.update({}, {"$set": {"_fullVersion.lastJsUpdate": NumberInt(latestUpdate)}});
 }
 
 function getOpenCGAVersion() {
@@ -95,10 +95,10 @@ function getOpenCGAVersion() {
             version = {
                 'version': 20000,
                 'release': 4,
-                'latestUpdate': 0
+                'lastJsUpdate': 0
             };
             if (typeof metadata._latestUpdate !== "undefined") {
-                version['latestUpdate'] = metadata._latestUpdate;
+                version['lastJsUpdate'] = metadata._latestUpdate;
             }
         }
     }
@@ -107,11 +107,11 @@ function getOpenCGAVersion() {
 
 function versionNeedsUpdate(version, release) {
     var dbVersion = getOpenCGAVersion();
-    return dbVersion.version <= version && dbVersion.release <= release;
+    return dbVersion.version < version || (dbVersion.version == version && dbVersion.release <= release);
 }
 
 function getLatestUpdate() {
-    return version.latestUpdate;
+    return version.lastJsUpdate;
 }
 
 function runUpdate(migrateFunction) {

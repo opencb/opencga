@@ -125,9 +125,10 @@ if (versionNeedsUpdate(20000, 5)) {
                     "$set":
                         {
                             "_fullVersion": {
-                                "version": 20000,
-                                "release": 4,
-                                "latestUpdate": latestUpdate
+                                "version": NumberInt(20000),
+                                "release": NumberInt(4),
+                                "lastJsUpdate": NumberInt(latestUpdate),
+                                "lastJavaUpdate": NumberInt(0)
                             }
                         },
                     "$unset": {"_latestUpdate": ""}
