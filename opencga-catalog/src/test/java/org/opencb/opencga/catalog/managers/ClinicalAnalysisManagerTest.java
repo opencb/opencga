@@ -346,6 +346,29 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         clinical = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, clinical.getNumResults());
         assertEquals(0, clinical.first().getComments().size());
+
+        // Remove dummy comment with no date
+        commentParamList = Collections.singletonList(new ClinicalCommentParam("", Collections.emptyList()));
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        try {
+            catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                    .setComments(commentParamList), options, sessionIdUser);
+            fail("It should fail because the comment has no date");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("date"));
+        }
+
+        // Replace comment with no date
+        commentParamList = Collections.singletonList(new ClinicalCommentParam("", Collections.emptyList()));
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("date");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                .setComments(commentParamList), options, sessionIdUser);
     }
 
     @Test
@@ -510,6 +533,34 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("id2", interpretation.getPrimaryFindings().get(1).getId());
         assertEquals("YetAnotherMethodName", interpretation.getPrimaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getPrimaryFindings().get(2).getId());
+
+        // Remove finding with missing id
+        variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+
+        updateParams = new InterpretationUpdateParams()
+                .setPrimaryFindings(Collections.singletonList(cv1));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+            fail("It should fail because finding id is missing");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("id"));
+        }
+
+        // Remove finding with missing id
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+            fail("It should fail because finding id is missing");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("id"));
+        }
     }
 
     @Test
@@ -613,6 +664,34 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("id2", interpretation.getSecondaryFindings().get(1).getId());
         assertEquals("YetAnotherMethodName", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+
+        // Remove finding with missing id
+        variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
+        evidence = new ClinicalVariantEvidence().setInterpretationMethodName("method");
+        cv1 = new ClinicalVariant(variantAvro, Collections.singletonList(evidence), null, null, "", ClinicalVariant.Status.NOT_REVIEWED, null);
+
+        updateParams = new InterpretationUpdateParams()
+                .setSecondaryFindings(Collections.singletonList(cv1));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+            fail("It should fail because finding id is missing");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("id"));
+        }
+
+        // Remove finding with missing id
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", updateParams, null, options, sessionIdUser);
+            fail("It should fail because finding id is missing");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("id"));
+        }
     }
 
     @Test
@@ -719,6 +798,29 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, interpretation.getNumResults());
         assertEquals(0, interpretation.first().getComments().size());
+
+        // Remove dummy comment with no date
+        commentParamList = Collections.singletonList(new ClinicalCommentParam("", Collections.emptyList()));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", new InterpretationUpdateParams()
+                    .setComments(commentParamList), null, options, sessionIdUser);
+            fail("It should fail because the comment has no date");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("date"));
+        }
+
+        // Replace comment with no date
+        commentParamList = Collections.singletonList(new ClinicalCommentParam("", Collections.emptyList()));
+        actionMap = new ObjectMap(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.REPLACE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("date");
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), "interpretation", new InterpretationUpdateParams()
+                .setComments(commentParamList), null, options, sessionIdUser);
     }
 
     @Test

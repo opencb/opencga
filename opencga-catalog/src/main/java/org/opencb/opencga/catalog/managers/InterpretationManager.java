@@ -273,6 +273,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         // Check there are no duplicated findings
         Set<String> findings = new HashSet<>();
         for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
+            if (StringUtils.isEmpty(primaryFinding.getId())) {
+                throw new CatalogException("Missing primary finding id.");
+            }
             if (findings.contains(primaryFinding.getId())) {
                 throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
             }
@@ -281,6 +284,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         findings = new HashSet<>();
         for (ClinicalVariant secondaryFinding : interpretation.getSecondaryFindings()) {
+            if (StringUtils.isEmpty(secondaryFinding.getId())) {
+                throw new CatalogException("Missing secondary finding id.");
+            }
             if (findings.contains(secondaryFinding.getId())) {
                 throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + secondaryFinding.getId() + "'");
             }
@@ -825,7 +831,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (updateParams != null && updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {
-            List<ClinicalComment> comments;
+            List<ClinicalComment> comments = new ArrayList<>(updateParams.getComments().size());
 
             ParamUtils.AddRemoveReplaceAction action = ParamUtils.AddRemoveReplaceAction.from(actionMap,
                     InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
@@ -833,8 +839,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             switch (action) {
                 case ADD:
                     // Ensure each comment has a different milisecond
-                    comments = new ArrayList<>(updateParams.getComments().size());
-
                     Calendar calendar = Calendar.getInstance();
                     for (ClinicalCommentParam comment : updateParams.getComments()) {
                         comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(),
@@ -845,8 +849,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 case REMOVE:
                 case REPLACE:
                     // We keep the date as is in this case
-                    comments = updateParams.getComments().stream().map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(),
-                            c.getDate())).collect(Collectors.toList());
+                    for (ClinicalCommentParam comment : updateParams.getComments()) {
+                        if (StringUtils.isEmpty(comment.getDate())) {
+                            throw new CatalogException("Missing mandatory 'date' field. This field is mandatory when action is '"
+                                    + action + "'.");
+                        }
+                        comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(), comment.getDate()));
+                    }
                     break;
                 default:
                     throw new IllegalStateException("Unknown comments action " + action);
@@ -886,6 +895,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
 
             for (ClinicalVariant primaryFinding : updateParams.getPrimaryFindings()) {
+                if (StringUtils.isEmpty(primaryFinding.getId())) {
+                    throw new CatalogException("Missing primary finding id.");
+                }
                 if (findingIds.contains(primaryFinding.getId())) {
                     throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
                 }
@@ -904,6 +916,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
 
             for (ClinicalVariant finding : updateParams.getSecondaryFindings()) {
+                if (StringUtils.isEmpty(finding.getId())) {
+                    throw new CatalogException("Missing secondary finding id.");
+                }
                 if (findingIds.contains(finding.getId())) {
                     throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + finding.getId() + "'");
                 }

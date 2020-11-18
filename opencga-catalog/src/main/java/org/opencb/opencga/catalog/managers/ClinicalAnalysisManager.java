@@ -1155,7 +1155,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
 
         if (updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {
-            List<ClinicalComment> comments;
+            List<ClinicalComment> comments = new ArrayList<>(updateParams.getComments().size());
 
             ParamUtils.AddRemoveReplaceAction action = ParamUtils.AddRemoveReplaceAction.from(actionMap,
                     ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
@@ -1163,8 +1163,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             switch (action) {
                 case ADD:
                     // Ensure each comment has a different milisecond
-                    comments = new ArrayList<>(updateParams.getComments().size());
-
                     Calendar calendar = Calendar.getInstance();
                     for (ClinicalCommentParam comment : updateParams.getComments()) {
                         comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(),
@@ -1174,9 +1172,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     break;
                 case REMOVE:
                 case REPLACE:
-                    // We keep the date as is in this case
-                    comments = updateParams.getComments().stream().map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(),
-                            c.getDate())).collect(Collectors.toList());
+                    for (ClinicalCommentParam comment : updateParams.getComments()) {
+                        if (StringUtils.isEmpty(comment.getDate())) {
+                            throw new CatalogException("Missing mandatory 'date' field. This field is mandatory when action is '"
+                                    + action + "'.");
+                        }
+                        comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(), comment.getDate()));
+                    }
                     break;
                 default:
                     throw new IllegalStateException("Unknown comments action " + action);
