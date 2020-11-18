@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -73,6 +74,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
             InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key()));
+    public static final QueryOptions INCLUDE_INTERPRETATION_FINDING_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
+            InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
+            InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
+            InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+            InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key()));
+
 
     public InterpretationManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                                  DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -86,51 +94,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     Enums.Resource getEntity() {
         return Enums.Resource.INTERPRETATION;
     }
-
-//    @Override
-//    OpenCGAResult<Interpretation> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
-//            throws CatalogException {
-//        ParamUtils.checkIsSingleID(entry);
-//        Query queryCopy = query == null ? new Query() : new Query(query);
-//        queryCopy.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-//
-//        if (UuidUtils.isOpenCgaUuid(entry)) {
-//            queryCopy.put(InterpretationDBAdaptor.QueryParams.UUID.key(), entry);
-//        } else {
-//            queryCopy.put(InterpretationDBAdaptor.QueryParams.ID.key(), entry);
-//        }
-//
-//        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
-//
-////        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-////                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
-////                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-////                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-//        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-//        if (interpretationDataResult.getNumResults() == 0) {
-//            interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
-//            if (interpretationDataResult.getNumResults() == 0) {
-//                throw new CatalogException("Interpretation " + entry + " not found");
-//            } else {
-//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-//                        + entry);
-//            }
-//        } else if (interpretationDataResult.getNumResults() > 1) {
-//            throw new CatalogException("More than one interpretation found based on " + entry);
-//        } else {
-//            // We perform this query to check permissions because interpretations doesn't have ACLs
-//            try {
-//                catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
-//                        interpretationDataResult.first().getClinicalAnalysisId(),
-//                        ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
-//            } catch (CatalogException e) {
-//                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the interpretation "
-//                        + entry);
-//            }
-//
-//            return interpretationDataResult;
-//        }
-//    }
 
     @Override
     InternalGetDataResult<Interpretation> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
@@ -307,11 +270,37 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         // Validate custom status
         validateCustomStatusParameters(clinicalAnalysis, interpretation, interpretationConfiguration);
 
+        // Check there are no duplicated findings
+        Set<String> findings = new HashSet<>();
+        for (ClinicalVariant primaryFinding : interpretation.getPrimaryFindings()) {
+            if (StringUtils.isEmpty(primaryFinding.getId())) {
+                throw new CatalogException("Missing primary finding id.");
+            }
+            if (findings.contains(primaryFinding.getId())) {
+                throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
+            }
+            findings.add(primaryFinding.getId());
+        }
+
+        findings = new HashSet<>();
+        for (ClinicalVariant secondaryFinding : interpretation.getSecondaryFindings()) {
+            if (StringUtils.isEmpty(secondaryFinding.getId())) {
+                throw new CatalogException("Missing secondary finding id.");
+            }
+            if (findings.contains(secondaryFinding.getId())) {
+                throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + secondaryFinding.getId() + "'");
+            }
+            findings.add(secondaryFinding.getId());
+        }
+
         if (!interpretation.getComments().isEmpty()) {
             // Fill author and date
+            Calendar calendar = Calendar.getInstance();
             for (ClinicalComment comment : interpretation.getComments()) {
                 comment.setAuthor(userId);
-                comment.setDate(TimeUtils.getTime());
+
+                comment.setDate(TimeUtils.getTimeMillis(calendar.getTime()));
+                calendar.add(Calendar.MILLISECOND, 1);
             }
         }
 
@@ -395,9 +384,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 interpretationUuid = interpretation.getUuid();
 
                 Map<String, Object> actionMap = new HashMap<>();
-                actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
-                actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.SET);
-                actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), ParamUtils.UpdateAction.SET);
+                actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
+                actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
+                actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), ParamUtils.BasicUpdateAction.SET);
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
@@ -601,7 +590,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         DBIterator<Interpretation> iterator;
         try {
             finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            iterator = interpretationDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INTERPRETATION_IDS, userId);
+            iterator = interpretationDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INTERPRETATION_FINDING_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -675,7 +664,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             ParamUtils.checkParameter(intepretationId, "InterpretationId");
 
             OpenCGAResult<Interpretation> interpretationOpenCGAResult = internalGet(study.getUid(), intepretationId,
-                    INCLUDE_INTERPRETATION_IDS, userId);
+                    INCLUDE_INTERPRETATION_FINDING_IDS, userId);
             if (interpretationOpenCGAResult.getNumResults() == 0) {
                 throw new CatalogException("Interpretation '" + interpretationId + "' not found.");
             }
@@ -772,7 +761,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             String interpretationUuid = "";
 
             try {
-                OpenCGAResult<Interpretation> tmpResult = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_IDS, userId);
+                OpenCGAResult<Interpretation> tmpResult = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_FINDING_IDS,
+                        userId);
                 if (tmpResult.getNumResults() == 0) {
                     throw new CatalogException("Interpretation '" + interpretationId + "' not found.");
                 }
@@ -815,13 +805,15 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     private OpenCGAResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams,
-                                 List<ClinicalAudit> clinicalAuditList,  ParamUtils.SaveInterpretationAs as, QueryOptions options,
+                                 List<ClinicalAudit> clinicalAuditList, ParamUtils.SaveInterpretationAs as, QueryOptions options,
                                  String userId) throws CatalogException {
         if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null
                 || study.getConfiguration().getClinical().getInterpretation() == null) {
             throw new CatalogException("Unexpected error: InterpretationConfiguration is null");
         }
         InterpretationStudyConfiguration interpretationConfiguration = study.getConfiguration().getClinical().getInterpretation();
+
+        Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
         // Check if user has permissions to write clinical analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
@@ -839,9 +831,36 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (updateParams != null && updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {
-            List<ClinicalComment> comments = updateParams.getComments().stream()
-                    .map(c -> new ClinicalComment(userId, c.getMessage(), c.getTags(), TimeUtils.getTime()))
-                    .collect(Collectors.toList());
+            List<ClinicalComment> comments = new ArrayList<>(updateParams.getComments().size());
+
+            ParamUtils.AddRemoveReplaceAction action = ParamUtils.AddRemoveReplaceAction.from(actionMap,
+                    InterpretationDBAdaptor.QueryParams.COMMENTS.key(), ParamUtils.AddRemoveReplaceAction.ADD);
+
+            switch (action) {
+                case ADD:
+                    // Ensure each comment has a different milisecond
+                    Calendar calendar = Calendar.getInstance();
+                    for (ClinicalCommentParam comment : updateParams.getComments()) {
+                        comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(),
+                                TimeUtils.getTimeMillis(calendar.getTime())));
+                        calendar.add(Calendar.MILLISECOND, 1);
+                    }
+                    break;
+                case REMOVE:
+                case REPLACE:
+                    // We keep the date as is in this case
+                    for (ClinicalCommentParam comment : updateParams.getComments()) {
+                        if (StringUtils.isEmpty(comment.getDate())) {
+                            throw new CatalogException("Missing mandatory 'date' field. This field is mandatory when action is '"
+                                    + action + "'.");
+                        }
+                        comments.add(new ClinicalComment(userId, comment.getMessage(), comment.getTags(), comment.getDate()));
+                    }
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown comments action " + action);
+            }
+
             parameters.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), comments);
         }
 
@@ -863,11 +882,48 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        if ((ListUtils.isNotEmpty(interpretation.getPrimaryFindings()) || ListUtils.isNotEmpty(interpretation.getSecondaryFindings()))
-                && !parameters.containsKey(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key())
-                && !parameters.containsKey(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key())) {
-            throw new CatalogException("Interpretation already has primary or secondary findings. Only array of primary or secondary "
-                    + "findings can be updated.");
+        // Check for repeated ids
+        if (updateParams != null && updateParams.getPrimaryFindings() != null && !updateParams.getPrimaryFindings().isEmpty()) {
+            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
+                    InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+
+            Set<String> findingIds;
+            if (action == ParamUtils.UpdateAction.ADD && interpretation.getPrimaryFindings() != null) {
+                findingIds = interpretation.getPrimaryFindings().stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
+            } else {
+                findingIds = new HashSet<>();
+            }
+
+            for (ClinicalVariant primaryFinding : updateParams.getPrimaryFindings()) {
+                if (StringUtils.isEmpty(primaryFinding.getId())) {
+                    throw new CatalogException("Missing primary finding id.");
+                }
+                if (findingIds.contains(primaryFinding.getId())) {
+                    throw new CatalogException("Primary finding ids should be unique. Found repeated id '" + primaryFinding.getId() + "'");
+                }
+                findingIds.add(primaryFinding.getId());
+            }
+        }
+        if (updateParams != null && updateParams.getSecondaryFindings() != null && !updateParams.getSecondaryFindings().isEmpty()) {
+            ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap,
+                    InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+
+            Set<String> findingIds;
+            if (action == ParamUtils.UpdateAction.ADD && interpretation.getSecondaryFindings() != null) {
+                findingIds = interpretation.getSecondaryFindings().stream().map(ClinicalVariant::getId).collect(Collectors.toSet());
+            } else {
+                findingIds = new HashSet<>();
+            }
+
+            for (ClinicalVariant finding : updateParams.getSecondaryFindings()) {
+                if (StringUtils.isEmpty(finding.getId())) {
+                    throw new CatalogException("Missing secondary finding id.");
+                }
+                if (findingIds.contains(finding.getId())) {
+                    throw new CatalogException("Secondary finding ids should be unique. Found repeated id '" + finding.getId() + "'");
+                }
+                findingIds.add(finding.getId());
+            }
         }
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {

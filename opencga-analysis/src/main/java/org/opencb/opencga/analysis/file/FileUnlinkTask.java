@@ -81,7 +81,7 @@ public class FileUnlinkTask extends OpenCgaTool {
                     .setTags(Collections.singletonList(randomMark));
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.ADD.name());
+            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.ADD.name());
             QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
             // Check and mark all the files for deletion
@@ -168,7 +168,7 @@ public class FileUnlinkTask extends OpenCgaTool {
                 .setTags(Collections.singletonList(randomMark));
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.REMOVE.name());
+        actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.REMOVE.name());
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         restore(query, updateParams, options);

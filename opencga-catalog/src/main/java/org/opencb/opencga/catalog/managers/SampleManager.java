@@ -534,7 +534,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
-                                                  ParamUtils.UpdateAction action, QueryOptions options, String token)
+                                                     ParamUtils.BasicUpdateAction action, QueryOptions options, String token)
             throws CatalogException {
         SampleUpdateParams sampleUpdateParams = new SampleUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -550,7 +550,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public OpenCGAResult<Sample> addAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
                                                 QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.UpdateAction.ADD, options, token);
+        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
     public OpenCGAResult<Sample> setAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
@@ -560,7 +560,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public OpenCGAResult<Sample> setAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
                                                 QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.UpdateAction.SET, options, token);
+        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
     }
 
     public OpenCGAResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
@@ -574,7 +574,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
                 .collect(Collectors.toList());
-        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.UpdateAction.REMOVE, options, token);
+        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options, token);
     }
 
     public OpenCGAResult<Sample> updateAnnotations(String studyStr, String sampleStr, String annotationSetId,
@@ -898,7 +898,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
                     && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
                 options.put(Constants.ACTIONS, actionMap);
             }
         }
@@ -1378,7 +1378,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (map == null) {
                 map = new HashMap<>();
             }
-            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.REMOVE);
+            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.REMOVE);
             options.put(Constants.ACTIONS, map);
 
             // Delete all annotation sets of variable set
@@ -1442,13 +1442,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
         if (!annotationSetList.isEmpty()) {
             // Add SET Action
-            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.SET);
+            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.SET);
             options.put(Constants.ACTIONS, map);
 
             sampleUpdateParams.setAnnotationSets(annotationSetList);
         } else {
             // Add REMOVE Action
-            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.UpdateAction.REMOVE);
+            map.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.REMOVE);
             options.put(Constants.ACTIONS, map);
 
             // Delete all annotation sets of variable set

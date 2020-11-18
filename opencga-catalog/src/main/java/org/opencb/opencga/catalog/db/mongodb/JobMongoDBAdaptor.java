@@ -410,8 +410,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         if (parameters.containsKey(QueryParams.INTERNAL_EVENTS.key())) {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.INTERNAL_EVENTS.key(),
-                    ParamUtils.UpdateAction.ADD);
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.INTERNAL_EVENTS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
             String[] acceptedObjectParams = new String[]{QueryParams.INTERNAL_EVENTS.key()};
             switch (operation) {
                 case SET:

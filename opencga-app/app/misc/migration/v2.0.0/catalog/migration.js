@@ -1,5 +1,8 @@
-var updateCount = 1;
-runUpdate(updateCount++, function () {
+if (!versionNeedsUpdate(20000, 5)) {
+    return;
+}
+
+runUpdate(function () {
     db.interpretation.createIndex({"clinicalAnalysisId": 1, "studyUid": 1}, {"background": true});
     db.interpretation.createIndex({"status": 1, "studyUid": 1}, {"background": true});
     db.interpretation.createIndex({"primaryFindings.id": 1, "studyUid": 1}, {"background": true});
@@ -14,7 +17,7 @@ runUpdate(updateCount++, function () {
 });
 
 // # 1668
-runUpdate(updateCount++, function () {
+runUpdate(function () {
     migrateCollection("clinical", {"qualityControl": {"$exists": false}}, {"_creationDate": 1}, function (bulk, doc) {
         bulk.find({"_id": doc._id}).updateOne({
             "$set": {
@@ -30,7 +33,7 @@ runUpdate(updateCount++, function () {
 });
 
 // # 1673
-runUpdate(updateCount++, function () {
+runUpdate(function () {
 
     // The clinical configuration will be autocompleted during migration by Java
     db.study.update({"configuration": {"$exists": false}}, {"$set": {"configuration": {"clinical": {}}}}, {"multi": true});
@@ -86,7 +89,7 @@ runUpdate(updateCount++, function () {
 });
 
 // # 1674
-runUpdate(updateCount++, function () {
+runUpdate(function () {
     migrateCollection("study", {"variableSets.internal": {"$exists": false}}, {"variableSets": 1}, function(bulk, doc) {
         if (isNotEmptyArray(doc.variableSets)) {
             var variableSets = [];
@@ -113,4 +116,27 @@ runUpdate(updateCount++, function () {
     });
 });
 
-// setOpenCGAVersion("2.0.0-rc5")
+runUpdate(function () {
+    migrateCollection("metadata", {}, {}, function(bulk, doc) {
+        var latestUpdate = doc._latestUpdate;
+        if (isNotUndefinedOrNull(doc._fullVersion) && isNotUndefinedOrNull(doc._fullVersion.latestUpdate)) {
+            latestUpdate = doc._fullVersion.latestUpdate;
+        }
+
+        bulk.find({"_id": doc._id}).updateOne(
+            {
+                "$set":
+                    {
+                        "_fullVersion": {
+                            "version": 20000,
+                            "release": 4,
+                            "latestUpdate": latestUpdate
+                        }
+                    },
+                "$unset": { "_latestUpdate":  ""}
+            }
+        );
+    });
+});
+
+setOpenCGAVersion("2.0.0", 20000, 5);

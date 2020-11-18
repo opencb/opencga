@@ -260,7 +260,7 @@ public class UserManager extends AbstractManager {
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
                     logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
-                    catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.UpdateAction.SET,
+                    catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET,
                             new GroupUpdateParams(Collections.emptyList()), token);
                     continue;
                 }
@@ -289,7 +289,7 @@ public class UserManager extends AbstractManager {
                     logger.info("Associating members to the internal OpenCGA group");
                     updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId).collect(Collectors.toSet())));
                 }
-                catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.UpdateAction.SET, updateParams, token);
+                catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.BasicUpdateAction.SET, updateParams, token);
             }
         }
         if (!foundAny) {
@@ -449,7 +449,7 @@ public class UserManager extends AbstractManager {
                     OpenCGAResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
                     if (group.getNumResults() == 1) {
                         // We will add those users to the existing group
-                        catalogManager.getStudyManager().updateGroup(study, internalGroup, ParamUtils.UpdateAction.ADD,
+                        catalogManager.getStudyManager().updateGroup(study, internalGroup, ParamUtils.BasicUpdateAction.ADD,
                                 new GroupUpdateParams(idList), token);
                         return;
                     }
