@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant.knockout.result;
+package org.opencb.opencga.core.models.analysis.knockout;
 
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 
