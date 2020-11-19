@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -164,24 +165,38 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
 
     @Test
-    public void testDuplicatedVariantsAccepted() throws Exception {
+    public void testDuplicatedVariantsAccepted1() throws Exception {
+        // Make sure loading order doesn't matter for this test
+        testDuplicatedVariantsAccepted(
+                "by_chr/chr22.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-1.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2-DUP2.variant-test-file.vcf.gz");
+    }
+
+    @Test
+    public void testDuplicatedVariantsAccepted2() throws Exception {
+        // Make sure loading order doesn't matter for this test
+        testDuplicatedVariantsAccepted(
+                "by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz",
+                "by_chr/chr22.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2-DUP2.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-1.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2.variant-test-file.vcf.gz");
+    }
+
+    public void testDuplicatedVariantsAccepted(String... files) throws Exception {
         URI outDir = newOutputUri();
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true);
         variantStorageEngine.getOptions().put(VariantStorageOptions.FAMILY.key(), true);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
 
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
-
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
-
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")),
-                outputUri, true, true, true);
-
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
+        for (String file : files) {
+            variantStorageEngine.index(Collections.singletonList(getResourceUri(file)),
+                    outDir, true, true, true);
+        }
 
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         int studyId = metadataManager.getStudyId(STUDY_NAME);
@@ -189,15 +204,17 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         Variant v = variantStorageEngine.get(new Query()
                 .append(VariantQueryParam.ID.key(), "22:44681612:A:G")
                 .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true), new QueryOptions()).first();
+        System.out.println("v.toJson() = " + v.toJson());
         checkIssueEntries_22_44681612_A_G(v);
 
         v = variantStorageEngine.getSampleData("22:44681612:A:G", STUDY_NAME, new QueryOptions()).first();
+        System.out.println("v.toJson() = " + v.toJson());
         checkIssueEntries_22_44681612_A_G(v);
 
         Iterator<FileMetadata> it = metadataManager.fileMetadataIterator(studyId);
         while (it.hasNext()) {
+            FileMetadata fileMetadata = it.next();
             for (Boolean nativeQuery : Arrays.asList(true, false)) {
-                FileMetadata fileMetadata = it.next();
                 String name = fileMetadata.getName();
                 Query query = new Query(VariantQueryParam.FILE.key(), name);
                 System.out.println("-----------------------");
@@ -234,6 +251,10 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertNotNull(sample.getFileIndex());
             assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
                     uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
+            String FILE = sample.getData().get(study.getSampleDataKeyPosition("FILE"));
+            if (StringUtils.isNotEmpty(FILE)) {
+                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE+".variant-test-file.vcf.gz");
+            }
         }
         for (IssueEntry issue : study.getIssues()) {
             SampleEntry sample = issue.getSample();
@@ -241,7 +262,12 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             assertNotNull(sample.getFileIndex());
             assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
                     uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
+            String FILE = sample.getData().get(study.getSampleDataKeyPosition("FILE"));
+            if (StringUtils.isNotEmpty(FILE)) {
+                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE+".variant-test-file.vcf.gz");
+            }
         }
+        assertNotEquals(0, study.getIssues().size());
     }
 
 
