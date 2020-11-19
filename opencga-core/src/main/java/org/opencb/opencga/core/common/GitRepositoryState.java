@@ -16,7 +16,11 @@
 
 package org.opencb.opencga.core.common;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 /**
@@ -26,7 +30,9 @@ import java.util.Properties;
  */
 public class GitRepositoryState {
 
+    public static final String RESOURCE_NAME = "org/opencb/opencga/core/git.properties";
     private static GitRepositoryState gitRepositoryState;
+    private static final Logger logger = LoggerFactory.getLogger(GitRepositoryState.class);
 
     private String tags;                    // =${git.tags} // comma separated tag names
     private String branch;                  // =${git.branch}
@@ -54,10 +60,22 @@ public class GitRepositoryState {
     public static GitRepositoryState get() {
         if (gitRepositoryState == null) {
             Properties properties = new Properties();
+            InputStream stream = null;
             try {
-                properties.load(GitRepositoryState.class.getClassLoader().getResourceAsStream("org/opencb/opencga/core/git.properties"));
+                stream = GitRepositoryState.class.getClassLoader().getResourceAsStream(RESOURCE_NAME);
+                if (stream != null) {
+                    properties.load(stream);
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.warn("Error reading " + RESOURCE_NAME, e);
+            } finally {
+                if (stream != null) {
+                    try {
+                        stream.close();
+                    } catch (IOException e) {
+                        logger.warn("Error closing stream from " + RESOURCE_NAME, e);
+                    }
+                }
             }
 
             gitRepositoryState = new GitRepositoryState(properties);

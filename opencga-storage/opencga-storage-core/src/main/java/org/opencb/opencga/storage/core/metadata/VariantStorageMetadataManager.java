@@ -76,7 +76,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final MetadataCache<Integer, String> sampleNameCache;
     private final MetadataCache<Integer, Boolean> sampleIdIndexedCache;
     private final MetadataCache<Integer, LinkedHashSet<Integer>> sampleIdsFromFileIdCache;
-    private final MetadataCache<Integer, VariantStorageEngine.SplitData> splitDataCache;
+    // Store ordinal from VariantStorageEngine.SplitData. -1 for null values.
+    private final MetadataCache<Integer, Integer> splitDataCache;
 
     private final MetadataCache<String, Integer> fileIdCache;
     private final MetadataCache<Integer, String> fileNameCache;
@@ -127,7 +128,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             if (sampleMetadata == null) {
                 throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
-            return sampleMetadata.getSplitData();
+            VariantStorageEngine.SplitData splitData = sampleMetadata.getSplitData();
+            if (splitData == null) {
+                return -1;
+            } else {
+                return splitData.ordinal();
+            }
         });
 
         fileIdCache = new MetadataCache<>(fileDBAdaptor::getFileId);
@@ -1287,7 +1293,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public VariantStorageEngine.SplitData getLoadSplitData(int studyId, int sampleId) {
-        return splitDataCache.get(studyId, sampleId);
+        Integer ordinal = splitDataCache.get(studyId, sampleId);
+        if (ordinal < 0) {
+            return null;
+        } else {
+            return VariantStorageEngine.SplitData.values()[ordinal];
+        }
     }
 
     /*

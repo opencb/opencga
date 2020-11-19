@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.junit.Assert;
@@ -16,8 +15,8 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 
 import java.util.*;
 
@@ -55,9 +54,9 @@ public class HBaseToStudyEntryConverterTest {
 
     @Test
     public void testConvertBasic() throws Exception {
-        List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
-        fixedValues.add(Pair.of(1, listOf("0/0", "PASS")));
-        fixedValues.add(Pair.of(3, listOf("0/1", "PASS")));
+        List<VariantRow.SampleColumn> fixedValues = new ArrayList<>();
+        fixedValues.add(getSampleColumn(1, listOf("0/0", "PASS")));
+        fixedValues.add(getSampleColumn(3, listOf("0/1", "PASS")));
 
         StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
         StudyEntry expected = new StudyEntry("1", Collections.emptyList(), listOf("GT", "FT"))
@@ -77,9 +76,9 @@ public class HBaseToStudyEntryConverterTest {
             return s;
         });
 
-        List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
-        fixedValues.add(Pair.of(1, listOf("0/0", "1,2", "10")));
-        fixedValues.add(Pair.of(3, listOf("0/1", "3,4", "20")));
+        List<VariantRow.SampleColumn> fixedValues = new ArrayList<>();
+        fixedValues.add(getSampleColumn(1, listOf("0/0", "1,2", "10")));
+        fixedValues.add(getSampleColumn(3, listOf("0/1", "3,4", "20")));
 
         StudyEntry s = converter.convert(fixedValues, Collections.emptyList(), new Variant("1:1000:A:C"), 1);
 
@@ -131,17 +130,18 @@ public class HBaseToStudyEntryConverterTest {
             return s;
         });
 
-        List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
+        List<VariantRow.SampleColumn> fixedValues = new ArrayList<>();
         List<Pair<String, PhoenixArray>> otherValues = new ArrayList<>();
-        fixedValues.add(Pair.of(1, listOf("0/0", "1,2", "10")));
+        List<String> right = listOf("0/0", "1,2", "10");
+        fixedValues.add(getSampleColumn(1, right));
 //        otherValues.add(Pair.of(1, OtherSampleData.newBuilder()
 //                .putSampleData("KEY_1", "VALUE_1")
 //                .putSampleData("KEY_2", "VALUE_2")
 //                .build().toByteArray()));
-        fixedValues.add(Pair.of(2, listOf("1/1", "8,9", "70")));
-        fixedValues.add(Pair.of(3, listOf("0/1", "3,4", "20")));
-        fixedValues.add(Pair.of(5, listOf("0/1", ".", ".")));
-        fixedValues.add(Pair.of(6, listOf(".", ".", ".")));
+        fixedValues.add(getSampleColumn(2, listOf("1/1", "8,9", "70")));
+        fixedValues.add(getSampleColumn(3, listOf("0/1", "3,4", "20")));
+        fixedValues.add(getSampleColumn(5, listOf("0/1", ".", ".")));
+        fixedValues.add(getSampleColumn(6, listOf(".", ".", ".")));
 //        otherValues.add(Pair.of(3, OtherSampleData.newBuilder()
 //                .putSampleData("KEY_1", "VALUE_1")
 //                .putSampleData("KEY_3", "VALUE_3")
@@ -156,6 +156,40 @@ public class HBaseToStudyEntryConverterTest {
                 .addSampleData("S5", listOf("0/1", ".", "."))
                 .addSampleData("S6", listOf(".", ".", "."));
         Assert.assertEquals(s.toString(), expected, s);
+    }
+
+    private VariantRow.SampleColumn getSampleColumn(int sampleId, List<String> sampleData) {
+        return new VariantRow.SampleColumn() {
+            @Override
+            public int getStudyId() {
+                return 0;
+            }
+
+            @Override
+            public int getSampleId() {
+                return sampleId;
+            }
+
+            @Override
+            public Integer getFileId() {
+                return null;
+            }
+
+            @Override
+            public List<String> getSampleData() {
+                return sampleData;
+            }
+
+            @Override
+            public List<String> getMutableSampleData() {
+                return new ArrayList<>(sampleData);
+            }
+
+            @Override
+            public String getSampleData(int idx) {
+                return sampleData.get(idx);
+            }
+        };
     }
 
     @Test
