@@ -32,9 +32,6 @@ if (versionNeedsUpdate(20000, 5)) {
     // # 1673
     runUpdate(function () {
 
-        // The clinical configuration will be autocompleted during migration by Java
-        db.study.update({"configuration": {"$exists": false}}, {"$set": {"configuration": {"clinical": {}}}}, {"multi": true});
-
         migrateCollection("clinical", {"consent.consents": {"$exists": false}}, {
             "creationDate": 1,
             "priority": 1,
@@ -135,6 +132,12 @@ if (versionNeedsUpdate(20000, 5)) {
                 }
             );
         });
+    });
+
+    runUpdate(function () {
+        // Force configuration update via Java
+        db.study.update({"configuration": {"$exists": true}}, {"$unset": {"configuration": ""}}, {"multi": true});
+        db.metadata.update({}, {"$set": {"_fullVersion.lastJavaUpdate": NumberInt(0)}});
     });
 
     setOpenCGAVersion("2.0.0", 20000, 5);

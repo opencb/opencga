@@ -316,6 +316,13 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 logger.info("Starting Catalog migration for stable 2.0.0");
                 runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v2.0.0-rc2_to_v2.0.0.js");
 
+                if (!needsMigration(metaCollection, 20000, 5)) {
+                    logger.info("DB already migrated to STABLE version. Nothing to migrate");
+                    return;
+                }
+
+                fetchUpdateVersionVariables(metaCollection);
+
                 if (needsUpdate(1)) {
                     StudyUpdateParams updateParams = new StudyUpdateParams()
                             .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
@@ -377,6 +384,11 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
     }
 
     private boolean needsMigration(MongoDBCollection metaCollection, int version, int release) {
+        fetchUpdateVersionVariables(metaCollection);
+        return (this.version < version || (this.version == version && this.release <= release));
+    }
+
+    private void fetchUpdateVersionVariables(MongoDBCollection metaCollection) {
         // Obtain the latest changes made to the DB
         Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
         Object fullVersion = metaDocument.get("_fullVersion");
@@ -389,8 +401,6 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             this.release = 4;
             this.lastUpdate = 0;
         }
-
-        return (this.version < version || (this.version == version && this.release <= release));
     }
 
     private boolean needsUpdate(int update) {
