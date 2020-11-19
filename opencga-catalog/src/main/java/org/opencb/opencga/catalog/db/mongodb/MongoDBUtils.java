@@ -37,6 +37,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.user.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -68,6 +70,8 @@ class MongoDBUtils {
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
     private static Map<Class, ObjectReader> jsonReaderMap;
+
+    protected static Logger logger = LoggerFactory.getLogger(MongoDBUtils.class);
 
     static {
         jsonObjectMapper = getDefaultObjectMapper();
@@ -370,7 +374,7 @@ class MongoDBUtils {
                         filteredParams.put(s, document);
                     }
                 } catch (CatalogDBException e) {
-                    e.printStackTrace();
+                    logger.warn("Skipping key '" + s + "': " + e.getMessage(), e);
                 }
             }
         }
@@ -474,9 +478,8 @@ class MongoDBUtils {
      * @param bsonList List to which we will add the ontology terms search.
      */
     public static void addOntologyQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
-        List<String> ontologyValues = query.getAsStringList(queryKey);
-        Bson ontologyId = MongoDBQueryUtils.createFilter(mongoKey + ".id", ontologyValues);
-        Bson ontologyName = MongoDBQueryUtils.createFilter(mongoKey + ".name", ontologyValues);
+        Bson ontologyId = MongoDBQueryUtils.createAutoFilter(mongoKey + ".id", queryKey, query, QueryParam.Type.STRING);
+        Bson ontologyName = MongoDBQueryUtils.createAutoFilter(mongoKey + ".name", queryKey, query, QueryParam.Type.STRING);
         bsonList.add(Filters.or(ontologyId, ontologyName));
     }
 

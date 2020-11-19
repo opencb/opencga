@@ -27,6 +27,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -34,6 +35,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -45,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -61,8 +64,8 @@ public abstract class OpenCgaTool {
     protected StorageConfiguration storageConfiguration;
     protected VariantStorageManager variantStorageManager;
 
-    protected String jobId;
-    protected String opencgaHome;
+    private String jobId;
+    private String opencgaHome;
     protected String token;
 
     protected final ObjectMap params;
@@ -75,6 +78,8 @@ public abstract class OpenCgaTool {
 
     private final ToolExecutorFactory toolExecutorFactory;
     private final Logger privateLogger;
+
+    private MemoryUsageMonitor memoryUsageMonitor;
 
     private ExecutionResultManager erm;
 
@@ -168,6 +173,9 @@ public abstract class OpenCgaTool {
         if (this.getClass().getAnnotation(Tool.class) == null) {
             throw new ToolException("Missing @" + Tool.class.getSimpleName() + " annotation in " + this.getClass());
         }
+        if (configuration.getAnalysis().getExecution().getOptions().getBoolean("memoryMonitor", false)) {
+            startMemoryMonitor();
+        }
         erm = new ExecutionResultManager(getId(), outDir);
         erm.init(params, executorParams);
         Thread hook = new Thread(() -> {
@@ -186,7 +194,9 @@ public abstract class OpenCgaTool {
                     if (exception == null) {
                         exception = new RuntimeException("Unexpected system shutdown");
                     }
-                    erm.close(exception);
+                    ExecutionResult result = erm.close(exception);
+                    privateLogger.info("------- Tool '" + getId() + "' executed in "
+                            + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
                 } catch (ToolException e) {
                     privateLogger.error("Error closing ExecutionResult", e);
                 }
@@ -228,6 +238,7 @@ public abstract class OpenCgaTool {
                 }
             }
             try {
+                privateCheck();
                 check();
                 erm.setSteps(getSteps());
                 run();
@@ -243,7 +254,7 @@ public abstract class OpenCgaTool {
             deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
             result = erm.close(exception);
-
+            stopMemoryMonitor();
             privateLogger.info("------- Tool '" + getId() + "' executed in "
                     + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
         }
@@ -257,6 +268,27 @@ public abstract class OpenCgaTool {
             String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
             privateLogger.warn(warningMessage, e);
             erm.addWarning(warningMessage);
+        }
+    }
+
+    private void startMemoryMonitor() {
+        if (memoryUsageMonitor == null) {
+            memoryUsageMonitor = new MemoryUsageMonitor();
+            memoryUsageMonitor.start();
+        }
+    }
+
+    private void stopMemoryMonitor() {
+        if (memoryUsageMonitor != null) {
+            memoryUsageMonitor.stop();
+            memoryUsageMonitor = null;
+        }
+    }
+
+    private void privateCheck() throws Exception {
+        ToolParams toolParams = findToolParams();
+        if (toolParams != null) {
+            toolParams.updateParams(getParams());
         }
     }
 
@@ -322,16 +354,44 @@ public abstract class OpenCgaTool {
         return token;
     }
 
-    public CatalogManager getCatalogManager() {
+    public final Path getOpencgaHome() {
+        return Paths.get(opencgaHome);
+    }
+
+    public final String getJobId() {
+        return jobId;
+    }
+
+    public final CatalogManager getCatalogManager() {
         return catalogManager;
     }
 
-    public VariantStorageManager getVariantStorageManager() {
+    public final VariantStorageManager getVariantStorageManager() {
         return variantStorageManager;
     }
 
-    public ObjectMap getParams() {
+    public final ObjectMap getParams() {
         return params;
+    }
+
+    private ToolParams findToolParams() throws ToolException {
+        for (Field field : getClass().getDeclaredFields()) {
+            if (field.isAnnotationPresent(org.opencb.opencga.core.tools.annotations.ToolParams.class)
+                    && ToolParams.class.isAssignableFrom(field.getType())) {
+                try {
+                    field.setAccessible(true);
+                    ToolParams toolParams = (ToolParams) field.get(this);
+                    if (toolParams == null) {
+                        toolParams = (ToolParams) field.getType().newInstance();
+                        field.set(this, toolParams);
+                    }
+                    return toolParams;
+                } catch (IllegalAccessException | InstantiationException e) {
+                    throw new ToolException("Unexpected error reading ToolParams");
+                }
+            }
+        }
+        return null;
     }
 
     public final OpenCgaTool addSource(ToolExecutor.Source source) {
@@ -389,6 +449,10 @@ public abstract class OpenCgaTool {
         erm.addEvent(type, message);
     }
 
+    protected final void addInfo(String message) throws ToolException {
+        erm.addEvent(Event.Type.INFO, message);
+    }
+
     protected final void addWarning(String warning) throws ToolException {
         erm.addWarning(warning);
     }
@@ -409,6 +473,10 @@ public abstract class OpenCgaTool {
             throw new ToolException("Error moving file from " + source + " to " + destiny, e);
         }
         // Add only if move is successful
+        addGeneratedFile(file);
+    }
+
+    protected final void addGeneratedFile(File file) throws ToolException {
         erm.addExternalFile(file.getUri());
     }
 
@@ -485,10 +553,6 @@ public abstract class OpenCgaTool {
      */
     private void loadStorageConfiguration() throws IOException {
         this.storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
-    }
-
-    public ExecutionResultManager getErm() {
-        return erm;
     }
 
     // TODO can this method be removed?

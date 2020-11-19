@@ -33,9 +33,10 @@ public class FileStatus extends Status {
     public static final String PENDING_DELETE = "PENDING_DELETE";
     public static final String DELETING = "DELETING"; // This status is set exactly before deleting the file from disk.
     public static final String REMOVED = "REMOVED";
+    public static final String MISSING_SAMPLES = "MISSING_SAMPLES";
 
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING,
-            REMOVED);
+            REMOVED, MISSING_SAMPLES);
 
     public FileStatus(String status, String message) {
         if (isValid(status)) {
@@ -58,7 +59,8 @@ public class FileStatus extends Status {
             return true;
         }
         if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)
-                || status.equals(PENDING_DELETE) || status.equals(DELETING) || status.equals(REMOVED))) {
+                || status.equals(PENDING_DELETE) || status.equals(DELETING) || status.equals(REMOVED)
+                || status.equals(MISSING_SAMPLES))) {
             return true;
         }
         return false;

@@ -227,7 +227,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         }
 
         try {
-            Path thresholdsPath = Paths.get(opencgaHome).resolve("analysis").resolve(ID).resolve("karyotypic_sex_thresholds.json");
+            Path thresholdsPath = getOpencgaHome().resolve("analysis").resolve(ID).resolve("karyotypic_sex_thresholds.json");
             karyotypicSexThresholds = JacksonUtils.getDefaultNonNullObjectMapper().readerFor(Map.class).readValue(thresholdsPath.toFile());
         } catch (IOException e) {
             addWarning("Skipping inferred sex: something wrong happened when loading the karyotypic sex thresholds file"

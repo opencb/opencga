@@ -64,8 +64,7 @@ db.job.find({}, {id:1, output:1, stdout:1, stderr:1}).forEach(function(job) {
     }
 
     // Update file documents
-    print(job.id + ": " + fileUids);
-    db.file.update({"uid": {"$in": fileUids}}, {"$set": {"jobId": "caca"}}, {"multi": true});
+    db.file.update({"uid": {"$in": fileUids}}, {"$set": {"jobId": job.id}}, {"multi": true});
 });
 
 // Fix clinical issue where member ids were not populated
@@ -204,6 +203,31 @@ migrateCollection("sample", {}, {}, function(bulk, doc) {
     }
 });
 
+migrateCollection("sample", {"qualityControl.metrics.variantStats.stats.mendelianErrorCount": {$exists: true}}, {}, function(bulk, doc) {
+    for (var metric of doc.qualityControl.metrics) {
+        for (variantStat of metric.variantStats) {
+            var count = variantStat.stats.mendelianErrorCount;
+            if (isNotUndefinedOrNull(count)) {
+                var keys = Object.keys(count);
+                if (isNotEmptyArray(keys)) {
+                    // We take the first of the values and Check if the value is already an instance of map
+                    var value = count[keys[0]];
+                    if (typeof value === 'object') {
+                        return;
+                    }
+
+                    // We need to migrate the value
+                    variantStat.stats.mendelianErrorCount = {
+                        "ALL": variantStat.stats.mendelianErrorCount
+                    };
+                }
+            }
+        }
+    }
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": {"qualityControl": doc.qualityControl}});
+});
+
 // Add new Variant permission
 migrateCollection("study", {}, {}, function(bulk, doc) {
     if (isNotEmptyArray(doc._acl)) {
@@ -301,7 +325,7 @@ db.clinical.update({}, {"$unset": {
     }}
 );
 
-migrateCollection("interpretation", {"modificationDate": {"$exists": false}}, {'creationDate': 1}, function(bulk, doc) {
+migrateCollection("interpretation", {}, {'creationDate': 1}, function(bulk, doc) {
     bulk.find({"_id": doc._id}).updateOne({"$set": { "modificationDate": doc.creationDate }});
 });
 
@@ -343,6 +367,10 @@ migrateCollection("interpretation", {"_lastOfVersion": {"$exists": false}}, {uid
     bulk.find({"_id": doc._id}).updateOne({"$set": set});
 });
 
+migrateCollection("interpretation", {"version": {"$type": "double"}}, {version: 1}, function(bulk, doc) {
+    bulk.find({"_id": doc._id}).updateOne({"$set": {"version": NumberInt(doc.version)}});
+});
+
 // # 1649
 migrateCollection("clinical", {"interpretation.version": {"$exists": false}}, {interpretation: 1, secondaryInterpretations: 1}, function(bulk, doc) {
     var set = {};
@@ -350,13 +378,13 @@ migrateCollection("clinical", {"interpretation.version": {"$exists": false}}, {i
     if (isNotUndefinedOrNull(doc.interpretation) && isNotUndefinedOrNull(doc.interpretation.uid)) {
         set['interpretation'] = {
             'uid': doc.interpretation.uid,
-            'version': 1
+            'version': NumberInt(1)
         };
     }
 
     if (isNotEmptyArray(doc.secondaryInterpretations)) {
         doc.secondaryInterpretations.forEach(function (interpretation) {
-            interpretation['version'] = 1;
+            interpretation['version'] = NumberInt(1);
         });
         set['secondaryInterpretations'] = doc.secondaryInterpretations;
     }

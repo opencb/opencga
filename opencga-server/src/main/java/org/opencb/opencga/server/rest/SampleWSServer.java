@@ -75,7 +75,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response infoSample(
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String samplesStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.SAMPLE_VERSION_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VERSION_PARAM) Integer version,
+            @ApiParam(value = ParamConstants.SAMPLE_VERSION_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VERSION_PARAM) String version,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -164,11 +164,55 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.ATTRIBUTES_PARAM) String attributes,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
-            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot) {
+
+            @ApiParam(value = "Sample variant stats id. If filtering by other stats fields and not provided, it will be automatically set to ALL")
+                @QueryParam("stats.id") String statsId,
+            @ApiParam(value = "Sample variant stats variantCount.") @QueryParam("stats.variantCount") String variantCount,
+            @ApiParam(value = "Sample variant stats chromosomeCount.") @QueryParam("stats.chromosomeCount") String chromosomeCount,
+            @ApiParam(value = "Sample variant stats typeCount.") @QueryParam("stats.typeCount") String typeCount,
+            @ApiParam(value = "Sample variant stats genotypeCount.") @QueryParam("stats.genotypeCount") String genotypeCount,
+            @ApiParam(value = "Sample variant stats tiTvRatio.") @QueryParam("stats.tiTvRatio") String tiTvRatio,
+            @ApiParam(value = "Sample variant stats qualityAvg.") @QueryParam("stats.qualityAvg") String qualityAvg,
+            @ApiParam(value = "Sample variant stats qualityStdDev.") @QueryParam("stats.qualityStdDev") String qualityStdDev,
+            @ApiParam(value = "Sample variant stats heterozygosityRate.") @QueryParam("stats.heterozygosityRate") String heterozygosityRate,
+            @ApiParam(value = "Sample variant stats depthCount.") @QueryParam("stats.depthCount") String depthCount,
+            @ApiParam(value = "Sample variant stats biotypeCount.") @QueryParam("stats.biotypeCount") String biotypeCount,
+            @ApiParam(value = "Sample variant stats clinicalSignificanceCount.") @QueryParam("stats.clinicalSignificanceCount") String clinicalSignificanceCount,
+            @ApiParam(value = "Sample variant stats consequenceTypeCount.") @QueryParam("stats.consequenceTypeCount") String consequenceTypeCount) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(sampleManager.search(studyStr, query, queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/distinct")
+    @ApiOperation(value = "Sample distinct method")
+    public Response distinct(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
+            @ApiParam(value = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM) String individual,
+            @ApiParam(value = ParamConstants.SAMPLE_FILE_IDS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_FILE_IDS_PARAM) String fileIds,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.ATTRIBUTES_PARAM) String attributes,
+            @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(sampleManager.distinct(studyStr, field, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -198,12 +242,12 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
@@ -225,11 +269,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
@@ -336,7 +380,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "Propagate sample permissions to related individuals", defaultValue = "false") @QueryParam("propagate") boolean propagate,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)

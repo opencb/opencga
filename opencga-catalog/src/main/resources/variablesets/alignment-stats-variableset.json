@@ -1,6 +1,7 @@
 {
   "unique": true,
   "confidential": false,
+  "internal": false,
   "id": "opencga_alignment_stats",
   "name": "opencga_alignment_stats",
   "description": "OpenCGA alignment stats",

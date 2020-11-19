@@ -31,6 +31,7 @@ public class VariableSet extends PrivateFields {
     private String name;
     private boolean unique;
     private boolean confidential;
+    private boolean internal;
     private String description;
     private Set<Variable> variables;
 
@@ -50,12 +51,13 @@ public class VariableSet extends PrivateFields {
     public VariableSet() {
     }
 
-    public VariableSet(String id, String name, boolean unique, boolean confidential, String description, Set<Variable> variables,
-                       List<AnnotableDataModels> entities, int release, Map<String, Object> attributes) {
+    public VariableSet(String id, String name, boolean unique, boolean confidential, boolean internal, String description,
+                       Set<Variable> variables, List<AnnotableDataModels> entities, int release, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.unique = unique;
         this.confidential = confidential;
+        this.internal = internal;
         this.description = description;
         this.entities = entities;
         this.release = release;
@@ -70,6 +72,7 @@ public class VariableSet extends PrivateFields {
         sb.append(", name='").append(name).append('\'');
         sb.append(", unique=").append(unique);
         sb.append(", confidential=").append(confidential);
+        sb.append(", internal=").append(internal);
         sb.append(", description='").append(description).append('\'');
         sb.append(", variables=").append(variables);
         sb.append(", entities=").append(entities);
@@ -117,6 +120,15 @@ public class VariableSet extends PrivateFields {
 
     public VariableSet setConfidential(boolean confidential) {
         this.confidential = confidential;
+        return this;
+    }
+
+    public boolean isInternal() {
+        return internal;
+    }
+
+    public VariableSet setInternal(boolean internal) {
+        this.internal = internal;
         return this;
     }
 

@@ -17,7 +17,8 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -27,6 +28,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -50,8 +52,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
 
     public CatalogManagerExternalResource() {
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
     }
 
     @Override
@@ -72,7 +74,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
             Files.createDirectory(opencgaHome);
         }
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", false);
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", true);
         catalogManager.close();
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside

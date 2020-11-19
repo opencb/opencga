@@ -5,6 +5,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntryIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndexEntry;
 
 import java.util.*;
 
@@ -119,6 +120,19 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
         Variant variant = next;
         next = null; // Clean next variant
         return variant;
+    }
+
+    @Override
+    public SampleVariantIndexEntry nextSampleVariantIndexEntry() {
+        AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
+        short fileIndex = 0;
+        if (hasFileIndex()) {
+            fileIndex = nextFileIndexEntry();
+        }
+        String genotype = nextGenotype();
+        int meCode = nextMendelianErrorCode();
+        Variant variant = next();
+        return new SampleVariantIndexEntry(variant, fileIndex, genotype, annotationIndexEntry, meCode);
     }
 
     @Override

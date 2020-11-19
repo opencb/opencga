@@ -128,7 +128,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
         }
 
-        long jobUid = getNewUid(clientSession);
+        long jobUid = getNewUid();
         job.setUid(jobUid);
         job.setStudyUid(studyId);
         if (StringUtils.isEmpty(job.getUuid())) {
@@ -207,13 +207,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Bson bson = parseQuery(query, QueryOptions.empty(), user);
         logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(jobCollection.count(bson));
-    }
-
-    @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bsonDocument = parseQuery(query, QueryOptions.empty());
-        return new OpenCGAResult(jobCollection.distinct(field, bsonDocument));
     }
 
     @Override
@@ -417,8 +410,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         if (parameters.containsKey(QueryParams.INTERNAL_EVENTS.key())) {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.INTERNAL_EVENTS.key(),
-                    ParamUtils.UpdateAction.ADD);
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.INTERNAL_EVENTS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
             String[] acceptedObjectParams = new String[]{QueryParams.INTERNAL_EVENTS.key()};
             switch (operation) {
                 case SET:
@@ -695,6 +688,16 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, null, userId);
+
+        return new OpenCGAResult(jobCollection.distinct(field, bson, clazz));
+    }
+
+    @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);
@@ -869,7 +872,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case START_TIME:
                     case END_TIME:
                     case OUTPUT_ERROR:
-                    case EXECUTION:
+                    case EXECUTION_START:
+                    case EXECUTION_END:
                     case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:

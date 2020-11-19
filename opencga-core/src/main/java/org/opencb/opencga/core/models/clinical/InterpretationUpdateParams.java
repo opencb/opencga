@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.common.StatusParam;
 
 import java.util.List;
 import java.util.Map;
@@ -37,21 +38,22 @@ public class InterpretationUpdateParams {
     private String creationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
-    private List<ClinicalComment> comments;
+    private List<ClinicalCommentParam> comments;
     private Map<String, Object> attributes;
+    private StatusParam status;
 
     public InterpretationUpdateParams() {
     }
 
     public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
                                       String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
-        this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, comments, attributes);
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
+        this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, comments, attributes, status);
     }
 
     public InterpretationUpdateParams(String id, String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
                                       String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<ClinicalComment> comments, Map<String, Object> attributes) {
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.analyst = analyst;
@@ -61,6 +63,7 @@ public class InterpretationUpdateParams {
         this.secondaryFindings = secondaryFindings;
         this.comments = comments;
         this.attributes = attributes;
+        this.status = status;
     }
 
     @JsonIgnore
@@ -80,6 +83,7 @@ public class InterpretationUpdateParams {
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -147,12 +151,21 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public List<ClinicalComment> getComments() {
+    public List<ClinicalCommentParam> getComments() {
         return comments;
     }
 
-    public InterpretationUpdateParams setComments(List<ClinicalComment> comments) {
+    public InterpretationUpdateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
+        return this;
+    }
+
+    public StatusParam getStatus() {
+        return status;
+    }
+
+    public InterpretationUpdateParams setStatus(StatusParam status) {
+        this.status = status;
         return this;
     }
 

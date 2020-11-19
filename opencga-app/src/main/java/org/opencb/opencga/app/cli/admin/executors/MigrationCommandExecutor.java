@@ -22,20 +22,23 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created on 08/09/17.
@@ -45,6 +48,10 @@ import java.util.Collections;
 public class MigrationCommandExecutor extends AdminCommandExecutor {
 
     private final MigrationCommandOptions migrationCommandOptions;
+
+    private int version;
+    private int release;
+    private int lastUpdate;
 
     public MigrationCommandExecutor(MigrationCommandOptions migrationCommandOptions) {
         super(migrationCommandOptions.getCommonOptions());
@@ -192,12 +199,19 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         boolean skipRc1 = false;
         boolean skipRc2 = false;
+        boolean skipFinalRelease = false;
         switch (options.what) {
             case RC1:
                 skipRc2 = true;
+                skipFinalRelease = true;
                 break;
             case RC2:
                 skipRc1 = true;
+                skipFinalRelease = true;
+                break;
+            case STABLE:
+                skipRc1 = true;
+                skipRc2 = true;
                 break;
             case ALL:
             default:
@@ -209,6 +223,11 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
 
         if (!skipRc1) {
+            if (StringUtils.isEmpty(options.jobFolder)) {
+                logger.error("Missing mandatory --job-directory parameter.");
+                return;
+            }
+
             String cypheredPassword = CryptoUtils.sha1(options.commonOptions.adminPassword);
             Document document = new Document("admin.password", cypheredPassword);
             if (metaCollection.count(document).getNumMatches() == 0) {
@@ -221,6 +240,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc1/", "opencga_catalog_v1.4.2_to_v2.0.0-rc1.js");
 
                 String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                token = catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
                 // Create default project and study for administrator #1491
                 catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
@@ -266,6 +286,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         if (!skipRc2) {
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
                 String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
 
                 logger.info("Starting Catalog migration for 2.0.0 RC2");
                 runMigration(catalogManager, appHome + "/misc/migration/v2.0.0-rc2/", "opencga_catalog_v2.0.0-rc1_to_v2.0.0-rc2.js");
@@ -282,6 +303,113 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 }
             }
         }
+        if (!skipFinalRelease) {
+            try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+                String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
+
+                if (!needsMigration(metaCollection, 20000, 5)) {
+                    logger.info("DB already migrated to STABLE version. Nothing to migrate");
+                    return;
+                }
+
+                logger.info("Starting Catalog migration for stable 2.0.0");
+                runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v2.0.0-rc2_to_v2.0.0.js");
+
+                if (!needsMigration(metaCollection, 20000, 5)) {
+                    logger.info("DB already migrated to STABLE version. Nothing to migrate");
+                    return;
+                }
+
+                fetchUpdateVersionVariables(metaCollection);
+
+                if (needsUpdate(1)) {
+                    StudyUpdateParams updateParams = new StudyUpdateParams()
+                            .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
+
+                    // Create default study configuration
+                    for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                        String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
+                        if (project.getStudies() != null) {
+                            for (Study study : project.getStudies()) {
+                                if (study.getConfiguration() == null) {
+                                    logger.info("Updating study configuration from study '{}'", study.getFqn());
+                                    catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
+                                }
+                            }
+                        }
+                    }
+                    updateLastUpdate(metaCollection, 1);
+                }
+
+                if (needsUpdate(2)) {
+                    VariableSet variableSet;
+                    try {
+                        InputStream inputStream = this.getClass().getClassLoader()
+                                .getResource("variablesets/sample-variant-stats-variableset.json").openStream();
+                        variableSet = JacksonUtils.getDefaultNonNullObjectMapper().readValue(inputStream, VariableSet.class);
+                    } catch (IOException e) {
+                        logger.error("Could not read Variable set 'variablesets/sample-variant-stats-variableset.json'", e);
+                        return;
+                    }
+
+                    // Create default opencga_sample_variant_stats variable set
+                    for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                        String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
+                        if (project.getStudies() != null) {
+                            for (Study study : project.getStudies()) {
+                                QueryOptions studyOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET_ID.key());
+                                List<VariableSet> variableSets = factory.getCatalogStudyDBAdaptor().get(study.getUid(), studyOptions).first().getVariableSets();
+
+                                boolean variableSetExists = false;
+                                for (VariableSet vs : variableSets) {
+                                    if ("opencga_sample_variant_stats".equals(vs.getId())) {
+                                        variableSetExists = true;
+                                        break;
+                                    }
+                                }
+                                if (!variableSetExists) {
+                                    logger.info("Creating sample variant stats Variable set for study '{}'", study.getFqn());
+                                    catalogManager.getStudyManager().createVariableSet(study.getFqn(), variableSet, token);
+                                }
+                            }
+                        }
+                    }
+
+                    updateLastUpdate(metaCollection, 2);
+                }
+
+            }
+        }
+    }
+
+    private boolean needsMigration(MongoDBCollection metaCollection, int version, int release) {
+        fetchUpdateVersionVariables(metaCollection);
+        return (this.version < version || (this.version == version && this.release <= release));
+    }
+
+    private void fetchUpdateVersionVariables(MongoDBCollection metaCollection) {
+        // Obtain the latest changes made to the DB
+        Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
+        Object fullVersion = metaDocument.get("_fullVersion");
+        if (fullVersion != null) {
+            this.version = ((Document) fullVersion).getInteger("version");
+            this.release = ((Document) fullVersion).getInteger("release");
+            this.lastUpdate = ((Document) fullVersion).getInteger("lastJavaUpdate");
+        } else {
+            this.version = 20000;
+            this.release = 4;
+            this.lastUpdate = 0;
+        }
+    }
+
+    private boolean needsUpdate(int update) {
+        return this.lastUpdate < update;
+    }
+
+    private void updateLastUpdate(MongoDBCollection metaCollection, int update) {
+        metaCollection.update(new Document(), new Document("$set", new Document("_fullVersion.lastJavaUpdate", update)),
+                QueryOptions.empty());
     }
 
     private void runMigration(CatalogManager catalogManager, String scriptFolder, String scriptFileName)

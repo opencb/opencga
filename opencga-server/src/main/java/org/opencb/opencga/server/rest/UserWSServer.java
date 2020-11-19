@@ -262,14 +262,14 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateConfiguration(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+                @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) ConfigUpdateParams params) {
         try {
             if (action == null) {
-                action = ParamUtils.BasicUpdateAction.ADD;
+                action = ParamUtils.AddRemoveAction.ADD;
             }
-            if (action == ParamUtils.BasicUpdateAction.ADD) {
+            if (action == ParamUtils.AddRemoveAction.ADD) {
                 return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.getId(), params.getConfiguration(), token));
             } else {
                 return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, params.getId(), token));
@@ -301,13 +301,13 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateFilters(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+                @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "Filter parameters. When removing, only the 'name' of the filter will be necessary", required = true) UserFilter params) {
         try {
             if (action == null) {
-                action = ParamUtils.BasicUpdateAction.ADD;
+                action = ParamUtils.AddRemoveAction.ADD;
             }
-            if (action == ParamUtils.BasicUpdateAction.ADD) {
+            if (action == ParamUtils.AddRemoveAction.ADD) {
                 return createOkResponse(catalogManager.getUserManager().addFilter(userId, params.getId(), params.getDescription(),
                         params.getResource(), params.getQuery(), params.getOptions(), token));
             } else {

@@ -4,23 +4,32 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
-public class VariantTypeAccumulator<T> extends FieldVariantAccumulator<T> {
+public class VariantTypeAccumulator<T> extends FacetFieldAccumulator<T> {
 
     private final Function<T, VariantType> getType;
+    private EnumSet<VariantType> typesSet;
+    private boolean allTypes;
 
     public VariantTypeAccumulator(Function<T, VariantType> getType) {
-        this(getType, null);
+        super(null);
+        this.getType = getType;
         // TODO: Accept subset of variant type
     }
 
-    public VariantTypeAccumulator(Function<T, VariantType> getType, FieldVariantAccumulator<T> nestedFieldAccumulator) {
-        super(nestedFieldAccumulator);
+    public VariantTypeAccumulator(Function<T, VariantType> getType, Collection<VariantType> types) {
+        super(null);
         this.getType = getType;
+        if (types == null || types.isEmpty()) {
+            allTypes = true;
+            typesSet = EnumSet.allOf(VariantType.class);
+        } else {
+            allTypes = false;
+            typesSet = EnumSet.noneOf(VariantType.class);
+            typesSet.addAll(types);
+        }
     }
 
     @Override
@@ -38,8 +47,19 @@ public class VariantTypeAccumulator<T> extends FieldVariantAccumulator<T> {
     }
 
     @Override
-    protected List<FacetField.Bucket> getBuckets(FacetField field, T variant) {
-        return Collections.singletonList(field.getBuckets().get(getType(variant).ordinal()));
+    protected List<FacetField.Bucket> getBuckets(FacetField field, T t) {
+        VariantType type = getType(t);
+        if (allTypes || typesSet.contains(type)) {
+            return Collections.singletonList(field.getBuckets().get(type.ordinal()));
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void evaluate(FacetField field) {
+        field.getBuckets().removeIf(b -> !typesSet.contains(VariantType.valueOf(b.getValue())));
+        super.evaluate(field);
     }
 
     protected VariantType getType(T variant) {

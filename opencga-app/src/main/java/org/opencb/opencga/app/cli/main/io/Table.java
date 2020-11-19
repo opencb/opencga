@@ -627,7 +627,8 @@ public class Table<T> {
             out.print("#");
             while (iterator.hasNext()) {
                 TableColumn<T> column = iterator.next();
-                out.print(column.getName());
+                String name = column.getName().replace(" ", "_").toUpperCase();
+                out.print(name);
                 if (iterator.hasNext()) {
                     out.print(sep);
                 }

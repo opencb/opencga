@@ -24,7 +24,10 @@ class RestClientGenerator(ABC):
 
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
-            'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'}
+            'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {'method_name': 'merge_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
         }
         self.categories = {
             'Users': 'User',
@@ -156,7 +159,7 @@ class RestClientGenerator(ABC):
         if self.get_endpoint_path(endpoint) in self.endpoints:
             return self.endpoints[self.get_endpoint_path(endpoint)]['method_name']
 
-        method_name = ''
+        method_name = None
         subpath = self.get_endpoint_path(endpoint).replace(self.get_category_path(category) + '/', '')
         items = subpath.split('/')
         if len(items) == 1:
@@ -182,12 +185,15 @@ class RestClientGenerator(ABC):
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
             if not self.any_arg(items):
                 method_name = '_'.join([items[3], items[1], items[2]])
+            # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
+            elif self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3]]):
+                method_name = '_'.join([items[3], items[1]])
         elif len(items) == 5:
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
             if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):
                 method_name = '_'.join([items[4], items[3]])
         if not method_name:
-            NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
+            raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
         return re.sub(r'(?<!^)(?=[A-Z])', '_', method_name).lower()
 
     @abstractmethod

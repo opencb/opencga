@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -28,6 +30,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -35,7 +38,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 05/06/17.
  */
-public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
+public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysis> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -50,24 +53,27 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS("status", OBJECT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        CONSENT("consent", TEXT_ARRAY, ""),
-        PRIORITY("priority", TEXT, ""),
+        QUALITY_CONTROL("qualityControl", OBJECT, ""),
+        CONSENT("consent", OBJECT, ""),
+        PRIORITY("priority", OBJECT, ""),
+        PRIORITY_ID("priority.id", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
         ANALYST_ID("analyst.id", TEXT, ""),
         ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
-        FLAGS("flags", TEXT_ARRAY, ""),
+        FLAGS("flags", OBJECT, ""),
+        FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
         LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
-        MEMBER("member", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
+        INDIVIDUAL("individual", TEXT_ARRAY, ""), // Alias to search for members from proband or family.members
 
         FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_ID("family.id", TEXT, ""),
@@ -76,6 +82,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", INTEGER_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
+        COMMENTS_DATE("comments.date", TEXT, ""),
         ALERTS("alerts", TEXT_ARRAY, ""),
         PROBAND("proband", TEXT_ARRAY, ""),
         PROBAND_ID("proband.id", TEXT, ""),
@@ -84,8 +91,12 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         PROBAND_SAMPLES_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATION("interpretation", TEXT, ""),
         INTERPRETATION_ID("interpretation.id", TEXT, ""),
+        INTERPRETATION_UID("interpretation.uid", LONG, ""),
         SECONDARY_INTERPRETATIONS("secondaryInterpretations", TEXT_ARRAY, ""),
         SECONDARY_INTERPRETATIONS_ID("secondaryInterpretations.id", TEXT_ARRAY, ""),
+        SECONDARY_INTERPRETATIONS_UID("secondaryInterpretations.uid", LONG, ""),
+
+        AUDIT("audit", TEXT_ARRAY, ""),
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
@@ -154,7 +165,14 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     OpenCGAResult nativeInsert(Map<String, Object> clinicalAnalysis, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options)
+    OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, List<ClinicalAudit> clinicalAuditList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<ClinicalAnalysis> update(long id, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<ClinicalAnalysis> update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList,
+                                           QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options)
@@ -162,6 +180,12 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<?> delete(ClinicalAnalysis id, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+     OpenCGAResult<ClinicalAnalysis> delete(Query query, List<ClinicalAudit> clinicalAuditList)
+             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 

@@ -105,7 +105,7 @@ public final class CatalogDemo {
         String sessionId = userSessions.get("user5");
 
         // user5 will be in the @admins group
-        catalogManager.getStudyManager().updateGroup(studyId, "@admins", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyId, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user5")), userSessions.get("user1"));
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
         catalogManager.getStudyManager().createGroup(studyId, new Group("analyst", Arrays.asList("user2", "user3", "user4")),

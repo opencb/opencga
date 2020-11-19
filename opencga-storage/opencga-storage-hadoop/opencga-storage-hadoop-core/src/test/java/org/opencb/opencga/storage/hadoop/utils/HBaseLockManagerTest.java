@@ -202,31 +202,19 @@ public class HBaseLockManagerTest extends VariantStorageBaseTest implements Hado
         String s;
 
         // Expired current token
-        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123"});
+        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("CURRENT-abc:123"));
         assertNull(s);
 
         // Valid current token
-        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:" + e});
+        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("CURRENT-abc:" + e));
         assertEquals("abc", s);
 
         // Current expired, first refresh valid
-        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:" + e});
-        assertEquals("abc", s);
-
-        // Current expired, first refresh expired, second refresh valid
-        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200", "REFRESH-abc:" + e});
+        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("REFRESH-abc:" + e));
         assertEquals("abc", s);
 
         // Expired refresh
-        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200"});
-        assertNull(s);
-
-        // Wrong refresh
-        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-efg:" + e});
-        assertNull(s);
-
-        // There is an token in between
-        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "zzz:" + e, "REFRESH-abc:" + e});
+        s = HBaseLockManager.parseValidLockToken(Bytes.toBytes("REFRESH-abc:200"));
         assertNull(s);
     }
 

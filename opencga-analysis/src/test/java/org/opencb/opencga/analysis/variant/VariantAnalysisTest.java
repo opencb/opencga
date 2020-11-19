@@ -192,7 +192,7 @@ public class VariantAnalysisTest {
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
 
-        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()), "");
+        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
     }
 
     @AfterClass
@@ -318,7 +318,7 @@ public class VariantAnalysisTest {
         SampleVariantStatsAnalysisParams params = new SampleVariantStatsAnalysisParams()
                 .setSample(samples)
                 .setVariantQuery(new AnnotationVariantQueryParams().setRegion("1,2"));
-        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, token);
+        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
@@ -367,7 +367,7 @@ public class VariantAnalysisTest {
         variantExportParams.setCompress(true);
         variantExportParams.setOutputFileName("chr22");
 
-        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, token);
+        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
     }
 
     @Test
@@ -437,7 +437,7 @@ public class VariantAnalysisTest {
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSampleIds());
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
     }
 
@@ -449,7 +449,7 @@ public class VariantAnalysisTest {
         params.setSample(file.getSampleIds());
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, null, token);
         checkExecutionResult(er, false);
         Assert.assertEquals(4, er.getAttributes().get("otherGenesCount"));
         Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -464,7 +464,7 @@ public class VariantAnalysisTest {
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
         Assert.assertEquals(0, er.getAttributes().get("otherGenesCount"));
         Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -479,7 +479,7 @@ public class VariantAnalysisTest {
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype("nonsense_mediated_decay");
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
         Assert.assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
         Assert.assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
@@ -515,7 +515,7 @@ public class VariantAnalysisTest {
 //                + "," + "non_stop_decay"
 //                + "," + "TR_V_gene");
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
     }
 
@@ -526,7 +526,7 @@ public class VariantAnalysisTest {
         SampleEligibilityAnalysisParams params = new SampleEligibilityAnalysisParams();
         params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
-        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, null, token);
 //        checkExecutionResult(er, false);
     }
 

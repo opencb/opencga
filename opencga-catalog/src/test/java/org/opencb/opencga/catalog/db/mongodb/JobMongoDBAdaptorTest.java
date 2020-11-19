@@ -29,10 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.file.FileInternal;
-import org.opencb.opencga.core.models.file.FileStatus;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -238,14 +235,14 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         job = getJob(studyId, "jobName1");
 
         List<File> fileInput = Arrays.asList(
-                new File().setUid(5L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
-                new File().setUid(6L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
-                new File().setUid(7L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap()))
+                new File().setUid(5L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
+                new File().setUid(6L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
+                new File().setUid(7L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples()))
         );
         List<File> fileOutput = Arrays.asList(
-                new File().setUid(15L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
-                new File().setUid(16L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap())),
-                new File().setUid(17L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap()))
+                new File().setUid(15L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
+                new File().setUid(16L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
+                new File().setUid(17L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples()))
         );
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)

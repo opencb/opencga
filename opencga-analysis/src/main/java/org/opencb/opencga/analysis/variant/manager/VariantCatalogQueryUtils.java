@@ -1132,8 +1132,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                String userId = catalogManager.getUserManager().getUserId(sessionId);
-                List<Study> studies = catalogManager.getStudyManager().resolveIds(values, userId);
+                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_ID, false, sessionId)
+                        .getResults();
                 return studies.stream().map(Study::getFqn).collect(Collectors.toList());
             } else {
                 List<String> validatedValues = new ArrayList<>(values.size());

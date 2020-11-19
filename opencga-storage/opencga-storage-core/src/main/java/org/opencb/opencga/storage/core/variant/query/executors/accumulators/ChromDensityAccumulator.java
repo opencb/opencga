@@ -13,14 +13,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-public class ChromDensityAccumulator<T> extends FieldVariantAccumulator<T> {
+public class ChromDensityAccumulator<T> extends FacetFieldAccumulator<T> {
     private final Region region;
     private final int step;
     private final int numSteps;
     private final Function<T, Integer> getStart;
 
     public ChromDensityAccumulator(VariantStorageMetadataManager metadataManager, Region region,
-                                   FieldVariantAccumulator<T> nestedFieldAccumulator, int step, Function<T, Integer> getStart) {
+                                   FacetFieldAccumulator<T> nestedFieldAccumulator, int step, Function<T, Integer> getStart) {
         super(nestedFieldAccumulator);
         this.region = region;
         this.step = step;
@@ -77,8 +77,8 @@ public class ChromDensityAccumulator<T> extends FieldVariantAccumulator<T> {
     }
 
     @Override
-    protected List<FacetField.Bucket> getBuckets(FacetField field, T variant) {
-        int idx = (getStart(variant) - region.getStart()) / step;
+    protected List<FacetField.Bucket> getBuckets(FacetField field, T t) {
+        int idx = (getStart(t) - region.getStart()) / step;
         if (idx < numSteps) {
             return Collections.singletonList(field.getBuckets().get(idx));
         } else {

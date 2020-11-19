@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
 import org.apache.hadoop.conf.Configuration;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.adaptors.VariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -26,6 +27,13 @@ public class HBaseVariantStorageMetadataDBAdaptorFactory implements VariantStora
         this.metaTableName = metaTableName;
         this.configuration = configuration;
         this.hBaseManager = hBaseManager;
+    }
+
+    @Override
+    public ObjectMap getConfiguration() {
+        ObjectMap objectMap = new ObjectMap();
+        configuration.iterator().forEachRemaining(e -> objectMap.put(e.getKey(), e.getValue()));
+        return objectMap;
     }
 
     @Override

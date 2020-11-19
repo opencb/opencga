@@ -13,7 +13,15 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class VariantStorageMetadataManagerTest extends VariantStorageBaseTest implements VariantStorageTest {
 
@@ -55,6 +63,39 @@ public abstract class VariantStorageMetadataManagerTest extends VariantStorageBa
         Assert.assertEquals("RUNNING", Collections.singletonList("MyTask3"), getTasks(study, Collections.singletonList(TaskMetadata.Status.RUNNING)));
         Assert.assertEquals("READY", Collections.singletonList("MyTask1"), getTasks(study, Collections.singletonList(TaskMetadata.Status.READY)));
         Assert.assertEquals("DONE", Collections.singletonList("MyTask2"), getTasks(study, Collections.singletonList(TaskMetadata.Status.DONE)));
+    }
+
+    @Test
+    public void registerFileParallel() throws Exception {
+        StudyMetadata study = metadataManager.createStudy("study");
+        ExecutorService service = Executors.newFixedThreadPool(10);
+
+        int numSamples = 3000;
+        List<String> sampleNames = IntStream.range(0, numSamples).mapToObj(i -> "SAMPLE_" + i).collect(Collectors.toList());
+        int numFiles = 30;
+
+        for (int i = 0; i < numFiles; i++) {
+            String fileName = "file." + i + ".txt";
+            service.submit(() -> metadataManager.registerFile(study.getId(), fileName, sampleNames));
+        }
+
+        service.shutdown();
+        assertTrue(service.awaitTermination(10, TimeUnit.MINUTES));
+
+        AtomicInteger totalNumFiles = new AtomicInteger();
+        metadataManager.fileMetadataIterator(study.getId()).forEachRemaining(fileMetadata -> {
+            Assert.assertEquals(fileMetadata.getName(), numSamples, fileMetadata.getSamples().size());
+            totalNumFiles.getAndIncrement();
+        });
+        assertEquals(numFiles, totalNumFiles.get());
+
+        AtomicInteger totalNumSamples = new AtomicInteger();
+        metadataManager.sampleMetadataIterator(study.getId()).forEachRemaining(sampleMetadata -> {
+            Assert.assertEquals(sampleMetadata.getName(), numFiles, sampleMetadata.getFiles().size());
+            totalNumSamples.getAndIncrement();
+        });
+        assertEquals(numSamples, totalNumSamples.get());
+
     }
 
     public List<String> getTasks(StudyMetadata study, List<TaskMetadata.Status> status) {

@@ -18,9 +18,8 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
@@ -118,8 +117,9 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         System.out.println(" # overlappingVariants = " + !ignoreOverlappingVariants);
         System.out.println(" #     (ignoreOverlapping = " + ignoreOverlappingVariants + ')');
         System.out.println("====================================================");
-        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-        stderr.setThreshold(Level.toLevel("debug"));
+//        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
+//        stderr.setThreshold(Level.toLevel("debug"));
+        Configurator.setRootLevel(Level.DEBUG);
 
         inputFile = VariantStorageBaseTest.getResourceUri("variant-test-file.vcf.gz").getPath();
 

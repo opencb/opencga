@@ -156,19 +156,24 @@
 {"collection": "clinical", "fields": {"family.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"dueDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "clinical", "fields": {"priority": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "clinical", "fields": {"flags": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"priority.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"flags.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"_acl": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 
-{"collection": "interpretation", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
-{"collection": "interpretation", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
-{"collection": "interpretation", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
+{"collection": "interpretation", "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "interpretation", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "interpretation", "fields": {"id": 1, "version": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"analyst.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"method.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"clinicalAnalysisId": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"primaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"secondaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}

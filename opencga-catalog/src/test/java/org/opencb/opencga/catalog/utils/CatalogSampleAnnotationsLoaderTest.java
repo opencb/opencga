@@ -66,7 +66,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
             catalogManager.deleteCatalogDB(token);
         }
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", false);
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", true);
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
         String pedFileName = "20130606_g1k.ped";
@@ -113,8 +113,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         variables.add(new Variable("NonExistingField", "", Variable.VariableType.DOUBLE, "", false, false, Collections.emptyList(), null, 0, null, "",
                 null, null));
 
-        VariableSet variableSet = new VariableSet("", "", false, false, "", variables,
-                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, null);
+        VariableSet variableSet = new VariableSet("", "", false, false, false, "",
+                variables, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, null);
 
         validate(pedigree, variableSet);
     }

@@ -5,6 +5,7 @@ import org.opencb.biodata.tools.clinical.DiseasePanelParsers;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.io.FileWriter;
@@ -59,6 +60,14 @@ public class PanelCommandExecutor extends CommandExecutor {
         int i = 1;
         int max = Integer.MAX_VALUE;
 
+        FileWriter fileWriter;
+        try {
+            fileWriter = new FileWriter(directory.resolve("panels.json").toFile());
+        } catch (IOException e) {
+            logger.error("Error creating fileWriter: {}", e.getMessage(), e);
+            throw e;
+        }
+
         List<String> panelIds = new LinkedList<>();
         while (i < max) {
             URL url = new URL("https://panelapp.genomicsengland.co.uk/api/v1/panels/?format=json&page=" + i);
@@ -79,13 +88,11 @@ public class PanelCommandExecutor extends CommandExecutor {
             for (Map<String, Object> panel : (List<Map>) panels.get("results")) {
 
                 if (String.valueOf(panel.get("version")).startsWith("0")) {
-                    logger.warn("Panel is not ready for interpretation: '{}', version: '{}'", panel.get("name"),
-                            panel.get("version"));
+                    logger.warn("Panel is not ready for interpretation: '{}', version: '{}'", panel.get("name"), panel.get("version"));
                 } else {
                     logger.info("Processing {} {} ...", panel.get("name"), panel.get("id"));
 
-                    url = new URL("https://panelapp.genomicsengland.co.uk/api/v1/panels/" + panel.get("id")
-                            + "?format=json");
+                    url = new URL("https://panelapp.genomicsengland.co.uk/api/v1/panels/" + panel.get("id") + "?format=json");
                     try (InputStream in = url.openStream()) {
                         Path path = originalsDirectory.resolve(panel.get("id") + ".json");
                         Files.copy(in, path);
@@ -94,6 +101,10 @@ public class PanelCommandExecutor extends CommandExecutor {
                         JacksonUtils.getDefaultObjectMapper().writeValue(directory.resolve(diseasePanel.getId() + ".json").toFile(),
                                 diseasePanel);
 
+                        // Add to multijson file
+                        fileWriter.write(JacksonUtils.getDefaultObjectMapper().writeValueAsString(diseasePanel));
+                        fileWriter.write("\n");
+
                         Files.delete(path);
                         panelIds.add(diseasePanel.getId());
                     }
@@ -101,6 +112,12 @@ public class PanelCommandExecutor extends CommandExecutor {
             }
 
             i++;
+        }
+
+        try {
+            fileWriter.close();
+        } catch (IOException e) {
+            logger.error("Error closing FileWriter: {}", e.getMessage(), e);
         }
 
         // Delete temporal directory

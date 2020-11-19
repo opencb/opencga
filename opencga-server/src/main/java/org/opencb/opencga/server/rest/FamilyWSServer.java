@@ -75,7 +75,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     public Response infoFamily(
             @ApiParam(value = ParamConstants.FAMILIES_DESCRIPTION, required = true) @PathParam("families") String familyStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Family version") @QueryParam("version") Integer version,
+            @ApiParam(value = ParamConstants.FAMILY_VERSION_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_VERSION_PARAM) String version,
             @ApiParam(value = "Boolean to retrieve deleted families", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -150,6 +150,43 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/distinct")
+    @ApiOperation(value = "Family distinct method")
+    public Response distinct(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias.")
+            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Family name") @QueryParam("name") String name,
+            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
+            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
+            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
+            @QueryParam("creationDate") String creationDate,
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
+            @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = "Boolean to retrieve deleted families", defaultValue = "false") @QueryParam("deleted") boolean deleted,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
+            @QueryParam("annotationsetName") String annotationsetName,
+            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
+            @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
+            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
+            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot,
+            @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
+        try {
+            query.remove(ParamConstants.STUDY_PARAM);
+            query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+            return createOkResponse(familyManager.distinct(studyStr, field, query, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @POST
     @Path("/create")
     @ApiOperation(value = "Create family and the individual objects if they do not exist", response = Family.class)
@@ -187,12 +224,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             queryOptions.put(Constants.REFRESH, refresh);
@@ -221,11 +258,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = ParamConstants.FAMILY_UPDATE_ROLES_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_UPDATE_ROLES_PARAM) boolean updateRoles,
             @ApiParam(value = "Update all the individual references from the family to point to their latest versions", defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             queryOptions.put(Constants.REFRESH, refresh);
@@ -337,7 +374,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true) @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new FamilyAclUpdateParams());

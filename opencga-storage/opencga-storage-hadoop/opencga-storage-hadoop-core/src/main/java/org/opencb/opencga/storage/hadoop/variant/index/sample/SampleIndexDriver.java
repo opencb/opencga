@@ -68,6 +68,7 @@ import static org.apache.phoenix.query.QueryConstants.SEPARATOR_BYTE;
 public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexDriver.class);
     public static final String SAMPLES = "samples";
+    public static final String SAMPLE_IDS = "sampleIds";
     public static final String OUTPUT = "output";
     public static final String SECONDARY_ONLY = "secondary-only";
 //    public static final String MAIN_ONLY = "main-only";
@@ -77,7 +78,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private static final String MULTI_FILE_SAMPLES = "SampleIndexDriver.multiFileSamples";
     private static final String FIXED_ATTRIBUTES = "SampleIndexDriver.fixedAttributes";
     private int study;
-    private int[] samples;
     private String outputTable;
     private boolean allSamples;
     private boolean secondaryOnly;
@@ -104,7 +104,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("--" + SAMPLES, "<samples>*");
+        params.put("--" + SAMPLES, "<samples>");
+        params.put("--" + SAMPLE_IDS, "<sample-ids>");
         params.put("--" + VariantStorageOptions.STUDY.key(), "<study>");
         params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + SECONDARY_ONLY, "<true|false>");
@@ -145,35 +146,31 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         partialScanSize = Integer.valueOf(getParam(PARTIAL_SCAN_SIZE, "1000"));
 
         String samplesParam = getParam(SAMPLES);
+        String sampleIdsStr = getParam(SAMPLE_IDS);
+        sampleIds = new TreeSet<>(Integer::compareTo);
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        if (samplesParam.equals(VariantQueryUtils.ALL)) {
+        if (StringUtils.isNotEmpty(samplesParam) && StringUtils.isNotEmpty(sampleIdsStr)) {
+            throw new IllegalArgumentException("Incompatible params " + SAMPLES + " and " + SAMPLE_IDS);
+        }
+        if (VariantQueryUtils.ALL.equals(samplesParam)) {
             allSamples = true;
-            samples = null;
-        } else {
+            sampleIds.addAll(metadataManager.getIndexedSamples(study));
+        } else if (StringUtils.isNotEmpty(samplesParam)) {
             allSamples = false;
-            List<Integer> sampleIds = new LinkedList<>();
             for (String sample : samplesParam.split(",")) {
-                Integer sampleId = metadataManager.getSampleId(study, sample);
+                Integer sampleId = metadataManager.getSampleId(getStudyId(), sample);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, study);
                 }
                 sampleIds.add(sampleId);
             }
-            samples = sampleIds.stream().mapToInt(Integer::intValue).toArray();
-            if (samples.length == 0) {
-                throw new IllegalArgumentException("empty samples!");
+        } else if (StringUtils.isNotEmpty(sampleIdsStr)) {
+            allSamples = false;
+            for (String sample : sampleIdsStr.split(",")) {
+                sampleIds.add(Integer.valueOf(sample));
             }
         }
 
-        sampleIds = new TreeSet<>(Integer::compareTo);
-
-        if (allSamples) {
-            sampleIds.addAll(metadataManager.getIndexedSamples(study));
-        } else {
-            for (int sample : samples) {
-                sampleIds.add(sample);
-            }
-        }
         if (sampleIds.isEmpty()) {
             throw new IllegalArgumentException("empty samples!");
         }

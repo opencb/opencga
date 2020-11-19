@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -44,7 +43,6 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     private static final int TIMEOUT = 10000;
 
     private final CellBaseClient cellBaseClient;
-    private final Function<Variant, String> variantSerializer;
 
     public CellBaseRestVariantAnnotator(StorageConfiguration storageConfiguration, ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
@@ -63,15 +61,6 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         logger.info("Annotating with Cellbase REST. host '{}', version '{}', species '{}', assembly '{}'",
                 cellbaseRest, cellbaseVersion, species, assembly);
 
-        if (impreciseVariants) {
-            // If the cellbase sever supports imprecise variants, use the original toString, which adds the CIPOS and CIEND
-            variantSerializer = Variant::toString;
-        } else {
-            variantSerializer = variant -> variant.getChromosome()
-                    + ':' + variant.getStart()
-                    + ':' + (variant.getReference().isEmpty() ? "-" : variant.getReference())
-                    + ':' + (variant.getAlternate().isEmpty() ? "-" : variant.getAlternate());
-        }
     }
 
     @Override

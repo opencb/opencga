@@ -141,7 +141,7 @@ public class    VariantStatsDriver extends AbstractVariantsTableDriver {
         getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
 
         Query query = VariantStatisticsManager.buildInputQuery(getMetadataManager(), readStudyMetadata(),
-                cohorts, overwrite, updateStats, options);
+                cohorts, overwrite, updateStats, options, aggregation);
         QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
 
         if (excludeFiles) {

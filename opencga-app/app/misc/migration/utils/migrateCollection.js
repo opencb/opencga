@@ -67,3 +67,60 @@ function isEmptyArray(arr) {
 function isNotEmptyArray(arr) {
     return typeof arr !== 'undefined' && arr !== null && arr.length > 0;
 }
+
+// Auxiliary methods to write in metadata the latest update run to avoid running the same thing again
+var version = undefined;
+var updateCount = 1;
+
+function setOpenCGAVersion(version, versionInt, release) {
+    db.metadata.update({}, {"$set":
+            {
+                "version": version,
+                "_fullVersion.version": NumberInt(versionInt),
+                "_fullVersion.release": NumberInt(release)
+            }
+    });
+}
+
+function setLatestUpdate(latestUpdate) {
+    db.metadata.update({}, {"$set": {"_fullVersion.lastJsUpdate": NumberInt(latestUpdate)}});
+}
+
+function getOpenCGAVersion() {
+    if (typeof version === "undefined") {
+        var metadata = db.metadata.findOne({}, {"_fullVersion": 1, "_latestUpdate": 1});
+        if (isNotUndefinedOrNull(metadata._fullVersion)) {
+            version = metadata._fullVersion;
+        } else {
+            version = {
+                'version': 20000,
+                'release': 4,
+                'lastJsUpdate': 0
+            };
+            if (typeof metadata._latestUpdate !== "undefined") {
+                version['lastJsUpdate'] = metadata._latestUpdate;
+            }
+        }
+    }
+    return version;
+}
+
+function versionNeedsUpdate(version, release) {
+    var dbVersion = getOpenCGAVersion();
+    return dbVersion.version < version || (dbVersion.version == version && dbVersion.release <= release);
+}
+
+function getLatestUpdate() {
+    return version.lastJsUpdate;
+}
+
+function runUpdate(migrateFunction) {
+    if (getLatestUpdate() < updateCount) {
+        print("Starting migration " + updateCount + "...");
+        migrateFunction();
+        setLatestUpdate(updateCount);
+    } else {
+        print("Skipping migration " + updateCount + "...");
+    }
+    updateCount++;
+}

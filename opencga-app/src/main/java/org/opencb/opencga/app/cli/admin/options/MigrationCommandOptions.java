@@ -65,18 +65,21 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
 
         @Parameter(names = {"--job-directory"}, description = "This new OpenCGA version requires a folder where all the analyses will be"
-                + " executed from. Please, specify which folder you will be using. WARNING: The folder typed here will necessarily need to "
-                + "be exactly the same one specified in the configuration file !", required = true, arity = 1)
+                + " executed from. Please, specify which folder you will be using. Mandatory parameter when migrating ALL or RC1."
+                + " WARNING: The folder typed here will necessarily need to be exactly the same one specified in the configuration file !",
+                arity = 1)
         public String jobFolder;
 
-        @Parameter(names = {"--what"}, description = "Select to which version migrate. Options: ALL, RC1, RC2")
+        @Parameter(names = {"--what"}, description = "Select to which version migrate. To get to the stable version, it is mandatory "
+                + "migrating to RC1 and RC2 first !!. Options: ALL, RC1, RC2, STABLE")
         public MigrateRC what = MigrateRC.ALL;
     }
 
     public enum MigrateRC {
         ALL,
         RC1,
-        RC2
+        RC2,
+        STABLE
     }
 
     public enum Migrate {

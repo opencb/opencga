@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.base.Throwables;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.log4j.Level;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -26,7 +25,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -89,9 +87,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private VariantStorageMetadataManager metadataManager;
 
     public MongoDBVariantStorageEngine() {
-        //Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
     }
 
     @Override
@@ -268,8 +263,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         Map<URI, StoragePipelineResult> resultsMap = new LinkedHashMap<>();
         LinkedList<StoragePipelineResult> results = new LinkedList<>();
 
-        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
-        monitor.setDelay(5000);
+//        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
+//        monitor.setDelay(5, TimeUnit.SECONDS);
 //        monitor.start();
         try {
             for (URI inputFile : inputFiles) {

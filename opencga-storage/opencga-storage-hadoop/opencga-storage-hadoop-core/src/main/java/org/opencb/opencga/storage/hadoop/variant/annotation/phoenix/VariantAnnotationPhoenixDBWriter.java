@@ -77,7 +77,7 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
         VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
         //TODO: Read population frequencies columns from StudyConfiguration ?
         variantPhoenixHelper.getPhoenixHelper().addMissingColumns(connection, variantTable,
-                VariantPhoenixHelper.getHumanPopulationFrequenciesColumns(), true, VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
+                VariantPhoenixHelper.getHumanPopulationFrequenciesColumns(), VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
         variantPhoenixHelper.updateAnnotationColumns(connection, variantTable);
     }
 

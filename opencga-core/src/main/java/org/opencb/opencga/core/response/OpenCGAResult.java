@@ -126,6 +126,20 @@ public class OpenCGAResult<T> extends DataResult<T> {
         return this;
     }
 
+    public OpenCGAResult<T> addEvent(Event event) {
+        if (events == null) {
+            events = new ArrayList<>();
+        } else {
+            try {
+                events.add(event);
+            } catch (UnsupportedOperationException e) {
+                events = new ArrayList<>(events);
+                events.add(event);
+            }
+        }
+        return this;
+    }
+
     public int getNumResults() {
         return numResults;
     }

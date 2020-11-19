@@ -24,10 +24,9 @@ import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.glassfish.jersey.server.ParamException;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
@@ -43,9 +42,11 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -54,7 +55,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -68,6 +68,8 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -81,9 +83,9 @@ import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObje
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
-    @DefaultValue("v2")
+    @DefaultValue(CURRENT_VERSION)
     @PathParam("apiVersion")
-    @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = "v2", defaultValue = "v2")
+    @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = CURRENT_VERSION, defaultValue = CURRENT_VERSION)
     protected String apiVersion;
     protected String exclude;
     protected String include;
@@ -120,7 +122,7 @@ public class OpenCGAWSServer {
 
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
-    protected static AtomicBoolean initialized;
+    public static AtomicBoolean initialized;
 
     protected static java.nio.file.Path opencgaHome;
 
@@ -134,8 +136,9 @@ public class OpenCGAWSServer {
     private static final int DEFAULT_LIMIT = AbstractManager.DEFAULT_LIMIT;
     private static final int MAX_LIMIT = AbstractManager.MAX_LIMIT;
     private static final int MAX_ID_SIZE = 100;
+    static final String CURRENT_VERSION = "v2";
 
-    private static String errorMessage;
+    public static String errorMessage;
 
     static {
         initialized = new AtomicBoolean(false);
@@ -146,10 +149,6 @@ public class OpenCGAWSServer {
         jsonObjectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
 
         jsonObjectWriter = jsonObjectMapper.writer();
-
-        //Disable MongoDB useless logging
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
     }
 
 
@@ -176,6 +175,12 @@ public class OpenCGAWSServer {
             }
         }
 
+        // take the time for calculating the whole duration of the call
+        startTime = System.currentTimeMillis();
+
+        // Add session attributes. Used by the ParamExceptionMapper
+        httpServletRequest.getSession().setAttribute("startTime", startTime);
+
         // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
@@ -189,18 +194,15 @@ public class OpenCGAWSServer {
 //                    + "or properly defined.");
 //        }
 
-        try {
-            verifyHeaders(httpHeaders);
-        } catch (CatalogAuthenticationException e) {
-            throw new IllegalStateException(e);
-        }
+        verifyHeaders(httpHeaders);
 
         query = new Query();
         queryOptions = new QueryOptions();
 
         parseParams();
-        // take the time for calculating the whole duration of the call
-        startTime = System.currentTimeMillis();
+
+        // Add session attributes. Used by the ParamExceptionMapper
+        httpServletRequest.getSession().setAttribute("requestDescription", requestDescription);
     }
 
     private void init() {
@@ -211,7 +213,7 @@ public class OpenCGAWSServer {
     static void init(String opencgaHomeStr) {
         initialized.set(true);
 
-        logger = LoggerFactory.getLogger("org.opencb.opencga.server.rest.OpenCGAWSServer");
+        logger = LoggerFactory.getLogger(OpenCGAWSServer.class);
         logger.info("========================================================================");
         logger.info("| Starting OpenCGA REST server, initializing OpenCGAWSServer");
         logger.info("| This message must appear only once.");
@@ -249,58 +251,91 @@ public class OpenCGAWSServer {
         java.nio.file.Path configDirPath = OpenCGAWSServer.opencgaHome.resolve("conf");
         if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
-            initOpenCGAObjects(configDirPath);
-
-            // TODO use configuration.yml for getting the server.log, for now is hardcoded
-            logger.info("|  * Server logfile: " + OpenCGAWSServer.opencgaHome.resolve("logs").resolve("server.log"));
-            initLogger(OpenCGAWSServer.opencgaHome.resolve("logs"));
+            loadOpenCGAConfiguration(configDirPath);
+            initLogger(configDirPath);
+            initOpenCGAObjects();
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirPath.toString() + "'";
             logger.error(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
 
+        logger.info("| OpenCGA REST successfully started!");
+        logger.info("| - Version " + GitRepositoryState.get().getBuildVersion());
+        logger.info("| - Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
         logger.info("========================================================================\n");
     }
 
     /**
-     * This method loads OpenCGA configuration files and initialize CatalogManager and StorageManagerFactory.
+     * This method loads OpenCGA configuration files.
      * This must be only executed once.
      *
      * @param configDir directory containing the configuration files
      */
-    private static void initOpenCGAObjects(java.nio.file.Path configDir) {
+    private static void loadOpenCGAConfiguration(java.nio.file.Path configDir) {
         try {
             logger.info("|  * Catalog configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/configuration.yml");
             configuration = Configuration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/configuration.yml")));
-            catalogManager = new CatalogManager(configuration);
 
             logger.info("|  * Storage configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/storage-configuration.yml");
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
-            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-            variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-        } catch (IOException | CatalogException e) {
+        } catch (Exception e) {
             errorMessage = e.getMessage();
-            e.printStackTrace();
+//            e.printStackTrace();
             logger.error("Error while creating CatalogManager", e);
         }
     }
 
-    private static void initLogger(java.nio.file.Path logs) {
+    /**
+     * This method initialize CatalogManager and StorageManagerFactory.
+     * This must be only executed once.
+     *
+     */
+    private static void initOpenCGAObjects() {
         try {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
-            String logFile = logs.resolve("server.log").toString();
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
-            rollingFileAppender.setThreshold(Level.DEBUG);
-            rollingFileAppender.setMaxFileSize("20MB");
-            rollingFileAppender.setMaxBackupIndex(10);
-            rootLogger.setLevel(Level.TRACE);
-            rootLogger.addAppender(rollingFileAppender);
-        } catch (IOException e) {
-            e.printStackTrace();
+            catalogManager = new CatalogManager(configuration);
+            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
+            variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+        } catch (Exception e) {
+            errorMessage = e.getMessage();
+//            e.printStackTrace();
+            logger.error("Error while creating CatalogManager", e);
+        }
+    }
+
+    private static void initLogger(java.nio.file.Path configDirPath) {
+        String logDir = System.getProperty("opencga.log.dir");
+        boolean logFileEnabled;
+        if (StringUtils.isBlank(logDir)) {
+            logDir = configuration.getLogDir();
+        } else {
+            configuration.setLogDir(logDir);
+        }
+
+        if (StringUtils.isNotBlank(configuration.getLogLevel())) {
+            Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
+            System.setProperty("opencga.log.level", level.name());
+        }
+
+        if (StringUtils.isBlank(logDir) || logDir.equalsIgnoreCase("null")) {
+            logFileEnabled = false;
+        } else {
+            logFileEnabled = true;
+            System.setProperty("opencga.log.file.name", "opencga-rest");
+            System.setProperty("opencga.log.dir", logDir);
+        }
+        System.setProperty("opencga.log.file.enabled", Boolean.toString(logFileEnabled));
+
+        URI log4jconfFile = configDirPath.resolve("log4j2.service.xml").toUri();
+        Configurator.reconfigure(log4jconfFile);
+
+        logger.info("|  * Log configuration file: '{}'", log4jconfFile.getPath());
+        if (logFileEnabled) {
+            logger.info("|  * Log dir: '{}'", logDir);
+        } else {
+            logger.info("|  * Do not write logs to file");
         }
     }
 
@@ -334,7 +369,7 @@ public class OpenCGAWSServer {
                 logger.warn("Setting 'apiVersion' from UriInfo object");
                 this.apiVersion = uriInfo.getPathParameters().getFirst("apiVersion");
             } else {
-                throw new VersionException("Version not valid: '" + apiVersion + "'");
+                throw new ParamException.PathParamException(new Throwable("Version not valid: '" + apiVersion + "'"), "apiVersion", "v2");
             }
         }
 
@@ -362,7 +397,7 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), Integer.parseInt(value));
                     break;
                 case QueryOptions.SKIP:
-                    int skip = Integer.parseInt(value);
+                    skip = Integer.parseInt(value);
                     queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
                     break;
                 case QueryOptions.SORT:
@@ -411,7 +446,16 @@ public class OpenCGAWSServer {
             }
         }
 
-        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : (count ? 0 : DEFAULT_LIMIT));
+        if (!multivaluedMap.containsKey(QueryOptions.LIMIT)) {
+            limit = DEFAULT_LIMIT;
+        } else if (limit > MAX_LIMIT) {
+            throw new ParamException.QueryParamException(new Throwable("'limit' value cannot be higher than '" + MAX_LIMIT + "'."),
+                    "limit", "0");
+        } else if (limit < 0) {
+            throw new ParamException.QueryParamException(new Throwable("'limit' must be a positive value lower or equal to '"
+                    + MAX_LIMIT + "'."), "limit", "0");
+        }
+        queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
 
 //      Exceptions
@@ -460,6 +504,10 @@ public class OpenCGAWSServer {
     }
 
     protected Response createErrorResponse(Throwable e) {
+        return createErrorResponse(e, startTime, apiVersion, requestDescription, params);
+    }
+
+    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription, ObjectMap params) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
@@ -473,15 +521,21 @@ public class OpenCGAWSServer {
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
         queryResponse.setResponses(Arrays.asList(result));
 
-        Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
-        if (e instanceof CatalogAuthorizationException) {
+        Response.StatusType errorStatus;
+        if (e instanceof WebApplicationException
+                && ((WebApplicationException) e).getResponse() != null
+                && ((WebApplicationException) e).getResponse().getStatusInfo() != null) {
+            errorStatus = ((WebApplicationException) e).getResponse().getStatusInfo();
+        } else if (e instanceof CatalogAuthorizationException) {
             errorStatus = Response.Status.FORBIDDEN;
         } else if (e instanceof CatalogAuthenticationException) {
             errorStatus = Response.Status.UNAUTHORIZED;
+        } else {
+            errorStatus = Response.Status.INTERNAL_SERVER_ERROR;
         }
 
         Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(errorStatus).build();
-        logResponse(response.getStatusInfo(), queryResponse);
+        logResponse(response.getStatusInfo(), queryResponse, startTime, requestDescription);
         return response;
     }
 
@@ -504,35 +558,47 @@ public class OpenCGAWSServer {
             logResponse(response.getStatusInfo());
             return response;
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
+            logger.error("Error creating error response", e);
         }
 
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
-    private <T> void addErrorEvent(RestResponse<T> response, String message) {
+    static <T> void addErrorEvent(RestResponse<T> response, String message) {
         if (response.getEvents() == null) {
             response.setEvents(new ArrayList<>());
         }
         response.getEvents().add(new Event(Event.Type.ERROR, message));
     }
 
-    private <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
+    private static <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
         if (response.getEvents() == null) {
             response.setEvents(new ArrayList<>());
         }
+        String message;
+        if (e instanceof ParamException.QueryParamException && e.getCause() != null) {
+            message = e.getCause().getMessage();
+        } else {
+            message = e.getMessage();
+        }
         response.getEvents().add(
-                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), e.getMessage()));
+                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), message));
     }
 
     // TODO: Change signature
     //    protected <T> Response createOkResponse(OpenCGAResult<T> result)
     //    protected <T> Response createOkResponse(List<OpenCGAResult<T>> results)
     protected Response createOkResponse(Object obj) {
+        return createOkResponse(obj, Collections.emptyList());
+    }
+
+    protected Response createOkResponse(Object obj, List<Event> events) {
         RestResponse queryResponse = new RestResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
+        queryResponse.setEvents(events);
 
         // Guarantee that the RestResponse object contains a list of results
         List<OpenCGAResult<?>> list = new ArrayList<>();
@@ -575,8 +641,8 @@ public class OpenCGAWSServer {
             logResponse(response.getStatusInfo());
             return response;
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            logger.error("Error parsing response object");
+//            e.printStackTrace();
+            logger.error("Error parsing response object", e);
             return createErrorResponse("", "Error parsing response object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }
@@ -586,21 +652,28 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2));
     }
 
-    protected Response createOkResponse(Object o1, MediaType o2, String fileName) {
+    protected Response createOkResponse(InputStream o1, MediaType o2, String fileName) {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    private void logResponse(Response.StatusType statusInfo) {
-        logResponse(statusInfo, null);
+    void logResponse(Response.StatusType statusInfo) {
+        logResponse(statusInfo, null, startTime, requestDescription);
     }
 
-    private void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
+    void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
+        logResponse(statusInfo, queryResponse, startTime, requestDescription);
+    }
+
+    static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime, String requestDescription) {
         StringBuilder sb = new StringBuilder();
         try {
+            boolean ok;
             if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
                 sb.append("OK");
+                ok = true;
             } else {
                 sb.append("ERROR");
+                ok = false;
             }
             sb.append(" [").append(statusInfo.getStatusCode()).append(']');
 
@@ -619,24 +692,27 @@ public class OpenCGAWSServer {
                 }
             }
             sb.append(", ").append(requestDescription);
-            logger.info(sb.toString());
+            if (ok) {
+                logger.info(sb.toString());
+            } else {
+                logger.error(sb.toString());
+            }
         } catch (RuntimeException e) {
             logger.warn("Error logging response", e);
             logger.info(sb.toString()); // Print incomplete response
         }
     }
 
-    protected Response createJsonResponse(RestResponse queryResponse) {
+    static Response createJsonResponse(RestResponse queryResponse) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            logger.error("Error parsing queryResponse object");
-            return createErrorResponse("", "Error parsing RestResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            logger.error("Error parsing queryResponse object", e);
+            throw new WebApplicationException("Error parsing queryResponse object", e);
         }
     }
 
-    protected Response buildResponse(Response.ResponseBuilder responseBuilder) {
+    protected static Response buildResponse(Response.ResponseBuilder responseBuilder) {
         return responseBuilder
                 .header("Access-Control-Allow-Origin", "*")
                 .header("Access-Control-Allow-Headers", "x-requested-with, content-type, authorization")
@@ -645,12 +721,13 @@ public class OpenCGAWSServer {
                 .build();
     }
 
-    private void verifyHeaders(HttpHeaders httpHeaders) throws CatalogAuthenticationException {
+    private void verifyHeaders(HttpHeaders httpHeaders) {
         List<String> authorization = httpHeaders.getRequestHeader("Authorization");
         if (authorization != null && authorization.get(0).length() > 7) {
             String token = authorization.get(0);
             if (!token.startsWith("Bearer ")) {
-                throw new CatalogAuthenticationException("Authorization header must start with Bearer JWToken");
+                throw new ParamException.HeaderParamException(new Throwable("Authorization header must start with Bearer JWToken"),
+                        "Bearer", "");
             }
             this.token = token.substring("Bearer".length()).trim();
         }
@@ -725,6 +802,16 @@ public class OpenCGAWSServer {
         return submitJob(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
     }
 
+    public Response submitJobAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr) {
+        return run(() -> {
+            if (!catalogManager.getUserManager().getUserId(token).equals(ParamConstants.OPENCGA_USER_ID)) {
+                throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
+            }
+            return submitJobRaw(toolId, null, "admin", bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+        });
+    }
+
     public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr) {
         return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr));
@@ -749,7 +836,7 @@ public class OpenCGAWSServer {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
             // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
             List<String> studies = catalogManager.getStudyManager()
-                    .get(project, new Query(), options, token)
+                    .search(project, new Query(), options, token)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

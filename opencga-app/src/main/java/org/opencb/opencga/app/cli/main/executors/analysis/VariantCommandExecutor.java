@@ -540,13 +540,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //        Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
 
 
-        QueryOptions metadataQueryOptions = new QueryOptions(options);
-        metadataQueryOptions.putAll(query);
-        metadataQueryOptions.addToListOption(QueryOptions.EXCLUDE, "files");
-        metadataQueryOptions.append("basic", true);
-        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(metadataQueryOptions).firstResult();
-        VcfOutputWriter vcfOutputWriter = new VcfOutputWriter(metadata, annotations, System.out);
-
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
@@ -555,6 +548,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
                     || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                 RestResponse<Variant> queryResponse = openCGAClient.getVariantClient().query(params);
+
+                VcfOutputWriter vcfOutputWriter = initVcfOutputWriter(query, options, annotations);
 
                 vcfOutputWriter.print(queryResponse);
                 return null;
@@ -592,6 +587,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                     || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                 options.put(QueryOptions.LIMIT, 1);
 
+                VcfOutputWriter vcfOutputWriter = initVcfOutputWriter(query, options, annotations);
+
                 vcfOutputWriter.print(variantIterator);
             } else {
                 JsonFormat.Printer printer = JsonFormat.printer();
@@ -606,6 +603,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
             return null;
         }
+    }
+
+    private VcfOutputWriter initVcfOutputWriter(Query query, QueryOptions options, List<String> annotations) throws ClientException {
+        QueryOptions metadataQueryOptions = new QueryOptions(options);
+        metadataQueryOptions.putAll(query);
+        metadataQueryOptions.addToListOption(QueryOptions.EXCLUDE, "files");
+        metadataQueryOptions.append("basic", true);
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(metadataQueryOptions).firstResult();
+        return new VcfOutputWriter(metadata, annotations, System.out);
     }
 
     private boolean usingGrpcMode(String mode) {

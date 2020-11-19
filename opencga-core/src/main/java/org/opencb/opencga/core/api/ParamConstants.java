@@ -68,14 +68,23 @@ public class ParamConstants {
     public static final String SNAPSHOT_PARAM = "snapshot";
     public static final String SNAPSHOT_DESCRIPTION = "Snapshot value (Latest version of the entry in the specified release)";
 
+    public static final String DISTINCT_FIELD_PARAM = "field";
+    public static final String DISTINCT_FIELD_DESCRIPTION = "Field for which to obtain the distinct values";
+
     public static final String PHENOTYPES_PARAM = "phenotypes";
     public static final String PHENOTYPES_DESCRIPTION = "Comma separated list of phenotype ids or names";
     public static final String DISORDERS_PARAM = "disorders";
     public static final String DISORDERS_DESCRIPTION = "Comma separated list of disorder ids or names";
 
+    public static final String BODY_PARAM = "body";
+
+    public static final String OVERWRITE = "overwrite";
+    public static final String FORCE = "force";
     // ---------------------------------------------
 
     public static final String USER_DESCRIPTION = "User ID";
+    public static final String OPENCGA_USER_ID = "opencga";
+    public static final String ANONYMOUS_USER_ID = "*";
 
     // ---------------------------------------------
 
@@ -121,6 +130,7 @@ public class ParamConstants {
     public static final String FILE_SIZE_DESCRIPTION = "File size";
     public static final String FILE_FOLDER = "folder";
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
+    public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
 
     // ---------------------------------------------
 
@@ -138,7 +148,8 @@ public class ParamConstants {
     public static final String SAMPLE_SOMATIC_PARAM = "somatic";
     public static final String SAMPLE_SOMATIC_DESCRIPTION = "Somatic sample";
     public static final String SAMPLE_VERSION_PARAM = "version";
-    public static final String SAMPLE_VERSION_DESCRIPTION = "Sample version";
+    public static final String SAMPLE_VERSION_DESCRIPTION = "Comma separated list of sample versions. 'all' to get all the sample versions."
+            + " Not supported if multiple sample ids are provided";
 
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_PARAM = "includeIndividual";
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION = "Include Individual object as an attribute";
@@ -151,17 +162,25 @@ public class ParamConstants {
             + "sample to be deleted should be also deleted.";
     public static final String SAMPLE_FORCE_DELETE_DESCRIPTION = "Force the deletion of samples even if they are associated to files, "
             + "individuals or cohorts.";
+    public static final String SAMPLES_ACTION_PARAM = "samplesAction";
+    public static final String SAMPLES_ACTION_DESCRIPTION = "Action to be performed if the array of samples is being updated.";
 
     // ---------------------------------------------
 
     public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual names or IDs" + UP_TO_100;
     public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or UUID";
+    public static final String INDIVIDUAL_VERSION_PARAM = "version";
+    public static final String INDIVIDUAL_VERSION_DESCRIPTION = "Comma separated list of individual versions. 'all' to get all the "
+            + "individual versions. Not supported if multiple individual ids are provided";
 
     // ---------------------------------------------
 
     public static final String FAMILIES_DESCRIPTION = "Comma separated list of family IDs or names" + UP_TO_100;
     public static final String FAMILY_UPDATE_ROLES_PARAM = "updateRoles";
     public static final String FAMILY_UPDATE_ROLES_DESCRIPTION = "Update the member roles within the family";
+    public static final String FAMILY_VERSION_PARAM = "version";
+    public static final String FAMILY_VERSION_DESCRIPTION = "Comma separated list of family versions. 'all' to get all the "
+            + "family versions. Not supported if multiple family ids are provided";
 
     // ---------------------------------------------
 
@@ -183,6 +202,10 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
+
+    // ---------------------------------------------
+
     public static final String PANEL_SOURCE = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
             + "sources are 'panelapp' and 'genecensus'";
@@ -192,6 +215,9 @@ public class ParamConstants {
             + "'source' will be allowed.";
 
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
+    public static final String PANEL_VERSION_PARAM = "version";
+    public static final String PANEL_VERSION_DESCRIPTION = "Comma separated list of panel versions. 'all' to get all the "
+            + "panel versions. Not supported if multiple panel ids are provided";
 
     // ---------------------------------------------
 
@@ -200,6 +226,7 @@ public class ParamConstants {
     public static final String JOB_ID_DESCRIPTION = "Job ID or UUID";
     public static final String JOB_ID_CREATION_DESCRIPTION = "Job ID. It must be a unique string within the study. An ID will be "
             + "autogenerated automatically if not provided.";
+    public static final String JOB_PARAM = "job";
     public static final String JOB_ID = "jobId";
     public static final String JOB_ID_PARAM = ID;
     public static final String JOB_DESCRIPTION = "jobDescription";
@@ -223,6 +250,10 @@ public class ParamConstants {
     public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as input.";
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
     public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as output.";
+    public static final String JOB_EXECUTION_START_PARAM = "execution.start";
+    public static final String JOB_EXECUTION_START_DESCRIPTION = "Execution start date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String JOB_EXECUTION_END_PARAM = "execution.end";
+    public static final String JOB_EXECUTION_END_DESCRIPTION = "Execution end date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
 
     // ---------------------------------------------
 

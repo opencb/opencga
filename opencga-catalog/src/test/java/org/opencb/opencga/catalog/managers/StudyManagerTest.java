@@ -20,10 +20,15 @@ import org.apache.avro.Schema;
 import org.apache.solr.common.StringUtils;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
@@ -31,7 +36,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class StudyManagerTest extends AbstractManagerTest {
 
@@ -84,5 +89,57 @@ public class StudyManagerTest extends AbstractManagerTest {
             }
             variable.setVariableSet(new LinkedHashSet<>(l));
         }
+    }
+
+    @Test
+    public void internalVariableSetTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+                null, null, null, new QueryOptions(), token).first();
+
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
+        variables.add(new Variable().setId("b").setType(Variable.VariableType.MAP_INTEGER).setAllowedKeys(Arrays.asList("b1", "b2")));
+        VariableSet variableSet = new VariableSet("myInternalVset", "", false, false, true, "", variables, null, 1, null);
+
+        OpenCGAResult<VariableSet> result = catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
+        assertEquals(1, result.getNumUpdated());
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.getResults().size());
+
+        // An internal variable set should never be returned
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        for (VariableSet vset : study.getVariableSets()) {
+            assertNotEquals(variableSet.getId(), vset.getId());
+            assertFalse(vset.isInternal());
+        }
+
+        // But if I try to create another one with the same id, it should fail
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("exists");
+        catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
+    }
+
+    @Test
+    public void updateClinicalConfiguration() throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+                null, null, null, new QueryOptions(), token).first();
+        assertNotNull(study.getConfiguration());
+        assertNotNull(study.getConfiguration().getClinical());
+        assertFalse(study.getConfiguration().getClinical().getPriorities().isEmpty());
+        assertFalse(study.getConfiguration().getClinical().getFlags().isEmpty());
+        assertFalse(study.getConfiguration().getClinical().getStatus().isEmpty());
+
+        ClinicalAnalysisStudyConfiguration configuration = new ClinicalAnalysisStudyConfiguration(Collections.emptyMap(), null,
+                Collections.emptyList(), Collections.emptyMap(), null);
+        StudyUpdateParams updateParams = new StudyUpdateParams()
+                .setConfiguration(new StudyConfiguration(configuration));
+        catalogManager.getStudyManager().update("newStudy", updateParams, QueryOptions.empty(), token);
+
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        assertNotNull(study.getConfiguration());
+        assertNotNull(study.getConfiguration().getClinical());
+        assertTrue(study.getConfiguration().getClinical().getPriorities().isEmpty());
+        assertTrue(study.getConfiguration().getClinical().getFlags().isEmpty());
+        assertTrue(study.getConfiguration().getClinical().getStatus().isEmpty());
     }
 }

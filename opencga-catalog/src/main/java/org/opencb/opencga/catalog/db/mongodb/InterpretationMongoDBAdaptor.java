@@ -20,9 +20,12 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.ClinicalAudit;
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.*;
@@ -54,6 +57,8 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.STATUS_ID;
+import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements InterpretationDBAdaptor {
@@ -84,19 +89,20 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action)
+    public OpenCGAResult insert(long studyId, Interpretation interpretation, ParamUtils.SaveInterpretationAs action,
+                                List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting interpretation insert transaction for interpretation id '{}'", interpretation.getId());
             Interpretation interpretation1 = insert(clientSession, studyId, interpretation);
-            updateClinicalAnalysisReferences(clientSession, interpretation1, action);
+            updateClinicalAnalysisReferences(clientSession, interpretation1, action, clinicalAuditList);
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
         }, e -> logger.error("Could not create interpretation {}: {}", interpretation.getId(), e.getMessage()));
     }
 
     private void updateClinicalAnalysisReferences(ClientSession clientSession, Interpretation interpretation,
-                                                  ParamUtils.SaveInterpretationAs action)
+                                                  ParamUtils.SaveInterpretationAs action, List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (action == null) {
             throw new CatalogParameterException("Missing enum to decide how to store the interpretation");
@@ -144,14 +150,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     interpretationList.add(ca.getInterpretation());
 
                     ObjectMap actions = new ObjectMap();
-                    actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET);
+                    actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.SET);
                     options.put(Constants.ACTIONS, actions);
 
                     // Set array of secondary interpretations
                     params.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), interpretationList);
                 } else if (existsPrimary) {
                     ObjectMap actions = new ObjectMap();
-                    actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD);
+                    actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.ADD);
                     options.put(Constants.ACTIONS, actions);
 
                     // Move current primary interpretation to secondary interpretations
@@ -159,7 +165,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                             Collections.singletonList(ca.getInterpretation()));
                 } else if (isSecondary) {
                     ObjectMap actions = new ObjectMap();
-                    actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.REMOVE);
+                    actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.REMOVE);
                     options.put(Constants.ACTIONS, actions);
 
                     // Remove current interpretation from array of secondary interpretations
@@ -168,14 +174,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 }
 
                 // Update interpretation(s) in ClinicalAnalysis
-                clinicalDBAdaptor.update(clientSession, ca, params, options);
+                clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
                 break;
             case SECONDARY:
                 // Add to secondaryInterpretations array in ClinicalAnalysis
                 params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
                         Collections.singletonList(interpretation));
                 ObjectMap actions = new ObjectMap();
-                actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD);
+                actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.ADD);
                 options = new QueryOptions(Constants.ACTIONS, actions);
 
                 if (ca.getInterpretation() != null && ca.getInterpretation().getUid() == interpretation.getUid()) {
@@ -183,7 +189,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     params.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), null);
                 }
 
-                clinicalDBAdaptor.update(clientSession, ca, params, options);
+                clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
                 break;
             default:
                 throw new IllegalStateException("Unknown action " + action);
@@ -204,7 +210,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     + interpretation.getId() + "'} already exists.");
         }
 
-        long interpretationUid = getNewUid(clientSession);
+        long interpretationUid = getNewUid();
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
@@ -257,6 +263,21 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
+    public OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyId)
+                .append(QueryParams.SNAPSHOT.key(), release - 1);
+        Bson bson = parseQuery(query);
+
+        Document update = new Document()
+                .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
+
+        QueryOptions queryOptions = new QueryOptions("multi", true);
+
+        return new OpenCGAResult(interpretationCollection.update(bson, update, queryOptions));
+    }
+
+    @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
         return count(null, query);
     }
@@ -272,11 +293,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException {
         return count(query);
-    }
-
-    @Override
-    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
-        return null;
     }
 
     @Override
@@ -319,6 +335,18 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return nativeGet(query, options);
     }
 
+    @Override
+    public OpenCGAResult<Interpretation> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        throw new NotImplementedException("Use other update method passing ClinicalAudit parameter");
+    }
+
+    @Override
+    public OpenCGAResult<Interpretation> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        throw new NotImplementedException("Use other update method passing ClinicalAudit parameter");
+    }
+
     private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query,
                                                         QueryOptions queryOptions) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
@@ -357,29 +385,32 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {QueryParams.ANALYST.key()};
+        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
-                ParamUtils.UpdateAction.ADD);
-        switch (operation) {
-            case SET:
-                filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
-                break;
-            case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
-                break;
+        ParamUtils.AddRemoveReplaceAction commentsOperation = ParamUtils.AddRemoveReplaceAction.from(actionMap, QueryParams.COMMENTS.key(),
+                ParamUtils.AddRemoveReplaceAction.ADD);
+        switch (commentsOperation) {
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
+            case REMOVE:
+                fixCommentsForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                break;
+            case REPLACE:
+                filterReplaceParams(parameters.getAsList(QueryParams.COMMENTS.key(), ClinicalComment.class), document,
+                        ClinicalComment::getDate, QueryParams.COMMENTS_DATE.key());
+                break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + commentsOperation);
         }
 
         objectAcceptedParams = new String[]{QueryParams.METHODS.key()};
-        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.METHODS.key(), ParamUtils.UpdateAction.ADD);
+        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.METHODS.key(),
+                ParamUtils.BasicUpdateAction.ADD);
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -395,13 +426,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         objectAcceptedParams = new String[]{QueryParams.PRIMARY_FINDINGS.key()};
-        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
-        switch (operation) {
+        ParamUtils.UpdateAction findingsOperation = ParamUtils.UpdateAction.from(actionMap, QueryParams.PRIMARY_FINDINGS.key(),
+                ParamUtils.UpdateAction.ADD);
+        switch (findingsOperation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFindingsForRemoval(parameters, QueryParams.PRIMARY_FINDINGS.key());
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                break;
+            case REPLACE:
+                filterReplaceParams(parameters.getAsList(QueryParams.PRIMARY_FINDINGS.key(), Map.class), document,
+                        m -> String.valueOf(m.get("id")), QueryParams.PRIMARY_FINDINGS_ID.key());
                 break;
             case ADD:
                 if (parameters.containsKey(QueryParams.PRIMARY_FINDINGS.key())) {
@@ -412,17 +449,22 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + findingsOperation);
         }
 
         objectAcceptedParams = new String[]{QueryParams.SECONDARY_FINDINGS.key()};
-        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
-        switch (operation) {
+        findingsOperation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.ADD);
+        switch (findingsOperation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFindingsForRemoval(parameters, QueryParams.SECONDARY_FINDINGS.key());
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
+                break;
+            case REPLACE:
+                filterReplaceParams(parameters.getAsList(QueryParams.SECONDARY_FINDINGS.key(), Map.class), document,
+                        m -> String.valueOf(m.get("id")), QueryParams.SECONDARY_FINDINGS_ID.key());
                 break;
             case ADD:
                 if (parameters.containsKey(QueryParams.SECONDARY_FINDINGS.key())) {
@@ -433,7 +475,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
             default:
-                throw new IllegalStateException("Unknown operation " + operation);
+                throw new IllegalStateException("Unknown operation " + findingsOperation);
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -445,6 +487,20 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         return document;
+    }
+
+    static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
+        if (parameters.get(findingsKey) == null) {
+            return;
+        }
+
+        List<Document> findingsParamList = new LinkedList<>();
+        for (Object finding : parameters.getAsList(findingsKey)) {
+            if (finding instanceof Map) {
+                findingsParamList.add(new Document("id", ((Map) finding).get("id")));
+            }
+        }
+        parameters.put(findingsKey, findingsParamList);
     }
 
     private void checkNewFindingsDontExist(List<ClinicalVariant> currentFindings, List<Map> newFindings)
@@ -478,13 +534,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult update(long id, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult update(long id, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return update(id, parameters, null, queryOptions);
+        return update(id, parameters, clinicalAuditList, null, queryOptions);
     }
 
     @Override
-    public OpenCGAResult update(long uid, ObjectMap parameters, ParamUtils.SaveInterpretationAs action, QueryOptions queryOptions)
+    public OpenCGAResult update(long uid, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList,
+                                ParamUtils.SaveInterpretationAs action, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), uid);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
@@ -497,18 +554,20 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         String interpretationId = interpretation.first().getId();
 
         try {
-            return runTransaction(clientSession -> update(clientSession, interpretation.first(), parameters, action, queryOptions));
+            return runTransaction(clientSession -> update(clientSession, interpretation.first(), parameters, clinicalAuditList, action,
+                    queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update interpretation {}: {}", interpretationId, e.getMessage(), e);
             throw new CatalogDBException("Could not update interpretation " + interpretationId + ": " + e.getMessage(), e.getCause());
         }
     }
 
-    public OpenCGAResult<Interpretation> merge(long interpretationUid, Interpretation interpretation,
+    public OpenCGAResult<Interpretation> merge(long interpretationUid, Interpretation interpretation, List<ClinicalAudit> clinicalAuditList,
                                                List<String> clinicalVariantList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
-            return runTransaction(clientSession -> merge(clientSession, interpretationUid, interpretation, clinicalVariantList));
+            return runTransaction(clientSession -> merge(clientSession, interpretationUid, interpretation, clinicalAuditList,
+                    clinicalVariantList));
         } catch (CatalogDBException e) {
             logger.error("Could not merge interpretation: {}", e.getMessage(), e);
             throw new CatalogDBException("Could not merge interpretation: " + e.getMessage(), e.getCause());
@@ -516,7 +575,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     private OpenCGAResult<Interpretation> merge(ClientSession clientSession, long interpretationUid, Interpretation interpretation2,
-                                                List<String> clinicalVariantList)
+                                                List<ClinicalAudit> clinicalAuditList, List<String> clinicalVariantList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), interpretationUid);
         OpenCGAResult<Interpretation> interpretationResult = get(clientSession, query, QueryOptions.empty());
@@ -534,12 +593,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 .append(QueryParams.METHODS.key(), interpretation.getMethods());
 
         ObjectMap actions = new ObjectMap()
-                .append(QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.UpdateAction.SET)
-                .append(QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.UpdateAction.SET)
-                .append(QueryParams.METHODS.key(), ParamUtils.UpdateAction.SET);
+                .append(QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET)
+                .append(QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET)
+                .append(QueryParams.METHODS.key(), ParamUtils.BasicUpdateAction.SET);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actions);
 
-        return update(clientSession, interpretation, params, null, options);
+        return update(clientSession, interpretation, params, clinicalAuditList, null, options);
     }
 
     private void mergeFindings(Interpretation interpretation, Interpretation interpretation2, boolean primaryFindings,
@@ -633,12 +692,52 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult<Interpretation> revert(long id, int previousVersion, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        try {
+            return runTransaction(clientSession -> {
+                Query query = new Query(QueryParams.UID.key(), id);
+                OpenCGAResult<Document> latestResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+
+                if (latestResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not find latest interpretation '" + id + "'");
+                }
+
+                query = new Query()
+                        .append(QueryParams.UID.key(), id)
+                        .append(QueryParams.VERSION.key(), previousVersion);
+                OpenCGAResult<Document> versionResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
+
+                if (versionResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not find version '" + previousVersion + "' of interpretation '" + id + "'");
+                }
+
+                Document latestInterpretation = revertToPreviousVersion(clientSession, interpretationCollection, versionResult.first(),
+                        latestResult.first());
+
+                // Update audit list from ClinicalAnalysis
+                updateClinicalAnalysisInterpretationReference(clientSession,
+                        interpretationConverter.convertToDataModelType(latestInterpretation), clinicalAuditList);
+
+                return OpenCGAResult.empty(Interpretation.class).setNumUpdated(1);
+            });
+        } catch (CatalogDBException e) {
+            logger.error("Could not revert version of interpretation {}: {}", id, e.getMessage(), e);
+            CatalogDBException exception = new CatalogDBException("Could not revert version of interpretation");
+            exception.addSuppressed(e);
+            throw exception;
+        }
+    }
+
+    @Override
+    public OpenCGAResult update(Query query, ObjectMap parameters, List<ClinicalAudit> clinicalAuditList, QueryOptions queryOptions)
+            throws CatalogDBException {
         return null;
     }
 
     OpenCGAResult<Interpretation> update(ClientSession clientSession, Interpretation interpretation, ObjectMap parameters,
-                                         ParamUtils.SaveInterpretationAs action, QueryOptions queryOptions)
+                                         List<ClinicalAudit> clinicalAuditList, ParamUtils.SaveInterpretationAs action,
+                                         QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         long interpretationUid = interpretation.getUid();
@@ -649,26 +748,44 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, parameters, query, queryOptions);
         Document updateOperation = updateDocument.toFinalUpdateDocument();
 
-        if (!updateOperation.isEmpty() || action != null) {
+        if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty() || action != null) {
             if (action != null) {
                 // Move interpretation
-                updateClinicalAnalysisReferences(clientSession, interpretation, action);
+                updateClinicalAnalysisReferences(clientSession, interpretation, action, clinicalAuditList);
             }
 
-            if (!updateOperation.isEmpty()) {
+            if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
+                DataResult update = DataResult.empty();
+
                 // Increment interpretation version
                 int version = createNewVersion(clientSession, studyUid, interpretationUid);
-
                 interpretation.setVersion(version);
-                updateClinicalAnalysisInterpretationReference(clientSession, interpretation);
+                updateClinicalAnalysisInterpretationReference(clientSession, interpretation, clinicalAuditList);
 
-                Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), interpretation.getUid()));
-                logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
-                        MongoClient.getDefaultCodecRegistry()), updateDocument);
-                DataResult update = interpretationCollection.update(clientSession, bsonQuery, updateOperation, null);
+                if (!updateOperation.isEmpty()) {
+                    Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), interpretation.getUid()));
+                    logger.debug("Update interpretation. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
+                            MongoClient.getDefaultCodecRegistry()), updateDocument);
+                    update = interpretationCollection.update(clientSession, bsonQuery, updateOperation, null);
 
-                if (update.getNumMatches() == 0) {
-                    throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
+                    if (update.getNumMatches() == 0) {
+                        throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
+                    }
+                }
+
+                if (!updateDocument.getNestedUpdateList().isEmpty()) {
+                    for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
+
+                        Bson bsonQuery = parseQuery(nestedDocument.getQuery().append(QueryParams.UID.key(), interpretation.getUid()));
+                        logger.debug("Update nested element from interpretation. Query: {}, Update: {}",
+                                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), nestedDocument.getSet());
+
+                        update = interpretationCollection.update(clientSession, bsonQuery, nestedDocument.getSet(), null);
+
+                        if (update.getNumMatches() == 0) {
+                            throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
+                        }
+                    }
                 }
 
                 return endWrite(tmpStartTime, update);
@@ -680,7 +797,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return OpenCGAResult.empty(Interpretation.class);
     }
 
-    private void updateClinicalAnalysisInterpretationReference(ClientSession clientSession, Interpretation interpretation)
+    private void updateClinicalAnalysisInterpretationReference(ClientSession clientSession, Interpretation interpretation,
+                                                               List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId())
@@ -696,11 +814,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         ObjectMap params;
         QueryOptions options = new QueryOptions();
 
-        if (ca.getInterpretation().getUid() == interpretation.getUid()) {
+        if (ca.getInterpretation() != null && ca.getInterpretation().getUid() == interpretation.getUid()) {
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
         } else {
             ObjectMap actions = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
-                    ParamUtils.UpdateAction.SET);
+                    ParamUtils.BasicUpdateAction.SET);
             options.put(Constants.ACTIONS, actions);
 
             // Interpretation must be one of the secondaries
@@ -716,7 +834,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), interpretationList);
         }
 
-        OpenCGAResult update = clinicalDBAdaptor.update(clientSession, ca, params, options);
+        OpenCGAResult update = clinicalDBAdaptor.update(clientSession, ca, params, clinicalAuditList, options);
         if (update.getNumUpdated() != 1) {
             throw new CatalogDBException("Could not update interpretation reference in Clinical Analysis to new version");
         }
@@ -738,6 +856,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     @Override
     public OpenCGAResult delete(Interpretation interpretation) throws CatalogDBException {
+        throw new NotImplementedException("Use other delete method passing a ClinicalAudit object");
+    }
+
+    @Override
+    public OpenCGAResult delete(Interpretation interpretation, List<ClinicalAudit> clinicalAuditList) throws CatalogDBException {
         String interpretationId = interpretation.getId();
         String clinicalId = interpretation.getClinicalAnalysisId();
         try {
@@ -751,7 +874,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     throw new CatalogDBException("Cannot find clinical analysis '" + clinicalId + "'.");
                 }
 
-                return delete(clientSession, interpretation, clinicalResult.first());
+                return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());
             });
         } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
             logger.error("Could not delete interpretation {}: {}", interpretationId, e.getMessage(), e);
@@ -761,6 +884,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     @Override
     public OpenCGAResult delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException("User other delete method passing a ClinicalAudit parameter");
+    }
+
+    @Override
+    public OpenCGAResult<Interpretation> delete(Query query, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         DBIterator<Interpretation> iterator = iterator(query, new QueryOptions());
 
         OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
@@ -779,7 +908,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         throw new CatalogDBException("Cannot find clinical analysis '" + clinicalId + "'.");
                     }
 
-                    return delete(clientSession, interpretation, clinicalResult.first());
+                    return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());
                 }));
             } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not delete interpretation {}: {}", interpretationId, e.getMessage(), e);
@@ -791,7 +920,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return result;
     }
 
-    OpenCGAResult delete(ClientSession clientSession, Interpretation interpretation, ClinicalAnalysis clinicalAnalysis)
+    OpenCGAResult delete(ClientSession clientSession, Interpretation interpretation, List<ClinicalAudit> clinicalAuditList,
+                         ClinicalAnalysis clinicalAnalysis)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
@@ -808,10 +938,10 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             clinicalParams.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(),
                     Collections.singletonList(interpretation));
             ObjectMap actions = new ObjectMap();
-            actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.REMOVE);
+            actions.put(ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.BasicUpdateAction.REMOVE);
             clinicalOptions.put(Constants.ACTIONS, actions);
         }
-        clinicalDBAdaptor.update(clientSession, clinicalAnalysis, clinicalParams, clinicalOptions);
+        clinicalDBAdaptor.update(clientSession, clinicalAnalysis, clinicalParams, clinicalAuditList, clinicalOptions);
 
         // Obtain the native document to be deleted
         Query query = new Query()
@@ -916,6 +1046,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             qOptions = new QueryOptions();
         }
 
+        qOptions = filterQueryOptions(qOptions, Arrays.asList(QueryParams.ID.key(), QueryParams.UUID.key(), QueryParams.UID.key(),
+                QueryParams.VERSION.key(), QueryParams.CLINICAL_ANALYSIS_ID.key()));
+
         logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
             return interpretationCollection.iterator(clientSession, bson, null, null, qOptions);
@@ -944,6 +1077,15 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery);
+
+        return new OpenCGAResult<>(interpretationCollection.distinct(field, bson, clazz));
+    }
 
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
@@ -961,6 +1103,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         Query queryCopy = new Query(query);
         queryCopy.remove(SampleDBAdaptor.QueryParams.DELETED.key());
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
+
+        if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
+            queryCopy.put(Constants.ALL_VERSIONS, true);
+            queryCopy.remove(QueryParams.VERSION.key());
+        }
 
         boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
 
@@ -992,6 +1139,23 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case ANALYST:
+                    case ANALYST_ID:
+                        addAutoOrQuery(QueryParams.ANALYST_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case PRIMARY_FINDINGS:
+                    case PRIMARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.PRIMARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case SECONDARY_FINDINGS:
+                    case SECONDARY_FINDINGS_ID:
+                        addAutoOrQuery(QueryParams.SECONDARY_FINDINGS_ID.key(), queryParam.key(), queryCopy, queryParam.type(),
+                                andBsonList);
+                        break;
+                    case STATUS:
+                    case STATUS_ID:
+                        addAutoOrQuery(STATUS_ID.key(), queryParam.key(), queryCopy, STATUS_ID.type(), andBsonList);
+                        break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
@@ -1000,11 +1164,17 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
                                 QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
+                    case METHODS:
+                    case METHODS_NAME:
+                        addAutoOrQuery(QueryParams.METHODS_NAME.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
                     case RELEASE:
+                    case SNAPSHOT:
                     case VERSION:
+                    case COMMENTS_DATE:
                     case CLINICAL_ANALYSIS_ID:
                     case DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

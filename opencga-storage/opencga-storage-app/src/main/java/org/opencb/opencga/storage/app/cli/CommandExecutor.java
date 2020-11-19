@@ -18,7 +18,8 @@ package org.opencb.opencga.storage.app.cli;
 
 import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.*;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,17 +89,15 @@ public abstract class CommandExecutor {
     public void configureDefaultLog(String logLevel) {
         logger = LoggerFactory.getLogger(this.getClass());
 
-        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.cluster", Level.WARN);
+        Configurator.setLevel("org.mongodb.driver.connection", Level.WARN);
 
         Level level = Level.toLevel(logLevel, Level.INFO);
-        rootLogger.setLevel(level);
+        Configurator.setRootLevel(level);
 
-        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
-        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-        stderr.setThreshold(level);
+//        // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
+//        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+//        stderr.setThreshold(level);
 
 
         this.logLevel = logLevel;
@@ -172,18 +171,18 @@ public abstract class CommandExecutor {
 //        }
 
         // If user has set up a logFile we redirect logs to it
-        if (this.logFile != null && !this.logFile.isEmpty()) {
-            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-
-            // If a log file is used then console log is removed
-            rootLogger.removeAppender("stderr");
-
-            // Creating a RollingFileAppender to output the log
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
-                    + "%m%n"), this.logFile, true);
-            rollingFileAppender.setThreshold(Level.toLevel(this.logLevel));
-            rootLogger.addAppender(rollingFileAppender);
-        }
+//        if (this.logFile != null && !this.logFile.isEmpty()) {
+//            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//
+//            // If a log file is used then console log is removed
+//            rootLogger.removeAppender("stderr");
+//
+//            // Creating a RollingFileAppender to output the log
+//            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
+//                    + "%m%n"), this.logFile, true);
+//            rollingFileAppender.setThreshold(Level.toLevel(this.logLevel));
+//            rootLogger.addAppender(rollingFileAppender);
+//        }
 
         logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }

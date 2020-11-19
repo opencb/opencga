@@ -1,0 +1,65 @@
+{{- if .Values.azureStorageAccount.enabled -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "pvConf" . | quote}}
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "azurefile"
+  azureFile:
+    secretName: {{ .Values.azureStorageAccount.secretName }}
+    shareName: {{ .Values.azureStorageAccount.volumes.conf.shareName }}
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "pvAnalysisconf" . | quote}}
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "azurefile"
+  azureFile:
+    secretName: {{ .Values.azureStorageAccount.secretName }}
+    shareName: {{ .Values.azureStorageAccount.volumes.analysisconf.shareName }}
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "pvSessions" . | quote}}
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "azurefile"
+  azureFile:
+    secretName: {{ .Values.azureStorageAccount.secretName }}
+    shareName: {{ .Values.azureStorageAccount.volumes.sessions.shareName }}
+    readOnly: false
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "pvVariants" . | quote}}
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "azurefile"
+  azureFile:
+    secretName: {{ .Values.azureStorageAccount.secretName }}
+    shareName: {{ .Values.azureStorageAccount.volumes.variants.shareName }}
+    readOnly: false
+{{- end }}

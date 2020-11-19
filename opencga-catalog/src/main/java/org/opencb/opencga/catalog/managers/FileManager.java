@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -141,67 +142,13 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    OpenCGAResult<File> internalGet(long studyUid, String fileName, @Nullable Query query, QueryOptions options, String user)
+    OpenCGAResult<File> internalGet(long studyUid, String entry, @Nullable Query query, QueryOptions options, String user)
             throws CatalogException {
         // We make this comparison because in File, the absence of a fileName means the user is actually looking for the / directory
-        if (StringUtils.isNotEmpty(fileName) || fileName == null) {
-            ParamUtils.checkIsSingleID(fileName);
+        if (StringUtils.isNotEmpty(entry) || entry == null) {
+            ParamUtils.checkIsSingleID(entry);
         }
-
-        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-
-        FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.PATH;
-        if (UuidUtils.isOpenCgaUuid(fileName)) {
-            queryParam = FileDBAdaptor.QueryParams.UUID;
-        } else {
-            fileName = fileName.replace(":", "/");
-            if (fileName.startsWith("/")) {
-                fileName = fileName.substring(1);
-            }
-        }
-
-        // We search the file
-        Query queryCopy = query == null ? new Query() : new Query(query);
-        queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(queryParam.key(), fileName);
-        OpenCGAResult<File> pathDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-        if (pathDataResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one file id found based on " + fileName);
-        } else if (pathDataResult.getNumResults() == 1) {
-            return pathDataResult;
-        }
-
-        if (queryParam == FileDBAdaptor.QueryParams.PATH && !fileName.contains("/")) {
-            queryParam = FileDBAdaptor.QueryParams.NAME;
-
-            // We search as a fileName as well
-            queryCopy = query == null ? new Query() : new Query(query);
-            queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
-            OpenCGAResult<File> nameDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
-            if (nameDataResult.getNumResults() > 1) {
-                throw new CatalogException("Error: More than one file id found based on " + fileName);
-            } else if (nameDataResult.getNumResults() == 1) {
-                return nameDataResult;
-            }
-        }
-
-        // The file could not be found or the user does not have permissions to see it
-        // Check if the file can be found without adding the user restriction
-        OpenCGAResult<File> resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
-        if (resultsNoCheck.getNumResults() == 1) {
-            throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the file " + fileName);
-        }
-        if (queryParam == FileDBAdaptor.QueryParams.NAME) {
-            // The last search was performed by name but we can also search by path just in case
-            queryCopy.put(FileDBAdaptor.QueryParams.PATH.key(), fileName);
-            resultsNoCheck = fileDBAdaptor.get(queryCopy, queryOptions);
-            if (resultsNoCheck.getNumResults() == 1) {
-                throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the file " + fileName);
-            }
-        }
-
-        throw new CatalogException("File " + fileName + " not found");
+        return internalGet(studyUid, Collections.singletonList(entry), query, options, user, false);
     }
 
     @Override
@@ -729,8 +676,8 @@ public class FileManager extends AnnotationSetManager<File> {
             if (parents) {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
-                        new FileInternal(new FileStatus(FileStatus.READY), new FileIndex(), Collections.emptyMap()), 0,
-                        Collections.emptyList(), null, "", Collections.emptyMap(), Collections.emptyMap());
+                        new FileInternal(new FileStatus(FileStatus.READY), new FileIndex(), Collections.emptyMap(), new MissingSamples()),
+                        0, Collections.emptyList(), null, "", Collections.emptyMap(), Collections.emptyMap());
                 validateNewFile(study, parentFile, sessionId, false);
                 parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, sessionId)
                         .first().getUid();
@@ -974,7 +921,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         // Set new samples
                         Map<String, Object> actionMap = new HashMap<>();
-                        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.SET.name());
+                        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.SET.name());
                         queryOptions.put(Constants.ACTIONS, actionMap);
                     }
                     if (!file.getAttributes().isEmpty()) {
@@ -1293,6 +1240,44 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
+    @Override
+    public OpenCGAResult<?> distinct(String studyId, String field, Query query, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,
+                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("field", new Query(query))
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            FileDBAdaptor.QueryParams param = FileDBAdaptor.QueryParams.getParam(field);
+            if (param == null) {
+                throw new CatalogException("Unknown '" + field + "' parameter.");
+            }
+            Class<?> clazz = getTypeClass(param.type());
+
+            fixQueryObject(study, query, userId);
+            // Fix query if it contains any annotation
+            AnnotationUtils.fixQueryAnnotationSearch(study, query);
+
+            query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            OpenCGAResult<?> result = fileDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
+
+            auditManager.auditDistinct(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditDistinct(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     void fixQueryObject(Study study, Query query, String user) throws CatalogException {
         super.fixQueryObject(query);
 
@@ -1333,6 +1318,9 @@ public class FileManager extends AnnotationSetManager<File> {
                 String auxPath = path;
                 if (auxPath.startsWith("/")) {
                     auxPath = auxPath.substring(1);
+                }
+                if (FileDBAdaptor.QueryParams.DIRECTORY.key().equals(key) && !auxPath.endsWith("/")) {
+                    auxPath = auxPath + "/";
                 }
                 finalPathList.add(auxPath);
             }
@@ -1375,8 +1363,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, fileIds, params, false, token);
+    public OpenCGAResult delete(String studyStr, List<String> fileIds, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, fileIds, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, List<String> fileIds, ObjectMap params, boolean ignoreException, String token)
@@ -1444,8 +1432,8 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     @Override
-    public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
-        return delete(studyStr, query, params, false, token);
+    public OpenCGAResult delete(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        return delete(studyStr, query, options, false, token);
     }
 
     public OpenCGAResult delete(String studyStr, Query query, ObjectMap params, boolean ignoreException, String token)
@@ -2004,7 +1992,7 @@ public class FileManager extends AnnotationSetManager<File> {
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
                     && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
                 options.put(Constants.ACTIONS, actionMap);
             }
         }
@@ -2023,7 +2011,7 @@ public class FileManager extends AnnotationSetManager<File> {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
             if (!actionMap.containsKey(FileDBAdaptor.QueryParams.RELATED_FILES.key())) {
                 logger.warn("Assuming the user wants to add the list of related files provided");
-                actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.ADD.name());
+                actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.BasicUpdateAction.ADD.name());
                 options.put(Constants.ACTIONS, actionMap);
             }
         }
@@ -3199,7 +3187,8 @@ public class FileManager extends AnnotationSetManager<File> {
             QueryOptions queryOptions = new QueryOptions()
                     .append(QueryOptions.LIMIT, 100);
 
-            return fileDBAdaptor.get(query, queryOptions);
+            return fileDBAdaptor.get(query, queryOptions)
+                    .addEvent(new Event(Event.Type.INFO, ParamConstants.FILE_ALREADY_LINKED));
         }
 
         // Check if the uri was linked to other path
@@ -3770,4 +3759,13 @@ public class FileManager extends AnnotationSetManager<File> {
 
         return fileDataResult.getNumMatches() > 0 ? CheckPath.DIRECTORY_EXISTS : CheckPath.FREE_PATH;
     }
+
+    public int getFileSampleLinkThreshold() {
+        return fileDBAdaptor.getFileSampleLinkThreshold();
+    }
+
+    public void setFileSampleLinkThreshold(int numSamples) {
+        fileDBAdaptor.setFileSampleLinkThreshold(numSamples);
+    }
+
 }

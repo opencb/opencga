@@ -86,6 +86,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /////////////////////////
     SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sampleIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
     SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit", 15),
+    SAMPLE_INDEX_BUILD_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.build.maxSamplesPerMR", 5000),
     SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR("storage.hadoop.sampleIndex.annotation.maxSamplesPerMR", 5000),
 
     /////////////////////////

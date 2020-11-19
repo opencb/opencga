@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.operations.variant;
 
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantAnnotationIndexParams extends ToolParams {
@@ -26,7 +27,8 @@ public class VariantAnnotationIndexParams extends ToolParams {
     }
 
     public VariantAnnotationIndexParams(String outdir, String outputFileName, String annotator,
-                                        boolean overwriteAnnotations, String region, boolean create, String load, String customName) {
+                                        boolean overwriteAnnotations, String region, boolean create, String load, String customName,
+                                        YesNoAuto sampleIndexAnnotation) {
         this.outdir = outdir;
         this.outputFileName = outputFileName;
         this.annotator = annotator;
@@ -35,6 +37,7 @@ public class VariantAnnotationIndexParams extends ToolParams {
         this.create = create;
         this.load = load;
         this.customName = customName;
+        this.sampleIndexAnnotation = sampleIndexAnnotation;
     }
 
     private String outdir;
@@ -45,6 +48,7 @@ public class VariantAnnotationIndexParams extends ToolParams {
     private boolean create;
     private String load;
     private String customName;
+    private YesNoAuto sampleIndexAnnotation;
 
     public String getOutdir() {
         return outdir;
@@ -115,6 +119,15 @@ public class VariantAnnotationIndexParams extends ToolParams {
 
     public VariantAnnotationIndexParams setOutputFileName(String outputFileName) {
         this.outputFileName = outputFileName;
+        return this;
+    }
+
+    public YesNoAuto getSampleIndexAnnotation() {
+        return sampleIndexAnnotation;
+    }
+
+    public VariantAnnotationIndexParams setSampleIndexAnnotation(YesNoAuto sampleIndexAnnotation) {
+        this.sampleIndexAnnotation = sampleIndexAnnotation;
         return this;
     }
 }

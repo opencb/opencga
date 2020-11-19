@@ -361,7 +361,7 @@ public class VariantPhoenixHelper {
     public void updateAnnotationColumns(Connection con, String variantsTableName) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         List<Column> annotColumns = Arrays.asList(VariantColumn.values());
-        phoenixHelper.addMissingColumns(con, variantsTableName, annotColumns, true, DEFAULT_TABLE_TYPE);
+        phoenixHelper.addMissingColumns(con, variantsTableName, annotColumns, DEFAULT_TABLE_TYPE);
     }
 
     public void updateStatsColumns(Connection con, String variantsTableName, int studyId, List<Integer> cohortIds) throws SQLException {
@@ -370,14 +370,14 @@ public class VariantPhoenixHelper {
         for (Integer cohortId : cohortIds) {
             columns.addAll(getStatsColumns(studyId, cohortId));
         }
-        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true, DEFAULT_TABLE_TYPE);
+        phoenixHelper.addMissingColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
     }
 
     public void registerNewStudy(Connection con, String variantsTableName, Integer studyId) throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         createTableIfNeeded(con, variantsTableName);
         List<Column> columns = Arrays.asList(getStudyColumn(studyId), getFillMissingColumn(studyId));
-        addMissingColumns(con, variantsTableName, columns, true);
+        addMissingColumns(con, variantsTableName, columns);
         con.commit();
     }
 
@@ -393,7 +393,7 @@ public class VariantPhoenixHelper {
         for (Integer sampleId : sampleIds) {
             columns.add(getSampleColumn(studyId, sampleId));
         }
-        phoenixHelper.addMissingColumns(con, variantsTableName, columns, true, DEFAULT_TABLE_TYPE);
+        phoenixHelper.addMissingColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
         con.commit();
     }
 
@@ -402,7 +402,7 @@ public class VariantPhoenixHelper {
         for (int i = 1; i <= release; i++) {
             columns.add(getReleaseColumn(i));
         }
-        phoenixHelper.addMissingColumns(con, table, columns, true, DEFAULT_TABLE_TYPE);
+        phoenixHelper.addMissingColumns(con, table, columns, DEFAULT_TABLE_TYPE);
         con.commit();
     }
 
@@ -463,10 +463,10 @@ public class VariantPhoenixHelper {
         }
     }
 
-    public void addMissingColumns(Connection connection, String variantsTableName, List<Column> newColumns, boolean oneCall)
+    public void addMissingColumns(Connection connection, String variantsTableName, List<Column> newColumns)
             throws SQLException {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
-        phoenixHelper.addMissingColumns(connection, variantsTableName, newColumns, oneCall, DEFAULT_TABLE_TYPE);
+        phoenixHelper.addMissingColumns(connection, variantsTableName, newColumns, DEFAULT_TABLE_TYPE);
     }
 
     private String buildCreate(String variantsTableName) {

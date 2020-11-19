@@ -162,10 +162,10 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installCatalogDB(String secretKey, String password, String email, String organization) throws CatalogException {
-        installCatalogDB(secretKey, password, email, organization, true);
+        installCatalogDB(secretKey, password, email, organization, false);
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean installIndexes)
+    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean test)
             throws CatalogException {
 
         if (existsCatalogDB()) {
@@ -190,16 +190,18 @@ public class CatalogManager implements AutoCloseable {
         studyManager.create("admin", "admin", "admin", "admin", "Default study", null, null, null, Collections.emptyMap(),
                 null, token);
 
-        if (installIndexes) {
-            installIndexes(token);
-        }
+        installIndexes(token, test);
     }
 
     public void installIndexes(String token) throws CatalogException {
+        installIndexes(token, false);
+    }
+
+    public void installIndexes(String token, boolean test) throws CatalogException {
         if (!OPENCGA.equals(userManager.getUserId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
-        catalogDBAdaptorFactory.createIndexes();
+        catalogDBAdaptorFactory.createIndexes(test);
     }
 
     public void deleteCatalogDB(String token) throws CatalogException, URISyntaxException {

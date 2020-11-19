@@ -57,13 +57,13 @@ public class JobIndexTask extends OpenCgaTool {
                         StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
                         StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true);
-        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(query, options, token);
+        OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().search(query, options, token);
         if (studyDataResult.getNumResults() == 0) {
             throw new CatalogException("Could not index catalog into solr. No studies found");
         }
 
         // Create solr collections if they don't exist
-        catalogSolrManager.createSolrCollections();
+        catalogSolrManager.createSolrCollections(CatalogSolrManager.JOB_SOLR_COLLECTION);
 
         for (Study study : studyDataResult.getResults()) {
             Map<String, Set<String>> studyAcls = SolrConverterUtil

@@ -419,6 +419,14 @@
                     <groupId>com.sun.jmx</groupId>
                     <artifactId>jmxri</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -639,6 +647,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <!-- Need log4j dependency for running hadoop tests. Internal services use directly the logger. -->
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
     </dependencyManagement>
 
@@ -799,6 +814,7 @@
                                     <exclude>org.apache.hadoop:hadoop-minicluster</exclude>
                                     <exclude>org.apache.hadoop:**:tests</exclude>
                                     <exclude>org.mortbay.jetty:**</exclude>
+                                    <exclude>log4j:**</exclude>
                                 </excludes>
                             </artifactSet>
 
@@ -859,6 +875,7 @@
                                     <include>org.mortbay.jetty:jetty</include>
                                     <include>org.mortbay.jetty:jetty-util</include>
                                     <include>org.mortbay.jetty:jetty-sslengine</include>
+                                    <exclude>log4j:**</exclude>
                                 </includes>
                             </artifactSet>
 
