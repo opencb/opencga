@@ -42,8 +42,6 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysisResultReader;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
@@ -68,6 +66,8 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
 import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
 import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -85,8 +85,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -1144,21 +1144,16 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             boolean runVariantStats = true;
-            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getAlignmentMetrics())) {
-                String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
-                for (SampleAlignmentQualityControlMetrics metrics : sample.getQualityControl().getAlignmentMetrics()) {
-                    if (bamId.equals(metrics.getBamFileId())) {
-                        if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                            runVariantStats = false;
-                        } else {
-                            for (SampleQcVariantStats variantStats : metrics.getVariantStats()) {
-                                if (variantStats.getId().equals(params.getVariantStatsId())) {
-                                    throw new ToolException("Invalid parameters: variant stats ID '"
-                                            + params.getVariantStatsId() + "' is already used");
-                                }
-                            }
+            if (sample.getQualityControl() != null) {
+                if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getVariantStats())
+                        && OPENCGA_ALL.equals(params.getVariantStatsId())) {
+                    runVariantStats = false;
+                } else {
+                    for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariantMetrics().getVariantStats()) {
+                        if (variantStats.getId().equals(params.getVariantStatsId())) {
+                            throw new ToolException("Invalid parameters: variant stats ID '" + params.getVariantStatsId()
+                                    + "' is already used");
                         }
-                        break;
                     }
                 }
             }
@@ -1183,15 +1178,9 @@ public class VariantWebService extends AnalysisWebService {
                             + " can not be null");
                 }
 
-                if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getAlignmentMetrics())) {
-                    String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
-                    for (SampleAlignmentQualityControlMetrics metrics : sample.getQualityControl().getAlignmentMetrics()) {
-                        if (bamId.equals(metrics.getBamFileId())) {
-                            if (CollectionUtils.isNotEmpty(metrics.getSignatures())) {
-                                runSignature = false;
-                            }
-                            break;
-                        }
+                if (sample.getQualityControl() != null) {
+                    if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getSignatures())) {
+                        runSignature = false;
                     }
                 }
             }

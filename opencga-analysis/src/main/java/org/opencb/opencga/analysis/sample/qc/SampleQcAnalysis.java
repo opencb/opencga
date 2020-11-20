@@ -40,10 +40,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -85,7 +82,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     private Sample sample;
     private File catalogBamFile;
-    private SampleAlignmentQualityControlMetrics metrics;
+    private SampleVariantQualityControlMetrics variantQcMetrics;
+    private SampleAlignmentQualityControlMetrics alignmentQcMetrics;
     private Job variantStatsJob = null;
     private Job signatureJob = null;
     private Job fastQcJob = null;
@@ -158,7 +156,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Get sample quality control metrics to update
-        metrics = getSampleQualityControlMetrics();
+        alignmentQcMetrics = getSampleAlignmentQualityControlMetrics();
+        variantQcMetrics = sample.getQualityControl().getVariantMetrics();
 
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
 
@@ -174,7 +173,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 .setSignatureId(signatureId)
                 .setSignatureQuery(signatureQuery)
                 .setGenesForCoverageStats(genesForCoverageStats)
-                .setMetrics(metrics);
+                .setAlignmentQcMetrics(alignmentQcMetrics);
 
         // Step by step
         step(VARIANT_STATS_STEP, () -> runVariantStats());
@@ -185,10 +184,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         step(MUTATIONAL_SIGNATUR_STEP, () -> runSignature());
 
         // Finally, update sample quality control metrics
-        metrics = executor.getMetrics();
-        if (metrics != null) {
-            updateSampleQualityControlMetrics(metrics);
-        }
+        alignmentQcMetrics = executor.getAlignmentQcMetrics();
+        updateSampleQualityControlMetrics(alignmentQcMetrics);
     }
 
     private void runVariantStats() throws ToolException {
@@ -197,8 +194,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         } else {
             Path path = Paths.get(variantStatsJob.getOutDir().getUri().getPath()).resolve("sample-variant-stats.json");
             if (path.toFile().exists()) {
-                if (metrics.getVariantStats() == null) {
-                    metrics.setVariantStats(new ArrayList<>());
+                if (variantQcMetrics.getVariantStats() == null) {
+                    variantQcMetrics.setVariantStats(new ArrayList<>());
                 }
 
                 List<SampleVariantStats> stats = new ArrayList<>();
@@ -219,7 +216,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                     query.put(key, variantStatsQuery.getString(key));
                 }
 
-                metrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, query, stats.get(0)));
+                variantQcMetrics.getVariantStats().add(new SampleQcVariantStats(variantStatsId, variantStatsDecription, query, stats.get(0)));
             }
         }
     }
@@ -237,7 +234,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 Signature.SignatureCount[] signatureCounts = MutationalSignatureAnalysis.parseSignatureCounts(path.toFile());
 
                 // Add to metrics
-                metrics.getSignatures().add(new Signature("ALL", new HashMap<>(), "SNV", signatureCounts, new ArrayList()));
+                variantQcMetrics.getSignatures().add(new Signature("ALL", new HashMap<>(), "SNV", signatureCounts, new ArrayList()));
             }
         }
 
@@ -266,7 +263,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 for (String key : signatureQuery.keySet()) {
                     map.put(key, signatureQuery.getString(key));
                 }
-                metrics.getSignatures().add(new Signature(signatureId, map, "SNV", mutationalSignature.getSignature().getCounts(),
+                variantQcMetrics.getSignatures().add(new Signature(signatureId, map, "SNV", mutationalSignature.getSignature().getCounts(),
                         new ArrayList()));
             } catch (CatalogException | StorageEngineException | IOException e) {
                 throw new ToolException("Error computing mutational signature for query '" + signatureId + "'", e);
@@ -337,12 +334,12 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                     }
                 }
 
-                metrics.setFastQc(fastQc);
+                alignmentQcMetrics.setFastQc(fastQc);
             }
         }
     }
 
-    private SampleAlignmentQualityControlMetrics getSampleQualityControlMetrics() {
+    private SampleAlignmentQualityControlMetrics getSampleAlignmentQualityControlMetrics() {
         String bamFileId = (catalogBamFile == null) ? "" : catalogBamFile.getId();
 
         if (sample.getQualityControl() == null) {
@@ -357,21 +354,20 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         return new SampleAlignmentQualityControlMetrics().setBamFileId(bamFileId);
     }
 
-    private void updateSampleQualityControlMetrics(SampleAlignmentQualityControlMetrics metrics) throws ToolException {
+    private void updateSampleQualityControlMetrics(SampleAlignmentQualityControlMetrics alignmentQcMetrics) throws ToolException {
         SampleQualityControl qualityControl = sample.getQualityControl();
         if (sample.getQualityControl() == null) {
             qualityControl = new SampleQualityControl();
         } else {
             int index = 0;
             for (SampleAlignmentQualityControlMetrics prevMetrics : qualityControl.getAlignmentMetrics()) {
-                if (prevMetrics.getBamFileId().equals(metrics.getBamFileId())) {
+                if (prevMetrics.getBamFileId().equals(alignmentQcMetrics.getBamFileId())) {
                     qualityControl.getAlignmentMetrics().remove(index);
                     break;
                 }
                 index++;
             }
         }
-        qualityControl.getAlignmentMetrics().add(metrics);
 
         try {
             catalogManager.getSampleManager().update(studyId, getSampleId(), new SampleUpdateParams().setQualityControl(qualityControl),
