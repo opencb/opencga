@@ -104,8 +104,8 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
             for (String firstKey : FIRST_LEVEL_KEYS) {
                 String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
                 for (String secondKey : secondLevelKeys) {
-                    pw.println(firstKey + "\t" + secondKey + "\t" + secondKey.substring(0,1) + "[" + firstKey + "]"
-                                    + secondKey.substring(2) + "\t" + map.get(firstKey).get(secondKey) + "\t"
+                    pw.println(firstKey + "\t" + secondKey + "\t" + secondKey.substring(0, 1) + "[" + firstKey + "]"
+                            + secondKey.substring(2) + "\t" + map.get(firstKey).get(secondKey) + "\t"
                             + (map.get(firstKey).get(secondKey) / sum));
                 }
             }
@@ -113,6 +113,31 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         } catch (Exception e) {
             throw new ToolException("Error writing output file: " + outputFile.getName(), e);
         }
+    }
+
+    protected String complement(String in) {
+        char[] inArray = in.toCharArray();
+        char[] outArray = new char[inArray.length];
+        for (int i = 0; i < inArray.length; i++) {
+            switch (inArray[i]) {
+                case 'A':
+                    outArray[i] = 'T';
+                    break;
+                case 'T':
+                    outArray[i] = 'A';
+                    break;
+                case 'G':
+                    outArray[i] = 'C';
+                    break;
+                case 'C':
+                    outArray[i] = 'G';
+                    break;
+                default:
+                    outArray[i] = inArray[i];
+                    break;
+            }
+        }
+        return outArray.toString();
     }
 
     private Double sumFreqMap(Map<String, Map<String, Double>> map) {
