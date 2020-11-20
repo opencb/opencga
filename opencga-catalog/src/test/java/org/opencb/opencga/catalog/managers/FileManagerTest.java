@@ -341,6 +341,17 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testLinkFilePassingNoDirectoryPath() throws CatalogException, URISyntaxException {
+        URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
+
+        String path = "A/B/C/variant-test-file-dot-names.vcf.gz";
+        // Instead of choosing a directory path, we will set a file equivalent to the file name (not how OpenCGA asks for the path)
+        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams().setUri(uri.toString()).setPath(path), true, token);
+        assertEquals(path, link.first().getPath());
+        assertEquals(File.Type.FILE, link.first().getType());
+    }
+
+    @Test
     public void testAssociateSamples() throws CatalogException, URISyntaxException {
         URI uri = getClass().getResource("/biofiles/variant-test-file-dot-names.vcf.gz").toURI();
         DataResult<File> link = fileManager.link(studyFqn, uri, ".", new ObjectMap(), token);
