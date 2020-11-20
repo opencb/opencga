@@ -49,6 +49,8 @@ public class StudyManagerTest extends AbstractManagerTest {
 
         Set<String> s = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
 
+        // This variable set is internal so it will not be returned from study
+        s.remove("variablesets/sample-variant-stats-variableset.json");
         assertEquals(s.size(), study.getVariableSets().size());
         assertEquals(s, study.getVariableSets().stream().map(v->v.getAttributes().get("resource")).collect(Collectors.toSet()));
 
@@ -56,7 +58,7 @@ public class StudyManagerTest extends AbstractManagerTest {
             Object avroClassStr = variableSet.getAttributes().get("avroClass");
             System.out.println("variableSet.getAttributes().get(\"avroClass\") = " + avroClassStr);
             if (avroClassStr != null) {
-                Class<?> avroClass = Class.forName(avroClassStr.toString());
+                Class<?> avroClass = Class.forName(avroClassStr.toString().split(" ")[1]);
                 Schema schema = (Schema) avroClass.getMethod("getClassSchema").invoke(null);
                 Map<String, Variable> expectedVariables = AvroToAnnotationConverter.convertToVariableSet(schema).stream().collect(Collectors.toMap(Variable::getId, v -> v));
                 Map<String, Variable> actualVariables = variableSet.getVariables().stream().collect(Collectors.toMap(Variable::getId, v->v));
@@ -66,7 +68,7 @@ public class StudyManagerTest extends AbstractManagerTest {
                     Variable actual = actualVariables.get(expectedEntry.getKey());
                     cleanVariable(actual);
                     cleanVariable(expectedEntry.getValue());
-                    assertEquals(expectedEntry.getKey(), expectedEntry.getValue().toString(), actual.toString());
+                    assertEquals(expectedEntry.getKey(), expectedEntry.getValue(), actual);
                 }
             }
         }
