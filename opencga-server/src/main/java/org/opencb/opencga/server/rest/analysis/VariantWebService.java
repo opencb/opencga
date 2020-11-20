@@ -74,7 +74,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
+import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
@@ -1144,9 +1144,9 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             boolean runVariantStats = true;
-            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+            if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getAlignmentMetrics())) {
                 String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
-                for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                for (SampleAlignmentQualityControlMetrics metrics : sample.getQualityControl().getAlignmentMetrics()) {
                     if (bamId.equals(metrics.getBamFileId())) {
                         if (CollectionUtils.isNotEmpty(metrics.getVariantStats()) && OPENCGA_ALL.equals(params.getVariantStatsId())) {
                             runVariantStats = false;
@@ -1183,9 +1183,9 @@ public class VariantWebService extends AnalysisWebService {
                             + " can not be null");
                 }
 
-                if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getMetrics())) {
+                if (sample.getQualityControl() != null && CollectionUtils.isNotEmpty(sample.getQualityControl().getAlignmentMetrics())) {
                     String bamId = catalogBamFile == null ? "" : catalogBamFile.getId();
-                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                    for (SampleAlignmentQualityControlMetrics metrics : sample.getQualityControl().getAlignmentMetrics()) {
                         if (bamId.equals(metrics.getBamFileId())) {
                             if (CollectionUtils.isNotEmpty(metrics.getSignatures())) {
                                 runSignature = false;
@@ -1198,11 +1198,11 @@ public class VariantWebService extends AnalysisWebService {
 
             boolean runFastQc = false;
             if (catalogBamFile != null) {
-                if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getMetrics())) {
+                if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getAlignmentMetrics())) {
                     runFastQc = true;
                 } else {
                     runFastQc = true;
-                    for (SampleQualityControlMetrics metrics : sample.getQualityControl().getMetrics()) {
+                    for (SampleAlignmentQualityControlMetrics metrics : sample.getQualityControl().getAlignmentMetrics()) {
                         if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
                             runFastQc = false;
                             break;

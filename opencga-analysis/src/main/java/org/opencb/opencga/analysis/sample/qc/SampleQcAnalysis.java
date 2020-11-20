@@ -42,7 +42,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
+import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -85,7 +85,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     private Sample sample;
     private File catalogBamFile;
-    private SampleQualityControlMetrics metrics;
+    private SampleAlignmentQualityControlMetrics metrics;
     private Job variantStatsJob = null;
     private Job signatureJob = null;
     private Job fastQcJob = null;
@@ -342,36 +342,36 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-    private SampleQualityControlMetrics getSampleQualityControlMetrics() {
+    private SampleAlignmentQualityControlMetrics getSampleQualityControlMetrics() {
         String bamFileId = (catalogBamFile == null) ? "" : catalogBamFile.getId();
 
         if (sample.getQualityControl() == null) {
             sample.setQualityControl(new SampleQualityControl());
         } else {
-            for (SampleQualityControlMetrics prevMetrics : sample.getQualityControl().getMetrics()) {
+            for (SampleAlignmentQualityControlMetrics prevMetrics : sample.getQualityControl().getAlignmentMetrics()) {
                 if (prevMetrics.getBamFileId().equals(bamFileId)) {
                     return prevMetrics;
                 }
             }
         }
-        return new SampleQualityControlMetrics().setBamFileId(bamFileId);
+        return new SampleAlignmentQualityControlMetrics().setBamFileId(bamFileId);
     }
 
-    private void updateSampleQualityControlMetrics(SampleQualityControlMetrics metrics) throws ToolException {
+    private void updateSampleQualityControlMetrics(SampleAlignmentQualityControlMetrics metrics) throws ToolException {
         SampleQualityControl qualityControl = sample.getQualityControl();
         if (sample.getQualityControl() == null) {
             qualityControl = new SampleQualityControl();
         } else {
             int index = 0;
-            for (SampleQualityControlMetrics prevMetrics : qualityControl.getMetrics()) {
+            for (SampleAlignmentQualityControlMetrics prevMetrics : qualityControl.getAlignmentMetrics()) {
                 if (prevMetrics.getBamFileId().equals(metrics.getBamFileId())) {
-                    qualityControl.getMetrics().remove(index);
+                    qualityControl.getAlignmentMetrics().remove(index);
                     break;
                 }
                 index++;
             }
         }
-        qualityControl.getMetrics().add(metrics);
+        qualityControl.getAlignmentMetrics().add(metrics);
 
         try {
             catalogManager.getSampleManager().update(studyId, getSampleId(), new SampleUpdateParams().setQualityControl(qualityControl),
