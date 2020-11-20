@@ -142,7 +142,7 @@ if (versionNeedsUpdate(20000, 5)) {
 
     // #1680 - Change SampleQualityControl data model
     runUpdate(function () {
-        migrateCollection("sample", {"$exists": {"qualityControl.metrics"}}, {"qualityControl": 1}, function (bulk, doc) {
+        migrateCollection("sample", {"qualityControl.metrics": {"$exists": true}}, {"qualityControl": 1}, function (bulk, doc) {
             var toSet = {
                 "qualityControl.alignmentMetrics": [],
                 "qualityControl.variantMetrics": {
@@ -152,7 +152,7 @@ if (versionNeedsUpdate(20000, 5)) {
                 }
             };
             var toUnset = {
-                "qualityControl.metrics" : ""
+                "qualityControl.metrics": ""
             };
 
             if (isNotEmptyArray(doc.qualityControl.metrics)) {
