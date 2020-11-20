@@ -140,5 +140,63 @@ if (versionNeedsUpdate(20000, 5)) {
         db.metadata.update({}, {"$set": {"_fullVersion.lastJavaUpdate": NumberInt(0)}});
     });
 
+    // #1680 - Change SampleQualityControl data model
+    runUpdate(function () {
+        migrateCollection("sample", {"$exists": {"qualityControl.metrics"}}, {"qualityControl": 1}, function (bulk, doc) {
+            var toSet = {
+                "qualityControl.alignmentMetrics": [],
+                "qualityControl.variantMetrics": {
+                    'variantStats': [],
+                    'signatures': [],
+                    'vcfFileIds': []
+                }
+            };
+            var toUnset = {
+                "qualityControl.metrics" : ""
+            };
+
+            if (isNotEmptyArray(doc.qualityControl.metrics)) {
+                for (var metric of doc.qualityControl.metrics) {
+                    // Alignment metrics
+                    if (isNotEmpty(metric['bamFileId']) || isNotUndefinedOrNull(metric['fastQc'])
+                        || isNotUndefinedOrNull(metric['samtoolsFlagstats']) || isNotUndefinedOrNull(metric['hsMetrics'])
+                        || isNotEmptyArray(metric['geneCoverageStats'])) {
+                        var alignmentStats = {};
+                        if (isNotEmpty(metric['bamFileId'])) {
+                            alignmentStats['bamFileId'] = metric['bamFileId'];
+                        }
+                        if (isNotUndefinedOrNull(metric['fastQc'])) {
+                            alignmentStats['fastQc'] = metric['fastQc'];
+                        }
+                        if (isNotUndefinedOrNull(metric['samtoolsFlagstats'])) {
+                            alignmentStats['samtoolsFlagstats'] = metric['samtoolsFlagstats'];
+                        }
+                        if (isNotUndefinedOrNull(metric['hsMetrics'])) {
+                            alignmentStats['hsMetrics'] = metric['hsMetrics'];
+                        }
+                        if (isNotEmptyArray(metric['geneCoverageStats'])) {
+                            alignmentStats['geneCoverageStats'] = metric['geneCoverageStats'];
+                        }
+                        toSet['qualityControl.alignmentMetrics'].push(alignmentStats);
+                    }
+
+                    // Variant metrics
+                    if (isNotEmptyArray(metric.variantStats)) {
+                        toSet['qualityControl.variantMetrics']['variantStats'] = metric.variantStats;
+                    }
+                    if (isNotEmptyArray(metric.signatures)) {
+                        toSet['qualityControl.variantMetrics']['signatures'] = metric.signatures;
+                    }
+                }
+            }
+            bulk.find({"_id": doc._id}).updateOne(
+                {
+                    "$set": toSet,
+                    "$unset": toUnset
+                }
+            );
+        });
+    });
+
     setOpenCGAVersion("2.0.0", 20000, 5);
 }
