@@ -1372,7 +1372,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String variableSetId = "opencga_sample_variant_stats";
 
-        if (CollectionUtils.isEmpty(sampleUpdateParams.getQualityControl().getAlignmentMetrics())) {
+        if (sampleUpdateParams.getQualityControl().getVariantMetrics() == null
+                || sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats().isEmpty()) {
             // Add REMOVE Action
             Map<String, Object> map = options.getMap(Constants.ACTIONS);
             if (map == null) {
