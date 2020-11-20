@@ -61,7 +61,6 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -263,9 +262,8 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 15.2);
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
-        SampleQualityControlMetrics metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null,
-                null, null);
-        SampleQualityControl qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        SampleQualityControl qualityControl = new SampleQualityControl(null, null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
                 new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
@@ -307,8 +305,8 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setVariantCount(15);
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
-        metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null, null, null);
-        qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        qualityControl = new SampleQualityControl(null, null, null, metrics);
 
         // And update sample
         result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl),
@@ -383,7 +381,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         // Remove SampleQcVariantStats values
-        qualityControl = new SampleQualityControl(Arrays.asList("file1", "file2"), null, null);
+        qualityControl = new SampleQualityControl(Arrays.asList("file1", "file2"), null, null, null);
 
         // And update sample
         result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl),
@@ -438,9 +436,8 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 15.2);
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
-        SampleQualityControlMetrics metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null,
-                null, null);
-        SampleQualityControl qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        SampleQualityControl qualityControl = new SampleQualityControl(null, null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
                 new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
@@ -473,8 +470,8 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setVariantCount(15);
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
-        metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null, null, null);
-        qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        qualityControl = new SampleQualityControl(null, null, null, metrics);
 
         // And update sample
         result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
@@ -568,22 +565,22 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         SampleQualityControl qualityControl = new SampleQualityControl();
 
-        SampleQualityControlMetrics metrics = new SampleQualityControlMetrics();
+        SampleAlignmentQualityControlMetrics metrics = new SampleAlignmentQualityControlMetrics();
         metrics.setFastQc(new FastQc().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality",
                 "perSeqQualityScores", "perBaseSeqContent", "perSeqGcContent", "perBaseNContent", "seqLengthDistribution",
                 "seqDuplicationLevels", "overrepresentedSeqs", "adapterContent", "kmerContent")));
 
-        qualityControl.getMetrics().add(metrics);
+        qualityControl.getAlignmentMetrics().add(metrics);
 
         catalogManager.getSampleManager().update(studyFqn, "testSample", new SampleUpdateParams().setQualityControl(qualityControl),
                 new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
-        assertEquals("basicStatistics", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getBasicStatistics());
-        assertEquals("perBaseSeqQuality", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerBaseSeqQuality());
-        assertEquals("perTileSeqQuality", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerTileSeqQuality());
-        assertEquals("perSeqQualityScores", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerSeqQualityScores());
-        assertEquals("perBaseSeqContent", testSample.first().getQualityControl().getMetrics().get(0).getFastQc().getSummary().getPerBaseSeqContent());
+        assertEquals("basicStatistics", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getBasicStatistics());
+        assertEquals("perBaseSeqQuality", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerBaseSeqQuality());
+        assertEquals("perTileSeqQuality", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerTileSeqQuality());
+        assertEquals("perSeqQualityScores", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerSeqQualityScores());
+        assertEquals("perBaseSeqContent", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerBaseSeqContent());
     }
 
     @Test

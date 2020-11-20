@@ -174,7 +174,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         metadataObject.put("_fullVersion", new Document()
                 .append("version", 20000)
                 .append("release", 5)
-                .append("lastJsUpdate", 5)
+                .append("lastJsUpdate", 7)
                 .append("lastJavaUpdate", 2)
         );
 

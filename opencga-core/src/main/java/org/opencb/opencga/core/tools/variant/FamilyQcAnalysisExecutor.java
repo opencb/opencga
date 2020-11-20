@@ -18,13 +18,7 @@ package org.opencb.opencga.core.tools.variant;
 
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-
-import java.util.List;
-import java.util.Map;
 
 public abstract class FamilyQcAnalysisExecutor extends OpenCgaToolExecutor {
 
