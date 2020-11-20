@@ -100,7 +100,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
-            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
+            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(),
+            ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -629,7 +630,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 supportedFlags.put(flagValue.getId(), flagValue);
             }
 
+            Map<String, FlagAnnotation> flagMap = new HashMap<>();
             for (FlagAnnotation flag : clinicalAnalysis.getFlags()) {
+                if (flagMap.containsKey(flag.getId())) {
+                    continue;
+                }
+                flagMap.put(flag.getId(), flag);
                 if (supportedFlags.containsKey(flag.getId())) {
                     flag.setDescription(supportedFlags.get(flag.getId()).getDescription());
                     flag.setDate(TimeUtils.getTime());
@@ -638,6 +644,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                             + "type '" + clinicalAnalysis.getType() + "' are: '" + String.join(", ", supportedFlags.keySet()) + "'.");
                 }
             }
+            clinicalAnalysis.setFlags(new ArrayList<>(flagMap.values()));
         }
     }
 
@@ -1246,8 +1253,29 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PRIORITY.key(), clinicalAnalysis.getPriority());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key())) {
+            Set<String> currentFlags = null;
+            if (clinicalAnalysis.getFlags() != null) {
+                currentFlags = clinicalAnalysis.getFlags().stream().map(FlagAnnotation::getId).collect(Collectors.toSet());
+            }
+
             clinicalAnalysis.setFlags(updateParams.getFlags().stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()));
             validateCustomFlagParameters(clinicalAnalysis, clinicalConfiguration);
+
+            ParamUtils.BasicUpdateAction action = ParamUtils.BasicUpdateAction.from(actionMap,
+                    ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.ADD);
+            if (action == ParamUtils.BasicUpdateAction.ADD) {
+                // Check for duplications
+                if (currentFlags != null) {
+                    Iterator<FlagAnnotation> iterator = clinicalAnalysis.getFlags().iterator();
+                    while (iterator.hasNext()) {
+                        FlagAnnotation flag = iterator.next();
+                        if (currentFlags.contains(flag.getId())) {
+                            iterator.remove();
+                        }
+                    }
+                }
+            }
+
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), clinicalAnalysis.getFlags());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key())) {
