@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FileCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -39,11 +38,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -96,11 +94,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         this.fileCollection = fileCollection;
         this.deletedFileCollection = deletedFileCollection;
         this.fileConverter = new FileConverter();
-    }
-
-    @Override
-    protected AnnotableConverter<? extends Annotable> getConverter() {
-        return fileConverter;
     }
 
     @Override
@@ -171,7 +164,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 }
 
                 ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
-                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
+                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
                 UpdateDocument sampleUpdateDocument = dbAdaptorFactory.getCatalogSampleDBAdaptor()
                         .updateFileReferences(params, sampleUpdateOptions);
@@ -400,6 +393,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             ObjectMap removedSamples = (ObjectMap) updateDocument.getAttributes().getMap("REMOVED_SAMPLES");
             List<Long> setSamples = updateDocument.getAttributes().getAsLongList("SET_SAMPLES");
 
+            if (setSamples.isEmpty() && (addedSamples == null || addedSamples.isEmpty())
+                    && (removedSamples == null || removedSamples.isEmpty())) {
+                throw new CatalogDBException("Internal error: Expected a list of added, removed or set samples");
+            }
+
             Bson sampleBsonQuery = null;
             UpdateDocument sampleUpdate = null;
             ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getId());
@@ -420,6 +418,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 // Replace the id for the new one
                 sampleUpdate = new UpdateDocument();
                 sampleUpdate.getSet().append(SampleDBAdaptor.QueryParams.FILE_IDS.key() + ".$", newFileId);
+
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
+                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
             }
             if (addedSamples != null && !addedSamples.isEmpty()) {
                 Query query = new Query()
@@ -427,10 +428,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         .append(SampleDBAdaptor.QueryParams.UID.key(), addedSamples.getAsLongList(file.getId()));
                 sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
 
-                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.ADD.name());
+                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.ADD.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
+
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
+                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
             }
             if (removedSamples != null && !removedSamples.isEmpty()) {
                 Query query = new Query()
@@ -438,21 +442,19 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         .append(SampleDBAdaptor.QueryParams.UID.key(), removedSamples.getAsLongList(file.getId()));
                 sampleBsonQuery = dbAdaptorFactory.getCatalogSampleDBAdaptor().parseQuery(query, null);
 
-                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), UpdateAction.REMOVE.name());
+                ObjectMap actionMap = new ObjectMap(SampleDBAdaptor.QueryParams.FILE_IDS.key(), BasicUpdateAction.REMOVE.name());
                 QueryOptions sampleUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 sampleUpdate = dbAdaptorFactory.getCatalogSampleDBAdaptor().updateFileReferences(params, sampleUpdateOptions);
-            }
-            if (sampleUpdate == null) {
-                throw new CatalogDBException("Internal error: Expected a list of added, removed or set samples");
-            }
 
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
-                    sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection().update(clientSession, sampleBsonQuery,
+                        sampleUpdate.toFinalUpdateDocument(), new QueryOptions(MongoDBCollection.MULTI, true));
+            }
         }
     }
 
-    private void getSampleChanges(Document fileDocument, List<Sample> sampleList, UpdateDocument updateDocument, UpdateAction operation) {
+    private void getSampleChanges(Document fileDocument, List<Sample> sampleList, UpdateDocument updateDocument,
+                                  BasicUpdateAction operation) {
         String fileId = fileDocument.getString(QueryParams.ID.key());
 
         Set<Long> currentSampleUidList = new HashSet<>();
@@ -466,7 +468,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (updateDocument.getSet().containsKey(QueryParams.ID.key())) {
             // The current list of samples need to replace the current fileId
             updateDocument.getAttributes().put("SET_SAMPLES", currentSampleUidList);
-        } else if (UpdateAction.SET.equals(operation) || UpdateAction.ADD.equals(operation)) {
+        } else if (BasicUpdateAction.SET.equals(operation) || BasicUpdateAction.ADD.equals(operation)) {
             // We will see which of the samples are actually new
             List<Long> samplesToAdd = new ArrayList<>();
 
@@ -480,7 +482,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 updateDocument.getAttributes().put("ADDED_SAMPLES", new ObjectMap(fileId, samplesToAdd));
             }
 
-            if (UpdateAction.SET.equals(operation) && fileDocument.get(PRIVATE_SAMPLES) != null) {
+            if (BasicUpdateAction.SET.equals(operation) && fileDocument.get(PRIVATE_SAMPLES) != null) {
                 // We also need to see which samples existed and are not currently in the new list provided by the user to take them out
                 Set<Long> newSampleUids = sampleList.stream().map(Sample::getUid).collect(Collectors.toSet());
 
@@ -496,7 +498,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     updateDocument.getAttributes().put("REMOVED_SAMPLES", new ObjectMap(fileId, samplesToRemove));
                 }
             }
-        } else if (UpdateAction.REMOVE.equals(operation)) {
+        } else if (BasicUpdateAction.REMOVE.equals(operation)) {
             // We will only store the samples to be removed that are already associated to the individual
             List<Long> samplesToRemove = new ArrayList<>();
 
@@ -543,8 +545,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            UpdateAction operation = UpdateAction.from(actionMap, QueryParams.TAGS.key(), UpdateAction.ADD);
-            if (UpdateAction.SET.equals(operation) || !tagList.isEmpty()) {
+            BasicUpdateAction operation = BasicUpdateAction.from(actionMap, QueryParams.TAGS.key(), BasicUpdateAction.ADD);
+            if (BasicUpdateAction.SET.equals(operation) || !tagList.isEmpty()) {
                 switch (operation) {
                     case SET:
                         document.getSet().put(QueryParams.TAGS.key(), tagList);
@@ -583,7 +585,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            UpdateAction operation = UpdateAction.from(actionMap, QueryParams.RELATED_FILES.key(), UpdateAction.ADD);
+            BasicUpdateAction operation = BasicUpdateAction.from(actionMap, QueryParams.RELATED_FILES.key(), BasicUpdateAction.ADD);
             switch (operation) {
                 case SET:
                     document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
@@ -636,7 +638,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             List<Sample> sampleList = sampleOpenCGAResult.getResults();
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            UpdateAction operation = UpdateAction.from(actionMap, QueryParams.SAMPLE_IDS.key(), UpdateAction.ADD);
+            BasicUpdateAction operation = BasicUpdateAction.from(actionMap, QueryParams.SAMPLE_IDS.key(), BasicUpdateAction.ADD);
 
             OpenCGAResult<Document> fileResult = nativeGet(clientSession, query, new QueryOptions());
             // We obtain the list of fileIds to be added/removed for each file
@@ -644,7 +646,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 getSampleChanges(fileDocument, sampleList, document, operation);
             }
 
-            if (UpdateAction.SET.equals(operation) || !sampleList.isEmpty()) {
+            if (BasicUpdateAction.SET.equals(operation) || !sampleList.isEmpty()) {
                 switch (operation) {
                     case SET:
                         document.getSet().put(PRIVATE_SAMPLES, fileConverter.convertSamples(sampleList));
@@ -1397,7 +1399,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 .append(QueryParams.SAMPLE_IDS.key(), Collections.singletonList(sample.getId()));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
-                new ObjectMap(QueryParams.SAMPLE_IDS.key(), UpdateAction.REMOVE.name()));
+                new ObjectMap(QueryParams.SAMPLE_IDS.key(), BasicUpdateAction.REMOVE.name()));
 
         Document update = getValidatedUpdateParams(clientSession, studyUid, params, query, queryOptions).toFinalUpdateDocument();
 

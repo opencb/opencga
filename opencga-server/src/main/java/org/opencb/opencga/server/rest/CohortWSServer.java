@@ -279,19 +279,19 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+                @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
 
             Map<String, Object> actionMap = new HashMap<>();
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             if (samplesAction == null) {
-                samplesAction = ParamUtils.UpdateAction.ADD;
+                samplesAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
@@ -313,18 +313,18 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+                @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
 
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             if (samplesAction == null) {
-                samplesAction = ParamUtils.UpdateAction.ADD;
+                samplesAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);

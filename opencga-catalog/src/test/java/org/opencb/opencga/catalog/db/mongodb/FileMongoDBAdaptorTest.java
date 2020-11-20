@@ -340,7 +340,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
 
-        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD);
+        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
 
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
@@ -380,7 +380,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<File> files = user3.getProjects().get(0).getStudies().get(0).getFiles();
         File file = files.get(0);
         File file2 = files.get(1);
-        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.ADD);
+        ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
 
         catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),

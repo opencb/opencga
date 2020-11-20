@@ -100,7 +100,7 @@ public abstract class StorageManager {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyIdStr, userId);
+        Study study = catalogManager.getStudyManager().get(studyIdStr, QueryOptions.empty(), sessionId).first();
 
         List<File> files;
         if (fileIdStrs.isEmpty()) {

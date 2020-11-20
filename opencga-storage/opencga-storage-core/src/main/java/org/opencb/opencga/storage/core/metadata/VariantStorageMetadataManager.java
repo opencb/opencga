@@ -76,7 +76,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     private final MetadataCache<Integer, String> sampleNameCache;
     private final MetadataCache<Integer, Boolean> sampleIdIndexedCache;
     private final MetadataCache<Integer, LinkedHashSet<Integer>> sampleIdsFromFileIdCache;
-    private final MetadataCache<Integer, VariantStorageEngine.SplitData> splitDataCache;
+    // Store ordinal from VariantStorageEngine.SplitData. -1 for null values.
+    private final MetadataCache<Integer, Integer> splitDataCache;
 
     private final MetadataCache<String, Integer> fileIdCache;
     private final MetadataCache<Integer, String> fileNameCache;
@@ -127,7 +128,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             if (sampleMetadata == null) {
                 throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
-            return sampleMetadata.getSplitData();
+            VariantStorageEngine.SplitData splitData = sampleMetadata.getSplitData();
+            if (splitData == null) {
+                return -1;
+            } else {
+                return splitData.ordinal();
+            }
         });
 
         fileIdCache = new MetadataCache<>(fileDBAdaptor::getFileId);
@@ -1287,7 +1293,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public VariantStorageEngine.SplitData getLoadSplitData(int studyId, int sampleId) {
-        return splitDataCache.get(studyId, sampleId);
+        Integer ordinal = splitDataCache.get(studyId, sampleId);
+        if (ordinal < 0) {
+            return null;
+        } else {
+            return VariantStorageEngine.SplitData.values()[ordinal];
+        }
     }
 
     /*
@@ -1306,12 +1317,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public void registerFileSamples(int studyId, int fileId, List<String> sampleIds)
             throws StorageEngineException {
 
+        // Register samples and add file
+        LinkedHashSet<Integer> samples = new LinkedHashSet<>(sampleIds.size());
+        for (String sample : sampleIds) {
+            samples.add(registerSample(studyId, fileId, sample));
+        }
+
         updateFileMetadata(studyId, fileId, fileMetadata -> {
             //Assign new sampleIds
-            LinkedHashSet<Integer> samples = new LinkedHashSet<>(sampleIds.size());
-            for (String sample : sampleIds) {
-                samples.add(registerSample(studyId, fileId, sample));
-            }
             fileMetadata.setSamples(samples);
             return fileMetadata;
         });
@@ -1333,24 +1346,33 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     protected Integer registerSample(int studyId, Integer fileId, String sample) throws StorageEngineException {
         Integer sampleId = getSampleId(studyId, sample);
         SampleMetadata sampleMetadata;
-        boolean update = false;
-        if (sampleId == null) {
-            //If the sample was not in the original studyId, a new SampleId is assigned.
-            sampleId = newSampleId(studyId);
 
-            sampleMetadata = new SampleMetadata(studyId, sampleId, sample);
-            update = true;
-        } else {
-            sampleMetadata = getSampleMetadata(studyId, sampleId);
+        if (sampleId == null) {
+            // Create sample with lock
+            try (Lock lock = lockStudy(studyId)) {
+                sampleId = getSampleId(studyId, sample);
+                if (sampleId == null) {
+                    //If the sample was not in the original studyId, a new SampleId is assigned.
+                    sampleId = newSampleId(studyId);
+
+                    sampleMetadata = new SampleMetadata(studyId, sampleId, sample);
+                    if (fileId != null) {
+                        sampleMetadata.getFiles().add(fileId);
+                    }
+                    unsecureUpdateSampleMetadata(studyId, sampleMetadata);
+                    return sampleId;
+                }
+            }
         }
+
+        sampleMetadata = getSampleMetadata(studyId, sampleId);
         if (fileId != null) {
             if (!sampleMetadata.getFiles().contains(fileId)) {
-                sampleMetadata.getFiles().add(fileId);
+                updateSampleMetadata(studyId, sampleId, s -> {
+                    s.getFiles().add(fileId);
+                    return s;
+                });
             }
-            update = true;
-        }
-        if (update) {
-            unsecureUpdateSampleMetadata(studyId, sampleMetadata);
         }
         return sampleId;
     }
@@ -1490,11 +1512,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             });
         } else {
             fileId = newFileId(studyId);
-            FileMetadata fileMetadata = new FileMetadata()
-                    .setId(fileId)
-                    .setName(fileName)
-                    .setPath(filePath);
-            unsecureUpdateFileMetadata(studyId, fileMetadata);
+            try (Lock lock = lockStudy(studyId)) {
+                FileMetadata fileMetadata = new FileMetadata()
+                        .setId(fileId)
+                        .setName(fileName)
+                        .setPath(filePath);
+                unsecureUpdateFileMetadata(studyId, fileMetadata);
+            }
         }
 
         return fileId;

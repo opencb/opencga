@@ -270,7 +270,7 @@ public class StudyCommandOptions {
         public List<String> users;
 
         @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, SET, REMOVE)", required = true, arity = 1)
-        public ParamUtils.UpdateAction action = ParamUtils.UpdateAction.ADD;
+        public ParamUtils.BasicUpdateAction action = ParamUtils.BasicUpdateAction.ADD;
     }
 
     @Parameters(commandNames = {"variable-sets"}, commandDescription = "Return the variable sets of a study")
@@ -283,7 +283,7 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"variable-sets-update"}, commandDescription = "Create or remove a variable set")
     public class VariableSetsUpdateCommandOptions extends BaseStudyCommand {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable set.", arity = 1)
-        public ParamUtils.BasicUpdateAction action;
+        public ParamUtils.AddRemoveAction action;
 
         @Parameter(names = {"--variable-set"}, description = "JSON file containing the variable set to be created or removed.",
                 required = true, arity = 1)
@@ -294,7 +294,7 @@ public class StudyCommandOptions {
     public class VariablesUpdateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable.", arity = 1)
-        public ParamUtils.BasicUpdateAction action;
+        public ParamUtils.AddRemoveAction action;
 
         @Parameter(names = {"--variable-set"}, description = "Variable set id", required = true, arity = 1)
         public String variableSet;

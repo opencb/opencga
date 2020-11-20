@@ -164,8 +164,23 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.ATTRIBUTES_PARAM) String attributes,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
-            @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot) {
+
+            @ApiParam(value = "Sample variant stats id. If filtering by other stats fields and not provided, it will be automatically set to ALL")
+                @QueryParam("stats.id") String statsId,
+            @ApiParam(value = "Sample variant stats variantCount.") @QueryParam("stats.variantCount") String variantCount,
+            @ApiParam(value = "Sample variant stats chromosomeCount.") @QueryParam("stats.chromosomeCount") String chromosomeCount,
+            @ApiParam(value = "Sample variant stats typeCount.") @QueryParam("stats.typeCount") String typeCount,
+            @ApiParam(value = "Sample variant stats genotypeCount.") @QueryParam("stats.genotypeCount") String genotypeCount,
+            @ApiParam(value = "Sample variant stats tiTvRatio.") @QueryParam("stats.tiTvRatio") String tiTvRatio,
+            @ApiParam(value = "Sample variant stats qualityAvg.") @QueryParam("stats.qualityAvg") String qualityAvg,
+            @ApiParam(value = "Sample variant stats qualityStdDev.") @QueryParam("stats.qualityStdDev") String qualityStdDev,
+            @ApiParam(value = "Sample variant stats heterozygosityRate.") @QueryParam("stats.heterozygosityRate") String heterozygosityRate,
+            @ApiParam(value = "Sample variant stats depthCount.") @QueryParam("stats.depthCount") String depthCount,
+            @ApiParam(value = "Sample variant stats biotypeCount.") @QueryParam("stats.biotypeCount") String biotypeCount,
+            @ApiParam(value = "Sample variant stats clinicalSignificanceCount.") @QueryParam("stats.clinicalSignificanceCount") String clinicalSignificanceCount,
+            @ApiParam(value = "Sample variant stats consequenceTypeCount.") @QueryParam("stats.consequenceTypeCount") String consequenceTypeCount) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(sampleManager.search(studyStr, query, queryOptions, token));
@@ -227,12 +242,12 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
@@ -254,11 +269,11 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create a new version of sample", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);

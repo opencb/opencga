@@ -137,7 +137,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testQueryAnonymousOnlyAggregated() throws Exception {
         // Only Aggregated studies
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD,
@@ -153,7 +153,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousViewSampleVariants() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams(StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS.name(), null), ADD, sessionId);
@@ -266,7 +266,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousInMembersWithoutPermissions() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         // Missing VIEW_AGGREGATED_VARIANTS
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
@@ -277,7 +277,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousOneStudyPermissions() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
@@ -303,7 +303,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousOneStudyPermissionsIncludeBoth() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
@@ -326,7 +326,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymousTwoStudiesPermissions() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "*",
                 new StudyAclParams()
@@ -337,7 +337,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         indexFile(file, new QueryOptions(), outputId2);
 
 
-        catalogManager.getStudyManager().updateGroup(studyId2, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyId2, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionId);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyId2), "*",
                 new StudyAclParams()

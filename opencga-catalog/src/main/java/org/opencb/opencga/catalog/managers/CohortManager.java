@@ -176,7 +176,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         try {
             // Fix sample query object and search for samples
             catalogManager.getSampleManager().fixQueryObject(study, sampleQuery, userId);
-            AnnotationUtils.fixQueryAnnotationSearch(study, sampleQuery);
             AnnotationUtils.fixQueryOptionAnnotation(options);
             sampleQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<Sample> result = sampleDBAdaptor.get(study.getUid(), sampleQuery, options, userId);
@@ -580,7 +579,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     }
 
     public OpenCGAResult<Cohort> updateAnnotationSet(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
-                                                     ParamUtils.UpdateAction action, QueryOptions options, String token)
+                                                     ParamUtils.BasicUpdateAction action, QueryOptions options, String token)
             throws CatalogException {
         CohortUpdateParams updateParams = new CohortUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -597,7 +596,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public OpenCGAResult<Cohort> addAnnotationSets(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
                                                    QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.UpdateAction.ADD, options, token);
+        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
     public OpenCGAResult<Cohort> setAnnotationSet(String studyStr, String cohortStr, AnnotationSet annotationSet, QueryOptions options,
@@ -607,7 +606,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     public OpenCGAResult<Cohort> setAnnotationSets(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
                                                    QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.UpdateAction.SET, options, token);
+        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
     }
 
     public OpenCGAResult<Cohort> removeAnnotationSet(String studyStr, String cohortStr, String annotationSetId, QueryOptions options,
@@ -621,7 +620,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
                 .collect(Collectors.toList());
-        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.UpdateAction.REMOVE, options, token);
+        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options, token);
     }
 
     public OpenCGAResult<Cohort> updateAnnotations(String studyStr, String cohortStr, String annotationSetId,
@@ -884,7 +883,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS) && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
                 options.put(Constants.ACTIONS, actionMap);
             }
         }

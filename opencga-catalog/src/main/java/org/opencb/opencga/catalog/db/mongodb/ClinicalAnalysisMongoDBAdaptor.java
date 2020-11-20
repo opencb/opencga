@@ -162,25 +162,41 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Document updateOperation = updateDocument.toFinalUpdateDocument();
 
         List<Event> events = new ArrayList<>();
-        if (!updateOperation.isEmpty()) {
-            Bson bsonQuery = Filters.eq(PRIVATE_UID, clinicalAnalysisUid);
+        if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
+            DataResult update;
 
-            logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
-                    MongoClient.getDefaultCodecRegistry()), updateDocument);
-            DataResult result = clinicalCollection.update(clientSession, bsonQuery, updateOperation, null);
+            if (!updateOperation.isEmpty()) {
+                Bson bsonQuery = Filters.eq(PRIVATE_UID, clinicalAnalysisUid);
 
-            if (result.getNumMatches() == 0) {
-                throw CatalogDBException.uidNotFound("Clinical Analysis", clinicalAnalysisUid);
+                logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
+                        MongoClient.getDefaultCodecRegistry()), updateDocument);
+                update = clinicalCollection.update(clientSession, bsonQuery, updateOperation, null);
+
+                if (update.getNumMatches() == 0) {
+                    throw CatalogDBException.uidNotFound("Clinical Analysis", clinicalAnalysisUid);
+                }
+                if (update.getNumUpdated() == 0) {
+                    events.add(new Event(Event.Type.WARNING, clinicalAnalysisId, "Clinical Analysis was already updated"));
+                }
+
+                logger.debug("Clinical Analysis {} successfully updated", clinicalAnalysisId);
             }
 
-            if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Clinical Analysis " + clinicalAnalysisId + " not found");
-            }
-            if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, clinicalAnalysisId, "Clinical Analysis was already updated"));
+            if (!updateDocument.getNestedUpdateList().isEmpty()) {
+                for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
+
+                    Bson bsonQuery = parseQuery(nestedDocument.getQuery().append(QueryParams.UID.key(), clinicalAnalysisUid));
+                    logger.debug("Update nested element from Clinical Analysis. Query: {}, Update: {}",
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), nestedDocument.getSet());
+
+                    update = clinicalCollection.update(clientSession, bsonQuery, nestedDocument.getSet(), null);
+
+                    if (update.getNumMatches() == 0) {
+                        throw CatalogDBException.uidNotFound("Clinical Analysis", clinicalAnalysisUid);
+                    }
+                }
             }
 
-            logger.debug("Clinical Analysis {} successfully updated", clinicalAnalysisId);
         } else {
             throw new CatalogDBException("Nothing to update");
         }
@@ -247,8 +263,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
 
         String[] objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
-        ParamUtils.BasicUpdateAction basicOperation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.COMMENTS.key(),
-                ParamUtils.BasicUpdateAction.ADD);
+        ParamUtils.AddRemoveReplaceAction basicOperation = ParamUtils.AddRemoveReplaceAction.from(actionMap, QueryParams.COMMENTS.key(),
+                ParamUtils.AddRemoveReplaceAction.ADD);
         switch (basicOperation) {
             case REMOVE:
                 fixCommentsForRemoval(parameters);
@@ -257,12 +273,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
                 break;
+            case REPLACE:
+                filterReplaceParams(parameters.getAsList(QueryParams.COMMENTS.key(), ClinicalComment.class), document,
+                        ClinicalComment::getDate, QueryParams.COMMENTS_DATE.key());
+                break;
             default:
                 throw new IllegalStateException("Unknown operation " + basicOperation);
         }
 
         objectAcceptedParams = new String[]{QueryParams.FILES.key()};
-        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.FILES.key(), ParamUtils.UpdateAction.ADD);
+        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FILES.key(),
+                ParamUtils.BasicUpdateAction.ADD);
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -278,7 +299,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         objectAcceptedParams = new String[]{FLAGS.key()};
-        operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.FLAGS.key(), ParamUtils.UpdateAction.ADD);
+        operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.FLAGS.key(), ParamUtils.BasicUpdateAction.ADD);
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
@@ -296,7 +317,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         // Secondary interpretations
         if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
-            operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(), ParamUtils.UpdateAction.ADD);
+            operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
             String[] secondaryInterpretationParams = {QueryParams.SECONDARY_INTERPRETATIONS.key()};
             switch (operation) {
                 case SET:
@@ -340,10 +362,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             return;
         }
 
-        List<ClinicalCommentParam> commentParamList = new LinkedList<>();
+        List<Document> commentParamList = new LinkedList<>();
         for (Object comment : parameters.getAsList(COMMENTS.key())) {
             if (comment instanceof ClinicalComment) {
-                commentParamList.add(ClinicalCommentParam.of((ClinicalComment) comment));
+                commentParamList.add(new Document(COMMENTS_DATE.key().replace(COMMENTS.key() + ".", ""),
+                        ((ClinicalComment) comment).getDate()));
             }
         }
         parameters.put(COMMENTS.key(), commentParamList);
@@ -921,6 +944,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case PROBAND_UID:
                     case DESCRIPTION:
                     case RELEASE:
+                    case COMMENTS_DATE:
                     case INTERNAL_STATUS_DATE:
                     case ACL:
                     case ACL_MEMBER:

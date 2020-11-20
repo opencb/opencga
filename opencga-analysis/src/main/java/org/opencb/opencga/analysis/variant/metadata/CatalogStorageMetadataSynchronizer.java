@@ -140,17 +140,12 @@ public class CatalogStorageMetadataSynchronizer {
     public boolean synchronizeCatalogFilesFromStorage(String study, List<File> files, String sessionId, QueryOptions fileQueryOptions)
             throws CatalogException, StorageEngineException {
 
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        boolean modified = false;
-        if (studyMetadata != null) {
-            // Update Catalog file and cohort status.
-            modified = synchronizeCatalogFilesFromStorage(studyMetadata, files, sessionId);
-            if (modified) {
-                // Files updated. Reload files from catalog
-                for (int i = 0; i < files.size(); i++) {
-                    File file = files.get(i);
-                    files.set(i, catalogManager.getFileManager().get(study, file.getId(), fileQueryOptions, sessionId).first());
-                }
+        boolean modified = synchronizeCatalogFilesFromStorage(study, files, sessionId);
+        if (modified) {
+            // Files updated. Reload files from catalog
+            for (int i = 0; i < files.size(); i++) {
+                File file = files.get(i);
+                files.set(i, catalogManager.getFileManager().get(study, file.getId(), fileQueryOptions, sessionId).first());
             }
         }
         return modified;
@@ -159,14 +154,19 @@ public class CatalogStorageMetadataSynchronizer {
     /**
      * Updates catalog metadata from storage metadata.
      *
-     * @param study                 StudyMetadata
+     * @param studyFqn              Study FQN
      * @param files                 Files to update
      * @param sessionId             User session id
      * @return if there were modifications in catalog
      * @throws CatalogException     if there is an error with catalog
      */
-    public boolean synchronizeCatalogFilesFromStorage(StudyMetadata study, List<File> files, String sessionId)
+    public boolean synchronizeCatalogFilesFromStorage(String studyFqn, List<File> files, String sessionId)
             throws CatalogException {
+        StudyMetadata study = metadataManager.getStudyMetadata(studyFqn);
+        if (study == null) {
+            return false;
+        }
+        // Update Catalog file and cohort status.
         logger.info("Synchronizing study " + study.getName());
 
         if (files != null && files.isEmpty()) {
@@ -209,6 +209,15 @@ public class CatalogStorageMetadataSynchronizer {
         modified |= synchronizeCohorts(study, sessionId);
 
         return modified;
+    }
+
+    public boolean synchronizeCohorts(String study, String sessionId) throws CatalogException {
+        StudyMetadata studyMetadata = getStudyMetadata(study);
+        if (studyMetadata == null) {
+            return false;
+        } else {
+            return synchronizeCohorts(studyMetadata, sessionId);
+        }
     }
 
     protected boolean synchronizeCohorts(StudyMetadata study, String sessionId) throws CatalogException {

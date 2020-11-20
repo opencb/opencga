@@ -1327,7 +1327,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<JobTop> top(Query baseQuery, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        List<String> studies = studyManager.get(new Query(StudyDBAdaptor.QueryParams.OWNER.key(), userId),
+        List<String> studies = studyManager.search(new Query(StudyDBAdaptor.QueryParams.OWNER.key(), userId),
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UUID.key()), token).getResults()
                 .stream()
                 .map(Study::getUuid)

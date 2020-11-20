@@ -921,7 +921,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         // Set new samples
                         Map<String, Object> actionMap = new HashMap<>();
-                        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.UpdateAction.SET.name());
+                        actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.SET.name());
                         queryOptions.put(Constants.ACTIONS, actionMap);
                     }
                     if (!file.getAttributes().isEmpty()) {
@@ -1992,7 +1992,7 @@ public class FileManager extends AnnotationSetManager<File> {
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
                     && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
                 options.put(Constants.ACTIONS, actionMap);
             }
         }
@@ -2011,7 +2011,7 @@ public class FileManager extends AnnotationSetManager<File> {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
             if (!actionMap.containsKey(FileDBAdaptor.QueryParams.RELATED_FILES.key())) {
                 logger.warn("Assuming the user wants to add the list of related files provided");
-                actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.ADD.name());
+                actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.BasicUpdateAction.ADD.name());
                 options.put(Constants.ACTIONS, actionMap);
             }
         }
@@ -3149,6 +3149,15 @@ public class FileManager extends AnnotationSetManager<File> {
         } else {
             if (params.getPath().startsWith("/")) {
                 params.setPath(params.getPath().substring(1));
+            }
+            String[] pathParts = params.getPath().split("/");
+            java.io.File originalFile = new java.io.File(normalizedUri);
+            if (originalFile.isFile()) {
+                String fileName = new java.io.File(normalizedUri).getName();
+                // If user sent something like uri = file.txt and path = "A/B/C/file.txt" we change the path so it does not include file.txt
+                if (fileName.equals(pathParts[pathParts.length - 1])) {
+                    params.setPath(params.getPath().substring(0, params.getPath().lastIndexOf(fileName)));
+                }
             }
             if (!params.getPath().isEmpty() && !params.getPath().endsWith("/")) {
                 params.setPath(params.getPath() + "/");

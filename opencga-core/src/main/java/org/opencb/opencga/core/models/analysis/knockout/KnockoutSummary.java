@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant.knockout.result;
+package org.opencb.opencga.core.models.analysis.knockout;
 
 public class KnockoutSummary {
 }

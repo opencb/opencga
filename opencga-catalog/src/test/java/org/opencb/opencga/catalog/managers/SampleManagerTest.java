@@ -23,7 +23,9 @@ import org.junit.Test;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.formats.sequence.fastqc.Summary;
 import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -59,6 +61,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -155,6 +158,346 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> testSample = catalogManager.getSampleManager()
                 .get(studyFqn, Collections.singletonList("testSample"), new Query(Constants.ALL_VERSIONS, true), null, false, token);
         assertEquals(4, testSample.getResults().size());
+    }
+
+    @Test
+    public void searchByInternalAnnotationSetTest() throws CatalogException {
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
+        variables.add(new Variable().setId("b").setType(Variable.VariableType.MAP_INTEGER).setAllowedKeys(Arrays.asList("b1", "b2")));
+        VariableSet variableSet = new VariableSet("myInternalVset", "", false, false, true, "", variables, null, 1, null);
+        catalogManager.getStudyManager().createVariableSet(studyFqn, variableSet, token);
+
+        Map<String, Object> annotations = new HashMap<>();
+        annotations.put("a", "hello");
+        annotations.put("b", new ObjectMap("b1", 2).append("b2", 3));
+        AnnotationSet annotationSet = new AnnotationSet("annSet", variableSet.getId(), annotations);
+
+        annotations = new HashMap<>();
+        annotations.put("a", "bye");
+        annotations.put("b", new ObjectMap("b1", 4).append("b2", 5));
+        AnnotationSet annotationSet2 = new AnnotationSet("annSet2", variableSet.getId(), annotations);
+
+        Sample sample = new Sample()
+                .setId("sample")
+                .setAnnotationSets(Arrays.asList(annotationSet, annotationSet2));
+        Sample sampleResult = catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token).first();
+        for (AnnotationSet aSet : sampleResult.getAnnotationSets()) {
+            assertNotEquals(variableSet.getId(), aSet.getVariableSetId());
+        }
+
+        // Create a different sample with different annotations
+        annotations = new HashMap<>();
+        annotations.put("a", "hi");
+        annotations.put("b", new ObjectMap("b1", 12).append("b2", 13));
+        annotationSet = new AnnotationSet("annSet", variableSet.getId(), annotations);
+
+        annotations = new HashMap<>();
+        annotations.put("a", "goodbye");
+        annotations.put("b", new ObjectMap("b1", 14).append("b2", 15));
+        annotationSet2 = new AnnotationSet("annSet2", variableSet.getId(), annotations);
+
+        Sample sample2 = new Sample()
+                .setId("sample2")
+                .setAnnotationSets(Arrays.asList(annotationSet, annotationSet2));
+        sampleResult = catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token).first();
+        for (AnnotationSet aSet : sampleResult.getAnnotationSets()) {
+            assertNotEquals(variableSet.getId(), aSet.getVariableSetId());
+        }
+
+        // Query by one of the annotations
+        Query query = new Query(Constants.ANNOTATION, "myInternalVset:a=hello");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=4");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        query = new Query(Constants.ANNOTATION, "b.b1=14");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample2", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        query = new Query(Constants.ANNOTATION, "a=goodbye");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertEquals("sample2", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
+
+        // Update sample annotation to be exactly the same as sample2
+        ObjectMap action = new ObjectMap(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
+        catalogManager.getSampleManager().update(studyFqn, sample.getId(),
+                new SampleUpdateParams().setAnnotationSets(Arrays.asList(annotationSet, annotationSet2)), options, token);
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:a=hello");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=4");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "b.b1=14");
+        assertEquals(2, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertTrue(Arrays.asList("sample", "sample2")
+                .containsAll(catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token)
+                        .getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+
+        query = new Query(Constants.ANNOTATION, "a=goodbye");
+        assertEquals(2, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+        assertTrue(Arrays.asList("sample", "sample2")
+                .containsAll(catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token)
+                        .getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+    }
+
+    @Test
+    public void updateQualityControlTest1() throws CatalogException {
+        Sample sample = new Sample().setId("sample");
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+
+        List<SampleQcVariantStats> sampleQcVariantStats = new ArrayList<>();
+        SampleVariantStats sampleVariantStats = new SampleVariantStats();
+        sampleVariantStats.setVariantCount(20);
+        sampleVariantStats.setTiTvRatio((float) 13.2);
+        sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
+
+        sampleVariantStats = new SampleVariantStats();
+        sampleVariantStats.setVariantCount(10);
+        sampleVariantStats.setTiTvRatio((float) 15.2);
+        sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
+
+        SampleQualityControlMetrics metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null,
+                null, null);
+        SampleQualityControl qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+
+        OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
+                new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        Query query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 20);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.variantCount", 10);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 15);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 13.2);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.tiTvRatio", 15.2);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.tiTvRatio", 3.5);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        // Change values
+        sampleQcVariantStats = new ArrayList<>();
+        sampleVariantStats = new SampleVariantStats();
+        sampleVariantStats.setVariantCount(15);
+        sampleVariantStats.setTiTvRatio((float) 3.5);
+        sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
+        metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null, null, null);
+        qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+
+        // And update sample
+        result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl),
+                QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        // Check same values as before but the results should be now different
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 20);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.variantCount", 10);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 15);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 13.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 15.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 3.5);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        // Update any other sample field to validate it doesn't affect quality control
+        result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setDescription("my description"),
+                QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        // Check same values as before but the results should be now different
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 20);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.variantCount", 10);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 15);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 13.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 15.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 3.5);
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        // Remove SampleQcVariantStats values
+        qualityControl = new SampleQualityControl(Arrays.asList("file1", "file2"), null, null);
+
+        // And update sample
+        result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl),
+                QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        // None of the previous queries should give any result
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 20);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v2")
+                .append("stats.variantCount", 10);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.variantCount", 15);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 13.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 15.2);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query()
+                .append("stats.id", "v1")
+                .append("stats.tiTvRatio", 3.5);
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+    }
+
+    @Test
+    public void updateQualityControlTest2() throws CatalogException {
+        Sample sample = new Sample().setId("sample");
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+
+        List<SampleQcVariantStats> sampleQcVariantStats = new ArrayList<>();
+        SampleVariantStats sampleVariantStats = new SampleVariantStats();
+        sampleVariantStats.setVariantCount(20);
+        sampleVariantStats.setTiTvRatio((float) 13.2);
+        sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
+
+        sampleVariantStats = new SampleVariantStats();
+        sampleVariantStats.setVariantCount(10);
+        sampleVariantStats.setTiTvRatio((float) 15.2);
+        sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
+
+        SampleQualityControlMetrics metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null,
+                null, null);
+        SampleQualityControl qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+
+        OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
+                new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        Query query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats__v1@opencga_sample_variant_stats:variantCount=20");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats__v2@opencga_sample_variant_stats:variantCount=20");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats__v2@opencga_sample_variant_stats:variantCount=10");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:variantCount=15");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:tiTvRatio=13.2");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:tiTvRatio=15.2");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:tiTvRatio=3.5");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        // Change values
+        sampleQcVariantStats = new ArrayList<>();
+        sampleVariantStats = new SampleVariantStats();
+        sampleVariantStats.setVariantCount(15);
+        sampleVariantStats.setTiTvRatio((float) 3.5);
+        sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
+        metrics = new SampleQualityControlMetrics(null, sampleQcVariantStats, null, null, null, null, null, null, null);
+        qualityControl = new SampleQualityControl(null, null, Collections.singletonList(metrics));
+
+        // And update sample
+        result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
+        assertEquals(1, result.getNumUpdated());
+
+        // Check same values as before but the results should be now different
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:variantCount=20");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:variantCount=10");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:variantCount=15");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:tiTvRatio=13.2");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:tiTvRatio=15.2");
+        assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
+
+        query = new Query(Constants.ANNOTATION, "opencga_sample_variant_stats:tiTvRatio=3.5");
+        assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
     }
 
     @Test
@@ -686,7 +1029,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotation))),
                 QueryOptions.empty(), token);
-}
+    }
 
     @Test
     public void testVariableAllowedKeys() throws CatalogException, IOException {
@@ -1144,7 +1487,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+        actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         HashMap<String, Object> annotations = new HashMap<>();
@@ -1737,14 +2080,14 @@ public class SampleManagerTest extends AbstractManagerTest {
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
                 Account.AccountType.GUEST, null);
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
         String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), this.token);
         queryResult = catalogManager.getProjectManager().getSharedProjects("*", QueryOptions.empty(), null);
         assertEquals(1, queryResult.getNumResults());
@@ -1752,7 +2095,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void smartResolutorStudyAliasFromAnonymousUser() throws CatalogException {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), token);
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, "*");
         assertTrue(study != null);

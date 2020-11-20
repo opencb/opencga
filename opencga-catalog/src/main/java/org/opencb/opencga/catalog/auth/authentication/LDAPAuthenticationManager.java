@@ -70,10 +70,10 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.originId = authenticationOrigin.getId();
 
         Map<String, Object> authOptions = authenticationOrigin.getOptions();
-        this.authUserId = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_AUTHENTICATION_USER));
-        this.authPassword = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_AUTHENTICATION_PASSWORD));
-        this.groupsSearch = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_GROUPS_SEARCH));
-        this.usersSearch = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_USERS_SEARCH));
+        this.authUserId = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_AUTHENTICATION_USER, ""));
+        this.authPassword = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_AUTHENTICATION_PASSWORD, ""));
+        this.groupsSearch = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_GROUPS_SEARCH, ""));
+        this.usersSearch = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_USERS_SEARCH, ""));
         this.fullNameKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_FULLNAME_KEY, "displayname"));
         this.memberKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_MEMBER_KEY, "member"));
         this.dnFormat = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_DN_FORMAT, "%s"));  // no formatting by default

@@ -594,7 +594,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     }
 
     public OpenCGAResult<Family> updateAnnotationSet(String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
-                                                     ParamUtils.UpdateAction action, QueryOptions options, String token)
+                                                     ParamUtils.BasicUpdateAction action, QueryOptions options, String token)
             throws CatalogException {
         FamilyUpdateParams updateParams = new FamilyUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -610,7 +610,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     public OpenCGAResult<Family> addAnnotationSets(String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
                                                    QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.UpdateAction.ADD, options, token);
+        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
     public OpenCGAResult<Family> setAnnotationSet(String studyStr, String familyStr, AnnotationSet annotationSet, QueryOptions options,
@@ -620,7 +620,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     public OpenCGAResult<Family> setAnnotationSets(String studyStr, String familyStr, List<AnnotationSet> annotationSetList,
                                                    QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.UpdateAction.SET, options, token);
+        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
     }
 
     public OpenCGAResult<Family> removeAnnotationSet(String studyStr, String familyStr, String annotationSetId, QueryOptions options,
@@ -634,7 +634,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
                 .collect(Collectors.toList());
-        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.UpdateAction.REMOVE, options, token);
+        return updateAnnotationSet(studyStr, familyStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options, token);
     }
 
     public OpenCGAResult<Family> updateAnnotations(String studyStr, String familyStr, String annotationSetId,
@@ -885,7 +885,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
                     && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
                 options.put(Constants.ACTIONS, actionMap);
             }
         }

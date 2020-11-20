@@ -70,33 +70,57 @@ function isNotEmptyArray(arr) {
 
 // Auxiliary methods to write in metadata the latest update run to avoid running the same thing again
 var version = undefined;
-var latestUpdate = undefined;
+var updateCount = 1;
 
-function setOpenCGAVersion(version) {
-    db.metadata.update({}, {"$set": {"version": version}});
+function setOpenCGAVersion(version, versionInt, release) {
+    db.metadata.update({}, {"$set":
+            {
+                "version": version,
+                "_fullVersion.version": NumberInt(versionInt),
+                "_fullVersion.release": NumberInt(release)
+            }
+    });
 }
 
 function setLatestUpdate(latestUpdate) {
-    db.metadata.update({}, {"$set": {"_latestUpdate": latestUpdate}});
+    db.metadata.update({}, {"$set": {"_fullVersion.lastJsUpdate": NumberInt(latestUpdate)}});
 }
 
 function getOpenCGAVersion() {
-    if (typeof latestUpdate === "undefined") {
-        var metadata = db.metadata.findOne({}, {"version": 1, "_latestUpdate": 1});
-        version = metadata.version;
-        latestUpdate = metadata._latestUpdate;
+    if (typeof version === "undefined") {
+        var metadata = db.metadata.findOne({}, {"_fullVersion": 1, "_latestUpdate": 1});
+        if (isNotUndefinedOrNull(metadata._fullVersion)) {
+            version = metadata._fullVersion;
+        } else {
+            version = {
+                'version': 20000,
+                'release': 4,
+                'lastJsUpdate': 0
+            };
+            if (typeof metadata._latestUpdate !== "undefined") {
+                version['lastJsUpdate'] = metadata._latestUpdate;
+            }
+        }
     }
     return version;
 }
 
+function versionNeedsUpdate(version, release) {
+    var dbVersion = getOpenCGAVersion();
+    return dbVersion.version < version || (dbVersion.version == version && dbVersion.release <= release);
+}
+
 function getLatestUpdate() {
-    if (typeof latestUpdate === "undefined") {
-        var metadata = db.metadata.findOne({}, {"version": 1, "_latestUpdate": 1});
-        version = metadata.version;
-        latestUpdate = metadata._latestUpdate;
+    return version.lastJsUpdate;
+}
+
+function runUpdate(migrateFunction) {
+    if (getLatestUpdate() < updateCount) {
+        print("Starting migration " + updateCount + "...");
+        migrateFunction();
+        setLatestUpdate(updateCount);
+    } else {
+        print("Skipping migration " + updateCount + "...");
     }
-    if (typeof latestUpdate === "undefined") {
-        latestUpdate = 0;
-    }
-    return latestUpdate;
+    updateCount++;
 }

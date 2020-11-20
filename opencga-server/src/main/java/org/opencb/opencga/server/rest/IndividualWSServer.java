@@ -269,9 +269,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)") @QueryParam("release") String release,
             @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.UpdateAction samplesAction,
+                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
@@ -283,10 +283,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
             queryOptions.remove("updateSampleVersion");
 
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             if (samplesAction == null) {
-                samplesAction = ParamUtils.UpdateAction.ADD;
+                samplesAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             Map<String, Object> actionMap = new HashMap<>();
@@ -311,9 +311,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.UpdateAction samplesAction,
+                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
@@ -324,10 +324,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
             queryOptions.remove("updateSampleVersion");
 
             if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.UpdateAction.ADD;
+                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
             if (samplesAction == null) {
-                samplesAction = ParamUtils.UpdateAction.ADD;
+                samplesAction = ParamUtils.BasicUpdateAction.ADD;
             }
 
             Map<String, Object> actionMap = new HashMap<>();

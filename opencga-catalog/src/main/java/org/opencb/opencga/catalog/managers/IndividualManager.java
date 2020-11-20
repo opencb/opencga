@@ -1011,7 +1011,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     public OpenCGAResult<Individual> updateAnnotationSet(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
-                                                         ParamUtils.UpdateAction action, QueryOptions options, String token)
+                                                         ParamUtils.BasicUpdateAction action, QueryOptions options, String token)
             throws CatalogException {
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setAnnotationSets(annotationSetList);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1027,7 +1027,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     public OpenCGAResult<Individual> addAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
                                                        QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.ADD, options, token);
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
     public OpenCGAResult<Individual> setAnnotationSet(String studyStr, String individualStr, AnnotationSet annotationSet,
@@ -1037,7 +1037,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     public OpenCGAResult<Individual> setAnnotationSets(String studyStr, String individualStr, List<AnnotationSet> annotationSetList,
                                                        QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.SET, options, token);
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
     }
 
     public OpenCGAResult<Individual> removeAnnotationSet(String studyStr, String individualStr, String annotationSetId,
@@ -1051,7 +1051,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
                 .collect(Collectors.toList());
-        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.UpdateAction.REMOVE, options, token);
+        return updateAnnotationSet(studyStr, individualStr, annotationSetList, ParamUtils.BasicUpdateAction.REMOVE, options, token);
     }
 
     public OpenCGAResult<Individual> updateAnnotations(String studyStr, String individualStr, String annotationSetId,
@@ -1302,7 +1302,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
                     && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");
-                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.BasicUpdateAction.ADD);
                 options.put(Constants.ACTIONS, actionMap);
             }
         }
@@ -1354,8 +1354,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             List<Sample> updatedSamples = new ArrayList<>();
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
             String action = (String) actionMap.getOrDefault(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
-                    ParamUtils.UpdateAction.ADD.name());
-            if (ParamUtils.UpdateAction.ADD.name().equals(action)) {
+                    ParamUtils.BasicUpdateAction.ADD.name());
+            if (ParamUtils.BasicUpdateAction.ADD.name().equals(action)) {
                 // We will convert the ADD action into a SET to remove existing samples with older versions and replace them for the
                 // newest ones
                 Iterator<Sample> iterator = sampleList.iterator();
@@ -1378,7 +1378,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 updatedSamples.addAll(sampleList);
 
                 // Replace action
-                actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.SET.name());
+                actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET.name());
             }
             // We add the rest of the samples the user want to add
             updatedSamples.addAll(sampleList);

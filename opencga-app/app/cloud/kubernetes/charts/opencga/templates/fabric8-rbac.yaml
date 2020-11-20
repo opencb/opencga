@@ -4,7 +4,7 @@ metadata:
   name: {{ include "clusterRoleBinding.name" . | quote}}
 subjects:
  - kind: ServiceAccount
-   name: master
+   name: {{ .Values.master.name }}
    namespace: {{ .Release.Namespace }}
 roleRef:
  kind: ClusterRole

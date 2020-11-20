@@ -17,10 +17,10 @@
 package org.opencb.opencga.analysis.variant.knockout;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByGene;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByIndividual.KnockoutGene;
-import org.opencb.opencga.analysis.variant.knockout.result.KnockoutVariant;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual.KnockoutGene;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.storage.core.metadata.models.Trio;

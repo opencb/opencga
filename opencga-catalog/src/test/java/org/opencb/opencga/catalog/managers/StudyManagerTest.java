@@ -28,6 +28,7 @@ import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
@@ -48,6 +49,8 @@ public class StudyManagerTest extends AbstractManagerTest {
 
         Set<String> s = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
 
+        // This variable set is internal so it will not be returned from study
+        s.remove("variablesets/sample-variant-stats-variableset.json");
         assertEquals(s.size(), study.getVariableSets().size());
         assertEquals(s, study.getVariableSets().stream().map(v->v.getAttributes().get("resource")).collect(Collectors.toSet()));
 
@@ -55,7 +58,7 @@ public class StudyManagerTest extends AbstractManagerTest {
             Object avroClassStr = variableSet.getAttributes().get("avroClass");
             System.out.println("variableSet.getAttributes().get(\"avroClass\") = " + avroClassStr);
             if (avroClassStr != null) {
-                Class<?> avroClass = Class.forName(avroClassStr.toString());
+                Class<?> avroClass = Class.forName(avroClassStr.toString().split(" ")[1]);
                 Schema schema = (Schema) avroClass.getMethod("getClassSchema").invoke(null);
                 Map<String, Variable> expectedVariables = AvroToAnnotationConverter.convertToVariableSet(schema).stream().collect(Collectors.toMap(Variable::getId, v -> v));
                 Map<String, Variable> actualVariables = variableSet.getVariables().stream().collect(Collectors.toMap(Variable::getId, v->v));
@@ -65,7 +68,7 @@ public class StudyManagerTest extends AbstractManagerTest {
                     Variable actual = actualVariables.get(expectedEntry.getKey());
                     cleanVariable(actual);
                     cleanVariable(expectedEntry.getValue());
-                    assertEquals(expectedEntry.getKey(), expectedEntry.getValue().toString(), actual.toString());
+                    assertEquals(expectedEntry.getKey(), expectedEntry.getValue(), actual);
                 }
             }
         }
@@ -88,6 +91,34 @@ public class StudyManagerTest extends AbstractManagerTest {
             }
             variable.setVariableSet(new LinkedHashSet<>(l));
         }
+    }
+
+    @Test
+    public void internalVariableSetTest() throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+                null, null, null, new QueryOptions(), token).first();
+
+        Set<Variable> variables = new HashSet<>();
+        variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
+        variables.add(new Variable().setId("b").setType(Variable.VariableType.MAP_INTEGER).setAllowedKeys(Arrays.asList("b1", "b2")));
+        VariableSet variableSet = new VariableSet("myInternalVset", "", false, false, true, "", variables, null, 1, null);
+
+        OpenCGAResult<VariableSet> result = catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
+        assertEquals(1, result.getNumUpdated());
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.getResults().size());
+
+        // An internal variable set should never be returned
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        for (VariableSet vset : study.getVariableSets()) {
+            assertNotEquals(variableSet.getId(), vset.getId());
+            assertFalse(vset.isInternal());
+        }
+
+        // But if I try to create another one with the same id, it should fail
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("exists");
+        catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
     }
 
     @Test

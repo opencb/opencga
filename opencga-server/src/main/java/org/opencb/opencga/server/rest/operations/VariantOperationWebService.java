@@ -109,7 +109,19 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantStorageMetadataSynchronizeParams.DESCRIPTION) VariantStorageMetadataSynchronizeParams params) {
-        return submitOperation(VariantStorageMetadataSynchronizeOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitJobAdmin(VariantStorageMetadataSynchronizeOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/variant/metadata/repair")
+    @ApiOperation(value = VariantStorageMetadataRepairTool.DESCRIPTION, response = Job.class)
+    public Response variantMetadataRepair(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = VariantStorageMetadataRepairToolParams.DESCRIPTION) VariantStorageMetadataRepairToolParams params) {
+        return submitJobAdmin(VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

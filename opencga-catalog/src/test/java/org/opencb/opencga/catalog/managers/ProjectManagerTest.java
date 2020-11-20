@@ -115,7 +115,7 @@ public class ProjectManagerTest extends GenericTest {
 
         // Create a new study in project2 with some dummy permissions for user
         String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, null, sessionIdUser2).first().getId();
-        catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser2);
 
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
@@ -133,7 +133,7 @@ public class ProjectManagerTest extends GenericTest {
 
         // Add permissions to user in a study of user3
         String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, null, sessionIdUser3).first().getId();
-        catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser3);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);

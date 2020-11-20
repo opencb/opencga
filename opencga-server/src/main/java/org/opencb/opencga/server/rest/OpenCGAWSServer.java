@@ -802,6 +802,16 @@ public class OpenCGAWSServer {
         return submitJob(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
     }
 
+    public Response submitJobAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr) {
+        return run(() -> {
+            if (!catalogManager.getUserManager().getUserId(token).equals(ParamConstants.OPENCGA_USER_ID)) {
+                throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
+            }
+            return submitJobRaw(toolId, null, "admin", bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+        });
+    }
+
     public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
                               String jobDependsOnStr, String jobTagsStr) {
         return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr));
@@ -826,7 +836,7 @@ public class OpenCGAWSServer {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
             // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
             List<String> studies = catalogManager.getStudyManager()
-                    .get(project, new Query(), options, token)
+                    .search(project, new Query(), options, token)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

@@ -33,8 +33,10 @@
 
     <properties>
         <opencga-storage-hadoop-deps.artifactId>${artifactId}</opencga-storage-hadoop-deps.artifactId>
-        <hdp.dependencies.version>2.6.5.3007-2</hdp.dependencies.version>
+<!--        <hdp.dependencies.version>2.6.5.3033-1</hdp.dependencies.version>-->
+        <hdp.dependencies.version>2.6.5.298-1</hdp.dependencies.version>
 
+        <!--        <guava.version>24.1.1-jre</guava.version>-->
         <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
         <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
         <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>

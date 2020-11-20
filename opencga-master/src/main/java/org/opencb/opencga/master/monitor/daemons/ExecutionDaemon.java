@@ -458,7 +458,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(":"));
             OpenCGAResult<Study> studyResult;
             try {
-                studyResult = catalogManager.getStudyManager().get(projectFqn, new Query(),
+                studyResult = catalogManager.getStudyManager().search(projectFqn, new Query(),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
                                 StudyDBAdaptor.QueryParams.FQN.key())), token);
             } catch (CatalogException e) {
@@ -1044,7 +1044,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 .setInternal(jobInternal);
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.UpdateAction.ADD.name());
+        actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.BasicUpdateAction.ADD.name());
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         Client client = ClientBuilder.newClient();

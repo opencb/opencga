@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.IndividualCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -45,7 +44,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -84,11 +82,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         this.individualCollection = individualCollection;
         this.deletedIndividualCollection = deletedIndividualCollection;
         this.individualConverter = new IndividualConverter();
-    }
-
-    @Override
-    protected AnnotableConverter<? extends Annotable> getConverter() {
-        return individualConverter;
     }
 
     @Override
@@ -447,8 +440,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 DBIterator<Family> familyIterator = familyDBAdaptor.iterator(clientSession, familyQuery, familyOptions);
 
                 ObjectMap actionMap = new ObjectMap()
-                        .append(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.UpdateAction.SET)
-                        .append(FamilyDBAdaptor.QueryParams.DISORDERS.key(), ParamUtils.UpdateAction.SET);
+                        .append(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.BasicUpdateAction.SET)
+                        .append(FamilyDBAdaptor.QueryParams.DISORDERS.key(), ParamUtils.BasicUpdateAction.SET);
                 QueryOptions familyUpdateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 while (familyIterator.hasNext()) {
@@ -593,7 +586,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
             ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
 
-            ObjectMap action = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), ParamUtils.UpdateAction.SET);
+            ObjectMap action = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), ParamUtils.BasicUpdateAction.SET);
             options = new QueryOptions()
                     .append(Constants.INCREMENT_VERSION, true)
                     .append(Constants.ACTIONS, action);
@@ -769,8 +762,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Individual individual = checkOnlyOneIndividualMatches(clientSession, query);
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-            ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SAMPLES.key(),
-                    ParamUtils.UpdateAction.ADD);
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SAMPLES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
             getSampleChanges(individual, parameters, document, operation);
 
             acceptedObjectParams = new String[]{QueryParams.SAMPLES.key()};
@@ -804,7 +797,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     private void getSampleChanges(Individual individual, ObjectMap parameters, UpdateDocument updateDocument,
-                                  ParamUtils.UpdateAction operation) {
+                                  ParamUtils.BasicUpdateAction operation) {
         List<Sample> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class);
 
         Set<Long> currentSampleUidList = new HashSet<>();
@@ -812,7 +805,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             currentSampleUidList = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
         }
 
-        if (operation == ParamUtils.UpdateAction.SET || operation == ParamUtils.UpdateAction.ADD) {
+        if (operation == ParamUtils.BasicUpdateAction.SET || operation == ParamUtils.BasicUpdateAction.ADD) {
             // We will see which of the samples are actually new
             List<Long> samplesToAdd = new ArrayList<>();
 
@@ -826,7 +819,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 updateDocument.getAttributes().put("ADDED_SAMPLES", samplesToAdd);
             }
 
-            if (operation == ParamUtils.UpdateAction.SET && individual.getSamples() != null) {
+            if (operation == ParamUtils.BasicUpdateAction.SET && individual.getSamples() != null) {
                 // We also need to see which samples existed and are not currently in the new list provided by the user to take them out
                 Set<Long> newSampleUids = sampleList.stream().map(Sample::getUid).collect(Collectors.toSet());
 
@@ -841,7 +834,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     updateDocument.getAttributes().put("REMOVED_SAMPLES", samplesToRemove);
                 }
             }
-        } else if (operation == ParamUtils.UpdateAction.REMOVE) {
+        } else if (operation == ParamUtils.BasicUpdateAction.REMOVE) {
             // We will only store the samples to be removed that are already associated to the individual
             List<Long> samplesToRemove = new ArrayList<>();
 
@@ -1408,7 +1401,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
-                new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name()));
+                new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE.name()));
 
         Bson update;
         try {

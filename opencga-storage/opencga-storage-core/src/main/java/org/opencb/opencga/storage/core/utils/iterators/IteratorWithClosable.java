@@ -12,6 +12,7 @@ import java.util.Iterator;
  */
 public class IteratorWithClosable<T> implements Iterator<T> {
     private final Iterator<T> iterator;
+    private boolean closed = false;
     private final Closeable closable;
 
     public IteratorWithClosable(Iterator<T> iterator, Closeable closable) {
@@ -22,10 +23,13 @@ public class IteratorWithClosable<T> implements Iterator<T> {
     @Override
     public boolean hasNext() {
         if (!iterator.hasNext()) {
-            try {
-                closable.close();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            if (!closed) {
+                try {
+                    closed = true;
+                    closable.close();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
             }
             return false;
         } else {

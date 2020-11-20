@@ -113,9 +113,9 @@ public class FileMetadataReader {
                         FileUpdateParams partialUpdate = new FileUpdateParams().setSampleIds(subList);
 
                         // SET for the first batch, then ADD
-                        ParamUtils.UpdateAction action = i == 0
-                                ? ParamUtils.UpdateAction.SET
-                                : ParamUtils.UpdateAction.ADD;
+                        ParamUtils.BasicUpdateAction action = i == 0
+                                ? ParamUtils.BasicUpdateAction.SET
+                                : ParamUtils.BasicUpdateAction.ADD;
                         catalogManager.getFileManager().update(studyId, file.getUuid(), partialUpdate,
                                 new QueryOptions(Constants.ACTIONS,
                                         Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), action.toString())), token);
@@ -126,7 +126,7 @@ public class FileMetadataReader {
                     catalogManager.getFileManager().update(studyId, file.getUuid(), updateParams,
                             new QueryOptions(Constants.ACTIONS,
                                     Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
-                                            ParamUtils.UpdateAction.SET.toString())), token);
+                                            ParamUtils.BasicUpdateAction.SET.toString())), token);
                 }
                 return catalogManager.getFileManager().get(studyId, file.getUuid(), QueryOptions.empty(), token).first();
             }

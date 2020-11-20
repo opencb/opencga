@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -71,16 +72,15 @@ public abstract class OperationTool extends OpenCgaTool {
     }
 
     protected final String getStudyFqn() throws CatalogException {
-        String userId = getCatalogManager().getUserManager().getUserId(getToken());
         String study = getParams().getString(ParamConstants.STUDY_PARAM);
         try {
-            return getCatalogManager().getStudyManager().resolveId(study, userId).getFqn();
+            return getStudyFqn(study);
         } catch (CatalogException e) {
             String project = params.getString(ParamConstants.PROJECT_PARAM);
             if (StringUtils.isNotEmpty(project) && !study.contains(":")) {
                 study = project + ":" + study;
                 try {
-                    return getCatalogManager().getStudyManager().resolveId(study, userId).getFqn();
+                    return getStudyFqn(study);
                 } catch (Exception e2) {
                     e.addSuppressed(e2);
                     throw e;
@@ -89,6 +89,10 @@ public abstract class OperationTool extends OpenCgaTool {
                 throw e;
             }
         }
+    }
+
+    protected String getStudyFqn(String study) throws CatalogException {
+        return getCatalogManager().getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, getToken()).first().getFqn();
     }
 
     private static boolean isVcfFormat(File.Format format) {
