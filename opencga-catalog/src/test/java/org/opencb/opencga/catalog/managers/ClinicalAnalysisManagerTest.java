@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.StatusValue;
@@ -999,30 +1000,34 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
-                .setFlags(Arrays.asList(new FlagValueParam(flag1.getId()), new FlagValueParam(flag2.getId())));
+                .setFlags(Arrays.asList(new FlagValueParam(flag1.getId()), new FlagValueParam(flag1.getId()),
+                        new FlagValueParam(flag2.getId())));
         OpenCGAResult<ClinicalAnalysis> update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(),
                 updateParams, options, sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
         updateParams = new ClinicalAnalysisUpdateParams()
-                .setFlags(Collections.singletonList(new FlagValueParam(flag3.getId())));
+                .setFlags(Arrays.asList(new FlagValueParam(flag2.getId()), new FlagValueParam(flag3.getId())));
         update = catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, options, sessionIdUser);
         assertEquals(1, update.getNumUpdated());
 
         ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, dummyEnvironment.first().getId(), QueryOptions.empty(),
                 sessionIdUser).first();
         assertEquals(3, ca.getFlags().size());
-        assertEquals(flag1.getId(), ca.getFlags().get(0).getId());
-        assertEquals(flag1.getDescription(), ca.getFlags().get(0).getDescription());
-        assertNotNull(ca.getFlags().get(0).getDate());
-
-        assertEquals(flag2.getId(), ca.getFlags().get(1).getId());
-        assertEquals(flag2.getDescription(), ca.getFlags().get(1).getDescription());
-        assertNotNull(ca.getFlags().get(1).getDate());
-
-        assertEquals(flag3.getId(), ca.getFlags().get(2).getId());
-        assertEquals(flag3.getDescription(), ca.getFlags().get(2).getDescription());
-        assertNotNull(ca.getFlags().get(2).getDate());
+        for (FlagAnnotation flag : ca.getFlags()) {
+            FlagValue flagToCompare = null;
+            if (flag.getId().equals(flag1.getId())) {
+                flagToCompare = flag1;
+            } else if (flag.getId().equals(flag2.getId())) {
+                flagToCompare = flag2;
+            } else if (flag.getId().equals(flag3.getId())) {
+                flagToCompare = flag3;
+            } else {
+                fail("It should match one of those 3 flags");
+            }
+            assertEquals(flagToCompare.getDescription(), flag.getDescription());
+            assertNotNull(flag.getDate());
+        }
 
         // Set other flags
         flag1 = configuration.getFlags().get(dummyEnvironment.first().getType()).get(0);

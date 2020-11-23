@@ -276,7 +276,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<SampleVariantStats> sampleStatsQuery() throws ClientException {
         return openCGAClient.getVariantClient()
-                .infoSampleStats(String.join(",", variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample),
+                .querySampleStats(String.join(",", variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample),
                         getParams(variantCommandOptions.sampleVariantStatsQueryCommandOptions.study));
     }
 

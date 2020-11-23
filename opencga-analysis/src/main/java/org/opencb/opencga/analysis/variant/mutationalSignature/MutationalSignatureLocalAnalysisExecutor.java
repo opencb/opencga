@@ -129,6 +129,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
                 // FAI access time
                 String key = variant.getReference() + ">" + variant.getAlternate();
+                if (variant.getStrand().equals("-")) {
+                    key = complement(key);
+                }
+
                 if (countMap.containsKey(key)) {
                     contextCount++;
                     try {
@@ -141,7 +145,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                         // Write context index
                         pw.println(variant.toString() + "\t" + sequence);
 
-                        // Update context counts
+//                        // Update context counts
+//                        if (variant.getStrand().equals("-")) {
+//                            sequence = complement(sequence);
+//                        }
                         if (countMap.get(key).containsKey(sequence)) {
                             countMap.get(key).put(sequence, countMap.get(key).get(sequence) + 1);
                         }
@@ -257,13 +264,20 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             // FAI access time
             String key = variant.getReference() + ">" + variant.getAlternate();
+            if (variant.getStrand().equals("-")) {
+                key = complement(key);
+            }
+
             if (countMap.containsKey(key)) {
                 contextCount++;
                 try {
                     // Read context index
                     String sequence = indexMap.get(variant.toString());
 
-                    // Update context counts
+//                    // Update context counts
+//                    if (variant.getStrand().equals("-")) {
+//                        sequence = complement(sequence);
+//                    }
                     if (countMap.get(key).containsKey(sequence)) {
                         countMap.get(key).put(sequence, countMap.get(key).get(sequence) + 1);
                     }
@@ -337,7 +351,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             result.setSignature(new Signature("SNV", sigCounts));
         }
 
-        
+
         // Signatures coefficients
         File coeffsFile = dir.resolve("signature_coefficients.json").toFile();
         if (coeffsFile.exists()) {

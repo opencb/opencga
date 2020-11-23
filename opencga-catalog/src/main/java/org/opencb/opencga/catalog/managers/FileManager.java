@@ -3150,6 +3150,15 @@ public class FileManager extends AnnotationSetManager<File> {
             if (params.getPath().startsWith("/")) {
                 params.setPath(params.getPath().substring(1));
             }
+            String[] pathParts = params.getPath().split("/");
+            java.io.File originalFile = new java.io.File(normalizedUri);
+            if (originalFile.isFile()) {
+                String fileName = new java.io.File(normalizedUri).getName();
+                // If user sent something like uri = file.txt and path = "A/B/C/file.txt" we change the path so it does not include file.txt
+                if (fileName.equals(pathParts[pathParts.length - 1])) {
+                    params.setPath(params.getPath().substring(0, params.getPath().lastIndexOf(fileName)));
+                }
+            }
             if (!params.getPath().isEmpty() && !params.getPath().endsWith("/")) {
                 params.setPath(params.getPath() + "/");
             }

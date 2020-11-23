@@ -19,7 +19,8 @@ package org.opencb.opencga.core.tools.variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleQualityControlMetrics;
+import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
+import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;
@@ -44,7 +45,7 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
     protected QcType qcType;
 
-    protected SampleQualityControlMetrics metrics;
+    protected SampleAlignmentQualityControlMetrics alignmentQcMetrics;
 
     public SampleQcAnalysisExecutor() {
     }
@@ -157,12 +158,12 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public SampleQualityControlMetrics getMetrics() {
-        return metrics;
+    public SampleAlignmentQualityControlMetrics getAlignmentQcMetrics() {
+        return alignmentQcMetrics;
     }
 
-    public SampleQcAnalysisExecutor setMetrics(SampleQualityControlMetrics metrics) {
-        this.metrics = metrics;
+    public SampleQcAnalysisExecutor setAlignmentQcMetrics(SampleAlignmentQualityControlMetrics alignmentQcMetrics) {
+        this.alignmentQcMetrics = alignmentQcMetrics;
         return this;
     }
 }

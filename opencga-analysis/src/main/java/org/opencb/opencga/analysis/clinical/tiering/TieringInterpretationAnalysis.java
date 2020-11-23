@@ -19,15 +19,19 @@ package org.opencb.opencga.analysis.clinical.tiering;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
+import java.util.Collections;
 import java.util.List;
 
 @Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
@@ -44,6 +48,11 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
     private ClinicalAnalysis clinicalAnalysis;
     private List<DiseasePanel> diseasePanels;
+
+    @Override
+    protected InterpretationMethod getInterpretationMethod() {
+        return getInterpretationMethod(ID);
+    }
 
     @Override
     protected void check() throws Exception {
@@ -77,6 +86,12 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
         // Check disease panels
         diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, token);
+
+        // Check primary
+        checkPrimaryInterpretation(clinicalAnalysis);
+
+        // Check interpretation method
+        checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);
