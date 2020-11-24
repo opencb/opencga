@@ -493,6 +493,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
+    public boolean exists() {
+        return projectDBAdaptor.exists();
+    }
+
     public ProjectMetadata getProjectMetadata() {
         return projectDBAdaptor.getProjectMetadata().first();
     }

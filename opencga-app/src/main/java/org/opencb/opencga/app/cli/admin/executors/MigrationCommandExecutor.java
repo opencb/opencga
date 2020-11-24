@@ -3,6 +3,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -12,6 +13,7 @@ import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigrati
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewStudyMetadata;
+import org.opencb.opencga.app.cli.admin.executors.migration.v2_0_0.VariantStorage200MigrationTool;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -25,6 +27,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.project.Project;
@@ -33,6 +36,7 @@ import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
+import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200MigrationToolParams;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -197,25 +201,44 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
-        boolean skipRc1 = false;
-        boolean skipRc2 = false;
-        boolean skipFinalRelease = false;
+
+        final boolean skipRc1;
+        final boolean skipRc2;
+        final boolean skipFinalRelease;
+        final boolean variantStorage;
         switch (options.what) {
-            case RC1:
+            case VARIANT_STORAGE:
+                skipRc1 = true;
                 skipRc2 = true;
                 skipFinalRelease = true;
+                variantStorage = true;
+                break;
+            case RC1:
+                skipRc1 = false;
+                skipRc2 = true;
+                skipFinalRelease = true;
+                variantStorage = false;
                 break;
             case RC2:
                 skipRc1 = true;
+                skipRc2 = false;
                 skipFinalRelease = true;
+                variantStorage = false;
                 break;
             case STABLE:
                 skipRc1 = true;
                 skipRc2 = true;
+                skipFinalRelease = false;
+                variantStorage = false;
                 break;
             case ALL:
-            default:
+                skipRc1 = false;
+                skipRc2 = false;
+                skipFinalRelease = false;
+                variantStorage = true;
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown param " + options.what);
         }
 
         // Check administrator password
@@ -379,6 +402,25 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     updateLastUpdate(metaCollection, 2);
                 }
 
+            }
+        }
+        if (variantStorage) {
+            try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+                String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+                List<Project> projects = catalogManager.getProjectManager()
+                        .get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "id,fqn"), adminToken).getResults();
+                for (Project project : projects) {
+                    if (project.getFqn().startsWith(ParamConstants.OPENCGA_USER_ID)) {
+                        // Skip opencga projects.
+                        continue;
+                    }
+                    VariantStorage200MigrationToolParams toolParams = new VariantStorage200MigrationToolParams()
+                            .setRemoveSpanDeletions(true)
+                            .setProject(project.getFqn());
+                    toolParams.updateParams(new ObjectMap(options.commonOptions.params));
+                    catalogManager.getJobManager()
+                            .submit("admin", VariantStorage200MigrationTool.ID, Enums.Priority.HIGH, toolParams.toParams(), adminToken);
+                }
             }
         }
     }

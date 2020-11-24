@@ -69,6 +69,11 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
                 (key, value) -> value == null ? 1 : value + 1);
     }
 
+    @Override
+    public boolean exists() {
+        return projectMetadata != null;
+    }
+
     private static final AtomicInteger NUM_PRINTS = new AtomicInteger();
 
     public static void writeAndClear(Path path) {

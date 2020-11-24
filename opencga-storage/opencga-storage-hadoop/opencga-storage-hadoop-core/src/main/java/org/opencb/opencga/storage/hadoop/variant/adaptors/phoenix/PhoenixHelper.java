@@ -260,9 +260,12 @@ public class PhoenixHelper {
     }
 
     public static byte[] toBytes(Collection<?> collection, PArrayDataType arrayType) {
+        return toBytes(collection.toArray(), arrayType);
+    }
+
+    public static byte[] toBytes(Object[] elements, PArrayDataType arrayType) {
         PDataType pDataType = PDataType.arrayBaseType(arrayType);
-        Object[] elements = collection.toArray();
-        PhoenixArray phoenixArray = new PhoenixArray(pDataType, elements);
+        PhoenixArray phoenixArray = PArrayDataType.instantiatePhoenixArray(pDataType, elements);
         return arrayType.toBytes(phoenixArray);
     }
 

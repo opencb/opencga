@@ -27,6 +27,7 @@ import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -102,7 +103,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             Query query = new Query()
                     .append(VariantQueryParam.STUDY.key(), getStudy())
                     .append(VariantQueryParam.SAMPLE.key(), getSampleName())
-                    .append(VariantQueryParam.TYPE.key(), "SNV");
+                    .append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
 
@@ -239,7 +240,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
         // Get variant iterator
         prepIteratorWatch.start();
-        query.append(VariantQueryParam.TYPE.key(), "SNV");
+        query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
         queryOptions.append(QueryOptions.INCLUDE, "id");
         VariantDBIterator iterator = getVariantIterator(query, queryOptions);
         prepIteratorWatch.stop();

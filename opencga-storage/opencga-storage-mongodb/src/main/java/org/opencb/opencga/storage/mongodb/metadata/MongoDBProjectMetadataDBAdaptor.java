@@ -81,6 +81,11 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
         return generateId(idType, true);
     }
 
+    @Override
+    public boolean exists() {
+        return getProjectMetadata() != null;
+    }
+
     private int generateId(String idType, boolean retry) throws StorageEngineException {
         String field = COUNTERS_FIELD + '.' + idType;
         Document projection = new Document(field, true);
