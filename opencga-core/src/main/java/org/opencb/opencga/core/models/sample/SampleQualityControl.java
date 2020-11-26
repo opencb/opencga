@@ -24,11 +24,10 @@ import java.util.List;
 
 public class SampleQualityControl implements Serializable {
 
-    List<String> fileIds;
-    List<ClinicalComment> comments;
-    List<SampleAlignmentQualityControlMetrics> alignmentMetrics;
-    SampleVariantQualityControlMetrics variantMetrics;
-
+    private List<String> fileIds;
+    private List<ClinicalComment> comments;
+    private List<SampleAlignmentQualityControlMetrics> alignmentMetrics;
+    private SampleVariantQualityControlMetrics variantMetrics;
 
     public SampleQualityControl() {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), null);
