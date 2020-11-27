@@ -30,6 +30,7 @@ import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
@@ -43,6 +44,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
  * Created on 08/09/17.
@@ -266,8 +269,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 token = catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
                 // Create default project and study for administrator #1491
-                catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", null, token);
-                catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", "Default study",
+                catalogManager.getProjectManager().create(ADMIN_PROJECT, ADMIN_PROJECT, "Default project", "", "", "", null, token);
+                catalogManager.getStudyManager().create(ADMIN_PROJECT, ADMIN_STUDY, ADMIN_STUDY, ADMIN_STUDY, "Default study",
                         null, null, null, Collections.emptyMap(), null, token);
 
                 // Create default JOBS folder for analysis
@@ -405,21 +408,30 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
         }
         if (variantStorage) {
+            logger.info("Migrate variant storage");
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
                 String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
                 List<Project> projects = catalogManager.getProjectManager()
                         .get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "id,fqn"), adminToken).getResults();
+                String theProject = options.commonOptions.params.get(ParamConstants.PROJECT_PARAM);
                 for (Project project : projects) {
                     if (project.getFqn().startsWith(ParamConstants.OPENCGA_USER_ID)) {
                         // Skip opencga projects.
                         continue;
                     }
+                    if (StringUtils.isNotEmpty(theProject) && !theProject.equals(project.getFqn())) {
+                        // project from -Dproject=XXXX is not this project. Skip!
+                        continue;
+                    }
+                    logger.info("Migrate project {}", project.getFqn());
                     VariantStorage200MigrationToolParams toolParams = new VariantStorage200MigrationToolParams()
                             .setRemoveSpanDeletions(true)
                             .setProject(project.getFqn());
                     toolParams.updateParams(new ObjectMap(options.commonOptions.params));
-                    catalogManager.getJobManager()
-                            .submit("admin", VariantStorage200MigrationTool.ID, Enums.Priority.HIGH, toolParams.toParams(), adminToken);
+                    Job job = catalogManager.getJobManager()
+                            .submit(ADMIN_STUDY_FQN, VariantStorage200MigrationTool.ID, Enums.Priority.HIGH, toolParams.toParams(), adminToken)
+                            .first();
+                    logger.info("Submitted job " + job.getId());
                 }
             }
         }

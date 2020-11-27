@@ -115,7 +115,7 @@ public class SampleIndexLoader {
                         tableNameGenerator.getVariantTableName(),
                         studyId,
                         null,
-                        options), options,
+                        options),
                 "Build sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
         postSampleIndexBuild(studyId, samples);
     }

@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.schema.types.PVarcharArray;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -101,6 +102,7 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
         private ImmutableBytesWritable variantsTable;
         private ImmutableBytesWritable deletedVariantsTable;
         private boolean deleteSpanDeletions;
+        private final Logger logger = LoggerFactory.getLogger(VariantTypeMigrationMapper.class);
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -119,6 +121,7 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
             Put put = new Put(result.getRow());
             boolean isSpanDeletion = variant.getVariant().getAlternate().equals(Allele.SPAN_DEL_STRING);
             final boolean[] isMainVariant = {false};
+            final int[] validSecondaryAlternates = {0};
 
             variant.walk(new VariantRow.VariantRowWalker() {
                 @Override
@@ -176,6 +179,9 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
                                 }
                                 modified = true;
                             }
+                            if (!secAlt.getAlternate().equals(VariantBuilder.SPAN_DELETION) && type != VariantType.NO_VARIATION) {
+                                validSecondaryAlternates[0]++;
+                            }
                         }
                         if (modified) {
                             String[] values;
@@ -197,12 +203,16 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
                 }
             });
 
+            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
             if (isSpanDeletion) {
                 context.getCounter(COUNTER_GROUP_NAME, "span_deletion").increment(1);
-            }
-
-            context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
-            if (isSpanDeletion && !isMainVariant[0]) {
+                if (isMainVariant[0]) {
+                    context.getCounter(COUNTER_GROUP_NAME, "span_deletion_main").increment(1);
+                }
+                if (validSecondaryAlternates[0] == 0) {
+                    context.getCounter(COUNTER_GROUP_NAME, "span_deletion_alone").increment(1);
+                    logger.info("span_deletion_alone : " + variant.getVariant().toString());
+                }
                 Put copyResult = new Put(result.getRow());
                 for (Cell cell : result.rawCells()) {
                     copyResult.add(cell);
