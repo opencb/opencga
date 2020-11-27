@@ -1372,7 +1372,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String variableSetId = "opencga_sample_variant_stats";
 
-        if (CollectionUtils.isEmpty(sampleUpdateParams.getQualityControl().getMetrics())) {
+        if (sampleUpdateParams.getQualityControl().getVariantMetrics() == null
+                || sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats().isEmpty()) {
             // Add REMOVE Action
             Map<String, Object> map = options.getMap(Constants.ACTIONS);
             if (map == null) {
@@ -1388,9 +1389,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
 
         List<AnnotationSet> annotationSetList = new LinkedList<>();
-        for (SampleQualityControlMetrics metric : sampleUpdateParams.getQualityControl().getMetrics()) {
-            if (CollectionUtils.isNotEmpty(metric.getVariantStats())) {
-                for (SampleQcVariantStats variantStat : metric.getVariantStats()) {
+        if (sampleUpdateParams.getQualityControl().getVariantMetrics() != null) {
+
+            if (CollectionUtils.isNotEmpty(sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats())) {
+                for (SampleQcVariantStats variantStat : sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats()) {
                     SampleVariantStats stats = variantStat.getStats();
                     if (stats != null) {
                         Map<String, Integer> indelLengthCount = new HashMap<>();

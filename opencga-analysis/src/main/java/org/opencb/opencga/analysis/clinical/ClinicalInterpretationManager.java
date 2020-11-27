@@ -32,6 +32,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -359,54 +360,50 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     private ClinicalVariant createClinicalVariant(Variant variant, Map<String, Set<String>> genePanelMap,
                                                   Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                                  Map<String, List<String>> actionableVariants, InterpretationAnalysisConfiguration config) {
-
-        if (variant.getAnnotation() ==  null || CollectionUtils.isEmpty(variant.getAnnotation().getConsequenceTypes())) {
-            return null;
-        }
-
-
+                                                  Map<String, List<String>> actionableVariants,
+                                                  InterpretationAnalysisConfiguration config) {
         List<String> panelIds;
         GenomicFeature gFeature;
         List<ClinicalVariantEvidence> evidences = new ArrayList<>();
 
-        for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
+        if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+            for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
+                gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
+                        ct.getSequenceOntologyTerms(), null);
+                panelIds = null;
+                if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
+                } else if (genePanelMap.containsKey(ct.getGeneName())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
+                }
 
-            gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
-                    ct.getSequenceOntologyTerms(), null);
-            panelIds = null;
-            if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
-                panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
-            } else if (genePanelMap.containsKey(ct.getGeneName())) {
-                panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
-            }
 
-
-            ClinicalVariantEvidence evidence;
-            if (CollectionUtils.isNotEmpty(panelIds)) {
-                for (String panelId : panelIds) {
-                    evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
-                            roleInCancer, actionableVariants, config);
+                ClinicalVariantEvidence evidence;
+                if (CollectionUtils.isNotEmpty(panelIds)) {
+                    for (String panelId : panelIds) {
+                        evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
+                                roleInCancer, actionableVariants, config);
+                        if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
+                            evidences.add(evidence);
+                        }
+                    }
+                } else {
+                    evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
+                            actionableVariants, config);
                     if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
                         evidences.add(evidence);
                     }
-                }
-            } else {
-                evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
-                        actionableVariants, config);
-                if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
-                    evidences.add(evidence);
                 }
             }
         }
 
         if (config != null && config.isSkipUntieredVariants() && CollectionUtils.isEmpty(evidences)) {
             return null;
-        } else {
-            ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
-            clinicalVariant.setEvidences(evidences);
-            return clinicalVariant;
         }
+        
+        ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
+        clinicalVariant.setEvidences(evidences);
+        return clinicalVariant;
     }
 
     /*--------------------------------------------------------------------------*/

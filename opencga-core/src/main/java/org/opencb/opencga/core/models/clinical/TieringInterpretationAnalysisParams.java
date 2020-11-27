@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.models.clinical;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
@@ -13,22 +12,28 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
     private List<String> panels;
     private ClinicalProperty.Penetrance penetrance;
 
-    @JsonProperty(defaultValue = "false")
-    private boolean secondary; // secondary interpretation (vs primary interpretation)
-
-    @JsonProperty(defaultValue = "true")
-    private boolean index;     // save interpretation in catalog DB
+    private boolean primary; // primary interpretation (vs secondary interpretation)
 
     public TieringInterpretationAnalysisParams() {
     }
 
     public TieringInterpretationAnalysisParams(String clinicalAnalysis, List<String> panels, ClinicalProperty.Penetrance penetrance,
-                                               boolean secondary, boolean index) {
+                                               boolean primary) {
         this.clinicalAnalysis = clinicalAnalysis;
         this.panels = panels;
         this.penetrance = penetrance;
-        this.secondary = secondary;
-        this.index = index;
+        this.primary = primary;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("TieringInterpretationAnalysisParams{");
+        sb.append("clinicalAnalysis='").append(clinicalAnalysis).append('\'');
+        sb.append(", panels=").append(panels);
+        sb.append(", penetrance=").append(penetrance);
+        sb.append(", primary=").append(primary);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getClinicalAnalysis() {
@@ -58,21 +63,12 @@ public class TieringInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
-    public boolean isSecondary() {
-        return secondary;
+    public boolean isPrimary() {
+        return primary;
     }
 
-    public TieringInterpretationAnalysisParams setSecondary(boolean secondary) {
-        this.secondary = secondary;
-        return this;
-    }
-
-    public boolean isIndex() {
-        return index;
-    }
-
-    public TieringInterpretationAnalysisParams setIndex(boolean index) {
-        this.index = index;
+    public TieringInterpretationAnalysisParams setPrimary(boolean primary) {
+        this.primary = primary;
         return this;
     }
 }

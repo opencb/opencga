@@ -41,8 +41,10 @@ public class AuthenticationOrigin {
     public static final String LDAP_USERS_SEARCH = "usersSearch";
     public static final String LDAP_GROUPS_SEARCH = "groupsSearch";
     public static final String LDAP_FULLNAME_KEY = "fullNameKey";
-    public static final String LDAP_MEMBER_KEY = "fullNameKey";
-    public static final String LDAP_DN_FORMAT = "dnFormat";
+    public static final String LDAP_MEMBER_KEY = "memberKey";
+    public static final String LDAP_DN_KEY = "dnKey";
+    public static final String LDAP_UID_KEY = "uidKey";
+    public static final String LDAP_UID_FORMAT = "uidFormat";
     public static final String LDAP_SSL_INVALID_CERTIFICATES_ALLOWED = "sslInvalidCertificatesAllowed";
 
     public AuthenticationOrigin() {
