@@ -18,7 +18,7 @@ We have deployed a public _**demo**_ installation to facilitate the testing and 
 
 OpenCGA _demo_ REST URL is available at [http://bioinfo.hpc.cam.ac.uk/opencga-prod/](http://bioinfo.hpc.cam.ac.uk/opencga-prod/). You can check REST API and documentation at [http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/](http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/).
 
-We have created a read-only user called _**demouser**_ with password _**demouser**_. As in most OpenCGA installations where normal users are not the owners of the data, _demouser_ has been given VIEW access to all _demo_ user data, this is a very common configuration in OpenCGA  where the owner of the data grant access to other users. In this _demo_ installation the owner of the data is _demo_ user, while _demouser_ user is the public  user created to query data.
+We have created a read-only user called _**demouser**_ with password _**demouser**_. As in most OpenCGA installations where normal users are not the owners of the data, _demouser_ has been given VIEW access to all _demo_ user data, this is a very common configuration in OpenCGA where the owner of the data grant access to other users. In this _demo_ installation the owner of the data is _demo_ user, while _demouser_ user is the public user created to query data.
 
 ### Genomic Data <a id="UsingOpenCGA-GenomicData"></a>
 
@@ -108,11 +108,11 @@ In order to make this _demo_ more useful to users we have loaded or simulated so
 
 #### 1000g <a id="UsingOpenCGA-1000g"></a>
 
-We loaded the 1000 Genomes pedigree file, you can find a copy at [http://resources.opencb.org/opencb/opencga/templates/demo/20130606\_g1k.ped](http://resources.opencb.org/opencb/opencga/templates/demo/20130606_g1k.ped) 
+We loaded the 1000 Genomes pedigree file, you can find a copy at [http://resources.opencb.org/opencb/opencga/templates/demo/20130606\_g1k.ped](http://resources.opencb.org/opencb/opencga/templates/demo/20130606_g1k.ped)
 
 #### uk10k <a id="UsingOpenCGA-uk10k"></a>
 
-There is no possible clinical data in this study. This is a _WGS aggregated_ dataset so no samples or genotypes were present in the dataset and, therefore, no _Individuals_ or _Samples_ have been created.  
+There is no possible clinical data in this study. This is a _WGS aggregated_ dataset so no samples or genotypes were present in the dataset and, therefore, no _Individuals_ or _Samples_ have been created.
 
 #### corpasome <a id="UsingOpenCGA-corpasome"></a>
 
@@ -127,4 +127,18 @@ To be documented soon.
 To be documented soon.
 
 #### Test
+
 test
+
+#### Test2 <a id="UsingOpenCGA-rams_cml"></a>
+
+test2
+
+#### Test 3
+
+aaa
+
+
+
+
+
