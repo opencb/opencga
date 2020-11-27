@@ -148,7 +148,7 @@ For changing particular settings during buildings you can create a profile in _~
 
                         <!-- cellbase -->
                         <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
-                        <OPENCGA.CELLBASE.REST.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.5.0-beta1.1/</OPENCGA.CELLBASE.REST.HOST>
+                        <OPENCGA.CELLBASE.REST.HOST>http://ws.opencb.org/cellbase/</OPENCGA.CELLBASE.REST.HOST>
                         <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
                         <OPENCGA.CELLBASE.DB.USER></OPENCGA.CELLBASE.DB.USER>
                         <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>

@@ -38,7 +38,7 @@ public class CellBaseConfiguration {
      */
     private String version;
 
-    private static final String CELLBASE_HOST = "http://bioinfo.hpc.cam.ac.uk/cellbase/";
+    private static final String CELLBASE_HOST = "http://ws.opencb.org/cellbase/";
     private static final String CELLBASE_VERSION = "v4";
 
     public CellBaseConfiguration() {
