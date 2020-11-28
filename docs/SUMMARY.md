@@ -7,7 +7,7 @@
   * [Kubernetes](installation/kubernetes/README.md)
     * [Azure](installation/kubernetes/azure.md)
     * [Configuration](installation/kubernetes/configuration.md)
-  * [Compute Cluster](installation/compute-cluster/README.md)
+  * [HPC Cluster On-Premise](installation/compute-cluster/README.md)
     * [Server Configuration](installation/compute-cluster/server-configuration.md)
     * [Building from Source](installation/compute-cluster/building-from-source.md)
     * [Chosing Variant Storage](installation/compute-cluster/chosing-variant-storage.md)
