@@ -21,20 +21,26 @@ You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/o
 * Implement a new **Action** system, Catalog will notify to a message queue _\(RabbitMQ, Apache Kafka\),_ this will allow other applications to know what's going on
 * Improve **RESTful** web services by adding standardise **error codes** to the response, this will improve debugging
 
-#### Storage Engines
-
-**Variant**
+**Variant Storage Engine**
 
 * Extend consequence type and population frequency filter in the sample genotype index
 * Improve sample genotype index for clinical and cancer by filtering by cosmic or VAF
 * Allow the index of custom INFO or FORMAT fields 
 * Implement a new **Cache** functionality, some sample and family-based variant queries and analysis can take up to few seconds, since this data is read-only this could be easily cached
 
-#### FIHR
+#### Clinical
+
+
+
+#### Analysis Framework
+
+
+
+#### Others
 
 * Implement **FIHR Genomics** API, this will allow FIHR applications to query genomic variants in OpenCGA
 
-### 2.0.0 \(June 2020\)
+### 2.0.0 \(Oct 2020\)
 
 You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/opencga/issues?q=is%3Aopen+is%3Aissue+milestone%3Av2.0.0). You can follow the development at [GitHub Projects](https://github.com/opencb/opencga/projects).
 
