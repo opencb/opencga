@@ -25,7 +25,7 @@
 * [Alignment and Coverage](components/alignment-and-coverage.md)
 * [Variant Storage Engine](components/variant-storage/README.md)
   * [Variant Data Model](https://docsgb.opencb.org/variant/variant-data-model)
-* [Clinical Interpretation](components/clinical.md)
+* [Clinical Analysis](components/clinical.md)
 * [Analysis Framework](components/analysis-framework.md)
 
 ## About
