@@ -171,7 +171,7 @@ Remember that **_develop_** branch dependencies are not ensured to be deployed a
     ├── conf
     ├── libs
     ├── LICENSE
-    ├── opencga-2.0.0-SNAPHOST.war
+    ├── opencga-2.0.0-SNAPSHOT.war
     ├── README.md
     ├── misc
     └── test
