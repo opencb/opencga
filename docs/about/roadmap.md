@@ -1,10 +1,14 @@
 # Roadmap
 
-In this section you can find only the **main top-level features** planned for major releases. For a more detailed list you can go to GitHub Issues at [https://github.com/opencb/opencga/issues](https://github.com/opencb/opencga/issues).
-
-From OpenCGA version 2.0.0 we follow **time-based releases**, two minor releases a year will be scheduled in April and October. 
+{% hint style="info" %}
+In this section, you can find only the **main top-level features** planned for major releases. For a more detailed list, you can go to GitHub Issues at [https://github.com/opencb/opencga/issues](https://github.com/opencb/opencga/issues).
+{% endhint %}
 
 ## OpenCGA 2.x Releases
+
+{% hint style="info" %}
+From OpenCGA version 2.0.0 we follow **time-based releases**, two minor releases a year will be scheduled in April and October. 
+{% endhint %}
 
 ### 2.1.0 \(Nov 2020\)
 
