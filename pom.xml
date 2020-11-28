@@ -649,7 +649,7 @@
                 <OPENCGA.MAIL.PASSWORD></OPENCGA.MAIL.PASSWORD>
 
                 <!-- cellbase -->
-                <OPENCGA.CELLBASE.REST.HOST>http://bioinfo.hpc.cam.ac.uk/cellbase/</OPENCGA.CELLBASE.REST.HOST>
+                <OPENCGA.CELLBASE.REST.HOST>https://ws.opencb.org/cellbase/</OPENCGA.CELLBASE.REST.HOST>
                 <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
