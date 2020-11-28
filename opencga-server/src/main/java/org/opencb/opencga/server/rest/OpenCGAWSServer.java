@@ -77,6 +77,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY_FQN;
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")
@@ -808,7 +809,7 @@ public class OpenCGAWSServer {
             if (!catalogManager.getUserManager().getUserId(token).equals(ParamConstants.OPENCGA_USER_ID)) {
                 throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
             }
-            return submitJobRaw(toolId, null, "admin", bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+            return submitJobRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
         });
     }
 

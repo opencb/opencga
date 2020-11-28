@@ -71,7 +71,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         public String jobFolder;
 
         @Parameter(names = {"--what"}, description = "Select to which version migrate. To get to the stable version, it is mandatory "
-                + "migrating to RC1 and RC2 first !!. Options: ALL, RC1, RC2, STABLE")
+                + "migrating to RC1 and RC2 first !!. Options: ALL, RC1, RC2, STABLE, VARIANT_STORAGE")
         public MigrateRC what = MigrateRC.ALL;
     }
 
@@ -79,7 +79,8 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         ALL,
         RC1,
         RC2,
-        STABLE
+        STABLE,
+        VARIANT_STORAGE
     }
 
     public enum Migrate {

@@ -407,18 +407,18 @@ public class SampleIndexQueryParser {
                 for (String type : typesStr) {
                     variantTypes.add(VariantType.valueOf(type));
                 }
-                if (variantTypes.contains(VariantType.SNP)) {
-                    // Can not distinguish between SNP and SNV. Filter only by SNV
-                    variantTypes.remove(VariantType.SNP);
-                    variantTypes.add(VariantType.SNV);
+                if (variantTypes.contains(VariantType.COPY_NUMBER_GAIN)) {
+                    // Can not distinguish between COPY_NUMBER_GAIN and COPY_NUMBER. Filter only by COPY_NUMBER
+                    variantTypes.remove(VariantType.COPY_NUMBER_GAIN);
+                    variantTypes.add(VariantType.COPY_NUMBER);
                 }
-                if (variantTypes.contains(VariantType.MNP)) {
-                    // Can not distinguish between MNP and MNV. Filter only by MNV
-                    variantTypes.remove(VariantType.MNP);
-                    variantTypes.add(VariantType.MNV);
+                if (variantTypes.contains(VariantType.COPY_NUMBER_LOSS)) {
+                    // Can not distinguish between COPY_NUMBER_LOSS and COPY_NUMBER. Filter only by COPY_NUMBER
+                    variantTypes.remove(VariantType.COPY_NUMBER_LOSS);
+                    variantTypes.add(VariantType.COPY_NUMBER);
                 }
             }
-            if (!hasSNPFilter(typesStr) && !hasMNPFilter(typesStr)) {
+            if (!hasCopyNumberGainFilter(typesStr) && !hasCopyNumberLossFilter(typesStr)) {
                 query.remove(TYPE.key());
             }
         }
@@ -538,8 +538,8 @@ public class SampleIndexQueryParser {
                 }
             }
             if (!typeCodes.contains(TYPE_OTHER_CODE)
-                    && !hasSNPFilter(types)
-                    && !hasMNPFilter(types)) {
+                    && !hasCopyNumberGainFilter(types)
+                    && !hasCopyNumberLossFilter(types)) {
                 query.remove(TYPE.key());
             }
         }
@@ -746,12 +746,12 @@ public class SampleIndexQueryParser {
         return new SampleFileIndexQuery(sample, fileIndexMask, qualQuery, dpQuery, validFileIndex1, validFileIndex2);
     }
 
-    private boolean hasSNPFilter(List<String> types) {
-        return types.contains(VariantType.SNP.name()) && !types.contains(VariantType.SNV.name());
+    private boolean hasCopyNumberGainFilter(List<String> types) {
+        return types.contains(VariantType.COPY_NUMBER_GAIN.name()) && !types.contains(VariantType.COPY_NUMBER.name());
     }
 
-    private boolean hasMNPFilter(List<String> types) {
-        return types.contains(VariantType.MNP.name()) && !types.contains(VariantType.MNV.name());
+    private boolean hasCopyNumberLossFilter(List<String> types) {
+        return types.contains(VariantType.COPY_NUMBER_LOSS.name()) && !types.contains(VariantType.COPY_NUMBER.name());
     }
 
     protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
