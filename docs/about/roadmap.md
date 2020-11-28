@@ -1,8 +1,6 @@
 # Roadmap
 
-{% hint style="info" %}
-In this section, you can find only the **main top-level features** planned for major releases. For a more detailed list, you can go to GitHub Issues at [https://github.com/opencb/opencga/issues](https://github.com/opencb/opencga/issues).
-{% endhint %}
+In this section, you can find only the main top-level features planned for major releases. For a more detailed list, you can go to GitHub Issues at [https://github.com/opencb/opencga/issues](https://github.com/opencb/opencga/issues).
 
 ## OpenCGA 2.x Releases
 
