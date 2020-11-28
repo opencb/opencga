@@ -50,6 +50,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_PROJECT;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY;
 
 public class CatalogManager implements AutoCloseable {
 
@@ -186,8 +188,8 @@ public class CatalogManager implements AutoCloseable {
         userManager.create(user, password, null);
 
         String token = userManager.login(OPENCGA, password).getToken();
-        projectManager.create("admin", "admin", "Default project", "", "", "", null, token);
-        studyManager.create("admin", "admin", "admin", "admin", "Default study", null, null, null, Collections.emptyMap(),
+        projectManager.create(ADMIN_PROJECT, ADMIN_PROJECT, "Default project", "", "", "", null, token);
+        studyManager.create(ADMIN_PROJECT, ADMIN_STUDY, ADMIN_STUDY, ADMIN_STUDY, "Default study", null, null, null, Collections.emptyMap(),
                 null, token);
 
         installIndexes(token, test);

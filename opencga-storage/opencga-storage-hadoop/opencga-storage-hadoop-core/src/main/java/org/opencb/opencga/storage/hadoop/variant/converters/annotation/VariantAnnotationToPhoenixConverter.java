@@ -115,8 +115,8 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         Set<String> flags = new HashSet<>();
         Set<Integer> soList = new HashSet<>();
         Set<String> biotype = new HashSet<>();
-        Set<Double> polyphen = new HashSet<>();
-        Set<Double> sift = new HashSet<>();
+        Set<Float> polyphen = new HashSet<>();
+        Set<Float> sift = new HashSet<>();
         Set<String> polyphenDesc = new HashSet<>();
         Set<String> siftDesc = new HashSet<>();
         Set<String> geneTraitName = new HashSet<>();
@@ -188,10 +188,14 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 if (proteinVariantAnnotation.getSubstitutionScores() != null) {
                     for (Score score : proteinVariantAnnotation.getSubstitutionScores()) {
                         if (score.getSource().equalsIgnoreCase("sift")) {
-                            addNotNull(sift, score.getScore());
+                            if (score.getScore() != null) {
+                                sift.add(score.getScore().floatValue());
+                            }
                             addNotNull(siftDesc, score.getDescription());
                         } else if (score.getSource().equalsIgnoreCase("polyphen")) {
-                            addNotNull(polyphen, score.getScore());
+                            if (score.getScore() != null) {
+                                polyphen.add(score.getScore().floatValue());
+                            }
                             addNotNull(polyphenDesc, score.getDescription());
                         }
                     }
@@ -351,15 +355,22 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {
             map.remove(column);
         }
-        map.forEach((column, value) -> add(put, column, value));
+        map.forEach((column, value) -> {
+            try {
+                add(put, column, value);
+            } catch (Exception e) {
+                logger.error("Error adding column " + column.column());
+                throw e;
+            }
+        });
 
         return put;
     }
 
-    private List<Double> sortProteinSubstitutionScores(Set<Double> scores) {
-        List<Double> sorted = new ArrayList<>(scores.size());
-        Double min = scores.stream().min(Double::compareTo).orElse(-1.0);
-        Double max = scores.stream().max(Double::compareTo).orElse(-1.0);
+    private List<Float> sortProteinSubstitutionScores(Set<Float> scores) {
+        List<Float> sorted = new ArrayList<>(scores.size());
+        Float min = scores.stream().min(Float::compareTo).orElse(-1.0F);
+        Float max = scores.stream().max(Float::compareTo).orElse(-1.0F);
         if (min >= 0) {
             sorted.add(min);
             sorted.add(max);

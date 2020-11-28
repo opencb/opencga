@@ -79,8 +79,8 @@ public class ExecutionResultManager {
         if (!file.canWrite()) {
             throw new ToolException("Write permission denied for output directory '" + outDir + "'");
         }
-        if (!StringUtils.isAlphanumeric(toolId.replaceAll("[-_]", ""))) {
-            throw new ToolException("Invalid ToolId. The tool id can only contain alphanumeric characters, ',' and '_'.");
+        if (!StringUtils.isAlphanumeric(toolId.replaceAll("[-_.]", ""))) {
+            throw new ToolException("Invalid ToolId. The tool id can only contain alphanumeric characters, '.', '-' and '_'");
         }
 
         file = outDir.resolve(toolId + FILE_EXTENSION).toFile();
@@ -302,6 +302,13 @@ public class ExecutionResultManager {
         try {
             return objectReader.readValue(file);
         } catch (IOException e) {
+            if (Files.exists(swapFile.toPath())) {
+                try {
+                    return objectReader.readValue(swapFile);
+                } catch (IOException ioException) {
+                    e.addSuppressed(ioException);
+                }
+            }
             throw new ToolException("Error reading ExecutionResult", e);
         }
 

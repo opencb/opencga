@@ -178,8 +178,12 @@ variant:
           mapreduce.map.memory.mb: 750
         VariantStatsDriver:
           mapreduce.map.memory.mb: 2048
+        SampleIndexDriver:
+          mapreduce.map.memory.mb: 4096
         SampleIndexAnnotationLoaderDriver:
           mapreduce.map.memory.mb: 4096
+        VariantMigration200Driver:
+          mapreduce.map.memory.mb: 1024
 
 
 ## PENDING

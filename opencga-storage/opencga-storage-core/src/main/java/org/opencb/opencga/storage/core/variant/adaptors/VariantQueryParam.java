@@ -60,7 +60,8 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam ALTERNATE = new VariantQueryParam("alternate", TEXT_ARRAY, ALTERNATE_DESCR);
 
     public static final String TYPE_DESCR
-            = "List of types, accepted values are SNV, MNV, INDEL, SV, CNV, INSERTION, DELETION, e.g. SNV,INDEL";
+            = "List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN,"
+        + " INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL";
     public static final VariantQueryParam TYPE = new VariantQueryParam("type", TEXT_ARRAY, TYPE_DESCR);
 
 

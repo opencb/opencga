@@ -178,6 +178,9 @@ public class VariantFileIndexConverter {
             case DELETION:
                 return TYPE_DEL_CODE;
             case CNV:
+            case COPY_NUMBER:
+            case COPY_NUMBER_GAIN:
+            case COPY_NUMBER_LOSS:
                 return TYPE_CNV_CODE;
             case BREAKEND:
                 return TYPE_REAR_CODE;

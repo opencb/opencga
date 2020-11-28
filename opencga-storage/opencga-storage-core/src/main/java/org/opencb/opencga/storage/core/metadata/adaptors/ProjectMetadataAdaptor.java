@@ -35,4 +35,6 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
     }
 
     int generateId(Integer studyId, String idType) throws StorageEngineException;
+
+    boolean exists();
 }
