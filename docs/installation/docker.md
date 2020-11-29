@@ -1,4 +1,4 @@
-# Docker
+# Running Docker
 
 ## Overview <a id="Docker-Overview"></a>
 
