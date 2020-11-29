@@ -1,7 +1,16 @@
 # Table of contents
 
 * [Home](README.md)
-* [Overview](overview.md)
+* [Overview](overview/README.md)
+  * [Features](overview/features.md)
+  * [Architecture](overview/architecture.md)
+  * [Security](overview/security.md)
+  * [Data Management](overview/data-management.md)
+  * [Variant Query and Analysis](overview/variant-query-and-analysis.md)
+  * [Clinical Data Analysis](overview/clinical-data-analysis.md)
+  * [Running Analysis](overview/running-analysis.md)
+  * [Scalability and Performance](overview/scalability-and-performance.md)
+  * [Sizing OpenCGA](overview/sizing-opencga.md)
 * [Installation](installation/README.md)
   * [Docker](installation/docker.md)
   * [Kubernetes](installation/kubernetes/README.md)
