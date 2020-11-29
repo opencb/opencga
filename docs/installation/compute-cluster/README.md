@@ -12,22 +12,10 @@ OpenCGA requires Java 8, Tomcat or MongoDB. We try to keep dependencies to the m
 
 There are two main ways to get OpenCGA for installation:
 
-* You can download the source code from GitHub and use [**Apache Maven**](https://maven.apache.org/) to compile and build it.
-* Or you can download a _prebuilt_ binary from the [**OpenCGA GitHub Releases**](https://github.com/opencb/opencga/releases) web page, notice that only _stable_ and _pre-releases_ are tagged and prebuilt.
+* You can download binaries from [OpenCGA GitHub Releases](https://github.com/opencb/opencga/releases), notice that **only** _stable_ and _pre-releases_ are tagged and _built_, if you want to test a development version see next point.
+* Or You can download the source code from GitHub and use Apache Maven to compile and build it.
 
-Here you can learn more about these two options.
-
-#### Building from Sources
-
-Although most users will use stable _prebuilt_ binaries \(see below\) there is still the need for different users to compile and build OpenCGA, for instance to test a development version. You can learn how to build from the source code at [**Installation Guide &gt; Building from Source Code**](http://docs.opencb.org/display/opencga/Building+from+Source+Code).
-
-#### Download Binaries
-
-You can download _stable_ and _pre-release_ \(beta and release candidate\) versions from [**OpenCGA GitHub Releases**](https://github.com/opencb/opencga/releases) web page. You will find a _tar.gz_ file with the name of _opencga_ and the _version,_ for instance, to download OpenCGA 1.0.0-rc2.1 you can go to the GitHub Release at:
-
-[**https://github.com/opencb/opencga/releases/tag/v1.0.0-rc2.1**](https://github.com/opencb/opencga/releases/tag/v1.0.0-rc2.1)
-
-and download the file _opencga-1.0.0-rc2.1.tar.gz_ from the _Downloads_ section.
+Please visit [Getting OpenCGA](building-from-source.md) to learn more about these two options.
 
 ### Step 3 - Install OpenCGA Binaries
 

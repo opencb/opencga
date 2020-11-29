@@ -1,13 +1,21 @@
-# Building from Source
+# Getting OpenCGA
 
-## Prerequisites
+## Download Binaries
 
-In order to build OpenCGA from source code you must first get the source code of OpenCGA from GitHub, most of the dependencies - including OpenCB dependencies - will be fetched from [Maven Central Repository](http://search.maven.org/), however in some scenarios OpenCB dependencies will need to be built from GitHub source code. Compiling and building processes are carried out by [**Apache Maven**](https://maven.apache.org/). The following tools are required for successful build:
+You can download any _stable_ or _pre-release_ version from [OpenCGA GitHub Releases](https://github.com/opencb/opencga/releases). You will find a _tar.gz_ file with the name of _opencga_ and the _version,_ for instance, to download OpenCGA 2.0.0-rc3 you have to go to GitHub Release page at [https://github.com/opencb/opencga/releases/tag/v2.0.0-rc3](https://github.com/opencb/opencga/releases/tag/v2.0.0-rc3) and download the file _**opencga-2.0.0-rc3.tar.gz**_ from the _Assets_ section:
+
+![Download the tar.gz with the OpenCGA and version](../../.gitbook/assets/opencga_binary-github.png)
+
+## Building from Source
+
+### Prerequisites
+
+In order to build OpenCGA from source code you must first get the source code of OpenCGA from GitHub, most of the dependencies - including OpenCB dependencies - will be fetched from [Maven Central Repository](http://search.maven.org/), however, in some scenarios, OpenCB dependencies will need to be built from GitHub source code. Compiling and building processes are carried out by [Apache Maven](https://maven.apache.org/). The following tools are required for successful build:
 
 * Java 1.8.0\_60+
 * Apache Maven
 
-You can learn how to install them in this section at [**Installation Guide &gt; Server Configuration**](http://docs.opencb.org/display/opencga/Server+Configuration).
+You can learn how to install them in this section at [Server Configuration](server-configuration.md).
 
 ### Getting and Compiling Dependencies
 
@@ -33,7 +41,7 @@ git clone -b develop https://github.com/opencb/oskar.git
 mvn clean install -DskipTests
 ```
 
-## Clone and Build OpenCGA
+### Clone and Build OpenCGA
 
 You can clone OpenCGA from GitHub by executing:
 

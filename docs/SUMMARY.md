@@ -17,7 +17,7 @@
     * [Configuration](installation/kubernetes/configuration.md)
   * [On-Premise HPC Cluster](installation/compute-cluster/README.md)
     * [Server Configuration](installation/compute-cluster/server-configuration.md)
-    * [Building from Source](installation/compute-cluster/building-from-source.md)
+    * [Getting OpenCGA](installation/compute-cluster/building-from-source.md)
     * [Choosing Variant Storage Engine](installation/compute-cluster/chosing-variant-storage.md)
     * [Configuration](installation/compute-cluster/configuration.md)
   * [Running Docker](installation/docker.md)
