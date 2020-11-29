@@ -2,9 +2,9 @@
 description: Understanding REST web service API
 ---
 
-# RESTful web service API
+# REST Web Service API
 
-## RESTful API Design
+## REST API Design
 
 ### Understanding the URL
 

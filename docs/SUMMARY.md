@@ -22,7 +22,7 @@
     * [Configuration](installation/compute-cluster/configuration.md)
   * [Running Docker](installation/docker.md)
 * [Using OpenCGA](using-opencga/README.md)
-  * [RESTful web service API](using-opencga/restful-web-service-api.md)
+  * [REST Web Service API](using-opencga/restful-web-service-api.md)
   * [IVA Web App](using-opencga/iva-web-app.md)
   * [Client Libraries](using-opencga/client-libraries/README.md)
     * [Java](using-opencga/client-libraries/java.md)
