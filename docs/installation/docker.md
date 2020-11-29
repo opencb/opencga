@@ -2,38 +2,14 @@
 
 ## Overview <a id="Docker-Overview"></a>
 
-OpenCGA produces **four** different Docker images for different use cases, these are:
+OpenCGA produces **four** different Docker images for runnning OpenCGA in two main different modes: _cluster_ and _local_. All of them run Java 8 and can be found in [OpenCB Docker Hub](https://hub.docker.com/u/opencb), the docker images are:
 
-* _opencga-base_: base image for building the other images, this image contains the OpenCGA basic installation folder  
-* _opencga-rest_: image running REST web services
-* _opencga-master_: image running _master_ service
-* _opencga_: all-in-one image with all OpenCGA components running
+* \*\*\*\*[opencga-base](https://hub.docker.com/r/opencb/opencga-base): base image for building the other images, this image contains the OpenCGA basic installation folder.
+* [opencga-init](https://hub.docker.com/r/opencb/opencga-init): image running REST web services
+* [opencga-r](https://hub.docker.com/r/opencb/opencga-r): image running _master_ service
+* [opencga-demo](https://hub.docker.com/r/opencb/opencga-demo): all-in-one image with all OpenCGA components running
 
-You can use _opencga_ Docker image to run a complete OpenCGA platform locally. You can use the other images to deploy a whole cluster solution in a cloud environment using Kubernetes. Docker Images are deployed in [Docker Hub OpenCB organisation](https://hub.docker.com/orgs/opencb).
-
-## Design and Implementation <a id="Docker-DesignandImplementation"></a>
-
-### Images <a id="Docker-Images"></a>
-
-All images run with the user _**opencga**_ and run **Java 8**. Docker images are deployed in Docker Hub.
-
-#### opencga-base <a id="Docker-opencga-base"></a>
-
-This image contains the basic installation in directory /opt
-
-More info at [https://hub.docker.com/repository/docker/opencb/opencga-base](https://hub.docker.com/repository/docker/opencb/opencga-base)
-
-#### opencga-rest <a id="Docker-opencga-rest"></a>
-
-This image is based in _opencga-base_ and runs REST web services using the REST server command-line.
-
-#### opencga-master <a id="Docker-opencga-master"></a>
-
-This image runs the master service
-
-#### opencga <a id="Docker-opencga"></a>
-
-all-in-one image with all OpenCGA components running 
+You can use OpenCGA Docker image to run a complete OpenCGA platform locally. You can use the other images to deploy a whole cluster solution in a cloud environment using Kubernetes. Docker Images are deployed in [Docker Hub OpenCB organisation](https://hub.docker.com/orgs/opencb).
 
 ### Implementation <a id="Docker-Implementation"></a>
 
@@ -55,5 +31,17 @@ The OpenCGA demo docker image contains the following components:
   1. Install OpenCGA catalog 
   2. Populate data \(optional\)
 
-To download OpenCGA demo image, use the command [_docker pull_](https://docs.docker.com/engine/reference/commandline/pull/) with the OpenCB enterprise, opencga-demo repository and tag
+To download OpenCGA demo image, use the command [_docker pull_](https://docs.docker.com/engine/reference/commandline/pull/) with the OpenCB enterprise, opencga-demo repository and tag.
+
+## Run OpenCGA Cluster
+
+Kubernetes, Ansible, OpenStack, ....
+
+## Run OpenCGA Local
+
+This mode is not intended for production but for a user demo.
+
+## Build Docker Images
+
+
 
