@@ -2,14 +2,16 @@
 
 There are two configuration files:
 
-* [configuration.yml](configuration.md#main-configuration): main configuration file
-* [storage-configuration.yml](configuration.md#storage-configuration): storage configuration
+* [configuration.yml](configuration.md#main-configuration): this is the main configuration file for OpenCGA Catalog and Analysis
+* [storage-configuration.yml](configuration.md#storage-configuration): storage configuration file
 
-## Main Configuration
+For Hadoop configuration ...
+
+## configuration.yml
 
 
 
-## Storage Configuration
+## storage-configuration.yml
 
 
 
