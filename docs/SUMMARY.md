@@ -41,6 +41,5 @@
 
 * [Roadmap](about/roadmap.md)
 * [Release Notes](about/release-notes.md)
-* [Contributors](about/contributors.md)
-* [Contributing](about/contributing.md)
+* [Community](about/contributing.md)
 
