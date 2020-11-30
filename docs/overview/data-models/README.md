@@ -28,3 +28,17 @@ Legend:
 
 
 
+### Creation and Modification Date
+
+
+
+### Status
+
+
+
+### File ID
+
+File IDs contain the path using `:`
+
+
+

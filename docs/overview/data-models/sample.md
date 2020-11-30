@@ -32,7 +32,11 @@ Legend:
         </p>
       </td>
       <td style="text-align:left">U, M, I</td>
-      <td style="text-align:left">Unique ID in the study</td>
+      <td style="text-align:left">
+        <p>Unique Sample ID in the study, this can be repeated across different studies.</p>
+        <p><em>Constraints: Unique, Mandatory, Immutable</em>
+        </p>
+      </td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -42,7 +46,12 @@ Legend:
         </p>
       </td>
       <td style="text-align:left">U, I</td>
-      <td style="text-align:left"></td>
+      <td style="text-align:left">
+        <p>Global unique ID in any study of any OpenCGA installation. This is created
+          during the sample creation and it is never changed.</p>
+        <p><em>Constraints: Unique, Immutable</em>
+        </p>
+      </td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -51,8 +60,9 @@ Legend:
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left">U</td>
       <td style="text-align:left"></td>
+      <td style="text-align:left">A reference to the <a href="individual.md">Individual</a> containing this
+        sample.</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -62,7 +72,8 @@ Legend:
         </p>
       </td>
       <td style="text-align:left"></td>
-      <td style="text-align:left"></td>
+      <td style="text-align:left">List of <a href="./#file-id">File ID</a> containing this sample, eg BAM,
+        VCF, QC images, ...</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -71,7 +82,7 @@ Legend:
         <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
-      <td style="text-align:left"></td>
+      <td style="text-align:left">An object describing how to sample was processed.</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -80,7 +91,7 @@ Legend:
         <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplecollection"><em>SampleCollection</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
-      <td style="text-align:left"></td>
+      <td style="text-align:left">An object describing how the sample was collected.</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -139,7 +150,7 @@ Legend:
         </p>
       </td>
       <td style="text-align:left">O</td>
-      <td style="text-align:left"></td>
+      <td style="text-align:left">A string representing the creation date in format YYYYMMDDHHmmss</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -149,7 +160,7 @@ Legend:
         </p>
       </td>
       <td style="text-align:left">O</td>
-      <td style="text-align:left"></td>
+      <td style="text-align:left">A string representing the modification date in format YYYYMMDDHHmmss</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -175,8 +186,7 @@ Legend:
       <td style="text-align:left">
         <p><b>status</b>
         </p>
-        <p><em>CustomStatus</em>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="./#status"><em>CustomStatus</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
       <td style="text-align:left"></td>
@@ -206,7 +216,70 @@ Legend:
 
 ### SampleProcessing
 
+This object describes how the sample was processed in the lab.
 
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Field</th>
+      <th style="text-align:left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">
+        <p><b>product</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">Type of product sequenced, this can be DNA or RNA for instance</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>preparationMethod</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>extractionMethod</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>labSampleId</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p>quantity</p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p>date</p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+  </tbody>
+</table>
 
 ### SampleCollection
 

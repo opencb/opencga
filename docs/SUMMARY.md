@@ -8,6 +8,7 @@
   * [Metadata and Clinical Data](overview/data-management.md)
   * [Data Models](overview/data-models/README.md)
     * [Sample](overview/data-models/sample.md)
+    * [Individual](overview/data-models/individual.md)
   * [Alignment and Coverage](overview/alignment-and-coverage.md)
   * [Variant Query and Analysis](overview/variant-query-and-analysis.md)
   * [Clinical Data Analysis](overview/clinical-data-analysis.md)
