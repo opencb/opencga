@@ -21,7 +21,6 @@ This is the main data model, it stores the most basic and important information.
   <thead>
     <tr>
       <th style="text-align:left">Field</th>
-      <th style="text-align:left">Constraints</th>
       <th style="text-align:left">Description</th>
     </tr>
   </thead>
@@ -33,12 +32,9 @@ This is the main data model, it stores the most basic and important information.
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left">U, M, I</td>
-      <td style="text-align:left">
-        <p>Unique Sample ID in the study, this can be repeated across different studies.</p>
-        <p><em>Constraints: Unique, Mandatory, Immutable</em>
-        </p>
-      </td>
+      <td style="text-align:left">Unique Sample ID in the study, this can be repeated across different studies.
+        This is a mandatory parameter in the creation and cannot be changed at
+        the moment.</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -47,13 +43,8 @@ This is the main data model, it stores the most basic and important information.
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left">U, I</td>
-      <td style="text-align:left">
-        <p>Global unique ID in any study of any OpenCGA installation. This is created
-          during the sample creation and it is never changed.</p>
-        <p><em>Constraints: Unique, Immutable</em>
-        </p>
-      </td>
+      <td style="text-align:left">Global unique ID in any study of any OpenCGA installation. This is created
+        during the sample creation and cannot be changed.</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -62,9 +53,9 @@ This is the main data model, it stores the most basic and important information.
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left"></td>
       <td style="text-align:left">A reference to the <a href="individual.md">Individual</a> containing this
-        sample.</td>
+        sample. Notice that samples can exist without and Individual ID, this field
+        is not mandatory.</td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -73,7 +64,6 @@ This is the main data model, it stores the most basic and important information.
         <p><em>List&lt;String&gt;</em>
         </p>
       </td>
-      <td style="text-align:left"></td>
       <td style="text-align:left">List of <a href="./#file-id">File ID</a> containing this sample, eg BAM,
         VCF, QC images, ...</td>
     </tr>
@@ -83,7 +73,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
         <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
-      <td style="text-align:left"></td>
       <td style="text-align:left">An object describing how to sample was processed.</td>
     </tr>
     <tr>
@@ -92,7 +81,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
         <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplecollection"><em>SampleCollection</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
-      <td style="text-align:left"></td>
       <td style="text-align:left">An object describing how the sample was collected.</td>
     </tr>
     <tr>
@@ -103,7 +91,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
       </td>
       <td style="text-align:left"></td>
-      <td style="text-align:left"></td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -113,7 +100,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
       </td>
       <td style="text-align:left"></td>
-      <td style="text-align:left"></td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -121,7 +107,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
         <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
-      <td style="text-align:left"></td>
       <td style="text-align:left"></td>
     </tr>
     <tr>
@@ -131,7 +116,6 @@ This is the main data model, it stores the most basic and important information.
         <p><em>Integer</em>
         </p>
       </td>
-      <td style="text-align:left">O</td>
       <td style="text-align:left"></td>
     </tr>
     <tr>
@@ -141,7 +125,6 @@ This is the main data model, it stores the most basic and important information.
         <p><em>Integer</em>
         </p>
       </td>
-      <td style="text-align:left">O</td>
       <td style="text-align:left"></td>
     </tr>
     <tr>
@@ -151,7 +134,6 @@ This is the main data model, it stores the most basic and important information.
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left">O</td>
       <td style="text-align:left">A string representing the creation date in format YYYYMMDDHHmmss</td>
     </tr>
     <tr>
@@ -161,7 +143,6 @@ This is the main data model, it stores the most basic and important information.
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left">O</td>
       <td style="text-align:left">A string representing the modification date in format YYYYMMDDHHmmss</td>
     </tr>
     <tr>
@@ -172,7 +153,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
       </td>
       <td style="text-align:left"></td>
-      <td style="text-align:left"></td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -182,7 +162,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
       </td>
       <td style="text-align:left"></td>
-      <td style="text-align:left"></td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -190,7 +169,6 @@ This is the main data model, it stores the most basic and important information.
         </p>
         <p>&lt;em&gt;&lt;/em&gt;<a href="./#status"><em>CustomStatus</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
-      <td style="text-align:left"></td>
       <td style="text-align:left"></td>
     </tr>
     <tr>
@@ -200,7 +178,6 @@ This is the main data model, it stores the most basic and important information.
         <p><em>SampleInternal</em>
         </p>
       </td>
-      <td style="text-align:left">O</td>
       <td style="text-align:left"></td>
     </tr>
     <tr>
@@ -210,7 +187,6 @@ This is the main data model, it stores the most basic and important information.
         <p><em>Map</em>
         </p>
       </td>
-      <td style="text-align:left"></td>
       <td style="text-align:left"></td>
     </tr>
   </tbody>
