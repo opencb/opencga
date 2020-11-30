@@ -11,9 +11,11 @@ Legend:
 * I - Immutable: cannot be changed in the updated\(\)
 * O - OpenCGA: managed by OpenCGA, no create\(\) or update\(\) permitted
 
-## Data Model
+## Data Models
 
 ### Sample
+
+This is the main data model, it stores the most basic and important information.
 
 <table>
   <thead>
@@ -214,6 +216,8 @@ Legend:
   </tbody>
 </table>
 
+### 
+
 ### SampleProcessing
 
 This object describes how the sample was processed in the lab.
@@ -291,7 +295,7 @@ This object describes how the sample was processed in the lab.
 
 ## Example
 
-This is a JSON example:
+This is a full JSON example:
 
 ```javascript
 {
