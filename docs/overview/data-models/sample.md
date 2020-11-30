@@ -25,9 +25,13 @@ This is the main data model, it stores the most basic and important information.
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left">Unique Sample ID in the study, this can be repeated across different studies.
-        This is a mandatory parameter in the creation and cannot be changed at
-        the moment.</td>
+      <td style="text-align:left">
+        <p>Unique Sample ID in the study, this can be repeated across different studies.
+          This is a mandatory parameter in the creation and cannot be changed at
+          the moment.</p>
+        <p><em>Constraints: Mandatory, Unique, Immutable</em>
+        </p>
+      </td>
     </tr>
     <tr>
       <td style="text-align:left">
@@ -36,8 +40,12 @@ This is the main data model, it stores the most basic and important information.
         <p><em>String</em>
         </p>
       </td>
-      <td style="text-align:left">Global unique ID in any study of any OpenCGA installation. This is created
-        during the sample creation and cannot be changed.</td>
+      <td style="text-align:left">
+        <p>Global unique ID in any study of any OpenCGA installation. This is created
+          during the sample creation and cannot be changed.</p>
+        <p><em>Constraints: Internal, Unique, Immutable</em>
+        </p>
+      </td>
     </tr>
     <tr>
       <td style="text-align:left">
