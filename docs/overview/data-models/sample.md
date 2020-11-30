@@ -15,26 +15,197 @@ Legend:
 
 ### Sample
 
-| Field | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| **id** | String | U, M, I | Unique ID in the study |
-| **uuid** | String | U, I |  |
-| **individualId** | String | U |  |
-| **fileIds** | List&lt;String&gt; |  |  |
-| **processing** | SampleProcessing |  |  |
-| **collection** | SampleCollection |  |  |
-| **somatic** | Boolean |  |  |
-| **annotationSets** | List&lt;[AnnotationSet](./#annotation-set)&gt; |  |  |
-| **qualityControl** | SampleQualityControl |  |  |
-| **release** | Integer | O |  |
-| **version** | Integer | O |  |
-| **creationDate** | String | O |  |
-| **modificationDate** | String | O |  |
-| **description** | String |  |  |
-| **phenotypes** | List&lt;Phenotype&gt; |  |  |
-| **status** | CustomStatus |  |  |
-| **internal** | SampleInternal | O |  |
-| **attributes** | Map |  |  |
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Field</th>
+      <th style="text-align:left">Constraints</th>
+      <th style="text-align:left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">
+        <p><b>id</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">U, M, I</td>
+      <td style="text-align:left">Unique ID in the study</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>uuid</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">U, I</td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>individualId</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">U</td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>fileIds</b>
+        </p>
+        <p><em>List&lt;String&gt;</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>processing</b>
+        </p>
+        <p><em>SampleProcessing</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>collection</b>
+        </p>
+        <p><em>SampleCollection</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>somatic</b>
+        </p>
+        <p><em>Boolean</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>annotationSets</b>
+        </p>
+        <p><em>List&lt;</em><a href="./#annotation-set"><em>AnnotationSet</em></a><em>&gt;</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>qualityControl</b>
+        </p>
+        <p><em>SampleQualityControl</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>release</b>
+        </p>
+        <p><em>Integer</em>
+        </p>
+      </td>
+      <td style="text-align:left">O</td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>version</b>
+        </p>
+        <p><em>Integer</em>
+        </p>
+      </td>
+      <td style="text-align:left">O</td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>creationDate</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">O</td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>modificationDate</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">O</td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>description</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>phenotypes</b>
+        </p>
+        <p><em>List&lt;Phenotype&gt;</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>status</b>
+        </p>
+        <p><em>CustomStatus</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>internal</b>
+        </p>
+        <p><em>SampleInternal</em>
+        </p>
+      </td>
+      <td style="text-align:left">O</td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>attributes</b>
+        </p>
+        <p><em>Map</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+      <td style="text-align:left"></td>
+    </tr>
+  </tbody>
+</table>
 
 ### SampleProcessing
 
