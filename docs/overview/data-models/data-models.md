@@ -4,11 +4,11 @@
 
 Sample data model ...
 
-Legend
+Legend:
 
-* U: unique
-* M: mandatory, must be provided in the creation
-* I: immutable, cannot be updated
+* U - Unique
+* M - Mandatory
+* I - Immutable
 
 ## Data Model
 
