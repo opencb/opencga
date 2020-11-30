@@ -12,9 +12,9 @@ All OpenCGA Data Models have been designed to follow some principles:
 
 ## Implementation
 
-### Data Model List
+### Diagram
 
-
+![](../../.gitbook/assets/catalog_data_models_v13.png)
 
 Legend:
 
