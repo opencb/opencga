@@ -22,3 +22,9 @@ Legend:
 * M - Mandatory
 * I - Immutable
 
+## Common Data Models
+
+### Annotation Set
+
+
+

@@ -6,9 +6,10 @@ Sample data model ...
 
 Legend:
 
-* U - Unique
-* M - Mandatory
-* I - Immutable
+* U - Unique: this field must be unique in the study
+* M - Mandatory: it is a mandatory parameter in the create\(\)
+* I - Immutable: cannot be changed in the updated\(\)
+* O - OpenCGA: managed by OpenCGA, no create\(\) or update\(\) permitted
 
 ## Data Model
 
@@ -17,22 +18,22 @@ Legend:
 | Field | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | **id** | String | U, M, I | Unique ID in the study |
-| **uuid** | String | U |  |
-| **individualId** | String |  |  |
+| **uuid** | String | U, I |  |
+| **individualId** | String | U |  |
 | **fileIds** | List&lt;String&gt; |  |  |
 | **processing** | SampleProcessing |  |  |
 | **collection** | SampleCollection |  |  |
 | **somatic** | Boolean |  |  |
-| **annotationSets** | List&lt;AnnotationSet&gt; |  |  |
+| **annotationSets** | List&lt;[AnnotationSet](./#annotation-set)&gt; |  |  |
 | **qualityControl** | SampleQualityControl |  |  |
-| **release** | Integer |  |  |
-| **version** | Integer |  |  |
-| **creationDate** | String |  |  |
-| **modificationDate** | String |  |  |
+| **release** | Integer | O |  |
+| **version** | Integer | O |  |
+| **creationDate** | String | O |  |
+| **modificationDate** | String | O |  |
 | **description** | String |  |  |
 | **phenotypes** | List&lt;Phenotype&gt; |  |  |
 | **status** | CustomStatus |  |  |
-| **internal** | SampleInternal |  |  |
+| **internal** | SampleInternal | O |  |
 | **attributes** | Map |  |  |
 
 ### SampleProcessing
