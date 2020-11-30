@@ -79,7 +79,7 @@ spec:
             dockerd-entrypoint.sh &
             sleep 5
             umount /tmp
-            docker pull opencb/opencga-r:2.0.0-SNAPHOST
+            docker pull opencb/opencga-r:2.0.0-SNAPSHOT
             sleep infinity
           env:
               - name: DOCKER_TLS_CERTDIR
