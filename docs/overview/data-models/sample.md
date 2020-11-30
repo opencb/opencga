@@ -2,14 +2,7 @@
 
 ## Overview
 
-Sample data model ...
-
-Legend:
-
-* U - Unique: this field must be unique in the study
-* M - Mandatory: it is a mandatory parameter in the create\(\)
-* I - Immutable: cannot be changed in the updated\(\)
-* O - OpenCGA: managed by OpenCGA, no create\(\) or update\(\) permitted
+Sample data model ... 
 
 ## Data Models
 

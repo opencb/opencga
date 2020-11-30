@@ -16,12 +16,6 @@ All OpenCGA Data Models have been designed to follow some principles:
 
 ![](../../.gitbook/assets/catalog_data_models_v13.png)
 
-Legend:
-
-* U - Unique
-* M - Mandatory
-* I - Immutable
-
 ## Common Data Models
 
 ### Annotation Set
