@@ -68,8 +68,7 @@ Legend:
       <td style="text-align:left">
         <p><b>processing</b>
         </p>
-        <p><em>SampleProcessing</em>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
       <td style="text-align:left"></td>
@@ -78,8 +77,7 @@ Legend:
       <td style="text-align:left">
         <p><b>collection</b>
         </p>
-        <p><em>SampleCollection</em>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplecollection"><em>SampleCollection</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
       <td style="text-align:left"></td>
@@ -108,8 +106,7 @@ Legend:
       <td style="text-align:left">
         <p><b>qualityControl</b>
         </p>
-        <p><em>SampleQualityControl</em>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
       <td style="text-align:left"></td>
@@ -212,6 +209,10 @@ Legend:
 
 
 ### SampleCollection
+
+
+
+### SampleQualityControl
 
 
 
