@@ -861,20 +861,52 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    // Alternate field may contain the separator char
+    // Alternate and chromosome fields may contain the separator char
     public static AlternateCoordinate getAlternateCoordinate(String s) {
-        String[] split = s.split(ALTERNATE_COORDINATE_SEPARATOR, 5);
-        int idx = split[4].lastIndexOf(ALTERNATE_COORDINATE_SEPARATOR);
-        String alternate = split[4].substring(0, idx);
-        VariantType type = VariantType.valueOf(split[4].substring(idx + 1));
-        return new AlternateCoordinate(
-                split[0],
-                Integer.parseInt(split[1]),
-                Integer.parseInt(split[2]),
-                split[3],
-                alternate,
-                type
-        );
+        try {
+            String[] split = s.split(ALTERNATE_COORDINATE_SEPARATOR);
+            if (split.length == 6) {
+                return new AlternateCoordinate(
+                        split[0],
+                        Integer.parseInt(split[1]),
+                        Integer.parseInt(split[2]),
+                        split[3],
+                        split[4],
+                        VariantType.valueOf(split[5])
+                );
+            }
+            StringBuilder chr;
+            Integer start;
+            Integer end;
+            String reference;
+            StringBuilder alternate;
+            VariantType type;
+
+            int i = 0;
+            chr = new StringBuilder(split[i++]);
+            while (!(StringUtils.isNumeric(split[i]) && StringUtils.isNumeric(split[i + 1]) && !StringUtils.isNumeric(split[i + 2]))) {
+                chr.append(":").append(split[i++]);
+            }
+            start = Integer.valueOf(split[i++]);
+            end = Integer.valueOf(split[i++]);
+            reference = split[i++];
+            alternate = new StringBuilder(split[i++]);
+            while (i != split.length - 1) {
+                alternate.append(":").append(split[i++]);
+            }
+            type = VariantType.valueOf(split[i]);
+
+            return new AlternateCoordinate(
+                    chr.toString(),
+                    start,
+                    end,
+                    reference,
+                    alternate.toString(),
+                    type
+            );
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error parsing AlternateCoordinate '" + s + "'", e);
+        }
     }
 
     public static String normalizeNonRefAlternateCoordinate(Variant variant, String s) {

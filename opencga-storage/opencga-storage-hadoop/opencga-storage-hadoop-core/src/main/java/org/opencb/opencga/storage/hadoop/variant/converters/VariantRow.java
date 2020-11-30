@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -161,6 +162,8 @@ public class VariantRow {
                             ((Integer) PInteger.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
                 } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
                     walker.variantAnnotation(new BytesVariantAnnotationColumn(cell));
+                } else if (columnName.equals(VariantColumn.TYPE.column())) {
+                    walker.type(VariantType.valueOf(Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
                 }
             }
         }
@@ -169,6 +172,9 @@ public class VariantRow {
     public abstract static class VariantRowWalker {
 
         protected void variant(Variant variant) {
+        }
+
+        protected void type(VariantType type) {
         }
 
         protected void study(int studyId) {

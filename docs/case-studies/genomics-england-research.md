@@ -52,6 +52,7 @@ Clinical data and genomic variants of **64,078 genomes** were loaded and indexed
       </td>
     </tr>
     <tr>
+      <td style="text-align:left">&lt;b&gt;&lt;/b&gt;</td>
       <td style="text-align:left">
         <p><b>CG38</b>
         </p>
@@ -63,7 +64,6 @@ Clinical data and genomic variants of **64,078 genomes** were loaded and indexed
       <td style="text-align:left">1.00</td>
       <td style="text-align:left"><b>286,136,051</b>
       </td>
-      <td style="text-align:left"></td>
     </tr>
     <tr>
       <td style="text-align:left"><b>GRCh38 Somatic</b>

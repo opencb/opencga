@@ -197,12 +197,26 @@ public class HBaseToStudyEntryConverterTest {
         Assert.assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "<NON_REF>", VariantType.NO_VARIATION),
                 HBaseToStudyEntryConverter.getAlternateCoordinate("1:10035:10035:A:<NON_REF>:NO_VARIATION"));
 
+        Assert.assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "", VariantType.INDEL),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("1:10035:10035:A::INDEL"));
+
         Assert.assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "<DUP:TANDEM>", VariantType.DUPLICATION),
                 HBaseToStudyEntryConverter.getAlternateCoordinate("1:10035:10035:A:<DUP:TANDEM>:DUPLICATION"));
 
         Assert.assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "A]chr1:1234]", VariantType.BREAKEND),
                 HBaseToStudyEntryConverter.getAlternateCoordinate("1:10035:10035:A:A]chr1:1234]:BREAKEND"));
 
+        Assert.assertEquals(new AlternateCoordinate("HLA-A*01:11N", 1265, 1266, "CG", "<*>", VariantType.NO_VARIATION),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("HLA-A*01:11N:1265:1266:CG:<*>:NO_VARIATION"));
+
+        Assert.assertEquals(new AlternateCoordinate("HLA-A*01:11N", 1265, 1266, "CG", "<DUP:TANDEM>", VariantType.TANDEM_DUPLICATION),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("HLA-A*01:11N:1265:1266:CG:<DUP:TANDEM>:TANDEM_DUPLICATION"));
+
+        Assert.assertEquals(new AlternateCoordinate("HLA-A*01:11N", 1265, 1266, "CG", "A]HLA-A*01:11N:1234]", VariantType.BREAKEND),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("HLA-A*01:11N:1265:1266:CG:A]HLA-A*01:11N:1234]:BREAKEND"));
+
+        Assert.assertEquals(new AlternateCoordinate("HLA-A*01:11N:12", 1265, 1266, "CG", "A]HLA-A*01:11N:1234]", VariantType.BREAKEND),
+                HBaseToStudyEntryConverter.getAlternateCoordinate("HLA-A*01:11N:12:1265:1266:CG:A]HLA-A*01:11N:1234]:BREAKEND"));
     }
 
     private PhoenixArray arrayOf(String... values) {
