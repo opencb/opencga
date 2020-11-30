@@ -1,2 +1,2 @@
-# Components
+# OpenCGA Architecture
 
