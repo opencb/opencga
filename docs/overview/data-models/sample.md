@@ -15,7 +15,7 @@ Legend:
 
 ### Sample
 
-This is the main data model, it stores the most basic and important information.
+This is the main data model, it stores the most basic and important information. You can find the Java [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 <table>
   <thead>
@@ -178,7 +178,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>phenotypes</b>
         </p>
-        <p><em>List&lt;Phenotype&gt;</em>
+        <p><em>List&lt;</em><a href="./#phenotype"><em>Phenotype</em></a><em>&gt;</em>
         </p>
       </td>
       <td style="text-align:left"></td>
@@ -215,8 +215,6 @@ This is the main data model, it stores the most basic and important information.
     </tr>
   </tbody>
 </table>
-
-### 
 
 ### SampleProcessing
 
