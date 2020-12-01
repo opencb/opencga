@@ -191,6 +191,11 @@ public class K8SExecutor implements BatchExecutor {
                         .withTtlSecondsAfterFinished(30)
                         .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
                         .withTemplate(new PodTemplateSpecBuilder()
+                                .withMetadata(new ObjectMetaBuilder()
+                                        // https://github.com/kubernetes/autoscaler/blob/master/
+                                        //   cluster-autoscaler/FAQ.md#what-types-of-pods-can-prevent-ca-from-removing-a-node
+                                        .addToAnnotations("cluster-autoscaler.kubernetes.io/safe-to-evict", "false")
+                                        .build())
                                 .withSpec(new PodSpecBuilder()
                                         .addToContainers(new ContainerBuilder()
                                                 .withName("opencga")

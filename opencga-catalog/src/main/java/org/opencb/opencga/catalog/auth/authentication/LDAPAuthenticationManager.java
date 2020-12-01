@@ -51,6 +51,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private String fullNameKey;
     private String memberKey;
     private String dnKey;
+    private String dnFormat;
     private String uidKey;
     private String uidFormat;
 
@@ -81,6 +82,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.fullNameKey = String.valueOf(authOptions.getOrDefault(LDAP_FULLNAME_KEY, "displayname"));
         this.memberKey = String.valueOf(authOptions.getOrDefault(LDAP_MEMBER_KEY, "member"));
         this.dnKey = String.valueOf(authOptions.getOrDefault(LDAP_DN_KEY, "dn"));
+        this.dnFormat = String.valueOf(authOptions.getOrDefault(LDAP_DN_FORMAT, "%s"));
         this.uidKey = String.valueOf(authOptions.getOrDefault(LDAP_UID_KEY, "uid"));
         this.uidFormat = String.valueOf(authOptions.getOrDefault(LDAP_UID_FORMAT, "%s"));  // no formatting by default
         this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(
@@ -373,10 +375,11 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     private String getDN(Attributes attributes) throws NamingException {
         if (attributes.get(dnKey) != null) {
-            return (String) attributes.get(dnKey).get(0);
+            String fullDn = (String) attributes.get(dnKey).get(0);
+            return String.format(dnFormat, fullDn);
         } else {
             throw new NamingException("DN id under '" + dnKey + "' key not found. Please, configure the proper '" + LDAP_DN_KEY
-                    + "' for your LDAP installation");
+                    + "' and possibly an '" + LDAP_DN_FORMAT + "' format for your LDAP installation");
         }
     }
 

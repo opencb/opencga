@@ -203,7 +203,8 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
                     fileEntry.getCall().getVariantId() + ":" + fileEntry.getCall().getAlleleIndex());
         }
         if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
-            fileColumn.set(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX, getSecondaryAlternates(variant, studyEntry));
+            fileColumn.set(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX,
+                    getSecondaryAlternates(variant, studyEntry.getSecondaryAlternates()));
         }
         fileColumn.set(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX, overlappingStatus.toString());
         fileColumn.set(HBaseToStudyEntryConverter.FILE_QUAL_IDX, data.get(StudyEntry.QUAL));
@@ -220,9 +221,9 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
         return fileColumn;
     }
 
-    private String getSecondaryAlternates(Variant variant, StudyEntry studyEntry) {
+    public static String getSecondaryAlternates(Variant variant, List<AlternateCoordinate> secondaryAlternates) {
         StringBuilder sb = new StringBuilder();
-        Iterator<AlternateCoordinate> iterator = studyEntry.getSecondaryAlternates().iterator();
+        Iterator<AlternateCoordinate> iterator = secondaryAlternates.iterator();
         while (iterator.hasNext()) {
             AlternateCoordinate alt = iterator.next();
             sb.append(alt.getChromosome() == null ? variant.getChromosome() : alt.getChromosome());

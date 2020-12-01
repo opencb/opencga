@@ -3,7 +3,7 @@
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
-  ## URL host to annotate variants, for example: http://bioinfo.hpc.cam.ac.uk/cellbase/
+  ## URL host to annotate variants, for example: http://ws.opencb.org/cellbase/
   host: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
 
@@ -178,8 +178,12 @@ variant:
           mapreduce.map.memory.mb: 750
         VariantStatsDriver:
           mapreduce.map.memory.mb: 2048
+        SampleIndexDriver:
+          mapreduce.map.memory.mb: 4096
         SampleIndexAnnotationLoaderDriver:
           mapreduce.map.memory.mb: 4096
+        VariantMigration200Driver:
+          mapreduce.map.memory.mb: 1024
 
 
 ## PENDING

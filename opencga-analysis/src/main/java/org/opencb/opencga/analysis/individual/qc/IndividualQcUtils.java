@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.individual.qc;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
@@ -39,9 +39,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -63,7 +61,7 @@ public class IndividualQcUtils {
         // Apply filter: biallelic variants
         Query query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study)
-                .append(VariantQueryParam.TYPE.key(), "SNV");
+                .append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
         String gt = samples.stream().map(s -> s + ":0/0,0/1,1/1").collect(Collectors.joining(";"));
         query.put(VariantQueryParam.GENOTYPE.key(), gt);

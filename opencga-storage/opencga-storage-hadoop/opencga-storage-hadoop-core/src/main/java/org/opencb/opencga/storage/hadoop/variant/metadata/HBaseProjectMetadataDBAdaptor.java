@@ -140,4 +140,9 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
         }
     }
 
+    @Override
+    public boolean exists() {
+        return tableExists();
+    }
+
 }

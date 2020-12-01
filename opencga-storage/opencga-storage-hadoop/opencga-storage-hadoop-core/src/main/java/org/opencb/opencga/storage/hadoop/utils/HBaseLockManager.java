@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -78,6 +77,7 @@ public class HBaseLockManager {
     private static final String LOCK_EXPIRING_DATE_SEPARATOR_STR = ":";
     private static final byte LOCK_PREFIX_SEPARATOR_BYTE = '-';
     private static final String LOCK_PREFIX_SEPARATOR_STR = "-";
+    private static final byte DEPRECATED_LOCK_SEPARATOR_BYTE = '_';
     private static final String CURRENT = "CURRENT" + LOCK_PREFIX_SEPARATOR_STR;
     private static final String REFRESH = "REFRESH" + LOCK_PREFIX_SEPARATOR_STR;
     protected static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(
@@ -168,7 +168,7 @@ public class HBaseLockManager {
         } while (!token.equals(readToken));
 
         boolean prevTokenExpired = lockValue != null && lockValue.length > 0;
-        boolean slowQuery = stopWatch.getTime(TimeUnit.SECONDS) > 60;
+        boolean slowQuery = stopWatch.getTime() > 60000;
         if (prevTokenExpired || slowQuery) {
             StringBuilder msg = new StringBuilder("Lock column '").append(Bytes.toStringBinary(column)).append("'");
             if (prevTokenExpired) {
@@ -316,7 +316,16 @@ public class HBaseLockManager {
         int idx1 = Bytes.indexOf(lockValue, LOCK_PREFIX_SEPARATOR_BYTE);
         int idx2 = Bytes.indexOf(lockValue, LOCK_EXPIRING_DATE_SEPARATOR_BYTE);
         String token = Bytes.toString(lockValue, idx1 + 1, idx2 - idx1 - 1);
-        long expireDate = Long.parseLong(Bytes.toString(lockValue, idx2 + 1));
+        long expireDate;
+        try {
+            expireDate = Long.parseLong(Bytes.toString(lockValue, idx2 + 1));
+        } catch (NumberFormatException e) {
+            // Deprecated token. Assume expired token
+            if (Bytes.contains(lockValue, DEPRECATED_LOCK_SEPARATOR_BYTE)) {
+                return null;
+            }
+            throw e;
+        }
 
         if (isExpired(expireDate)) {
             return null;
@@ -327,7 +336,15 @@ public class HBaseLockManager {
 
     protected static long parseExpireDate(byte[] lockValue) {
         int idx2 = Bytes.indexOf(lockValue, LOCK_EXPIRING_DATE_SEPARATOR_BYTE);
-        return Long.parseLong(Bytes.toString(lockValue, idx2 + 1));
+        try {
+            return Long.parseLong(Bytes.toString(lockValue, idx2 + 1));
+        } catch (NumberFormatException e) {
+            // Deprecated token. Assume expired token
+            if (Bytes.contains(lockValue, DEPRECATED_LOCK_SEPARATOR_BYTE)) {
+                return -1;
+            }
+            throw e;
+        }
     }
 
     /**
