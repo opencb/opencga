@@ -400,7 +400,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (config != null && config.isSkipUntieredVariants() && CollectionUtils.isEmpty(evidences)) {
             return null;
         }
-        
+
         ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
         clinicalVariant.setEvidences(evidences);
         return clinicalVariant;

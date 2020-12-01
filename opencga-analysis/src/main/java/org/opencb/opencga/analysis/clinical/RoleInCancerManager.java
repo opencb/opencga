@@ -37,15 +37,16 @@ public class RoleInCancerManager {
     }
 
     public Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer() throws IOException {
-        // Lazy loading
-        if (roleInCancer == null) {
-            synchronized (ROLE_IN_CANCER_URL) {
-                if (roleInCancer == null) {
-                    roleInCancer = loadRoleInCancer();
-                }
-            }
-        }
-        return roleInCancer;
+        return new HashMap<>();
+//        // Lazy loading
+//        if (roleInCancer == null) {
+//            synchronized (ROLE_IN_CANCER_URL) {
+//                if (roleInCancer == null) {
+//                    roleInCancer = loadRoleInCancer();
+//                }
+//            }
+//        }
+//        return roleInCancer;
     }
 
     private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer() throws IOException {

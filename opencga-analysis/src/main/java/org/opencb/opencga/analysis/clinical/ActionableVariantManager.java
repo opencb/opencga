@@ -43,15 +43,17 @@ public class ActionableVariantManager {
     public ActionableVariantManager() {}
 
     public Map<String, List<String>> getActionableVariants(String assembly) throws IOException {
-        // Lazy loading
-        if (actionableVariants == null) {
-            actionableVariants = loadActionableVariants();
-        }
-
-        if (actionableVariants.containsKey(assembly)) {
-            return actionableVariants.get(assembly);
-        }
-        return null;
+        return new HashMap<>();
+        
+//        // Lazy loading
+//        if (actionableVariants == null) {
+//            actionableVariants = loadActionableVariants();
+//        }
+//
+//        if (actionableVariants.containsKey(assembly)) {
+//            return actionableVariants.get(assembly);
+//        }
+//        return null;
     }
 
 
