@@ -50,8 +50,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
 import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.THREE_PRIME_UTR_VARIANT;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.lte;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.numResults;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -496,6 +495,25 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+    }
+
+
+    @Test
+    public void testApproximateCount() {
+        VariantQueryResult<Variant> result = variantStorageEngine.get(
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME)
+                        .append(SAMPLE.key(), sampleNames.get(STUDY_NAME).get(0))
+                        .append(INCLUDE_SAMPLE_ID.key(), "true")
+                        .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.9"),
+                new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 200)
+                        .append(QueryOptions.COUNT, true));
+
+        assertTrue(result.getApproximateCount());
+        assertThat(result.getApproximateCountSamplingSize(), gte(200));
+        assertEquals("hadoop + sample_index_table", result.getSource());
     }
 
 }

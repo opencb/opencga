@@ -148,16 +148,15 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             // SampleIndex iterator will be closed when closing the variants iterator
             return dbAdaptor.iterator(variants, query, inputOptions, batchSize);
         } else {
-            // Ensure results are sorted
+            int skip = getSkip(inputOptions);
+            int limit = getLimit(inputOptions);
+            int samplingSize = asyncCount ? 0 : getSamplingSize(inputOptions, DEFAULT_SAMPLING_SIZE, iterator);
+            int tmpLimit = Math.max(limit, samplingSize);
+
             QueryOptions options = new QueryOptions(inputOptions);
+            // Ensure results are sorted and it's not counting from variants dbAdaptor
             options.put(QueryOptions.SORT, true);
             options.put(QueryOptions.COUNT, false);
-
-            int skip = getSkip(options);
-            int limit = getLimit(options);
-            int samplingSize = asyncCount ? 0 : getSamplingSize(options, DEFAULT_SAMPLING_SIZE, iterator);
-
-            int tmpLimit = Math.max(limit, samplingSize);
             options.put(QueryOptions.LIMIT, tmpLimit);
 
             MultiVariantDBIterator variantDBIterator = dbAdaptor.iterator(
