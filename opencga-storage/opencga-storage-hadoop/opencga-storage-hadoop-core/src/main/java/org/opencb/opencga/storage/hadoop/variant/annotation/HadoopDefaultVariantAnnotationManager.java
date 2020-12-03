@@ -47,13 +47,11 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
-import org.opencb.opencga.storage.hadoop.variant.pending.DiscoverPendingVariantsDriver;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
 import java.io.IOException;
@@ -115,11 +113,23 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 logger.info("Skip MapReduce to discover variants to annotate.");
             } else {
                 boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+                AnnotationPendingVariantsManager pendingVariantsManager = new AnnotationPendingVariantsManager(dbAdaptor);
                 ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
                 long lastLoadedFileTs = projectMetadata.getAttributes()
                         .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
                 long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
                         .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+
+                boolean tableExists = pendingVariantsManager.exists();
+                if (!tableExists && lastVariantsToAnnotateUpdateTs > 0) {
+                    lastVariantsToAnnotateUpdateTs = 0;
+                    logger.info("Table with pending variants to annotate not found. Force MapReduce. "
+                            + "Remove old '" + HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS + "' from project manager");
+                    dbAdaptor.getMetadataManager().updateProjectMetadata(p -> {
+                        p.getAttributes().remove(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+                        return p;
+                    });
+                }
 
                 // Skip MR if no file has been loaded since the last execution
                 if (!overwrite && lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
@@ -128,13 +138,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     long ts = System.currentTimeMillis();
 
                     // Append all query to params to use the same filter also at the MR
-                    params = new ObjectMap(params)
-                            .append(DiscoverPendingVariantsDriver.OVERWRITE, overwrite)
-                            .appendAll(query);
-                    mrExecutor.run(DiscoverPendingVariantsDriver.class,
-                            DiscoverPendingVariantsDriver.buildArgs(
-                                    dbAdaptor.getVariantTable(), AnnotationPendingVariantsDescriptor.class, params),
-                            params, "Prepare variants to annotate");
+                    params = new ObjectMap(params).appendAll(query);
+                    pendingVariantsManager.discoverPending(mrExecutor, overwrite, params);
 
                     if (annotateAll) {
                         dbAdaptor.getMetadataManager().updateProjectMetadata(pm -> {

@@ -10,6 +10,8 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
+import java.io.IOException;
+
 public abstract class PendingVariantsManager {
 
     private final PendingVariantsDescriptor descriptor;
@@ -49,6 +51,31 @@ public abstract class PendingVariantsManager {
         mrExecutor.run(DiscoverPendingVariantsDriver.class,
                 DiscoverPendingVariantsDriver.buildArgs(
                         tableNameGenerator.getVariantTableName(), descriptor.getClass(), options),
-                options, "Discover pending " + descriptor.name() + " variants");
+                "Discover pending " + descriptor.name() + " variants");
     }
+
+    public boolean exists() throws StorageEngineException {
+        String tableName = descriptor.getTableName(tableNameGenerator);
+        try {
+            return hBaseManager.tableExists(tableName);
+        } catch (IOException e) {
+            throw new StorageEngineException("Unable to determine if table '" + tableName + "' exists", e);
+        }
+    }
+
+    public void deleteTable() throws StorageEngineException {
+        String tableName = descriptor.getTableName(tableNameGenerator);
+        try {
+            if (hBaseManager.tableExists(tableName)) {
+                hBaseManager.act(tableName, (table, admin) -> {
+                    admin.disableTable(table.getName());
+                    admin.deleteTable(table.getName());
+                    return null;
+                });
+            }
+        } catch (IOException e) {
+            throw new StorageEngineException("Unable to delete table '" + tableName + "'", e);
+        }
+    }
+
 }

@@ -41,8 +41,6 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescr
         return generator.getPendingAnnotationTableName();
     }
 
-
-
     public boolean createTableIfNeeded(String tableName, HBaseManager hBaseManager) throws IOException {
         return createTableIfNeeded(tableName, hBaseManager, Compression.getCompressionAlgorithmByName(
                 hBaseManager.getConf().get(
