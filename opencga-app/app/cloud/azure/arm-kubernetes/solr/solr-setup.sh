@@ -106,6 +106,13 @@ TOTAL_RAM=$(sed 's/ kB//g'  <<< $(grep -oP '^MemTotal:\s+\K.*' /proc/meminfo))
 SOLR_HEAP=$(echo "$TOTAL_RAM/1024/1024/2" | bc )
 echo "SOLR_HEAP=${SOLR_HEAP}g" >> /opt/solr.in.sh
 
+# Increment URL Max size
+echo 'SOLR_OPTS="$SOLR_OPTS -Dsolr.jetty.request.header.size=1048576"' >> /opt/solr.in.sh
+
+# Increment max boolean clauses.
+# See https://lucene.apache.org/solr/guide/8_4/query-settings-in-solrconfig.html#maxbooleanclauses
+echo 'SOLR_OPTS="$SOLR_OPTS -Dsolr.max.booleanClauses=12288"' >> /opt/solr.in.sh
+
 docker run --name ${DOCKER_NAME}                                  \
     --restart always                                              \
     -h $(hostname)                                                \
