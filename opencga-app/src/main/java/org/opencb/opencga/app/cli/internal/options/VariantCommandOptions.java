@@ -1034,6 +1034,18 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
+
+        @Parameter(names = {"--index"}, description = "Index result in catalog as sampleQc.", arity = 0)
+        public boolean index;
+
+        @Parameter(names = {"--index-id"}, description = "SampleQC identifier")
+        public String indexId;
+
+        @Parameter(names = {"--index-description"}, description = "SampleQC description")
+        public String indexDescription;
+
+        @Parameter(names = {"--index-overwrite"}, description = "Overwrite already indexed sample stats", arity = 0)
+        public boolean indexOverwrite;
     }
 
     @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Read precomputed sample variant stats")

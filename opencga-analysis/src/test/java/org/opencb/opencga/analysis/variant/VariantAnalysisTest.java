@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -73,6 +74,9 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.junit.Assert.*;
+
 @RunWith(Parameterized.class)
 public class VariantAnalysisTest {
 
@@ -90,7 +94,8 @@ public class VariantAnalysisTest {
     public static Object[][] parameters() {
         return new Object[][]{
                 {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
-                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}};
+                {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}
+        };
     }
 
     public VariantAnalysisTest(String storageEngine) {
@@ -244,7 +249,7 @@ public class VariantAnalysisTest {
                 count.increment();
             }
         });
-        Assert.assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), token).first().intValue(),
+        assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), token).first().intValue(),
                 count.intValue());
     }
 
@@ -269,7 +274,7 @@ public class VariantAnalysisTest {
                 count.increment();
             }
         });
-        Assert.assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), token).first().intValue(),
+        assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), token).first().intValue(),
                 count.intValue());
     }
 
@@ -299,7 +304,7 @@ public class VariantAnalysisTest {
         });
         Query variantsQuery = new Query(VariantQueryParam.REGION.key(), region);
         System.out.println("variantsQuery = " + variantsQuery.toJson());
-        Assert.assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), token).getNumMatches(),
+        assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), token).getNumMatches(),
                 count.intValue());
     }
 
@@ -312,21 +317,70 @@ public class VariantAnalysisTest {
 
     @Test
     public void testSampleStats() throws Exception {
-        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats"));
+        sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(0, 2));
+        sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(2, 4));
+        sampleVariantStats("1,2", "stats_2", false, 2, Collections.singletonList(ParamConstants.ALL));
+        try {
+            sampleVariantStats("1,2", "stats_1", false, 2, file.getSampleIds());
+            fail();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        sampleVariantStats("1,2", "stats_3", true, 3, Collections.singletonList(ParamConstants.ALL));
+        sampleVariantStats("1,2", "stats_1", true, 3, file.getSampleIds());
+        sampleVariantStats("1,2", "stats_1", false, 2, Collections.singletonList(ParamConstants.ALL), true);
+        sampleVariantStats("1,2", "stats_1", true, 3, Collections.singletonList(ParamConstants.ALL));
+        sampleVariantStats(null, "ALL", false, 4, Collections.singletonList(ParamConstants.ALL));
+
+        try {
+            sampleVariantStats("4", "ALL", true, 4, Collections.singletonList(ParamConstants.ALL));
+            fail();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples)
+            throws Exception {
+        return sampleVariantStats(region, indexId, indexOverwrite, expectedStats, samples, false);
+    }
+
+    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo)
+            throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats_" + indexId));
         System.out.println("output = " + outDir.toAbsolutePath());
-        List<String> samples = file.getSampleIds();
         SampleVariantStatsAnalysisParams params = new SampleVariantStatsAnalysisParams()
                 .setSample(samples)
-                .setVariantQuery(new AnnotationVariantQueryParams().setRegion("1,2"));
+                .setIndex(indexId != null)
+                .setIndexId(indexId)
+                .setIndexOverwrite(indexOverwrite)
+                .setVariantQuery(new AnnotationVariantQueryParams().setRegion(region));
         ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
-        checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+        if (nothingToDo) {
+            assertEquals("All samples stats indexed. Nothing to do!", result.getEvents().get(0).getMessage());
+        } else {
+            checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
-        List<SampleVariantStats> allStats = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(outDir.resolve("sample-variant-stats.json").toFile()).readAll();
-        for (SampleVariantStats sampleVariantStats : allStats) {
-            System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sampleVariantStats));
-            Assert.assertEquals(new HashSet<>(Arrays.asList("1", "2")), sampleVariantStats.getChromosomeCount().keySet());
+            List<SampleVariantStats> allStats = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(outDir.resolve("sample-variant-stats.json").toFile()).readAll();
+            for (SampleVariantStats sampleVariantStats : allStats) {
+//                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sampleVariantStats));
+                List<String> expectedRegion = region == null
+                        ? Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X")
+                        : Arrays.asList(region.split(","));
+                assertEquals(new HashSet<>(expectedRegion), sampleVariantStats.getChromosomeCount().keySet());
+            }
+            if (samples.get(0).equals(ParamConstants.ALL)) {
+                samples = file.getSampleIds();
+            }
+            for (String sample : samples) {
+                Sample sampleObj = catalogManager.getSampleManager().get(STUDY, sample, QueryOptions.empty(), token).first();
+                List<SampleQcVariantStats> variantStats = sampleObj.getQualityControl().getVariantMetrics().getVariantStats();
+                assertEquals(expectedStats, variantStats.size());
+                assertThat(variantStats.stream().map(SampleQcVariantStats::getId).collect(Collectors.toSet()), hasItem(indexId));
+            }
         }
+        return result;
     }
 
     @Test
@@ -362,7 +416,7 @@ public class VariantAnalysisTest {
         System.out.println("outDir = " + outDir);
         VariantExportParams variantExportParams = new VariantExportParams();
         variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22"));
-        Assert.assertEquals("22", variantExportParams.getRegion());
+        assertEquals("22", variantExportParams.getRegion());
         variantExportParams.setCt("lof");
         variantExportParams.setCompress(true);
         variantExportParams.setOutputFileName("chr22");
@@ -422,11 +476,11 @@ public class VariantAnalysisTest {
 
         List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(STUDY, token);
         System.out.println("scores.get(0) = " + JacksonUtils.getDefaultObjectMapper().writeValueAsString(scores));
-        Assert.assertEquals(1, scores.size());
-        Assert.assertEquals("GwasScore", scores.get(0).getName());
+        assertEquals(1, scores.size());
+        assertEquals("GwasScore", scores.get(0).getName());
 
         for (Variant variant : variantStorageManager.iterable(token)) {
-            Assert.assertEquals("GwasScore", variant.getStudies().get(0).getScores().get(0).getId());
+            assertEquals("GwasScore", variant.getStudies().get(0).getScores().get(0).getId());
         }
     }
 
@@ -451,8 +505,8 @@ public class VariantAnalysisTest {
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, null, token);
         checkExecutionResult(er, false);
-        Assert.assertEquals(4, er.getAttributes().get("otherGenesCount"));
-        Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
+        assertEquals(4, er.getAttributes().get("otherGenesCount"));
+        assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
     }
 
     @Test
@@ -466,8 +520,8 @@ public class VariantAnalysisTest {
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
-        Assert.assertEquals(0, er.getAttributes().get("otherGenesCount"));
-        Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
+        assertEquals(0, er.getAttributes().get("otherGenesCount"));
+        assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
     }
 
     @Test
@@ -481,8 +535,8 @@ public class VariantAnalysisTest {
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
-        Assert.assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
-        Assert.assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
+        assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
+        assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
     }
 
     @Test
@@ -537,12 +591,12 @@ public class VariantAnalysisTest {
     public void checkExecutionResult(ExecutionResult er, boolean customExecutor) {
         if (customExecutor) {
             if (storageEngine.equals("hadoop")) {
-                Assert.assertEquals("hbase-mapreduce", er.getExecutor().getId());
+                assertEquals("hbase-mapreduce", er.getExecutor().getId());
             } else {
-                Assert.assertEquals("mongodb-local", er.getExecutor().getId());
+                assertEquals("mongodb-local", er.getExecutor().getId());
             }
         } else {
-            Assert.assertEquals("opencga-local", er.getExecutor().getId());
+            assertEquals("opencga-local", er.getExecutor().getId());
         }
     }
 }

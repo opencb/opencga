@@ -22,26 +22,43 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.List;
 
 public class SampleVariantStatsAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Sample variant stats params";
+    public static final String DESCRIPTION = "Sample variant stats params. "
+            + "Use index=true and indexId='' to store the result in catalog sample QC. indexId=ALL requires an empty query. "
+            + "Use sample=all to compute sample stats of all samples in the variant storage.";
     private List<String> sample;
     private List<String> individual;
-    private AnnotationVariantQueryParams variantQuery;
+    private AnnotationVariantQueryParams variantQuery = new AnnotationVariantQueryParams();
     private String outdir;
+    private boolean index;
+    private boolean indexOverwrite;
+    private String indexId;
+    private String indexDescription;
 
     public SampleVariantStatsAnalysisParams() {
     }
 
-    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual,
-                                            Query variantQuery, String outdir) {
-        this(sample, individual, new AnnotationVariantQueryParams(variantQuery), outdir);
-    }
-
-    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual,
-                                            AnnotationVariantQueryParams variantQuery, String outdir) {
+    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, AnnotationVariantQueryParams variantQuery,
+                                            String outdir, boolean index, boolean indexOverwrite, String indexId, String indexDescription) {
         this.sample = sample;
         this.individual = individual;
         this.variantQuery = variantQuery;
         this.outdir = outdir;
+        this.index = index;
+        this.indexOverwrite = indexOverwrite;
+        this.indexId = indexId;
+        this.indexDescription = indexDescription;
+    }
+
+    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, Query variantQuery, String outdir,
+                                            boolean index, boolean indexOverwrite, String indexId, String indexDescription) {
+        this.sample = sample;
+        this.individual = individual;
+        this.variantQuery = new AnnotationVariantQueryParams(variantQuery);
+        this.outdir = outdir;
+        this.index = index;
+        this.indexOverwrite = indexOverwrite;
+        this.indexId = indexId;
+        this.indexDescription = indexDescription;
     }
 
     public List<String> getSample() {
@@ -62,6 +79,15 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
         return this;
     }
 
+    public AnnotationVariantQueryParams getVariantQuery() {
+        return variantQuery;
+    }
+
+    public SampleVariantStatsAnalysisParams setVariantQuery(AnnotationVariantQueryParams variantQuery) {
+        this.variantQuery = variantQuery;
+        return this;
+    }
+
     public String getOutdir() {
         return outdir;
     }
@@ -71,12 +97,39 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
         return this;
     }
 
-    public AnnotationVariantQueryParams getVariantQuery() {
-        return variantQuery;
+    public boolean isIndex() {
+        return index;
     }
 
-    public SampleVariantStatsAnalysisParams setVariantQuery(AnnotationVariantQueryParams variantQuery) {
-        this.variantQuery = variantQuery;
+    public SampleVariantStatsAnalysisParams setIndex(boolean index) {
+        this.index = index;
+        return this;
+    }
+
+    public boolean isIndexOverwrite() {
+        return indexOverwrite;
+    }
+
+    public SampleVariantStatsAnalysisParams setIndexOverwrite(boolean indexOverwrite) {
+        this.indexOverwrite = indexOverwrite;
+        return this;
+    }
+
+    public String getIndexId() {
+        return indexId;
+    }
+
+    public SampleVariantStatsAnalysisParams setIndexId(String indexId) {
+        this.indexId = indexId;
+        return this;
+    }
+
+    public String getIndexDescription() {
+        return indexDescription;
+    }
+
+    public SampleVariantStatsAnalysisParams setIndexDescription(String indexDescription) {
+        this.indexDescription = indexDescription;
         return this;
     }
 }

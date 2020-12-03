@@ -713,7 +713,11 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.sample,
                 cliOptions.individual,
                 variantQuery,
-                cliOptions.outdir);
+                cliOptions.outdir,
+                cliOptions.index,
+                cliOptions.indexOverwrite,
+                cliOptions.indexId,
+                cliOptions.indexDescription);
         toolRunner.execute(SampleVariantStatsAnalysis.class, toolParams, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 

@@ -40,6 +40,10 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
+    // TODO: Replace with QueryParam
+    String STATS_ID = "stats.id";
+    String STATS_VARIANT_COUNT = "stats.variantCount";
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),

@@ -1325,14 +1325,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     private void fixQualityControlQuery(Query query) {
         String variableSetId = "opencga_sample_variant_stats";
-        List<String> simpleStatsKeys = Arrays.asList("stats.variantCount", "stats.tiTvRatio", "stats.qualityAvg", "stats.qualityStdDev",
-                "stats.heterozygosityRate");
+        List<String> simpleStatsKeys = Arrays.asList(SampleDBAdaptor.STATS_VARIANT_COUNT,
+                "stats.tiTvRatio", "stats.qualityAvg", "stats.qualityStdDev", "stats.heterozygosityRate");
 
         List<String> mapStatsKeys = Arrays.asList("stats.chromosomeCount", "stats.typeCount", "stats.genotypeCount", "stats.depthCount",
                 "stats.biotypeCount", "stats.clinicalSignificanceCount", "stats.consequenceTypeCount");
 
         // Default annotation set id
-        String id = query.getString("stats.id", "ALL");
+        String id = query.getString(SampleDBAdaptor.STATS_ID, "ALL");
 
         List<String> annotationList = new LinkedList<>();
         for (String statsKey : simpleStatsKeys) {
@@ -1355,7 +1355,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (!annotationList.isEmpty()) {
-            query.remove("stats.id");
+            query.remove(SampleDBAdaptor.STATS_ID);
             query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
         }
 
