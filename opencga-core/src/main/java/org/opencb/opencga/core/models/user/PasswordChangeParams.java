@@ -40,8 +40,8 @@ public class PasswordChangeParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("PasswordChangeParams{");
         sb.append("user='").append(user).append('\'');
-        sb.append(", password='").append(password).append('\'');
-        sb.append(", newPassword='").append(newPassword).append('\'');
+        sb.append(", password='").append("********").append('\'');
+        sb.append(", newPassword='").append("********").append('\'');
         sb.append('}');
         return sb.toString();
     }
