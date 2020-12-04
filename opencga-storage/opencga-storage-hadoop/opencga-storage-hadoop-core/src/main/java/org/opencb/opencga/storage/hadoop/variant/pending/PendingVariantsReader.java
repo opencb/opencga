@@ -61,7 +61,7 @@ public class PendingVariantsReader extends AbstractHBaseDataReader<Variant> {
         List<Scan> scans = new ArrayList<>();
         List<Region> regions = null;
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
-            regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()));
+            regions = Region.parseRegions(query.getString(VariantQueryParam.REGION.key()), true);
         }
         if (regions == null) {
             scans.add(new Scan());

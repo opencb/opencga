@@ -627,11 +627,11 @@ public class VariantHBaseQueryParser {
     private List<Region> getRegions(Query query) {
         List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
-            regions.addAll(Region.parseRegions(query.getString(REGION.key())));
+            regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
         }
 
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key())));
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
         }
 
         regions = mergeRegions(regions);

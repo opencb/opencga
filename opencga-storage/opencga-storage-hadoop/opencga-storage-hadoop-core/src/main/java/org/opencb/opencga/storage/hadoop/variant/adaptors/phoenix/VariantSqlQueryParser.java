@@ -406,7 +406,7 @@ public class VariantSqlQueryParser {
             List<String> genes = variantQueryXref.getGenes();
             List<String> geneRegionFilters = new ArrayList<>();
             if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-                for (Region region : Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()))) {
+                for (Region region : Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true)) {
                     geneRegionFilters.add(getRegionFilter(region));
                 }
             } else {

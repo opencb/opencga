@@ -133,12 +133,12 @@ public class SampleIndexQueryParser {
         // Extract regions
         List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
-            regions.addAll(Region.parseRegions(query.getString(REGION.key())));
+            regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
             query.remove(REGION.key());
         }
 
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key())));
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
             query.remove(ANNOT_GENE_REGIONS.key());
             query.remove(GENE.key());
         }

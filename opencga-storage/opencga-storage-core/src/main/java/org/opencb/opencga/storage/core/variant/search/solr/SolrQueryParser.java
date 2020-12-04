@@ -496,7 +496,7 @@ public class SolrQueryParser {
 
         // Regions
         if (StringUtils.isNotEmpty(query.getString(REGION.key()))) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
+            regions = Region.parseRegions(query.getString(REGION.key()), true);
         }
 
         // Biotypes
