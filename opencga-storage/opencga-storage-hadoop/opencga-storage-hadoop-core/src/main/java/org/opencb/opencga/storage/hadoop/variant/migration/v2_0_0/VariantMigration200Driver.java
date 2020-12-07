@@ -55,9 +55,10 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
 
         region = getConf().get(VariantQueryParam.REGION.key());
 
+        Integer variantsTableRegions = getHBaseManager().act(getVariantsTable(), (t, admin) -> admin.getTableRegions(t.getName()).size());
         String deletedSpanDeletionsTable = getVariantsTable() + "_old_span_del";
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
-                50,
+                Math.max(1, variantsTableRegions / 10),
                 VariantPhoenixKeyFactory::generateVariantRowKey);
         getHBaseManager()
                 .createTableIfNeeded(deletedSpanDeletionsTable, GenomeHelper.COLUMN_FAMILY_BYTES, splitList, Compression.Algorithm.GZ);
@@ -69,8 +70,6 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
         } else {
             logger.info("Do not remove span deletions from main variants table");
         }
-
-
     }
 
     @Override
