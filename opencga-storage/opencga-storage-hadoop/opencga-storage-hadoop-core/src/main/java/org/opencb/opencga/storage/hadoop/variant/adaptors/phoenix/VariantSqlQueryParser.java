@@ -375,6 +375,7 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_COSMIC}
      *
      * @param query Query to parse
+     * @param otherFilters Other filters to be added
      * @return List of region filters
      */
     protected List<String> getRegionFilters(Query query, List<String> otherFilters) {

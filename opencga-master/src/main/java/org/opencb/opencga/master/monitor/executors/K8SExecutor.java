@@ -43,6 +43,8 @@ public class K8SExecutor implements BatchExecutor {
 
     public static final String K8S_MASTER_NODE = "k8s.masterUrl";
     public static final String K8S_IMAGE_NAME = "k8s.imageName";
+    public static final String K8S_IMAGE_PULL_POLICY = "k8s.imagePullPolicy";
+    public static final String K8S_IMAGE_PULL_SECRETS = "k8s.imagePullSecrets";
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_REQUESTS = "k8s.requests";
     public static final String K8S_LIMITS = "k8s.limits";
@@ -89,6 +91,8 @@ public class K8SExecutor implements BatchExecutor {
     private final Map<String, Pair<Instant, String>> jobStatusCache = new ConcurrentHashMap<>();
     private final Watch podsWatcher;
     private final Watch jobsWatcher;
+    private String imagePullPolicy;
+    private List<LocalObjectReference> imagePullSecrets;
 
     public K8SExecutor(Execution execution) {
         this.k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
@@ -99,7 +103,8 @@ public class K8SExecutor implements BatchExecutor {
         this.tolerations = buildTolelrations(execution.getOptions().getList(K8S_TOLERATIONS));
         this.k8sConfig = new ConfigBuilder().withMasterUrl(k8sClusterMaster).build();
         this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
-
+        this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
+        this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         nodeSelector = getMap(execution, K8S_NODE_SELECTOR);
 
         HashMap<String, Quantity> requests = new HashMap<>();
@@ -197,10 +202,11 @@ public class K8SExecutor implements BatchExecutor {
                                         .addToAnnotations("cluster-autoscaler.kubernetes.io/safe-to-evict", "false")
                                         .build())
                                 .withSpec(new PodSpecBuilder()
+                                        .withImagePullSecrets(imagePullSecrets)
                                         .addToContainers(new ContainerBuilder()
                                                 .withName("opencga")
                                                 .withImage(imageName)
-                                                .withImagePullPolicy("Always")
+                                                .withImagePullPolicy(imagePullPolicy)
                                                 .withResources(resources)
                                                 .addToEnv(DOCKER_HOST)
                                                 .withCommand("/bin/sh", "-c")
@@ -398,40 +404,40 @@ public class K8SExecutor implements BatchExecutor {
         }
     }
 
-    private List<VolumeMount> buildVolumeMounts(List<Object> list) {
-        List<VolumeMount> volumeMounts = new ArrayList<>();
+    private <T> List<T> buildObjects(List<Object> list, Class<T> clazz) {
+        List<T> ts = new ArrayList<>();
         if (list == null) {
-            return volumeMounts;
+            return ts;
         }
+        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
         for (Object o : list) {
-            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-            volumeMounts.add(mapper.convertValue(o, VolumeMount.class));
+            ts.add(mapper.convertValue(o, clazz));
         }
-        return volumeMounts;
+        return ts;
+    }
+    private <T> T buildObject(Object o, Class<T> clazz) {
+        if (o == null) {
+            return null;
+        }
+        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+        return mapper.convertValue(o, clazz);
+    }
+
+    private List<VolumeMount> buildVolumeMounts(List<Object> list) {
+        return buildObjects(list, VolumeMount.class);
+    }
+
+    private List<LocalObjectReference> buildLocalObjectReference(Object object) {
+        LocalObjectReference reference = buildObject(object, LocalObjectReference.class);
+        return reference == null ? Collections.emptyList() : Collections.singletonList(reference);
     }
 
     private List<Volume> buildVolumes(List<Object> list) {
-        List<Volume> volumes = new ArrayList<>();
-        if (list == null) {
-            return volumes;
-        }
-        for (Object o : list) {
-            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-            volumes.add(mapper.convertValue(o, Volume.class));
-        }
-        return volumes;
+        return buildObjects(list, Volume.class);
     }
 
     private List<Toleration> buildTolelrations(List<Object> list) {
-        List<Toleration> tolerations = new ArrayList<>();
-        if (list == null) {
-            return tolerations;
-        }
-        for (Object o : list) {
-            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-            tolerations.add(mapper.convertValue(o, Toleration.class));
-        }
-        return tolerations;
+        return buildObjects(list, Toleration.class);
     }
 
     private KubernetesClient getKubernetesClient() {
