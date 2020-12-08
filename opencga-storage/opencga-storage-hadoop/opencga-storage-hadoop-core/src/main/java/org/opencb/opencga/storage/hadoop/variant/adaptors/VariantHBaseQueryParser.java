@@ -151,7 +151,9 @@ public class VariantHBaseQueryParser {
         }
         if (otherParams.contains(GENE)) {
             if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-                otherParams.remove(GENE);
+                if (!query.getString(ANNOT_GENE_REGIONS.key()).equals(SKIP_GENE_REGIONS)) {
+                    otherParams.remove(GENE);
+                }
             }
         }
         if (otherParams.contains(ANNOT_EXPRESSION)) {

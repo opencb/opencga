@@ -132,6 +132,7 @@ public final class VariantQueryUtils {
     )));
 
     public static final String SKIP_MISSING_GENES = "skipMissingGenes";
+    public static final String SKIP_GENE_REGIONS = "skipGeneRegions";
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 

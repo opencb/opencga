@@ -129,8 +129,10 @@ public class VariantSqlQueryParser {
         try {
 
             Set<Column> dynamicColumns = new HashSet<>();
-            List<String> regionFilters = getRegionFilters(query);
+            List<String> combinedFilters = new ArrayList<>();
+            List<String> regionFilters = getRegionFilters(query, combinedFilters);
             List<String> filters = getOtherFilters(variantQuery, options, dynamicColumns);
+            filters.addAll(combinedFilters);
 
             List<HintNode.Hint> hints = new ArrayList<>();
             if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
@@ -375,7 +377,7 @@ public class VariantSqlQueryParser {
      * @param query Query to parse
      * @return List of region filters
      */
-    protected List<String> getRegionFilters(Query query) {
+    protected List<String> getRegionFilters(Query query, List<String> otherFilters) {
         List<String> regionFilters = new LinkedList<>();
 
         if (isValidParam(query, REGION)) {
@@ -405,9 +407,15 @@ public class VariantSqlQueryParser {
         if (!variantQueryXref.getGenes().isEmpty()) {
             List<String> genes = variantQueryXref.getGenes();
             List<String> geneRegionFilters = new ArrayList<>();
+            boolean skipGeneRegions = false;
             if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-                for (Region region : Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true)) {
-                    geneRegionFilters.add(getRegionFilter(region));
+                String geneRegions = query.getString(ANNOT_GENE_REGIONS.key());
+                if (geneRegions.equals(SKIP_GENE_REGIONS)) {
+                    skipGeneRegions = true;
+                } else {
+                    for (Region region : Region.parseRegions(geneRegions, true)) {
+                        geneRegionFilters.add(getRegionFilter(region));
+                    }
                 }
             } else {
                 throw new VariantQueryException("Error building query by genes '" + genes
@@ -453,6 +461,9 @@ public class VariantSqlQueryParser {
 
             if (combinedFilters == null) {
                 regionFilters.addAll(geneRegionFilters);
+            } else if (skipGeneRegions) {
+                // Add combinedFilters as normal filters
+                otherFilters.addAll(combinedFilters);
             } else {
                 regionFilters.add(appendFilters(Arrays.asList(
                         appendFilters(geneRegionFilters, QueryOperation.OR),

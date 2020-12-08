@@ -129,22 +129,6 @@ public class SampleIndexQueryParser {
      * @see SampleIndexQueryParser#validSampleIndexQuery(Query)
      */
     public SampleIndexQuery parse(Query query) {
-        //
-        // Extract regions
-        List<Region> regions = new ArrayList<>();
-        if (isValidParam(query, REGION)) {
-            regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
-            query.remove(REGION.key());
-        }
-
-        if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
-            query.remove(ANNOT_GENE_REGIONS.key());
-            query.remove(GENE.key());
-        }
-
-        regions = mergeRegions(regions);
-
         // TODO: Accept variant IDs?
 
         // Extract study
@@ -422,6 +406,24 @@ public class SampleIndexQueryParser {
                 query.remove(TYPE.key());
             }
         }
+
+        // Extract regions
+        List<Region> regions = new ArrayList<>();
+        if (isValidParam(query, REGION)) {
+            regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
+            query.remove(REGION.key());
+        }
+
+        if (isValidParam(query, ANNOT_GENE_REGIONS)) {
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
+            if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE) || isValidParam(query, ANNOT_BIOTYPE)) {
+                query.put(ANNOT_GENE_REGIONS.key(), SKIP_GENE_REGIONS);
+            } else {
+                query.remove(ANNOT_GENE_REGIONS.key());
+                query.remove(GENE.key());
+            }
+        }
+        regions = mergeRegions(regions);
 
         return new SampleIndexQuery(regions, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
@@ -837,8 +839,8 @@ public class SampleIndexQueryParser {
             }
             if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
                 ctFilterCoveredBySummary = true;
+                ctCovered = true;
                 annotationIndex |= MISSENSE_VARIANT_MASK;
-                query.remove(ANNOT_CONSEQUENCE_TYPE.key());
             }
 
             // Do not use ctIndex if the CT filter is covered by the summary
