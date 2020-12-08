@@ -152,9 +152,14 @@ public class VariantMapReduceUtil {
             boolean useSampleIndex = !skipSampleIndex
                     && SampleIndexQueryParser.validSampleIndexQuery(query);
             if (useSampleIndex) {
+                Object regions = query.get(VariantQueryParam.REGION.key());
+                Object geneRegions = query.get(VariantQueryUtils.ANNOT_GENE_REGIONS.key());
                 // Remove extra fields from the query
                 new SampleIndexQueryParser(metadataManager).parse(query);
 
+                // Preserve regions and gene_regions
+                query.put(VariantQueryParam.REGION.key(), regions);
+                query.put(VariantQueryUtils.ANNOT_GENE_REGIONS.key(), geneRegions);
                 LOGGER.info("Use sample index to read from HBase");
             }
 
