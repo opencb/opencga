@@ -73,6 +73,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     public static final String SECONDARY_ONLY = "secondary-only";
 //    public static final String MAIN_ONLY = "main-only";
     public static final String PARTIAL_SCAN_SIZE = "partial-scan-size";
+    public static final String MAX_COLUMNS_PER_SCAN = "max-columns-per-scan";
 
     private static final String SAMPLE_ID_TO_FILE_ID_MAP = "SampleIndexDriver.sampleIdToFileIdMap";
     private static final String MULTI_FILE_SAMPLES = "SampleIndexDriver.multiFileSamples";
@@ -90,6 +91,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private double partialScanSize;
     private List<String> fixedAttributes;
     private boolean multiScan = false;
+    private int maxColumns;
 
     @Override
     protected String getJobOperationName() {
@@ -112,6 +114,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         params.put("--" + PARTIAL_SCAN_SIZE, "<samples-per-scan>");
+        params.put("--" + MAX_COLUMNS_PER_SCAN, "<max-columns-per-scan>");
         return params;
     }
 
@@ -144,6 +147,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
         // Max number of samples to be processed in each Scan.
         partialScanSize = Integer.valueOf(getParam(PARTIAL_SCAN_SIZE, "1000"));
+        maxColumns = Integer.valueOf(getParam(MAX_COLUMNS_PER_SCAN, "4000"));
 
         String samplesParam = getParam(SAMPLES);
         String sampleIdsStr = getParam(SAMPLE_IDS);
@@ -255,7 +259,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             }
             scan.setFilter(filter);
 
-            if (sampleIds.size() < 6000) {
+            int approxExpectedNumColumns =
+                    sampleIds.size()
+                    + sampleIdToFileIdMap.values().stream().flatMap(Collection::stream).collect(Collectors.toSet()).size();
+            if (approxExpectedNumColumns < maxColumns) {
                 for (Integer sample : sampleIds) {
                     byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
                     scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
@@ -343,6 +350,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private VariantFileIndexConverter fileIndexConverter;
         private List<String> fixedAttributes;
         private final Map<Integer, SampleMetadata> samples = new HashMap<>();
+        private final Set<Integer> files = new HashSet<>();
         private boolean hasGenotype;
 
         private final Map<Integer, SampleIndexEntryPutBuilder> samplesMap = new HashMap<>();
@@ -382,6 +390,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     for (String file : files) {
                         fileIds.add(Integer.valueOf(file));
                     }
+                    this.files.addAll(fileIds);
                     samples.put(sampleId, new SampleMetadata(0, sampleId, null).setFiles(fileIds));
                 }
             }
@@ -399,6 +408,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             Map<Integer, Short> fileIndexMap = new HashMap<>();
 
             variantRow.forEachFile(fileColumn -> {
+                if (!this.files.contains(fileColumn.getFileId())) {
+                    // Discard extra files
+                    return;
+                }
                 Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn.raw(), fixedAttributes);
 
                 short fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), 0, fileAttributes, null);
@@ -408,6 +421,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
             variantRow.forEachSample(sampleColumn -> {
                 int sampleId = sampleColumn.getSampleId();
+                SampleMetadata sampleMetadata = samples.get(sampleId);
+                if (sampleMetadata == null) {
+                    // Discard extra samples
+                    return;
+                }
                 String gt;
                 boolean validGt;
                 if (hasGenotype) {
@@ -425,7 +443,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 if (validGt) {
                     SampleIndexEntryPutBuilder builder = samplesMap.computeIfAbsent(sampleId,
                             s -> new SampleIndexEntryPutBuilder(s, variant));
-                    SampleMetadata sampleMetadata = samples.get(sampleId);
                     List<Integer> files;
                     int filePosition;
                     if (sampleMetadata.isMultiFileSample()) {
@@ -453,7 +470,20 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             }
                             builder.add(gt, new SampleVariantIndexEntry(variant, fileIndex));
                             if (samplesToCount.contains(sampleId)) {
-                                context.getCounter(COUNTER_GROUP_NAME, "SAMPLE_" + sampleId + '_' + gt).increment(1);
+                                switch (gt) {
+                                    case "1/1":
+                                    case "0/1":
+                                    case "1/2":
+                                    case "1/3":
+                                    case "0|1":
+                                    case "1|0":
+                                    case "1|1":
+                                        context.getCounter(COUNTER_GROUP_NAME, "SAMPLE_" + sampleId + "_" + gt).increment(1);
+                                        break;
+                                    default:
+                                        context.getCounter(COUNTER_GROUP_NAME, "SAMPLE_" + sampleId + "_x/x").increment(1);
+                                        break;
+                                }
                             }
                         }
                     }

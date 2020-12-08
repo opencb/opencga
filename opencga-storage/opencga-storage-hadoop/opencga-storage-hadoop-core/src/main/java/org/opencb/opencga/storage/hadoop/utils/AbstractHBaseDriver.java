@@ -107,6 +107,12 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             value = getConf().get("--" + key);
         }
         if (StringUtils.isEmpty(value)) {
+            value = getConf().get(getClass().getName() + "." + key);
+        }
+        if (StringUtils.isEmpty(value)) {
+            value = getConf().get(getClass().getSimpleName() + "." + key);
+        }
+        if (StringUtils.isEmpty(value)) {
             value = defaultValue;
         }
         return value;
