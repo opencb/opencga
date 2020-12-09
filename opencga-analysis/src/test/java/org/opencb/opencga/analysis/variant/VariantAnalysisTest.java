@@ -398,16 +398,16 @@ public class VariantAnalysisTest {
 
     @Test
     public void testCohortStatsIndex() throws Exception {
-        ObjectMap executorParams = new ObjectMap();
-        CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
-        analysis.setStudy(STUDY)
-                .setCohortName(StudyEntry.DEFAULT_COHORT)
+        CohortVariantStatsAnalysisParams toolParams = new CohortVariantStatsAnalysisParams()
+                .setCohort(StudyEntry.DEFAULT_COHORT)
                 .setIndex(true);
-        checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+
+        ExecutionResult result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
+                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
     }
 
     @Test

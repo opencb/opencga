@@ -742,7 +742,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndex(cliOptions.index)
-                .setSamplesQuery(query)
+                .setSampleAnnotation(cliOptions.samplesAnnotation)
                 .setSampleNames(sampleNames)
                 .start();
     }
