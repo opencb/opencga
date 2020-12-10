@@ -46,7 +46,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -187,7 +187,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
             DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
 
-        if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
+        if (VariantPhoenixSchema.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
             int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
@@ -198,10 +198,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
             Task<VariantAnnotation, Put> task = Task.join(hBaseConverter, annotationIndexDBLoader.asTask(true));
 
-            VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(
-                    dbAdaptor.getHBaseManager(),
-                    dbAdaptor.getTableNameGenerator(),
-                    GenomeHelper.COLUMN_FAMILY_BYTES);
+            VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(dbAdaptor);
             return new ParallelTaskRunner<>(reader, task, writer, config);
         } else {
             return new ParallelTaskRunner<>(reader,
@@ -272,9 +269,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
 
         String columnFamily = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
-        String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(annotationMetadata.getId());
+        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(annotationMetadata.getId());
         Map<String, String> columnsToCopyMap = Collections.singletonMap(
-                columnFamily + ':' + VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.column(),
+                columnFamily + ':' + VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.column(),
                 columnFamily + ':' + targetColumn);
         String[] args = CopyHBaseColumnDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
@@ -291,7 +288,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 .getAnnotation().getSaved(name);
 
         String columnFamily = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
-        String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId());
+        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(saved.getId());
 
         String[] args = DeleteHBaseColumnDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),

@@ -7,14 +7,14 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Test;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SyncStatus;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.INDEX_NOT_SYNC;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.INDEX_STUDIES;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.INDEX_NOT_SYNC;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.INDEX_STUDIES;
 
 public class HadoopVariantSearchIndexUtilsTest {
 
@@ -60,11 +60,11 @@ public class HadoopVariantSearchIndexUtilsTest {
         return Result.create(cellsArray);
     }
 
-    private Cell kv(long ts, VariantPhoenixHelper.VariantColumn column) {
+    private Cell kv(long ts, VariantPhoenixSchema.VariantColumn column) {
         return kv(ts, column, "value");
     }
 
-    private Cell kv(long ts, VariantPhoenixHelper.VariantColumn column, String value) {
+    private Cell kv(long ts, VariantPhoenixSchema.VariantColumn column, String value) {
         return new KeyValue(Bytes.toBytes("row"), GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes(), ts, Bytes.toBytes(value));
     }
 

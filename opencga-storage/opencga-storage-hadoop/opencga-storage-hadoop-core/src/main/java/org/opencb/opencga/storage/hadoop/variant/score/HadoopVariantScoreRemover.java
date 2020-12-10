@@ -11,10 +11,10 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.VariantsTableDeleteColumnMapper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 
@@ -31,7 +31,7 @@ public class HadoopVariantScoreRemover extends VariantScoreRemover {
 
     @Override
     protected void remove(VariantScoreMetadata scoreMetadata, ObjectMap options) throws StorageEngineException {
-        PhoenixHelper.Column column = VariantPhoenixHelper.getVariantScoreColumn(scoreMetadata.getStudyId(), scoreMetadata.getId());
+        PhoenixHelper.Column column = VariantPhoenixSchema.getVariantScoreColumn(scoreMetadata.getStudyId(), scoreMetadata.getId());
 
         options = new ObjectMap(options);
         options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_MAPPER_CLASS, VariantsTableDeleteColumnMapper.class.getName());
@@ -47,12 +47,9 @@ public class HadoopVariantScoreRemover extends VariantScoreRemover {
     @Override
     protected void postRemove(VariantScoreMetadata scoreMetadata, boolean success) throws StorageEngineException {
         if (success) {
+            VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
             try {
-                VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-                Connection connection = dbAdaptor.getJdbcConnection();
-                String variantTable = dbAdaptor.getVariantTable();
-
-                phoenixHelper.dropScore(connection, variantTable, scoreMetadata.getStudyId(), Collections.singleton(scoreMetadata.getId()));
+                schemaManager.dropScore(scoreMetadata.getStudyId(), Collections.singletonList(scoreMetadata.getId()));
             } catch (SQLException e) {
                 throw Throwables.propagate(e);
             }

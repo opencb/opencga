@@ -15,7 +15,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -67,7 +68,7 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
             logger.info("Regenerate annotations for region " + region);
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes());
 
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, variantTable, scan, getMapperClass());
@@ -82,8 +83,9 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
 
         // Update missing columns, if any
         try {
-            VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(getHelper());
-            variantPhoenixHelper.updateAnnotationColumns(variantPhoenixHelper.newJdbcConnection(), variantTable);
+            VariantPhoenixSchemaManager schemaManager =
+                    new VariantPhoenixSchemaManager(getConf(), variantTable, getMetadataManager());
+            schemaManager.registerAnnotationColumns();
         } catch (ClassNotFoundException | SQLException e) {
             throw new RuntimeException(e);
         }

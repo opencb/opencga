@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -32,6 +33,7 @@ import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.*;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,9 +190,15 @@ public class PhoenixHelper {
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType)
             throws SQLException {
-        Set<String> columns = getColumns(con, tableName, tableType).stream()
+        LinkedHashSet<String> columns = getColumns(con, tableName, tableType).stream()
                 .map(Column::column)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        addMissingColumns(con, tableName, newColumns, tableType, columns);
+    }
+
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType,
+                                  Set<String> columns)
+            throws SQLException {
         Set<Column> missingColumns = newColumns.stream()
                 .filter(column -> !columns.contains(column.column()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -357,13 +365,17 @@ public class PhoenixHelper {
             schema = null;
             table = fullTableName;
         }
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         try (ResultSet resultSet = con.getMetaData().getColumns(null, schema, table, null)) {
-
             List<Column> columns = new ArrayList<>();
             while (resultSet.next()) {
                 String columnName = resultSet.getString(PhoenixDatabaseMetaData.COLUMN_NAME);
                 String typeName = resultSet.getString(PhoenixDatabaseMetaData.TYPE_NAME);
                 columns.add(Column.build(columnName, PDataType.fromSqlTypeName(typeName)));
+            }
+            if (stopWatch.getTime() > 5 * 1000) {
+                logger.warn("Slow read columns from Phoenix. Took " + TimeUtils.durationToString(stopWatch));
             }
             return columns;
         }
@@ -470,16 +482,16 @@ public class PhoenixHelper {
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof ColumnImpl)) {
+            if (!(o instanceof Column)) {
                 return false;
             }
 
-            ColumnImpl column1 = (ColumnImpl) o;
+            Column column1 = (Column) o;
 
-            if (column != null ? !column.equals(column1.column) : column1.column != null) {
+            if (column != null ? !column.equals(column1.column()) : column1.column() != null) {
                 return false;
             }
-            return pDataType != null ? pDataType.equals(column1.pDataType) : column1.pDataType == null;
+            return pDataType != null ? pDataType.equals(column1.getPDataType()) : column1.getPDataType() == null;
 
         }
 

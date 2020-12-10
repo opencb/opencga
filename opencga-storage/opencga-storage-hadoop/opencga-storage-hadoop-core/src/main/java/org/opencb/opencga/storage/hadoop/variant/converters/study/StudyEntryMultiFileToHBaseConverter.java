@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters.study;
 import com.google.common.collect.LinkedListMultimap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
 import java.util.Collection;
 
@@ -28,7 +28,7 @@ public class StudyEntryMultiFileToHBaseConverter extends StudyEntryToHBaseConver
     }
 
     protected byte[] getSampleColumn(Integer sampleId) {
-        return VariantPhoenixHelper.buildSampleColumnKey(studyMetadata.getId(), sampleId);
+        return VariantPhoenixSchema.buildSampleColumnKey(studyMetadata.getId(), sampleId);
     }
 
     @Override

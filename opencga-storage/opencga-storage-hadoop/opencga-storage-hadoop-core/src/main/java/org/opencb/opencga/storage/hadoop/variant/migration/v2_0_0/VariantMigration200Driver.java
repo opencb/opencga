@@ -18,7 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -146,7 +146,7 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
                     }
                     if (newType != null) {
                         put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES,
-                                VariantPhoenixHelper.VariantColumn.TYPE.bytes(), Bytes.toBytes(newType.name()));
+                                VariantPhoenixSchema.VariantColumn.TYPE.bytes(), Bytes.toBytes(newType.name()));
                     }
                 }
 
@@ -194,7 +194,7 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
                                     = StudyEntryToHBaseConverter.getSecondaryAlternates(variant.getVariant(), secondaryAlternates);
                             put.addColumn(
                                     GenomeHelper.COLUMN_FAMILY_BYTES,
-                                    VariantPhoenixHelper.buildFileColumnKey(fileColumn.getStudyId(), fileColumn.getFileId()),
+                                    VariantPhoenixSchema.buildFileColumnKey(fileColumn.getStudyId(), fileColumn.getFileId()),
                                     PhoenixHelper.toBytes(values, PVarcharArray.INSTANCE)
                             );
                         }

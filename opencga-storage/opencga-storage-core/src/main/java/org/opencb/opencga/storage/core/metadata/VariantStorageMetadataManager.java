@@ -169,6 +169,18 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
+    public Lock lockGlobal(long lockDuration, long timeout, String lockName)
+            throws StorageEngineException {
+        try {
+            return projectDBAdaptor.lockProject(lockDuration, timeout, lockName);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock the Project", e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Unable to lock the Project", e);
+        }
+    }
+
     public Lock lockStudy(int studyId) throws StorageEngineException {
         return lockStudy(studyId, lockDuration, lockTimeout);
     }

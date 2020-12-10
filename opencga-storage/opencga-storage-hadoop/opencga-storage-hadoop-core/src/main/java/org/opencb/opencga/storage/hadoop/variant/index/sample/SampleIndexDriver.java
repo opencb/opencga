@@ -31,7 +31,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -205,7 +205,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String table) throws IOException {
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
-                new QualifierFilter(EQUAL, new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixHelper.buildStudyColumnsPrefix(study)))),
+                new QualifierFilter(EQUAL, new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixSchema.buildStudyColumnsPrefix(study)))),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '|', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '/', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'.', '/', '.', SEPARATOR_BYTE})),
@@ -234,14 +234,14 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 scan.setFilter(filter);
                 scans.add(scan);
                 for (int sample : samplesSubSet) {
-                    byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                    byte[] sampleColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample);
                     scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                     for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                         if (multiFileSamples.contains(sample)) {
-                            byte[] sampleFileColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample, fileId);
+                            byte[] sampleFileColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample, fileId);
                             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleFileColumn);
                         }
-                        byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                        byte[] fileColumn = VariantPhoenixSchema.buildFileColumnKey(study, fileId);
                         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                     }
                 }
@@ -264,14 +264,14 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     + sampleIdToFileIdMap.values().stream().flatMap(Collection::stream).collect(Collectors.toSet()).size();
             if (approxExpectedNumColumns < maxColumns) {
                 for (Integer sample : sampleIds) {
-                    byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                    byte[] sampleColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample);
                     scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                     for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                         if (multiFileSamples.contains(sample)) {
-                            byte[] sampleFileColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample, fileId);
+                            byte[] sampleFileColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample, fileId);
                             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleFileColumn);
                         }
-                        byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                        byte[] fileColumn = VariantPhoenixSchema.buildFileColumnKey(study, fileId);
                         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                     }
                 }
