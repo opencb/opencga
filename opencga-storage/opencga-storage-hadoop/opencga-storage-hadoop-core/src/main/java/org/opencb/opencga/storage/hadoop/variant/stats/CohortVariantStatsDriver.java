@@ -41,6 +41,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
     private QueryOptions queryOptions;
     private int numSamples;
     private int numFiles;
+    private Set<Integer> fileIds;
 
     @Override
     protected Map<String, String> getParams() {
@@ -81,7 +82,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         }
         numSamples = sampleIds.size();
 
-        Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(getStudyId(), sampleIds);
+        fileIds = metadataManager.getFileIdsFromSampleIds(getStudyId(), sampleIds);
         numFiles = fileIds.size();
 
         query = new Query(VariantMapReduceUtil.getQueryFromConfig(getConf()))
@@ -101,7 +102,8 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         super.setupJob(job, archiveTable, variantTable);
 
         job.getConfiguration().setInt(NUM_SAMPLES, numSamples);
-        job.getConfiguration().setInt(NUM_FILES, numSamples);
+        job.getConfiguration().setInt(NUM_FILES, numFiles);
+        setFiles(job.getConfiguration(), fileIds);
 
         return job;
     }
@@ -290,16 +292,16 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
         private String study;
         private ExposedVariantSetStatsCalculator calculator;
-//        private Set<String> files;
-        private int numSamples;
+        private Set<Integer> fileIds;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
 
+            int numSamples = context.getConfiguration().getInt(NUM_SAMPLES, 0);
             study = String.valueOf(getStudyId());
-//            files = new HashSet<>();
             calculator = new ExposedVariantSetStatsCalculator(study, null, numSamples, null);
+            fileIds = new HashSet<>(getFiles(context.getConfiguration()));
         }
 
         @Override
@@ -310,11 +312,13 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
                     .setFiles(entries);
 
             Variant variant = row.walker().onFile(fileColumn -> {
-                if (fileColumn.getOverlappingStatus().equals(VariantOverlappingStatus.NONE)) {
-                    HashMap<String, String> attributes = new HashMap<>();
-                    attributes.put(StudyEntry.QUAL, fileColumn.getQualString());
-                    attributes.put(StudyEntry.FILTER, fileColumn.getFilter());
-                    entries.add(new FileEntry(String.valueOf(fileColumn.getFileId()), fileColumn.getCall(), attributes));
+                if (fileIds.contains(fileColumn.getFileId())) {
+                    if (fileColumn.getOverlappingStatus().equals(VariantOverlappingStatus.NONE)) {
+                        HashMap<String, String> attributes = new HashMap<>(2);
+                        attributes.put(StudyEntry.QUAL, fileColumn.getQualString());
+                        attributes.put(StudyEntry.FILTER, fileColumn.getFilter());
+                        entries.add(new FileEntry(String.valueOf(fileColumn.getFileId()), fileColumn.getCall(), attributes));
+                    }
                 }
             }).walk();
 
@@ -373,6 +377,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
             }
 
             int numSamples = context.getConfiguration().getInt(NUM_SAMPLES, 0);
+            long numFiles = context.getConfiguration().getInt(NUM_FILES, 0);
             Map<String, Long> chrLengthMap = null;
 
             ExposedVariantSetStatsCalculator calculator = new ExposedVariantSetStatsCalculator("", null, numSamples, chrLengthMap)
@@ -385,7 +390,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
             calculator.post();
 
-            stats.getValue().setFilesCount((long) getFiles(context.getConfiguration()).size());
+            stats.getValue().setFilesCount(numFiles);
 
             context.write(n, new Text(stats.getValue().toString()));
         }
