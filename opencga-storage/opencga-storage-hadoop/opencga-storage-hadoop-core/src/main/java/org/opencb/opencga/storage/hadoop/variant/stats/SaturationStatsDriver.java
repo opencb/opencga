@@ -26,7 +26,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,14 +98,14 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
         for (Integer id : studyIds) {
             int maxSampleIdInStudy = 0;
             for (Integer sampleId : metadataManager.getIndexedSamples(id)) {
-                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.buildSampleColumnKey(id, sampleId));
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.buildSampleColumnKey(id, sampleId));
                 numSamples++;
                 maxSampleIdInStudy = Math.max(maxSampleIdInStudy, sampleId);
             }
             sampleIdsPad.put(id, maxSampleId);
             maxSampleId += maxSampleIdInStudy;
         }
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
 
 //        scan.setFilter(new KeyOnlyFilter());
         scan.setFilter(
@@ -118,7 +118,7 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
                                 new ValueFilter(CompareFilter.CompareOp.EQUAL, new BinaryPrefixComparator(Bytes.toBytes("1"))),
                                 // Include TYPE, so we can count variants not in any sample
                                 new QualifierFilter(CompareFilter.CompareOp.EQUAL,
-                                        new BinaryComparator(VariantPhoenixHelper.VariantColumn.TYPE.bytes()))
+                                        new BinaryComparator(VariantPhoenixSchema.VariantColumn.TYPE.bytes()))
                         ),
                         new KeyOnlyFilter()
                 )
@@ -264,8 +264,8 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
             int samples = 0;
             for (Cell cell : value.rawCells()) {
                 String column = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                Integer studyId = VariantPhoenixHelper.extractStudyId(column, false);
-                Integer sampleId = VariantPhoenixHelper.extractSampleId(column, false);
+                Integer studyId = VariantPhoenixSchema.extractStudyId(column, false);
+                Integer sampleId = VariantPhoenixSchema.extractSampleId(column, false);
                 int sampleIdPad = 0;
                 if (studyId != null) {
                     sampleIdPad = sampleIdsPad.get(studyId);

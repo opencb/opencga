@@ -15,7 +15,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -99,7 +99,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
                 context.progress();
                 Result currentValue = context.getCurrentValue();
                 if (currentValue.rawCells().length == 1
-                        && CellUtil.matchingQualifier(currentValue.rawCells()[0], VariantPhoenixHelper.VariantColumn.TYPE.bytes())) {
+                        && CellUtil.matchingQualifier(currentValue.rawCells()[0], VariantPhoenixSchema.VariantColumn.TYPE.bytes())) {
                     context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants_extra").increment(1);
                     if (!currentValue.isPartial()) {
                         continue;

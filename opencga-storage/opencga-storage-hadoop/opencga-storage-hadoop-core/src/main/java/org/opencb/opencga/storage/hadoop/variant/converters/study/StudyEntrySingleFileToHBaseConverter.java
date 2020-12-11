@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
 import java.util.*;
 
@@ -23,12 +23,12 @@ public class StudyEntrySingleFileToHBaseConverter extends StudyEntryToHBaseConve
             int sampleId = sampleMetadata.getId();
             if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
                 if (sampleMetadata.getFiles().indexOf(fileId) == 0) {
-                    sampleToColumn.put(sampleId, VariantPhoenixHelper.buildSampleColumnKey(studyMetadata.getId(), sampleId));
+                    sampleToColumn.put(sampleId, VariantPhoenixSchema.buildSampleColumnKey(studyMetadata.getId(), sampleId));
                 } else {
-                    sampleToColumn.put(sampleId, VariantPhoenixHelper.buildSampleColumnKey(studyMetadata.getId(), sampleId, fileId));
+                    sampleToColumn.put(sampleId, VariantPhoenixSchema.buildSampleColumnKey(studyMetadata.getId(), sampleId, fileId));
                 }
             } else {
-                sampleToColumn.put(sampleId, VariantPhoenixHelper.buildSampleColumnKey(studyMetadata.getId(), sampleId));
+                sampleToColumn.put(sampleId, VariantPhoenixSchema.buildSampleColumnKey(studyMetadata.getId(), sampleId));
             }
         });
     }

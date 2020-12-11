@@ -36,7 +36,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
 import org.slf4j.Logger;
@@ -60,7 +60,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
     private VariantAnnotator variantAnnotator;
     private boolean forceAnnotation;
     private VariantAnnotationToPhoenixConverter annotationConverter;
-    private VariantPhoenixHelper.VariantColumn[] columnsOrdered;
+    private VariantPhoenixSchema.VariantColumn[] columnsOrdered;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
@@ -70,7 +70,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         /* Annotation -> Phoenix converter */
         getHelper();
         annotationConverter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES);
-        columnsOrdered = VariantPhoenixHelper.VariantColumn.values();
+        columnsOrdered = VariantPhoenixSchema.VariantColumn.values();
 
         /* Annotator config */
         String configFile = "storage-configuration.yml";
@@ -161,7 +161,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
 
     private List<Object> toOrderedList(Map<PhoenixHelper.Column, ?> columnMap) {
         List<Object> orderedValues = new ArrayList<>(columnsOrdered.length);
-        for (VariantPhoenixHelper.VariantColumn column : columnsOrdered) {
+        for (VariantPhoenixSchema.VariantColumn column : columnsOrdered) {
             Object columnValue = columnMap.get(column);
             if (columnValue != null) {
                 if (column.getPDataType().isArrayType()) {

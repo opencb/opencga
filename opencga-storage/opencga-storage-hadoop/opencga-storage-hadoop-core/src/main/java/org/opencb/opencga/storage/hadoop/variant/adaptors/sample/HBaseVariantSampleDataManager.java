@@ -25,7 +25,7 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
@@ -37,8 +37,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.SAMPLE_DATA_SUFIX;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildStudyColumnsPrefix;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.SAMPLE_DATA_SUFIX;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.buildStudyColumnsPrefix;
 
 public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
@@ -125,7 +125,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 get.setFilter(new FilterList(FilterList.Operator.MUST_PASS_ALL, filters));
                 if (!includeAllSamples) {
                     for (Integer sampleId : includeSampleIds) {
-                        byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId);
+                        byte[] column = VariantPhoenixSchema.buildSampleColumnKey(studyId, sampleId);
                         get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column);
                     }
                 }
@@ -150,16 +150,16 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
                 // Add file columns
                 for (Integer fileId : fileIdsFromSampleIds) {
-                    get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
+                    get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.buildFileColumnKey(studyId, fileId));
                 }
 
                 // Add Stats column
                 Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
-                PhoenixHelper.Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
+                PhoenixHelper.Column statsColumn = VariantPhoenixSchema.getStatsColumn(studyId, cohortId);
                 get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, statsColumn.bytes());
 
                 // Add annotation column
-                PhoenixHelper.Column annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION;
+                PhoenixHelper.Column annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION;
                 get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, annotationColumn.bytes());
 
                 // Get

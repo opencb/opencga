@@ -21,10 +21,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.storage.core.config.ConfigurationOption;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
@@ -481,24 +483,14 @@ public class VariantMapReduceUtil {
     }
 
     public static Scan configureMapReduceScan(Scan scan, Configuration conf) {
-        return configureMapReduceScan(scan, conf, 50);
-    }
-
-    public static Scan configureMapReduceScan(Scan scan, Configuration conf, int defaultCacheSize) {
-        configureMapReduceScans(Collections.singletonList(scan), conf, defaultCacheSize);
+        configureMapReduceScans(Collections.singletonList(scan), conf);
         return scan;
     }
 
     public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf) {
-        return configureMapReduceScans(scans, conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.defaultValue());
-    }
-
-    public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf, int defaultCacheSize) {
-        int caching = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), defaultCacheSize);
-        int maxColumns = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_COLUMNS.key(),
-                HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_COLUMNS.defaultValue());
-        int maxFilters = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_FILTERS.key(),
-                HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_FILTERS.defaultValue());
+        int caching = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING));
+        int maxColumns = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_COLUMNS));
+        int maxFilters = Integer.parseInt(getParam(conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_MAX_FILTERS));
 
         LOGGER.info("Scan set Caching to " + caching);
         int actualColumns = scans.get(0).getFamilyMap()
@@ -546,4 +538,48 @@ public class VariantMapReduceUtil {
         }
     }
 
+    public static String getParam(Configuration conf, ConfigurationOption key) {
+        Object defaultValue = key.defaultValue();
+        return getParam(conf, key.key(), defaultValue == null ? null : defaultValue.toString());
+    }
+    public static String getParam(Configuration conf, String key) {
+        return getParam(conf, key, null);
+    }
+
+    public static String getParam(Configuration conf, String key, String defaultValue) {
+        return getParam(conf, key, defaultValue, null);
+    }
+
+    /**
+     * Reads a param that might come in different forms. It will take the the first value in this order:
+     * - "--{key}"
+     * - "packageName.className.{key}"
+     * - "className.{key}"
+     * - "{key}"
+     * - "{defaultvalue}"
+     *
+     * @param conf          Configuration from where to read the value.
+     * @param key           Key to read
+     * @param defaultValue  Default value
+     * @param aClass        Optional class
+     * @return              The value
+     */
+    public static String getParam(Configuration conf, String key, String defaultValue, Class<? extends AbstractHBaseDriver> aClass) {
+        String value = conf.get("--" + key);
+        if (aClass != null) {
+            if (StringUtils.isEmpty(value)) {
+                value = conf.get(aClass.getName() + "." + key);
+            }
+            if (StringUtils.isEmpty(value)) {
+                value = conf.get(aClass.getSimpleName() + "." + key);
+            }
+        }
+        if (StringUtils.isEmpty(value)) {
+            value = conf.get(key);
+        }
+        if (StringUtils.isEmpty(value)) {
+            value = defaultValue;
+        }
+        return value;
+    }
 }

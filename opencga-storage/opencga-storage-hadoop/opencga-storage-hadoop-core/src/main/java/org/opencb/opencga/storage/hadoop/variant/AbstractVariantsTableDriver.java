@@ -234,6 +234,10 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
                     .collect(Collectors.toList());
     }
 
+    public static void setFiles(Configuration conf, Collection<Integer> fileIds) {
+        conf.setStrings(FILE_ID, fileIds.stream().map(Object::toString).toArray(String[]::new));
+    }
+
     protected void setStudyId(int studyId) {
         this.studyId = studyId;
         getConf().setInt(STUDY_ID, studyId);

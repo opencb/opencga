@@ -55,7 +55,8 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationPhoenixDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationUpsertExecutor;
@@ -93,7 +94,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
     private final String variantTable;
-    private final VariantPhoenixHelper phoenixHelper;
+    private final PhoenixHelper phoenixHelper;
     private final HBaseCredentials credentials;
     private final AtomicReference<VariantStorageMetadataManager> studyConfigurationManager = new AtomicReference<>(null);
     private final Configuration configuration;
@@ -135,7 +136,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.key(),
                 HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.defaultValue());
 
-        phoenixHelper = new VariantPhoenixHelper(genomeHelper);
+        phoenixHelper = new PhoenixHelper(this.configuration);
 
         hbaseQueryParser = new VariantHBaseQueryParser(genomeHelper, studyConfigurationManager.get());
     }
@@ -295,12 +296,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         byte[] annotationColumn;
         if (name.equals(VariantAnnotationManager.CURRENT)) {
-            annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
+            annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes();
         } else {
             ProjectMetadata.VariantAnnotationMetadata saved = getMetadataManager().getProjectMetadata().
                     getAnnotation().getSaved(name);
 
-            annotationColumn = Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId()));
+            annotationColumn = Bytes.toBytes(VariantPhoenixSchema.getAnnotationSnapshotColumn(saved.getId()));
             query.put(ANNOT_NAME.key(), saved.getId());
         }
         VariantQueryProjection selectElements = VariantQueryProjectionParser.parseVariantQueryFields(query, options, getMetadataManager());
@@ -445,8 +446,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 if (e.getErrorCode() == SQLExceptionCode.COLUMN_NOT_FOUND.getErrorCode()) {
                     try {
                         logger.error(e.getMessage());
-                        List<PhoenixHelper.Column> columns = phoenixHelper.getPhoenixHelper()
-                                .getColumns(getJdbcConnection(), variantTable, VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
+                        List<PhoenixHelper.Column> columns = phoenixHelper
+                                .getColumns(getJdbcConnection(), variantTable, VariantPhoenixSchema.DEFAULT_TABLE_TYPE);
                         logger.info("Available columns from table " + variantTable + " :");
                         for (PhoenixHelper.Column column : columns) {
                             logger.info(" - " + column.toColumnInfo());
@@ -556,9 +557,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      * Ensure that all the annotation fields exist are defined.
      *
      * @param studyMetadata StudyMetadata where the cohorts are defined
-     * @throws SQLException is there is any error with Phoenix
+     * @throws StorageEngineException is there is any error with Phoenix
      */
-    public void updateStatsColumns(StudyMetadata studyMetadata) throws SQLException {
+    public void updateStatsColumns(StudyMetadata studyMetadata) throws StorageEngineException {
         List<Integer> cohortIds = new ArrayList<>();
         getMetadataManager().cohortIterator(studyMetadata.getId())
                 .forEachRemaining(cohortMetadata -> {
@@ -566,7 +567,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                         cohortIds.add(cohortMetadata.getId());
                     }
                 });
-        phoenixHelper.updateStatsColumns(getJdbcConnection(), variantTable, studyMetadata.getId(), cohortIds);
+        new VariantPhoenixSchemaManager(this).registerNewCohorts(studyMetadata.getId(), cohortIds);
     }
 
     /**
@@ -611,7 +612,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 currentAnnotationId);
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
-        String fullTableName = VariantPhoenixHelper.getEscapedFullTableName(variantTable, getConfiguration());
+        String fullTableName = VariantPhoenixSchema.getEscapedFullTableName(variantTable, getConfiguration());
         try (java.sql.Connection conn = phoenixHelper.newJdbcConnection(this.configuration);
              VariantAnnotationUpsertExecutor upsertExecutor =
                      new VariantAnnotationUpsertExecutor(conn, fullTableName)) {

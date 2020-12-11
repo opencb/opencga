@@ -23,7 +23,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.util.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
@@ -88,8 +87,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
 
     @Override
     public Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
-        return lock(getStudyMetadataRowKey(studyId), column, lockDuration, timeout);
+        return lock(getStudyMetadataRowKey(studyId), getLockColumn(lockName), lockDuration, timeout);
     }
 
     @Override

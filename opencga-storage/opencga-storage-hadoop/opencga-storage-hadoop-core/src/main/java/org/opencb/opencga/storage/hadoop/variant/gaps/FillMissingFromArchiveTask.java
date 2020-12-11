@@ -17,7 +17,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 
@@ -42,7 +42,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     public FillMissingFromArchiveTask(StudyMetadata studyMetadata, VariantStorageMetadataManager metadataManager,
                                       GenomeHelper helper, boolean overwrite, boolean simplifiedNewMultiAllelicVariants) {
         super(studyMetadata, metadataManager, helper, Collections.emptyList(), true, simplifiedNewMultiAllelicVariants);
-        fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(studyMetadata.getId());
+        fillMissingColumn = VariantPhoenixSchema.getFillMissingColumn(studyMetadata.getId());
         this.overwrite = overwrite;
         this.indexedFiles = new ArrayList<>(metadataManager.getIndexedFiles(studyMetadata.getId()));
         Integer lastFile = new ArrayList<>(indexedFiles).get(indexedFiles.size() - 1);

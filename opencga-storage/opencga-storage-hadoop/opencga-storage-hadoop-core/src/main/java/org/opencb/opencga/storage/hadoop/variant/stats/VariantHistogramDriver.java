@@ -19,7 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
@@ -78,7 +78,7 @@ public class VariantHistogramDriver extends AbstractVariantsTableDriver {
         Scan scan = new Scan();
 
         for (Integer studyId : getMetadataManager().getStudyIds()) {
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
         }
 //        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
         scan.setFilter(new FirstKeyOnlyFilter());

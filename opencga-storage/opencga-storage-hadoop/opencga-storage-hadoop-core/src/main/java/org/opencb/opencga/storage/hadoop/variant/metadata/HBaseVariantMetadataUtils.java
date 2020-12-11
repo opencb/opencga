@@ -167,6 +167,10 @@ class HBaseVariantMetadataUtils {
         return LOCK_COLUMN;
     }
 
+    static byte[] getLockColumn(String lockName) {
+        return StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
+    }
+
     static byte[] getTypeColumn() {
         return TYPE_COLUMN;
     }

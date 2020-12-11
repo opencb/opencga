@@ -70,7 +70,8 @@ import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.sample.HBaseVariantSampleDataManager;
 import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -687,15 +688,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 Map<String, List<String>> columns = new HashMap<>();
                 String family = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
                 for (Integer fileId : fileIds) {
-                    String fileColumn = family + ':' + VariantPhoenixHelper.getFileColumn(studyId, fileId).column();
+                    String fileColumn = family + ':' + VariantPhoenixSchema.getFileColumn(studyId, fileId).column();
                     List<String> sampleColumns = new ArrayList<>();
                     for (Integer sampleId : metadataManager.getFileMetadata(sm.getId(), fileId).getSamples()) {
-                        sampleColumns.add(family + ':' + VariantPhoenixHelper.getSampleColumn(studyId, sampleId).column());
+                        sampleColumns.add(family + ':' + VariantPhoenixSchema.getSampleColumn(studyId, sampleId).column());
                     }
                     columns.put(fileColumn, sampleColumns);
                 }
                 if (removeWholeStudy) {
-                    columns.put(family + ':' + VariantPhoenixHelper.getStudyColumn(studyId).column(), Collections.emptyList());
+                    columns.put(family + ':' + VariantPhoenixSchema.getStudyColumn(studyId).column(), Collections.emptyList());
                 }
 
                 String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, columns, options);
@@ -788,17 +789,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         super.postRemoveFiles(study, fileIds, taskId, error);
         if (!error) {
             VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
-            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+            VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
 
             StudyMetadata sm = getMetadataManager().getStudyMetadata(study);
 
-            List<Integer> sampleIds = new ArrayList<>();
-            for (Integer fileId : fileIds) {
-                sampleIds.addAll(getMetadataManager().getFileMetadata(sm.getId(), fileId).getSamples());
-            }
-
             try {
-                phoenixHelper.dropFiles(dbAdaptor.getJdbcConnection(), dbAdaptor.getVariantTable(), sm.getId(), fileIds, sampleIds);
+                schemaManager.dropFiles(sm.getId(), fileIds);
             } catch (SQLException e) {
                 throw new StorageEngineException("Error removing columns from Phoenix", e);
             }
