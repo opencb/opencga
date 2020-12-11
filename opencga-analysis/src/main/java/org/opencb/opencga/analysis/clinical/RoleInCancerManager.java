@@ -17,45 +17,52 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.commons.utils.FileUtils;
-import org.opencb.commons.utils.URLUtils;
 
 import java.io.*;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.utils.FileUtils.newBufferedReader;
 
 public class RoleInCancerManager {
+    private final String ROLE_IN_CANCER_PATH = "analysis/cancer-gene-census/cancer-gene-census.tsv";
     private final String ROLE_IN_CANCER_URL = "http://resources.opencb.org/opencb/opencga/analysis/cancer-gene-census/cancer-gene-census.tsv";
     private static Map<String, ClinicalProperty.RoleInCancer> roleInCancer = null;
+    
+    private Path openCgaHome;
 
-    public RoleInCancerManager() {
+    public RoleInCancerManager(Path openCgaHome) {
+        this.openCgaHome = openCgaHome;
     }
 
     public Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer() throws IOException {
-        return new HashMap<>();
-//        // Lazy loading
-//        if (roleInCancer == null) {
-//            synchronized (ROLE_IN_CANCER_URL) {
-//                if (roleInCancer == null) {
-//                    roleInCancer = loadRoleInCancer();
-//                }
-//            }
-//        }
-//        return roleInCancer;
+        // Lazy loading
+        if (roleInCancer == null) {
+            synchronized (ROLE_IN_CANCER_URL) {
+                if (roleInCancer == null) {
+                    roleInCancer = loadRoleInCancer();
+                }
+            }
+        }
+        return roleInCancer;
     }
 
     private Map<String, ClinicalProperty.RoleInCancer> loadRoleInCancer() throws IOException {
         // Read 'role in cancer' file
-        try (InputStream in = new URL(ROLE_IN_CANCER_URL).openStream()) {
+        Path path = openCgaHome.resolve(ROLE_IN_CANCER_PATH);
+        if (path.toFile().exists()) {
+            InputStream in = Files.newInputStream(path);
             return loadRoleInCancer(in);
-        } catch (FileNotFoundException e) {
-            // FIXME: Should we ignore this error?
-            return null;
+        } else {
+            try (InputStream in = new URL(ROLE_IN_CANCER_URL).openStream()) {
+                return loadRoleInCancer(in);
+            } catch (FileNotFoundException e) {
+                // FIXME: Should we ignore this error?
+                return null;
+            }
         }
     }
 
