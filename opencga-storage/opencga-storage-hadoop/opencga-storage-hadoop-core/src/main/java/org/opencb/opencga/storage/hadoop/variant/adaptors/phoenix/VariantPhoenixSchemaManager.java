@@ -35,6 +35,7 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
 public class VariantPhoenixSchemaManager {
 
     private static final String PENDING_PHOENIX_COLUMNS = "pending_phoenix_columns";
+    private static final String PHOENIX_COLUMNS_ALTER_COUNTER = "phoenix_columns_alter_counter";
     private static final long MAX_LOCK_TIMEOUT = TimeUnit.MINUTES.toMillis(30);
     private static final long LOCK_ATTEMPT_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
     private static final long MAX_ATTEMPTS = MAX_LOCK_TIMEOUT / LOCK_ATTEMPT_TIMEOUT;
@@ -47,6 +48,7 @@ public class VariantPhoenixSchemaManager {
     private Set<String> _existingColumns;
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixSchemaManager.class);
+    private int alterCounter = -1;
 
     public VariantPhoenixSchemaManager(VariantHadoopDBAdaptor dbAdaptor) {
         this(dbAdaptor.getConfiguration(), dbAdaptor.getVariantTable(), dbAdaptor.getMetadataManager(), dbAdaptor.getJdbcConnection());
@@ -229,7 +231,7 @@ public class VariantPhoenixSchemaManager {
                         .addMissingColumns(con, variantsTableName, pendingColumns,
                                 DEFAULT_TABLE_TYPE, getExistingColumns());
                 // Final update to remove new added columns
-                updatePendingColumns(Collections.emptyList());
+                removeAddedColumnsFromPending(pendingColumns);
                 msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch);
             }
             if (stopWatch.getTime(TimeUnit.SECONDS) < 10) {
@@ -318,11 +320,19 @@ public class VariantPhoenixSchemaManager {
         return sb.append(") )").toString();
     }
 
+    /**
+     * Get the defined columns in phoenix.
+     * This method will cache the value unless the "last_alter_counter" is modified.
+     * @throws StorageEngineException on errors
+     */
     private Set<String> getExistingColumns() throws StorageEngineException {
-        return getExistingColumns(false);
-    }
-
-    private Set<String> getExistingColumns(boolean update) throws StorageEngineException {
+        int currentAlterCounter = getAlterCounter(metadataManager.getProjectMetadata());
+        boolean update = false;
+        if (alterCounter != currentAlterCounter) {
+            alterCounter = currentAlterCounter;
+            // Force update if "alterCounter" has been increased
+            update = true;
+        }
         if (_existingColumns == null || update) {
             try {
                 _existingColumns = phoenixHelper
@@ -336,9 +346,16 @@ public class VariantPhoenixSchemaManager {
         return _existingColumns;
     }
 
+    /**
+     * Update list of pending columns.
+     * Include pending columns from ProjectManager.
+     *
+     * @param columns List of pending columns.
+     * @throws StorageEngineException on errors
+     */
     private Set<PhoenixHelper.Column> updatePendingColumns(Collection<PhoenixHelper.Column> columns)
             throws StorageEngineException {
-        Set<String> existingColumns = getExistingColumns(true);
+        Set<String> existingColumns = getExistingColumns();
 
         ProjectMetadata projectMetadata = metadataManager.updateProjectMetadata(pm -> {
             // Merge pending columns with new columns
@@ -352,6 +369,34 @@ public class VariantPhoenixSchemaManager {
             return pm;
         });
         return getPendingColumns(projectMetadata);
+    }
+
+    /**
+     * Remove these columns from the list of pending columns.
+     * Increase the "alterCounter".
+     *
+     * @param columns List of added columns.
+     * @throws StorageEngineException on errors
+     */
+    private void removeAddedColumnsFromPending(Collection<PhoenixHelper.Column> columns) throws StorageEngineException {
+        metadataManager.updateProjectMetadata(pm -> {
+            // Merge pending columns with new columns
+            Set<PhoenixHelper.Column> pendingColumns = getPendingColumns(pm);
+            pendingColumns.removeAll(columns);
+            setPendingColumns(pm, pendingColumns);
+
+            int lastAlter = getAlterCounter(pm);
+            setAlterCounter(pm, lastAlter + 1);
+            return pm;
+        });
+    }
+
+    private void setAlterCounter(ProjectMetadata pm, int value) {
+        pm.getAttributes().put(PHOENIX_COLUMNS_ALTER_COUNTER, value);
+    }
+
+    private int getAlterCounter(ProjectMetadata pm) {
+        return pm.getAttributes().getInt(PHOENIX_COLUMNS_ALTER_COUNTER, 1);
     }
 
     private Set<PhoenixHelper.Column> getPendingColumns(ProjectMetadata projectMetadata) {
@@ -383,7 +428,8 @@ public class VariantPhoenixSchemaManager {
         } else {
             timeout = LOCK_ATTEMPT_TIMEOUT;
             if (attempt == 1) {
-                logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, MAX_LOCK_TIMEOUT);
+                logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName,
+                        TimeUnit.MILLISECONDS.toMinutes(MAX_LOCK_TIMEOUT));
             }
             logger.info("Lock attempt {}/{}, timeout of {}s", attempt, MAX_ATTEMPTS, TimeUnit.MILLISECONDS.toSeconds(LOCK_ATTEMPT_TIMEOUT));
         }

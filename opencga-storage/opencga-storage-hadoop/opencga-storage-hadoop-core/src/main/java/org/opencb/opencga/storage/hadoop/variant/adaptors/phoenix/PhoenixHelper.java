@@ -57,6 +57,7 @@ public class PhoenixHelper {
     // Server offset, for server pagination, is only available in Phoenix4.8 or Phoenix4.7.0.2.5.0 (from HDP2.5.0)
     // See https://issues.apache.org/jira/browse/PHOENIX-2722
     public static final String PHOENIX_SERVER_OFFSET_AVAILABLE = "phoenix.server.offset.available";
+    public static final int SLOW_OPERATION_MILLIS = 10 * 1000;
 
     private final Configuration conf;
     private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
@@ -213,7 +214,12 @@ public class PhoenixHelper {
                         missingColumnsList.subList(batch * batchSize, Math.min(missingColumnsList.size(),
                                 (batch + 1) * batchSize)), true, tableType);
                 logger.info(sql);
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
                 execute(con, sql);
+                if (stopWatch.getTime() > SLOW_OPERATION_MILLIS) {
+                    logger.warn("Slow ALTER " + tableType.name() + ". Took " + TimeUtils.durationToString(stopWatch));
+                }
             }
         }
     }
@@ -374,7 +380,7 @@ public class PhoenixHelper {
                 String typeName = resultSet.getString(PhoenixDatabaseMetaData.TYPE_NAME);
                 columns.add(Column.build(columnName, PDataType.fromSqlTypeName(typeName)));
             }
-            if (stopWatch.getTime() > 5 * 1000) {
+            if (stopWatch.getTime() > SLOW_OPERATION_MILLIS) {
                 logger.warn("Slow read columns from Phoenix. Took " + TimeUtils.durationToString(stopWatch));
             }
             return columns;
