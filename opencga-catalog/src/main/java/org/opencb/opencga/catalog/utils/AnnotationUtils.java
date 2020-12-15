@@ -306,9 +306,9 @@ public class AnnotationUtils {
                 }
                 break;
             case INTEGER:
-                Integer integerValue = getIntegerValue(defaultValue);
-                if (integerValue != null) {
-                    annotation.put(variable.getId(), integerValue);
+                Long longValue = getLongValue(defaultValue);
+                if (longValue != null) {
+                    annotation.put(variable.getId(), longValue);
                     return true;
                 }
                 break;
@@ -379,14 +379,14 @@ public class AnnotationUtils {
             }
             case INTEGER:
                 for (Object object : listValues) {
-                    int numericValue = (int) object;
+                    long numericValue = (long) object;
 
                     if (variable.getAllowedValues() != null && !variable.getAllowedValues().isEmpty()) {
                         boolean valid = false;
                         for (String range : variable.getAllowedValues()) {
                             String[] split = range.split(":", -1);
-                            int min = split[0].isEmpty() ? Integer.MIN_VALUE : Integer.valueOf(split[0]);
-                            int max = split[1].isEmpty() ? Integer.MAX_VALUE : Integer.valueOf(split[1]);
+                            long min = split[0].isEmpty() ? Long.MIN_VALUE : Long.valueOf(split[0]);
+                            long max = split[1].isEmpty() ? Long.MAX_VALUE : Long.valueOf(split[1]);
                             if (numericValue >= min && numericValue <= max) {
                                 valid = true;
                                 break;
@@ -462,7 +462,7 @@ public class AnnotationUtils {
                     }
                     Map<String, Object> objectMap = (Map<String, Object>) object;
                     for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
-                        if (!(entry.getValue() instanceof Integer)) {
+                        if (!(entry.getValue() instanceof Integer) && !(entry.getValue() instanceof Long)) {
                             throw new CatalogException(entry.getKey() + " does not seem to be integer. Expected an integer map for "
                                     + "variable " + variable.getId());
                         }
@@ -525,7 +525,7 @@ public class AnnotationUtils {
                 case DOUBLE:
                     return getNumericValue(value);
                 case INTEGER:
-                    return getIntegerValue(value);
+                    return getLongValue(value);
                 case OBJECT:
                 case MAP_BOOLEAN:
                 case MAP_INTEGER:
@@ -605,24 +605,24 @@ public class AnnotationUtils {
      * @param value
      * @return
      */
-    private static Integer getIntegerValue(Object value) throws CatalogException {
-        Integer numericValue = null;
+    private static Long getLongValue(Object value) throws CatalogException {
+        Long numericValue = null;
         if (value == null) {
             return null;
         } else if (value instanceof Number) {
-            return ((Number) value).intValue();
+            return ((Number) value).longValue();
         } else if (value instanceof String) {
             if (((String) value).isEmpty()) {
                 numericValue = null;    //Empty string
             } else {
                 try {
-                    numericValue = Integer.parseInt((String) value);
+                    numericValue = Long.parseLong((String) value);
                 } catch (NumberFormatException e) {
-                    throw new CatalogException("Value " + value + " is not an integer number", e);
+                    throw new CatalogException("Value " + value + " is not a Long number", e);
                 }
             }
         } else if (value instanceof Boolean) {
-            return (Boolean) value ? 1 : 0;
+            return (Boolean) value ? 1L : 0L;
         }
         return numericValue;
     }
@@ -1000,9 +1000,9 @@ public class AnnotationUtils {
                     case INTEGER:
                     case MAP_INTEGER:
                         if (variable.isMultiValue()) {
-                            type = QueryParam.Type.INTEGER_ARRAY;
+                            type = QueryParam.Type.LONG_ARRAY;
                         } else {
-                            type = QueryParam.Type.INTEGER;
+                            type = QueryParam.Type.LONG;
                         }
                         break;
                     case DOUBLE:
