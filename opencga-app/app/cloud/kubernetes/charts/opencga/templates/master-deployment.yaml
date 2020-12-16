@@ -8,10 +8,12 @@ spec:
   replicas: {{ .Values.master.replicaCount }}
   selector:
     matchLabels:
+      app: { { .Values.master.name } }
       {{- include "opencga.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
+        app: { { .Values.master.name } }
         {{- include "opencga.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.master.imagePullSecrets }}
