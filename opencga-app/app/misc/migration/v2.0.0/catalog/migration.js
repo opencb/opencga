@@ -198,5 +198,14 @@ if (versionNeedsUpdate(20000, 5)) {
         });
     });
 
+    runUpdate(function () {
+        db.cohort.createIndex({"numSamples": 1, "studyUid": 1}, {"background": true});
+
+        migrateCollection("cohort", {"numSamples": {"$exists": false}}, {"samples": 1}, function (bulk, doc) {
+            var nsamples = NumberInt(isNotUndefinedOrNull(doc.samples) ? doc.samples.length : 0);
+            bulk.find({"_id": doc._id}).updateOne({ "$set": { "numSamples": nsamples }});
+        });
+    });
+
     setOpenCGAVersion("2.0.0", 20000, 5);
 }

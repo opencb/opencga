@@ -248,6 +248,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         validateNewAnnotationSets(study.getVariableSets(), cohort.getAnnotationSets());
 
         if (!cohort.getSamples().isEmpty()) {
+            // Remove possible duplicates
+            Map<String, Sample> sampleMap = new HashMap<>();
+            for (Sample sample : cohort.getSamples()) {
+                sampleMap.put(sample.getId(), sample);
+            }
+            cohort.setSamples(new ArrayList<>(sampleMap.values()));
+
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(SampleDBAdaptor.QueryParams.UID.key(), cohort.getSamples().stream()
@@ -258,6 +265,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 throw new CatalogException("Error: Some samples do not exist in the study " + study.getFqn());
             }
         }
+
+        cohort.setNumSamples(cohort.getSamples().size());
     }
 
     public Long getStudyId(long cohortId) throws CatalogException {
@@ -924,6 +933,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
 
             if (ListUtils.isNotEmpty(updateParams.getSamples())) {
+                // Remove possible duplications
+                updateParams.setSamples(updateParams.getSamples().stream().distinct().collect(Collectors.toList()));
+
                 InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
                         updateParams.getSamples(), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
 
