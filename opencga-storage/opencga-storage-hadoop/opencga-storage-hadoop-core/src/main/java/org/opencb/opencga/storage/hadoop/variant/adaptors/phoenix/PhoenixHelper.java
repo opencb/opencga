@@ -20,7 +20,10 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
@@ -31,12 +34,16 @@ import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.TableNotFoundException;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PDataType;
+import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.*;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -62,6 +69,7 @@ public class PhoenixHelper {
     private final Configuration conf;
     private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
     private static Method positionAtArrayElement;
+    private TableName systemCatalog;
 
     public PhoenixHelper(Configuration conf) {
         this.conf = conf;
@@ -198,10 +206,10 @@ public class PhoenixHelper {
     }
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType,
-                                  Set<String> columns)
+                                  Set<String> alreadyDefinedColumns)
             throws SQLException {
         Set<Column> missingColumns = newColumns.stream()
-                .filter(column -> !columns.contains(column.column()))
+                .filter(column -> !alreadyDefinedColumns.contains(column.column()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         if (!missingColumns.isEmpty()) {
             logger.info("Adding missing columns: " + missingColumns);
@@ -359,6 +367,66 @@ public class PhoenixHelper {
         } catch (TableNotFoundException ignore) {
             return false;
         }
+    }
+
+    private TableName getSystemCatalogTable(HBaseManager hBaseManager) throws IOException {
+        if (systemCatalog != null) {
+            return systemCatalog;
+        }
+        if (hBaseManager.tableExists("SYSTEM.CATALOG")) {
+            systemCatalog = TableName.valueOf("SYSTEM.CATALOG");
+        } else if (hBaseManager.tableExists("SYSTEM:CATALOG")) {
+            systemCatalog = TableName.valueOf("SYSTEM:CATALOG");
+        }
+        return systemCatalog;
+    }
+
+    public List<Column> getColumns(HBaseManager hBaseManager, String fullTableName, PTableType tableType) throws IOException {
+        return getColumns(hBaseManager, fullTableName, tableType, null);
+    }
+
+    public List<Column> getColumns(HBaseManager hBaseManager, String fullTableName, PTableType tableType, List<String> columnsFilter)
+            throws IOException {
+        TableName systemCatalogTable = getSystemCatalogTable(hBaseManager);
+        if (systemCatalogTable == null) {
+            return Collections.emptyList();
+        }
+        String tenant = "";
+        String schema;
+        String table;
+        if (isNamespaceMappingEnabled(tableType, conf)) {
+            schema = SchemaUtil.getSchemaNameFromFullName(fullTableName);
+            table = SchemaUtil.getTableNameFromFullName(fullTableName);
+        } else {
+            schema = null;
+            table = fullTableName;
+        }
+        return hBaseManager.act(systemCatalogTable.getNameAsString(), systemCatalog -> {
+            List<Column> columns = new ArrayList<>();
+            List<Get> gets = new ArrayList<>(columnsFilter.size());
+            for (String column : columnsFilter) {
+                String row = tenant + "\\x00"
+                        + (schema == null ? "" : schema) + "\\x00"
+                        + table + "\\x00"
+                        + column + "\\x00"
+                        + GenomeHelper.COLUMN_FAMILY;
+                byte[] rowKey = Bytes.toBytesBinary(row);
+                gets.add(new Get(rowKey).addColumn(PhoenixDatabaseMetaData.TABLE_FAMILY_BYTES, PhoenixDatabaseMetaData.DATA_TYPE_BYTES));
+            }
+            Result[] get = systemCatalog.get(gets);
+            for (int i = 0; i < get.length; i++) {
+                Result result = get[i];
+                if (result != null && !result.isEmpty()) {
+//                    StringUtils.splitByWholeSeparatorPreserveAllTokens(Bytes.toStringBinary(result.getRow()), "\\x00")
+                    Cell c = result.rawCells()[0];
+                    Integer dataType = (Integer) PInteger.INSTANCE.toObject(c.getValueArray(), c.getValueOffset(), c.getValueLength());
+                    columns.add(Column.build(columnsFilter.get(i), PDataType.fromTypeId(dataType)));
+                }
+            }
+//            logger.info("Columns from " + systemCatalogTable + " : " + columns);
+            return columns;
+        });
+
     }
 
     public List<Column> getColumns(Connection con, String fullTableName, PTableType tableType) throws SQLException {

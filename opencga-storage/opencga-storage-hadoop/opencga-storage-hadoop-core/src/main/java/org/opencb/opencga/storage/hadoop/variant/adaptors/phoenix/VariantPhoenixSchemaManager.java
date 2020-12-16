@@ -16,12 +16,14 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -45,29 +47,36 @@ public class VariantPhoenixSchemaManager {
     private final PhoenixHelper phoenixHelper;
     private final VariantStorageMetadataManager metadataManager;
     private final String metaTableName;
-    private Set<String> _existingColumns;
+    private final HBaseManager hBaseManager;
+//    private Set<String> existingColumnsCache;
+    // Cache with the existence of certain columns
+    private final Map<String, Boolean> columnExistsCache;
 
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixSchemaManager.class);
     private int alterCounter = -1;
 
     public VariantPhoenixSchemaManager(VariantHadoopDBAdaptor dbAdaptor) {
-        this(dbAdaptor.getConfiguration(), dbAdaptor.getVariantTable(), dbAdaptor.getMetadataManager(), dbAdaptor.getJdbcConnection());
-    }
-
-    public VariantPhoenixSchemaManager(Configuration conf, String variantsTableName, VariantStorageMetadataManager metadataManager)
-            throws SQLException, ClassNotFoundException {
-        this(conf, variantsTableName, metadataManager, new PhoenixHelper(conf).newJdbcConnection());
+        this(dbAdaptor.getConfiguration(), dbAdaptor.getVariantTable(), dbAdaptor.getMetadataManager(),
+                dbAdaptor.getHBaseManager(), dbAdaptor.getJdbcConnection());
     }
 
     public VariantPhoenixSchemaManager(Configuration conf, String variantsTableName, VariantStorageMetadataManager metadataManager,
-                                       Connection con) {
+                                       HBaseManager hBaseManager)
+            throws SQLException, ClassNotFoundException {
+        this(conf, variantsTableName, metadataManager, hBaseManager, new PhoenixHelper(conf).newJdbcConnection());
+    }
+
+    public VariantPhoenixSchemaManager(Configuration conf, String variantsTableName, VariantStorageMetadataManager metadataManager,
+                                       HBaseManager hBaseManager, Connection con) {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
+        this.hBaseManager = hBaseManager;
         this.con = con;
         this.metadataManager = metadataManager;
         phoenixHelper = new PhoenixHelper(conf);
         this.variantsTableName = variantsTableName;
         String dbName = HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName(variantsTableName);
         this.metaTableName = HBaseVariantTableNameGenerator.getMetaTableName(null, dbName);
+        columnExistsCache = new HashMap<>();
     }
 
     public void registerPendingColumns() throws StorageEngineException {
@@ -156,7 +165,7 @@ public class VariantPhoenixSchemaManager {
 
     private List<PhoenixHelper.Column> buildNewFilesAndSamplesColumns(Integer studyId, Collection<Integer> fileIds) {
         List<PhoenixHelper.Column> columns = new LinkedList<>();
-        Set<Integer> newSamples = new HashSet<>();
+        Set<Integer> newSamples = new LinkedHashSet<>();
 
         for (Integer fileId : fileIds) {
             FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
@@ -228,8 +237,7 @@ public class VariantPhoenixSchemaManager {
                 msg = "Columns already in phoenix. Nothing to do! Had to wait " + TimeUtils.durationToString(stopWatch);
             } else {
                 phoenixHelper
-                        .addMissingColumns(con, variantsTableName, pendingColumns,
-                                DEFAULT_TABLE_TYPE, getExistingColumns());
+                        .addMissingColumns(con, variantsTableName, pendingColumns, DEFAULT_TABLE_TYPE, Collections.emptySet());
                 // Final update to remove new added columns
                 removeAddedColumnsFromPending(pendingColumns);
                 msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch);
@@ -320,30 +328,74 @@ public class VariantPhoenixSchemaManager {
         return sb.append(") )").toString();
     }
 
+//    /**
+//     * Get the defined columns in phoenix.
+//     * This method will cache the value unless the "last_alter_counter" is modified.
+//     * @throws StorageEngineException on errors
+//     */
+//    private Set<String> getExistingColumns() throws StorageEngineException {
+//        int currentAlterCounter = getAlterCounter(metadataManager.getProjectMetadata());
+//        boolean update = false;
+//        if (alterCounter != currentAlterCounter) {
+//            alterCounter = currentAlterCounter;
+//            // Force update if "alterCounter" has been increased
+//            update = true;
+//        }
+//        if (existingColumnsCache == null || update) {
+//            try {
+//                existingColumnsCache = phoenixHelper
+//                        .getColumns(con, variantsTableName, DEFAULT_TABLE_TYPE).stream()
+//                        .map(PhoenixHelper.Column::column)
+//                        .collect(Collectors.toCollection(LinkedHashSet::new));
+//            } catch (SQLException e) {
+//                throw new StorageEngineException("Problem reading existing columns", e);
+//            }
+//        }
+//        return existingColumnsCache;
+//    }
+
     /**
-     * Get the defined columns in phoenix.
-     * This method will cache the value unless the "last_alter_counter" is modified.
+     * Update cache with the existence of these columns.
+     * The cache is invalidated if the value {@link #PHOENIX_COLUMNS_ALTER_COUNTER} is modified.
+     *
+     * @param columns  columns to check
+     *
      * @throws StorageEngineException on errors
      */
-    private Set<String> getExistingColumns() throws StorageEngineException {
+    private void updateColumnsCache(Collection<PhoenixHelper.Column> columns) throws StorageEngineException {
+        if (columns.isEmpty()) {
+            return;
+        }
         int currentAlterCounter = getAlterCounter(metadataManager.getProjectMetadata());
-        boolean update = false;
         if (alterCounter != currentAlterCounter) {
             alterCounter = currentAlterCounter;
             // Force update if "alterCounter" has been increased
-            update = true;
+            columnExistsCache.clear();
         }
-        if (_existingColumns == null || update) {
+        List<String> columnsToCheck = columns.stream()
+                .filter(c -> !columnExistsCache.containsKey(c.column()))
+                .map(PhoenixHelper.Column::column)
+                .collect(Collectors.toList());
+        if (!columnsToCheck.isEmpty()) {
             try {
-                _existingColumns = phoenixHelper
-                        .getColumns(con, variantsTableName, DEFAULT_TABLE_TYPE).stream()
-                        .map(PhoenixHelper.Column::column)
-                        .collect(Collectors.toSet());
-            } catch (SQLException e) {
+                List<PhoenixHelper.Column> existingColumns = phoenixHelper.getColumns(
+                        hBaseManager, variantsTableName, DEFAULT_TABLE_TYPE, columnsToCheck);
+                for (String c : columnsToCheck) {
+                    columnExistsCache.put(c, false);
+                }
+                for (PhoenixHelper.Column definedColumn : existingColumns) {
+                    columnExistsCache.put(definedColumn.column(), true);
+                }
+            } catch (IOException e) {
                 throw new StorageEngineException("Problem reading existing columns", e);
             }
         }
-        return _existingColumns;
+    }
+
+    private LinkedHashSet<PhoenixHelper.Column> filterOutDefinedColumnsFromCache(Collection<PhoenixHelper.Column> pendingColumns) {
+        return pendingColumns.stream()
+                .filter(c -> !columnExistsCache.getOrDefault(c.column(), false))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**
@@ -355,17 +407,16 @@ public class VariantPhoenixSchemaManager {
      */
     private Set<PhoenixHelper.Column> updatePendingColumns(Collection<PhoenixHelper.Column> columns)
             throws StorageEngineException {
-        Set<String> existingColumns = getExistingColumns();
+
+        // Update cache of defined columns. Do not update cache in synchronized "updateProjectMetadata".
+        updateColumnsCache(getPendingColumns(metadataManager.getProjectMetadata(), columns));
 
         ProjectMetadata projectMetadata = metadataManager.updateProjectMetadata(pm -> {
             // Merge pending columns with new columns
-            Set<PhoenixHelper.Column> pendingColumns = getPendingColumns(pm);
-            pendingColumns.addAll(columns);
-            // Remove existing columns from pending list
-            pendingColumns = pendingColumns.stream()
-                    .filter(column -> !existingColumns.contains(column.column()))
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            setPendingColumns(pm, pendingColumns);
+            Set<PhoenixHelper.Column> pendingColumns = getPendingColumns(pm, columns);
+            // Actual missing columns
+            Set<PhoenixHelper.Column> missingColumns = filterOutDefinedColumnsFromCache(pendingColumns);
+            setPendingColumns(pm, missingColumns);
             return pm;
         });
         return getPendingColumns(projectMetadata);
@@ -400,12 +451,20 @@ public class VariantPhoenixSchemaManager {
     }
 
     private Set<PhoenixHelper.Column> getPendingColumns(ProjectMetadata projectMetadata) {
+        return getPendingColumns(projectMetadata, null);
+    }
+
+    private Set<PhoenixHelper.Column> getPendingColumns(ProjectMetadata projectMetadata,
+                                                        Collection<PhoenixHelper.Column> otherPendingColumns) {
         List<String> pendingPhoenixColumnsStr = projectMetadata.getAttributes().getAsStringList(PENDING_PHOENIX_COLUMNS);
         Set<PhoenixHelper.Column> pendingPhoenixColumns = new LinkedHashSet<>(pendingPhoenixColumnsStr.size() / 2);
         for (int i = 0; i < pendingPhoenixColumnsStr.size(); i += 2) {
             String name = pendingPhoenixColumnsStr.get(i);
             String sqlType = pendingPhoenixColumnsStr.get(i + 1);
             pendingPhoenixColumns.add(PhoenixHelper.Column.build(name, PDataType.fromSqlTypeName(sqlType)));
+        }
+        if (otherPendingColumns != null) {
+            pendingPhoenixColumns.addAll(otherPendingColumns);
         }
         return pendingPhoenixColumns;
     }
