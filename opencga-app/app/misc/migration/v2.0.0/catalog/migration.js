@@ -207,5 +207,12 @@ if (versionNeedsUpdate(20000, 5)) {
         });
     });
 
+    runUpdate(function () {
+        // Create missing indexes and remove old indexes
+        db.file.createIndex({"_samples.id": 1, "studyUid": 1}, {"background": true});
+        db.file.createIndex({"_samples.uuid": 1, "studyUid": 1}, {"background": true});
+        db.file.dropIndex('samples.uid_1_studyUid_1');
+    });
+
     setOpenCGAVersion("2.0.0", 20000, 5);
 }

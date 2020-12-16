@@ -44,7 +44,8 @@
 {"collection": "file", "fields": {"bioformat": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"uri": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "file", "fields": {"samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"_samples.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"_samples.uuid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"jobId": 1, "studyUid": 1}, "options": {"background": true}}
