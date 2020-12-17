@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.batch.JobSpecBuilder;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.*;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -265,7 +266,10 @@ public class K8SExecutor implements BatchExecutor {
         }
         String jobName = ("opencga-job-" + jobId).toLowerCase();
         if (jobName.length() > 63) {
-            jobName = jobName.substring(0, 30) + "--" + jobName.substring(jobName.length() - 30);
+            // Job Id too large. Shrink it!
+            jobName = jobName.substring(0, 27)
+                    + "-r" + RandomStringUtils.randomAlphanumeric(5) + "-"
+                    + jobName.substring(jobName.length() - 27);
         }
         return jobName;
     }
