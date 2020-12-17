@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -229,6 +230,14 @@ public class CohortVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                         catalogManager.getStudyManager().createDefaultVariableSets(study, token);
                     }
 
+                    Cohort cohort = catalogManager.getCohortManager()
+                            .get(study, toolParams.getCohort(),
+                                    new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key()), token)
+                            .first();
+                    if (cohort.getAnnotationSets().stream().anyMatch(a -> a.getId().equals(VARIABLE_SET_ID))) {
+                        catalogManager.getCohortManager()
+                                .removeAnnotationSet(study, toolParams.getCohort(), VARIABLE_SET_ID, new QueryOptions(), token);
+                    }
                     AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);
                     catalogManager.getCohortManager()
                             .addAnnotationSet(study, toolParams.getCohort(), annotationSet, new QueryOptions(), token);

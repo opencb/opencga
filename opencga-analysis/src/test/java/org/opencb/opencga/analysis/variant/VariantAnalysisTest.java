@@ -43,10 +43,15 @@ import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -408,6 +413,37 @@ public class VariantAnalysisTest {
         ExecutionResult result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+
+        Cohort cohort = catalogManager.getCohortManager().get(STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
+        assertEquals(1, cohort.getAnnotationSets().size());
+        AnnotationSet annotationSet = cohort.getAnnotationSets().get(0);
+        assertEquals(CohortVariantStatsAnalysis.VARIABLE_SET_ID, annotationSet.getId());
+        assertEquals(CohortVariantStatsAnalysis.VARIABLE_SET_ID, annotationSet.getVariableSetId());
+        Object variantCount = annotationSet.getAnnotations().get("variantCount");
+        System.out.println("variantCount = " + variantCount);
+
+        CohortUpdateParams updateParams = new CohortUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSet.getId(), "",  Collections.singletonMap("variantCount", 1))));
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, ParamUtils.CompleteUpdateAction.REPLACE));
+
+        catalogManager.getCohortManager()
+                .update(STUDY, StudyEntry.DEFAULT_COHORT, updateParams, true, options, token);
+
+        toolParams = new CohortVariantStatsAnalysisParams()
+                .setCohort(StudyEntry.DEFAULT_COHORT)
+                .setIndex(true);
+
+        result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
+                new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
+
+
+        cohort = catalogManager.getCohortManager().get(STUDY, StudyEntry.DEFAULT_COHORT, new QueryOptions(), token).first();
+        assertEquals(1, cohort.getAnnotationSets().size());
+        annotationSet = cohort.getAnnotationSets().get(0);
+        assertEquals(CohortVariantStatsAnalysis.VARIABLE_SET_ID, annotationSet.getId());
+        assertEquals(CohortVariantStatsAnalysis.VARIABLE_SET_ID, annotationSet.getVariableSetId());
+        assertEquals(variantCount, annotationSet.getAnnotations().get("variantCount"));
     }
 
     @Test

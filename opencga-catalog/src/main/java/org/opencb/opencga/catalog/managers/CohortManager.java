@@ -608,16 +608,6 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
-    public OpenCGAResult<Cohort> setAnnotationSet(String studyStr, String cohortStr, AnnotationSet annotationSet, QueryOptions options,
-                                                  String token) throws CatalogException {
-        return setAnnotationSets(studyStr, cohortStr, Collections.singletonList(annotationSet), options, token);
-    }
-
-    public OpenCGAResult<Cohort> setAnnotationSets(String studyStr, String cohortStr, List<AnnotationSet> annotationSetList,
-                                                   QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, cohortStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
-    }
-
     public OpenCGAResult<Cohort> removeAnnotationSet(String studyStr, String cohortStr, String annotationSetId, QueryOptions options,
                                                      String token) throws CatalogException {
         return removeAnnotationSets(studyStr, cohortStr, Collections.singletonList(annotationSetId), options, token);

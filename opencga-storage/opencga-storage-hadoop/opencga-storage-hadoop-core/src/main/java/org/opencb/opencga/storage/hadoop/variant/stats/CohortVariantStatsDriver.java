@@ -23,6 +23,8 @@ import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -34,6 +36,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
     public static final String SAMPLES = "samples";
     public static final String COHORT = "cohort";
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final String NUM_SAMPLES = "numSamples";
     private static final String NUM_FILES = "numFiles";
@@ -93,6 +96,8 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
             query.append(VariantQueryParam.INCLUDE_FILE.key(), fileIds);
         }
         query.remove(VariantQueryParam.COHORT.key());
+
+        logger.info("Compute cohort variant stats for {} samples from {} files", numSamples, numFiles);
 
         queryOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_STATS));
     }
@@ -325,7 +330,13 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
             variant.setStudies(Collections.singletonList(studyEntry));
             variant.setAnnotation(row.getVariantAnnotation());
 
-            calculator.apply(Collections.singletonList(variant));
+            context.getCounter(COUNTER_GROUP_NAME, "hbase_rows").increment(1);
+            if (entries.isEmpty()) {
+                context.getCounter(COUNTER_GROUP_NAME, "skip_variants").increment(1);
+            } else {
+                context.getCounter(COUNTER_GROUP_NAME, "variants").increment(1);
+                calculator.apply(Collections.singletonList(variant));
+            }
         }
 
         @Override
