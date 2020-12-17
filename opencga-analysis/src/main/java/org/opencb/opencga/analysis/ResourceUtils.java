@@ -33,12 +33,21 @@ public class ResourceUtils {
         return URLUtils.download(url, outDir);
     }
 
-    public static File downloadAnalysis(String analysisId, String resouceName, Path outDir) throws IOException {
-        return URLUtils.download(new URL(URL + "analysis/" + analysisId + "/" + resouceName), outDir);
+    public static File downloadAnalysis(String analysisId, String resouceName, Path outDir, Path openCgaHome) throws IOException {
+        Path path = null;
+        String filename = "analysis/" + analysisId + "/" + resouceName;
+        if (openCgaHome != null) {
+            path = openCgaHome.resolve(filename);
+        }
+        if (path != null && path.toFile().exists()) {
+            return path.toFile();
+        } else {
+            return URLUtils.download(new URL(URL + filename), outDir);
+        }
     }
 
-    public static DownloadedRefGenome downloadRefGenome(Species species, Assembly assembly, Authority authority, Path outDir)
-            throws IOException {
+    public static DownloadedRefGenome downloadRefGenome(Species species, Assembly assembly, Authority authority, Path outDir,
+                                                        Path openCgaHome) throws IOException {
 
         // Sanity check
         if (species != Species.hsapiens) {
@@ -51,32 +60,44 @@ public class ResourceUtils {
             throw new IOException("Authority '" + authority + "' not supported");
         }
 
-        // Get files to downloadAnalysis
-        List<String> links = new LinkedList<>();
-        links.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz");
-        links.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.fai");
-        links.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.gzi");
-
         // Download files
         File gzFile = null;
         File faiFile = null;
         File gziFile = null;
 
-        for (String link : links) {
-            URL url = new URL(URL + "reference-genomes/" + link);
-            File file = URLUtils.download(url, outDir);
-            if (file == null) {
-                // Something wrong happened, remove downloaded files
-                cleanRefGenome(links, outDir);
-                return null;
+        // Get files to downloadAnalysis
+        List<String> filenames = new LinkedList<>();
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz");
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.fai");
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.gzi");
+
+        Path path = null;
+        for (String filename : filenames) {
+            File file;
+
+            if (openCgaHome != null) {
+                path = openCgaHome.resolve("analysis/commons/reference-genomes/" + filename);
             }
-            if (link.endsWith("gz")) {
+            if (path != null && path.toFile().exists()) {
+                file = path.toFile();
+            } else {
+                URL url = new URL(URL + "analysis/commons/reference-genomes/" + filename);
+                file = URLUtils.download(url, outDir);
+                if (file == null) {
+                    // Something wrong happened, remove downloaded files
+                    cleanRefGenome(filenames, outDir);
+                    return null;
+                }
+            }
+            if (filename.endsWith("gz")) {
                 gzFile = file;
-            } else if (link.endsWith("fai")) {
+            } else if (filename.endsWith("fai")) {
                 faiFile = file;
-            } else if (link.endsWith("gzi")) {
+            } else if (filename.endsWith("gzi")) {
                 gziFile = file;
             }
+
+            path = null;
         }
         return new DownloadedRefGenome(species, assembly, authority, gzFile, faiFile, gziFile);
     }

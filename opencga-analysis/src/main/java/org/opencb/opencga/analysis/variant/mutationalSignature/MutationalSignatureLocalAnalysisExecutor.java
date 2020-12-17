@@ -198,7 +198,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     public MutationalSignature query(Query query, QueryOptions queryOptions)
             throws CatalogException, ToolException, StorageEngineException, IOException {
 
-        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
+        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir(),
+                getOpenCgaHome());
         if (signatureFile == null) {
             throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
         }

@@ -198,5 +198,21 @@ if (versionNeedsUpdate(20000, 5)) {
         });
     });
 
+    runUpdate(function () {
+        db.cohort.createIndex({"numSamples": 1, "studyUid": 1}, {"background": true});
+
+        migrateCollection("cohort", {"numSamples": {"$exists": false}}, {"samples": 1}, function (bulk, doc) {
+            var nsamples = NumberInt(isNotUndefinedOrNull(doc.samples) ? doc.samples.length : 0);
+            bulk.find({"_id": doc._id}).updateOne({ "$set": { "numSamples": nsamples }});
+        });
+    });
+
+    runUpdate(function () {
+        // Create missing indexes and remove old indexes
+        db.file.createIndex({"_samples.id": 1, "studyUid": 1}, {"background": true});
+        db.file.createIndex({"_samples.uuid": 1, "studyUid": 1}, {"background": true});
+        db.file.dropIndex('samples.uid_1_studyUid_1');
+    });
+
     setOpenCGAVersion("2.0.0", 20000, 5);
 }

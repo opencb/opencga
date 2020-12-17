@@ -142,8 +142,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 
-        this.roleInCancerManager = new RoleInCancerManager();
-        this.actionableVariantManager = new ActionableVariantManager();
+        this.roleInCancerManager = new RoleInCancerManager(opencgaHome);
+        this.actionableVariantManager = new ActionableVariantManager(opencgaHome);
 
         this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);
 

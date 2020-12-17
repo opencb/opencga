@@ -601,11 +601,11 @@
 
     <dynamicField name="annotations__s__*" type="string" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__d__*" type="double" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="annotations__i__*" type="int" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="annotations__i__*" type="long" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__b__*" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="annotations__sm__*" type="strings" multiValued="true" indexed="true" stored="true"/>
     <dynamicField name="annotations__dm__*" type="double" indexed="true" stored="true" multiValued="true"/>
-    <dynamicField name="annotations__im__*" type="int" indexed="true" stored="true" multiValued="true"/>
+    <dynamicField name="annotations__im__*" type="long" indexed="true" stored="true" multiValued="true"/>
     <dynamicField name="annotations__bm__*" type="boolean" indexed="true" stored="true" multiValued="true"/>
 
 </schema>
