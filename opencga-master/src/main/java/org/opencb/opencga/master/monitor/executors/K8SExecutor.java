@@ -268,7 +268,7 @@ public class K8SExecutor implements BatchExecutor {
         if (jobName.length() > 63) {
             // Job Id too large. Shrink it!
             jobName = jobName.substring(0, 27)
-                    + "-r" + RandomStringUtils.randomAlphanumeric(5) + "-"
+                    + "-r" + RandomStringUtils.randomAlphanumeric(5).toLowerCase() + "-"
                     + jobName.substring(jobName.length() - 27);
         }
         return jobName;
