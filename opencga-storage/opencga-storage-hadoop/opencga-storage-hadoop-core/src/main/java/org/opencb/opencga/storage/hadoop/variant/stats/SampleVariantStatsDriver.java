@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -32,6 +33,8 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.VariantTableAggregationDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.filters.VariantRowFilterFactory;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
@@ -43,6 +46,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -55,12 +59,14 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 //    public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     //    public static final boolean STATS_PARTIAL_RESULTS_DEFAULT = true;
     private static final String TRIOS = "trios";
-    private static final String SAMPLE_DATA_DP_IDX = "SAMPLE_DATA_DP_IDX";
-    private static final String FILE_DATA_DP_IDX = "FILE_DATA_DP_IDX";
     private static final String WRITE_TO_DISK = "write";
     private static final String STATS_OPERATION_NAME = "sample_stats";
+    private static final String FIXED_FORMAT = "FIXED_FORMAT";
+    private static final String FIXED_FILE_ATTRIBUTES = "FIXED_FILE_ATTRIBUTES";
     private List<Integer> sampleIds;
     private String trios;
+    private String fileData;
+    private String sampleData;
 
     @Override
     protected Map<String, String> getParams() {
@@ -107,6 +113,14 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         sampleIds = new ArrayList<>(includeSample);
         if (sampleIds.isEmpty()) {
             throw new IllegalArgumentException("Nothing to do!");
+        }
+        fileData = getParam(VariantQueryParam.FILE_DATA.key());
+        if (StringUtils.isNotEmpty(fileData)) {
+            LOGGER.info(" * fileData : " + fileData);
+        }
+        sampleData = getParam(VariantQueryParam.SAMPLE_DATA.key());
+        if (StringUtils.isNotEmpty(sampleData)) {
+            LOGGER.info(" * sampleData : " + sampleData);
         }
         this.trios = trios.toString();
 
@@ -156,9 +170,12 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
     @Override
     protected Query getQuery() {
-        return super.getQuery()
+        Query query = super.getQuery()
                 .append(VariantQueryParam.STUDY.key(), getStudyId())
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+        query.remove(VariantQueryParam.SAMPLE_DATA.key());
+        query.remove(VariantQueryParam.FILE_DATA.key());
+        return query;
     }
 
     @Override
@@ -225,8 +242,14 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         List<String> fileAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
 
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
-        job.getConfiguration().setInt(SAMPLE_DATA_DP_IDX, fixedFormat.indexOf(VCFConstants.DEPTH_KEY));
-        job.getConfiguration().setInt(FILE_DATA_DP_IDX, fileAttributes.indexOf(VCFConstants.DEPTH_KEY));
+        job.getConfiguration().setStrings(FIXED_FORMAT, fixedFormat.toArray(new String[0]));
+        job.getConfiguration().setStrings(FIXED_FILE_ATTRIBUTES, fileAttributes.toArray(new String[0]));
+        if (StringUtils.isNotEmpty(fileData)) {
+            job.getConfiguration().set(VariantQueryParam.FILE_DATA.key(), fileData);
+        }
+        if (StringUtils.isNotEmpty(sampleData)) {
+            job.getConfiguration().set(VariantQueryParam.SAMPLE_DATA.key(), sampleData);
+        }
         job.getConfiguration().setInt(STUDY_ID, getStudyId());
         job.getConfiguration().set(TRIOS, trios);
         if (outdir != null) {
@@ -345,11 +368,14 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
         protected final Logger logger = LoggerFactory.getLogger(SampleVariantStatsMapper.class);
         private VariantStorageMetadataManager vsm;
-        private Map<Integer, List<Integer>> fileToSampleIds = new HashMap<>();
+        private final Map<Integer, List<Integer>> fileToSampleIds = new HashMap<>();
         private DistributedSampleVariantStatsCalculator calculator;
+        private final HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter();
         private int[] sampleIdsPosition;
         private int sampleDataDpIdx;
         private int fileDataDpIdx;
+        private Predicate<VariantRow.FileColumn> fileDataFilter;
+        private Predicate<VariantRow.SampleColumn> sampleDataFilter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -357,8 +383,15 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             studyId = context.getConfiguration().getInt(STUDY_ID, -1);
             samples = context.getConfiguration().getInts(SAMPLES);
             sampleIdsPosition = new int[IntStream.of(samples).max().orElse(0) + 1];
-            sampleDataDpIdx = context.getConfiguration().getInt(SAMPLE_DATA_DP_IDX, -1);
-            fileDataDpIdx = context.getConfiguration().getInt(FILE_DATA_DP_IDX, -1);
+
+            String fileDataQuery = context.getConfiguration().get(VariantQueryParam.FILE_DATA.key());
+            String sampleDataQuery = context.getConfiguration().get(VariantQueryParam.SAMPLE_DATA.key());
+            List<String> fixedFormat = new ArrayList<>(context.getConfiguration().getStringCollection(FIXED_FORMAT));
+            List<String> fileAttributes = new ArrayList<>(context.getConfiguration().getStringCollection(FIXED_FILE_ATTRIBUTES));
+            VariantRowFilterFactory filterFactory = new VariantRowFilterFactory(fileAttributes, fixedFormat);
+
+            sampleDataDpIdx = fixedFormat.indexOf(VCFConstants.DEPTH_KEY);
+            fileDataDpIdx = fileAttributes.indexOf(VCFConstants.DEPTH_KEY);
 
             Arrays.fill(sampleIdsPosition, -1);
             for (int i = 0; i < samples.length; i++) {
@@ -368,6 +401,10 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             Pedigree pedigree = readPedigree(context.getConfiguration());
             calculator = new DistributedSampleVariantStatsCalculator(pedigree, samples);
             calculator.pre();
+
+            fileDataFilter = filterFactory.buildFileDataFilter(fileDataQuery)
+                    .and(fileCell -> VariantOverlappingStatus.NONE == fileCell.getOverlappingStatus());
+            sampleDataFilter = filterFactory.buildSampleDataFilter(sampleDataQuery);
 
             vsm = this.getMetadataManager();
         }
@@ -384,15 +421,23 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
         @Override
         protected void map(Object key, VariantRow row, Context context) throws IOException, InterruptedException {
-            VariantAnnotation annotation = row.getVariantAnnotation();
+            VariantAnnotation[] annotation = new VariantAnnotation[1];
 
             List<String> gts = Arrays.asList(new String[samples.length]);
             List<String> dps = Arrays.asList(new String[samples.length]);
             List<String> quals = Arrays.asList(new String[samples.length]);
             List<String> filters = Arrays.asList(new String[samples.length]);
+            // All samples valid by default.
+            // If any filter (either sample-data or file-data) fails, then the sample would become invalid.
+            boolean[] invalidSamples = new boolean[samples.length];
 
             Variant variant = row.walker().onSample(sampleCell -> {
                 int sampleId = sampleCell.getSampleId();
+                if (!sampleDataFilter.test(sampleCell)) {
+                    // Invalidate sample
+                    invalidSamples[sampleIdsPosition[sampleId]] = true;
+                    return;
+                }
 
                 String gt = sampleCell.getGT();
 
@@ -416,7 +461,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
             }).onFile(fileCell -> {
                 int fileId = fileCell.getFileId();
 
-                if (VariantOverlappingStatus.NONE == fileCell.getOverlappingStatus()) {
+                if (fileDataFilter.test(fileCell)) {
                     for (Integer sampleId : getSamplesFromFileId(fileId)) {
                         filters.set(sampleIdsPosition[sampleId], fileCell.getFilter());
                         quals.set(sampleIdsPosition[sampleId], fileCell.getQualString());
@@ -431,10 +476,33 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                             }
                         }
                     }
+                } else {
+                    // Invalidate samples from this file
+                    for (Integer sampleId : getSamplesFromFileId(fileId)) {
+                        invalidSamples[sampleIdsPosition[sampleId]] = true;
+                    }
                 }
+            }).onVariantAnnotation(variantAnnotationColumn -> {
+                ImmutableBytesWritable bytesWritable = variantAnnotationColumn.toBytesWritable();
+                annotation[0] = annotationConverter.convert(bytesWritable.get(), bytesWritable.getOffset(), bytesWritable.getLength());
             }).walk();
 
-            calculator.update(variant, annotation, gts, dps, quals, filters);
+            // discard invalidated samples by removing its genotype
+            int invalidSamplesCount = 0;
+            for (int i = 0; i < invalidSamples.length; i++) {
+                if (invalidSamples[i]) {
+                    // discard this specific sample
+                    gts.set(i, null);
+                    invalidSamplesCount++;
+                }
+            }
+            context.getCounter(COUNTER_GROUP_NAME, "variants_total").increment(1);
+            if (invalidSamplesCount == samples.length) {
+                context.getCounter(COUNTER_GROUP_NAME, "variants_discarded").increment(1);
+            } else {
+                context.getCounter(COUNTER_GROUP_NAME, "variants_used").increment(1);
+                calculator.update(variant, annotation[0], gts, dps, quals, filters);
+            }
         }
 
         @Override

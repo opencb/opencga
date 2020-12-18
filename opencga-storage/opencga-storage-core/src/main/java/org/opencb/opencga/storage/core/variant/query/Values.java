@@ -30,6 +30,10 @@ public class Values<V> implements QueryElement, Iterable<V> {
         return values;
     }
 
+    public int size() {
+        return values.size();
+    }
+
     public V getValue(Predicate<V> selector) {
         return values.stream().filter(selector).findFirst().orElse(null);
     }

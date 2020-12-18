@@ -321,6 +321,17 @@ public class VariantAnalysisTest {
     }
 
     @Test
+    public void testSampleStatsSampleFilter() throws Exception {
+        Assume.assumeThat(storageEngine, CoreMatchers.is(CoreMatchers.not(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)));
+        sampleVariantStats(null, "stats_filter_GT", false, 1, Collections.singletonList(ParamConstants.ALL), false,
+                new Query(VariantQueryParam.SAMPLE_DATA.key(), "GT=1|1"));
+        sampleVariantStats(null, "stats_filter_DS", false, 2, Collections.singletonList(ParamConstants.ALL), false,
+                new Query(VariantQueryParam.SAMPLE_DATA.key(), "DS>1"));
+        sampleVariantStats(null, "stats_filter_DS_GT", false, 3, Collections.singletonList(ParamConstants.ALL), false,
+                new Query(VariantQueryParam.SAMPLE_DATA.key(), "DS>1;GT!=1|1"));
+    }
+
+    @Test
     public void testSampleStats() throws Exception {
         sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(0, 2));
         sampleVariantStats("1,2", "stats_1", false, 1, file.getSampleIds().subList(2, 4));
@@ -352,14 +363,28 @@ public class VariantAnalysisTest {
 
     private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo)
             throws Exception {
+        return sampleVariantStats(region, indexId, indexOverwrite, expectedStats, samples, nothingToDo, new Query(), true);
+    }
+
+    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo,
+                                               Query query)
+            throws Exception {
+        return sampleVariantStats(region, indexId, indexOverwrite, expectedStats, samples, nothingToDo, query, false);
+    }
+
+    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo,
+                                               Query query, boolean checkRegions)
+            throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats_" + indexId));
         System.out.println("output = " + outDir.toAbsolutePath());
         SampleVariantStatsAnalysisParams params = new SampleVariantStatsAnalysisParams()
                 .setSample(samples)
                 .setIndex(indexId != null)
                 .setIndexId(indexId)
-                .setIndexOverwrite(indexOverwrite)
-                .setVariantQuery(new AnnotationVariantQueryParams().setRegion(region));
+                .setIndexOverwrite(indexOverwrite);
+        params.getVariantQuery()
+                .appendQuery(query)
+                .setRegion(region);
         ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
         if (nothingToDo) {
@@ -367,13 +392,15 @@ public class VariantAnalysisTest {
         } else {
             checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
-            List<SampleVariantStats> allStats = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(outDir.resolve("sample-variant-stats.json").toFile()).readAll();
-            for (SampleVariantStats sampleVariantStats : allStats) {
+            if (checkRegions) {
+                List<SampleVariantStats> allStats = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class).<SampleVariantStats>readValues(outDir.resolve("sample-variant-stats.json").toFile()).readAll();
+                for (SampleVariantStats sampleVariantStats : allStats) {
 //                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sampleVariantStats));
-                List<String> expectedRegion = region == null
-                        ? Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X")
-                        : Arrays.asList(region.split(","));
-                assertEquals(new HashSet<>(expectedRegion), sampleVariantStats.getChromosomeCount().keySet());
+                    List<String> expectedRegion = region == null
+                            ? Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "X")
+                            : Arrays.asList(region.split(","));
+                    assertEquals(new HashSet<>(expectedRegion), sampleVariantStats.getChromosomeCount().keySet());
+                }
             }
             if (samples.get(0).equals(ParamConstants.ALL)) {
                 samples = file.getSampleIds();
