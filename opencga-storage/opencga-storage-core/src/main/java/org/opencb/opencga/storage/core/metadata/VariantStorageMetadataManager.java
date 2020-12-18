@@ -122,7 +122,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.getSamples();
-        });
+        }, samples -> samples.size() > 100);
         splitDataCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
             if (sampleMetadata == null) {
@@ -157,7 +157,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
             return sampleMetadata.getFiles();
-        });
+        }, files -> files.size() > 20);
 
         cohortIdCache = new MetadataCache<>(cohortDBAdaptor::getCohortId);
         cohortNameCache = new MetadataCache<>((studyId, cohortId) -> {
