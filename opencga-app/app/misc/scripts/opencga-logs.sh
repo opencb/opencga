@@ -1,12 +1,13 @@
 #!/bin/sh
 
 FILE=""
-LINES=+1
+LINES="+1"
 LOG_LEVEL=INFO
 OPENCB_ONLY=FALSE
 FOLLOW=FALSE
 COLOR=TRUE
 LOG_PREFIX=""
+TAIL="TRUE"
 
 printUsage() {
   echo ""
@@ -84,10 +85,14 @@ if [ -z "$FILE" ]; then
   FILE="-"
 fi
 
-if [ $FOLLOW = "TRUE" ]; then
-  if [ "$FILE" = "-" ]; then
-    TAIL_OPTS="${TAIL_OPTS} -f "
+if [ "$FILE" = "-" ]; then
+  if [ "$LINES" = "+1" ]; then
+    TAIL=FALSE;
   else
+    echo "Unable to follow from standard input and tail with '--tail $LINES'"
+  fi
+else
+  if [ $FOLLOW = "TRUE" ]; then
     TAIL_OPTS="${TAIL_OPTS} -F "
   fi
 fi
@@ -172,7 +177,11 @@ opencgaLogs() {
 EOM
   )
 
-  exec tail -n ${LINES} ${TAIL_OPTS} "${FILE}" | jq --unbuffered -r -R "${JQ_SCRIPT}"
+  if [ "$TAIL" = "TRUE" ]; then
+    exec tail -n ${LINES} ${TAIL_OPTS} "${FILE}" | jq --unbuffered -r -R "${JQ_SCRIPT}"
+  else
+    jq --unbuffered -r -R "${JQ_SCRIPT}"
+  fi
 }
 
 if [ "$FILE" = "-" ]; then

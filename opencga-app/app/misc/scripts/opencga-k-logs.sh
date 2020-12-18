@@ -6,7 +6,8 @@
 OPENCGA_LOGS_OPTS=""
 KUBECTL_LOG_OPTS=""
 DEPLOYMENT=rest
-CONTAINER=opencga
+ALL_CONTAINERS=FALSE
+CONTAINER=""
 
 printUsage() {
   echo ""
@@ -16,7 +17,7 @@ printUsage() {
   echo "            --context         STRING    Kubernetes context to use"
   echo "     -d     --deployment      STRING    Deployment name"
   echo "     -c     --container       STRING    Print logs from this container"
-  echo "            --all-containers            Get all containers' logs in the pod(s)"
+  echo "     -A     --all-containers            Get all containers' logs in the pod(s)"
   echo "     -n     --tail            INT       Output the last NUM lines"
   echo "     -f     --follow                    Output appended data as the file grows"
   echo "     -l     --log-level       STRING    Log level filter. [debug, info, warn, error]. Default: info"
@@ -38,6 +39,7 @@ case $key in
     ;;
     --verbose)
     set -x
+    OPENCGA_LOGS_OPTS="${OPENCGA_LOGS_OPTS} --verbose"
     shift # past argument
     ;;
     --context)
@@ -45,8 +47,8 @@ case $key in
     shift # past argument
     shift # past value
     ;;
-    --all-containers)
-    KUBECTL_LOG_OPTS="${KUBECTL_LOG_OPTS} --all-containers"
+    -A|--all-containers)
+    ALL_CONTAINERS="TRUE"
     shift # past argument
     ;;
     -c|--container)
@@ -75,14 +77,51 @@ case $key in
 esac
 done
 
+IS_MASTER_DEPLOYMENT=FALSE
+IS_REST_DEPLOYMENT=FALSE
+IS_IVA_DEPLOYMENT=FALSE
+case "$DEPLOYMENT" in
+  *master*)
+    CONTAINER=${CONTAINER:-"$DEPLOYMENT"}
+    IS_MASTER_DEPLOYMENT=TRUE
+    ;;
+  *rest*)
+    CONTAINER=${CONTAINER:-"opencga"}
+    IS_REST_DEPLOYMENT=TRUE
+    ;;
+  *iva*)
+    CONTAINER=${CONTAINER:-"iva"}
+    IS_IVA_DEPLOYMENT=TRUE
+    ;;
+  *)
+    CONTAINER=${CONTAINER:-"opencga"}
+    ;;
+esac
+
+if [ $ALL_CONTAINERS = "TRUE" ]; then
+  KUBECTL_LOG_OPTS="${KUBECTL_LOG_OPTS} --all-containers"
+else
+  KUBECTL_LOG_OPTS="${KUBECTL_LOG_OPTS} --container ${CONTAINER}"
+fi
+
 cd "$(dirname "$0")" || (echo "ERROR MOVING" && exit)
 
 # See https://stackoverflow.com/a/22644006/2073398
 trap "exit" INT TERM
 trap "kill 0" EXIT
 
-for pod in $(kubectl get pods --selector=app=${DEPLOYMENT} $CONTEXT -o name) ; do
-    kubectl logs $CONTEXT -c ${CONTAINER} ${KUBECTL_LOG_OPTS} "${pod}" | ./opencga-logs.sh --prefix "${pod}" ${OPENCGA_LOGS_OPTS} - &
+PODS=$(kubectl get pods --selector=app=${DEPLOYMENT} $CONTEXT -o name)
+if [ -z "$PODS" ]; then
+  if [ "$IS_MASTER_DEPLOYMENT" = TRUE ]; then
+    PODS="deployment/$DEPLOYMENT"
+  else
+    echo "No pods found for deployment ${DEPLOYMENT} in context $CONTEXT"
+    exit 1;
+  fi
+fi
+
+for pod in $PODS ; do
+    kubectl logs $CONTEXT ${KUBECTL_LOG_OPTS} "${pod}" | ./opencga-logs.sh --prefix "${pod}" ${OPENCGA_LOGS_OPTS} - &
 done
 
 wait
