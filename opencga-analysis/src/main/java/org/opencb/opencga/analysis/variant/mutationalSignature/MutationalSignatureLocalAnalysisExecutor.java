@@ -130,9 +130,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
                 // FAI access time
                 String key = variant.getReference() + ">" + variant.getAlternate();
-                if (variant.getStrand().equals("-")) {
-                    key = complement(key);
-                }
+//                if (variant.getStrand().equals("-")) {
+//                    key = complement(key);
+//                }
 
                 if (countMap.containsKey(key)) {
                     contextCount++;
