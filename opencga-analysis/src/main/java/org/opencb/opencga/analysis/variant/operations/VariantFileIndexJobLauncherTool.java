@@ -129,8 +129,8 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
 
     private String buildJobId(File file) {
         String fileName = file.getName();
-        if (fileName.length() > 33) {
-            fileName = fileName.substring(0, 30) + "...";
+        if (fileName.length() > 30) {
+            fileName = fileName.substring(0, 30);
         }
         return "index_" + fileName + "_" + TimeUtils.getTime();
     }
