@@ -923,6 +923,8 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
+            executor.setOpenCgaHome(opencgaHome);
+
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
