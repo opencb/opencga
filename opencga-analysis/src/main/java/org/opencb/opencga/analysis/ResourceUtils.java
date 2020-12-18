@@ -40,8 +40,10 @@ public class ResourceUtils {
             path = openCgaHome.resolve(filename);
         }
         if (path != null && path.toFile().exists()) {
+            System.out.println("downloadAnalysis from path: " + path);
             return path.toFile();
         } else {
+            System.out.println("downloadAnalysis from URL: " + (URL + filename) + ", (path does not exist: " + path + ")");
             return URLUtils.download(new URL(URL + filename), outDir);
         }
     }
@@ -79,9 +81,11 @@ public class ResourceUtils {
                 path = openCgaHome.resolve("analysis/commons/reference-genomes/" + filename);
             }
             if (path != null && path.toFile().exists()) {
+                System.out.println("downloadRefGenome from path: " + path);
                 file = path.toFile();
             } else {
                 URL url = new URL(URL + "analysis/commons/reference-genomes/" + filename);
+                System.out.println("downloadAnalysis from URL: " + URL + ", (path does not exist: " + path + ")");
                 file = URLUtils.download(url, outDir);
                 if (file == null) {
                     // Something wrong happened, remove downloaded files

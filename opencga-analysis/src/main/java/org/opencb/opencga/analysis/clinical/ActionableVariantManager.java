@@ -72,9 +72,12 @@ public class ActionableVariantManager {
 
                 Path path = openCgaHome.resolve("analysis/commons/" + filename);
                 if (path.toFile().exists()) {
+                    System.out.println("loadActionableVariants from path: " + path);
                     actionableFile = path.toFile();
                 } else {
                     // Donwload 'actionable variant' file
+                    System.out.println("loadActionableVariants from URL: " + (ACTIONABLE_URL + filename) + ", (path does not exist: "
+                            + path + ")");
                     actionableFile = URLUtils.download(new URL(ACTIONABLE_URL + filename), Paths.get("/tmp"));
                 }
             } catch (IOException e) {
