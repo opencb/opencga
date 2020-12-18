@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.CohortDBAdaptor.QueryParams.*;
+
 /**
  * Created by pfurio on 3/22/16.
  */
@@ -40,28 +42,28 @@ public class CohortConverter extends AnnotableConverter<Cohort> {
         Document document = super.convertToStorageType(object, variableSetList);
         document.remove(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key());
 
-        document.put("uid", object.getUid());
-        document.put("studyUid", object.getStudyUid());
+        document.put(UID.key(), object.getUid());
+        document.put(STUDY_UID.key(), object.getStudyUid());
 
         validateSamplesToUpdate(document);
         return document;
     }
 
     public void validateSamplesToUpdate(Document document) {
-        List<Document> samples = (List) document.get("samples");
+        List<Document> samples = (List) document.get(SAMPLES.key());
         if (samples != null) {
             // We make sure we don't store duplicates
             Set<Long> sampleSet = new HashSet<>();
             for (Document sample : samples) {
-                long id = sample.getInteger("uid").longValue();
+                long id = sample.getInteger(UID.key()).longValue();
                 if (id > 0) {
                     sampleSet.add(id);
                 }
             }
 
-            document.put("samples",
+            document.put(SAMPLES.key(),
                     sampleSet.stream()
-                            .map(sample -> new Document("uid", sample))
+                            .map(sample -> new Document(UID.key(), sample))
                             .collect(Collectors.toList()));
         }
     }

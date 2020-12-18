@@ -553,16 +553,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
-    public OpenCGAResult<Sample> setAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
-                                               String token) throws CatalogException {
-        return setAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSet), options, token);
-    }
-
-    public OpenCGAResult<Sample> setAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
-                                                QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
-    }
-
     public OpenCGAResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
                                                   String token) throws CatalogException {
         return removeAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSetId), options, token);

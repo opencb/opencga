@@ -59,6 +59,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER, ""),
+        NUM_SAMPLES("numSamples", INTEGER, ""),
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 

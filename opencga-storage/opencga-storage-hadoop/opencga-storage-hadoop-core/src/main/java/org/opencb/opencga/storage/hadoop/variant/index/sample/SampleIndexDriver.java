@@ -78,6 +78,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private static final String SAMPLE_ID_TO_FILE_ID_MAP = "SampleIndexDriver.sampleIdToFileIdMap";
     private static final String MULTI_FILE_SAMPLES = "SampleIndexDriver.multiFileSamples";
     private static final String FIXED_ATTRIBUTES = "SampleIndexDriver.fixedAttributes";
+    private static final String PARTIAL_SCAN = "SampleIndexDriver.partial_scan";
+
     private int study;
     private String outputTable;
     private boolean allSamples;
@@ -275,6 +277,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                     }
                 }
+            } else {
+                job.getConfiguration().setBoolean(PARTIAL_SCAN, true);
             }
             scans = Collections.singletonList(scan);
         }
@@ -354,6 +358,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private boolean hasGenotype;
 
         private final Map<Integer, SampleIndexEntryPutBuilder> samplesMap = new HashMap<>();
+        private boolean partialScan;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -394,6 +399,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     samples.put(sampleId, new SampleMetadata(0, sampleId, null).setFiles(fileIds));
                 }
             }
+            partialScan = context.getConfiguration().getBoolean(PARTIAL_SCAN, false);
             for (int sampleId : context.getConfiguration().getInts(MULTI_FILE_SAMPLES)) {
                 samples.get(sampleId).setSplitData(VariantStorageEngine.SplitData.MULTI);
             }
@@ -408,8 +414,9 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             Map<Integer, Short> fileIndexMap = new HashMap<>();
 
             variantRow.forEachFile(fileColumn -> {
-                if (!this.files.contains(fileColumn.getFileId())) {
+                if (partialScan && !this.files.contains(fileColumn.getFileId())) {
                     // Discard extra files
+                    // Only check map with a Partial Scan.
                     return;
                 }
                 Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn.raw(), fixedAttributes);

@@ -9,10 +9,12 @@ spec:
   selector:
     matchLabels:
       app: {{  .Values.rest.name  }}
+      { { - include "opencga.selectorLabels" . | nindent 6 } }
   template:
     metadata:
       labels:
         app: {{  .Values.rest.name  }}
+        { { - include "opencga.selectorLabels" . | nindent 8 } }
     spec:
     {{- with .Values.rest.imagePullSecrets }}
       imagePullSecrets:

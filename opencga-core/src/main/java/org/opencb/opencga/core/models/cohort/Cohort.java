@@ -37,6 +37,7 @@ public class Cohort extends Annotable {
     private String modificationDate;
     private String description;
     private List<Sample> samples;
+    private int numSamples;
 
     private int release;
     private CustomStatus status;
@@ -48,22 +49,23 @@ public class Cohort extends Annotable {
 
     public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples, int release,
                   Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, Collections.emptyList(), release, new CustomStatus(), null, attributes);
+        this(id, type, creationDate, description, samples, 0, Collections.emptyList(), release, new CustomStatus(), null, attributes);
     }
 
     public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, annotationSetList, release, new CustomStatus(), null, attributes);
+        this(id, type, creationDate, description, samples, 0, annotationSetList, release, new CustomStatus(), null, attributes);
     }
 
     public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
-                  List<AnnotationSet> annotationSets, int release, CustomStatus status, CohortInternal internal,
+                  int numSamples, List<AnnotationSet> annotationSets, int release, CustomStatus status, CohortInternal internal,
                   Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.creationDate = creationDate;
         this.description = description;
         this.samples = samples;
+        this.numSamples = numSamples;
         this.annotationSets = annotationSets;
         this.release = release;
         this.status = status;
@@ -81,6 +83,7 @@ public class Cohort extends Annotable {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
+        sb.append(", numSamples=").append(numSamples);
         sb.append(", release=").append(release);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -107,13 +110,14 @@ public class Cohort extends Annotable {
                 && Objects.equals(internal, cohort.internal)
                 && Objects.equals(description, cohort.description)
                 && Objects.equals(samples, cohort.samples)
+                && Objects.equals(numSamples, cohort.numSamples)
                 && Objects.equals(status, cohort.status)
                 && Objects.equals(attributes, cohort.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, id, type, creationDate, internal, description, samples, status, release, attributes);
+        return Objects.hash(uuid, id, type, creationDate, internal, description, samples, numSamples, status, release, attributes);
     }
 
     @Override
@@ -197,6 +201,15 @@ public class Cohort extends Annotable {
 
     public Cohort setSamples(List<Sample> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public int getNumSamples() {
+        return numSamples;
+    }
+
+    public Cohort setNumSamples(int numSamples) {
+        this.numSamples = numSamples;
         return this;
     }
 

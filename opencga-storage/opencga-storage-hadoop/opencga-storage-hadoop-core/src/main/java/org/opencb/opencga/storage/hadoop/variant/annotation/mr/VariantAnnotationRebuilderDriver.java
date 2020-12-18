@@ -84,7 +84,7 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
         // Update missing columns, if any
         try {
             VariantPhoenixSchemaManager schemaManager =
-                    new VariantPhoenixSchemaManager(getConf(), variantTable, getMetadataManager());
+                    new VariantPhoenixSchemaManager(getConf(), variantTable, getMetadataManager(), getHBaseManager());
             schemaManager.registerAnnotationColumns();
         } catch (ClassNotFoundException | SQLException e) {
             throw new RuntimeException(e);

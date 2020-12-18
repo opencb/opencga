@@ -174,7 +174,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         annotations = new HashMap<>();
         annotations.put("a", "bye");
-        annotations.put("b", new ObjectMap("b1", 4).append("b2", 5));
+        annotations.put("b", new ObjectMap("b1", Integer.MAX_VALUE + 1L).append("b2", 5));
         AnnotationSet annotationSet2 = new AnnotationSet("annSet2", variableSet.getId(), annotations);
 
         Sample sample = new Sample()
@@ -209,7 +209,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
         assertEquals("sample", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
 
-        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=4");
+        query = new Query(Constants.ANNOTATION, "myInternalVset:b.b1=" + (Integer.MAX_VALUE + 1L));
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
         assertEquals("sample", catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token).first().getId());
 
@@ -898,7 +898,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         HashMap<String, Object> annotations = new HashMap<>();
         annotations.put("NAME", "Joe");
-        annotations.put("AGE", 25);
+        annotations.put("AGE", Integer.MAX_VALUE + 1L);
         annotations.put("HEIGHT", 180);
         annotations.put("MAP", new ObjectMap("unknownKey1", "value1").append("unknownKey2", 42));
 
@@ -918,7 +918,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(4, map.size());
 
         assertEquals("Joe", map.get("NAME"));
-        assertEquals(25, map.get("AGE"));
+        assertEquals(Integer.MAX_VALUE + 1L, map.get("AGE"));
         assertEquals(180.0, map.get("HEIGHT"));
         assertEquals(2, ((Map) map.get("MAP")).size());
         assertEquals("value1", ((Map) map.get("MAP")).get("unknownKey1"));
@@ -1754,7 +1754,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
             assertEquals(5, auxAnnotations.size());
             assertEquals("SAMPLE1", auxAnnotations.get("NAME"));
-            assertEquals(38, auxAnnotations.get("AGE"));
+            assertEquals(38L, auxAnnotations.get("AGE"));
             assertEquals("extra", auxAnnotations.get("EXTRA"));
         };
 
