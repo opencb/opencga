@@ -92,7 +92,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     }
 
 
-    protected Map<String, Map<String, Double>> initFreqMap() {
+    protected static Map<String, Map<String, Double>> initFreqMap() {
         Map<String, Map<String, Double>> map = new LinkedHashMap<>();
         for (String firstKey : FIRST_LEVEL_KEYS) {
             Map<String, Double> secondMap = new LinkedHashMap<>();
@@ -106,7 +106,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return map;
     }
 
-    protected void writeCountMap(Map<String, Map<String, Double>> map, File outputFile) throws ToolException {
+    protected static void writeCountMap(Map<String, Map<String, Double>> map, File outputFile) throws ToolException {
         double sum = sumFreqMap(map);
         try {
             PrintWriter pw = new PrintWriter(outputFile);
@@ -125,7 +125,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         }
     }
 
-    protected String complement(String in) {
+    protected static String complement(String in) {
         char[] inArray = in.toCharArray();
         char[] outArray = new char[inArray.length];
         for (int i = 0; i < inArray.length; i++) {
@@ -147,10 +147,35 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
                     break;
             }
         }
-        return outArray.toString();
+        return new String(outArray);
     }
 
-    private Double sumFreqMap(Map<String, Map<String, Double>> map) {
+    protected static String reverseComplement(String in) {
+        char[] inArray = in.toCharArray();
+        char[] outArray = new char[inArray.length];
+        for (int i = 0; i < inArray.length; i++) {
+            switch (inArray[i]) {
+                case 'A':
+                    outArray[inArray.length - i - 1] = 'T';
+                    break;
+                case 'T':
+                    outArray[inArray.length - i - 1] = 'A';
+                    break;
+                case 'G':
+                    outArray[inArray.length - i - 1] = 'C';
+                    break;
+                case 'C':
+                    outArray[inArray.length - i - 1] = 'G';
+                    break;
+                default:
+                    outArray[inArray.length - i - 1] = inArray[i];
+                    break;
+            }
+        }
+        return new String(outArray);
+    }
+
+    private static Double sumFreqMap(Map<String, Map<String, Double>> map) {
         double sum = 0;
         for (String firstKey : FIRST_LEVEL_KEYS) {
             String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;

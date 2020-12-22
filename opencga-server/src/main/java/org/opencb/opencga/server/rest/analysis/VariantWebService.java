@@ -897,6 +897,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -911,6 +912,8 @@ public class VariantWebService extends AnalysisWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
+            logger.debug("Mutational Signature query = " + query);
+
             if (!query.containsKey(SAMPLE.key())) {
                 return createErrorResponse(new Exception("Missing sample name"));
             }
@@ -923,6 +926,8 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
+            executor.setOpenCgaHome(opencgaHome);
+
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);

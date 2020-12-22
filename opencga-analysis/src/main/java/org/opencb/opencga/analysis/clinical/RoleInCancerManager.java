@@ -54,9 +54,11 @@ public class RoleInCancerManager {
         // Read 'role in cancer' file
         Path path = openCgaHome.resolve(ROLE_IN_CANCER_PATH);
         if (path.toFile().exists()) {
+            System.out.println("loadRoleInCancer from path: " + path);
             InputStream in = Files.newInputStream(path);
             return loadRoleInCancer(in);
         } else {
+            System.out.println("loadRoleInCancer from URL: " + ROLE_IN_CANCER_URL + ", (path does not exist: " + path + ")");
             try (InputStream in = new URL(ROLE_IN_CANCER_URL).openStream()) {
                 return loadRoleInCancer(in);
             } catch (FileNotFoundException e) {
