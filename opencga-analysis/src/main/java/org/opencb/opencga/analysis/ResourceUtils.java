@@ -17,7 +17,7 @@
 package org.opencb.opencga.analysis;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.io.FileUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.URLUtils;
@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.File;
@@ -50,8 +49,11 @@ public class ResourceUtils {
             path = openCgaHome.resolve(filename);
         }
         if (path != null && path.toFile().exists()) {
-            System.out.println("downloadAnalysis from path: " + path);
-            return path.toFile();
+            File outFile = outDir.resolve(path.toFile().getName()).toFile();
+            System.out.println("downloadAnalysis from path: " + path + " to " + outFile.getAbsolutePath());
+            FileUtils.copyFile(path.toFile(), outFile);
+
+            return outFile;
         } else {
             System.out.println("downloadAnalysis from URL: " + (URL + filename) + ", (path does not exist: " + path + ")");
             return URLUtils.download(new URL(URL + filename), outDir);
@@ -79,8 +81,10 @@ public class ResourceUtils {
                 path = openCgaHome.resolve("analysis/commons/reference-genomes/" + filename);
             }
             if (path != null && path.toFile().exists()) {
-                System.out.println("downloadRefGenome from path: " + path);
-                file = path.toFile();
+                File outFile = outDir.resolve(path.toFile().getName()).toFile();
+                System.out.println("downloadRefGenome from path: " + path + " to " + outFile.getAbsolutePath());
+                FileUtils.copyFile(path.toFile(), outFile);
+                file = outFile;
             } else {
                 URL url = new URL(URL + "analysis/commons/reference-genomes/" + filename);
                 System.out.println("downloadAnalysis from URL: " + URL + ", (path does not exist: " + path + ")");
