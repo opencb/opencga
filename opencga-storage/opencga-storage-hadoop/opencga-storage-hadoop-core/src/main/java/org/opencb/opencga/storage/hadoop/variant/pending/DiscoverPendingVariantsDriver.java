@@ -22,7 +22,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -88,6 +87,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
 
         Scan scan = new Scan();
         descriptor.configureScan(scan, getMetadataManager());
+        VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
         logger.info("Scan variants table " + variantTable + " with scan " + scan.toString(50));
 
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)) {
@@ -95,14 +95,7 @@ public class DiscoverPendingVariantsDriver extends AbstractVariantsTableDriver {
             VariantHBaseQueryParser.addRegionFilter(scan, region);
         }
 
-        int caching = getConf().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 50);
         boolean multiThread = getConf().getBoolean("annotation.pending.discover.MultithreadedTableMapper", false);
-
-
-        scan.setCaching(caching);
-        scan.setCacheBlocks(false);
-        logger.info("Set scan caching to " + caching);
-
         final Class<? extends TableMapper> mapperClass;
         if (multiThread) {
             logger.info("Run with MultithreadedTableMapper");
