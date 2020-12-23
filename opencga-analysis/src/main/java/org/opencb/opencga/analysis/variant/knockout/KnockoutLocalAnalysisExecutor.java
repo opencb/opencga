@@ -267,7 +267,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         sampleEntry.getData().get(0),
                         fileEntry.getData().get(StudyEntry.FILTER),
                         fileEntry.getData().get(StudyEntry.QUAL),
-                        KnockoutVariant.KnockoutType.HET_ALT, null
+                        KnockoutVariant.KnockoutType.HET_ALT, null,
                 );
                 if (variants.put(variant.toString(), knockoutVariant) == null) {
                     // Variant not seen
@@ -467,7 +467,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                             fileEntry.getData().get(StudyEntry.FILTER),
                                             fileEntry.getData().get(StudyEntry.QUAL),
                                             KnockoutVariant.KnockoutType.HOM_ALT,
-                                            ct.getSequenceOntologyTerms()));
+                                            , ct.getSequenceOntologyTerms(), ));
                                 }
                             } else if (GenotypeClass.HET_REF.test(genotype)) {
                                 if (variant.getType().equals(VariantType.DELETION)) {
@@ -537,7 +537,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                     fileEntry.getData().get(StudyEntry.FILTER),
                                     fileEntry.getData().get(StudyEntry.QUAL),
                                     KnockoutVariant.KnockoutType.COMP_HET,
-                                    ct.getSequenceOntologyTerms()));
+                                    , ct.getSequenceOntologyTerms(), ));
                         }
                     }
                 }
@@ -565,8 +565,8 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         variant.getStudies().get(0).getSampleData(0).get(0),
                         fileEntry.getData().get(StudyEntry.FILTER),
                         fileEntry.getData().get(StudyEntry.QUAL),
-                        KnockoutVariant.KnockoutType.HET_ALT, null
-                );
+                        KnockoutVariant.KnockoutType.HET_ALT, , null,
+                        );
                 if (variants.put(variant.toString(), knockoutVariant) == null) {
                     // Variant not seen
                     if (variant.overlapWith(secVar, true)) {
@@ -587,7 +587,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                             knockoutTranscript.addVariant(new KnockoutVariant(
                                     variant.toString(), gt, null, null,
                                     KnockoutVariant.KnockoutType.HET_ALT,
-                                    ct.getSequenceOntologyTerms()));
+                                    , ct.getSequenceOntologyTerms(), ));
 
                             KnockoutVariant secKnockoutVar = variants.get(secVar.toString());
                             knockoutTranscript.addVariant(new KnockoutVariant(
@@ -596,7 +596,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                     secKnockoutVar.getFilter(),
                                     secKnockoutVar.getQual(),
                                     KnockoutVariant.KnockoutType.HET_ALT,
-                                    ct.getSequenceOntologyTerms()));
+                                    , ct.getSequenceOntologyTerms(), ));
                         }
                     }
                 }
@@ -649,14 +649,14 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                         fileEntry.getData().get(StudyEntry.FILTER),
                                         fileEntry.getData().get(StudyEntry.QUAL),
                                         KnockoutVariant.KnockoutType.DELETION_OVERLAP,
-                                        ct.getSequenceOntologyTerms()));
+                                        , ct.getSequenceOntologyTerms(), ));
 
                                 knockoutTranscript.addVariant(new KnockoutVariant(
                                         svVariant.toString(), svSampleData.get(0),
                                         svFileEntry.getData().get(StudyEntry.FILTER),
                                         svFileEntry.getData().get(StudyEntry.QUAL),
                                         KnockoutVariant.KnockoutType.DELETION_OVERLAP,
-                                        ct.getSequenceOntologyTerms()));
+                                        , ct.getSequenceOntologyTerms(), ));
                             }
                         }
                     }
@@ -727,7 +727,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
             KnockoutTranscript t = gene.getTranscript(consequenceType.getEnsemblTranscriptId());
             t.setBiotype(consequenceType.getBiotype());
-            t.addVariant(new KnockoutVariant(variant, gt, filter, qual, knockoutType, consequenceType.getSequenceOntologyTerms()));
+            t.addVariant(new KnockoutVariant(variant, gt, filter, qual, knockoutType, , consequenceType.getSequenceOntologyTerms(), ));
         }
     }
 

@@ -93,6 +93,18 @@ public class KnockoutByIndividual {
         return genesMap.values();
     }
 
+    public KnockoutByIndividual addGene(KnockoutGene gene) {
+        genesMap.put(gene.getName(), gene);
+        return this;
+    }
+
+    public KnockoutByIndividual addGenes(Collection<KnockoutGene> genes) {
+        for (KnockoutGene gene : genes) {
+            genesMap.put(gene.getName(), gene);
+        }
+        return this;
+    }
+
     public KnockoutGene getGene(String gene) {
         return genesMap.computeIfAbsent(gene, KnockoutGene::new);
     }
