@@ -22,7 +22,12 @@ import java.util.List;
 public class KnockoutTranscript {
 
     private String id;
+    private String chromosome;
+    private int start;
+    private int end;
     private String biotype;
+    private String strand;
+
     private List<KnockoutVariant> variants = new LinkedList<>();
 
     public KnockoutTranscript() {
@@ -47,6 +52,42 @@ public class KnockoutTranscript {
 
     public KnockoutTranscript setBiotype(String biotype) {
         this.biotype = biotype;
+        return this;
+    }
+
+    public String getChromosome() {
+        return chromosome;
+    }
+
+    public KnockoutTranscript setChromosome(String chromosome) {
+        this.chromosome = chromosome;
+        return this;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public KnockoutTranscript setStart(int start) {
+        this.start = start;
+        return this;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public KnockoutTranscript setEnd(int end) {
+        this.end = end;
+        return this;
+    }
+
+    public String getStrand() {
+        return strand;
+    }
+
+    public KnockoutTranscript setStrand(String strand) {
+        this.strand = strand;
         return this;
     }
 
