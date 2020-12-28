@@ -323,6 +323,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return new OpenCGAResult<>(aggregate);
     }
 
+    /**
+     * Filter QueryOptions object to ensure the keys provided are always included.
+     *
+     * @param options QueryOptions object.
+     * @param keys Keys that always need to be included in the response.
+     * @return A new QueryOptions object containing the mandatory fields.
+     */
     protected QueryOptions filterQueryOptions(QueryOptions options, List<String> keys) {
         if (options == null) {
             return null;
