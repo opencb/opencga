@@ -114,13 +114,22 @@ function getLatestUpdate() {
     return version.lastJsUpdate;
 }
 
-function runUpdate(migrateFunction) {
+function runUpdate(migrateFunction, message) {
+    var text = updateCount;
+    if (isNotEmpty(message)) {
+        text = text + " (" + message + ")";
+    }
+
     if (getLatestUpdate() < updateCount) {
-        print("Starting migration " + updateCount + "...");
+        print("Starting migration " + text + "...");
         migrateFunction();
         setLatestUpdate(updateCount);
     } else {
-        print("Skipping migration " + updateCount + "...");
+        print("Skipping migration " + text + "...");
     }
     updateCount++;
+}
+
+function runUpdate(migrateFunction) {
+    runUpdate(migrateFunction, "");
 }

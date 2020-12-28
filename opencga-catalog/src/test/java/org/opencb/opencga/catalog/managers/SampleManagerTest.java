@@ -30,16 +30,17 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -47,6 +48,7 @@ import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
@@ -56,6 +58,7 @@ import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
@@ -1132,24 +1135,51 @@ public class SampleManagerTest extends AbstractManagerTest {
                                                 Collections.emptySet(), Collections.emptyMap()))),
                                 Collections.emptyMap()))),
                 Collections.emptyMap()));
+        variables.add(new Variable("a4", "a4", "", Variable.VariableType.MAP_INTEGER, null, true, false, null, null, 0, "", "",
+                Collections.emptySet(), Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
         InputStream inputStream = this.getClass().getClassLoader().getResource("annotation_sets/complete_annotation.json").openStream();
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectMap annotations = objectMapper.readValue(inputStream, ObjectMap.class);
+        annotations.getMap("a").put("one.two", "hello");
+        annotations.put("a4", new ObjectMap()
+                .append("three.four", 5)
+                .append(".", 3)
+                .append("another", 1)
+                .append("boo", 4)
+                .append("KASDOK", 4)
+                .append("ZASDASD", 4)
+                .append(".asd", 4)
+        );
 
         catalogManager.getSampleManager().update(studyFqn, s_1, new SampleUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annotation1", vs1.getId(), annotations))),
                 QueryOptions.empty(), token);
 
         Query query = new Query(Constants.ANNOTATION, "a3.b.c.z=z2;a2.b.c.z=z3");
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "annotationSet.annotation1");
         assertEquals(0 , catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query(Constants.ANNOTATION, "a3.b.c.z=z2;a2.b.c.z=z");
-        OpenCGAResult<Sample> result = catalogManager.getSampleManager().search(studyFqn, query, null, token);
+        OpenCGAResult<Sample> result = catalogManager.getSampleManager().search(studyFqn, query, options, token);
         assertEquals(1, result.getNumResults());
         assertEquals(s_1, result.first().getId());
+        assertEquals(7, ((Map) result.first().getAnnotationSets().get(0).getAnnotations().get("a4")).size());
+
+        options = new QueryOptions(ParamConstants.FLATTEN_ANNOTATIONS, true);
+        result = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        assertEquals(1, result.getNumResults());
+        assertEquals(s_1, result.first().getId());
+
+        query = new Query(Constants.ANNOTATION, "a4..=3");
+        result = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        assertEquals(1, result.getNumResults());
+
+        query = new Query(Constants.ANNOTATION, "a4..=2");
+        result = catalogManager.getSampleManager().search(studyFqn, query, options, token);
+        assertEquals(0, result.getNumResults());
     }
 
     @Test
