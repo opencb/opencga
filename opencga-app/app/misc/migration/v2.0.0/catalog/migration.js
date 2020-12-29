@@ -246,7 +246,7 @@ if (versionNeedsUpdate(20000, 5)) {
         var knownAnnotationIssues = {
             "opencga_cohort_variant_stats": ["chromosomeCount", "chromosomeDensity", "filterCount"],
             "opencga_file_variant_stats": ["chromosomeCount", "chromosomeDensity", "filterCount"],
-            "opencga_sample_variant_stats": ["chromosomeCount", "filterCount"]
+            "opencga_sample_variant_stats": ["chromosomeCount", "filterCount", "genotypeCount"]
         }
 
         // Check if the annotation might be one of the affected (contained in the map). If so, return the variable field as well.
