@@ -215,6 +215,33 @@ if (versionNeedsUpdate(20000, 5)) {
     });
 
     runUpdate(function () {
+        print("Creating missing file indexes...")
+        db.file.createIndex({"customInternalAnnotationSets.as": 1}, {"background": true});
+        db.file.createIndex({"customInternalAnnotationSets.vs": 1}, {"background": true});
+        db.file.createIndex({"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1}, {"background": true});
+
+        print("Creating missing sample indexes...")
+        db.sample.createIndex({"customInternalAnnotationSets.as": 1}, {"background": true});
+        db.sample.createIndex({"customInternalAnnotationSets.vs": 1}, {"background": true});
+        db.sample.createIndex({"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1}, {"background": true});
+
+        print("Creating missing individual indexes...")
+        db.individual.createIndex({"customInternalAnnotationSets.as": 1}, {"background": true});
+        db.individual.createIndex({"customInternalAnnotationSets.vs": 1}, {"background": true});
+        db.individual.createIndex({"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1}, {"background": true});
+
+        print("Creating missing cohort indexes...")
+        db.cohort.createIndex({"customInternalAnnotationSets.as": 1}, {"background": true});
+        db.cohort.createIndex({"customInternalAnnotationSets.vs": 1}, {"background": true});
+        db.cohort.createIndex({"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1}, {"background": true});
+
+        print("Creating missing family indexes...")
+        db.family.createIndex({"customInternalAnnotationSets.as": 1}, {"background": true});
+        db.family.createIndex({"customInternalAnnotationSets.vs": 1}, {"background": true});
+        db.family.createIndex({"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1}, {"background": true});
+    }, "Create missing CustomInternalAnnotationSet indexes");
+
+    runUpdate(function () {
         // Map containing the fields that we know that might have been processed incorrectly
         var knownAnnotationIssues = {
             "opencga_cohort_variant_stats": ["chromosomeCount", "chromosomeDensity", "filterCount"],
