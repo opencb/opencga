@@ -129,7 +129,3 @@ function runUpdate(migrateFunction, message) {
     }
     updateCount++;
 }
-
-function runUpdate(migrateFunction) {
-    runUpdate(migrateFunction, "");
-}
