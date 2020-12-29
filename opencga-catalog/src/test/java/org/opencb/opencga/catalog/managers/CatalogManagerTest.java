@@ -850,6 +850,22 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void deleteJobTest() throws CatalogException {
+        // Grant view permissions, but no EXECUTION permission
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
+
+        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+                sessionIdUser3);
+        assertEquals(1, search.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
+
+        OpenCGAResult deleteResult = catalogManager.getJobManager().delete(studyFqn, Collections.singletonList(search.first().getId()),
+                QueryOptions.empty(), token);
+        assertEquals(1, deleteResult.getNumDeleted());
+    }
+
+    @Test
     public void visitJob() throws CatalogException {
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token)
                 .first();
