@@ -181,27 +181,51 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         }
 
         private void transposeSampleToGeneOutputFiles() throws IOException {
-            Map<String, KnockoutByGene> byGeneMap = new HashMap<>();
-            for (String sample : getSamples()) {
-                Path fileName = getSampleFileName(sample);
-                if (Files.exists(fileName)) {
-                    KnockoutByIndividual byIndividual = readSampleFile(sample);
-                    for (KnockoutGene gene : byIndividual.getGenes()) {
-                        KnockoutByGene byGene = byGeneMap.computeIfAbsent(gene.getName(),
-                                id -> new KnockoutByGene().setId(gene.getId()).setName(gene.getName()).setIndividuals(new LinkedList<>()));
-
-                        KnockoutByGene.KnockoutIndividual knockoutIndividual = new KnockoutByGene.KnockoutIndividual()
-                                .setId(byIndividual.getId())
-                                .setSampleId(byIndividual.getSampleId())
-                                .setTranscripts(gene.getTranscripts());
-                        byGene.getIndividuals().add(knockoutIndividual);
+            Set<String> transposedGenes = new HashSet<>();
+            int batchSize = 200;// Maths.max(1, 2000 - getSamples().size());
+            int prevBatchSize;
+            int numBatches = 0;
+            do {
+                numBatches++;
+                Map<String, KnockoutByGene> byGeneMap = new HashMap<>();
+                for (String sample : getSamples()) {
+                    Path fileName = getSampleFileName(sample);
+                    if (Files.exists(fileName)) {
+                        KnockoutByIndividual byIndividual = readSampleFile(sample);
+                        for (KnockoutGene gene : byIndividual.getGenes()) {
+                            KnockoutByGene byGene;
+                            if (byGeneMap.size() < batchSize) {
+                                if (transposedGenes.contains(gene.getName())) {
+                                    // Skip already transposed genes
+                                    byGene = null;
+                                } else {
+                                    // Create new gene if absent
+                                    byGene = byGeneMap.computeIfAbsent(gene.getName(),
+                                            id -> new KnockoutByGene().setId(gene.getId()).setName(gene.getName()).setIndividuals(new LinkedList<>()));
+                                }
+                            } else {
+                                // As we already have enough genes, do not try to create a new one.
+                                // If this gene is not in the map, simply ignore it.
+                                byGene = byGeneMap.get(gene.getName());
+                            }
+                            if (byGene != null) {
+                                KnockoutByGene.KnockoutIndividual knockoutIndividual = new KnockoutByGene.KnockoutIndividual()
+                                        .setId(byIndividual.getId())
+                                        .setSampleId(byIndividual.getSampleId())
+                                        .setTranscripts(gene.getTranscripts());
+                                byGene.getIndividuals().add(knockoutIndividual);
+                            }
+                        }
                     }
                 }
-            }
+                for (Map.Entry<String, KnockoutByGene> entry : byGeneMap.entrySet()) {
+                    transposedGenes.add(entry.getKey());
+                    writeGeneFile(entry.getValue());
+                }
+                prevBatchSize = byGeneMap.size();
+                logger.info("Transpose sample to gene. Batch {} of {} genes", numBatches, prevBatchSize);
+            } while (prevBatchSize == batchSize);
 
-            for (Map.Entry<String, KnockoutByGene> entry : byGeneMap.entrySet()) {
-                writeGeneFile(entry.getValue());
-            }
         }
 
         private void knockouts(Query query, String sample, Trio trio, Map<String, KnockoutGene> knockoutGenes,
