@@ -8,6 +8,7 @@ public class ClinicalCommentParam {
 
     private String message;
     private List<String> tags;
+    private String date;
 
     public ClinicalCommentParam() {
     }
@@ -17,12 +18,18 @@ public class ClinicalCommentParam {
         this.tags = tags;
     }
 
+    public ClinicalCommentParam(String message, List<String> tags, String date) {
+        this.message = message;
+        this.tags = tags;
+        this.date = date;
+    }
+
     public ClinicalComment toClinicalComment() {
         return new ClinicalComment("", message, tags, "");
     }
 
     public static ClinicalCommentParam of(ClinicalComment comment) {
-        return new ClinicalCommentParam(comment.getMessage(), comment.getTags());
+        return new ClinicalCommentParam(comment.getMessage(), comment.getTags(), comment.getDate());
     }
 
     public String getMessage() {
@@ -40,6 +47,15 @@ public class ClinicalCommentParam {
 
     public ClinicalCommentParam setTags(List<String> tags) {
         this.tags = tags;
+        return this;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public ClinicalCommentParam setDate(String date) {
+        this.date = date;
         return this;
     }
 }

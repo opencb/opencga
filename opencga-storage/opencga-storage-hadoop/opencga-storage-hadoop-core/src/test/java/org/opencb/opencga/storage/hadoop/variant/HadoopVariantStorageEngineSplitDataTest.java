@@ -1,8 +1,12 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.IssueEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -25,10 +29,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -55,7 +56,6 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
     @Test
     public void testMultiChromosomeSplitData() throws Exception {
-
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr20.variant-test-file.vcf.gz")),
                 outputUri, true, true, true);
@@ -66,7 +66,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
         }
 
         variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
@@ -74,7 +74,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
         }
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
@@ -86,14 +86,14 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
         }
         variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
         for (String sample : SAMPLES) {
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
         }
 
 
@@ -165,29 +165,56 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
 
 
     @Test
-    public void testDuplicatedVariantsAccepted() throws Exception {
+    public void testDuplicatedVariantsAccepted1() throws Exception {
+        // Make sure loading order doesn't matter for this test
+        testDuplicatedVariantsAccepted(
+                "by_chr/chr22.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-1.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2-DUP2.variant-test-file.vcf.gz");
+    }
+
+    @Test
+    public void testDuplicatedVariantsAccepted2() throws Exception {
+        // Make sure loading order doesn't matter for this test
+        testDuplicatedVariantsAccepted(
+                "by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz",
+                "by_chr/chr22.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2-DUP2.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-1.variant-test-file.vcf.gz",
+                "by_chr/chr22_1-2.variant-test-file.vcf.gz");
+    }
+
+    public void testDuplicatedVariantsAccepted(String... files) throws Exception {
         URI outDir = newOutputUri();
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.FAMILY.key(), true);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
 
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
-
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")),
-                outputUri, true, true, true);
-
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
+        for (String file : files) {
+            variantStorageEngine.index(Collections.singletonList(getResourceUri(file)),
+                    outDir, true, true, true);
+        }
 
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         int studyId = metadataManager.getStudyId(STUDY_NAME);
+
+        Variant v = variantStorageEngine.get(new Query()
+                .append(VariantQueryParam.ID.key(), "22:44681612:A:G")
+                .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true), new QueryOptions()).first();
+        System.out.println("v.toJson() = " + v.toJson());
+        checkIssueEntries_22_44681612_A_G(v);
+
+        v = variantStorageEngine.getSampleData("22:44681612:A:G", STUDY_NAME, new QueryOptions()).first();
+        System.out.println("v.toJson() = " + v.toJson());
+        checkIssueEntries_22_44681612_A_G(v);
+
         Iterator<FileMetadata> it = metadataManager.fileMetadataIterator(studyId);
         while (it.hasNext()) {
+            FileMetadata fileMetadata = it.next();
             for (Boolean nativeQuery : Arrays.asList(true, false)) {
-                FileMetadata fileMetadata = it.next();
                 String name = fileMetadata.getName();
                 Query query = new Query(VariantQueryParam.FILE.key(), name);
                 System.out.println("-----------------------");
@@ -210,6 +237,37 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                 }
             }
         }
+    }
+
+    private void checkIssueEntries_22_44681612_A_G(Variant v) {
+        assertEquals("22:44681612:A:G", v.getId());
+
+        StudyEntry study = v.getStudies().get(0);
+        FileEntry file = study.getFile(study.getSample("NA19600").getFileIndex());
+        assertEquals("chr22_1-2-DUP.variant-test-file.vcf.gz", file.getFileId());
+        Set<String> uniq = new HashSet<>();
+        for (SampleEntry sample : study.getSamples()) {
+            assertNotNull(sample.getSampleId());
+            assertNotNull(sample.getFileIndex());
+            assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
+                    uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
+            String FILE = sample.getData().get(study.getSampleDataKeyPosition("FILE"));
+            if (StringUtils.isNotEmpty(FILE)) {
+                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE+".variant-test-file.vcf.gz");
+            }
+        }
+        for (IssueEntry issue : study.getIssues()) {
+            SampleEntry sample = issue.getSample();
+            assertNotNull(sample.getSampleId());
+            assertNotNull(sample.getFileIndex());
+            assertTrue(uniq + " + " + sample.getSampleId() + "_" + sample.getFileIndex(),
+                    uniq.add(sample.getSampleId() + "_" + sample.getFileIndex()));
+            String FILE = sample.getData().get(study.getSampleDataKeyPosition("FILE"));
+            if (StringUtils.isNotEmpty(FILE)) {
+                assertEquals(study.getFile(sample.getFileIndex()).getFileId(), FILE+".variant-test-file.vcf.gz");
+            }
+        }
+        assertNotEquals(0, study.getIssues().size());
     }
 
 
@@ -242,7 +300,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId_split, mm.getSampleId(studyId_split, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
         }
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
@@ -255,7 +313,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId_normal, mm.getSampleId(studyId_normal, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
         }
 
         checkVariantsTable(studyId_split, studyId_normal, new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES));

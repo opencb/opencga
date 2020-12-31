@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.main.executors.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
@@ -11,6 +12,8 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.Arrays;
@@ -37,6 +40,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case VARIANT_CONFIGURE:
                 queryResponse = variantConfigure();
+                break;
+            case VARIANT_INDEX_LAUNCHER:
+                queryResponse = variantIndexLauncher();
                 break;
             case VARIANT_SECONDARY_INDEX:
                 queryResponse = variantSecondaryIndex();
@@ -94,6 +100,21 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().configureVariant(new ObjectMap(cliOptions.commonOptions.params), params);
     }
 
+    private RestResponse<Job> variantIndexLauncher() throws ClientException {
+        OperationsCommandOptions.VariantIndexLauncherCommandOptions cliOptions = operationsCommandOptions.variantIndexLauncher;
+
+        ObjectMap params = getParams(cliOptions);
+
+        return openCGAClient.getVariantOperationClient().launcherVariantIndex(
+                new VariantFileIndexJobLauncherParams(
+                        cliOptions.name,
+                        cliOptions.directory,
+                        cliOptions.resumeFailed,
+                        cliOptions.ignoreFailed,
+                        cliOptions.maxJobs,
+                        VariantIndexParams.fromParams(VariantIndexParams.class, cliOptions.indexParams)), params);
+    }
+
     private RestResponse<Job> variantSecondaryIndex() throws ClientException {
         OperationsCommandOptions.VariantSecondaryIndexCommandOptions cliOptions = operationsCommandOptions.variantSecondaryIndex;
 
@@ -130,7 +151,8 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 cliOptions.genericVariantAnnotateOptions.region,
                 cliOptions.genericVariantAnnotateOptions.create,
                 cliOptions.genericVariantAnnotateOptions.load,
-                cliOptions.genericVariantAnnotateOptions.customName
+                cliOptions.genericVariantAnnotateOptions.customName,
+                YesNoAuto.parse(cliOptions.genericVariantAnnotateOptions.sampleIndexAnnotation)
         );
         return openCGAClient.getVariantOperationClient().indexVariantAnnotation(body, params);
     }
@@ -202,7 +224,8 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 new VariantSampleIndexParams(
                         cliOptions.sample,
                         cliOptions.buildIndex,
-                        cliOptions.annotate
+                        cliOptions.annotate,
+                        cliOptions.overwrite
                 ), params);
     }
 

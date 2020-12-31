@@ -19,12 +19,14 @@ package org.opencb.opencga.storage.hadoop.variant.annotation.phoenix;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +50,7 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
     private String variantTable;
     private GenomeHelper genomeHelper;
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotationPhoenixDBWriter.class);
+    private final VariantPhoenixSchemaManager schemaManager;
 
     public VariantAnnotationPhoenixDBWriter(VariantHadoopDBAdaptor dbAdaptor, QueryOptions options, String variantTable,
                                             Connection jdbcConnection, boolean closeConnection) {
@@ -65,20 +68,17 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
         this.converter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES, currentAnnotationId);
         this.variantTable = variantTable;
         List<PhoenixHelper.Column> columns = new ArrayList<>();
-        Collections.addAll(columns, VariantPhoenixHelper.VariantColumn.values());
-        columns.addAll(VariantPhoenixHelper.getHumanPopulationFrequenciesColumns());
+        Collections.addAll(columns, VariantPhoenixSchema.VariantColumn.values());
+        columns.addAll(VariantPhoenixSchema.getHumanPopulationFrequenciesColumns());
 
         this.upsertExecutor = new VariantAnnotationUpsertExecutor(connection,
-                VariantPhoenixHelper.getEscapedFullTableName(variantTable, dbAdaptor.getConfiguration()), columns);
+                VariantPhoenixSchema.getEscapedFullTableName(variantTable, dbAdaptor.getConfiguration()), columns);
+        schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
     }
 
     @Override
-    public synchronized void pre() throws SQLException {
-        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
-        //TODO: Read population frequencies columns from StudyConfiguration ?
-        variantPhoenixHelper.getPhoenixHelper().addMissingColumns(connection, variantTable,
-                VariantPhoenixHelper.getHumanPopulationFrequenciesColumns(), true, VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
-        variantPhoenixHelper.updateAnnotationColumns(connection, variantTable);
+    public synchronized void pre() throws StorageEngineException {
+        schemaManager.registerAnnotationColumns();
     }
 
     @Override

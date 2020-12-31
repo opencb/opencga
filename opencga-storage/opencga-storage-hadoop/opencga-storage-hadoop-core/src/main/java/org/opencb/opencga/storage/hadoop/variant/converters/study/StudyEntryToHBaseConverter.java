@@ -28,7 +28,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -73,7 +73,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
                                        Set<String> defaultGenotypes) {
         super(columnFamily);
         this.studyMetadata = metadataManager.getStudyMetadata(studyId);
-        studyColumn = VariantPhoenixHelper.getStudyColumn(studyMetadata.getId());
+        studyColumn = VariantPhoenixSchema.getStudyColumn(studyMetadata.getId());
         this.addSecondaryAlternates = addSecondaryAlternates;
         this.defaultGenotypes = defaultGenotypes;
         fixedFormat = HBaseToVariantConverter.getFixedFormat(studyMetadata);
@@ -94,7 +94,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
             if (release <= 0) {
                 throw new IllegalArgumentException("Invalid RELEASE value. Expected > 0, received " + release);
             }
-            releaseColumn = VariantPhoenixHelper.getReleaseColumn(release);
+            releaseColumn = VariantPhoenixSchema.getReleaseColumn(release);
         } else {
             releaseColumn = null;
         }
@@ -104,19 +104,19 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
     public Put convert(Variant variant) {
         byte[] rowKey = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
         Put put = new Put(rowKey);
-        add(put, VariantPhoenixHelper.VariantColumn.TYPE, variant.getType().toString());
+        add(put, VariantPhoenixSchema.VariantColumn.TYPE, variant.getType().toString());
         if (variant.getSv() != null) {
             if (variant.getSv().getCiStartLeft() != null) {
-                add(put, VariantPhoenixHelper.VariantColumn.CI_START_L, variant.getSv().getCiStartLeft());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_START_L, variant.getSv().getCiStartLeft());
             }
             if (variant.getSv().getCiStartRight() != null) {
-                add(put, VariantPhoenixHelper.VariantColumn.CI_START_R, variant.getSv().getCiStartRight());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_START_R, variant.getSv().getCiStartRight());
             }
             if (variant.getSv().getCiEndLeft() != null) {
-                add(put, VariantPhoenixHelper.VariantColumn.CI_END_L, variant.getSv().getCiEndLeft());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_END_L, variant.getSv().getCiEndLeft());
             }
             if (variant.getSv().getCiEndRight() != null) {
-                add(put, VariantPhoenixHelper.VariantColumn.CI_END_R, variant.getSv().getCiEndRight());
+                add(put, VariantPhoenixSchema.VariantColumn.CI_END_R, variant.getSv().getCiEndRight());
             }
         }
         add(put, studyColumn, 0);
@@ -177,7 +177,7 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
             for (FileEntry fileEntry : studyEntry.getFiles()) {
                 int fileId = Integer.parseInt(fileEntry.getFileId());
                 if (writeAllFileAttributes || filesToWrite.contains(fileId)) {
-                    byte[] fileColumnKey = VariantPhoenixHelper
+                    byte[] fileColumnKey = VariantPhoenixSchema
                             .buildFileColumnKey(studyMetadata.getId(), fileId);
                     List<String> fileColumn = remapFileData(variant, studyEntry, fileEntry, overlappingStatus);
                     addVarcharArray(put, fileColumnKey, fileColumn);
@@ -203,7 +203,8 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
                     fileEntry.getCall().getVariantId() + ":" + fileEntry.getCall().getAlleleIndex());
         }
         if (addSecondaryAlternates && studyEntry.getSecondaryAlternates() != null && !studyEntry.getSecondaryAlternates().isEmpty()) {
-            fileColumn.set(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX, getSecondaryAlternates(variant, studyEntry));
+            fileColumn.set(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX,
+                    getSecondaryAlternates(variant, studyEntry.getSecondaryAlternates()));
         }
         fileColumn.set(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX, overlappingStatus.toString());
         fileColumn.set(HBaseToStudyEntryConverter.FILE_QUAL_IDX, data.get(StudyEntry.QUAL));
@@ -220,9 +221,9 @@ public abstract class StudyEntryToHBaseConverter extends AbstractPhoenixConverte
         return fileColumn;
     }
 
-    private String getSecondaryAlternates(Variant variant, StudyEntry studyEntry) {
+    public static String getSecondaryAlternates(Variant variant, List<AlternateCoordinate> secondaryAlternates) {
         StringBuilder sb = new StringBuilder();
-        Iterator<AlternateCoordinate> iterator = studyEntry.getSecondaryAlternates().iterator();
+        Iterator<AlternateCoordinate> iterator = secondaryAlternates.iterator();
         while (iterator.hasNext()) {
             AlternateCoordinate alt = iterator.next();
             sb.append(alt.getChromosome() == null ? variant.getChromosome() : alt.getChromosome());

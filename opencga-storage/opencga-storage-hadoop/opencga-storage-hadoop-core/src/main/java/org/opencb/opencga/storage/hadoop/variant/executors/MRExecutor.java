@@ -62,6 +62,12 @@ public abstract class MRExecutor {
         return System.getProperty("app.home", "");
     }
 
+    public <T extends Tool> void run(Class<T> execClass, String[] args, String taskDescription)
+            throws StorageEngineException {
+        run(execClass, args, options, taskDescription);
+    }
+
+    @Deprecated
     public <T extends Tool> void run(Class<T> execClass, String[] args, ObjectMap options, String taskDescription)
             throws StorageEngineException {
         Logger logger = LoggerFactory.getLogger(MRExecutor.class);

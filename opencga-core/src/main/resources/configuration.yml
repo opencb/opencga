@@ -40,24 +40,22 @@ authentication:
   # Session expiration time in seconds
   expiration: 3600
   authenticationOrigins:
-# LDAP configuration example
-#  - id: ldap            # Any id
+# Custom LDAP | LDAPS configuration example
+#  - id: ldaps                                              # Any id
 #    type: LDAP
-#    host: ldap://localhost:9000
+#    host: ldaps://localhost:636                            # or ldap://localhost:123
 #    options:
-#      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
-#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
-
-# Custom LDAPS configuration example
-#  - id: ldaps            # Any id
-#    type: LDAP
-#    host: ldaps://localhost:636
-#    options:
-#      usersSearch: dc=ge,dc=co,dc=uk                       # Base search to look for users
-#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for groups
-#      fullNameKey: displayname                             # Key to get the user's full name when importing users
-#      dnKey: gecos                                         # Get the user's unique identifier...
-#      dnFormat: "uid=%s,ou=people,dc=ge,dc=co,dc=uk"       # ...and pass a distinguished name to the auth request in the right format
+#      authUserId: ""                                       # Auth user id and password if querying the LDAP system requires authentication. By default, empty.
+#      authPassword: ""                                     # Auth user id and password if querying the LDAP system requires authentication. By default, empty.
+#      usersSearch: dc=ge,dc=co,dc=uk                       # Mandatory field. Base search to look for users. By default, empty.
+#      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Mandatory field. Base search to look for groups. By default, empty.
+#      fullNameKey: displayname                             # Key to get the user's full name when importing users. By default, 'displayname'.
+#      memberKey: member                                    # Key within groups to extract the user id. By default, 'member'.
+#      dnKey: dn                                            # Key to get the user's DN or RDN unique identifier. By default, 'dn'.
+#      dnFormat: "%s"                                       # Formatter to extract the user's DN if it is contained within a larger string. By default, '%s' to take the whole string.
+#      uidKey: uid                                          # Key to get the user id to be used in OpenCGA. By default, 'uid'.
+#      uidFormat: "%s"                                      # Formatter to extract the user id if the uid is contained within a larger string. By default, '%s' to take the whole string.
+#      sslInvalidCertificatesAllowed: false                 # If using LDAPs with a custom certificate, set to true to accept any certificate. By default, false.
 
 # Azure AD configuration example
 #  - id: aad                                               # Any id
@@ -152,7 +150,10 @@ analysis:
      ## Kubernetes executor configuration example
      # k8s.masterUrl: "https://192.168.99.100:8443/"
      # FOR Cluster Autoscaler and dedicated jobs agent pool:
-      k8s.imageName: "opencb/opencga-base:2.0.0-hdp3.1-dev"
+      k8s.imageName: "opencb/opencga-base:2.0.0-hdp3.1s"
+      k8s.imagePullPolicy: "IfNotPresent"
+#      k8s.imagePullSecrets:
+#        name : "dockerhub-secrets-name"
       k8s.namespace: "default"
       k8s.requests:
         cpu: 3
@@ -191,25 +192,17 @@ analysis:
           mountPath: /opt/opencga/analysis
       k8s.volumes:
         - name: conf
-          azureFile:
-            secretName: azure-files-secret
-            shareName: conf
-            readOnly: true
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-conf"
         - name: sessions
-          azureFile:
-            secretName: azure-files-secret
-            shareName: sessions
-            readOnly: false
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-sessions"
         - name: variants
-          azureFile:
-            secretName: azure-files-secret
-            shareName: variants
-            readOnly: false
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-variants"
         - name: analysisconf
-          azureFile:
-            secretName: azure-files-secret
-            shareName: analysisconf
-            readOnly: false
+          persistentVolumeClaim:
+            claimName: "pvc-opencga-analysisconf"
 
   # List of analysis frameworks
   frameworks:

@@ -249,6 +249,10 @@ class Test_init_script(unittest.TestCase):
                     "--grpc-host", "test-grpc-host",
                     "--analysis-execution-mode", "k8s",
                     "--k8s-master-node","test-k8s-master-node",
+                    "--k8s-volumes-pvc-conf","my-pvc-conf",
+                    "--k8s-volumes-pvc-sessions","my-pvc-sessions",
+                    "--k8s-volumes-pvc-variants","my-pvc-variants",
+                    "--k8s-volumes-pvc-analysisconf","my-pvc-analysisconf",
                     "--max-concurrent-jobs", "25",
                     "--variant-default-engine","test-variant-default-engine",
                     "--hadoop-ssh-dns", "test-hadoop-ssh-host",
@@ -282,6 +286,18 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(
             config["analysis"]["execution"]["id"], "k8s"
+        )
+        self.assertEqual(
+            config["analysis"]["execution"]["options"]["k8s.volumes"][0]["persistentVolumeClaim"]["claimName"], "my-pvc-conf"
+        )
+        self.assertEqual(
+            config["analysis"]["execution"]["options"]["k8s.volumes"][1]["persistentVolumeClaim"]["claimName"], "my-pvc-sessions"
+        )
+        self.assertEqual(
+            config["analysis"]["execution"]["options"]["k8s.volumes"][2]["persistentVolumeClaim"]["claimName"], "my-pvc-variants"
+        )
+        self.assertEqual(
+            config["analysis"]["execution"]["options"]["k8s.volumes"][3]["persistentVolumeClaim"]["claimName"], "my-pvc-analysisconf"
         )
         self.assertEqual(
             config["analysis"]["execution"]["options"]["k8s.masterUrl"], "test-k8s-master-node"
@@ -616,7 +632,7 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(
             storage_config["cellbase"]["host"],
-            "http://bioinfo.hpc.cam.ac.uk/cellbase/",
+            "https://ws.opencb.org/cellbase/",
         )
 
     def test_cellbase_rest_not_set(self):
@@ -700,7 +716,7 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(
             storage_config["cellbase"]["host"],
-            "http://bioinfo.hpc.cam.ac.uk/cellbase/",
+            "https://ws.opencb.org/cellbase/",
         )
 
 # TODO: Tests for k8s config

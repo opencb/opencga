@@ -27,6 +27,13 @@
                 "description": "objectId of the service principal."
             }
         },
+        "aksNodeResourceGroup": {
+            "type": "string",
+            "defaultValue": null,
+            "metadata": {
+                "description": "Name of the resource group containing agent pool nodes."
+            }
+        },
         "vnetId": {
             "type": "string",
             "metadata": {
@@ -210,6 +217,7 @@
             "location": "[resourceGroup().location]",
             "properties": {
                 "kubernetesVersion": "[parameters('kubernetesVersion')]",
+                "nodeResourceGroup" : "[parameters('aksNodeResourceGroup')]",
                 "enableRBAC": "[parameters('aksEnableRBAC')]",
                 "dnsPrefix": "[parameters('aksDnsPrefix')]",
                 "addonProfiles": {

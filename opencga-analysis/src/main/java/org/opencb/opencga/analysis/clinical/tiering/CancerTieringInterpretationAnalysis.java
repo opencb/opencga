@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.clinical.tiering;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -40,6 +41,11 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     private CancerTieringInterpretationConfiguration config;
 
     private ClinicalAnalysis clinicalAnalysis;
+
+    @Override
+    protected InterpretationMethod getInterpretationMethod() {
+        return getInterpretationMethod(ID);
+    }
 
     protected void check() throws Exception {
         super.check();
@@ -68,6 +74,12 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         }
 
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        // Check primary
+        checkPrimaryInterpretation(clinicalAnalysis);
+
+        // Check interpretation method
+        checkInterpretationMethod(getInterpretationMethod(ID).getName(), clinicalAnalysis);
 
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);

@@ -100,7 +100,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         params.put("dynamicParam1", dynamic1);
         params.put("dynamicNested2", dynamic1);
-        String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant-index", params);
+        String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant index-run", params);
         assertEquals("opencga-internal.sh variant index-run "
                 + "--key value "
                 + "--camel-case-key value "
@@ -195,13 +195,13 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testProjectScopeTask() throws Exception {
         // User 2 to admins group in study1 but not in study2
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user2")), token);
 
         // User 3 to admins group in both study1 and study2
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
-        catalogManager.getStudyManager().updateGroup(studyFqn2, "@admins", ParamUtils.UpdateAction.ADD,
+        catalogManager.getStudyManager().updateGroup(studyFqn2, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
 
         HashMap<String, Object> params = new HashMap<>();

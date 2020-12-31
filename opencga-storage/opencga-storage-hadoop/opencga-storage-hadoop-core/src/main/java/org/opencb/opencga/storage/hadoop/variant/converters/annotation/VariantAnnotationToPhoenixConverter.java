@@ -26,7 +26,7 @@ import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +37,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.parseConsequenceType;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
 /**
@@ -115,8 +115,8 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         Set<String> flags = new HashSet<>();
         Set<Integer> soList = new HashSet<>();
         Set<String> biotype = new HashSet<>();
-        Set<Double> polyphen = new HashSet<>();
-        Set<Double> sift = new HashSet<>();
+        Set<Float> polyphen = new HashSet<>();
+        Set<Float> sift = new HashSet<>();
         Set<String> polyphenDesc = new HashSet<>();
         Set<String> siftDesc = new HashSet<>();
         Set<String> geneTraitName = new HashSet<>();
@@ -188,10 +188,14 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 if (proteinVariantAnnotation.getSubstitutionScores() != null) {
                     for (Score score : proteinVariantAnnotation.getSubstitutionScores()) {
                         if (score.getSource().equalsIgnoreCase("sift")) {
-                            addNotNull(sift, score.getScore());
+                            if (score.getScore() != null) {
+                                sift.add(score.getScore().floatValue());
+                            }
                             addNotNull(siftDesc, score.getDescription());
                         } else if (score.getSource().equalsIgnoreCase("polyphen")) {
-                            addNotNull(polyphen, score.getScore());
+                            if (score.getScore() != null) {
+                                polyphen.add(score.getScore().floatValue());
+                            }
                             addNotNull(polyphenDesc, score.getDescription());
                         }
                     }
@@ -288,7 +292,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
-                PhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
+                PhoenixHelper.Column column = VariantPhoenixSchema.getConservationScoreColumn(score.getSource());
                 map.put(column, score.getScore());
             }
         }
@@ -296,14 +300,14 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.putAll(DEFAULT_POP_FREQ);
         if (variantAnnotation.getPopulationFrequencies() != null) {
             for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
-                PhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
+                PhoenixHelper.Column column = VariantPhoenixSchema.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
                 map.put(column, Arrays.asList(pf.getRefAlleleFreq(), pf.getAltAlleleFreq()));
             }
         }
 
         if (variantAnnotation.getFunctionalScore() != null) {
             for (Score score : variantAnnotation.getFunctionalScore()) {
-                PhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
+                PhoenixHelper.Column column = VariantPhoenixSchema.getFunctionalScoreColumn(score.getSource());
                 map.put(column, score.getScore());
             }
         }
@@ -348,18 +352,25 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         byte[] bytesRowKey = generateVariantRowKey(variantAnnotation);
         Put put = new Put(bytesRowKey);
 
-        for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {
+        for (PhoenixHelper.Column column : VariantPhoenixSchema.PRIMARY_KEY) {
             map.remove(column);
         }
-        map.forEach((column, value) -> add(put, column, value));
+        map.forEach((column, value) -> {
+            try {
+                add(put, column, value);
+            } catch (Exception e) {
+                logger.error("Error adding column " + column.column());
+                throw e;
+            }
+        });
 
         return put;
     }
 
-    private List<Double> sortProteinSubstitutionScores(Set<Double> scores) {
-        List<Double> sorted = new ArrayList<>(scores.size());
-        Double min = scores.stream().min(Double::compareTo).orElse(-1.0);
-        Double max = scores.stream().max(Double::compareTo).orElse(-1.0);
+    private List<Float> sortProteinSubstitutionScores(Set<Float> scores) {
+        List<Float> sorted = new ArrayList<>(scores.size());
+        Float min = scores.stream().min(Float::compareTo).orElse(-1.0F);
+        Float max = scores.stream().max(Float::compareTo).orElse(-1.0F);
         if (min >= 0) {
             sorted.add(min);
             sorted.add(max);

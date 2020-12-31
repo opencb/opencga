@@ -19,50 +19,72 @@ package org.opencb.opencga.core.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Thread for monitoring the memory usage of the JDK.
  * <p>
  * Usage:
  * MemoryUsageMonitor m = new MemoryUsageMonitor().start();
  * .....
- * m.interrupt();
+ * m.stop();
  * <p>
  * Created on 11/04/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MemoryUsageMonitor extends Thread {
+public class MemoryUsageMonitor {
 
-    private boolean active = true;
+    private static final double MEGABYTE = 1024 * 1024;
+    private final AtomicBoolean active = new AtomicBoolean(false);
     private final Logger logger;
-    private int delay;
-
-    public MemoryUsageMonitor(Logger logger) {
-        this.logger = logger;
-        delay = 1000;
-    }
+    private int delayMillis;
+    private Thread thread;
 
     public MemoryUsageMonitor() {
-        this.setName("memory-monitor");
+        this.thread = new Thread(this::run);
+        this.thread.setName("memory-monitor");
         this.logger = LoggerFactory.getLogger(MemoryUsageMonitor.class);
-        delay = 1000;
+        delayMillis = 5000;
     }
 
     public int getDelay() {
-        return delay;
+        return delayMillis;
     }
 
-    public MemoryUsageMonitor setDelay(int delay) {
-        this.delay = delay;
+    public MemoryUsageMonitor setDelay(int delay, TimeUnit timeUnit) {
+        this.delayMillis = (int) timeUnit.toMillis(delay);
         return this;
     }
 
-    @Override
-    public void run() {
+    public synchronized MemoryUsageMonitor start() {
+        if (!active.get()) {
+            active.set(true);
+            thread.start();
+        }
+        return this;
+    }
+
+    public synchronized MemoryUsageMonitor stop() {
+        if (active.get()) {
+            active.set(false);
+            this.thread.interrupt();
+            try {
+                this.thread.join();
+            } catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
+            }
+            logMemory(logger);
+        }
+        return this;
+    }
+
+    private void run() {
         try {
-            while (active) {
+            while (active.get()) {
                 logMemory();
-                Thread.sleep(delay);
+                Thread.sleep(delayMillis);
             }
         } catch (InterruptedException ignore) {
             Thread.currentThread().interrupt();
@@ -75,12 +97,11 @@ public class MemoryUsageMonitor extends Thread {
 
     public static void logMemory(Logger logger) {
         Runtime rt = Runtime.getRuntime();
-        //1048576 = 1024*1024 = 2^20
         logger.info(String.format("Memory usage. MaxMemory: %.2f MiB"
                         + " TotalMemory: %.2f MiB"
                         + " FreeMemory: %.2f MiB"
-                        + " UsedMemory: %.2f MiB", rt.maxMemory() / 1048576.0, rt.totalMemory() / 1048576.0,
-                rt.freeMemory() / 1048576.0, (rt.totalMemory() - rt.freeMemory()) / 1048576.0));
+                        + " UsedMemory: %.2f MiB", rt.maxMemory() / MEGABYTE, rt.totalMemory() / MEGABYTE,
+                rt.freeMemory() / MEGABYTE, (rt.totalMemory() - rt.freeMemory()) / MEGABYTE));
     }
 
 }

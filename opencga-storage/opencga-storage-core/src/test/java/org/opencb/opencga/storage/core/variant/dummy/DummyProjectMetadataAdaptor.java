@@ -29,7 +29,7 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     private static Map<String, Integer> counters = new HashMap<>();
 
     @Override
-    public Lock lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    public Lock lockProject(long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
         return new Lock(0) {
             @Override
             public void unlock0() {
@@ -67,6 +67,11 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     public synchronized int generateId(Integer studyId, String idType) throws StorageEngineException {
         return counters.compute(idType + (studyId == null ? "" : ("_" + studyId)),
                 (key, value) -> value == null ? 1 : value + 1);
+    }
+
+    @Override
+    public boolean exists() {
+        return projectMetadata != null;
     }
 
     private static final AtomicInteger NUM_PRINTS = new AtomicInteger();

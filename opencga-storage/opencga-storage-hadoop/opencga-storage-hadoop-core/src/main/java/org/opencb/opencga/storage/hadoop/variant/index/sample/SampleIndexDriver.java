@@ -31,7 +31,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -68,16 +68,19 @@ import static org.apache.phoenix.query.QueryConstants.SEPARATOR_BYTE;
 public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexDriver.class);
     public static final String SAMPLES = "samples";
+    public static final String SAMPLE_IDS = "sampleIds";
     public static final String OUTPUT = "output";
     public static final String SECONDARY_ONLY = "secondary-only";
 //    public static final String MAIN_ONLY = "main-only";
     public static final String PARTIAL_SCAN_SIZE = "partial-scan-size";
+    public static final String MAX_COLUMNS_PER_SCAN = "max-columns-per-scan";
 
     private static final String SAMPLE_ID_TO_FILE_ID_MAP = "SampleIndexDriver.sampleIdToFileIdMap";
     private static final String MULTI_FILE_SAMPLES = "SampleIndexDriver.multiFileSamples";
     private static final String FIXED_ATTRIBUTES = "SampleIndexDriver.fixedAttributes";
+    private static final String PARTIAL_SCAN = "SampleIndexDriver.partial_scan";
+
     private int study;
-    private int[] samples;
     private String outputTable;
     private boolean allSamples;
     private boolean secondaryOnly;
@@ -90,6 +93,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private double partialScanSize;
     private List<String> fixedAttributes;
     private boolean multiScan = false;
+    private int maxColumns;
 
     @Override
     protected String getJobOperationName() {
@@ -104,13 +108,15 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("--" + SAMPLES, "<samples>*");
+        params.put("--" + SAMPLES, "<samples>");
+        params.put("--" + SAMPLE_IDS, "<sample-ids>");
         params.put("--" + VariantStorageOptions.STUDY.key(), "<study>");
         params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + SECONDARY_ONLY, "<true|false>");
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         params.put("--" + PARTIAL_SCAN_SIZE, "<samples-per-scan>");
+        params.put("--" + MAX_COLUMNS_PER_SCAN, "<max-columns-per-scan>");
         return params;
     }
 
@@ -143,37 +149,34 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
         // Max number of samples to be processed in each Scan.
         partialScanSize = Integer.valueOf(getParam(PARTIAL_SCAN_SIZE, "1000"));
+        maxColumns = Integer.valueOf(getParam(MAX_COLUMNS_PER_SCAN, "4000"));
 
         String samplesParam = getParam(SAMPLES);
+        String sampleIdsStr = getParam(SAMPLE_IDS);
+        sampleIds = new TreeSet<>(Integer::compareTo);
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        if (samplesParam.equals(VariantQueryUtils.ALL)) {
+        if (StringUtils.isNotEmpty(samplesParam) && StringUtils.isNotEmpty(sampleIdsStr)) {
+            throw new IllegalArgumentException("Incompatible params " + SAMPLES + " and " + SAMPLE_IDS);
+        }
+        if (VariantQueryUtils.ALL.equals(samplesParam)) {
             allSamples = true;
-            samples = null;
-        } else {
+            sampleIds.addAll(metadataManager.getIndexedSamples(study));
+        } else if (StringUtils.isNotEmpty(samplesParam)) {
             allSamples = false;
-            List<Integer> sampleIds = new LinkedList<>();
             for (String sample : samplesParam.split(",")) {
-                Integer sampleId = metadataManager.getSampleId(study, sample);
+                Integer sampleId = metadataManager.getSampleId(getStudyId(), sample);
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sample, study);
                 }
                 sampleIds.add(sampleId);
             }
-            samples = sampleIds.stream().mapToInt(Integer::intValue).toArray();
-            if (samples.length == 0) {
-                throw new IllegalArgumentException("empty samples!");
+        } else if (StringUtils.isNotEmpty(sampleIdsStr)) {
+            allSamples = false;
+            for (String sample : sampleIdsStr.split(",")) {
+                sampleIds.add(Integer.valueOf(sample));
             }
         }
 
-        sampleIds = new TreeSet<>(Integer::compareTo);
-
-        if (allSamples) {
-            sampleIds.addAll(metadataManager.getIndexedSamples(study));
-        } else {
-            for (int sample : samples) {
-                sampleIds.add(sample);
-            }
-        }
         if (sampleIds.isEmpty()) {
             throw new IllegalArgumentException("empty samples!");
         }
@@ -204,7 +207,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected Job setupJob(Job job, String archiveTable, String table) throws IOException {
         FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ALL,
-                new QualifierFilter(EQUAL, new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixHelper.buildStudyColumnsPrefix(study)))),
+                new QualifierFilter(EQUAL, new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixSchema.buildStudyColumnsPrefix(study)))),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '|', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'0', '/', '0', SEPARATOR_BYTE})),
                 new ValueFilter(NOT_EQUAL, new BinaryPrefixComparator(new byte[]{'.', '/', '.', SEPARATOR_BYTE})),
@@ -233,14 +236,14 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 scan.setFilter(filter);
                 scans.add(scan);
                 for (int sample : samplesSubSet) {
-                    byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                    byte[] sampleColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample);
                     scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                     for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                         if (multiFileSamples.contains(sample)) {
-                            byte[] sampleFileColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample, fileId);
+                            byte[] sampleFileColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample, fileId);
                             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleFileColumn);
                         }
-                        byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                        byte[] fileColumn = VariantPhoenixSchema.buildFileColumnKey(study, fileId);
                         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                     }
                 }
@@ -258,19 +261,24 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             }
             scan.setFilter(filter);
 
-            if (sampleIds.size() < 6000) {
+            int approxExpectedNumColumns =
+                    sampleIds.size()
+                    + sampleIdToFileIdMap.values().stream().flatMap(Collection::stream).collect(Collectors.toSet()).size();
+            if (approxExpectedNumColumns < maxColumns) {
                 for (Integer sample : sampleIds) {
-                    byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
+                    byte[] sampleColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample);
                     scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                     for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                         if (multiFileSamples.contains(sample)) {
-                            byte[] sampleFileColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample, fileId);
+                            byte[] sampleFileColumn = VariantPhoenixSchema.buildSampleColumnKey(study, sample, fileId);
                             scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleFileColumn);
                         }
-                        byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
+                        byte[] fileColumn = VariantPhoenixSchema.buildFileColumnKey(study, fileId);
                         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                     }
                 }
+            } else {
+                job.getConfiguration().setBoolean(PARTIAL_SCAN, true);
             }
             scans = Collections.singletonList(scan);
         }
@@ -346,9 +354,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private VariantFileIndexConverter fileIndexConverter;
         private List<String> fixedAttributes;
         private final Map<Integer, SampleMetadata> samples = new HashMap<>();
+        private final Set<Integer> files = new HashSet<>();
         private boolean hasGenotype;
 
         private final Map<Integer, SampleIndexEntryPutBuilder> samplesMap = new HashMap<>();
+        private boolean partialScan;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -385,9 +395,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     for (String file : files) {
                         fileIds.add(Integer.valueOf(file));
                     }
+                    this.files.addAll(fileIds);
                     samples.put(sampleId, new SampleMetadata(0, sampleId, null).setFiles(fileIds));
                 }
             }
+            partialScan = context.getConfiguration().getBoolean(PARTIAL_SCAN, false);
             for (int sampleId : context.getConfiguration().getInts(MULTI_FILE_SAMPLES)) {
                 samples.get(sampleId).setSplitData(VariantStorageEngine.SplitData.MULTI);
             }
@@ -402,6 +414,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             Map<Integer, Short> fileIndexMap = new HashMap<>();
 
             variantRow.forEachFile(fileColumn -> {
+                if (partialScan && !this.files.contains(fileColumn.getFileId())) {
+                    // Discard extra files
+                    // Only check map with a Partial Scan.
+                    return;
+                }
                 Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn.raw(), fixedAttributes);
 
                 short fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), 0, fileAttributes, null);
@@ -411,6 +428,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
             variantRow.forEachSample(sampleColumn -> {
                 int sampleId = sampleColumn.getSampleId();
+                SampleMetadata sampleMetadata = samples.get(sampleId);
+                if (sampleMetadata == null) {
+                    // Discard extra samples
+                    return;
+                }
                 String gt;
                 boolean validGt;
                 if (hasGenotype) {
@@ -428,7 +450,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 if (validGt) {
                     SampleIndexEntryPutBuilder builder = samplesMap.computeIfAbsent(sampleId,
                             s -> new SampleIndexEntryPutBuilder(s, variant));
-                    SampleMetadata sampleMetadata = samples.get(sampleId);
                     List<Integer> files;
                     int filePosition;
                     if (sampleMetadata.isMultiFileSample()) {
@@ -456,7 +477,20 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             }
                             builder.add(gt, new SampleVariantIndexEntry(variant, fileIndex));
                             if (samplesToCount.contains(sampleId)) {
-                                context.getCounter(COUNTER_GROUP_NAME, "SAMPLE_" + sampleId + '_' + gt).increment(1);
+                                switch (gt) {
+                                    case "1/1":
+                                    case "0/1":
+                                    case "1/2":
+                                    case "1/3":
+                                    case "0|1":
+                                    case "1|0":
+                                    case "1|1":
+                                        context.getCounter(COUNTER_GROUP_NAME, "SAMPLE_" + sampleId + "_" + gt).increment(1);
+                                        break;
+                                    default:
+                                        context.getCounter(COUNTER_GROUP_NAME, "SAMPLE_" + sampleId + "_x/x").increment(1);
+                                        break;
+                                }
                             }
                         }
                     }

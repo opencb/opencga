@@ -22,7 +22,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mortbay.util.SingletonList;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
@@ -40,7 +39,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
@@ -153,6 +152,34 @@ public class FamilyManagerTest extends GenericTest {
         for (Family result : search.getResults()) {
             assertTrue(result.getId().startsWith("Mart"));
         }
+    }
+
+    @Test
+    public void testRoles() throws CatalogException {
+        DataResult<Family> dummyFamily = createDummyFamily("Martinez-Martinez", true);
+
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("mother").get("child1"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("mother").get("child2"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("mother").get("child3"));
+
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("father").get("child1"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("father").get("child2"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, dummyFamily.first().getRoles().get("father").get("child3"));
+
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child1").get("child2"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child1").get("child3"));
+        assertEquals(Family.FamiliarRelationship.FATHER, dummyFamily.first().getRoles().get("child1").get("father"));
+        assertEquals(Family.FamiliarRelationship.MOTHER, dummyFamily.first().getRoles().get("child1").get("mother"));
+
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child3").get("child2"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child3").get("child1"));
+        assertEquals(Family.FamiliarRelationship.FATHER, dummyFamily.first().getRoles().get("child3").get("father"));
+        assertEquals(Family.FamiliarRelationship.MOTHER, dummyFamily.first().getRoles().get("child3").get("mother"));
+
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child2").get("child1"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, dummyFamily.first().getRoles().get("child2").get("child3"));
+        assertEquals(Family.FamiliarRelationship.FATHER, dummyFamily.first().getRoles().get("child2").get("father"));
+        assertEquals(Family.FamiliarRelationship.MOTHER, dummyFamily.first().getRoles().get("child2").get("mother"));
     }
 
     @Test
@@ -275,7 +302,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().size());   // proband version
 
         // LOCK CLINICAL ANALYSIS
-        catalogManager.getClinicalAnalysisManager().update(STUDY, "clinical", new ClinicalUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, "clinical", new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
         assertTrue(clinicalResult.isLocked());

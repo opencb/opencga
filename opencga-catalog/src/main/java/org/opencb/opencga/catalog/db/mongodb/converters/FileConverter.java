@@ -78,13 +78,17 @@ public class FileConverter extends AnnotableConverter<File> {
     }
 
     public List<Document> convertSamples(List<Sample> sampleList) {
+        return convertSamples(sampleList, true);
+    }
+
+    public List<Document> convertSamples(List<Sample> sampleList, boolean checkUid) {
         if (sampleList == null || sampleList.isEmpty()) {
             return Collections.emptyList();
         }
         List<Document> samples = new ArrayList(sampleList.size());
         for (Sample sample : sampleList) {
             long sampleId = sample != null ? (sample.getUid() == 0 ? -1L : sample.getUid()) : -1L;
-            if (sampleId > 0) {
+            if (!checkUid || sampleId > 0) {
                 samples.add(new Document()
                         .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
                         .append(SampleDBAdaptor.QueryParams.UUID.key(), sample.getUuid())

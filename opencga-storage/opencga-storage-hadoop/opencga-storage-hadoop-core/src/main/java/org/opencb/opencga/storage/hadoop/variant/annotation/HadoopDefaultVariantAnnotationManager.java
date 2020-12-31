@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -45,14 +46,12 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsDescriptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
-import org.opencb.opencga.storage.hadoop.variant.pending.DiscoverPendingVariantsDriver;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
 import java.io.IOException;
@@ -113,24 +112,34 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             if (skipDiscoverPendingVariantsToAnnotate(params)) {
                 logger.info("Skip MapReduce to discover variants to annotate.");
             } else {
+                boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+                AnnotationPendingVariantsManager pendingVariantsManager = new AnnotationPendingVariantsManager(dbAdaptor);
                 ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
                 long lastLoadedFileTs = projectMetadata.getAttributes()
                         .getLong(HadoopVariantStorageEngine.LAST_LOADED_FILE_TS);
                 long lastVariantsToAnnotateUpdateTs = projectMetadata.getAttributes()
                         .getLong(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
 
+                boolean tableExists = pendingVariantsManager.exists();
+                if (!tableExists && lastVariantsToAnnotateUpdateTs > 0) {
+                    lastVariantsToAnnotateUpdateTs = 0;
+                    logger.info("Table with pending variants to annotate not found. Force MapReduce. "
+                            + "Remove old '" + HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS + "' from project manager");
+                    dbAdaptor.getMetadataManager().updateProjectMetadata(p -> {
+                        p.getAttributes().remove(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS);
+                        return p;
+                    });
+                }
+
                 // Skip MR if no file has been loaded since the last execution
-                if (lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
+                if (!overwrite && lastVariantsToAnnotateUpdateTs > lastLoadedFileTs) {
                     logger.info("Skip MapReduce to discover variants to annotate. List of pending annotations to annotate is updated");
                 } else {
                     long ts = System.currentTimeMillis();
 
                     // Append all query to params to use the same filter also at the MR
                     params = new ObjectMap(params).appendAll(query);
-                    mrExecutor.run(DiscoverPendingVariantsDriver.class,
-                            DiscoverPendingVariantsDriver.buildArgs(
-                                    dbAdaptor.getVariantTable(), AnnotationPendingVariantsDescriptor.class, params),
-                            params, "Prepare variants to annotate");
+                    pendingVariantsManager.discoverPending(mrExecutor, overwrite, params);
 
                     if (annotateAll) {
                         dbAdaptor.getMetadataManager().updateProjectMetadata(pm -> {
@@ -167,22 +176,18 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     private boolean skipDiscoverPendingVariantsToAnnotate(ObjectMap params) {
-        // Skip if overwriting annotations, or if specific param
-        return params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false)
-                || params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
+        return params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
     }
 
     private boolean skipPendingVariantsToAnnotateTable(ObjectMap params) {
-        // Skip if overwriting annotations, or if specific param
-        return params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false)
-                || params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
+        return params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
     }
 
     @Override
     protected ParallelTaskRunner<VariantAnnotation, ?> buildLoadAnnotationParallelTaskRunner(
             DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
 
-        if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
+        if (VariantPhoenixSchema.DEFAULT_TABLE_TYPE == PTableType.VIEW
                 || params.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
             int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
@@ -193,10 +198,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
             Task<VariantAnnotation, Put> task = Task.join(hBaseConverter, annotationIndexDBLoader.asTask(true));
 
-            VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(
-                    dbAdaptor.getHBaseManager(),
-                    dbAdaptor.getTableNameGenerator(),
-                    GenomeHelper.COLUMN_FAMILY_BYTES);
+            VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(dbAdaptor);
             return new ParallelTaskRunner<>(reader, task, writer, config);
         } else {
             return new ParallelTaskRunner<>(reader,
@@ -221,9 +223,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         List<Integer> studies = VariantQueryProjectionParser.getIncludeStudies(query, null, metadataManager);
 
-        boolean skipSampleIndexAnnotation = params.getBoolean("skipSampleIndexAnnotation");
+        boolean sampleIndex = YesNoAuto.parse(params, VariantStorageOptions.ANNOTATION_SAMPLE_INDEX.key()).booleanValue(true);
 
-        if (skipSampleIndexAnnotation) {
+        if (!sampleIndex) {
             logger.info("Skip Sample Index Annotation");
             // Nothing to do!
             return;
@@ -267,9 +269,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
 
         String columnFamily = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
-        String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(annotationMetadata.getId());
+        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(annotationMetadata.getId());
         Map<String, String> columnsToCopyMap = Collections.singletonMap(
-                columnFamily + ':' + VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.column(),
+                columnFamily + ':' + VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.column(),
                 columnFamily + ':' + targetColumn);
         String[] args = CopyHBaseColumnDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
@@ -286,7 +288,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 .getAnnotation().getSaved(name);
 
         String columnFamily = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
-        String targetColumn = VariantPhoenixHelper.getAnnotationSnapshotColumn(saved.getId());
+        String targetColumn = VariantPhoenixSchema.getAnnotationSnapshotColumn(saved.getId());
 
         String[] args = DeleteHBaseColumnDriver.buildArgs(
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),

@@ -62,6 +62,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATION_LOAD_BATCH_SIZE("annotation.load.batchSize", 100),
     ANNOTATION_LOAD_THREADS("annotation.load.numThreads", 4),
     ANNOTATION_OVERWEITE("annotation.overwrite"),
+    ANNOTATION_SAMPLE_INDEX("annotation.sampleIndex", YesNoAuto.YES),
 
     ANNOTATOR("annotator"),
     ANNOTATOR_CLASS("annotator.class"),
@@ -69,9 +70,13 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_INCLUDE("annotator.cellbase.include"),
     ANNOTATOR_CELLBASE_EXCLUDE("annotator.cellbase.exclude"),
     ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", 10000),
-    ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants"),
+    ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants", true),
+    ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
+
+    METADATA_LOCK_DURATION("metadata.lock.duration", 5000),
+    METADATA_LOCK_TIMEOUT("metadata.lock.timeout", 60000),
 
     QUERY_DEFAULT_TIMEOUT("query.timeout.default", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
     QUERY_MAX_TIMEOUT("query.timeout.max", 30000),         // Max allowed timeout for DBAdaptor operations
@@ -86,6 +91,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3),      // Minimum number of QueryParams in the query to intersect
 
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
+    @Deprecated
     APPROXIMATE_COUNT("approximateCount", false),
 
     // Do not store genotypes from the current file.

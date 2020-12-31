@@ -50,6 +50,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_PROJECT;
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY;
 
 public class CatalogManager implements AutoCloseable {
 
@@ -162,10 +164,10 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installCatalogDB(String secretKey, String password, String email, String organization) throws CatalogException {
-        installCatalogDB(secretKey, password, email, organization, true);
+        installCatalogDB(secretKey, password, email, organization, false);
     }
 
-    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean installIndexes)
+    public void installCatalogDB(String secretKey, String password, String email, String organization, boolean test)
             throws CatalogException {
 
         if (existsCatalogDB()) {
@@ -186,20 +188,22 @@ public class CatalogManager implements AutoCloseable {
         userManager.create(user, password, null);
 
         String token = userManager.login(OPENCGA, password).getToken();
-        projectManager.create("admin", "admin", "Default project", "", "", "", null, token);
-        studyManager.create("admin", "admin", "admin", "admin", "Default study", null, null, null, Collections.emptyMap(),
+        projectManager.create(ADMIN_PROJECT, ADMIN_PROJECT, "Default project", "", "", "", null, token);
+        studyManager.create(ADMIN_PROJECT, ADMIN_STUDY, ADMIN_STUDY, ADMIN_STUDY, "Default study", null, null, null, Collections.emptyMap(),
                 null, token);
 
-        if (installIndexes) {
-            installIndexes(token);
-        }
+        installIndexes(token, test);
     }
 
     public void installIndexes(String token) throws CatalogException {
+        installIndexes(token, false);
+    }
+
+    public void installIndexes(String token, boolean test) throws CatalogException {
         if (!OPENCGA.equals(userManager.getUserId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
-        catalogDBAdaptorFactory.createIndexes();
+        catalogDBAdaptorFactory.createIndexes(test);
     }
 
     public void deleteCatalogDB(String token) throws CatalogException, URISyntaxException {

@@ -50,6 +50,12 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_M
  */
 public class SampleIndexDBAdaptor implements VariantIterable {
 
+    private static final String SAMPLE_INDEX_STATUS = "sampleIndexGenotypes";
+    private static final String SAMPLE_INDEX_ANNOTATION_STATUS = "sampleIndexAnnotation";
+
+    @Deprecated // Deprecated to avoid confusion with actual "SAMPLE_INDEX_STATUS"
+    private static final String SAMPLE_INDEX_ANNOTATION_STATUS_OLD = "sampleIndex";
+
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final VariantStorageMetadataManager metadataManager;
@@ -71,12 +77,33 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         converter = new HBaseToSampleIndexConverter(configuration);
     }
 
+    public static TaskMetadata.Status getSampleIndexAnnotationStatus(SampleMetadata sampleMetadata) {
+        TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS, null);
+        if (status == null) {
+            // The status name was renamed. In case of missing value (null), check for the deprecated value.
+            status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
+        }
+        return status;
+    }
+
+    public static SampleMetadata setSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status) {
+        // Remove deprecated value.
+        sampleMetadata.getStatus().remove(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
+        sampleMetadata.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS, status);
+        return sampleMetadata;
+    }
+
     public static TaskMetadata.Status getSampleIndexStatus(SampleMetadata sampleMetadata) {
-        return sampleMetadata.getStatus(SampleIndexAnnotationLoader.SAMPLE_INDEX_STATUS);
+        TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_STATUS, null);
+        if (status == null) {
+            // This is a new status. In case of missing value (null), assume it's READY
+            status = TaskMetadata.Status.READY;
+        }
+        return status;
     }
 
     public static SampleMetadata setSampleIndexStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status) {
-        return sampleMetadata.setStatus(SampleIndexAnnotationLoader.SAMPLE_INDEX_STATUS, status);
+        return sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, status);
     }
 
     @Override

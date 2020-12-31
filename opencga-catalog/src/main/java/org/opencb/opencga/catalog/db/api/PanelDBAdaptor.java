@@ -34,7 +34,7 @@ import java.util.Map;
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 
-public interface PanelDBAdaptor extends DBAdaptor<Panel> {
+public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),

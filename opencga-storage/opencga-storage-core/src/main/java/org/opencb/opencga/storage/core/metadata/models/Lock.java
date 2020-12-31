@@ -41,9 +41,6 @@ public abstract class Lock implements Closeable {
         keepAliveFuture = executorService.submit(() -> {
             try {
                 while (keepAlive.get()) {
-
-
-
                     sleeping.set(true);
                     Thread.sleep(keepAliveIntervalMillis);
                     sleeping.set(false);

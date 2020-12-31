@@ -3,7 +3,7 @@
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
-  ## URL host to annotate variants, for example: http://bioinfo.hpc.cam.ac.uk/cellbase/
+  ## URL host to annotate variants, for example: http://ws.opencb.org/cellbase/
   host: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
 
@@ -92,7 +92,9 @@ variant:
     #annotator.class: #Allows to inject custom annotators
     annotator.cellbase.exclude: "expression"
     annotator.cellbase.useCache: true
-    annotator.cellbase.impreciseVariants: true # Imprecise variants supported by cellbase (REST only)
+    annotator.cellbase.impreciseVariants: true          # Imprecise variants supported by cellbase
+    annotator.cellbase.starAlternate: false             # Variants with stat "*" alternate supported by cellbase
+    annotator.cellbase.variantLengthThreshold: 10000    # Variants length threshold
 
     query.timeout.default: 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
     query.timeout.max: 30000     #(ms) Max allowed timeout for DBAdaptor operations.
@@ -144,6 +146,7 @@ variant:
         storage.hadoop.variant.table.compression: "snappy"           # Allowed values: none, snappy, gz
         storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit: 15
         storage.hadoop.sampleIndex.table.compression: "snappy"       # Allowed values: none, snappy, gz
+        storage.hadoop.sampleIndex.build.maxSamplesPerMR: 5000
         storage.hadoop.sampleIndex.annotation.maxSamplesPerMR: 5000
         storage.hadoop.annotationIndex.table.compression: "snappy"   # Allowed values: none, snappy, gz
         storage.hadoop.pendingAnnotation.table.compression: "snappy" # Allowed values: none, snappy, gz
@@ -175,8 +178,13 @@ variant:
           mapreduce.map.memory.mb: 750
         VariantStatsDriver:
           mapreduce.map.memory.mb: 2048
+        SampleIndexDriver:
+          mapreduce.map.memory.mb: 4096
+          max-columns-per-scan: 4000
         SampleIndexAnnotationLoaderDriver:
           mapreduce.map.memory.mb: 4096
+        VariantMigration200Driver:
+          mapreduce.map.memory.mb: 1024
 
 
 ## PENDING

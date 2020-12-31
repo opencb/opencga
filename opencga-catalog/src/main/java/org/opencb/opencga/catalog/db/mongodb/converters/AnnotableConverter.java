@@ -33,7 +33,10 @@ import java.util.Map;
 public class AnnotableConverter<T extends Annotable> extends OpenCgaMongoConverter<T> {
 
     private static final String ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.ANNOTATION_SETS.key();
-    private static final String PRIVATE_VS_MAP =  AnnotationMongoDBAdaptor.AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key();
+    private static final String INTERNAL_ANNOTATION_SETS = AnnotationMongoDBAdaptor.AnnotationSetParams.INTERNAL_ANNOTATION_SETS.key();
+    private static final String PRIVATE_VS_MAP = AnnotationMongoDBAdaptor.AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key();
+    private static final String INTERNAL_PRIVATE_VS_MAP =
+            AnnotationMongoDBAdaptor.AnnotationSetParams.PRIVATE_INTERNAL_VARIABLE_SET_MAP.key();
 
     private AnnotationConverter annotationConverter;
 
@@ -45,8 +48,10 @@ public class AnnotableConverter<T extends Annotable> extends OpenCgaMongoConvert
 
     public Document convertToStorageType(T object, List<VariableSet> variableSetList) {
         List<Document> documentList = new ArrayList<>();
+        List<Document> internalDocumentList = new ArrayList<>();
 
         Document privateVariableSetMap = new Document();
+        Document internalPrivateVariableSetMap = new Document();
 
         if (variableSetList != null && !variableSetList.isEmpty() && object.getAnnotationSets() != null
                 && !object.getAnnotationSets().isEmpty()) {
@@ -58,9 +63,12 @@ public class AnnotableConverter<T extends Annotable> extends OpenCgaMongoConvert
 
             for (AnnotationSet annotationSet : object.getAnnotationSets()) {
                 VariableSet variableSet = variableSetMap.get(annotationSet.getVariableSetId());
-                if (variableSet != null) {
+                if (variableSet != null && !variableSet.isInternal()) {
                     documentList.addAll(annotationConverter.annotationToDB(variableSet, annotationSet));
                     privateVariableSetMap.put(String.valueOf(variableSet.getUid()), variableSet.getId());
+                } else if (variableSet != null && variableSet.isInternal()) {
+                    internalDocumentList.addAll(annotationConverter.annotationToDB(variableSet, annotationSet));
+                    internalPrivateVariableSetMap.put(String.valueOf(variableSet.getUid()), variableSet.getId());
                 }
             }
         }
@@ -70,6 +78,8 @@ public class AnnotableConverter<T extends Annotable> extends OpenCgaMongoConvert
 
         document.put(ANNOTATION_SETS, documentList);
         document.put(PRIVATE_VS_MAP, privateVariableSetMap);
+        document.put(INTERNAL_ANNOTATION_SETS, internalDocumentList);
+        document.put(INTERNAL_PRIVATE_VS_MAP, internalPrivateVariableSetMap);
 
         return document;
     }

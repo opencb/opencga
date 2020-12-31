@@ -54,8 +54,8 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
     @Override
     public void run() throws ToolException {
         // Sanity check: metrics to update can not be null
-        if (metrics == null) {
-            throw new ToolException("Sample quality control metrics is null");
+        if (alignmentQcMetrics == null) {
+            throw new ToolException("Sample alignment quality control metrics is null");
         }
 
         catalogManager = getVariantStorageManager().getCatalogManager();
@@ -84,7 +84,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
     }
 
     private void runFlagStats() throws ToolException {
-        if (metrics.getSamtoolsFlagstats() != null) {
+        if (alignmentQcMetrics.getSamtoolsFlagstats() != null) {
             // Samtools flag stats already exists!
             addWarning("Skipping samtools/flagstat analysis: it was already computed");
             return;
@@ -112,14 +112,14 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         // Check for result
         SamtoolsFlagstats flagtats = executor.getFlagstatsResult();
         if (flagtats != null) {
-            metrics.setSamtoolsFlagstats(flagtats);
+            alignmentQcMetrics.setSamtoolsFlagstats(flagtats);
         }
     }
 
     private void runHsMetrics() throws ToolException {
         addWarning("Skipping picard/CollectHsMetrics analysis: not yet implemented");
 
-        if (metrics.getHsMetrics() != null) {
+        if (alignmentQcMetrics.getHsMetrics() != null) {
             // Hs metrics already exists!
             addWarning("Skipping picard/CollectHsMetrics analysis: it was already computed");
             return;
@@ -207,7 +207,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         try {
             // Parse Hs metrics and update sample quality control
             HsMetrics hsMetrics = HsMetricsParser.parse(picardDir.resolve(hsMetricsFilename).toFile());
-            metrics.setHsMetrics(hsMetrics);
+            alignmentQcMetrics.setHsMetrics(hsMetrics);
         } catch (IOException e) {
             throw new ToolException(e);
         }
@@ -227,7 +227,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
         }
 
         // Sanity check
-        List<GeneCoverageStats> geneCoverageStats = metrics.getGeneCoverageStats();
+        List<GeneCoverageStats> geneCoverageStats = alignmentQcMetrics.getGeneCoverageStats();
         if (geneCoverageStats == null) {
             geneCoverageStats = new ArrayList<>();
         }
@@ -262,7 +262,7 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
                 geneCoverageStats.add(geneCoverageStatsResult.first());
 
                 // Add result to the list
-                metrics.setGeneCoverageStats(geneCoverageStats);
+                alignmentQcMetrics.setGeneCoverageStats(geneCoverageStats);
             } catch (Exception e) {
                 throw new ToolException(e);
             }

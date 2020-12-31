@@ -48,10 +48,11 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public Lock lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
+    public Lock lockProject(long lockDuration, long timeout, String lockName)
+            throws InterruptedException, TimeoutException, StorageEngineException {
         try {
             ensureTableExists();
-            return lock.lock(getProjectRowKey(), getLockColumn(), lockDuration, timeout);
+            return lock.lock(getProjectRowKey(), getLockColumn(lockName), lockDuration, timeout);
         } catch (IOException e) {
             throw new StorageEngineException("Error locking project in HBase", e);
         }
@@ -138,6 +139,11 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
         } catch (IOException e) {
             throw new StorageEngineException("Error generating ID", e);
         }
+    }
+
+    @Override
+    public boolean exists() {
+        return tableExists();
     }
 
 }

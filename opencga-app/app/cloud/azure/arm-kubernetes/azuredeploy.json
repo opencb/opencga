@@ -647,6 +647,9 @@
                     "aksServicePrincipalObjectId": {
                         "value": "[parameters('aksServicePrincipalObjectId')]"
                     },
+                    "aksNodeResourceGroup": {
+                        "value": "[concat(parameters('rgPrefix'), '-agentpools')]"
+                    },
                     "vnetId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
                     },

@@ -46,7 +46,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class AnnotationUtils {
 
-    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^:=^<>~!$]+:)?([^=^<>~!:$]+)([=^<>~!$]+.+)$");
+    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([^:=^<>~!@$]+@)?([^:=@^<>~!$]+:)?([^=@^<>~!:$]+)([=^<>~!$]+.+)$");
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!==?|!?=?~|==?=?)([^=<>~!]+.*)$");
 
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
@@ -306,9 +306,9 @@ public class AnnotationUtils {
                 }
                 break;
             case INTEGER:
-                Integer integerValue = getIntegerValue(defaultValue);
-                if (integerValue != null) {
-                    annotation.put(variable.getId(), integerValue);
+                Long longValue = getLongValue(defaultValue);
+                if (longValue != null) {
+                    annotation.put(variable.getId(), longValue);
                     return true;
                 }
                 break;
@@ -379,14 +379,14 @@ public class AnnotationUtils {
             }
             case INTEGER:
                 for (Object object : listValues) {
-                    int numericValue = (int) object;
+                    long numericValue = (long) object;
 
                     if (variable.getAllowedValues() != null && !variable.getAllowedValues().isEmpty()) {
                         boolean valid = false;
                         for (String range : variable.getAllowedValues()) {
                             String[] split = range.split(":", -1);
-                            int min = split[0].isEmpty() ? Integer.MIN_VALUE : Integer.valueOf(split[0]);
-                            int max = split[1].isEmpty() ? Integer.MAX_VALUE : Integer.valueOf(split[1]);
+                            long min = split[0].isEmpty() ? Long.MIN_VALUE : Long.valueOf(split[0]);
+                            long max = split[1].isEmpty() ? Long.MAX_VALUE : Long.valueOf(split[1]);
                             if (numericValue >= min && numericValue <= max) {
                                 valid = true;
                                 break;
@@ -432,9 +432,9 @@ public class AnnotationUtils {
                 for (Object object : listValues) {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
                         Map objectMap = (Map) object;
-                        checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, variable.getDescription(),
-                                variable.getVariableSet(), null, 1, null), new AnnotationSet("", variable.getId(), objectMap, null, 1,
-                                null), null, true);
+                        checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, false,
+                                        variable.getDescription(), variable.getVariableSet(), null, 1, null),
+                                new AnnotationSet("", variable.getId(), objectMap, null, 1, null), null, true);
                     }
                 }
                 break;
@@ -462,7 +462,7 @@ public class AnnotationUtils {
                     }
                     Map<String, Object> objectMap = (Map<String, Object>) object;
                     for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
-                        if (!(entry.getValue() instanceof Integer)) {
+                        if (!(entry.getValue() instanceof Integer) && !(entry.getValue() instanceof Long)) {
                             throw new CatalogException(entry.getKey() + " does not seem to be integer. Expected an integer map for "
                                     + "variable " + variable.getId());
                         }
@@ -525,7 +525,7 @@ public class AnnotationUtils {
                 case DOUBLE:
                     return getNumericValue(value);
                 case INTEGER:
-                    return getIntegerValue(value);
+                    return getLongValue(value);
                 case OBJECT:
                 case MAP_BOOLEAN:
                 case MAP_INTEGER:
@@ -605,24 +605,24 @@ public class AnnotationUtils {
      * @param value
      * @return
      */
-    private static Integer getIntegerValue(Object value) throws CatalogException {
-        Integer numericValue = null;
+    private static Long getLongValue(Object value) throws CatalogException {
+        Long numericValue = null;
         if (value == null) {
             return null;
         } else if (value instanceof Number) {
-            return ((Number) value).intValue();
+            return ((Number) value).longValue();
         } else if (value instanceof String) {
             if (((String) value).isEmpty()) {
                 numericValue = null;    //Empty string
             } else {
                 try {
-                    numericValue = Integer.parseInt((String) value);
+                    numericValue = Long.parseLong((String) value);
                 } catch (NumberFormatException e) {
-                    throw new CatalogException("Value " + value + " is not an integer number", e);
+                    throw new CatalogException("Value " + value + " is not a Long number", e);
                 }
             }
         } else if (value instanceof Boolean) {
-            return (Boolean) value ? 1 : 0;
+            return (Boolean) value ? 1L : 0L;
         }
         return numericValue;
     }
@@ -787,7 +787,7 @@ public class AnnotationUtils {
             if (matcher.find()) {
 
                 if (annotation.startsWith(Constants.VARIABLE_SET)) {
-                    String variableSetString = matcher.group(3);
+                    String variableSetString = matcher.group(4);
                     // Obtain the operator to take it out and get only the actual value
                     String operator = getOperator(variableSetString);
                     variableSetString = variableSetString.replace(operator, "");
@@ -807,9 +807,17 @@ public class AnnotationUtils {
                     continue;
                 }
 
-                String variableSetString = matcher.group(1);
-                String key = matcher.group(2);
-                String valueString = matcher.group(3);
+                String annotationSetString = matcher.group(1);
+                String variableSetString = matcher.group(2);
+                String key = matcher.group(3);
+                String valueString = matcher.group(4);
+
+                if (StringUtils.isNotEmpty(annotationSetString)) {
+                    if (StringUtils.isEmpty(variableSetString)) {
+                        throw new CatalogException("Missing variable set id");
+                    }
+                    annotationSetString = annotationSetString.replace("@", "");
+                }
 
                 if (StringUtils.isEmpty(variableSetString)) {
                     // Obtain the variable set for the annotations
@@ -829,8 +837,24 @@ public class AnnotationUtils {
                         throw new CatalogException("The variable " + variableSetString + " does not exist in the study " + study.getFqn());
                     }
                     if (!variableTypeMap.get(variableSetString).containsKey(key)) {
-                        throw new CatalogException("Variable " + key + " from variableSet " + variableSetString + " does not exist. Cannot "
-                                + "perform query " + annotation);
+                        // Maybe it is a dynamic parameter
+                        Map<String, QueryParam.Type> dynamicParams = new HashMap<>();
+                        for (String tmpKey : variableTypeMap.get(variableSetString).keySet()) {
+                            if (tmpKey.endsWith(".*")) {
+                                // It is a dynamic map
+                                if (key.contains(tmpKey.substring(0, tmpKey.length() - 1))) {
+                                    dynamicParams.put(key, variableTypeMap.get(variableSetString).get(tmpKey));
+                                }
+                            }
+                        }
+                        if (!dynamicParams.isEmpty()) {
+                            variableTypeMap.get(variableSetString).putAll(dynamicParams);
+                        }
+
+                        if (!variableTypeMap.get(variableSetString).containsKey(key)) {
+                            throw new CatalogException("Variable " + key + " from variableSet " + variableSetString
+                                    + " does not exist. Cannot perform query " + annotation);
+                        }
                     }
                 }
 
@@ -842,9 +866,14 @@ public class AnnotationUtils {
                     confidentialPermissionChecked = true;
                 }
 
-                annotationList.add(variableSetString + ":" + key + valueString);
+                if (StringUtils.isEmpty(annotationSetString)) {
+                    annotationList.add(variableSetString + ":" + key + valueString);
+                } else {
+                    annotationList.add(annotationSetString + "@" + variableSetString + ":" + key + valueString);
+                }
                 queriedVariableTypeMap.put(variableSetString + ":" + key, variableTypeMap.get(variableSetString).get(key));
                 queriedVariableTypeMap.put(variableSetString, variableSetMap.get(variableSetString).getUid());
+                queriedVariableTypeMap.put(variableSetString + "__isInternal", variableSetMap.get(variableSetString).isInternal());
             } else {
                 throw new CatalogException("Annotation format from " + annotation + " not accepted. Supported format contains "
                         + "[variableSet:]variable=value");
@@ -971,9 +1000,9 @@ public class AnnotationUtils {
                     case INTEGER:
                     case MAP_INTEGER:
                         if (variable.isMultiValue()) {
-                            type = QueryParam.Type.INTEGER_ARRAY;
+                            type = QueryParam.Type.LONG_ARRAY;
                         } else {
-                            type = QueryParam.Type.INTEGER;
+                            type = QueryParam.Type.LONG;
                         }
                         break;
                     case DOUBLE:

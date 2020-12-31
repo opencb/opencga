@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -264,8 +263,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         Map<URI, StoragePipelineResult> resultsMap = new LinkedHashMap<>();
         LinkedList<StoragePipelineResult> results = new LinkedList<>();
 
-        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
-        monitor.setDelay(5000);
+//        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
+//        monitor.setDelay(5, TimeUnit.SECONDS);
 //        monitor.start();
         try {
             for (URI inputFile : inputFiles) {

@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.score;
 
-import com.google.common.base.Throwables;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -15,14 +14,10 @@ import org.opencb.opencga.storage.core.variant.score.VariantScoreParser;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 
 import java.io.IOException;
 import java.net.URI;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
 public class HadoopVariantScoreLoader extends VariantScoreLoader {
@@ -60,17 +55,8 @@ public class HadoopVariantScoreLoader extends VariantScoreLoader {
     @Override
     protected VariantScoreMetadata postLoad(VariantScoreMetadata scoreMetadata, boolean success) throws StorageEngineException {
         if (success) {
-            PhoenixHelper.Column column = VariantPhoenixHelper.getVariantScoreColumn(scoreMetadata.getStudyId(), scoreMetadata.getId());
-            try {
-                Connection connection = dbAdaptor.getJdbcConnection();
-                String variantTable = dbAdaptor.getVariantTable();
-
-                PhoenixHelper phoenixHelper = new PhoenixHelper(dbAdaptor.getConfiguration());
-                phoenixHelper.addMissingColumns(connection, variantTable, Collections.singleton(column),
-                        true, VariantPhoenixHelper.DEFAULT_TABLE_TYPE);
-            } catch (SQLException e) {
-                throw Throwables.propagate(e);
-            }
+            VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
+            schemaManager.registerNewScore(scoreMetadata.getStudyId(), scoreMetadata.getId());
         }
 
         return super.postLoad(scoreMetadata, success);

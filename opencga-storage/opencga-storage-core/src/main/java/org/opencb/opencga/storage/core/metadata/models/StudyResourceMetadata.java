@@ -61,7 +61,11 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
     }
 
     public TaskMetadata.Status getStatus(String statusName) {
-        return getStatus().getOrDefault(statusName, TaskMetadata.Status.NONE);
+        return getStatus(statusName, TaskMetadata.Status.NONE);
+    }
+
+    public TaskMetadata.Status getStatus(String statusName, TaskMetadata.Status defaultValue) {
+        return getStatus().getOrDefault(statusName, defaultValue);
     }
 
     public T setStatus(String statusName, TaskMetadata.Status status) {

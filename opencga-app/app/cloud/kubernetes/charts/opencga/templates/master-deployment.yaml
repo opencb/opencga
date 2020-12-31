@@ -8,10 +8,12 @@ spec:
   replicas: {{ .Values.master.replicaCount }}
   selector:
     matchLabels:
+      app: { { .Values.master.name } }
       {{- include "opencga.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
+        app: { { .Values.master.name } }
         {{- include "opencga.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.master.imagePullSecrets }}
@@ -33,7 +35,7 @@ spec:
         - name:  "INIT_OPENCGA_PASS"
           valueFrom:
             secretKeyRef:
-              name: opencga-secrets
+              name: {{ include "opencga.secretName" . }}
               key: openCgaAdminPassword
         - name:  "INIT_HEALTH_CHECK_INTERVAL"
           value: "30"
@@ -46,7 +48,7 @@ spec:
         - name: "INIT_HADOOP_SSH_PASS"
           valueFrom:
             secretKeyRef:
-              name: opencga-secrets
+              name: {{ include "opencga.secretName" . }}
               key: hdInsightSshPassword
         - name: "INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
           value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/" 
@@ -69,7 +71,7 @@ spec:
         - name: "INIT_CATALOG_DATABASE_PASSWORD"
           valueFrom:
             secretKeyRef:
-              name: opencga-secrets
+              name: {{ include "opencga.secretName" . }}
               key: mongoDbPassword
         - name: "INIT_CATALOG_SEARCH_HOSTS"
         {{- if .Values.deploySolr }}
@@ -87,6 +89,14 @@ spec:
           value: {{ .Values.analysis.execution.options.k8s.masterNode }}
         - name: "INIT_K8S_NAMESPACE"
           value: {{ .Values.analysis.execution.options.k8s.namespace }}
+        - name: "INIT_K8S_VOLUMES_PVC_CONF"
+          value: {{ include "pvcConf" . | quote }}
+        - name: "INIT_K8S_VOLUMES_PVC_SESSIONS"
+          value: {{ include "pvcSessions" . | quote }}
+        - name: "INIT_K8S_VOLUMES_PVC_VARIANTS"
+          value: {{ include "pvcVariants" . | quote }}
+        - name: "INIT_K8S_VOLUMES_PVC_ANALYSISCONF"
+          value: {{ include "pvcAnalysisconf" . | quote }}
         - name: "INIT_ANALYSIS_EXECUTION_MODE"
           value: {{ .Values.analysis.execution.id | quote }}
         - name: "INIT_MAX_CONCURRENT_JOBS"
@@ -127,7 +137,7 @@ spec:
           - name:  "PASSWORD"
             valueFrom:
               secretKeyRef:
-                name: opencga-secrets
+                name: {{ include "opencga.secretName" . }}
                 key: openCgaAdminPassword
           resources:
             {{- toYaml .Values.master.resources | nindent 12 }}
@@ -142,29 +152,21 @@ spec:
             mountPath: /opt/opencga/analysis
       volumes:
       - name: conf
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.conf.shareName }}
-          readOnly: false
+        persistentVolumeClaim:
+          claimName: {{ include "pvcConf" . | quote }}
       - name: sessions
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.sessions.shareName }}
-          readOnly: false
+        persistentVolumeClaim:
+          claimName: {{ include "pvcSessions" . | quote }}
       - name: variants
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.variants.shareName }}
-          readOnly: false
+        persistentVolumeClaim:
+          claimName: {{ include "pvcVariants" . | quote }}
       - name: analysisconf
-        azureFile:
-          secretName: azure-files-secret
-          shareName: {{ .Values.volumes.analysisconf.shareName }}
-          readOnly: false
+        persistentVolumeClaim:
+          claimName: {{ include "pvcAnalysisconf" . | quote }}
       - name: default-conf
         configMap:
-          name: default-conf
-      {{- with .Values.master.nodeSelector }}
+          name: {{ include "opencga.defaultConf.name" . }}
+    {{- with .Values.master.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}

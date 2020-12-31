@@ -117,7 +117,9 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             doLoad = true;
         }
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
-        if (!overwrite) {
+        if (overwrite) {
+            query.remove(VariantQueryParam.ANNOTATION_EXISTS.key());
+        } else {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
         int checkpointSize = params.getInt(
@@ -267,7 +269,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     .setNumTasks(numThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true)
-                    .setReadQueuePutTimeout(timeout)
+                    .setReadQueuePutTimeout((int) TimeUnit.MILLISECONDS.toSeconds(timeout))
                     .setSorted(false).build();
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
                     new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);

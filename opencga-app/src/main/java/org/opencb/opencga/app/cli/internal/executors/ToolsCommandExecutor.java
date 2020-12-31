@@ -4,12 +4,11 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.tools.ToolFactory;
-import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
@@ -19,7 +18,6 @@ import java.util.Collection;
 public class ToolsCommandExecutor extends InternalCommandExecutor {
 
     private final ToolsCommandOptions toolCommandOptions;
-    private ToolRunner toolRunner;
 
     public ToolsCommandExecutor(ToolsCommandOptions toolCommandOptions) {
         super(toolCommandOptions.commonCommandOptions);
@@ -34,7 +32,6 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
 
         String subCommandString = getParsedSubCommand(toolCommandOptions.jCommander);
         configure();
-        toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory, toolCommandOptions.internalJobOptions.jobId);
         switch (subCommandString) {
             case "execute-tool":
                 executeTool();
@@ -54,12 +51,13 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
 
     private void executeTool() throws ToolException {
         ToolsCommandOptions.ExecuteToolCommandOptions cliOptions = this.toolCommandOptions.executeToolCommandOptions;
-        toolRunner.execute(cliOptions.toolId, new ObjectMap(cliOptions.params), Paths.get(cliOptions.outDir), token);
+        toolRunner.execute(cliOptions.toolId, new ObjectMap(cliOptions.params), Paths.get(cliOptions.outDir),
+                toolCommandOptions.internalJobOptions.jobId, token);
     }
 
     private void executeJob() throws CatalogException, ToolException {
         ToolsCommandOptions.ExecuteJobCommandOptions cliOptions = this.toolCommandOptions.executeJobCommandOptions;
-        toolRunner.execute(cliOptions.job, token);
+        toolRunner.execute(cliOptions.study, cliOptions.job, token);
     }
 
     private void listTools() {

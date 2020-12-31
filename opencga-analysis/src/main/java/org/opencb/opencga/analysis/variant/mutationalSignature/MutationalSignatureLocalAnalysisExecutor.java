@@ -22,11 +22,11 @@ import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.GZIIndex;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -36,7 +36,6 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -90,26 +89,17 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         PrintWriter pw = new PrintWriter(indexFile);
 
         try {
-            long start, faiTime = 0;
-            StopWatch prepIteratorWatch = new StopWatch();
-            StopWatch rWatch = new StopWatch();
-            StopWatch loopWatch = new StopWatch();
-            StopWatch totalWatch = new StopWatch();
-            totalWatch.start();
-
             // Compute signature profile: contextual frequencies of each type of base substitution
 
             Query query = new Query()
                     .append(VariantQueryParam.STUDY.key(), getStudy())
                     .append(VariantQueryParam.SAMPLE.key(), getSampleName())
-                    .append(VariantQueryParam.TYPE.key(), "SNV");
+                    .append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
 
             // Get variant iterator
-            prepIteratorWatch.start();
             VariantDBIterator iterator = getVariantIterator(query, queryOptions);
-            prepIteratorWatch.stop();
 
             // Read mutation context from reference genome (.gz, .gz.fai and .gz.gzi files)
             String base = getRefGenomePath().toAbsolutePath().toString();
@@ -118,40 +108,20 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             Map<String, Map<String, Double>> countMap = initFreqMap();
 
-            long ko = 0;
-            long count = 0;
-            long contextCount = 0;
-            loopWatch.start();
-
             while (iterator.hasNext()) {
-                count++;
                 Variant variant = iterator.next();
 
-                // FAI access time
-                String key = variant.getReference() + ">" + variant.getAlternate();
-                if (countMap.containsKey(key)) {
-                    contextCount++;
-                    try {
-                        start = System.currentTimeMillis();
-                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
-                                variant.getEnd() + 1);
-                        String sequence = new String(refSeq.getBases());
-                        faiTime += (System.currentTimeMillis() - start);
+                // Accessing to the context sequence and write it into the context index file
+                ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
+                        variant.getEnd() + 1);
+                String sequence = new String(refSeq.getBases());
 
-                        // Write context index
-                        pw.println(variant.toString() + "\t" + sequence);
+                // Write context index
+                pw.println(variant.toString() + "\t" + sequence);
 
-                        // Update context counts
-                        if (countMap.get(key).containsKey(sequence)) {
-                            countMap.get(key).put(sequence, countMap.get(key).get(sequence) + 1);
-                        }
-                    } catch (Exception e) {
-                        //System.out.println("Error getting context sequence for variant " + variant.toStringSimple() + ": " + e.getMessage());
-                        ko++;
-                    }
-                }
+                // Update count map
+                updateCountMap(variant, sequence, countMap);
             }
-            loopWatch.stop();
 
             // Write context counts
             writeCountMap(countMap, getOutDir().resolve(CONTEXT_FILENAME).toFile());
@@ -160,24 +130,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             pw.close();
 
             // Execute R script in docker
-            rWatch.start();
             executeRScript();
-            rWatch.stop();
-
-            totalWatch.stop();
-
-            logger.info("number of variants = " + count);
-            logger.info("number of variantes in context = " + contextCount);
-            logger.info("number of errors when accessing context = " + ko);
-            logger.info("get iterator time = " + TimeUtils.durationToString(prepIteratorWatch));
-            logger.info("FAI time = " + faiTime);
-            logger.info("loop time (iterator time + FAI time + ...) = " + TimeUtils.durationToString(loopWatch));
-            logger.info("R script time = " + TimeUtils.durationToString(rWatch));
-            logger.info("Total time = " + TimeUtils.durationToString(totalWatch));
         } catch (Exception e) {
             throw new ToolExecutorException(e);
         }
-
 
         // Check output files
         if (!new File(getOutDir() + "/signature_summary.png").exists()
@@ -190,17 +146,12 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     public MutationalSignature query(Query query, QueryOptions queryOptions)
             throws CatalogException, ToolException, StorageEngineException, IOException {
 
-        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
+        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir(),
+                getOpenCgaHome());
         if (signatureFile == null) {
             throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
         }
         setMutationalSignaturePath(signatureFile.toPath());
-
-        StopWatch prepIteratorWatch = new StopWatch();
-        StopWatch rWatch = new StopWatch();
-        StopWatch loopWatch = new StopWatch();
-        StopWatch totalWatch = new StopWatch();
-        totalWatch.start();
 
         // Get context index filename
         String name = getContextIndexFilename(getSampleName());
@@ -235,68 +186,50 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             String[] parts = line.split("\t");
             indexMap.put(parts[0], parts[1]);
         }
-        long loadTime = System.currentTimeMillis() - start;
 
         // Get variant iterator
-        prepIteratorWatch.start();
-        query.append(VariantQueryParam.TYPE.key(), "SNV");
+        query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
         queryOptions.append(QueryOptions.INCLUDE, "id");
         VariantDBIterator iterator = getVariantIterator(query, queryOptions);
-        prepIteratorWatch.stop();
 
         Map<String, Map<String, Double>> countMap = initFreqMap();
 
-        long ko = 0;
-        long count = 0;
-        long contextCount = 0;
-        loopWatch.start();
-
         while (iterator.hasNext()) {
-            count++;
             Variant variant = iterator.next();
 
-            // FAI access time
-            String key = variant.getReference() + ">" + variant.getAlternate();
-            if (countMap.containsKey(key)) {
-                contextCount++;
-                try {
-                    // Read context index
-                    String sequence = indexMap.get(variant.toString());
-
-                    // Update context counts
-                    if (countMap.get(key).containsKey(sequence)) {
-                        countMap.get(key).put(sequence, countMap.get(key).get(sequence) + 1);
-                    }
-                } catch (Exception e) {
-                    //System.out.println("Error getting context sequence for variant " + variant.toStringSimple() + ": " + e.getMessage());
-                    ko++;
-                }
-            }
+            // Update count map
+            updateCountMap(variant, indexMap.get(variant.toString()), countMap);
         }
 
         // Write context counts
         writeCountMap(countMap, getOutDir().resolve(CONTEXT_FILENAME).toFile());
 
         // Run R script
-        rWatch.start();
         if (getExecutorParams().getBoolean("fitting")) {
             executeRScript();
         }
-        rWatch.stop();
-
-        totalWatch.stop();
-
-        logger.info("number of variants = " + count);
-        logger.info("number of variantes in context = " + contextCount);
-        logger.info("number of errors when accessing context = " + ko);
-        logger.info("index size = " + indexMap.size());
-        logger.info("load index time = " + TimeUtils.durationToString(loadTime));
-        logger.info("get iterator time = " + TimeUtils.durationToString(prepIteratorWatch));
-        logger.info("loop time (iterator time + Map time + ...) = " + TimeUtils.durationToString(loopWatch));
-        logger.info("R script time = " + TimeUtils.durationToString(rWatch));
-        logger.info("Total time = " + TimeUtils.durationToString(totalWatch));
 
         return parse(getOutDir());
+    }
+    
+    private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Double>> countMap) {
+        String k, seq;
+
+        String key = variant.getReference() + ">" + variant.getAlternate();
+
+        if (countMap.containsKey(key)) {
+            k = key;
+            seq = sequence;
+        } else {
+            k = MutationalSignatureAnalysisExecutor.complement(key);
+            seq = MutationalSignatureAnalysisExecutor.reverseComplement(sequence);
+        }
+        if (countMap.get(k).containsKey(seq)) {
+            countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
+        } else {
+            logger.error("Something wrong happened counting mutational signature substitutions: variant = " + variant.toString()
+                    + ", key = " + key + ", k = " + k + ", sequence = " + sequence + ", seq = " + seq);
+        }
     }
 
     private VariantDBIterator getVariantIterator(Query query, QueryOptions queryOptions) throws ToolExecutorException, CatalogException,
@@ -337,7 +270,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             result.setSignature(new Signature("SNV", sigCounts));
         }
 
-        
         // Signatures coefficients
         File coeffsFile = dir.resolve("signature_coefficients.json").toFile();
         if (coeffsFile.exists()) {

@@ -629,6 +629,17 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                    }
                 }
             }
+            if (!regions.isEmpty()) {
+                if (isValidParam(query, REGION)) {
+                    Set<String> regionsFromQuery = new HashSet<>(query.getAsStringList(REGION.key()));
+                    for (Region region : regions) {
+                        regionsFromQuery.add(region.toString());
+                    }
+                    query.put(REGION.key(), regionsFromQuery);
+                } else {
+                    query.put(REGION.key(), regions);
+                }
+            }
 
             if (isValidParam(query, GENE)) {
                 geneNames.addAll(query.getAsStringList(GENE.key()));
@@ -1132,8 +1143,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                String userId = catalogManager.getUserManager().getUserId(sessionId);
-                List<Study> studies = catalogManager.getStudyManager().resolveIds(values, userId);
+                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_ID, false, sessionId)
+                        .getResults();
                 return studies.stream().map(Study::getFqn).collect(Collectors.toList());
             } else {
                 List<String> validatedValues = new ArrayList<>(values.size());

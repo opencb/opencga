@@ -88,8 +88,10 @@ public class SolrConverterUtil {
             case TEXT_ARRAY:
                 return "__sm__";
             case INTEGER:
+            case LONG:
                 return "__i__";
             case INTEGER_ARRAY:
+            case LONG_ARRAY:
                 return "__im__";
             case DECIMAL:
                 return "__d__";

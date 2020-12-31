@@ -36,14 +36,8 @@ public class JobCommandExecutor extends InternalCommandExecutor {
 
     private void secondaryIndex() throws ToolException {
         JobCommandOptions.SecondaryIndex options = jobCommandOptions.secondaryIndex;
-
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        // Prepare analysis parameters and config
-        JobIndexTask indexTask = new JobIndexTask();
-        indexTask.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
-        indexTask.start();
+        toolRunner.execute(JobIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
 }

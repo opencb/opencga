@@ -24,6 +24,7 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -63,8 +64,7 @@ public abstract class OperationManager {
     }
 
     protected final String getStudyFqn(String study, String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        return catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
     }
 
     public static boolean isVcfFormat(File file) {

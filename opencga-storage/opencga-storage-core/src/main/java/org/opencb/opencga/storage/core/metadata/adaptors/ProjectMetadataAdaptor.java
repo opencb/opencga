@@ -16,7 +16,12 @@ import java.util.concurrent.TimeoutException;
  */
 public interface ProjectMetadataAdaptor extends AutoCloseable {
 
-    Lock lockProject(long lockDuration, long timeout)
+    default Lock lockProject(long lockDuration, long timeout)
+            throws InterruptedException, TimeoutException, StorageEngineException {
+        return lockProject(lockDuration, timeout, null);
+    }
+
+    Lock lockProject(long lockDuration, long timeout, String lockName)
             throws InterruptedException, TimeoutException, StorageEngineException;
 
     void unLockProject(long lockId) throws StorageEngineException;
@@ -35,4 +40,6 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
     }
 
     int generateId(Integer studyId, String idType) throws StorageEngineException;
+
+    boolean exists();
 }

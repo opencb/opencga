@@ -30,31 +30,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created on 30/05/17.
+ *
+ * This writer is thread-safe.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put> {
 
     private final StudyEntryToHBaseConverter converter;
-    private int skippedRefBlock = 0;
-    private int skippedAll = 0;
-    private int skippedRefVariants = 0;
-    private int loadedVariants = 0;
-    private int loadedVariantsAll = 0;
+    private final AtomicInteger skippedRefBlock = new AtomicInteger();
+    private final AtomicInteger skippedRefVariants = new AtomicInteger();
+    private final AtomicInteger loadedVariants = new AtomicInteger();
     private final Logger logger = LoggerFactory.getLogger(VariantHadoopDBWriter.class);
-
-    private final LinkedHashMap<String, String> LOADED_VARIANTS_SET = new LinkedHashMap<String, String>(10000) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
-            return size() > 10000;
-        }
-    };
 
     public VariantHadoopDBWriter(String tableName, int studyId, int fileId, VariantStorageMetadataManager metadataManager,
                                  HBaseManager hBaseManager, boolean includeReferenceVariantsData, boolean excludeGenotypes) {
@@ -69,48 +61,36 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
         List<Put> puts = new ArrayList<>(list.size());
         for (Variant variant : list) {
             if (HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET.contains(variant.getType())) {
-                if (!alreadyLoaded(variant)) {
-                    Put put = converter.convert(variant);
-                    if (put != null) {
-                        HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
-                        puts.add(put);
-                        loadedVariants++;
-                    } else {
-                        skippedRefVariants++;
-                    }
+                Put put = converter.convert(variant);
+                if (put != null) {
+                    HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
+                    puts.add(put);
+                    loadedVariants.getAndIncrement();
+                } else {
+                    skippedRefVariants.getAndIncrement();
                 }
-                loadedVariantsAll++;
             } else { //Discard ref_block and symbolic variants.
-                if (!alreadyLoaded(variant)) {
-                    skippedRefBlock++;
-                }
-                skippedAll++;
+                skippedRefBlock.getAndIncrement();
             }
         }
         return puts;
     }
 
-    private boolean alreadyLoaded(Variant v) {
-        return LOADED_VARIANTS_SET.put(v.toString(), "") != null;
-    }
-
     public int getSkippedRefBlock() {
-        return skippedRefBlock;
-    }
-
-    public int getSkippedAll() {
-        return skippedAll;
+        return skippedRefBlock.get();
     }
 
     public int getSkippedRefVariants() {
-        return skippedRefVariants;
+        return skippedRefVariants.get();
     }
 
     public int getLoadedVariants() {
-        return loadedVariants;
+        return loadedVariants.get();
     }
 
-    public int getLoadedVariantsAll() {
-        return loadedVariantsAll;
+    public static List<Variant> filterVariantsNotFromThisSlice(long sliceStart, List<Variant> inputVariants) {
+        List<Variant> variants = new ArrayList<>(inputVariants);
+        variants.removeIf(variant -> variant.getStart() < sliceStart);
+        return variants;
     }
 }

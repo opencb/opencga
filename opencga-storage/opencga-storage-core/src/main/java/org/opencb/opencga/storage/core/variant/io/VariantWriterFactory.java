@@ -228,7 +228,7 @@ public class VariantWriterFactory {
                 VariantMetadataFactory metadataFactory = new VariantMetadataFactory(variantStorageMetadataManager);
                 VariantMetadata variantMetadata;
                 try {
-                    variantMetadata = metadataFactory.makeVariantMetadata(query, queryOptions);
+                    variantMetadata = metadataFactory.makeVariantMetadata(query, queryOptions, true);
                 } catch (StorageEngineException e) {
                     throw new IOException(e);
                 }

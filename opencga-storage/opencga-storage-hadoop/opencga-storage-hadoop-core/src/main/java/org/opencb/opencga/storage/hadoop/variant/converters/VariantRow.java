@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.OriginalCall;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -32,7 +33,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.*;
 
 public class VariantRow {
 
@@ -161,6 +162,8 @@ public class VariantRow {
                             ((Integer) PInteger.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
                 } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
                     walker.variantAnnotation(new BytesVariantAnnotationColumn(cell));
+                } else if (columnName.equals(VariantColumn.TYPE.column())) {
+                    walker.type(VariantType.valueOf(Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
                 }
             }
         }
@@ -169,6 +172,9 @@ public class VariantRow {
     public abstract static class VariantRowWalker {
 
         protected void variant(Variant variant) {
+        }
+
+        protected void type(VariantType type) {
         }
 
         protected void study(int studyId) {
@@ -311,7 +317,9 @@ public class VariantRow {
 
         PhoenixArray raw();
 
-        String getCallString();
+        default String getCallString() {
+            return getString(HBaseToStudyEntryConverter.FILE_CALL_IDX);
+        }
 
         default OriginalCall getCall() {
             String callString = getCallString();
@@ -325,19 +333,52 @@ public class VariantRow {
             }
         }
 
-        List<AlternateCoordinate> getSecondaryAlternates();
+        default List<AlternateCoordinate> getSecondaryAlternates() {
+            String secAlt = getString(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX);
+            if (StringUtils.isNotEmpty(secAlt)) {
+                return HBaseToStudyEntryConverter.getAlternateCoordinates(secAlt);
+            }
+            return null;
+        }
 
-        VariantOverlappingStatus getOverlappingStatus();
+        default VariantOverlappingStatus getOverlappingStatus() {
+            return VariantOverlappingStatus.valueFromShortString(getString(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX));
+        }
 
-        Double getQual();
+        default Double getQual() {
+            String qualStr = getQualString();
+            if (StringUtils.isNotEmpty(qualStr) && !(".").equals(qualStr)) {
+                return Double.valueOf(qualStr);
+            } else {
+                return null;
+            }
+        }
 
-        String getQualString();
+        default String getQualString() {
+            return getString(HBaseToStudyEntryConverter.FILE_QUAL_IDX);
+        }
 
-        String getFilter();
+        default String getFilter() {
+            return getString(HBaseToStudyEntryConverter.FILE_FILTER_IDX);
+        }
 
-        String getFileData(int idx);
+        default String getFileData(int fileDataField) {
+            return getString(fileDataField + HBaseToStudyEntryConverter.FILE_INFO_START_IDX);
+        }
+
+        default Float getFloatValue(int idx) {
+            return toFloat(getString(idx));
+        }
 
         String getString(int idx);
+    }
+
+    static Float toFloat(String value) {
+        if (StringUtils.isNotEmpty(value) && !(".").equals(value)) {
+            return Float.valueOf(value);
+        } else {
+            return null;
+        }
     }
 
     public interface SampleColumn extends Column {
@@ -356,6 +397,10 @@ public class VariantRow {
         }
 
         String getSampleData(int idx);
+
+        default Float getSampleDataFloat(int idx) {
+            return toFloat(getSampleData(idx));
+        }
 
     }
 
@@ -533,50 +578,6 @@ public class VariantRow {
         public PhoenixArray raw() {
             return (PhoenixArray) PVarcharArray.INSTANCE.toObject(
                     valueArray, valueOffset, valueLength);
-        }
-
-        @Override
-        public String getCallString() {
-            return getString(HBaseToStudyEntryConverter.FILE_CALL_IDX);
-        }
-
-        @Override
-        public List<AlternateCoordinate> getSecondaryAlternates() {
-            String secAlt = getString(HBaseToStudyEntryConverter.FILE_SEC_ALTS_IDX);
-            if (StringUtils.isNotEmpty(secAlt)) {
-                return HBaseToStudyEntryConverter.getAlternateCoordinates(secAlt);
-            }
-            return null;
-        }
-
-        @Override
-        public VariantOverlappingStatus getOverlappingStatus() {
-            return VariantOverlappingStatus.valueFromShortString(getString(HBaseToStudyEntryConverter.FILE_VARIANT_OVERLAPPING_STATUS_IDX));
-        }
-
-        @Override
-        public Double getQual() {
-            String qualStr = getQualString();
-            if (StringUtils.isNotEmpty(qualStr) && !(".").equals(qualStr)) {
-                return Double.valueOf(qualStr);
-            } else {
-                return null;
-            }
-        }
-
-        @Override
-        public String getQualString() {
-            return getString(HBaseToStudyEntryConverter.FILE_QUAL_IDX);
-        }
-
-        @Override
-        public String getFilter() {
-            return getString(HBaseToStudyEntryConverter.FILE_FILTER_IDX);
-        }
-
-        @Override
-        public String getFileData(int fileDataField) {
-            return getString(fileDataField + HBaseToStudyEntryConverter.FILE_INFO_START_IDX);
         }
 
     }

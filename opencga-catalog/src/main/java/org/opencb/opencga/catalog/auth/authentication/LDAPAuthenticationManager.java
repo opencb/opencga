@@ -32,6 +32,8 @@ import javax.naming.directory.*;
 import java.security.Key;
 import java.util.*;
 
+import static org.opencb.opencga.core.config.AuthenticationOrigin.*;
+
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -48,7 +50,10 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private String usersSearch;
     private String fullNameKey;
     private String memberKey;
+    private String dnKey;
     private String dnFormat;
+    private String uidKey;
+    private String uidFormat;
 
     private long expiration;
 
@@ -70,15 +75,18 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.originId = authenticationOrigin.getId();
 
         Map<String, Object> authOptions = authenticationOrigin.getOptions();
-        this.authUserId = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_AUTHENTICATION_USER));
-        this.authPassword = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_AUTHENTICATION_PASSWORD));
-        this.groupsSearch = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_GROUPS_SEARCH));
-        this.usersSearch = String.valueOf(authOptions.get(AuthenticationOrigin.LDAP_USERS_SEARCH));
-        this.fullNameKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_FULLNAME_KEY, "displayname"));
-        this.memberKey = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_MEMBER_KEY, "member"));
-        this.dnFormat = String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_DN_FORMAT, "%s"));  // no formatting by default
+        this.authUserId = String.valueOf(authOptions.getOrDefault(LDAP_AUTHENTICATION_USER, ""));
+        this.authPassword = String.valueOf(authOptions.getOrDefault(LDAP_AUTHENTICATION_PASSWORD, ""));
+        this.groupsSearch = String.valueOf(authOptions.getOrDefault(LDAP_GROUPS_SEARCH, ""));
+        this.usersSearch = String.valueOf(authOptions.getOrDefault(LDAP_USERS_SEARCH, ""));
+        this.fullNameKey = String.valueOf(authOptions.getOrDefault(LDAP_FULLNAME_KEY, "displayname"));
+        this.memberKey = String.valueOf(authOptions.getOrDefault(LDAP_MEMBER_KEY, "member"));
+        this.dnKey = String.valueOf(authOptions.getOrDefault(LDAP_DN_KEY, "dn"));
+        this.dnFormat = String.valueOf(authOptions.getOrDefault(LDAP_DN_FORMAT, "%s"));
+        this.uidKey = String.valueOf(authOptions.getOrDefault(LDAP_UID_KEY, "uid"));
+        this.uidFormat = String.valueOf(authOptions.getOrDefault(LDAP_UID_FORMAT, "%s"));  // no formatting by default
         this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(
-                String.valueOf(authOptions.getOrDefault(AuthenticationOrigin.LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, false))
+                String.valueOf(authOptions.getOrDefault(LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, false))
         );
 
         this.expiration = expiration;
@@ -356,16 +364,22 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private String getUID(Attributes attributes) throws NamingException {
-        return attributes.get("uid") != null ? (String) attributes.get("uid").get(0) : "";
+        if (attributes.get(uidKey) != null) {
+            String fullUid = (String) attributes.get(uidKey).get(0);
+            return String.format(uidFormat, fullUid);
+        } else {
+            throw new NamingException("UID under '" + uidKey + "' key not found. Please, configure the proper '" + LDAP_UID_KEY
+                    + "' and possibly an '" + LDAP_UID_FORMAT + "' format for your LDAP installation");
+        }
     }
 
     private String getDN(Attributes attributes) throws NamingException {
-        if (attributes.get("dn") != null) {
-            return (String) attributes.get("dn").get(0);
-        } else if (attributes.get("distinguishedname") != null) {
-            return (String) attributes.get("distinguishedname").get(0);
+        if (attributes.get(dnKey) != null) {
+            String fullDn = (String) attributes.get(dnKey).get(0);
+            return String.format(dnFormat, fullDn);
         } else {
-            return "";
+            throw new NamingException("DN id under '" + dnKey + "' key not found. Please, configure the proper '" + LDAP_DN_KEY
+                    + "' and possibly an '" + LDAP_DN_FORMAT + "' format for your LDAP installation");
         }
     }
 

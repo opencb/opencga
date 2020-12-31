@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 
 import java.nio.file.Path;
@@ -17,6 +18,11 @@ public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStora
         if (clear) {
             clear();
         }
+    }
+
+    @Override
+    public ObjectMap getConfiguration() {
+        return new ObjectMap();
     }
 
     @Override

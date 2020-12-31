@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical.xnet;
 
+import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -34,6 +35,11 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 
 //    private List<DiseasePanel> diseasePanels;
 //    private ClinicalAnalysis clinicalAnalysis;
+
+    @Override
+    protected InterpretationMethod getInterpretationMethod() {
+        return getInterpretationMethod(ID);
+    }
 
     @Override
     protected void run() throws ToolException {

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Result;
@@ -33,7 +34,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
@@ -49,8 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.variant.VariantBuilder.REF_ONLY_ALT;
-import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.NA_GT_VALUE;
-import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
 
 
@@ -128,7 +128,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     public Map<Integer, StudyEntry> convert(VariantRow row) {
         Set<Integer> studies = new HashSet<>();
         Map<Integer, Integer> fillMissing = new HashMap<>();
-        Map<Integer, List<Pair<Integer, List<String>>>> sampleDataMap = new HashMap<>();
+        Map<Integer, List<VariantRow.SampleColumn>> sampleDataMap = new HashMap<>();
         Map<Integer, List<Pair<String, PhoenixArray>>> filesMap = new HashMap<>();
         Map<Integer, List<VariantStats>> stats = new HashMap<>();
         Map<Integer, List<VariantScore>> scores = new HashMap<>();
@@ -138,30 +138,21 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 .onFillMissing(fillMissing::put)
                 .onSample(sampleColumn -> {
                     studies.add(sampleColumn.getStudyId());
-                    List<Integer> multiFiles;
-                    if (configuration.getProjection() == null) {
-                        multiFiles = Collections.emptyList();
-                    } else {
-                        multiFiles = configuration.getProjection()
-                                .getStudy(sampleColumn.getStudyId())
-                                .getMultiFileSamples()
-                                .get(sampleColumn.getSampleId());
-                        if (multiFiles == null) {
-                            multiFiles = Collections.emptyList();
-                        }
-                    }
+                    List<Integer> multiFiles = getMultiFiles(sampleColumn);
                     if (!multiFiles.isEmpty()) {
                         if (sampleColumn.getFileId() == null) {
-                            // Is the first file?
-                        } else {
-                            if (!multiFiles.contains(sampleColumn.getFileId())) {
-                                // Skip this file
-                                return;
-                            }
+                            // First file from multiFiles
+                            // Add fileId to sampleColumn
+                            Integer fileId = getFileIdFromMultiFileSample(sampleColumn.getStudyId(), sampleColumn.getSampleId());
+                            sampleColumn = new SampleColumnWithFileId(sampleColumn, fileId);
+                        }
+                        if (!multiFiles.contains(sampleColumn.getFileId())) {
+                            // Skip this file
+                            return;
                         }
                     }
                     sampleDataMap.computeIfAbsent(sampleColumn.getStudyId(), s -> new ArrayList<>())
-                            .add(Pair.of(sampleColumn.getSampleId(), sampleColumn.getMutableSampleData()));
+                            .add(sampleColumn);
                 })
                 .onFile(fileColumn -> {
                     studies.add(fileColumn.getStudyId());
@@ -202,7 +193,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         for (Integer studyId : studies) {
             int fillMissingColumnValue = fillMissing.getOrDefault(studyId, -1);
             StudyMetadata studyMetadata = getStudyMetadata(studyId);
-            List<Pair<Integer, List<String>>> samplesData = sampleDataMap.getOrDefault(studyId, Collections.emptyList());
+            List<VariantRow.SampleColumn> samplesData = sampleDataMap.getOrDefault(studyId, Collections.emptyList());
             List<Pair<String, PhoenixArray>> files = filesMap.getOrDefault(studyId, Collections.emptyList());
 
             StudyEntry studyEntry = convert(samplesData, files, variant, studyMetadata, fillMissingColumnValue);
@@ -214,13 +205,29 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return map;
     }
 
-    public StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
+    private List<Integer> getMultiFiles(VariantRow.SampleColumn sampleColumn) {
+        List<Integer> multiFiles;
+        if (configuration.getProjection() == null) {
+            multiFiles = Collections.emptyList();
+        } else {
+            multiFiles = configuration.getProjection()
+                    .getStudy(sampleColumn.getStudyId())
+                    .getMultiFileSamples()
+                    .get(sampleColumn.getSampleId());
+            if (multiFiles == null) {
+                multiFiles = Collections.emptyList();
+            }
+        }
+        return multiFiles;
+    }
+
+    public StudyEntry convert(List<VariantRow.SampleColumn> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, Integer studyId) {
         return convert(sampleDataMap, filesMap, variant, getStudyMetadata(studyId), -1);
     }
 
-    protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
+    protected StudyEntry convert(List<VariantRow.SampleColumn> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, StudyMetadata studyMetadata, int fillMissingColumnValue) {
         List<String> fixedSampleDataKeys = getFixedSampleDataKeys(studyMetadata);
@@ -228,10 +235,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         int[] sampleDataKeysMap = getFormatsMap(studyMetadata.getId(), fixedSampleDataKeys);
 
-        for (Pair<Integer, List<String>> pair : sampleDataMap) {
-            Integer sampleId = pair.getKey();
-            List<String> sampleData = pair.getValue();
-            addMainSampleDataColumn(studyMetadata, studyEntry, sampleDataKeysMap, sampleId, sampleData);
+        for (VariantRow.SampleColumn sampleColumn : sampleDataMap) {
+            addMainSampleDataColumn(studyMetadata, studyEntry, sampleDataKeysMap, sampleColumn);
         }
 
         Map<String, List<String>> alternateFileMap = new HashMap<>();
@@ -294,8 +299,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     protected void addMainSampleDataColumn(StudyMetadata studyMetadata, StudyEntry studyEntry,
-                                           int[] sampleDataKeysMap, Integer sampleId, List<String> sampleData) {
-        sampleData = remapSamplesData(sampleData, sampleDataKeysMap);
+                                           int[] sampleDataKeysMap, VariantRow.SampleColumn sampleColumn) {
+        int sampleId = sampleColumn.getSampleId();
+        List<String> sampleData = remapSamplesData(sampleColumn.getMutableSampleData(), sampleDataKeysMap);
         Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
         // Replace UNKNOWN_GENOTYPE, if any
         if (gtIdx != null) {
@@ -309,11 +315,36 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         String sampleName = getSampleName(studyMetadata.getId(), sampleId);
         Integer samplePosition = studyEntry.getSamplesPosition().get(sampleName);
-        SampleEntry old = studyEntry.getSamples().set(samplePosition, new SampleEntry(null, null, sampleData));
-        if (old != null) {
-            old.setSampleId(sampleName);
-            studyEntry.getIssues().add(new IssueEntry(IssueType.DISCREPANCY, old));
+        SampleEntry sampleEntry = new SampleEntry(null, sampleColumn.getFileId(), sampleData);
+        SampleEntry oldSampleEntry = studyEntry.getSamples().set(samplePosition, sampleEntry);
+        if (oldSampleEntry != null) {
+            if (MAIN_ALT.test(oldSampleEntry.getData().get(0)) && !MAIN_ALT.test(sampleEntry.getData().get(0))) {
+                // Use the most significant genotype as "main" sample entry
+                SampleEntry aux = sampleEntry;
+                sampleEntry = oldSampleEntry;
+                oldSampleEntry = aux;
+                studyEntry.getSamples().set(samplePosition, sampleEntry);
+            }
+            if (sampleEntry.getFileIndex() == null) {
+                Integer fileId = getFileIdFromMultiFileSample(sampleColumn.getStudyId(), sampleColumn.getSampleId());
+                sampleEntry.setFileIndex(fileId);
+            }
+            if (oldSampleEntry.getFileIndex() == null) {
+                Integer fileId = getFileIdFromMultiFileSample(sampleColumn.getStudyId(), sampleColumn.getSampleId());
+                oldSampleEntry.setFileIndex(fileId);
+            }
+            oldSampleEntry.setSampleId(sampleName);
+            studyEntry.getIssues().add(new IssueEntry(IssueType.DISCREPANCY, oldSampleEntry));
         }
+    }
+
+    private Integer getFileIdFromMultiFileSample(int studyId, int sampleId) {
+        // First file from multiFiles
+        // Add fileId to sampleColumn
+//        metadataManager.getLoadSplitData(sampleColumn.getStudyId(), sampleColumn.getSampleId())
+//                .equals(VariantStorageEngine.SplitData.MULTI)
+        return metadataManager
+                .getFileIdsFromSampleId(studyId, sampleId).get(0);
     }
 
     private int[] getFormatsMap(int studyId, List<String> fixedFormat) {
@@ -436,25 +467,37 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> unmodifiableEmptyData = Collections.unmodifiableList(emptyData);
         List<String> unmodifiableEmptyDataReferenceGenotype = Collections.unmodifiableList(emptyDataReferenceGenotype);
 
-        List<Integer> filesInThisVariant = studyEntry.getFiles().stream()
-                .map(FileEntry::getFileId)
-                .map(file -> getFileId(studyMetadata.getId(), file))
-                .collect(Collectors.toCollection(() -> new ArrayList<>(studyEntry.getFiles().size())));
+        List<Integer> filesInThisVariant = new ArrayList<>(studyEntry.getFiles().size());
+        for (FileEntry fileEntry : studyEntry.getFiles()) {
+            String file = fileEntry.getFileId();
+            Integer id = getFileId(studyMetadata.getId(), file);
+            filesInThisVariant.add(id);
+        }
 
         List<Boolean> sampleWithVariant = getSampleWithVariant(studyMetadata, filesInThisVariant);
         List<Boolean> missingUpdatedList = getMissingUpdatedSamples(studyMetadata, fillMissingColumnValue);
 
+        Map<Integer, Integer> fileIdToFileIdxMap;
         Map<Integer, Integer> sampleIdTofileIdxMap;
+        Set<Integer> multiFileSample;
         if (!filesInThisVariant.isEmpty()) {
             sampleIdTofileIdxMap = new HashMap<>();
+            fileIdToFileIdxMap = new HashMap<>(studyEntry.getFiles().size());
+            multiFileSample = new HashSet<>();
             for (int idx = 0; idx < filesInThisVariant.size(); idx++) {
                 Integer fileId = filesInThisVariant.get(idx);
+                fileIdToFileIdxMap.put(fileId, idx);
                 for (Integer sampleId : metadataManager.getSampleIdsFromFileId(studyMetadata.getId(), fileId)) {
-                    sampleIdTofileIdxMap.put(sampleId, idx);
+                    Integer old = sampleIdTofileIdxMap.put(sampleId, idx);
+                    if (old != null) {
+                        multiFileSample.add(sampleId);
+                    }
                 }
             }
         } else {
             sampleIdTofileIdxMap = Collections.emptyMap();
+            fileIdToFileIdxMap = Collections.emptyMap();
+            multiFileSample = Collections.emptySet();
         }
         int sampleIdx = 0;
         List<SampleEntry> samplesData = studyEntry.getSamples();
@@ -484,21 +527,58 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 if (configuration.getIncludeSampleId()) {
                     sampleEntry.setSampleId(sampleName);
                 }
-                if (!sampleIdTofileIdxMap.isEmpty()) {
+
+                // Ensure fileIndex is present
+                if (sampleEntry.getFileIndex() != null) {
+                    // If fileIndex is preset at this point, it is actually the fileId
+                    sampleEntry.setFileIndex(fileIdToFileIdxMap.get(sampleEntry.getFileIndex()));
+                } else if (!sampleIdTofileIdxMap.isEmpty()) {
                     Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sampleName);
-                    sampleEntry.setFileIndex(sampleIdTofileIdxMap.get(sampleId));
+                    if (multiFileSample.contains(sampleId)) {
+                        // If is a multiFileSample, and the fileIndex is not defined, it was the first file from that sample
+                        // Then, read the first file from this sample
+                        Integer fileId = getFileIdFromMultiFileSample(studyMetadata.getId(), sampleId);
+                        sampleEntry.setFileIndex(fileIdToFileIdxMap.get(fileId));
+                    } else {
+                        // Otherwise, check where was its only file
+                        sampleEntry.setFileIndex(sampleIdTofileIdxMap.get(sampleId));
+                    }
                 }
             }
         }
+        if (studyEntry.getIssues() != null) {
+            for (IssueEntry issue : studyEntry.getIssues()) {
+                SampleEntry sampleEntry = issue.getSample();
+
+                // Ensure fileIndex is present
+                if (sampleEntry.getFileIndex() != null) {
+                    // If fileIndex is preset at this point, it is actually the fileId
+                    sampleEntry.setFileIndex(fileIdToFileIdxMap.get(sampleEntry.getFileIndex()));
+                } else if (!sampleIdTofileIdxMap.isEmpty()) {
+                    Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sampleEntry.getSampleId());
+                    if (multiFileSample.contains(sampleId)) {
+                        // If is a multiFileSample, and the fileIndex is not defined, it was the first file from that sample
+                        // Then, read the first file from this sample
+                        Integer fileId = getFileIdFromMultiFileSample(studyMetadata.getId(), sampleId);
+                        sampleEntry.setFileIndex(fileIdToFileIdxMap.get(fileId));
+                    } else {
+                        // Otherwise, check where was its only file
+                        sampleEntry.setFileIndex(sampleIdTofileIdxMap.get(sampleId));
+                    }
+                }
+            }
+        }
+
+
     }
 
     /**
-     * Given a study and the value of the fillMissingColumnValue {@link VariantPhoenixHelper::getFillMissingColumn}, gets a list of
+     * Given a study and the value of the fillMissingColumnValue {@link VariantPhoenixSchema ::getFillMissingColumn}, gets a list of
      * booleans, one per sample, ordered by the position in the StudyEntry indicating if that sample has known information for that
      * position, of if it is unknown.
      *
      * @param studyMetadata The study configuration
-     * @param fillMissingColumnValue    Value of the column {@link VariantPhoenixHelper::getFillMissingColumn} containing the last
+     * @param fillMissingColumnValue    Value of the column {@link VariantPhoenixSchema ::getFillMissingColumn} containing the last
      *                                  file updated by the fillMissing task
      * @return List of boolean values, one per sample.
      */
@@ -655,6 +735,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
             Map<String, List<String>> samplesWithUnknownGenotype = new HashMap<>();
             Integer gtIndex = studyEntry.getSampleDataKeyPositions().get("GT");
+            Map<String, Integer> sampleToFileIdxMap = new HashMap<>(studyEntry.getSamples().size());
             for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
                 String secondaryAlternates = entry.getKey();
                 List<String> fileIds = entry.getValue();
@@ -671,14 +752,45 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 se.setSampleDataKeys(studyEntry.getSampleDataKeys());
                 se.setSamples(new ArrayList<>(fileIds.size()));
 
-                for (String fileId : fileIds) {
-                    FileEntry fileEntry = studyEntry.getFile(fileId);
+                for (String fileName : fileIds) {
+                    FileEntry fileEntry = studyEntry.getFile(fileName);
                     if (fileEntry != null) {
                         se.getFiles().add(fileEntry);
                     }
+                    Integer fileId = metadataManager.getFileId(studyMetadata.getId(), fileName);
                     List<String> samples = getSamplesInFile(studyMetadata.getId(), fileId);
                     for (String sample : samples) {
-                        List<String> sampleData = studyEntry.getSampleData(sample);
+                        SampleEntry sampleEntry = studyEntry.getSample(sample);
+                        // At this point, fileIndex is actually the fileId
+                        // Skip sampleEntries from other files
+                        boolean foundSampleInIssues = false;
+                        if (sampleEntry != null && sampleEntry.getFileIndex() == null) {
+                            Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sample);
+                            if (VariantStorageEngine.SplitData.MULTI
+                                    .equals(metadataManager.getLoadSplitData(studyMetadata.getId(), sampleId))) {
+                                // First file from multiFiles
+                                // Add fileId to sampleEntry
+                                sampleEntry.setFileIndex(getFileIdFromMultiFileSample(studyMetadata.getId(), sampleId));
+                            }
+                        }
+                        if (sampleEntry == null || sampleEntry.getFileIndex() != null && !sampleEntry.getFileIndex().equals(fileId)) {
+                            // This sample is not from this file. Search in issues.
+                            for (IssueEntry issue : studyEntry.getIssues()) {
+                                if (issue.getSample().getSampleId().equals(sample) && issue.getSample().getFileIndex().equals(fileId)) {
+                                    sampleEntry = issue.getSample();
+                                    foundSampleInIssues = true;
+                                }
+                            }
+                            if (!foundSampleInIssues) {
+                                // Sample not found. Skip this.
+                                continue;
+                            }
+                        }
+                        if (foundSampleInIssues) {
+                            sample = sample + "_ISSUE+" + sampleEntry.getFileIndex();
+                        }
+                        sampleToFileIdxMap.put(sample, sampleEntry.getFileIndex());
+                        List<String> sampleData = sampleEntry.getData();
                         if (gtIndex == null || !sampleData.get(0).equals(UNKNOWN_GENOTYPE)) {
                             se.addSampleData(sample, sampleData);
                         } else {
@@ -693,6 +805,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         }
                     }
                 }
+                if (CollectionUtils.isEmpty(se.getSamples())) {
+                    se.setSortedSamplesPosition(new LinkedHashMap<>());
+                }
                 sampleVariant.addStudyEntry(se);
                 variants.add(sampleVariant);
             }
@@ -704,10 +819,23 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             StudyEntry newSe = newVariant.getStudies().get(0);
             for (String sample : newSe.getSamplesName()) {
                 List<String> unknownGenotypeData = samplesWithUnknownGenotype.get(sample);
-                if (unknownGenotypeData != null) {
+                if (sample.contains("_ISSUE+")) {
+                    int idx1 = sample.lastIndexOf("_");
+                    int idx2 = sample.lastIndexOf("+");
+                    int fileId = Integer.parseInt(sample.substring(idx2 + 1));
+                    String sampleName = sample.substring(0, idx1);
+                    for (IssueEntry issue : studyEntry.getIssues()) {
+                        if (issue.getSample().getFileIndex().equals(fileId) && issue.getSample().getSampleId().equals(sampleName)) {
+                            issue.getSample().setData(newSe.getSampleData(sample));
+                            break;
+                        }
+                    }
+                } else if (unknownGenotypeData != null) {
                     studyEntry.addSampleData(sample, unknownGenotypeData);
                 } else {
                     studyEntry.addSampleData(sample, newSe.getSampleData(sample));
+                    // Preserve "fileIndex", which is, actually, the fileId
+                    studyEntry.getSample(sample).setFileIndex(sampleToFileIdxMap.get(sample));
                 }
             }
             for (FileEntry fileEntry : newSe.getFiles()) {
@@ -733,20 +861,52 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
     }
 
-    // Alternate field may contain the separator char
+    // Alternate and chromosome fields may contain the separator char
     public static AlternateCoordinate getAlternateCoordinate(String s) {
-        String[] split = s.split(ALTERNATE_COORDINATE_SEPARATOR, 5);
-        int idx = split[4].lastIndexOf(ALTERNATE_COORDINATE_SEPARATOR);
-        String alternate = split[4].substring(0, idx);
-        VariantType type = VariantType.valueOf(split[4].substring(idx + 1));
-        return new AlternateCoordinate(
-                split[0],
-                Integer.parseInt(split[1]),
-                Integer.parseInt(split[2]),
-                split[3],
-                alternate,
-                type
-        );
+        try {
+            String[] split = s.split(ALTERNATE_COORDINATE_SEPARATOR);
+            if (split.length == 6) {
+                return new AlternateCoordinate(
+                        split[0],
+                        Integer.parseInt(split[1]),
+                        Integer.parseInt(split[2]),
+                        split[3],
+                        split[4],
+                        VariantType.valueOf(split[5])
+                );
+            }
+            StringBuilder chr;
+            Integer start;
+            Integer end;
+            String reference;
+            StringBuilder alternate;
+            VariantType type;
+
+            int i = 0;
+            chr = new StringBuilder(split[i++]);
+            while (!(StringUtils.isNumeric(split[i]) && StringUtils.isNumeric(split[i + 1]) && !StringUtils.isNumeric(split[i + 2]))) {
+                chr.append(":").append(split[i++]);
+            }
+            start = Integer.valueOf(split[i++]);
+            end = Integer.valueOf(split[i++]);
+            reference = split[i++];
+            alternate = new StringBuilder(split[i++]);
+            while (i != split.length - 1) {
+                alternate.append(":").append(split[i++]);
+            }
+            type = VariantType.valueOf(split[i]);
+
+            return new AlternateCoordinate(
+                    chr.toString(),
+                    start,
+                    end,
+                    reference,
+                    alternate.toString(),
+                    type
+            );
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error parsing AlternateCoordinate '" + s + "'", e);
+        }
     }
 
     public static String normalizeNonRefAlternateCoordinate(Variant variant, String s) {
@@ -882,4 +1042,43 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return metadataManager.getCohortName(studyId, cohortId);
     }
 
+    private static class SampleColumnWithFileId implements VariantRow.SampleColumn {
+        private final VariantRow.SampleColumn sampleColumnWithoutFile;
+        private final Integer fileId;
+
+        SampleColumnWithFileId(VariantRow.SampleColumn sampleColumnWithoutFile, Integer fileId) {
+            this.sampleColumnWithoutFile = sampleColumnWithoutFile;
+            this.fileId = fileId;
+        }
+
+        @Override
+        public int getStudyId() {
+            return sampleColumnWithoutFile.getStudyId();
+        }
+
+        @Override
+        public int getSampleId() {
+            return sampleColumnWithoutFile.getSampleId();
+        }
+
+        @Override
+        public Integer getFileId() {
+            return fileId;
+        }
+
+        @Override
+        public List<String> getSampleData() {
+            return sampleColumnWithoutFile.getSampleData();
+        }
+
+        @Override
+        public List<String> getMutableSampleData() {
+            return sampleColumnWithoutFile.getMutableSampleData();
+        }
+
+        @Override
+        public String getSampleData(int idx) {
+            return sampleColumnWithoutFile.getSampleData(idx);
+        }
+    }
 }

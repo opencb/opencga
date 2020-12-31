@@ -4,6 +4,7 @@
   "name" : "opencga_file_variant_stats",
   "unique" : true,
   "confidential" : false,
+  "internal": false,
   "description" : "OpenCGA file variant stats",
   "variables" : [ {
     "id" : "variantCount",
@@ -134,10 +135,10 @@
     "required" : false,
     "multiValue" : false,
     "allowedValues" : null,
-    "allowedKeys" : [ "3prime_overlapping_ncrna", "IG_C_gene", "IG_C_pseudogene", "IG_D_gene", "IG_J_gene", "IG_J_pseudogene", "IG_V_gene", "IG_V_pseudogene", "Mt_rRNA", "Mt_tRNA", "TR_C_gene", "TR_D_gene", "TR_J_gene", "TR_J_pseudogene", "TR_V_gene", "TR_V_pseudogene", "antisense", "lincRNA", "miRNA", "misc_RNA", "polymorphic_pseudogene", "processed_pseudogene", "processed_transcript", "protein_coding", "pseudogene", "rRNA", "sense_intronic", "sense_overlapping", "snRNA", "snoRNA", "nonsense_mediated_decay", "NMD_transcript_variant", "unprocessed_pseudogene", "transcribed_unprocessed_pseudogene", "retained_intron", "non_stop_decay", "unitary_pseudogene", "translated_processed_pseudogene", "transcribed_processed_pseudogene", "tRNA_pseudogene", "snoRNA_pseudogene", "snRNA_pseudogene", "scRNA_pseudogene", "rRNA_pseudogene", "misc_RNA_pseudogene", "miRNA_pseudogene", "non_coding", "ambiguous_orf", "known_ncrna", "retrotransposed", "transcribed_unitary_pseudogene", "translated_unprocessed_pseudogene", "LRG_gene", "intergenic_variant" ],
+    "allowedKeys" : [ "3prime_overlapping_ncrna", "3prime_overlapping_ncRNA", "ambiguous_orf", "antisense", "antisense_RNA", "bidirectional_promoter_lncRNA", "IG_C_gene", "IG_C_pseudogene", "IG_D_gene", "IG_J_gene", "IG_J_pseudogene", "IG_pseudogene", "IG_V_gene", "IG_V_pseudogene", "intergenic_variant", "known_ncrna", "lincRNA", "LRG_gene", "macro_lncRNA", "miRNA", "miRNA_pseudogene", "misc_RNA", "misc_RNA_pseudogene", "Mt_rRNA", "Mt_tRNA", "NMD_transcript_variant", "non_coding", "nonsense_mediated_decay", "non_stop_decay", "polymorphic_pseudogene", "processed_pseudogene", "processed_transcript", "protein_coding", "pseudogene", "retained_intron", "retrotransposed", "ribozyme", "rRNA", "rRNA_pseudogene", "scaRNA", "scRNA", "scRNA_pseudogene", "sense_intronic", "sense_overlapping", "snoRNA", "snoRNA_pseudogene", "snRNA", "snRNA_pseudogene", "sRNA", "TEC", "transcribed_processed_pseudogene", "transcribed_unitary_pseudogene", "transcribed_unprocessed_pseudogene", "translated_processed_pseudogene", "translated_unprocessed_pseudogene", "TR_C_gene", "TR_D_gene", "TR_J_gene", "TR_J_pseudogene", "tRNA_pseudogene", "TR_V_gene", "TR_V_pseudogene", "unitary_pseudogene", "unprocessed_pseudogene", "vaultRNA" ],
     "rank" : 8,
     "dependsOn" : null,
-    "description" : "Variants count group by biotype. e.g. protein-coding, miRNA, lncRNA, ...",
+    "description" : "Variants count group by biotype. e.g. protein-coding, miRNA, lncRNA, ....  Each counter is increased at most one per variant. If multiple overlapping genes have the same biotypes, it will count as one.",
     "variableSet" : null,
     "attributes" : null
   }, {

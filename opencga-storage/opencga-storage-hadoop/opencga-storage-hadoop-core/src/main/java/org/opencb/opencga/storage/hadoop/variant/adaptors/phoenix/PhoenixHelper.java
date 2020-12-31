@@ -18,8 +18,12 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
@@ -30,11 +34,16 @@ import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.TableNotFoundException;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PDataType;
+import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.*;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
@@ -55,10 +64,12 @@ public class PhoenixHelper {
     // Server offset, for server pagination, is only available in Phoenix4.8 or Phoenix4.7.0.2.5.0 (from HDP2.5.0)
     // See https://issues.apache.org/jira/browse/PHOENIX-2722
     public static final String PHOENIX_SERVER_OFFSET_AVAILABLE = "phoenix.server.offset.available";
+    public static final int SLOW_OPERATION_MILLIS = 10 * 1000;
 
     private final Configuration conf;
     private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
     private static Method positionAtArrayElement;
+    private TableName systemCatalog;
 
     public PhoenixHelper(Configuration conf) {
         this.conf = conf;
@@ -186,23 +197,36 @@ public class PhoenixHelper {
         execute(con, buildDropTable(tableName, tableType, ifExists, cascade));
     }
 
-    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, boolean oneCall, PTableType tableType)
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType)
             throws SQLException {
-        Set<String> columns = getColumns(con, tableName, tableType).stream().map(Column::column).collect(Collectors.toSet());
+        LinkedHashSet<String> columns = getColumns(con, tableName, tableType).stream()
+                .map(Column::column)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        addMissingColumns(con, tableName, newColumns, tableType, columns);
+    }
+
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> newColumns, PTableType tableType,
+                                  Set<String> alreadyDefinedColumns)
+            throws SQLException {
         Set<Column> missingColumns = newColumns.stream()
-                .filter(column -> !columns.contains(column.column()))
-                .collect(Collectors.toSet());
+                .filter(column -> !alreadyDefinedColumns.contains(column.column()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         if (!missingColumns.isEmpty()) {
             logger.info("Adding missing columns: " + missingColumns);
-            if (oneCall) {
-                String sql = buildAlterAddColumns(tableName, missingColumns, true, tableType);
+            List<Column> missingColumnsList = new ArrayList<>(missingColumns);
+            // Run alter table in batches
+            int batchSize = 5000;
+            int numBatches = missingColumnsList.size() / batchSize + 1;
+            for (int batch = 0; batch < numBatches; batch++) {
+                String sql = buildAlterAddColumns(tableName,
+                        missingColumnsList.subList(batch * batchSize, Math.min(missingColumnsList.size(),
+                                (batch + 1) * batchSize)), true, tableType);
                 logger.info(sql);
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
                 execute(con, sql);
-            } else {
-                for (Column column : missingColumns) {
-                    String sql = buildAlterAddColumn(tableName, column.column(), column.sqlType(), true, tableType);
-                    logger.info(sql);
-                    execute(con, sql);
+                if (stopWatch.getTime() > SLOW_OPERATION_MILLIS) {
+                    logger.warn("Slow ALTER " + tableType.name() + ". Took " + TimeUtils.durationToString(stopWatch));
                 }
             }
         }
@@ -258,9 +282,12 @@ public class PhoenixHelper {
     }
 
     public static byte[] toBytes(Collection<?> collection, PArrayDataType arrayType) {
+        return toBytes(collection.toArray(), arrayType);
+    }
+
+    public static byte[] toBytes(Object[] elements, PArrayDataType arrayType) {
         PDataType pDataType = PDataType.arrayBaseType(arrayType);
-        Object[] elements = collection.toArray();
-        PhoenixArray phoenixArray = new PhoenixArray(pDataType, elements);
+        PhoenixArray phoenixArray = PArrayDataType.instantiatePhoenixArray(pDataType, elements);
         return arrayType.toBytes(phoenixArray);
     }
 
@@ -342,6 +369,66 @@ public class PhoenixHelper {
         }
     }
 
+    private TableName getSystemCatalogTable(HBaseManager hBaseManager) throws IOException {
+        if (systemCatalog != null) {
+            return systemCatalog;
+        }
+        if (hBaseManager.tableExists("SYSTEM.CATALOG")) {
+            systemCatalog = TableName.valueOf("SYSTEM.CATALOG");
+        } else if (hBaseManager.tableExists("SYSTEM:CATALOG")) {
+            systemCatalog = TableName.valueOf("SYSTEM:CATALOG");
+        }
+        return systemCatalog;
+    }
+
+    public List<Column> getColumns(HBaseManager hBaseManager, String fullTableName, PTableType tableType) throws IOException {
+        return getColumns(hBaseManager, fullTableName, tableType, null);
+    }
+
+    public List<Column> getColumns(HBaseManager hBaseManager, String fullTableName, PTableType tableType, List<String> columnsFilter)
+            throws IOException {
+        TableName systemCatalogTable = getSystemCatalogTable(hBaseManager);
+        if (systemCatalogTable == null) {
+            return Collections.emptyList();
+        }
+        String tenant = "";
+        String schema;
+        String table;
+        if (isNamespaceMappingEnabled(tableType, conf)) {
+            schema = SchemaUtil.getSchemaNameFromFullName(fullTableName);
+            table = SchemaUtil.getTableNameFromFullName(fullTableName);
+        } else {
+            schema = null;
+            table = fullTableName;
+        }
+        return hBaseManager.act(systemCatalogTable.getNameAsString(), systemCatalog -> {
+            List<Column> columns = new ArrayList<>();
+            List<Get> gets = new ArrayList<>(columnsFilter.size());
+            for (String column : columnsFilter) {
+                String row = tenant + "\\x00"
+                        + (schema == null ? "" : schema) + "\\x00"
+                        + table + "\\x00"
+                        + column + "\\x00"
+                        + GenomeHelper.COLUMN_FAMILY;
+                byte[] rowKey = Bytes.toBytesBinary(row);
+                gets.add(new Get(rowKey).addColumn(PhoenixDatabaseMetaData.TABLE_FAMILY_BYTES, PhoenixDatabaseMetaData.DATA_TYPE_BYTES));
+            }
+            Result[] get = systemCatalog.get(gets);
+            for (int i = 0; i < get.length; i++) {
+                Result result = get[i];
+                if (result != null && !result.isEmpty()) {
+//                    StringUtils.splitByWholeSeparatorPreserveAllTokens(Bytes.toStringBinary(result.getRow()), "\\x00")
+                    Cell c = result.rawCells()[0];
+                    Integer dataType = (Integer) PInteger.INSTANCE.toObject(c.getValueArray(), c.getValueOffset(), c.getValueLength());
+                    columns.add(Column.build(columnsFilter.get(i), PDataType.fromTypeId(dataType)));
+                }
+            }
+//            logger.info("Columns from " + systemCatalogTable + " : " + columns);
+            return columns;
+        });
+
+    }
+
     public List<Column> getColumns(Connection con, String fullTableName, PTableType tableType) throws SQLException {
         String schema;
         String table;
@@ -352,13 +439,17 @@ public class PhoenixHelper {
             schema = null;
             table = fullTableName;
         }
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         try (ResultSet resultSet = con.getMetaData().getColumns(null, schema, table, null)) {
-
             List<Column> columns = new ArrayList<>();
             while (resultSet.next()) {
                 String columnName = resultSet.getString(PhoenixDatabaseMetaData.COLUMN_NAME);
                 String typeName = resultSet.getString(PhoenixDatabaseMetaData.TYPE_NAME);
                 columns.add(Column.build(columnName, PDataType.fromSqlTypeName(typeName)));
+            }
+            if (stopWatch.getTime() > SLOW_OPERATION_MILLIS) {
+                logger.warn("Slow read columns from Phoenix. Took " + TimeUtils.durationToString(stopWatch));
             }
             return columns;
         }
@@ -465,16 +556,16 @@ public class PhoenixHelper {
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof ColumnImpl)) {
+            if (!(o instanceof Column)) {
                 return false;
             }
 
-            ColumnImpl column1 = (ColumnImpl) o;
+            Column column1 = (Column) o;
 
-            if (column != null ? !column.equals(column1.column) : column1.column != null) {
+            if (column != null ? !column.equals(column1.column()) : column1.column() != null) {
                 return false;
             }
-            return pDataType != null ? pDataType.equals(column1.pDataType) : column1.pDataType == null;
+            return pDataType != null ? pDataType.equals(column1.getPDataType()) : column1.getPDataType() == null;
 
         }
 

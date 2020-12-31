@@ -1,17 +1,18 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
+import org.opencb.opencga.analysis.variant.operations.VariantFileIndexJobLauncherTool;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenericJulieRunCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PROJECT_DESC;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
@@ -28,6 +29,7 @@ public class OperationsCommandOptions {
     public static final String OPERATIONS_COMMAND = "operations";
 
     public static final String VARIANT_CONFIGURE = "variant-configure";
+    public static final String VARIANT_INDEX_LAUNCHER = "variant-index-launcher";
 
     public static final String VARIANT_SECONDARY_INDEX = "variant-secondary-index";
     public static final String VARIANT_SECONDARY_INDEX_DELETE = "variant-secondary-index-delete";
@@ -46,6 +48,7 @@ public class OperationsCommandOptions {
     public static final String VARIANT_AGGREGATE = "variant-aggregate";
 
     public final VariantConfigureCommandOptions variantConfigure;
+    public final VariantIndexLauncherCommandOptions variantIndexLauncher;
 
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndex;
     public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDelete;
@@ -84,6 +87,7 @@ public class OperationsCommandOptions {
         commonJobOptions = new GeneralCliOptions.JobOptions();
 
         variantConfigure = new VariantConfigureCommandOptions();
+        variantIndexLauncher = new VariantIndexLauncherCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
         variantSecondaryIndexDelete = new VariantSecondaryIndexDeleteCommandOptions();
         variantAnnotation = new VariantAnnotationIndexCommandOptions();
@@ -106,6 +110,31 @@ public class OperationsCommandOptions {
 
         @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
+    }
+
+    @Parameters(commandNames = {VARIANT_INDEX_LAUNCHER}, commandDescription = VariantFileIndexJobLauncherTool.DESCRIPTION)
+    public class VariantIndexLauncherCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--name"}, description = "File name filter", arity = 1)
+        public String name;
+
+        @Parameter(names = {"--directory"}, description = "Directory containing the files to index", arity = 1)
+        public String directory;
+
+        @Parameter(names = {"--resume-failed"}, description = "Resume failed indexations", arity = 0)
+        public boolean resumeFailed;
+
+        @Parameter(names = {"--ignore-failed"}, description = "Ignore failed indexations", arity = 0)
+        public boolean ignoreFailed;
+
+        @Parameter(names = {"--max-jobs"}, description = "Maximum number of jobs to launch", arity = 1)
+        public int maxJobs;
+
+        @DynamicParameter(names = {"-I", "--index-params"}, description = "Specific variant index params")
+        public Map<String, String> indexParams = new HashMap<>();
     }
 
     @Parameters(commandNames = {VARIANT_SECONDARY_INDEX}, commandDescription = "Creates a secondary index using a search engine")
@@ -237,8 +266,8 @@ public class OperationsCommandOptions {
         @Parameter(names = {"--annotate"}, description = "Annotate sample index", arity = 0)
         public boolean annotate;
 
-//        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
-//        public boolean overwrite = false;
+        @Parameter(names = {"--overwrite"}, description = "Overwrite existing values", arity = 0)
+        public boolean overwrite;
     }
 
     @Parameters(commandNames = {VARIANT_FAMILY_GENOTYPE_INDEX}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)

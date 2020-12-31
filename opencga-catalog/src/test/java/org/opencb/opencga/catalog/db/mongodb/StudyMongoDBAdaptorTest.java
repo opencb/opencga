@@ -83,8 +83,8 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 new Variable("PHEN", "", Variable.VariableType.CATEGORICAL, "", true, false, Arrays.asList("CASE", "CONTROL"), null, 4, "", "",
                         null, Collections.emptyMap())
         ));
-        VariableSet variableSet = new VariableSet(name, name, false, confidential, "My description", variables,
-                Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, Collections.emptyMap());
+        VariableSet variableSet = new VariableSet(name, name, false, confidential, false, "My description",
+                variables, Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), 1, Collections.emptyMap());
         catalogStudyDBAdaptor.createVariableSet(5L, variableSet);
 
         return catalogStudyDBAdaptor.getVariableSet(5L, name, QueryOptions.empty());

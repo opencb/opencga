@@ -129,9 +129,11 @@ public class TemplateManager {
                 if (CollectionUtils.isNotEmpty(study.getFiles())) {
                     List<String> studyIndexVcfJobIds = fetchFiles(template, study);
                     projectIndexVcfJobIds.addAll(studyIndexVcfJobIds);
-                    String statsJob = variantStats(study, studyIndexVcfJobIds);
-                    if (statsJob != null) {
-                        statsJobIds.add(statsJob);
+                    if (isVariantStudy(study)) {
+                        String statsJob = variantStats(study, studyIndexVcfJobIds);
+                        if (statsJob != null) {
+                            statsJobIds.add(statsJob);
+                        }
                     }
                 }
             }
@@ -472,7 +474,8 @@ public class TemplateManager {
 
     private boolean isVcf(File file) {
         String path = getFilePath(file);
-        return path.endsWith(".vcf.gz") || path.endsWith(".vcf");
+        return path.endsWith(".vcf.gz") || path.endsWith(".vcf")
+                || path.endsWith(".gvcf.gz") || path.endsWith(".gvcf");
     }
 
     private String indexVcf(Study study, String file, List<String> jobDependsOn) throws ClientException {
@@ -561,10 +564,14 @@ public class TemplateManager {
     private List<String> getVariantStudies(Project project) {
         return project.getStudies()
                 .stream()
-                .filter(study -> study.getFiles() != null
-                        && study.getFiles().stream().anyMatch(this::isVcf))
+                .filter(this::isVariantStudy)
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
+    }
+
+    private boolean isVariantStudy(Study study) {
+        return study.getFiles() != null
+                && study.getFiles().stream().anyMatch(this::isVcf);
     }
 
     private String checkJob(RestResponse<Job> jobRestResponse) throws ClientException {

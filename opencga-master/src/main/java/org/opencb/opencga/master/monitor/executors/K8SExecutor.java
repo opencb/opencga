@@ -24,7 +24,9 @@ import io.fabric8.kubernetes.api.model.batch.JobSpecBuilder;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.*;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
@@ -32,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,6 +44,8 @@ public class K8SExecutor implements BatchExecutor {
 
     public static final String K8S_MASTER_NODE = "k8s.masterUrl";
     public static final String K8S_IMAGE_NAME = "k8s.imageName";
+    public static final String K8S_IMAGE_PULL_POLICY = "k8s.imagePullPolicy";
+    public static final String K8S_IMAGE_PULL_SECRETS = "k8s.imagePullSecrets";
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_REQUESTS = "k8s.requests";
     public static final String K8S_LIMITS = "k8s.limits";
@@ -83,9 +89,11 @@ public class K8SExecutor implements BatchExecutor {
     private final KubernetesClient kubernetesClient;
     private static Logger logger = LoggerFactory.getLogger(K8SExecutor.class);
 
-    private final Map<String, String> jobStatusCache = new ConcurrentHashMap<>();
+    private final Map<String, Pair<Instant, String>> jobStatusCache = new ConcurrentHashMap<>();
     private final Watch podsWatcher;
     private final Watch jobsWatcher;
+    private String imagePullPolicy;
+    private List<LocalObjectReference> imagePullSecrets;
 
     public K8SExecutor(Execution execution) {
         this.k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
@@ -96,7 +104,8 @@ public class K8SExecutor implements BatchExecutor {
         this.tolerations = buildTolelrations(execution.getOptions().getList(K8S_TOLERATIONS));
         this.k8sConfig = new ConfigBuilder().withMasterUrl(k8sClusterMaster).build();
         this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
-
+        this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
+        this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         nodeSelector = getMap(execution, K8S_NODE_SELECTOR);
 
         HashMap<String, Quantity> requests = new HashMap<>();
@@ -135,7 +144,7 @@ public class K8SExecutor implements BatchExecutor {
                     jobStatusCache.remove(k8sJobName);
                 } else {
                     String status = getStatusFromK8sJob(k8Job, k8sJobName);
-                    jobStatusCache.put(k8sJobName, status);
+                    jobStatusCache.put(k8sJobName, Pair.of(Instant.now(), status));
                 }
             }
 
@@ -160,7 +169,7 @@ public class K8SExecutor implements BatchExecutor {
                     jobStatusCache.remove(k8jobName);
                 } else {
                     String status = getStatusFromPod(pod);
-                    jobStatusCache.put(k8jobName, status);
+                    jobStatusCache.put(k8jobName, Pair.of(Instant.now(), status));
                 }
             }
 
@@ -188,11 +197,17 @@ public class K8SExecutor implements BatchExecutor {
                         .withTtlSecondsAfterFinished(30)
                         .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
                         .withTemplate(new PodTemplateSpecBuilder()
+                                .withMetadata(new ObjectMetaBuilder()
+                                        // https://github.com/kubernetes/autoscaler/blob/master/
+                                        //   cluster-autoscaler/FAQ.md#what-types-of-pods-can-prevent-ca-from-removing-a-node
+                                        .addToAnnotations("cluster-autoscaler.kubernetes.io/safe-to-evict", "false")
+                                        .build())
                                 .withSpec(new PodSpecBuilder()
+                                        .withImagePullSecrets(imagePullSecrets)
                                         .addToContainers(new ContainerBuilder()
                                                 .withName("opencga")
                                                 .withImage(imageName)
-                                                .withImagePullPolicy("Always")
+                                                .withImagePullPolicy(imagePullPolicy)
                                                 .withResources(resources)
                                                 .addToEnv(DOCKER_HOST)
                                                 .withCommand("/bin/sh", "-c")
@@ -215,7 +230,7 @@ public class K8SExecutor implements BatchExecutor {
         if (shouldAddDockerDaemon(queue)) {
             k8sJob.getSpec().getTemplate().getSpec().getContainers().add(dockerDaemonSidecar);
         }
-        jobStatusCache.put(jobName, Enums.ExecutionStatus.QUEUED);
+        jobStatusCache.put(jobName, Pair.of(Instant.now(), Enums.ExecutionStatus.QUEUED));
         getKubernetesClient().batch().jobs().inNamespace(namespace).create(k8sJob);
     }
 
@@ -251,7 +266,11 @@ public class K8SExecutor implements BatchExecutor {
         }
         String jobName = ("opencga-job-" + jobId).toLowerCase();
         if (jobName.length() > 63) {
-            jobName = jobName.substring(0, 30) + "--" + jobName.substring(jobName.length() - 30);
+            // Job Id too large. Shrink it!
+            // NOTE: This shrinking MUST be predictable!
+            jobName = jobName.substring(0, 27)
+                    + "-" + DigestUtils.md5Hex(jobName).substring(0, 6).toLowerCase() + "-"
+                    + jobName.substring(jobName.length() - 27);
         }
         return jobName;
     }
@@ -259,7 +278,22 @@ public class K8SExecutor implements BatchExecutor {
     @Override
     public String getStatus(String jobId) {
         String k8sJobName = buildJobName(jobId);
-        String status = jobStatusCache.compute(k8sJobName, (k, v) -> v == null ? getStatusForce(k) : v);
+        String status = jobStatusCache.compute(k8sJobName, (k, v) -> {
+            if (v == null) {
+                logger.warn("Missing job " + k8sJobName + " in cache. Fetch JOB info");
+                return Pair.of(Instant.now(), getStatusForce(k));
+            } else if (v.getKey().until(Instant.now(), ChronoUnit.MINUTES) > 10) {
+                String newStatus = getStatusForce(k);
+                String oldStatus = v.getValue();
+                if (!oldStatus.equals(newStatus)) {
+                    logger.warn("Update job " + k8sJobName + " from status cache. Change from " + oldStatus + " to " + newStatus);
+                } else {
+                    logger.debug("Update job " + k8sJobName + " from status cache. Status unchanged");
+                }
+                return Pair.of(Instant.now(), newStatus);
+            }
+            return v;
+        }).getValue();
         logger.debug("Get status from job " + k8sJobName + ". Cache size: " + jobStatusCache.size() + " . Status: " + status);
         return status;
     }
@@ -285,7 +319,6 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private String getStatusForce(String k8sJobName) {
-        logger.warn("Missing job " + k8sJobName + " in cache. Fetch JOB info");
         Job k8Job = getKubernetesClient()
                 .batch()
                 .jobs()
@@ -376,40 +409,40 @@ public class K8SExecutor implements BatchExecutor {
         }
     }
 
-    private List<VolumeMount> buildVolumeMounts(List<Object> list) {
-        List<VolumeMount> volumeMounts = new ArrayList<>();
+    private <T> List<T> buildObjects(List<Object> list, Class<T> clazz) {
+        List<T> ts = new ArrayList<>();
         if (list == null) {
-            return volumeMounts;
+            return ts;
         }
+        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
         for (Object o : list) {
-            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-            volumeMounts.add(mapper.convertValue(o, VolumeMount.class));
+            ts.add(mapper.convertValue(o, clazz));
         }
-        return volumeMounts;
+        return ts;
+    }
+    private <T> T buildObject(Object o, Class<T> clazz) {
+        if (o == null) {
+            return null;
+        }
+        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+        return mapper.convertValue(o, clazz);
+    }
+
+    private List<VolumeMount> buildVolumeMounts(List<Object> list) {
+        return buildObjects(list, VolumeMount.class);
+    }
+
+    private List<LocalObjectReference> buildLocalObjectReference(Object object) {
+        LocalObjectReference reference = buildObject(object, LocalObjectReference.class);
+        return reference == null ? Collections.emptyList() : Collections.singletonList(reference);
     }
 
     private List<Volume> buildVolumes(List<Object> list) {
-        List<Volume> volumes = new ArrayList<>();
-        if (list == null) {
-            return volumes;
-        }
-        for (Object o : list) {
-            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-            volumes.add(mapper.convertValue(o, Volume.class));
-        }
-        return volumes;
+        return buildObjects(list, Volume.class);
     }
 
     private List<Toleration> buildTolelrations(List<Object> list) {
-        List<Toleration> tolerations = new ArrayList<>();
-        if (list == null) {
-            return tolerations;
-        }
-        for (Object o : list) {
-            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-            tolerations.add(mapper.convertValue(o, Toleration.class));
-        }
-        return tolerations;
+        return buildObjects(list, Toleration.class);
     }
 
     private KubernetesClient getKubernetesClient() {

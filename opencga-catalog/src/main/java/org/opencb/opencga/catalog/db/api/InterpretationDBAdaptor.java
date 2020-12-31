@@ -35,7 +35,7 @@ import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
-public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
+public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
@@ -46,17 +46,23 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         INTERNAL_STATUS("internal.status", TEXT, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        ANALYST("analyst", TEXT_ARRAY, ""),
+        ANALYST("analyst", TEXT, ""),
+        ANALYST_ID("analyst.id", TEXT, ""),
         METHODS("methods", TEXT_ARRAY, ""),
+        METHODS_NAME("methods.name", TEXT_ARRAY, ""),
         PRIMARY_FINDINGS("primaryFindings", TEXT_ARRAY, ""),
+        PRIMARY_FINDINGS_ID("primaryFindings.id", TEXT_ARRAY, ""),
         SECONDARY_FINDINGS("secondaryFindings", TEXT_ARRAY, ""),
+        SECONDARY_FINDINGS_ID("secondaryFindings.id", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
-        STATUS("status", TEXT, ""),
+        COMMENTS_DATE("comments.date", TEXT_ARRAY, ""),
+        STATUS("status", OBJECT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
+        MODIFICATION_DATE("modificationDate", DATE, ""),
         VERSION("version", INTEGER, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
-        SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
-        MODIFICATION_DATE("modificationDate", DATE, ""),
+        SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot,
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 
@@ -137,6 +143,9 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
                                          QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
+    OpenCGAResult<Interpretation> revert(long id, int previousVersion, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
     OpenCGAResult<Interpretation> merge(long interpretationUid, Interpretation interpretation, List<ClinicalAudit> clinicalAuditList,
                                         List<String> clinicalVariantList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -152,5 +161,8 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long interpretationId) throws CatalogDBException;
+
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 }

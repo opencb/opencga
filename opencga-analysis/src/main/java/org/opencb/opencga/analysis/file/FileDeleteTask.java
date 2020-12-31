@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.file;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
@@ -93,7 +92,7 @@ public class FileDeleteTask extends OpenCgaTool {
                     .setTags(Collections.singletonList(randomMark));
 
             Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.ADD.name());
+            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.ADD.name());
             QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
             // Check and mark all the files for deletion
@@ -138,7 +137,7 @@ public class FileDeleteTask extends OpenCgaTool {
                     File file = iterator.next();
                     try {
                         logger.info("Deleting file '{}'...", file.getPath());
-                        ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, skipTrash);
+                        QueryOptions params = new QueryOptions(Constants.SKIP_TRASH, skipTrash);
                         fileManager.delete(studyFqn, Collections.singletonList(file.getUuid()), params, token);
                     } catch (Exception e) {
                         logger.error("Error deleting file '{}': {}", file.getPath(), e.getMessage(), e);
@@ -214,7 +213,7 @@ public class FileDeleteTask extends OpenCgaTool {
                 .setTags(Collections.singletonList(randomMark));
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.REMOVE.name());
+        actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.REMOVE.name());
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         restore(query, updateParams, options);
@@ -229,7 +228,7 @@ public class FileDeleteTask extends OpenCgaTool {
                 .setTags(Collections.singletonList(randomMark));
 
         Map<String, Object> actionMap = new HashMap<>();
-        actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.UpdateAction.REMOVE.name());
+        actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), ParamUtils.BasicUpdateAction.REMOVE.name());
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
         restore(query, updateParams, options);

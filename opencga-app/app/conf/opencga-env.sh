@@ -7,27 +7,25 @@
 # CLASSPATH_PREFIX
 
 
-# Increase Java Heap if needed
-if [ -z "$JAVA_HEAP" ]; then
-  case `basename $PRG` in
+# Get configuration depending on the prog name
+case $(basename "$PRG") in
   "opencga-admin.sh")
-    JAVA_HEAP="8192m"
+    JAVA_HEAP=${JAVA_HEAP:-"8192m"}
     OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
     OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
   "opencga-internal.sh")
-    JAVA_HEAP="12288m"
+    JAVA_HEAP=${JAVA_HEAP:-"12288m"}
     OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.internal.xml
     OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
 #  "opencga.sh")
   *)
-    JAVA_HEAP="2048m"
+    JAVA_HEAP=${JAVA_HEAP:-"2048m"}
     OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
     OPENCGA_LOG_DIR=""
     ;;
-  esac
-fi
+esac
 
 
 #Set log4j properties file
@@ -50,12 +48,12 @@ elif [ "$AGENTS_NUM" -gt 1 ]; then
 fi
 
 
-export COLUMNS=`tput cols 2> /dev/null`
-export LINES=`tput lines 2> /dev/null`
+export COLUMNS=$(tput cols 2> /dev/null)
+export LINES=$(tput lines 2> /dev/null)
 
 # export OPENCGA_HOME=${BASEDIR}
 
-if [ -f "${BASEDIR}"/libs/opencga-storage-hadoop-core-*.jar ] ; then
+if ( ls "${BASEDIR}"/libs/opencga-storage-hadoop-core-*.jar >/dev/null 2>&1 ) ; then
 
     # Add the folder conf/hadoop to the classpath.
     # Add first the user defined hadoop configuration, and then the system hadoop conf, to allow the user to overwrite the configuration.
@@ -68,25 +66,25 @@ if [ -f "${BASEDIR}"/libs/opencga-storage-hadoop-core-*.jar ] ; then
     # Add the system hadoop configuration folders to the classpath.
     # Check if the command hbase exists
     #   see http://stackoverflow.com/questions/592620/check-if-a-program-exists-from-a-bash-script
-    if `command -v hbase >/dev/null 2>&1` ; then
+    if ( command -v hbase >/dev/null 2>&1 ); then
         hbase_conf=$(hbase classpath | tr ":" "\n" | grep "/conf" | tr "\n" ":")
         export CLASSPATH_PREFIX=${CLASSPATH_PREFIX}:${hbase_conf}
     fi
 
     # Add specific Amazon EMR dependencies
-    if `command -v hadoop >/dev/null 2>&1` ; then
+    if ( command -v hadoop >/dev/null 2>&1 ); then
         EMR_DEPENDENCIES=`find  $(hadoop classpath | tr ":" " ") -type f -name "hadoop-common-*-amzn-3.jar" -o -name "emrfs-hadoop-assembly-*.jar"  2> /dev/null | tr "\n" ":"`
         export CLASSPATH_PREFIX=${CLASSPATH_PREFIX}:${EMR_DEPENDENCIES}
     fi
 
     phoenix=""
-    if `command -v phoenix_utils.py > /dev/null 2>&1`; then
+    if ( command -v phoenix_utils.py > /dev/null 2>&1 ); then
         phoenix=$(phoenix_utils.py | grep phoenix_client_jar | cut -f 2 -d " ")
     fi
 
-    jackson=$(find ${BASEDIR}/libs/ -name "jackson-*-2.[0-9].[0-9].jar" | tr "\n" ":")
-    proto=$(find ${BASEDIR}/libs/ -name "protobuf-java-*.jar" | tr "\n" ":")
-    avro=$(find ${BASEDIR}/libs/ -name "avro-*.jar" | tr "\n" ":")
+    jackson=$(find "${BASEDIR}/libs/" -name "jackson-*-2.[0-9].[0-9].jar" | tr "\n" ":")
+    proto=$(find "${BASEDIR}/libs/" -name "protobuf-java-*.jar" | tr "\n" ":")
+    avro=$(find "${BASEDIR}/libs/" -name "avro-*.jar" | tr "\n" ":")
     export HADOOP_CLASSPATH="${phoenix}:${proto}:${avro}:${jackson}:${CLASSPATH_PREFIX}"
     export HADOOP_USER_CLASSPATH_FIRST=true
 fi

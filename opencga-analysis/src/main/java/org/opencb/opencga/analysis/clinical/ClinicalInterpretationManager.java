@@ -21,6 +21,7 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.*;
 import org.opencb.biodata.models.clinical.interpretation.*;
@@ -31,6 +32,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -49,10 +51,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
-import org.opencb.opencga.core.models.clinical.ClinicalConsent;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
@@ -140,8 +142,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 
-        this.roleInCancerManager = new RoleInCancerManager();
-        this.actionableVariantManager = new ActionableVariantManager();
+        this.roleInCancerManager = new RoleInCancerManager(opencgaHome);
+        this.actionableVariantManager = new ActionableVariantManager(opencgaHome);
 
         this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);
 
@@ -358,54 +360,50 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     private ClinicalVariant createClinicalVariant(Variant variant, Map<String, Set<String>> genePanelMap,
                                                   Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
-                                                  Map<String, List<String>> actionableVariants, InterpretationAnalysisConfiguration config) {
-
-        if (variant.getAnnotation() ==  null || CollectionUtils.isEmpty(variant.getAnnotation().getConsequenceTypes())) {
-            return null;
-        }
-
-
+                                                  Map<String, List<String>> actionableVariants,
+                                                  InterpretationAnalysisConfiguration config) {
         List<String> panelIds;
         GenomicFeature gFeature;
         List<ClinicalVariantEvidence> evidences = new ArrayList<>();
 
-        for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
+        if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
+            for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
+                gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
+                        ct.getSequenceOntologyTerms(), null);
+                panelIds = null;
+                if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
+                } else if (genePanelMap.containsKey(ct.getGeneName())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
+                }
 
-            gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
-                    ct.getSequenceOntologyTerms(), null);
-            panelIds = null;
-            if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
-                panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
-            } else if (genePanelMap.containsKey(ct.getGeneName())) {
-                panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
-            }
 
-
-            ClinicalVariantEvidence evidence;
-            if (CollectionUtils.isNotEmpty(panelIds)) {
-                for (String panelId : panelIds) {
-                    evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
-                            roleInCancer, actionableVariants, config);
+                ClinicalVariantEvidence evidence;
+                if (CollectionUtils.isNotEmpty(panelIds)) {
+                    for (String panelId : panelIds) {
+                        evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
+                                roleInCancer, actionableVariants, config);
+                        if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
+                            evidences.add(evidence);
+                        }
+                    }
+                } else {
+                    evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
+                            actionableVariants, config);
                     if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
                         evidences.add(evidence);
                     }
-                }
-            } else {
-                evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
-                        actionableVariants, config);
-                if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
-                    evidences.add(evidence);
                 }
             }
         }
 
         if (config != null && config.isSkipUntieredVariants() && CollectionUtils.isEmpty(evidences)) {
             return null;
-        } else {
-            ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
-            clinicalVariant.setEvidences(evidences);
-            return clinicalVariant;
         }
+
+        ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
+        clinicalVariant.setEvidences(evidences);
+        return clinicalVariant;
     }
 
     /*--------------------------------------------------------------------------*/
@@ -923,16 +921,17 @@ public class ClinicalInterpretationManager extends StorageManager {
     public List<ClinicalVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
                                                       String studyId, ClinicalVariantCreator creator, String sessionId)
             throws StorageEngineException, ToolException, CatalogException, IOException {
-        List<ClinicalVariant> secondaryFindings = null;
-        if (clinicalAnalysis.getConsent() != null
-                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-            List<Variant> variants = getSecondaryFindings(sampleNames.get(0), clinicalAnalysis.getId(), studyId,
-                    sessionId);
-            if (CollectionUtils.isNotEmpty(variants)) {
-                secondaryFindings = creator.createSecondaryFindings(variants);
-            }
-        }
-        return secondaryFindings;
+        throw new NotImplementedException("Secondary findings does not exist");
+//        List<ClinicalVariant> secondaryFindings = null;
+//        if (clinicalAnalysis.getConsent() != null
+//                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
+//            List<Variant> variants = getSecondaryFindings(sampleNames.get(0), clinicalAnalysis.getId(), studyId,
+//                    sessionId);
+//            if (CollectionUtils.isNotEmpty(variants)) {
+//                secondaryFindings = creator.createSecondaryFindings(variants);
+//            }
+//        }
+//        return secondaryFindings;
     }
 
 //    public List<ReportedLowCoverage> getReportedLowCoverage(int maxCoverage, ClinicalAnalysis clinicalAnalysis,
@@ -1182,7 +1181,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             // There must be one single owner for all the studies, we do nt allow to query multiple databases
             if (users.size() == 1) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds, ","));
-                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyQuery, QueryOptions.empty(), token);
+                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().search(studyQuery, QueryOptions.empty(), token);
 
                 // If the user is the owner we do not have to check anything else
                 List<String> studyAliases = new ArrayList<>(studyIds.size());
@@ -1216,8 +1215,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     private void checkInterpretationPermissions(String study, long interpretationId, String token)
             throws CatalogException, ClinicalVariantException {
         // Get user ID from token and study numeric ID
-        String userId = catalogManager.getUserManager().getUserId(token);
-        String studyId = catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(), interpretationId);
@@ -1236,7 +1234,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (query != null && query.containsKey(ClinicalVariantEngine.QueryParams.STUDY.key())) {
             String study = query.getString(ClinicalVariantEngine.QueryParams.STUDY.key());
             List<String> studies = Arrays.asList(study.split(","));
-            studyIds = catalogManager.getStudyManager().resolveIds(studies, userId)
+            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_ID, false, userId)
+                    .getResults()
                     .stream()
                     .map(Study::getFqn)
                     .collect(Collectors.toList());

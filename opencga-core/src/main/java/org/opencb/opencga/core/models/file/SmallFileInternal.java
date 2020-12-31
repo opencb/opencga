@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.file;
 public class SmallFileInternal {
 
     private FileStatus status;
+    private MissingSamples missingSamples;
 
     public SmallFileInternal() {
     }
@@ -27,10 +28,16 @@ public class SmallFileInternal {
         this.status = status;
     }
 
+    public SmallFileInternal(FileStatus status, MissingSamples missingSamples) {
+        this.status = status;
+        this.missingSamples = missingSamples;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SmallFileInternal{");
         sb.append("status=").append(status);
+        sb.append("missingSamples=").append(missingSamples);
         sb.append('}');
         return sb.toString();
     }
@@ -41,6 +48,15 @@ public class SmallFileInternal {
 
     public SmallFileInternal setStatus(FileStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public MissingSamples getMissingSamples() {
+        return missingSamples;
+    }
+
+    public SmallFileInternal setMissingSamples(MissingSamples missingSamples) {
+        this.missingSamples = missingSamples;
         return this;
     }
 }

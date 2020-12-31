@@ -30,7 +30,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CohortCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -45,7 +44,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -60,6 +58,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.opencb.opencga.catalog.db.api.CohortDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -77,11 +76,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         this.cohortCollection = cohortCollection;
         this.deletedCohortCollection = deletedCohortCollection;
         this.cohortConverter = new CohortConverter();
-    }
-
-    @Override
-    protected AnnotableConverter<? extends Annotable> getConverter() {
-        return cohortConverter;
     }
 
     @Override
@@ -114,7 +108,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     long insert(ClientSession clientSession, long studyId, Cohort cohort, List<VariableSet> variableSetList) throws CatalogDBException {
         checkCohortIdExists(clientSession, studyId, cohort.getId());
 
-        long newId = getNewUid(clientSession);
+        long newId = getNewUid();
         cohort.setUid(newId);
         cohort.setStudyUid(studyId);
         if (StringUtils.isEmpty(cohort.getUuid())) {
@@ -205,13 +199,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Bson bson = parseQuery(query, user);
         logger.debug("Cohort count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(cohortCollection.count(clientSession, bson));
-    }
-
-    @Override
-    public OpenCGAResult distinct(Query query, String field)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Bson bson = parseQuery(query);
-        return new OpenCGAResult(cohortCollection.distinct(field, bson));
     }
 
     @Override
@@ -315,6 +302,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             if (result.getNumUpdated() == 0) {
                 events.add(new Event(Event.Type.WARNING, cohort.getId(), "Cohort was already updated"));
             }
+
+            if (parameters.containsKey(SAMPLES.key())) {
+                // Update numSamples field
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UID.key(), SAMPLES.key() + "." + UID.key()));
+                MongoDBIterator<Cohort> iterator = cohortCollection.iterator(clientSession, finalQuery, null, cohortConverter, options);
+                while (iterator.hasNext()) {
+                    Cohort tmpCohort = iterator.next();
+                    Bson bsonQuery = parseQuery(new Query(UID.key(), tmpCohort.getUid()));
+                    Document updateDoc = new Document("$set", new Document(NUM_SAMPLES.key(), tmpCohort.getSamples().size()));
+                    cohortCollection.update(clientSession, bsonQuery, updateDoc, QueryOptions.empty());
+                }
+            }
+
             logger.debug("Cohort {} successfully updated", cohort.getId());
         }
 
@@ -360,10 +360,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        ParamUtils.UpdateAction operation = ParamUtils.UpdateAction.from(actionMap, QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.ADD);
-        String[] sampleObjectParams = new String[]{QueryParams.SAMPLES.key()};
+        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, SAMPLES.key(),
+                ParamUtils.BasicUpdateAction.ADD);
+        String[] sampleObjectParams = new String[]{SAMPLES.key()};
 
-        if (operation == ParamUtils.UpdateAction.SET || !parameters.getAsList(QueryParams.SAMPLES.key()).isEmpty()) {
+        if (operation == ParamUtils.BasicUpdateAction.SET || !parameters.getAsList(SAMPLES.key()).isEmpty()) {
             switch (operation) {
                 case SET:
                     filterObjectParams(parameters, document.getSet(), sampleObjectParams);
@@ -649,7 +650,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = removeInnerProjections(qOptions, QueryParams.SAMPLES.key());
+        qOptions = removeInnerProjections(qOptions, SAMPLES.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
 
@@ -687,6 +688,16 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query, user);
         return groupBy(cohortCollection, bsonQuery, fields, QueryParams.ID.key(), options);
+    }
+
+    @Override
+    public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query finalQuery = query != null ? new Query(query) : new Query();
+        finalQuery.put(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(finalQuery, userId);
+
+        return new OpenCGAResult<>(cohortCollection.distinct(field, bson, clazz));
     }
 
     @Override
@@ -815,6 +826,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case ID:
                     case TYPE:
                     case RELEASE:
+                    case NUM_SAMPLES:
                     case INTERNAL_STATUS_DESCRIPTION:
                     case INTERNAL_STATUS_DATE:
                     case DESCRIPTION:
@@ -856,10 +868,10 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         // We set the status of all the matching cohorts to INVALID and add the sample to be removed
         ObjectMap params = new ObjectMap()
                 .append(QueryParams.INTERNAL_STATUS_NAME.key(), CohortStatus.INVALID)
-                .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
+                .append(SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
-                new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.UpdateAction.REMOVE.name()));
+                new ObjectMap(SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE.name()));
 
         Bson update = parseAndValidateUpdateParams(clientSession, params, null, queryOptions).toFinalUpdateDocument();
 

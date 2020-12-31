@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop-deps</artifactId>
-        <version>2.0.0-rc4</version>
+        <version>2.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -479,6 +479,19 @@
             <artifactId>hadoop-azure-datalake</artifactId>
             <version>${hadoop.version}</version>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <!--
+              | Dependency needed by ABFS (hadoop-azure-datalake)
+              | Using 1.0.7.Final instead of 1.0.4.Final.
+              | See:
+              |  https://issues.apache.org/jira/browse/HADOOP-16460
+              |  https://issues.apache.org/jira/browse/HADOOP-16410
+              |  https://issues.apache.org/jira/browse/HADOOP-16405
+              -->
+            <groupId>org.wildfly.openssl</groupId>
+            <artifactId>wildfly-openssl</artifactId>
+            <version>1.0.7.Final</version>
         </dependency>
     </dependencies>
 

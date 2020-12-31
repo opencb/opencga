@@ -17,10 +17,8 @@
 package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.cohort.CohortIndexTask;
@@ -31,13 +29,10 @@ import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -52,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.core.api.ParamConstants.ADMIN_STUDY_FQN;
 import static org.opencb.opencga.core.models.admin.UserImportParams.ResourceType.*;
 
 @Path("/{apiVersion}/admin")
@@ -206,12 +202,12 @@ public class AdminWSServer extends OpenCGAWSServer {
         try {
             ObjectMap params = new ObjectMap();
             List<OpenCGAResult<Job>> results = new ArrayList<>(6);
-            results.add(catalogManager.getJobManager().submit("admin", FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit("admin", SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit("admin", IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit("admin", FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit("admin", CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit("admin", JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             return createOkResponse(OpenCGAResult.merge(results));
         } catch (Exception e) {
             return createErrorResponse(e);

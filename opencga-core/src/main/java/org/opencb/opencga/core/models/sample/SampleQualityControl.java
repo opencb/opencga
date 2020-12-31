@@ -24,18 +24,22 @@ import java.util.List;
 
 public class SampleQualityControl implements Serializable {
 
-    List<String> fileIds;
-    List<ClinicalComment> comments;
-    List<SampleQualityControlMetrics> metrics;
+    private List<String> fileIds;
+    private List<ClinicalComment> comments;
+    private List<SampleAlignmentQualityControlMetrics> alignmentMetrics;
+    private SampleVariantQualityControlMetrics variantMetrics;
 
     public SampleQualityControl() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), null);
     }
 
-    public SampleQualityControl(List<String> fileIds, List<ClinicalComment> comments, List<SampleQualityControlMetrics> metrics) {
+    public SampleQualityControl(List<String> fileIds, List<ClinicalComment> comments,
+                                List<SampleAlignmentQualityControlMetrics> alignmentMetrics,
+                                SampleVariantQualityControlMetrics variantMetrics) {
         this.fileIds = fileIds;
         this.comments = comments;
-        this.metrics = metrics;
+        this.alignmentMetrics = alignmentMetrics;
+        this.variantMetrics = variantMetrics;
     }
 
     @Override
@@ -43,7 +47,8 @@ public class SampleQualityControl implements Serializable {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
         sb.append("fileIds=").append(fileIds);
         sb.append(", comments=").append(comments);
-        sb.append(", metrics=").append(metrics);
+        sb.append(", alignmentMetrics=").append(alignmentMetrics);
+        sb.append(", variantMetrics=").append(variantMetrics);
         sb.append('}');
         return sb.toString();
     }
@@ -66,12 +71,21 @@ public class SampleQualityControl implements Serializable {
         return this;
     }
 
-    public List<SampleQualityControlMetrics> getMetrics() {
-        return metrics;
+    public List<SampleAlignmentQualityControlMetrics> getAlignmentMetrics() {
+        return alignmentMetrics;
     }
 
-    public SampleQualityControl setMetrics(List<SampleQualityControlMetrics> metrics) {
-        this.metrics = metrics;
+    public SampleQualityControl setAlignmentMetrics(List<SampleAlignmentQualityControlMetrics> alignmentMetrics) {
+        this.alignmentMetrics = alignmentMetrics;
+        return this;
+    }
+
+    public SampleVariantQualityControlMetrics getVariantMetrics() {
+        return variantMetrics;
+    }
+
+    public SampleQualityControl setVariantMetrics(SampleVariantQualityControlMetrics variantMetrics) {
+        this.variantMetrics = variantMetrics;
         return this;
     }
 }

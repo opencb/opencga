@@ -46,6 +46,14 @@ public class VariantQueryParser {
     protected final VariantStorageMetadataManager metadataManager;
     protected final VariantQueryProjectionParser projectionParser;
 
+    private static final Map<VariantType, VariantType> DEPRECATED_VARIANT_TYPES = new HashMap<>();
+    static {
+        DEPRECATED_VARIANT_TYPES.put(VariantType.SNP, VariantType.SNV);
+        DEPRECATED_VARIANT_TYPES.put(VariantType.MNP, VariantType.MNV);
+        DEPRECATED_VARIANT_TYPES.put(VariantType.CNV, VariantType.COPY_NUMBER);
+    }
+
+
     public VariantQueryParser(CellBaseUtils cellBaseUtils, VariantStorageMetadataManager metadataManager) {
         this.cellBaseUtils = cellBaseUtils;
         this.metadataManager = metadataManager;
@@ -142,31 +150,36 @@ public class VariantQueryParser {
         query.remove(ANNOT_COSMIC.key());
 
         if (VariantQueryUtils.isValidParam(query, TYPE)) {
-            Set<String> types = new HashSet<>();
+            Set<VariantType> types = new HashSet<>();
+            List<String> typesFromQuery = query.getAsStringList(TYPE.key());
+            if (typesFromQuery.contains(VariantType.SNP.name()) && !typesFromQuery.contains(VariantType.SNV.name())) {
+                throw VariantQueryException.malformedParam(TYPE, "Unable to filter by SNP");
+            }
+            if (typesFromQuery.contains(VariantType.MNP.name()) && !typesFromQuery.contains(VariantType.MNV.name())) {
+                throw VariantQueryException.malformedParam(TYPE, "Unable to filter by MNP");
+            }
             if (query.getString(TYPE.key()).contains(NOT)) {
                 // Invert negations
-                for (VariantType value : VariantType.values()) {
-                    types.add(value.name());
-                }
-                for (String type : query.getAsStringList(TYPE.key())) {
+                types.addAll(Arrays.asList(VariantType.values()));
+                for (String type : typesFromQuery) {
                     if (isNegated(type)) {
                         type = removeNegation(type);
                     } else {
                         throw VariantQueryException.malformedParam(TYPE, "Can not mix negated and no negated values");
                     }
                     // Expand types to subtypes
-                    type = type.toUpperCase();
-                    Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(type));
-                    types.remove(type);
-                    subTypes.forEach(subType -> types.remove(subType.toString()));
+                    VariantType variantType = parseVariantType(type);
+                    Set<VariantType> subTypes = Variant.subTypes(variantType);
+                    types.remove(variantType);
+                    types.removeAll(subTypes);
                 }
             } else {
                 // Expand types to subtypes
-                for (String type : query.getAsStringList(TYPE.key())) {
-                    type = type.toUpperCase();
-                    Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(type));
-                    types.add(type);
-                    subTypes.forEach(subType -> types.add(subType.toString()));
+                for (String type : typesFromQuery) {
+                    VariantType variantType = parseVariantType(type);
+                    Set<VariantType> subTypes = Variant.subTypes(variantType);
+                    types.add(variantType);
+                    types.addAll(subTypes);
                 }
             }
             query.put(TYPE.key(), new ArrayList<>(types));
@@ -244,6 +257,15 @@ public class VariantQueryParser {
             query.put(ANNOT_CONSEQUENCE_TYPE.key(), values.operation == null
                     ? parsedCts
                     : String.join(values.operation.separator(), parsedCts));
+        }
+    }
+
+    private VariantType parseVariantType(String type) {
+        try {
+            VariantType variantType = VariantType.valueOf(type.toUpperCase());
+            return DEPRECATED_VARIANT_TYPES.getOrDefault(variantType, variantType);
+        } catch (IllegalArgumentException e) {
+            throw VariantQueryException.malformedParam(TYPE, "Unknown variant type " + type);
         }
     }
 

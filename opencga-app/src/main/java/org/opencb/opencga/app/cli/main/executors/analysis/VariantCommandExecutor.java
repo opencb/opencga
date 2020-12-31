@@ -39,7 +39,6 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -269,14 +268,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 new SampleVariantStatsAnalysisParams(
                         variantCommandOptions.sampleVariantStatsCommandOptions.sample,
                         variantCommandOptions.sampleVariantStatsCommandOptions.individual,
-                        variantQuery,
-                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir),
+                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir, variantCommandOptions.sampleVariantStatsCommandOptions.index, variantCommandOptions.sampleVariantStatsCommandOptions.indexOverwrite, variantCommandOptions.sampleVariantStatsCommandOptions.indexId, variantCommandOptions.sampleVariantStatsCommandOptions.indexDescription, variantQuery
+                ),
                 getParams(variantCommandOptions.sampleVariantStatsCommandOptions.study));
     }
 
     private RestResponse<SampleVariantStats> sampleStatsQuery() throws ClientException {
         return openCGAClient.getVariantClient()
-                .infoSampleStats(String.join(",", variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample),
+                .querySampleStats(String.join(",", variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample),
                         getParams(variantCommandOptions.sampleVariantStatsQueryCommandOptions.study));
     }
 
@@ -540,13 +539,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //        Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
 
 
-        QueryOptions metadataQueryOptions = new QueryOptions(options);
-        metadataQueryOptions.putAll(query);
-        metadataQueryOptions.addToListOption(QueryOptions.EXCLUDE, "files");
-        metadataQueryOptions.append("basic", true);
-        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(metadataQueryOptions).firstResult();
-        VcfOutputWriter vcfOutputWriter = new VcfOutputWriter(metadata, annotations, System.out);
-
         ObjectMap params = new ObjectMap(query);
         params.putAll(options);
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
@@ -555,6 +547,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
                     || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                 RestResponse<Variant> queryResponse = openCGAClient.getVariantClient().query(params);
+
+                VcfOutputWriter vcfOutputWriter = initVcfOutputWriter(query, options, annotations);
 
                 vcfOutputWriter.print(queryResponse);
                 return null;
@@ -592,6 +586,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                     || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                 options.put(QueryOptions.LIMIT, 1);
 
+                VcfOutputWriter vcfOutputWriter = initVcfOutputWriter(query, options, annotations);
+
                 vcfOutputWriter.print(variantIterator);
             } else {
                 JsonFormat.Printer printer = JsonFormat.printer();
@@ -606,6 +602,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
             return null;
         }
+    }
+
+    private VcfOutputWriter initVcfOutputWriter(Query query, QueryOptions options, List<String> annotations) throws ClientException {
+        QueryOptions metadataQueryOptions = new QueryOptions(options);
+        metadataQueryOptions.putAll(query);
+        metadataQueryOptions.addToListOption(QueryOptions.EXCLUDE, "files");
+        metadataQueryOptions.append("basic", true);
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(metadataQueryOptions).firstResult();
+        return new VcfOutputWriter(metadata, annotations, System.out);
     }
 
     private boolean usingGrpcMode(String mode) {
@@ -766,26 +771,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private ObjectMap getParams(String project, String study) {
-        ObjectMap params = new ObjectMap(variantCommandOptions.commonCommandOptions.params);
-        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
-        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
-        params.putIfNotEmpty(ParamConstants.JOB_ID, variantCommandOptions.commonJobOptions.jobId);
-        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, variantCommandOptions.commonJobOptions.jobDescription);
-        if (variantCommandOptions.commonJobOptions.jobDependsOn != null) {
-            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", variantCommandOptions.commonJobOptions.jobDependsOn));
-        }
-        if (variantCommandOptions.commonJobOptions.jobTags != null) {
-            params.put(ParamConstants.JOB_TAGS, String.join(",", variantCommandOptions.commonJobOptions.jobTags));
-        }
-        if (variantCommandOptions.commonNumericOptions.limit > 0) {
-            params.put(QueryOptions.LIMIT, variantCommandOptions.commonNumericOptions.limit);
-        }
-        if (variantCommandOptions.commonNumericOptions.skip > 0) {
-            params.put(QueryOptions.SKIP, variantCommandOptions.commonNumericOptions.skip);
-        }
-        if (variantCommandOptions.commonNumericOptions.count) {
-            params.put(QueryOptions.COUNT, variantCommandOptions.commonNumericOptions.count);
-        }
+        ObjectMap params = getCommonParams(project, study, variantCommandOptions.commonCommandOptions.params);
+        addJobParams(variantCommandOptions.commonJobOptions, params);
+        addNumericParams(variantCommandOptions.commonNumericOptions, params);
         return params;
     }
 }

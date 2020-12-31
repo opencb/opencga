@@ -11,7 +11,7 @@ public class ChromosomeAccumulator extends CategoricalAccumulator<Variant> {
         this(null);
     }
 
-    public ChromosomeAccumulator(FieldVariantAccumulator<Variant> nestedFieldAccumulator) {
+    public ChromosomeAccumulator(FacetFieldAccumulator<Variant> nestedFieldAccumulator) {
         super(v -> Collections.singletonList(v.getChromosome()), VariantField.CHROMOSOME.fieldName(), nestedFieldAccumulator);
     }
 }

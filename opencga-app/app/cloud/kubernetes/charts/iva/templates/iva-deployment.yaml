@@ -31,7 +31,12 @@ spec:
           - /bin/sh
         args:
           - -c
-          - '[ -f /opt/ivaconf/config.js ] && echo Configuration already exists || echo Copy configuration && cp -r /usr/local/apache2/htdocs/iva/conf/* /opt/ivaconf && echo "opencga.host = \"{{ .Values.opencga.host }}\";" >> /opt/ivaconf/config.js'
+          - '( [ -f /opt/ivaconf/config.js ] && [ "{{ .Values.iva.configuration.overwrite }}" != "true" ] )
+                && echo Configuration already exists
+                || echo "Copy configuration. Overwrite = {{ .Values.iva.configuration.overwrite }}"
+                     && cp -r /usr/local/apache2/htdocs/iva/conf/* /opt/ivaconf
+                     && echo "opencga.host = \"{{ .Values.opencga.host }}\";" >> /opt/ivaconf/config.js
+                     && echo "cellbase.hosts[0] = \"{{ .Values.cellbase.host }}\";" >> /opt/ivaconf/config.js'
         volumeMounts:
           - mountPath: /opt/ivaconf
             name: ivaconf
@@ -52,7 +57,7 @@ spec:
           name: ivaconf
       volumes:
       - azureFile:
-          secretName: azure-files-secret
+          secretName: {{ .Values.azureStorageAccount.secretName }}
           shareName: {{ .Values.iva.volumes.ivaconf.shareName }}
         name: ivaconf
       {{- with .Values.iva.nodeSelector }}

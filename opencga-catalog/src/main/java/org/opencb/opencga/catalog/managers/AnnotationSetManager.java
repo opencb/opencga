@@ -187,9 +187,10 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 if (annotationSetsObject instanceof List) {
                     ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
 
-                    ParamUtils.UpdateAction action = ParamUtils.UpdateAction.from(actionMap, ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                    ParamUtils.BasicUpdateAction action = ParamUtils.BasicUpdateAction.from(actionMap, ANNOTATION_SETS,
+                            ParamUtils.BasicUpdateAction.ADD);
 
-                    if (action == ParamUtils.UpdateAction.ADD || action == ParamUtils.UpdateAction.SET) {
+                    if (action == ParamUtils.BasicUpdateAction.ADD || action == ParamUtils.BasicUpdateAction.SET) {
                         /* We need to validate that the new annotationSets are fine to be stored */
 
                         // Create a map variableSetId - VariableSet
@@ -201,7 +202,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         // Create a map annotationSetName - AnnotationSet
                         Map<String, AnnotationSet> annotationSetMap = new HashMap<>();
                         List<AnnotationSet> annotationSetList = new ArrayList<>();
-                        if (action == ParamUtils.UpdateAction.ADD) {
+                        if (action == ParamUtils.BasicUpdateAction.ADD) {
                             // Get all the annotation sets from the entry
                             OpenCGAResult<AnnotationSet> annotationSetDataResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
 
@@ -273,7 +274,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         // Override the list of annotationSets
                         parameters.put(ANNOTATION_SETS, finalAnnotationList);
 
-                    } else if (action == ParamUtils.UpdateAction.REMOVE) {
+                    } else if (action == ParamUtils.BasicUpdateAction.REMOVE) {
                         for (Object annotationSetObject : ((List) annotationSetsObject)) {
                             AnnotationSet annotationSet;
                             try {
@@ -285,8 +286,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                                         + "Update could not be performed.");
                             }
 
-                            // Check the annotationSet ids are present
-                            if (StringUtils.isEmpty(annotationSet.getId())) {
+                            // Check the annotationSet ids or the variable set ids are present
+                            if (StringUtils.isEmpty(annotationSet.getId()) && StringUtils.isEmpty(annotationSet.getVariableSetId())) {
                                 throw new CatalogException("Cannot remove annotationSet. Mandatory annotationSet id field is empty");
                             }
                         }

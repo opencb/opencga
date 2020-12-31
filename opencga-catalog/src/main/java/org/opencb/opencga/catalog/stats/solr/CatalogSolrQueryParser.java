@@ -333,8 +333,8 @@ public class CatalogSolrQueryParser {
                         break;
                     case INTEGER:
                         auxVariableMap.put("type", isParentArray || variable.isMultiValue()
-                                ? QueryParam.Type.INTEGER_ARRAY
-                                : QueryParam.Type.INTEGER);
+                                ? LONG_ARRAY
+                                : LONG);
                         variableMap.put(fullVariablePath, auxVariableMap);
                         break;
                     case DOUBLE:
@@ -359,7 +359,7 @@ public class CatalogSolrQueryParser {
                         variableMap.put(fullVariablePath + ".*", auxVariableMap);
                         break;
                     case MAP_INTEGER:
-                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? INTEGER_ARRAY : INTEGER);
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? LONG_ARRAY : LONG);
                         variableMap.put(fullVariablePath + ".*", auxVariableMap);
                         break;
                     case MAP_DOUBLE:
@@ -396,16 +396,16 @@ public class CatalogSolrQueryParser {
                 Matcher matcher = AnnotationUtils.ANNOTATION_PATTERN.matcher(annotation);
 
                 if (matcher.find()) {
-                    String valueString = matcher.group(3);
+                    String valueString = matcher.group(4);
 
                     if (annotation.startsWith(Constants.ANNOTATION_SET_NAME)) {
                         annotationMap.put("annotationSets", getValues(Arrays.asList(valueString.split(",")), QueryParam.Type.TEXT));
                     } else { // annotation
                         // Split the annotation by key - value
                         // Remove the : at the end of the variableSet
-                        String variableSet = matcher.group(1).replace(":", "");
+                        String variableSet = matcher.group(2).replace(":", "");
                         // long variableSetUid = Long.valueOf(matcher.group(1).replace(":", ""));
-                        String key = matcher.group(2);
+                        String key = matcher.group(3);
 
                         if (variableTypeMap == null || variableTypeMap.isEmpty()) {
                             logger.error("Internal error: The variableTypeMap is null or empty {}", variableTypeMap);

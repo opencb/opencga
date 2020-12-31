@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
 
 public class JobsLog {
-    private static final int BATCH_SIZE = 500;
+    private static final int BATCH_SIZE = 2000;
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass().toString());
     private final OpenCGAClient openCGAClient;
@@ -129,7 +129,7 @@ public class JobsLog {
                     content = secureOp(() -> openCGAClient.getJobClient().headLog(jobId, params).firstResult());
                 } else {
                     params.append("lines", c.tailLines);
-                    content = secureOp(() -> openCGAClient.getJobClient().headLog(jobId, params).firstResult());
+                    content = secureOp(() -> openCGAClient.getJobClient().tailLog(jobId, params).firstResult());
                 }
             } else {
                 params.put("lines", Math.min(maxLines - printedLines.get(), BATCH_SIZE));
@@ -177,7 +177,7 @@ public class JobsLog {
             } catch (Exception e) {
                 errors++;
                 if (errors > MAX_ERRORS) {
-                    logger.error("Got " + errors + " consecutive errors trying to print Jobs Top");
+                    logger.error("Got " + errors + " consecutive errors trying to print Jobs Log");
                     throw e;
                 }
             }
