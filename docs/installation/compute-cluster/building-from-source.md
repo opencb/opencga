@@ -243,9 +243,9 @@ build/
 │   ├── azure-mgmt-trafficmanager-1.13.0.jar
 │   ├── azure-storage-6.1.0.jar
 │   ├── BigWig-1.0.jar
-│   ├── biodata-formats-2.0.4-SNAPSHOT.jar
-│   ├── biodata-models-2.0.4-SNAPSHOT.jar
-│   ├── biodata-tools-2.0.4-SNAPSHOT.jar
+│   ├── biodata-formats-2.0.4.jar
+│   ├── biodata-models-2.0.4.jar
+│   ├── biodata-tools-2.0.4.jar
 │   ├── biojava-alignment-4.1.0.jar
 │   ├── biojava-core-4.1.0.jar
 │   ├── biojava-phylo-4.1.0.jar
@@ -388,17 +388,17 @@ build/
 │   ├── okio-1.15.0.jar
 │   ├── opencensus-api-0.21.0.jar
 │   ├── opencensus-contrib-grpc-metrics-0.21.0.jar
-│   ├── opencga-analysis-2.0.0-SNAPSHOT.jar
-│   ├── opencga-app-2.0.0-SNAPSHOT.jar
-│   ├── opencga-catalog-2.0.0-SNAPSHOT.jar
-│   ├── opencga-client-2.0.0-SNAPSHOT.jar
-│   ├── opencga-core-2.0.0-SNAPSHOT.jar
-│   ├── opencga-master-2.0.0-SNAPSHOT.jar
-│   ├── opencga-server-2.0.0-SNAPSHOT.jar
-│   ├── opencga-storage-app-2.0.0-SNAPSHOT.jar
-│   ├── opencga-storage-core-2.0.0-SNAPSHOT.jar
-│   ├── opencga-storage-mongodb-2.0.0-SNAPSHOT.jar
-│   ├── opencga-storage-server-2.0.0-SNAPSHOT.jar
+│   ├── opencga-analysis-2.0.0.jar
+│   ├── opencga-app-2.0.0.jar
+│   ├── opencga-catalog-2.0.0.jar
+│   ├── opencga-client-2.0.0.jar
+│   ├── opencga-core-2.0.0.jar
+│   ├── opencga-master-2.0.0.jar
+│   ├── opencga-server-2.0.0.jar
+│   ├── opencga-storage-app-2.0.0.jar
+│   ├── opencga-storage-core-2.0.0.jar
+│   ├── opencga-storage-mongodb-2.0.0.jar
+│   ├── opencga-storage-server-2.0.0.jar
 │   ├── osgi-resource-locator-1.0.1.jar
 │   ├── oskar-analysis-0.2.0-20191017.131623-2.jar
 │   ├── oskar-core-0.2.0-20191017.131625-2.jar
@@ -447,7 +447,7 @@ build/
 │   └── solr
 ├── monitor
 │   └── README.md
-├── opencga-client-2.0.0-SNAPSHOT.tar.gz
+├── opencga-client-2.0.0.tar.gz
 ├── opencga.war
 ├── README.md
 └── test
