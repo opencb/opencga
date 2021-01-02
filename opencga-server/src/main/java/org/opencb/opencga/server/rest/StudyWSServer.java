@@ -406,7 +406,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             DataResult<VariableSet> queryResult;
             if (action == ParamUtils.AddRemoveAction.ADD) {
                 // Fix variable set params to support 1.3.x
-                // TODO: Remove in version 2.0.0
+                // TODO: Remove in version 2.0.1-SNAPSHOT
                 params.setId(StringUtils.isNotEmpty(params.getId()) ? params.getId() : params.getName());
                 for (Variable variable : params.getVariables()) {
                     fixVariable(variable);
