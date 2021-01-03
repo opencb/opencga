@@ -712,8 +712,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         SampleVariantStatsAnalysisParams toolParams = new SampleVariantStatsAnalysisParams(
                 cliOptions.sample,
                 cliOptions.individual,
-                variantQuery,
-                cliOptions.outdir);
+                cliOptions.outdir, cliOptions.index, cliOptions.indexOverwrite, cliOptions.indexId, cliOptions.indexDescription, variantQuery
+        );
         toolRunner.execute(SampleVariantStatsAnalysis.class, toolParams, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
@@ -738,7 +738,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndex(cliOptions.index)
-                .setSamplesQuery(query)
+                .setSampleAnnotation(cliOptions.samplesAnnotation)
                 .setSampleNames(sampleNames)
                 .start();
     }

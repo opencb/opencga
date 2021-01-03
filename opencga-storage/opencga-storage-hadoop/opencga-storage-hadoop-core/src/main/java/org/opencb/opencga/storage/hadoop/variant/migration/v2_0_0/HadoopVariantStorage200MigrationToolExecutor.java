@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
+import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,6 +89,8 @@ public class HadoopVariantStorage200MigrationToolExecutor extends VariantStorage
                             });
                         }
                     }
+                    AnnotationPendingVariantsManager pendingVariantsManager = new AnnotationPendingVariantsManager(engine.getDBAdaptor());
+                    pendingVariantsManager.deleteTable();
                 }
 
                 // Only update if executing the full migration

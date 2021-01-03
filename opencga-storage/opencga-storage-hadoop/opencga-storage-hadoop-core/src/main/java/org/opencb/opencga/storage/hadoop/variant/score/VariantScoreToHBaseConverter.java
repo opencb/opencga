@@ -6,7 +6,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantScore;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
@@ -19,7 +19,7 @@ public class VariantScoreToHBaseConverter extends AbstractPhoenixConverter imple
 
     public VariantScoreToHBaseConverter(byte[] columnFamily, int studyId, int scoreId) {
         super(columnFamily);
-        column = VariantPhoenixHelper.getVariantScoreColumn(studyId, scoreId);
+        column = VariantPhoenixSchema.getVariantScoreColumn(studyId, scoreId);
     }
 
     @Override

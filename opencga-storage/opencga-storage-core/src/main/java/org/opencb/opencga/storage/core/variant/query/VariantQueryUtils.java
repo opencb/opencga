@@ -132,6 +132,14 @@ public final class VariantQueryUtils {
     )));
 
     public static final String SKIP_MISSING_GENES = "skipMissingGenes";
+    public static final String SKIP_GENE_REGIONS = "skipGeneRegions";
+
+    public static final String OP_LE = "<=";
+    public static final String OP_GE = ">=";
+    public static final String OP_EQ = "=";
+    public static final String OP_NEQ = "!=";
+    public static final String OP_GT = ">";
+    public static final String OP_LT = "<";
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
@@ -671,7 +679,7 @@ public final class VariantQueryUtils {
                 String file = fileValue.getKey();
                 String filtersString = fileValue.getValue();
 
-                Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(FILE_DATA, filtersString, "<=", ">=", "=", ">", "<");
+                Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilterComparators(FILE_DATA, filtersString);
 
                 files.add(new KeyValues<>(file, values.getOperation(), values.getValues()));
             }
@@ -689,7 +697,7 @@ public final class VariantQueryUtils {
                 throw VariantQueryException.malformedParam(FILE_DATA, value, "Missing \"" + FILE.key() + "\" param.");
             }
 
-            Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(FILE_DATA, value, "<=", ">=", "=", ">", "<");
+            Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilterComparators(FILE_DATA, value);
 
             List<KeyValues<String, KeyOpValue<String, String>>> files = new LinkedList<>();
             for (String file : fileIds.getValues()) {
@@ -776,11 +784,15 @@ public final class VariantQueryUtils {
 //        return parseMultiKeyValueFilter(param, stringValue, IS);
 //    }
 
-    private static Values<KeyOpValue<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
+    public static Values<KeyOpValue<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
         return parseMultiKeyValueFilter(param, stringValue, IS);
     }
 
-    private static Values<KeyOpValue<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue,
+    public static Values<KeyOpValue<String, String>> parseMultiKeyValueFilterComparators(VariantQueryParam param, String stringValue) {
+        return parseMultiKeyValueFilter(param, stringValue, OP_LE, OP_GE, OP_NEQ, OP_EQ, OP_GT, OP_LT);
+    }
+
+    public static Values<KeyOpValue<String, String>> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue,
                                                                                String... separators) {
         Map<String, KeyOpValue<String, String>> map = new LinkedHashMap<>();
         StringTokenizer tokenizer = new StringTokenizer(stringValue, OR + AND, true);

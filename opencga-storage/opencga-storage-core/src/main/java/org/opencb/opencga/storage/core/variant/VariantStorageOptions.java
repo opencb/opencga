@@ -91,6 +91,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3),      // Minimum number of QueryParams in the query to intersect
 
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
+    @Deprecated
     APPROXIMATE_COUNT("approximateCount", false),
 
     // Do not store genotypes from the current file.

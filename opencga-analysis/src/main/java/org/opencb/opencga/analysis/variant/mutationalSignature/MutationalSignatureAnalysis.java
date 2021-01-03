@@ -16,17 +16,19 @@
 
 package org.opencb.opencga.analysis.variant.mutationalSignature;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.Signature;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -37,9 +39,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Tool(id = MutationalSignatureAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class MutationalSignatureAnalysis extends OpenCgaTool {
@@ -86,6 +86,8 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
         try {
             study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
 
+
+
             if (StringUtils.isNotEmpty(sampleName)) {
                 OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(study, sampleName, new QueryOptions(), token);
                 if (sampleResult.getNumResults() != 1) {
@@ -111,19 +113,19 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
     @Override
     protected void run() throws ToolException {
         step("download-ref-genomes", () -> {
-            // FIXME to make URLs dependent on assembly (and Ensembl/NCBI ?)
-            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(ResourceUtils.Species.hsapiens,
-                    ResourceUtils.Assembly.GRCh38, ResourceUtils.Authority.Ensembl, getScratchDir());
+            String assembly = ResourceUtils.getAssembly(catalogManager, study, token);
+            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(assembly, getScratchDir(), getOpencgaHome());
 
             if (refGenome == null) {
-                throw new ToolException("Something wrong happened downloading reference genome from " + ResourceUtils.URL);
+                throw new ToolException("Something wrong happened accessing reference genome, check local path and public repository");
             }
 
             refGenomePath = refGenome.getGzFile().toPath();
         });
 
         step("download-mutational-signatures", () -> {
-            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
+            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir(),
+                    getOpencgaHome());
             if (signatureFile == null) {
                 throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
             }
@@ -137,6 +139,7 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
                     .setSampleName(sampleName)
                     .setRefGenomePath(refGenomePath)
                     .setMutationalSignaturePath(mutationalSignaturePath)
+                    .setOpenCgaHome(getOpencgaHome())
                     .execute();
         });
     }
@@ -157,6 +160,5 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
             throw new ToolException(e);
         }
     }
-
 }
 

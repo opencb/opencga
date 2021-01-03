@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.analysis.knockout;
 
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class KnockoutVariant {
     private String qual;
     private KnockoutType knockoutType;
     private List<SequenceOntologyTerm> sequenceOntologyTerms;
+    private List<PopulationFrequency> populationFrequencies;
 
     public enum KnockoutType {
         HOM_ALT,
@@ -40,13 +42,15 @@ public class KnockoutVariant {
     }
 
     public KnockoutVariant(String id, String genotype, String filter, String qual, KnockoutType knockoutType,
-                           List<SequenceOntologyTerm> sequenceOntologyTerms) {
+                           List<SequenceOntologyTerm> sequenceOntologyTerms,
+                           List<PopulationFrequency> populationFrequencies) {
         this.id = id;
         this.genotype = genotype;
         this.filter = filter;
         this.qual = qual;
         this.knockoutType = knockoutType;
         this.sequenceOntologyTerms = sequenceOntologyTerms;
+        this.populationFrequencies = populationFrequencies;
     }
 
     public String getId() {
@@ -100,6 +104,15 @@ public class KnockoutVariant {
 
     public KnockoutVariant setSequenceOntologyTerms(List<SequenceOntologyTerm> sequenceOntologyTerms) {
         this.sequenceOntologyTerms = sequenceOntologyTerms;
+        return this;
+    }
+
+    public List<PopulationFrequency> getPopulationFrequencies() {
+        return populationFrequencies;
+    }
+
+    public KnockoutVariant setPopulationFrequencies(List<PopulationFrequency> populationFrequencies) {
+        this.populationFrequencies = populationFrequencies;
         return this;
     }
 }

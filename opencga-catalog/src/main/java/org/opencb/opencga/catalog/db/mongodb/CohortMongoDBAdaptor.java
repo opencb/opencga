@@ -58,6 +58,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.opencb.opencga.catalog.db.api.CohortDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -301,6 +302,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             if (result.getNumUpdated() == 0) {
                 events.add(new Event(Event.Type.WARNING, cohort.getId(), "Cohort was already updated"));
             }
+
+            if (parameters.containsKey(SAMPLES.key())) {
+                // Update numSamples field
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UID.key(), SAMPLES.key() + "." + UID.key()));
+                MongoDBIterator<Cohort> iterator = cohortCollection.iterator(clientSession, finalQuery, null, cohortConverter, options);
+                while (iterator.hasNext()) {
+                    Cohort tmpCohort = iterator.next();
+                    Bson bsonQuery = parseQuery(new Query(UID.key(), tmpCohort.getUid()));
+                    Document updateDoc = new Document("$set", new Document(NUM_SAMPLES.key(), tmpCohort.getSamples().size()));
+                    cohortCollection.update(clientSession, bsonQuery, updateDoc, QueryOptions.empty());
+                }
+            }
+
             logger.debug("Cohort {} successfully updated", cohort.getId());
         }
 
@@ -346,11 +360,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
-        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SAMPLES.key(),
+        ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, SAMPLES.key(),
                 ParamUtils.BasicUpdateAction.ADD);
-        String[] sampleObjectParams = new String[]{QueryParams.SAMPLES.key()};
+        String[] sampleObjectParams = new String[]{SAMPLES.key()};
 
-        if (operation == ParamUtils.BasicUpdateAction.SET || !parameters.getAsList(QueryParams.SAMPLES.key()).isEmpty()) {
+        if (operation == ParamUtils.BasicUpdateAction.SET || !parameters.getAsList(SAMPLES.key()).isEmpty()) {
             switch (operation) {
                 case SET:
                     filterObjectParams(parameters, document.getSet(), sampleObjectParams);
@@ -636,7 +650,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = removeInnerProjections(qOptions, QueryParams.SAMPLES.key());
+        qOptions = removeInnerProjections(qOptions, SAMPLES.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
 
@@ -812,6 +826,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case ID:
                     case TYPE:
                     case RELEASE:
+                    case NUM_SAMPLES:
                     case INTERNAL_STATUS_DESCRIPTION:
                     case INTERNAL_STATUS_DATE:
                     case DESCRIPTION:
@@ -853,10 +868,10 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         // We set the status of all the matching cohorts to INVALID and add the sample to be removed
         ObjectMap params = new ObjectMap()
                 .append(QueryParams.INTERNAL_STATUS_NAME.key(), CohortStatus.INVALID)
-                .append(QueryParams.SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
+                .append(SAMPLES.key(), Collections.singletonList(new Sample().setUid(sampleUid)));
         // Add the the Remove action for the sample provided
         QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS,
-                new ObjectMap(QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE.name()));
+                new ObjectMap(SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE.name()));
 
         Bson update = parseAndValidateUpdateParams(clientSession, params, null, queryOptions).toFinalUpdateDocument();
 

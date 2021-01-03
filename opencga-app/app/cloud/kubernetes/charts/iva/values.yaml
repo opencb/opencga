@@ -6,7 +6,7 @@ opencga:
   host: "http://opencga.local/opencga"
 
 cellbase:
-  host: "http://bioinfo.hpc.cam.ac.uk/cellbase"
+  host: "http://ws.opencb.org/cellbase/"
 
 iva:
   name: iva

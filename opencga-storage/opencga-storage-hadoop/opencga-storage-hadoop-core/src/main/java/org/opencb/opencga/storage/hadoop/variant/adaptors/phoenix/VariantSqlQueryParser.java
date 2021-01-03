@@ -45,7 +45,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.*;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -63,7 +63,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.*;
 
 /**
  * Created on 16/12/15.
@@ -129,8 +129,10 @@ public class VariantSqlQueryParser {
         try {
 
             Set<Column> dynamicColumns = new HashSet<>();
-            List<String> regionFilters = getRegionFilters(query);
+            List<String> combinedFilters = new ArrayList<>();
+            List<String> regionFilters = getRegionFilters(query, combinedFilters);
             List<String> filters = getOtherFilters(variantQuery, options, dynamicColumns);
+            filters.addAll(combinedFilters);
 
             List<HintNode.Hint> hints = new ArrayList<>();
             if (DEFAULT_TABLE_TYPE != PTableType.VIEW && filters.isEmpty()) {
@@ -226,9 +228,9 @@ public class VariantSqlQueryParser {
                 int studyId = study.getId();
 
                 if (returnedFields.contains(VariantField.STUDIES)) {
-                    Column studyColumn = VariantPhoenixHelper.getStudyColumn(studyId);
+                    Column studyColumn = VariantPhoenixSchema.getStudyColumn(studyId);
                     sb.append(",\"").append(studyColumn.column()).append('"');
-                    sb.append(",\"").append(VariantPhoenixHelper.getFillMissingColumn(studyId).column()).append('"');
+                    sb.append(",\"").append(VariantPhoenixSchema.getFillMissingColumn(studyId).column()).append('"');
                     if (returnedFields.contains(VariantField.STUDIES_STATS)) {
                         for (Integer cohortId : study.getCohorts()) {
                             Column statsColumn = getStatsColumn(studyId, cohortId);
@@ -281,7 +283,7 @@ public class VariantSqlQueryParser {
                 if (returnedFields.contains(VariantField.STUDIES_SCORES)) {
                     for (VariantScoreMetadata variantScore : study.getStudyMetadata().getVariantScores()) {
                         sb.append(",\"");
-                        sb.append(VariantPhoenixHelper.getVariantScoreColumn(variantScore.getStudyId(), variantScore.getId()));
+                        sb.append(VariantPhoenixSchema.getVariantScoreColumn(variantScore.getStudyId(), variantScore.getId()));
                         sb.append('"');
                     }
                 }
@@ -294,7 +296,7 @@ public class VariantSqlQueryParser {
                 int release = metadataManager.getProjectMetadata().getRelease();
                 for (int i = 1; i <= release; i++) {
                     sb.append(',');
-                    VariantPhoenixHelper.buildReleaseColumnKey(i, sb);
+                    VariantPhoenixSchema.buildReleaseColumnKey(i, sb);
                 }
             }
 
@@ -373,9 +375,10 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParam#ANNOT_COSMIC}
      *
      * @param query Query to parse
+     * @param otherFilters Other filters to be added
      * @return List of region filters
      */
-    protected List<String> getRegionFilters(Query query) {
+    protected List<String> getRegionFilters(Query query, List<String> otherFilters) {
         List<String> regionFilters = new LinkedList<>();
 
         if (isValidParam(query, REGION)) {
@@ -405,9 +408,15 @@ public class VariantSqlQueryParser {
         if (!variantQueryXref.getGenes().isEmpty()) {
             List<String> genes = variantQueryXref.getGenes();
             List<String> geneRegionFilters = new ArrayList<>();
+            boolean skipGeneRegions = false;
             if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-                for (Region region : Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()))) {
-                    geneRegionFilters.add(getRegionFilter(region));
+                String geneRegions = query.getString(ANNOT_GENE_REGIONS.key());
+                if (geneRegions.equals(SKIP_GENE_REGIONS)) {
+                    skipGeneRegions = true;
+                } else {
+                    for (Region region : Region.parseRegions(geneRegions, true)) {
+                        geneRegionFilters.add(getRegionFilter(region));
+                    }
                 }
             } else {
                 throw new VariantQueryException("Error building query by genes '" + genes
@@ -453,6 +462,9 @@ public class VariantSqlQueryParser {
 
             if (combinedFilters == null) {
                 regionFilters.addAll(geneRegionFilters);
+            } else if (skipGeneRegions) {
+                // Add combinedFilters as normal filters
+                otherFilters.addAll(combinedFilters);
             } else {
                 regionFilters.add(appendFilters(Arrays.asList(
                         appendFilters(geneRegionFilters, QueryOperation.OR),
@@ -994,7 +1006,7 @@ public class VariantSqlQueryParser {
                     studyId = metadataManager.getStudyId(studyResource[0]);
                     scoreId = metadataManager.getVariantScoreMetadata(studyId, studyResource[1]).getId();
                 }
-                return VariantPhoenixHelper.getVariantScoreColumn(studyId, scoreId);
+                return VariantPhoenixSchema.getVariantScoreColumn(studyId, scoreId);
             }, null, filters, null, 1);
         }
 
@@ -1473,13 +1485,13 @@ public class VariantSqlQueryParser {
         }
 
         addQueryFilter(query, STATS_REF,
-                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsFreqColumn),
+                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsFreqColumn),
                 null,
                 filters,
                 keyOpValue -> {
                     if (keyOpValue[1].equals(">") || keyOpValue[1].equals(">=")) {
-                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsFreqColumn);
-                        Integer studyId = VariantPhoenixHelper.extractStudyId(column.column(), true);
+                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsFreqColumn);
+                        Integer studyId = VariantPhoenixSchema.extractStudyId(column.column(), true);
 
                         if (!studiesFilter.contains(studyId) || studyOp == QueryOperation.OR) {
                             return " OR \"" + column.column() + "\"[1] IS NULL ";
@@ -1491,12 +1503,12 @@ public class VariantSqlQueryParser {
                 s -> 1);
 
         addQueryFilter(query, STATS_ALT,
-                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsFreqColumn),
+                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsFreqColumn),
                 null, filters,
                 keyOpValue -> {
                     if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<=")) {
-                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsFreqColumn);
-                        Integer studyId = VariantPhoenixHelper.extractStudyId(column.column(), true);
+                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsFreqColumn);
+                        Integer studyId = VariantPhoenixSchema.extractStudyId(column.column(), true);
 
                         if (!studiesFilter.contains(studyId) || studyOp == QueryOperation.OR) {
                             return " OR \"" + column.column() + "\"[2] IS NULL ";
@@ -1506,12 +1518,12 @@ public class VariantSqlQueryParser {
                 }, null, s -> 2);
 
         addQueryFilter(query, STATS_MAF,
-                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsMafColumn),
+                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsMafColumn),
                 null, filters,
                 keyOpValue -> {
                     if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<=")) {
-                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsMafColumn);
-                        Integer studyId = VariantPhoenixHelper.extractStudyId(column.column(), true);
+                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsMafColumn);
+                        Integer studyId = VariantPhoenixSchema.extractStudyId(column.column(), true);
 
                         if (!studiesFilter.contains(studyId) || studyOp == QueryOperation.OR) {
                             return " OR \"" + column.column() + "\" IS NULL ";
@@ -1521,12 +1533,12 @@ public class VariantSqlQueryParser {
                 }, null, null);
 
         addQueryFilter(query, STATS_MGF,
-                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsMgfColumn),
+                (keyOpValue, v) -> getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsMgfColumn),
                 null, filters,
                 keyOpValue -> {
                     if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<=")) {
-                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsMgfColumn);
-                        Integer studyId = VariantPhoenixHelper.extractStudyId(column.column(), true);
+                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsMgfColumn);
+                        Integer studyId = VariantPhoenixSchema.extractStudyId(column.column(), true);
 
                         if (!studiesFilter.contains(studyId) || studyOp == QueryOperation.OR) {
                             return " OR \"" + column.column() + "\" IS NULL ";
@@ -1537,12 +1549,12 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, STATS_PASS_FREQ,
                 (String[] keyOpValue, String v) -> getCohortColumn(keyOpValue, defaultStudyMetadata,
-                        VariantPhoenixHelper::getStatsPassFreqColumn),
+                        VariantPhoenixSchema::getStatsPassFreqColumn),
                 null, filters,
                 (String[] keyOpValue) -> {
                     if (keyOpValue[1].equals("<") || keyOpValue[1].equals("<=")) {
-                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixHelper::getStatsPassFreqColumn);
-                        Integer studyId = VariantPhoenixHelper.extractStudyId(column.column(), true);
+                        Column column = getCohortColumn(keyOpValue, defaultStudyMetadata, VariantPhoenixSchema::getStatsPassFreqColumn);
+                        Integer studyId = VariantPhoenixSchema.extractStudyId(column.column(), true);
 
                         if (!studiesFilter.contains(studyId) || studyOp == QueryOperation.OR) {
                             return " OR \"" + column.column() + "\"[2] IS NULL ";

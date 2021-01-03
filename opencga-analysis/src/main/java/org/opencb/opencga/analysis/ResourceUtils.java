@@ -16,7 +16,16 @@
 
 package org.opencb.opencga.analysis;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.URLUtils;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,111 +42,109 @@ public class ResourceUtils {
         return URLUtils.download(url, outDir);
     }
 
-    public static File downloadAnalysis(String analysisId, String resouceName, Path outDir) throws IOException {
-        return URLUtils.download(new URL(URL + "analysis/" + analysisId + "/" + resouceName), outDir);
+    public static File downloadAnalysis(String analysisId, String resouceName, Path outDir, Path openCgaHome) throws IOException {
+        Path path = null;
+        String filename = "analysis/" + analysisId + "/" + resouceName;
+        if (openCgaHome != null) {
+            path = openCgaHome.resolve(filename);
+        }
+        if (path != null && path.toFile().exists()) {
+            File outFile = outDir.resolve(path.toFile().getName()).toFile();
+            System.out.println("downloadAnalysis from path: " + path + " to " + outFile.getAbsolutePath());
+            FileUtils.copyFile(path.toFile(), outFile);
+
+            return outFile;
+        } else {
+            System.out.println("downloadAnalysis from URL: " + (URL + filename) + ", (path does not exist: " + path + ")");
+            return URLUtils.download(new URL(URL + filename), outDir);
+        }
     }
 
-    public static DownloadedRefGenome downloadRefGenome(Species species, Assembly assembly, Authority authority, Path outDir)
-            throws IOException {
-
-        // Sanity check
-        if (species != Species.hsapiens) {
-            throw new IOException("Species '" + species + "' not supported yet");
-        }
-        if (assembly != Assembly.GRCh37 && assembly != Assembly.GRCh38) {
-            throw new IOException("Assembly '" + assembly + "' not supported");
-        }
-        if (authority != Authority.Ensembl) {
-            throw new IOException("Authority '" + authority + "' not supported");
-        }
-
-        // Get files to downloadAnalysis
-        List<String> links = new LinkedList<>();
-        links.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz");
-        links.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.fai");
-        links.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.gzi");
+    public static DownloadedRefGenome downloadRefGenome(String assembly, Path outDir, Path openCgaHome) throws IOException {
 
         // Download files
         File gzFile = null;
         File faiFile = null;
         File gziFile = null;
 
-        for (String link : links) {
-            URL url = new URL(URL + "reference-genomes/" + link);
-            File file = URLUtils.download(url, outDir);
-            if (file == null) {
-                // Something wrong happened, remove downloaded files
-                cleanRefGenome(links, outDir);
-                return null;
+        // Get files to downloadAnalysis
+        List<String> filenames = new LinkedList<>();
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz");
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.fai");
+        filenames.add("Homo_sapiens." + assembly + ".dna.primary_assembly.fa.gz.gzi");
+
+        Path path = null;
+        for (String filename : filenames) {
+            File file;
+
+            if (openCgaHome != null) {
+                path = openCgaHome.resolve("analysis/commons/reference-genomes/" + filename);
             }
-            if (link.endsWith("gz")) {
+            if (path != null && path.toFile().exists()) {
+                File outFile = outDir.resolve(path.toFile().getName()).toFile();
+                System.out.println("downloadRefGenome from path: " + path + " to " + outFile.getAbsolutePath());
+                FileUtils.copyFile(path.toFile(), outFile);
+                file = outFile;
+            } else {
+                URL url = new URL(URL + "analysis/commons/reference-genomes/" + filename);
+                System.out.println("downloadAnalysis from URL: " + URL + ", (path does not exist: " + path + ")");
+                file = URLUtils.download(url, outDir);
+                if (file == null) {
+                    // Something wrong happened, remove downloaded files
+                    cleanRefGenome(filenames, outDir);
+                    return null;
+                }
+            }
+            if (filename.endsWith("gz")) {
                 gzFile = file;
-            } else if (link.endsWith("fai")) {
+            } else if (filename.endsWith("fai")) {
                 faiFile = file;
-            } else if (link.endsWith("gzi")) {
+            } else if (filename.endsWith("gzi")) {
                 gziFile = file;
             }
+
+            // Reset path for the next iteration
+            path = null;
         }
-        return new DownloadedRefGenome(species, assembly, authority, gzFile, faiFile, gziFile);
+        return new DownloadedRefGenome(assembly, gzFile, faiFile, gziFile);
     }
 
     //-------------------------------------------------------------------------
     // Support for downloading reference genomes
     //-------------------------------------------------------------------------
 
-    public enum Authority {
-        Ensembl, NCBI
-    }
-
-    public enum Species {
-        hsapiens
-    }
-
-    public enum Assembly {
-        GRCh37, GRCh38
+    public static String getAssembly(CatalogManager catalogManager, String studyId, String sessionId) throws CatalogException {
+        String assembly = "";
+        OpenCGAResult<Project> projectQueryResult;
+        projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
+        if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())
+                && projectQueryResult.first().getOrganism() != null
+                && projectQueryResult.first().getOrganism().getAssembly() != null) {
+            assembly = projectQueryResult.first().getOrganism().getAssembly();
+        }
+        return assembly;
     }
 
     public static class DownloadedRefGenome {
-        private Species species;
-        private Assembly assembly;
-        private Authority authority;
+        private String assembly;
         private File gzFile;
         private File faiFile;
         private File gziFile;
 
-        public DownloadedRefGenome(Species species, Assembly assembly, Authority authority, File gzFile, File faiFile, File gziFile) {
-            this.species = species;
+        public DownloadedRefGenome(String assembly, File gzFile, File faiFile, File gziFile) {
             this.assembly = assembly;
-            this.authority = authority;
             this.gzFile = gzFile;
             this.faiFile = faiFile;
             this.gziFile = gziFile;
         }
 
-        public Species getSpecies() {
-            return species;
-        }
-
-        public DownloadedRefGenome setSpecies(Species species) {
-            this.species = species;
-            return this;
-        }
-
-        public Assembly getAssembly() {
+        public String getAssembly() {
             return assembly;
         }
 
-        public DownloadedRefGenome setAssembly(Assembly assembly) {
+        public DownloadedRefGenome setAssembly(String assembly) {
             this.assembly = assembly;
-            return this;
-        }
-
-        public Authority getAuthority() {
-            return authority;
-        }
-
-        public DownloadedRefGenome setAuthority(Authority authority) {
-            this.authority = authority;
             return this;
         }
 

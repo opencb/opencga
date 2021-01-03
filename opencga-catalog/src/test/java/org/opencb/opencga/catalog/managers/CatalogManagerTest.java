@@ -850,6 +850,22 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void deleteJobTest() throws CatalogException {
+        // Grant view permissions, but no EXECUTION permission
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
+
+        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+                sessionIdUser3);
+        assertEquals(1, search.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
+
+        OpenCGAResult deleteResult = catalogManager.getJobManager().delete(studyFqn, Collections.singletonList(search.first().getId()),
+                QueryOptions.empty(), token);
+        assertEquals(1, deleteResult.getNumDeleted());
+    }
+
+    @Test
     public void visitJob() throws CatalogException {
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token)
                 .first();
@@ -1167,11 +1183,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token).first();
 
         Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
-                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, token).first();
+                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId1)), null, token).first();
 
 
         assertEquals("MyCohort", myCohort.getId());
         assertEquals(3, myCohort.getSamples().size());
+        assertEquals(3, myCohort.getNumSamples());
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId1.getUid()));
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId2.getUid()));
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId3.getUid()));
@@ -1182,20 +1199,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<Cohort> result = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(),
                 new CohortUpdateParams()
                         .setId("myModifiedCohort")
-                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId4.getId(), sampleId5.getId())),
+                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId3.getId(), sampleId4.getId(), sampleId5.getId())),
                 options, token);
         assertEquals(1, result.getNumUpdated());
 
         Cohort myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals("myModifiedCohort", myModifiedCohort.getId());
         assertEquals(4, myModifiedCohort.getSamples().size());
+        assertEquals(4, myModifiedCohort.getNumSamples());
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId1.getUid()));
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId3.getUid()));
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId4.getUid()));
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId5.getUid()));
 
-        options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
-                ParamUtils.BasicUpdateAction.SET.name()));
+        QueryOptions options1 = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.NUM_SAMPLES.key());
+        myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", options1, token).first();
+        assertEquals(4, myModifiedCohort.getNumSamples());
+        assertNull(myModifiedCohort.getSamples());
+
+        options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
                         .setSamples(Collections.emptyList()),
@@ -1204,26 +1226,29 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals(0, myModifiedCohort.getSamples().size());
+        assertEquals(0, myModifiedCohort.getNumSamples());
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 ParamUtils.BasicUpdateAction.ADD.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
-                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId())),
+                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId1.getId(), sampleId3.getId())),
                 options, token);
         assertEquals(1, result.getNumUpdated());
         myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals(2, myModifiedCohort.getSamples().size());
+        assertEquals(2, myModifiedCohort.getNumSamples());
 
         options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 ParamUtils.BasicUpdateAction.REMOVE.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
-                        .setSamples(Arrays.asList(sampleId3.getId())),
+                        .setSamples(Arrays.asList(sampleId3.getId(), sampleId3.getId())),
                 options, token);
         assertEquals(1, result.getNumUpdated());
         myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
         assertEquals(1, myModifiedCohort.getSamples().size());
+        assertEquals(1, myModifiedCohort.getNumSamples());
         assertTrue(myModifiedCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId1.getUid()));
     }
 

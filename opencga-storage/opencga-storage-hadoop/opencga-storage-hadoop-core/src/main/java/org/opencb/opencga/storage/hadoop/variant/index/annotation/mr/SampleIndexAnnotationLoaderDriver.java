@@ -16,7 +16,7 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -125,7 +125,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         boolean multiFileSamples = false;
         for (Integer sampleId : sampleIds) {
             SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
-            List<PhoenixHelper.Column> sampleColumns = VariantPhoenixHelper.getSampleColumns(sampleMetadata);
+            List<PhoenixHelper.Column> sampleColumns = VariantPhoenixSchema.getSampleColumns(sampleMetadata);
             if (sampleColumns.size() > 1) {
                 multiFileSamples = true;
             }
@@ -133,7 +133,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
                 scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
             }
         }
-        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes());
 
         SampleIndexAnnotationLoaderMapper.setHasGenotype(job, hasGenotype);
         SampleIndexAnnotationLoaderMapper.setMultiFileSamples(job, multiFileSamples);

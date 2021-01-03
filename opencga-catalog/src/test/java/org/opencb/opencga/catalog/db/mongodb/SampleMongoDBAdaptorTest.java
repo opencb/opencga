@@ -42,7 +42,6 @@ import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleInternal;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.*;

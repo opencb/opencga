@@ -43,8 +43,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchIndexUtils;
 
@@ -71,7 +71,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     private final byte[] columnFamily;
     private final long ts;
     private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter;
-    private byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
+    private byte[] annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes();
     private String annotationColumnStr = Bytes.toString(annotationColumn);
     private String defaultAnnotationId = null;
     private Map<Integer, String> annotationIds;
@@ -179,8 +179,8 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
             variantAnnotation = convert(valueArray, valueOffset, valueLength);
         }
         List<Integer> releases = new ArrayList<>();
-        for (byte[] bytes : result.getFamilyMap(columnFamily).tailMap(VariantPhoenixHelper.RELEASE_PREFIX_BYTES).keySet()) {
-            if (Bytes.startsWith(bytes, VariantPhoenixHelper.RELEASE_PREFIX_BYTES)) {
+        for (byte[] bytes : result.getFamilyMap(columnFamily).tailMap(VariantPhoenixSchema.RELEASE_PREFIX_BYTES).keySet()) {
+            if (Bytes.startsWith(bytes, VariantPhoenixSchema.RELEASE_PREFIX_BYTES)) {
                 releases.add(getRelease(Bytes.toString(bytes)));
             }
         }
@@ -188,7 +188,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         String annotationId = this.defaultAnnotationId;
         if (defaultAnnotationId == null && annotationIds != null) {
             // Read the annotation Id from ANNOTATION_ID column
-            byte[] annotationIdBytes = result.getFamilyMap(columnFamily).get(VariantPhoenixHelper.VariantColumn.ANNOTATION_ID.bytes());
+            byte[] annotationIdBytes = result.getFamilyMap(columnFamily).get(VariantPhoenixSchema.VariantColumn.ANNOTATION_ID.bytes());
             if (annotationIdBytes != null && annotationIdBytes.length > 0) {
                 int annotationIdNum = ((Integer) PInteger.INSTANCE.toObject(annotationIdBytes));
                 annotationId = annotationIds.get(annotationIdNum);
@@ -241,7 +241,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
             boolean hasIndex = false;
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String columnName = metaData.getColumnName(i);
-                if (columnName.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
+                if (columnName.startsWith(VariantPhoenixSchema.RELEASE_PREFIX)) {
                     if (resultSet.getBoolean(i)) {
                         releases.add(getRelease(columnName));
                     }
@@ -277,7 +277,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
             try {
                 Integer annotationIdColumnIdx = findColumn(resultSet, VariantColumn.ANNOTATION_ID.column());
                 if (annotationIdColumnIdx != null) {
-                    int annotationIdNum = resultSet.getInt(VariantPhoenixHelper.VariantColumn.ANNOTATION_ID.column());
+                    int annotationIdNum = resultSet.getInt(VariantPhoenixSchema.VariantColumn.ANNOTATION_ID.column());
                     annotationId = annotationIds.get(annotationIdNum);
                 }
             } catch (SQLException e) {
@@ -331,7 +331,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     }
 
     public Integer getRelease(String columnName) {
-        return Integer.valueOf(columnName.substring(VariantPhoenixHelper.RELEASE_PREFIX.length()));
+        return Integer.valueOf(columnName.substring(VariantPhoenixSchema.RELEASE_PREFIX.length()));
     }
 
     private VariantAnnotation post(VariantAnnotation variantAnnotation, List<Integer> releases, VariantStorageEngine.SyncStatus syncStatus,

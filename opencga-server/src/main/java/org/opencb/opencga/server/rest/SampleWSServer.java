@@ -168,8 +168,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
 
             @ApiParam(value = "Sample variant stats id. If filtering by other stats fields and not provided, it will be automatically set to ALL")
-                @QueryParam("stats.id") String statsId,
-            @ApiParam(value = "Sample variant stats variantCount.") @QueryParam("stats.variantCount") String variantCount,
+                @QueryParam(SampleDBAdaptor.STATS_ID) String statsId,
+            @ApiParam(value = "Sample variant stats variantCount.") @QueryParam(SampleDBAdaptor.STATS_VARIANT_COUNT) String variantCount,
             @ApiParam(value = "Sample variant stats chromosomeCount.") @QueryParam("stats.chromosomeCount") String chromosomeCount,
             @ApiParam(value = "Sample variant stats typeCount.") @QueryParam("stats.typeCount") String typeCount,
             @ApiParam(value = "Sample variant stats genotypeCount.") @QueryParam("stats.genotypeCount") String genotypeCount,

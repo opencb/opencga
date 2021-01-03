@@ -24,7 +24,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -193,11 +193,11 @@ public class    VariantStatsDriver extends AbstractVariantsTableDriver {
             if (excludeFiles) {
                 // Ensure we are not returning any file
                 NavigableSet<byte[]> columns = scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);
-                columns.removeIf(column -> endsWith(column, VariantPhoenixHelper.FILE_SUFIX_BYTES));
+                columns.removeIf(column -> endsWith(column, VariantPhoenixSchema.FILE_SUFIX_BYTES));
             }
             // See #1600
             // Add TYPE column to force scan ALL rows to avoid unlikely but possible timeouts fetching new variants
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
             // Remove STUDY filter
             scan.setFilter(null);
 

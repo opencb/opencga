@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -169,7 +168,7 @@ public class HBaseLockManager {
         } while (!token.equals(readToken));
 
         boolean prevTokenExpired = lockValue != null && lockValue.length > 0;
-        boolean slowQuery = stopWatch.getTime(TimeUnit.SECONDS) > 60;
+        boolean slowQuery = stopWatch.getTime() > 60000;
         if (prevTokenExpired || slowQuery) {
             StringBuilder msg = new StringBuilder("Lock column '").append(Bytes.toStringBinary(column)).append("'");
             if (prevTokenExpired) {

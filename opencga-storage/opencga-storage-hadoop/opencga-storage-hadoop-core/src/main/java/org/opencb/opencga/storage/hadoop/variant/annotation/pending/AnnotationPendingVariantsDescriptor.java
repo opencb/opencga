@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.SO;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.TYPE;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.SO;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.TYPE;
 
 public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescriptor {
 
@@ -40,8 +40,6 @@ public class AnnotationPendingVariantsDescriptor implements PendingVariantsDescr
     public String getTableName(HBaseVariantTableNameGenerator generator) {
         return generator.getPendingAnnotationTableName();
     }
-
-
 
     public boolean createTableIfNeeded(String tableName, HBaseManager hBaseManager) throws IOException {
         return createTableIfNeeded(tableName, hBaseManager, Compression.getCompressionAlgorithmByName(

@@ -1,5 +1,7 @@
 package org.opencb.opencga.analysis.variant.operations;
 
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -13,6 +15,16 @@ public class VariantStorageMetadataSynchronizeOperationTool extends OperationToo
 
     @ToolParams
     protected final VariantStorageMetadataSynchronizeParams toolParams = new VariantStorageMetadataSynchronizeParams();
+
+    @Override
+    protected void check() throws Exception {
+        super.check();
+
+        String userId = getCatalogManager().getUserManager().getUserId(getToken());
+        if (!userId.equals(ParamConstants.OPENCGA_USER_ID)) {
+            throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
+        }
+    }
 
     @Override
     protected void run() throws Exception {

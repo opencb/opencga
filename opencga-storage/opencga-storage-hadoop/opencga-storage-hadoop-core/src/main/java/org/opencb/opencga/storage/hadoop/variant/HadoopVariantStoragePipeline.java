@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -29,7 +27,6 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -38,17 +35,13 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
-import org.opencb.opencga.storage.core.metadata.models.Lock;
-import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
-import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -59,15 +52,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Supplier;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_SLICE_BUFFER_SIZE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.VARIANT_TABLE_LOAD_REFERENCE;
@@ -282,126 +271,12 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     protected void registerLoadedFiles(List<Integer> fileIds) throws StorageEngineException {
         int studyId = getStudyId();
 
-        VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-
-
-        String metaTableName = dbAdaptor.getTableNameGenerator().getMetaTableName();
-        String variantsTableName = dbAdaptor.getTableNameGenerator().getVariantTableName();
-        Connection jdbcConnection = dbAdaptor.getJdbcConnection();
-
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-        final String species = metadataManager.getProjectMetadata().getSpecies();
-
-        Lock lock = null;
-        try {
-            long lockDuration = TimeUnit.MINUTES.toMillis(5);
-            try {
-                lock = metadataManager.lockStudy(studyId, lockDuration,
-                        TimeUnit.SECONDS.toMillis(5), GenomeHelper.PHOENIX_LOCK_COLUMN);
-            } catch (StorageEngineException e) {
-                Throwable cause = e.getCause();
-                if (cause instanceof TimeoutException) {
-                    int timeout = 30;
-                    logger.info("Waiting to get Lock over HBase table {} up to {} minutes ...", metaTableName, timeout);
-                    lock = metadataManager.lockStudy(studyId, lockDuration,
-                            TimeUnit.MINUTES.toMillis(timeout), GenomeHelper.PHOENIX_LOCK_COLUMN);
-                } else {
-                    throw e;
-                }
-            }
-            StopWatch stopWatch = StopWatch.createStarted();
-
-            try {
-                phoenixHelper.registerNewStudy(jdbcConnection, variantsTableName, studyId);
-            } catch (SQLException e) {
-                throw new StorageEngineException("Unable to register study in Phoenix", e);
-            }
-
-            try {
-                if (species.equals("hsapiens")) {
-                    List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
-                    phoenixHelper.addMissingColumns(jdbcConnection, variantsTableName, columns);
-                }
-            } catch (SQLException e) {
-                throw new StorageEngineException("Unable to register population frequency columns in Phoenix", e);
-            }
-
-            try {
-                Set<Integer> newSamples = new HashSet<>();
-                List<PhoenixHelper.Column> multiFileSampleColumns = new ArrayList<>();
-                for (Integer fileId : fileIds) {
-                    FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
-                    newSamples.addAll(fileMetadata.getSamples());
-                }
-                for (Integer sampleId : newSamples) {
-                    SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                    if (SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
-                        // If multi file load, register all secondary sample columns
-                        for (Integer fileId : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
-                            multiFileSampleColumns.add(VariantPhoenixHelper.getSampleColumn(studyId, sampleId, fileId));
-                        }
-                    }
-                }
-                phoenixHelper.registerNewFiles(jdbcConnection, variantsTableName, studyId, fileIds, newSamples, multiFileSampleColumns);
-
-                int release = metadataManager.getProjectMetadata().getRelease();
-                phoenixHelper.registerRelease(jdbcConnection, variantsTableName, release);
-
-            } catch (SQLException e) {
-                throw new StorageEngineException("Unable to register samples in Phoenix", e);
-            }
-
-            stopWatch.stop();
-            String msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch);
-            if (stopWatch.getTime(TimeUnit.SECONDS) < 10) {
-                logger.info(msg);
-            } else {
-                logger.warn("Slow phoenix response");
-                logger.warn(msg);
-            }
-        } catch (StorageEngineException e) {
-            throw new StorageEngineException("Error locking table to modify Phoenix columns!", e);
-        } finally {
-            try {
-                if (lock != null) {
-                    lock.unlock();
-                }
-            } catch (HBaseLockManager.IllegalLockStatusException e) {
-                logger.warn(e.getMessage());
-                logger.debug(e.getMessage(), e);
-            }
-        }
-
-        if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW) {
-            logger.debug("Skip create indexes for VIEW table");
-        } else if (options.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
+        VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
+        schemaManager.registerNewFiles(studyId, fileIds);
+        if (options.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
             logger.info("Skip create indexes!!");
         } else {
-            lock = null;
-            try {
-                lock = metadataManager.lockStudy(studyId, TimeUnit.MINUTES.toMillis(60),
-                        TimeUnit.SECONDS.toMillis(5), PHOENIX_INDEX_LOCK_COLUMN);
-                if (species.equals("hsapiens")) {
-                    List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(variantsTableName);
-                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, VariantPhoenixHelper.DEFAULT_TABLE_TYPE,
-                            variantsTableName, popFreqIndices, false);
-                }
-                phoenixHelper.createVariantIndexes(jdbcConnection, variantsTableName);
-            } catch (SQLException e) {
-                throw new StorageEngineException("Unable to create Phoenix Indexes", e);
-            } catch (StorageEngineException e) {
-                if (e.getCause() instanceof TimeoutException) {
-                    // Indices are been created by another instance. Don't need to create twice.
-                    logger.info("Unable to get lock to create PHOENIX INDICES. Already been created by another instance. "
-                            + "Skip create indexes!");
-                } else {
-                    throw new StorageEngineException("Unable to create Phoenix Indexes", e);
-                }
-            } finally {
-                if (lock != null) {
-                    lock.unlock();
-                }
-            }
+            schemaManager.createPhoenixIndexes();
         }
     }
 

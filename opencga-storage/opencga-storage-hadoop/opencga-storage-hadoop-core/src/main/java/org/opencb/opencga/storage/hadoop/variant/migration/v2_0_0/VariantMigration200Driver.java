@@ -18,7 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -55,9 +55,10 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
 
         region = getConf().get(VariantQueryParam.REGION.key());
 
+        Integer variantsTableRegions = getHBaseManager().act(getVariantsTable(), (t, admin) -> admin.getTableRegions(t.getName()).size());
         String deletedSpanDeletionsTable = getVariantsTable() + "_old_span_del";
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
-                50,
+                Math.max(1, variantsTableRegions / 10),
                 VariantPhoenixKeyFactory::generateVariantRowKey);
         getHBaseManager()
                 .createTableIfNeeded(deletedSpanDeletionsTable, GenomeHelper.COLUMN_FAMILY_BYTES, splitList, Compression.Algorithm.GZ);
@@ -69,8 +70,6 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
         } else {
             logger.info("Do not remove span deletions from main variants table");
         }
-
-
     }
 
     @Override
@@ -147,7 +146,7 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
                     }
                     if (newType != null) {
                         put.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES,
-                                VariantPhoenixHelper.VariantColumn.TYPE.bytes(), Bytes.toBytes(newType.name()));
+                                VariantPhoenixSchema.VariantColumn.TYPE.bytes(), Bytes.toBytes(newType.name()));
                     }
                 }
 
@@ -195,7 +194,7 @@ public class VariantMigration200Driver extends AbstractVariantsTableDriver {
                                     = StudyEntryToHBaseConverter.getSecondaryAlternates(variant.getVariant(), secondaryAlternates);
                             put.addColumn(
                                     GenomeHelper.COLUMN_FAMILY_BYTES,
-                                    VariantPhoenixHelper.buildFileColumnKey(fileColumn.getStudyId(), fileColumn.getFileId()),
+                                    VariantPhoenixSchema.buildFileColumnKey(fileColumn.getStudyId(), fileColumn.getFileId()),
                                     PhoenixHelper.toBytes(values, PVarcharArray.INSTANCE)
                             );
                         }

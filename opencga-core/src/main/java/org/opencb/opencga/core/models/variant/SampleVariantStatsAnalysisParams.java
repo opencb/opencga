@@ -22,26 +22,73 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.List;
 
 public class SampleVariantStatsAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Sample variant stats params";
+    public static final String DESCRIPTION = "Sample variant stats params. "
+            + "Use index=true and indexId='' to store the result in catalog sample QC. indexId=ALL requires an empty query. "
+            + "Use sample=all to compute sample stats of all samples in the variant storage.";
     private List<String> sample;
     private List<String> individual;
-    private AnnotationVariantQueryParams variantQuery;
+    private VariantQueryParams variantQuery = new VariantQueryParams();
     private String outdir;
+    private boolean index;
+    private boolean indexOverwrite;
+    private String indexId;
+    private String indexDescription;
+
+    public static class VariantQueryParams extends AnnotationVariantQueryParams {
+        public String sampleData;
+        public String fileData;
+
+        public VariantQueryParams() {
+        }
+
+        public VariantQueryParams(Query query) {
+            super(query);
+        }
+
+        public String getSampleData() {
+            return sampleData;
+        }
+
+        public VariantQueryParams setSampleData(String sampleData) {
+            this.sampleData = sampleData;
+            return this;
+        }
+
+        public String getFileData() {
+            return fileData;
+        }
+
+        public VariantQueryParams setFileData(String fileData) {
+            this.fileData = fileData;
+            return this;
+        }
+    }
 
     public SampleVariantStatsAnalysisParams() {
     }
 
-    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual,
-                                            Query variantQuery, String outdir) {
-        this(sample, individual, new AnnotationVariantQueryParams(variantQuery), outdir);
+    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
+                                            boolean indexOverwrite, String indexId, String indexDescription,
+                                            AnnotationVariantQueryParams variantQuery) {
+        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, new VariantQueryParams(variantQuery.toQuery()));
     }
 
-    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual,
-                                            AnnotationVariantQueryParams variantQuery, String outdir) {
+    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
+                                            boolean indexOverwrite, String indexId, String indexDescription, Query variantQuery) {
+        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, new VariantQueryParams(variantQuery));
+    }
+
+    public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
+                                            boolean indexOverwrite, String indexId, String indexDescription,
+                                            VariantQueryParams variantQuery) {
         this.sample = sample;
         this.individual = individual;
         this.variantQuery = variantQuery;
         this.outdir = outdir;
+        this.index = index;
+        this.indexOverwrite = indexOverwrite;
+        this.indexId = indexId;
+        this.indexDescription = indexDescription;
     }
 
     public List<String> getSample() {
@@ -62,6 +109,15 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
         return this;
     }
 
+    public VariantQueryParams getVariantQuery() {
+        return variantQuery;
+    }
+
+    public SampleVariantStatsAnalysisParams setVariantQuery(VariantQueryParams variantQuery) {
+        this.variantQuery = variantQuery;
+        return this;
+    }
+
     public String getOutdir() {
         return outdir;
     }
@@ -71,12 +127,39 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
         return this;
     }
 
-    public AnnotationVariantQueryParams getVariantQuery() {
-        return variantQuery;
+    public boolean isIndex() {
+        return index;
     }
 
-    public SampleVariantStatsAnalysisParams setVariantQuery(AnnotationVariantQueryParams variantQuery) {
-        this.variantQuery = variantQuery;
+    public SampleVariantStatsAnalysisParams setIndex(boolean index) {
+        this.index = index;
+        return this;
+    }
+
+    public boolean isIndexOverwrite() {
+        return indexOverwrite;
+    }
+
+    public SampleVariantStatsAnalysisParams setIndexOverwrite(boolean indexOverwrite) {
+        this.indexOverwrite = indexOverwrite;
+        return this;
+    }
+
+    public String getIndexId() {
+        return indexId;
+    }
+
+    public SampleVariantStatsAnalysisParams setIndexId(String indexId) {
+        this.indexId = indexId;
+        return this;
+    }
+
+    public String getIndexDescription() {
+        return indexDescription;
+    }
+
+    public SampleVariantStatsAnalysisParams setIndexDescription(String indexDescription) {
+        this.indexDescription = indexDescription;
         return this;
     }
 }

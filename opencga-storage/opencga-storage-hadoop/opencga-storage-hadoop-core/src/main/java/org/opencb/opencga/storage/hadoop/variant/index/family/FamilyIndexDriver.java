@@ -21,7 +21,7 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.VariantTableSampleIndexOrderMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -174,7 +174,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         for (Integer sampleId : sampleIds) {
             if (sampleId != MISSING_SAMPLE) {
                 SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sampleId);
-                for (PhoenixHelper.Column column : VariantPhoenixHelper.getSampleColumns(sampleMetadata)) {
+                for (PhoenixHelper.Column column : VariantPhoenixSchema.getSampleColumns(sampleMetadata)) {
                     scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column.bytes());
                 }
             }

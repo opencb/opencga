@@ -632,7 +632,7 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(
             storage_config["cellbase"]["host"],
-            "http://bioinfo.hpc.cam.ac.uk/cellbase/",
+            "https://ws.opencb.org/cellbase/",
         )
 
     def test_cellbase_rest_not_set(self):
@@ -716,7 +716,7 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(
             storage_config["cellbase"]["host"],
-            "http://bioinfo.hpc.cam.ac.uk/cellbase/",
+            "https://ws.opencb.org/cellbase/",
         )
 
 # TODO: Tests for k8s config
