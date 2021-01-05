@@ -32,6 +32,7 @@ hadoop:
   sshDns: "FILL_ME"
   sshUsername: "FILL_ME"
   sshPassword: "FILL_ME"
+  flavour: "hdp3.1"
 
 opencga:
 #  secretName: {{ include "opencga.fullname" . }}-secret
@@ -65,8 +66,7 @@ rest:
   replicaCount: 3
 
   image:
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-base:2.0.1-SNAPSHOT-hdp3.1
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
     pullPolicy: Always
 
   imagePullSecrets: []
@@ -139,8 +139,7 @@ master:
   replicaCount: 1
 
   image:
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-base:2.0.1-SNAPSHOT-hdp3.1
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
     pullPolicy: Always
 
   imagePullSecrets: []
@@ -189,8 +188,7 @@ master:
 init:
   name: init
   image:
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-init:2.0.1-SNAPSHOT-hdp3.1
+    repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
     pullPolicy: Always
 
   podSecurityContext: {}

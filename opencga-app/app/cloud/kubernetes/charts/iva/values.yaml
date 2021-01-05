@@ -8,6 +8,9 @@ opencga:
 cellbase:
   host: "http://ws.opencb.org/cellbase/"
 
+azureStorageAccount:
+  secretName: # FILL_ME
+
 iva:
   name: iva
 
@@ -18,8 +21,7 @@ iva:
   replicaCount: 2
 
   image:
-    # TODO: Currently building from beta image. Update once release available.
-    repository: opencb/iva-app:2.0.0-beta
+    repository: opencb/iva-app:{{ .Chart.AppVersion }}
 
     pullPolicy: Always
 
