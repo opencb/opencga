@@ -31,11 +31,11 @@ import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -46,7 +46,9 @@ import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -55,8 +57,8 @@ import java.util.stream.Collectors;
 public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "knockout";
     public static final String DESCRIPTION = "Obtains the list of knocked out genes for each sample.";
-    protected static final String KNOCKOUT_INDIVIDUALS_JSON = "knockout.individuals.json";
-    protected static final String KNOCKOUT_GENES_JSON = "knockout.genes.json";
+    protected static final String KNOCKOUT_INDIVIDUALS_JSON = "knockout.individuals.json.gz";
+    protected static final String KNOCKOUT_GENES_JSON = "knockout.genes.json.gz";
 
     private final KnockoutAnalysisParams analysisParams = new KnockoutAnalysisParams();
     private String studyFqn;
@@ -207,8 +209,8 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             getToolExecutor(KnockoutAnalysisExecutor.class)
                     .setStudy(studyFqn)
                     .setSamples(analysisParams.getSample())
-                    .setSampleFileNamePattern(getScratchDir().resolve("knockout.sample.{sample}.json").toString())
-                    .setGeneFileNamePattern(getScratchDir().resolve("knockout.gene.{gene}.json").toString())
+                    .setSampleFileNamePattern(getScratchDir().resolve("knockout.sample.{sample}.json.gz").toString())
+                    .setGeneFileNamePattern(getScratchDir().resolve("knockout.gene.{gene}.json.gz").toString())
                     .setProteinCodingGenes(new HashSet<>(proteinCodingGenes))
                     .setOtherGenes(new HashSet<>(otherGenes))
                     .setBiotype(analysisParams.getBiotype())
@@ -222,13 +224,15 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         step("add-metadata-to-output-files", () -> {
             Map<String, String> sampleIdToIndividualIdMap = new HashMap<>();
             ObjectReader reader = JacksonUtils.getDefaultObjectMapper().readerFor(KnockoutByIndividual.class);
-            try (SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
+
+            try (BufferedWriter bufferedWriter = org.opencb.commons.utils.FileUtils.newBufferedWriter(getIndividualsOutputFile());
+                 SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
 //                    .writerWithDefaultPrettyPrinter()
                     .writer(new MinimalPrettyPrinter("\n"))
                     .forType(KnockoutByIndividual.class)
-                    .writeValues(getIndividualsOutputFile())) {
-                for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.sample..*.json"), null)) {
-                    KnockoutByIndividual knockoutByIndividual = reader.readValue(file);
+                    .writeValues(bufferedWriter)) {
+                for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.sample..*.json.gz"), null)) {
+                    KnockoutByIndividual knockoutByIndividual = reader.readValue(org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath()));
 
                     Individual individual = catalogManager
                             .getIndividualManager()
@@ -255,14 +259,16 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             }
 
             reader = JacksonUtils.getDefaultObjectMapper().readerFor(KnockoutByGene.class);
-            try (SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
+
+            try (BufferedWriter bufferedWriter = org.opencb.commons.utils.FileUtils.newBufferedWriter(getGenesOutputFile());
+                 SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
 //                    .writerWithDefaultPrettyPrinter()
                     .writer(new MinimalPrettyPrinter("\n"))
                     .forType(KnockoutByGene.class)
-                    .writeValues(getGenesOutputFile())) {
+                    .writeValues(bufferedWriter)) {
                 CellBaseUtils cellBaseUtils = getVariantStorageManager().getCellBaseUtils(studyFqn, getToken());
-                for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.gene..*.json"), null)) {
-                    KnockoutByGene knockoutByGene = reader.readValue(file);
+                for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.gene..*.json.gz"), null)) {
+                    KnockoutByGene knockoutByGene = reader.readValue(org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath()));
                     QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "transcripts,annotation.expression");
                     Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
                             .search(new Query(GeneDBAdaptor.QueryParams.NAME.key(), knockoutByGene.getName()), queryOptions).firstResult();
@@ -304,12 +310,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         });
     }
 
-    private File getIndividualsOutputFile() {
-        return getOutDir().resolve(KNOCKOUT_INDIVIDUALS_JSON).toFile();
+    private Path getIndividualsOutputFile() {
+        return getOutDir().resolve(KNOCKOUT_INDIVIDUALS_JSON);
     }
 
-    private File getGenesOutputFile() {
-        return getOutDir().resolve(KNOCKOUT_GENES_JSON).toFile();
+    private Path getGenesOutputFile() {
+        return getOutDir().resolve(KNOCKOUT_GENES_JSON);
     }
 
 }
