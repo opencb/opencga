@@ -181,7 +181,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         }
 
         private void transposeSampleToGeneOutputFiles() throws IOException {
-            int samplesBatchSize = 2;// Maths.max(1, 2000 - getSamples().size());
+            int samplesBatchSize = 200;// Maths.max(1, 2000 - getSamples().size());
             int numBatches = (int) Math.ceil((float) getSamples().size() / samplesBatchSize);
 
             for (int batch = 0; batch < numBatches; batch++) {
