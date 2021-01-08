@@ -67,7 +67,7 @@ rest:
 
   image:
     repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   imagePullSecrets: []
 
@@ -140,7 +140,7 @@ master:
 
   image:
     repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   imagePullSecrets: []
 
@@ -189,7 +189,7 @@ init:
   name: init
   image:
     repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   podSecurityContext: {}
   # fsGroup: 2000
