@@ -171,7 +171,12 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkObj(user, "User");
         ParamUtils.checkValidUserId(user.getId());
         ParamUtils.checkParameter(user.getName(), "name");
-        checkEmail(user.getEmail());
+        try {
+            checkEmail(user.getEmail());
+        } catch (CatalogParameterException e) {
+            user.setEmail("");
+            logger.warn("Missing email for user '" + user.getId() + "'");
+        }
         ParamUtils.checkObj(user.getAccount(), "account");
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
 
