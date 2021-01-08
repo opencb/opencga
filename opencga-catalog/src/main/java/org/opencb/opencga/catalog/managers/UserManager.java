@@ -172,6 +172,9 @@ public class UserManager extends AbstractManager {
         try {
             checkEmail(user.getEmail());
         } catch (CatalogParameterException e) {
+            if (StringUtils.isNotEmpty(user.getEmail())) {
+                throw e;
+            }
             user.setEmail("");
             logger.warn("Missing email for user '" + user.getId() + "'");
         }
