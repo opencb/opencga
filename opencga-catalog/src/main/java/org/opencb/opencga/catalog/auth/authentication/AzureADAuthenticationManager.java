@@ -21,6 +21,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationProvider;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -315,12 +316,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         for (com.microsoft.graph.models.extensions.User graphUser : graphUserList) {
             id = graphUser.id;
             name = graphUser.displayName;
-            mail = graphUser.mail;
-//            if (!StringUtils.isEmpty(graphUser.mail)) {
-//                mail = graphUser.mail;
-//            } else {
-//                mail = graphUser.userPrincipalName;
-//            }
+            mail = getEmail(graphUser);
 
             Map<String, String> additionalProperties = new HashMap<>();
             if (graphUser.getRawObject() != null) {
@@ -346,6 +342,20 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
         }
 
         return userList;
+    }
+
+    private String getEmail(com.microsoft.graph.models.extensions.User user) {
+        if (StringUtils.isNotEmpty(user.mail)) {
+            return user.mail;
+        }
+        if (ListUtils.isNotEmpty(user.otherMails)) {
+            for (String otherMail : user.otherMails) {
+                if (StringUtils.isNotEmpty(otherMail)) {
+                    return otherMail;
+                }
+            }
+        }
+        return "";
     }
 
     @Override
