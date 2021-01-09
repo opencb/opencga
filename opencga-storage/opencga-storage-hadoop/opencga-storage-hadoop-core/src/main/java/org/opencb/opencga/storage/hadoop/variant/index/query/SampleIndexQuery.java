@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;

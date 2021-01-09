@@ -281,7 +281,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             return;
         }
 
-        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
+        if (CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
             FastQc fastQc = null;
 
             // First, look for fastqc_data.txt to parse it

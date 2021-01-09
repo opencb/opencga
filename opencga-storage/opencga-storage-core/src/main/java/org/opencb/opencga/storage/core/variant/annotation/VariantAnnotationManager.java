@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.annotation;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;

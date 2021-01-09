@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.stats.solr.converters;
 
-import org.apache.commons.collections.map.HashedMap;
+import org.apache.commons.collections4.map.HashedMap;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.QueryParam;

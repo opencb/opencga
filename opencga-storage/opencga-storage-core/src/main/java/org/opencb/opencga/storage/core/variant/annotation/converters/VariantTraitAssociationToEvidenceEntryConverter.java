@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.core.variant.annotation.converters;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public class VariantTraitAssociationToEvidenceEntryConverter implements Converter<VariantTraitAssociation, List<EvidenceEntry>> {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantTraitAssociationToEvidenceEntryConverter.class);

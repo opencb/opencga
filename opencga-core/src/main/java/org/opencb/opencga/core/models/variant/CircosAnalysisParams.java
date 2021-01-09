@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.variant;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;

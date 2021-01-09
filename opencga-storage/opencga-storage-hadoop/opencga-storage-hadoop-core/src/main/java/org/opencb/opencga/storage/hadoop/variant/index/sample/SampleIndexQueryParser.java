@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;

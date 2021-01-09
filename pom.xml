@@ -51,6 +51,7 @@
 <!--        <bionet.version>0.2.0-SNAPSHOT</bionet.version>-->
         <jackson.version>2.10.1</jackson.version>
         <jersey.version>2.25.1</jersey.version>
+        <collections.version>4.4</collections.version>
         <avro.version>1.7.7</avro.version>
         <protobuf.version>3.9.0</protobuf.version>
         <grpc.version>1.23.0</grpc.version>
@@ -286,6 +287,11 @@
                         <artifactId>log4j-web</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>${collections.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
