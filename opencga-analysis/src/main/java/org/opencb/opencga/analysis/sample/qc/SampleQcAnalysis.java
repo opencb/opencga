@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
-import com.nimbusds.oauth2.sdk.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;

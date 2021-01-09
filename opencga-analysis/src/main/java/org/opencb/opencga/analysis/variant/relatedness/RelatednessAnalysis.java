@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.relatedness;
 
-import com.nimbusds.oauth2.sdk.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
