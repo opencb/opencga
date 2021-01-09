@@ -13,10 +13,6 @@ import org.opencb.opencga.storage.hadoop.variant.stats.SampleVariantStatsDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 @ToolExecutor(id="hbase-mapreduce", tool = "sample-variant-stats",
@@ -25,7 +21,7 @@ import java.util.List;
 public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
         extends SampleVariantStatsAnalysisExecutor implements HadoopVariantStorageToolExecutor {
 
-    private static final int SAMPLES_BATCH_SIZE = 5000;
+    private static final int MAX_SAMPLES_BATCH_SIZE = 4000;
     private static Logger logger = LoggerFactory.getLogger(SampleVariantStatsHBaseMapReduceAnalysisExecutor.class);
 
     @Override
@@ -45,44 +41,26 @@ public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
                     throw VariantQueryException.sampleNotFound(sampleName, study);
                 }
             }
-            Path output = getOutputFile().toAbsolutePath();
-            Path outdir = output.getParent();
-            int numBatches = (int) (Math.ceil(sampleNames.size() / ((float) SAMPLES_BATCH_SIZE)));
-            int batchSize = (int) (Math.ceil(sampleNames.size() / (float) numBatches));
-            if (numBatches > 1) {
-                logger.info("Execute sample stats in {} batches of {} samples", numBatches, batchSize);
-            }
-            for (int batch = 0; batch < numBatches; batch++) {
-                List<String> batchSamples;
-                if (numBatches > 1) {
-                    batchSamples = sampleNames.subList(batch * batchSize, Math.min(sampleNames.size(), (batch + 1) * batchSize));
-                    logger.info("Sample stats batch {}/{} with {} samples", batch + 1, numBatches, batchSamples.size());
-                } else {
-                    batchSamples = sampleNames;
-                }
-                Path tmpOutput = batch == 0 ? output : outdir.resolve(output.getFileName() + "." + batch);
 
-                ObjectMap params = new ObjectMap(engine.getOptions())
-                        .appendAll(getVariantQuery())
-                        .append(SampleVariantStatsDriver.SAMPLES, batchSamples)
-                        .append(SampleVariantStatsDriver.OUTPUT, tmpOutput.toAbsolutePath().toUri());
-                engine.getMRExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(
-                        dbAdaptor.getArchiveTableName(studyId),
-                        dbAdaptor.getVariantTable(),
-                        studyId,
-                        null,
-                        params
-                ), "Calculate sample variant stats");
-                if (batch != 0) {
-                    try (OutputStream os = Files.newOutputStream(output, StandardOpenOption.APPEND)) {
-                        Files.copy(tmpOutput, os);
-                        Files.delete(tmpOutput);
-                    }
-                }
-            }
+            ObjectMap params = new ObjectMap(engine.getOptions())
+                    .appendAll(getVariantQuery())
+                    .append(SampleVariantStatsDriver.SAMPLES, sampleNames)
+                    .append(SampleVariantStatsDriver.OUTPUT, getOutputFile().toAbsolutePath().toUri());
+            engine.getMRExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(
+                    dbAdaptor.getArchiveTableName(studyId),
+                    dbAdaptor.getVariantTable(),
+                    studyId,
+                    null,
+                    params
+            ), "Calculate sample variant stats");
+
         } catch (Exception e) {
             throw new ToolExecutorException(e);
         }
     }
 
+    @Override
+    public int getMaxBatchSize() {
+        return MAX_SAMPLES_BATCH_SIZE;
+    }
 }

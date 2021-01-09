@@ -13,7 +13,7 @@ ZK_HOSTS_NUM=$2
 SOLR_VERSION=$3
 SOLR_VOLUME=/datadrive/solr-volume
 DOCKER_NAME=opencga-solr-${SOLR_VERSION}
-
+OPENCGA_VERSION=REPLACEME_OPENCGA_VERSION
 
 scanForNewDisks() {
     # Looks for unpartitioned disks
@@ -131,7 +131,7 @@ done
 
 # Add OpenCGA Configuration Sets
 # copy configset to volume ready to mount
-docker run --rm -v ${SOLR_VOLUME}/solr/configsets:/target opencb/opencga-base:2.1.0-SNAPSHOT cp -r /opt/opencga/misc/solr/ /target/opencga/
+docker run --rm -v ${SOLR_VOLUME}/solr/configsets:/target opencb/opencga-base:${OPENCGA_VERSION} cp -r /opt/opencga/misc/solr/ /target/opencga/
 
 for i in `ls  ${SOLR_VOLUME}/solr/configsets/opencga/ | grep "configset"` ; do
   echo "Install configset ${i}"

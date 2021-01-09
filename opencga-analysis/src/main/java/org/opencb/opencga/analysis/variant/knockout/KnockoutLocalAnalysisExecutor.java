@@ -181,51 +181,43 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         }
 
         private void transposeSampleToGeneOutputFiles() throws IOException {
-            Set<String> transposedGenes = new HashSet<>();
-            int batchSize = 200;// Maths.max(1, 2000 - getSamples().size());
-            int prevBatchSize;
-            int numBatches = 0;
-            do {
-                numBatches++;
+            int samplesBatchSize = 200;// Maths.max(1, 2000 - getSamples().size());
+            int numBatches = (int) Math.ceil((float) getSamples().size() / samplesBatchSize);
+
+            for (int batch = 0; batch < numBatches; batch++) {
                 Map<String, KnockoutByGene> byGeneMap = new HashMap<>();
-                for (String sample : getSamples()) {
+                List<String> samplesBatch = getSamples().subList(batch * samplesBatchSize,
+                        Math.min(getSamples().size(), (batch + 1) * samplesBatchSize));
+                for (String sample : samplesBatch) {
                     Path fileName = getSampleFileName(sample);
                     if (Files.exists(fileName)) {
                         KnockoutByIndividual byIndividual = readSampleFile(sample);
                         for (KnockoutGene gene : byIndividual.getGenes()) {
                             KnockoutByGene byGene;
-                            if (byGeneMap.size() < batchSize) {
-                                if (transposedGenes.contains(gene.getName())) {
-                                    // Skip already transposed genes
-                                    byGene = null;
-                                } else {
-                                    // Create new gene if absent
-                                    byGene = byGeneMap.computeIfAbsent(gene.getName(),
-                                            id -> new KnockoutByGene().setId(gene.getId()).setName(gene.getName()).setIndividuals(new LinkedList<>()));
-                                }
-                            } else {
-                                // As we already have enough genes, do not try to create a new one.
-                                // If this gene is not in the map, simply ignore it.
-                                byGene = byGeneMap.get(gene.getName());
-                            }
-                            if (byGene != null) {
-                                KnockoutByGene.KnockoutIndividual knockoutIndividual = new KnockoutByGene.KnockoutIndividual()
-                                        .setId(byIndividual.getId())
-                                        .setSampleId(byIndividual.getSampleId())
-                                        .setTranscripts(gene.getTranscripts());
-                                byGene.getIndividuals().add(knockoutIndividual);
-                            }
+                            // Create new gene if absent
+                            byGene = byGeneMap.computeIfAbsent(gene.getName(),
+                                    id -> new KnockoutByGene().setId(gene.getId()).setName(gene.getName()).setIndividuals(new LinkedList<>()));
+                            KnockoutByGene.KnockoutIndividual knockoutIndividual = new KnockoutByGene.KnockoutIndividual()
+                                    .setId(byIndividual.getId())
+                                    .setSampleId(byIndividual.getSampleId())
+                                    .setTranscripts(gene.getTranscripts());
+                            byGene.getIndividuals().add(knockoutIndividual);
                         }
                     }
                 }
                 for (Map.Entry<String, KnockoutByGene> entry : byGeneMap.entrySet()) {
-                    transposedGenes.add(entry.getKey());
-                    writeGeneFile(entry.getValue());
+                    String gene = entry.getKey();
+                    if (Files.exists(getGeneFileName(gene))) {
+                        KnockoutByGene knockoutByGene = readGeneFile(gene);
+                        knockoutByGene.getIndividuals().addAll(entry.getValue().getIndividuals());
+                        writeGeneFile(knockoutByGene);
+                    } else {
+                        writeGeneFile(entry.getValue());
+                    }
                 }
-                prevBatchSize = byGeneMap.size();
-                logger.info("Transpose sample to gene. Batch {} of {} genes", numBatches, prevBatchSize);
-            } while (prevBatchSize == batchSize);
-
+                logger.info("Transpose sample to gene. Batch {}/{} of {} samples with {} genes",
+                        batch + 1, numBatches, samplesBatch.size(), byGeneMap.size());
+            }
         }
 
         private void knockouts(Query query, String sample, Trio trio, Map<String, KnockoutGene> knockoutGenes,

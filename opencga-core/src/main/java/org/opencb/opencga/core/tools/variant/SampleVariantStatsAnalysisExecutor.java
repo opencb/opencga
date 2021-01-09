@@ -94,4 +94,6 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExec
             throw new ToolException("Error writing output file: " + outFilename, e);
         }
     }
+
+    public abstract int getMaxBatchSize();
 }

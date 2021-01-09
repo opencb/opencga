@@ -11,11 +11,11 @@ After compiling and installing OpenCGA, the six Solr config sets are located at 
 In order to upload all of them, you need to execute the following commands:
 
 ```
-$ ./bin/solr zk upconfig -n opencga-variant-configset-VERSION -d ~/opencga/build/misc/solr/opencga-variant-configset-VERSION -z localhost:9983
-$ ./bin/solr zk upconfig -n opencga-cohort-configset-VERSION -d ~/opencga/build/misc/solr/opencga-cohort-configset-VERSION -z localhost:9983
-$ ./bin/solr zk upconfig -n opencga-family-configset-VERSION -d ~/opencga/build/misc/solr/opencga-family-configset-VERSION -z localhost:9983
-$ ./bin/solr zk upconfig -n opencga-file-configset-VERSION -d ~/opencga/build/misc/solr/opencga-file-configset-VERSION -z localhost:9983
-$ ./bin/solr zk upconfig -n opencga-individual-configset-VERSION -d ~/opencga/build/misc/solr/opencga-individual-configset-VERSION -z localhost:9983
-$ ./bin/solr zk upconfig -n opencga-sample-configset-VERSION -d ~/opencga/build/misc/solr/opencga-sample-configset-VERSION -z localhost:9983
+$ ./bin/solr zk upconfig -n opencga-variant-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-variant-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
+$ ./bin/solr zk upconfig -n opencga-cohort-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-cohort-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
+$ ./bin/solr zk upconfig -n opencga-family-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-family-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
+$ ./bin/solr zk upconfig -n opencga-file-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-file-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
+$ ./bin/solr zk upconfig -n opencga-individual-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-individual-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
+$ ./bin/solr zk upconfig -n opencga-sample-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-sample-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
 
 ```

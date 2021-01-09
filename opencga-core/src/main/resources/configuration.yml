@@ -150,7 +150,7 @@ analysis:
      ## Kubernetes executor configuration example
      # k8s.masterUrl: "https://192.168.99.100:8443/"
      # FOR Cluster Autoscaler and dedicated jobs agent pool:
-      k8s.imageName: "opencb/opencga-base:2.1.0-SNAPSHOT-hdp3.1s"
+      k8s.imageName: "opencb/opencga-base:${opencga.version}-hdp3.1"
       k8s.imagePullPolicy: "IfNotPresent"
 #      k8s.imagePullSecrets:
 #        name : "dockerhub-secrets-name"

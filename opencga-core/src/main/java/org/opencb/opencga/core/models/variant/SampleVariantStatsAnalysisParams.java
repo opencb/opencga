@@ -33,6 +33,7 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
     private boolean indexOverwrite;
     private String indexId;
     private String indexDescription;
+    private Integer batchSize;
 
     public static class VariantQueryParams extends AnnotationVariantQueryParams {
         public String sampleData;
@@ -68,18 +69,18 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
     }
 
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
-                                            boolean indexOverwrite, String indexId, String indexDescription,
+                                            boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize,
                                             AnnotationVariantQueryParams variantQuery) {
-        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, new VariantQueryParams(variantQuery.toQuery()));
+        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize, new VariantQueryParams(variantQuery.toQuery()));
     }
 
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
-                                            boolean indexOverwrite, String indexId, String indexDescription, Query variantQuery) {
-        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, new VariantQueryParams(variantQuery));
+                                            boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize, Query variantQuery) {
+        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize, new VariantQueryParams(variantQuery));
     }
 
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
-                                            boolean indexOverwrite, String indexId, String indexDescription,
+                                            boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize,
                                             VariantQueryParams variantQuery) {
         this.sample = sample;
         this.individual = individual;
@@ -89,6 +90,7 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
         this.indexOverwrite = indexOverwrite;
         this.indexId = indexId;
         this.indexDescription = indexDescription;
+        this.batchSize = batchSize;
     }
 
     public List<String> getSample() {
@@ -160,6 +162,15 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
 
     public SampleVariantStatsAnalysisParams setIndexDescription(String indexDescription) {
         this.indexDescription = indexDescription;
+        return this;
+    }
+
+    public Integer getBatchSize() {
+        return batchSize;
+    }
+
+    public SampleVariantStatsAnalysisParams setBatchSize(Integer batchSize) {
+        this.batchSize = batchSize;
         return this;
     }
 }

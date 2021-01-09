@@ -82,6 +82,13 @@
         <!--                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>-->
         <!--            </properties>-->
         <!--        </profile>-->
+        <profile>
+            <id>emr5.31</id>
+            <properties>
+                <opencga-storage-hadoop-deps.id>emr5.31</opencga-storage-hadoop-deps.id>
+                <opencga-storage-hadoop-deps.artifactId>opencga-storage-hadoop-deps-${opencga-storage-hadoop-deps.id}</opencga-storage-hadoop-deps.artifactId>
+            </properties>
+        </profile>
         <!--        <profile>-->
         <!--            <id>cdh5.13</id>-->
         <!--            <properties>-->

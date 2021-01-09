@@ -1035,6 +1035,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
 
+        @Parameter(names = {"--batch-size"}, description = "Number of samples to compute in parallel.")
+        public Integer batchSize;
+
         @Parameter(names = {"--index"}, description = "Index result in catalog as sampleQc.", arity = 0)
         public boolean index;
 
