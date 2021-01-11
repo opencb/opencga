@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.google.common.collect.Iterators;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.util.Bytes;

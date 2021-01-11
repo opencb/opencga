@@ -85,7 +85,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -455,7 +455,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
         try (java.sql.Connection con = phoenixHelper.newJdbcConnection()) {
             if (phoenixHelper.tableExists(con, tableName)) {
-                phoenixHelper.dropTable(con, tableName, VariantPhoenixHelper.DEFAULT_TABLE_TYPE, true, true);
+                phoenixHelper.dropTable(con, tableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, true, true);
             }
         }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));

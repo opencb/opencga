@@ -5,7 +5,7 @@ set -e
 ZK_HOST=${1:-localhost:9983}
 SOLR_HOME=${2:-/opt/solr}
 OPENCGA_HOME=${3:-/opt/opencga}
-VERSION=REPLACEME_VERSION
+VERSION=REPLACEME_OPENCGA_VERSION
 
 echo "Install configsets from ${OPENCGA_HOME}/misc/solr"
 echo "ZK_HOST=${ZK_HOST}"

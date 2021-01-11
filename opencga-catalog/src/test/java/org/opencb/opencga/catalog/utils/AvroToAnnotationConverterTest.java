@@ -82,7 +82,8 @@ public class AvroToAnnotationConverterTest {
                 .setName("opencga_sample_variant_stats")
                 .setDescription("OpenCGA sample variant stats")
                 .setEntities(Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE))
-                .setUnique(true)
+                .setUnique(false)
+                .setInternal(true)
                 .setConfidential(false)
                 .setAttributes(Collections.singletonMap("avroClass", SampleVariantStats.class.toString()))
                 .setVariables(new LinkedHashSet<>(variables));
@@ -126,59 +127,77 @@ public class AvroToAnnotationConverterTest {
     private void addBiotypeKeys(Variable biotypeCount) {
         biotypeCount.setAllowedKeys(Arrays.asList(
                 VariantAnnotationUtils.THREEPRIME_OVERLAPPING_NCRNA,
+                "3prime_overlapping_ncRNA",
+                VariantAnnotationUtils.AMBIGUOUS_ORF,
+                VariantAnnotationUtils.ANTISENSE,
+                "antisense_RNA",
+                "bidirectional_promoter_lncRNA",
                 VariantAnnotationUtils.IG_C_GENE,
                 VariantAnnotationUtils.IG_C_PSEUDOGENE,
                 VariantAnnotationUtils.IG_D_GENE,
                 VariantAnnotationUtils.IG_J_GENE,
                 VariantAnnotationUtils.IG_J_PSEUDOGENE,
+                "IG_pseudogene",
                 VariantAnnotationUtils.IG_V_GENE,
                 VariantAnnotationUtils.IG_V_PSEUDOGENE,
+
+                VariantAnnotationUtils.INTERGENIC_VARIANT,
+
+                VariantAnnotationUtils.KNOWN_NCRNA,
+                VariantAnnotationUtils.LINCRNA,
+                VariantAnnotationUtils.LRG_GENE,
+
+                "macro_lncRNA",
+                VariantAnnotationUtils.MIRNA,
+                VariantAnnotationUtils.MIRNA_PSEUDOGENE,
+                VariantAnnotationUtils.MISC_RNA,
+                VariantAnnotationUtils.MISC_RNA_PSEUDOGENE,
                 VariantAnnotationUtils.MT_RRNA,
                 VariantAnnotationUtils.MT_TRNA,
-                VariantAnnotationUtils.TR_C_GENE,
-                VariantAnnotationUtils.TR_D_GENE,
-                VariantAnnotationUtils.TR_J_GENE,
-                VariantAnnotationUtils.TR_J_PSEUDOGENE,
-                VariantAnnotationUtils.TR_V_GENE,
-                VariantAnnotationUtils.TR_V_PSEUDOGENE,
-                VariantAnnotationUtils.ANTISENSE,
-                VariantAnnotationUtils.LINCRNA,
-                VariantAnnotationUtils.MIRNA,
-                VariantAnnotationUtils.MISC_RNA,
+                VariantAnnotationUtils.NMD_TRANSCRIPT_VARIANT,
+                VariantAnnotationUtils.NON_CODING,
+                VariantAnnotationUtils.NONSENSE_MEDIATED_DECAY,
+                VariantAnnotationUtils.NON_STOP_DECAY,
+
                 VariantAnnotationUtils.POLYMORPHIC_PSEUDOGENE,
                 VariantAnnotationUtils.PROCESSED_PSEUDOGENE,
                 VariantAnnotationUtils.PROCESSED_TRANSCRIPT,
                 VariantAnnotationUtils.PROTEIN_CODING,
                 VariantAnnotationUtils.PSEUDOGENE,
+
+                VariantAnnotationUtils.RETAINED_INTRON,
+                VariantAnnotationUtils.RETROTRANSPOSED,
+                "ribozyme",
                 VariantAnnotationUtils.RRNA,
+                VariantAnnotationUtils.RRNA_PSEUDOGENE,
+
+                "scaRNA",
+                "scRNA",
+                VariantAnnotationUtils.SCRNA_PSEUDOGENE,
                 VariantAnnotationUtils.SENSE_INTRONIC,
                 VariantAnnotationUtils.SENSE_OVERLAPPING,
-                VariantAnnotationUtils.SNRNA,
                 VariantAnnotationUtils.SNORNA,
-                VariantAnnotationUtils.NONSENSE_MEDIATED_DECAY,
-                VariantAnnotationUtils.NMD_TRANSCRIPT_VARIANT,
-                VariantAnnotationUtils.UNPROCESSED_PSEUDOGENE,
-                VariantAnnotationUtils.TRANSCRIBED_UNPROCESSED_PSEUDGENE,
-                VariantAnnotationUtils.RETAINED_INTRON,
-                VariantAnnotationUtils.NON_STOP_DECAY,
-                VariantAnnotationUtils.UNITARY_PSEUDOGENE,
-                VariantAnnotationUtils.TRANSLATED_PROCESSED_PSEUDOGENE,
-                VariantAnnotationUtils.TRANSCRIBED_PROCESSED_PSEUDOGENE,
-                VariantAnnotationUtils.TRNA_PSEUDOGENE,
                 VariantAnnotationUtils.SNORNA_PSEUDOGENE,
+                VariantAnnotationUtils.SNRNA,
                 VariantAnnotationUtils.SNRNA_PSEUDOGENE,
-                VariantAnnotationUtils.SCRNA_PSEUDOGENE,
-                VariantAnnotationUtils.RRNA_PSEUDOGENE,
-                VariantAnnotationUtils.MISC_RNA_PSEUDOGENE,
-                VariantAnnotationUtils.MIRNA_PSEUDOGENE,
-                VariantAnnotationUtils.NON_CODING,
-                VariantAnnotationUtils.AMBIGUOUS_ORF,
-                VariantAnnotationUtils.KNOWN_NCRNA,
-                VariantAnnotationUtils.RETROTRANSPOSED,
+                "sRNA",
+
+                "TEC",
+                VariantAnnotationUtils.TRANSCRIBED_PROCESSED_PSEUDOGENE,
                 VariantAnnotationUtils.TRANSCRIBED_UNITARY_PSEUDOGENE,
+                VariantAnnotationUtils.TRANSCRIBED_UNPROCESSED_PSEUDGENE,
+                VariantAnnotationUtils.TRANSLATED_PROCESSED_PSEUDOGENE,
                 VariantAnnotationUtils.TRANSLATED_UNPROCESSED_PSEUDOGENE,
-                VariantAnnotationUtils.LRG_GENE,
-                VariantAnnotationUtils.INTERGENIC_VARIANT
+                VariantAnnotationUtils.TR_C_GENE,
+                VariantAnnotationUtils.TR_D_GENE,
+                VariantAnnotationUtils.TR_J_GENE,
+                VariantAnnotationUtils.TR_J_PSEUDOGENE,
+                VariantAnnotationUtils.TRNA_PSEUDOGENE,
+                VariantAnnotationUtils.TR_V_GENE,
+                VariantAnnotationUtils.TR_V_PSEUDOGENE,
+                VariantAnnotationUtils.UNITARY_PSEUDOGENE,
+                VariantAnnotationUtils.UNPROCESSED_PSEUDOGENE,
+                "vaultRNA"
         ));
     }
 }

@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.io.bit;
 
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,12 +24,12 @@ public class BitStreamTest {
 
     @Before
     public void setUp() throws Exception {
-        Random random = new Random(2);
+//        Random random = new Random(2);
         bits = new byte[LENGTH * Byte.SIZE];
         bytes = new byte[LENGTH];
 
         for (int i = 0; i < bits.length; i++) {
-            bits[i] = (byte) (RandomUtils.nextBoolean(random) ? 1 : 0);
+            bits[i] = (byte) (RandomUtils.nextBoolean() ? 1 : 0);
         }
         for (int i = 0; i < LENGTH; i++) {
             for (int bit = 0; bit < Byte.SIZE; bit++) {

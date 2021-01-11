@@ -25,7 +25,7 @@ spec:
       - name: init
         securityContext:
           {{- toYaml .Values.iva.securityContext | nindent 12 }}
-        image: "{{ .Values.iva.image.repository }}"
+        image: {{ tpl .Values.iva.image.repository . | quote }}
         imagePullPolicy: {{ .Values.iva.image.pullPolicy }}
         command:
           - /bin/sh
@@ -44,7 +44,7 @@ spec:
       - name: {{ .Chart.Name }}
         securityContext:
           {{- toYaml .Values.iva.securityContext | nindent 12 }}
-        image: "{{ .Values.iva.image.repository }}"
+        image: {{ tpl .Values.iva.image.repository . | quote }}
         imagePullPolicy: {{ .Values.iva.image.pullPolicy }}
         ports:
         - containerPort: 80

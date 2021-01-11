@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -986,6 +987,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             qOptions = new QueryOptions();
         }
         qOptions = removeAnnotationProjectionOptions(qOptions);
+        qOptions = filterQueryOptions(qOptions, SampleManager.INCLUDE_SAMPLE_IDS.getAsStringList(QueryOptions.INCLUDE));
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
 
 //        if (isQueryingIndividualFields(finalQuery)) {

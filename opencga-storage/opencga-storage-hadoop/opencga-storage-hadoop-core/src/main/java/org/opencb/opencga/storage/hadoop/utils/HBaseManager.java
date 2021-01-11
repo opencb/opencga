@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,19 +53,19 @@ public class HBaseManager implements AutoCloseable {
 
     @FunctionalInterface
     public interface HBaseTableConsumer {
+
         void accept(Table table) throws IOException;
     }
-
     @FunctionalInterface
     public interface HBaseTableFunction<T> {
+
         T function(Table table) throws IOException;
     }
-
     @FunctionalInterface
     public interface HBaseTableAdminFunction<T> {
+
         T function(Table table, Admin admin) throws IOException;
     }
-
     public HBaseManager(Configuration configuration) {
         this(configuration, (Connection) null);
     }
@@ -296,6 +297,17 @@ public class HBaseManager implements AutoCloseable {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname); Admin admin = con.getAdmin()) {
             return func.function(table, admin);
+        }
+    }
+
+    public List<TableName> listTables() throws IOException {
+        try (Admin admin = getConnection().getAdmin()) {
+            HTableDescriptor[] hTableDescriptors = admin.listTables();
+            List<TableName> tableNames = new ArrayList<>(hTableDescriptors.length);
+            for (HTableDescriptor hTableDescriptor : hTableDescriptors) {
+                tableNames.add(hTableDescriptor.getTableName());
+            }
+            return tableNames;
         }
     }
 

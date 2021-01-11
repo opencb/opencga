@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +95,7 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
                 super.pre();
                 try {
                     hadoopDbAdaptor.updateStatsColumns(studyMetadata);
-                } catch (SQLException e) {
+                } catch (StorageEngineException e) {
                     throw new RuntimeException(e);
                 }
                 return writer.pre();

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.stats.solr;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
@@ -333,8 +333,8 @@ public class CatalogSolrQueryParser {
                         break;
                     case INTEGER:
                         auxVariableMap.put("type", isParentArray || variable.isMultiValue()
-                                ? QueryParam.Type.INTEGER_ARRAY
-                                : QueryParam.Type.INTEGER);
+                                ? LONG_ARRAY
+                                : LONG);
                         variableMap.put(fullVariablePath, auxVariableMap);
                         break;
                     case DOUBLE:
@@ -359,7 +359,7 @@ public class CatalogSolrQueryParser {
                         variableMap.put(fullVariablePath + ".*", auxVariableMap);
                         break;
                     case MAP_INTEGER:
-                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? INTEGER_ARRAY : INTEGER);
+                        auxVariableMap.put("type", isParentArray || variable.isMultiValue() ? LONG_ARRAY : LONG);
                         variableMap.put(fullVariablePath + ".*", auxVariableMap);
                         break;
                     case MAP_DOUBLE:

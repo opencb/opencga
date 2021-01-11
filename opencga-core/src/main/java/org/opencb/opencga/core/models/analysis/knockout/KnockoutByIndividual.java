@@ -161,6 +161,11 @@ public class KnockoutByIndividual {
     public static class KnockoutGene {
         private String id;
         private String name;
+        private String chromosome;
+        private int start;
+        private int end;
+        private String biotype;
+        private String strand;
         private Map<String, KnockoutTranscript> transcriptsMap = new HashMap<>(); // Internal only
 
         public KnockoutGene() {
@@ -185,6 +190,51 @@ public class KnockoutByIndividual {
 
         public KnockoutGene setName(String name) {
             this.name = name;
+            return this;
+        }
+
+        public String getChromosome() {
+            return chromosome;
+        }
+
+        public KnockoutGene setChromosome(String chromosome) {
+            this.chromosome = chromosome;
+            return this;
+        }
+
+        public int getStart() {
+            return start;
+        }
+
+        public KnockoutGene setStart(int start) {
+            this.start = start;
+            return this;
+        }
+
+        public int getEnd() {
+            return end;
+        }
+
+        public KnockoutGene setEnd(int end) {
+            this.end = end;
+            return this;
+        }
+
+        public String getBiotype() {
+            return biotype;
+        }
+
+        public KnockoutGene setBiotype(String biotype) {
+            this.biotype = biotype;
+            return this;
+        }
+
+        public String getStrand() {
+            return strand;
+        }
+
+        public KnockoutGene setStrand(String strand) {
+            this.strand = strand;
             return this;
         }
 

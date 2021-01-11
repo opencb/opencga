@@ -12,6 +12,8 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.Arrays;
@@ -38,6 +40,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case VARIANT_CONFIGURE:
                 queryResponse = variantConfigure();
+                break;
+            case VARIANT_INDEX_LAUNCHER:
+                queryResponse = variantIndexLauncher();
                 break;
             case VARIANT_SECONDARY_INDEX:
                 queryResponse = variantSecondaryIndex();
@@ -93,6 +98,21 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = getParams(cliOptions.project, cliOptions.study);
 
         return openCGAClient.getVariantOperationClient().configureVariant(new ObjectMap(cliOptions.commonOptions.params), params);
+    }
+
+    private RestResponse<Job> variantIndexLauncher() throws ClientException {
+        OperationsCommandOptions.VariantIndexLauncherCommandOptions cliOptions = operationsCommandOptions.variantIndexLauncher;
+
+        ObjectMap params = getParams(cliOptions);
+
+        return openCGAClient.getVariantOperationClient().launcherVariantIndex(
+                new VariantFileIndexJobLauncherParams(
+                        cliOptions.name,
+                        cliOptions.directory,
+                        cliOptions.resumeFailed,
+                        cliOptions.ignoreFailed,
+                        cliOptions.maxJobs,
+                        VariantIndexParams.fromParams(VariantIndexParams.class, cliOptions.indexParams)), params);
     }
 
     private RestResponse<Job> variantSecondaryIndex() throws ClientException {

@@ -18,9 +18,9 @@ package org.opencb.opencga.analysis.clinical;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.*;
@@ -142,8 +142,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
         this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 
-        this.roleInCancerManager = new RoleInCancerManager();
-        this.actionableVariantManager = new ActionableVariantManager();
+        this.roleInCancerManager = new RoleInCancerManager(opencgaHome);
+        this.actionableVariantManager = new ActionableVariantManager(opencgaHome);
 
         this.catalogQueryUtils = new VariantCatalogQueryUtils(catalogManager);
 
@@ -400,7 +400,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (config != null && config.isSkipUntieredVariants() && CollectionUtils.isEmpty(evidences)) {
             return null;
         }
-        
+
         ClinicalVariant clinicalVariant = new ClinicalVariant(variant.getImpl());
         clinicalVariant.setEvidences(evidences);
         return clinicalVariant;

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.sample.qc;
 
-import com.nimbusds.oauth2.sdk.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
@@ -281,7 +281,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             return;
         }
 
-        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
+        if (CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
             FastQc fastQc = null;
 
             // First, look for fastqc_data.txt to parse it

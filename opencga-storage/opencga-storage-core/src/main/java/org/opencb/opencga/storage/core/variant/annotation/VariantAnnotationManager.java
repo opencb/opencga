@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.annotation;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -30,9 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.sql.Date;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -118,7 +116,7 @@ public abstract class VariantAnnotationManager {
         }
 
         List<ObjectMap> currentSourceVersion = current.getSourceVersion();
-        if (CollectionUtils.isNotEmpty(currentSourceVersion) && !currentSourceVersion.equals(newSourceVersion)) {
+        if (CollectionUtils.isNotEmpty(currentSourceVersion) && !sameSourceVersion(newSourceVersion, currentSourceVersion)) {
             String msg = "Source version of the annotator has changed. "
                     + "Existing annotation calculated with "
                     + currentSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"))
@@ -132,6 +130,14 @@ public abstract class VariantAnnotationManager {
         }
 
         return current;
+    }
+
+    private boolean sameSourceVersion(List<ObjectMap> newSourceVersion, List<ObjectMap> currentSourceVersion) {
+        if (currentSourceVersion.size() != newSourceVersion.size()) {
+            return false;
+        }
+        Set<ObjectMap> newSourceVersionSet = new HashSet<>(newSourceVersion);
+        return newSourceVersionSet.containsAll(currentSourceVersion);
     }
 
     protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,

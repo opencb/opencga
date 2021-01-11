@@ -89,6 +89,8 @@ public class ParamConstants {
     public static final String ADMIN_STUDY = "admin";
     public static final String ADMIN_STUDY_FQN = OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
     public static final String ANONYMOUS_USER_ID = "*";
+    public static final String MEMBERS_GROUP = "@members";
+    public static final String ADMINS_GROUP = "@admins";
 
     public static final String USER_DESCRIPTION = "User ID";
 

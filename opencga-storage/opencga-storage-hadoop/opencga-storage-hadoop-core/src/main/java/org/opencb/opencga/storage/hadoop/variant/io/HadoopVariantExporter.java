@@ -99,7 +99,7 @@ public class HadoopVariantExporter extends VariantExporter {
 
             String[] args = VariantExporterDriver.buildArgs(dbAdaptor.getVariantTable(), options);
 
-            mrExecutor.run(VariantExporterDriver.class, args, engine.getOptions(), "Export variants");
+            mrExecutor.run(VariantExporterDriver.class, args, "Export variants");
 
             VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
             writeMetadata(metadata, metadataPath.toUri());

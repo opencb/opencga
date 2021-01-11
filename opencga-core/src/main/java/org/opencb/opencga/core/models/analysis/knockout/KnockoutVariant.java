@@ -42,7 +42,7 @@ public class KnockoutVariant {
     }
 
     public KnockoutVariant(String id, String genotype, String filter, String qual, KnockoutType knockoutType,
-                           List<PopulationFrequency> populationFrequencies, List<SequenceOntologyTerm> sequenceOntologyTerms) {
+                           List<SequenceOntologyTerm> sequenceOntologyTerms, List<PopulationFrequency> populationFrequencies) {
         this.id = id;
         this.genotype = genotype;
         this.filter = filter;
@@ -50,6 +50,7 @@ public class KnockoutVariant {
         this.knockoutType = knockoutType;
         this.populationFrequencies = populationFrequencies;
         this.sequenceOntologyTerms = sequenceOntologyTerms;
+        this.populationFrequencies = populationFrequencies;
     }
 
     public String getId() {
@@ -97,21 +98,21 @@ public class KnockoutVariant {
         return this;
     }
 
-    public List<PopulationFrequency> getPopulationFrequencies() {
-        return populationFrequencies;
-    }
-
-    public KnockoutVariant setPopulationFrequencies(List<PopulationFrequency> populationFrequencies) {
-        this.populationFrequencies = populationFrequencies;
-        return this;
-    }
-
     public List<SequenceOntologyTerm> getSequenceOntologyTerms() {
         return sequenceOntologyTerms;
     }
 
     public KnockoutVariant setSequenceOntologyTerms(List<SequenceOntologyTerm> sequenceOntologyTerms) {
         this.sequenceOntologyTerms = sequenceOntologyTerms;
+        return this;
+    }
+
+    public List<PopulationFrequency> getPopulationFrequencies() {
+        return populationFrequencies;
+    }
+
+    public KnockoutVariant setPopulationFrequencies(List<PopulationFrequency> populationFrequencies) {
+        this.populationFrequencies = populationFrequencies;
         return this;
     }
 }

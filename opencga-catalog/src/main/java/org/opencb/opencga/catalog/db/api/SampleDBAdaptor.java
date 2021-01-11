@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -39,6 +39,10 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
+
+    // TODO: Replace with QueryParam
+    String STATS_ID = "stats.id";
+    String STATS_VARIANT_COUNT = "stats.variantCount";
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),

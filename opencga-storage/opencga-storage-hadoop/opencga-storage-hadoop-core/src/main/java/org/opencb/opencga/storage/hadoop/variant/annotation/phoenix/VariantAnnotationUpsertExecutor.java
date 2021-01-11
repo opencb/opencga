@@ -21,7 +21,7 @@ import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.UpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,7 @@ public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, 
     private final List<Column> columnList;
 
     public VariantAnnotationUpsertExecutor(Connection conn, String tableName) {
-        this(conn, tableName, Arrays.stream(VariantPhoenixHelper.VariantColumn.values()).collect(Collectors.toList()));
+        this(conn, tableName, Arrays.stream(VariantPhoenixSchema.VariantColumn.values()).collect(Collectors.toList()));
     }
 
     public VariantAnnotationUpsertExecutor(Connection conn, String tableName, List<Column> columnList) {

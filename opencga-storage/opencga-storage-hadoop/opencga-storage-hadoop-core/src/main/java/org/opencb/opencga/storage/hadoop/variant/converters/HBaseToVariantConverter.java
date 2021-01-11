@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -206,7 +206,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(ResultSet resultSet) {
             Variant variant = extractVariantFromResultSet(resultSet);
             try {
-                String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
+                String type = resultSet.getString(VariantPhoenixSchema.VariantColumn.TYPE.column());
                 if (StringUtils.isNotBlank(type)) {
                     variant.setType(VariantType.valueOf(type));
                 }
@@ -235,7 +235,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(Result result) {
             Variant variant = extractVariantFromVariantRowKey(result.getRow());
             try {
-                Cell cell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+                Cell cell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.VariantColumn.TYPE.bytes());
                 if (cell != null && cell.getValueLength() > 0) {
                     String string = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                     variant.setType(VariantType.valueOf(string));

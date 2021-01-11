@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -551,16 +551,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     public OpenCGAResult<Sample> addAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
                                                 QueryOptions options, String token) throws CatalogException {
         return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
-    }
-
-    public OpenCGAResult<Sample> setAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
-                                               String token) throws CatalogException {
-        return setAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSet), options, token);
-    }
-
-    public OpenCGAResult<Sample> setAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
-                                                QueryOptions options, String token) throws CatalogException {
-        return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.SET, options, token);
     }
 
     public OpenCGAResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
@@ -1325,14 +1315,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     private void fixQualityControlQuery(Query query) {
         String variableSetId = "opencga_sample_variant_stats";
-        List<String> simpleStatsKeys = Arrays.asList("stats.variantCount", "stats.tiTvRatio", "stats.qualityAvg", "stats.qualityStdDev",
-                "stats.heterozygosityRate");
+        List<String> simpleStatsKeys = Arrays.asList(SampleDBAdaptor.STATS_VARIANT_COUNT,
+                "stats.tiTvRatio", "stats.qualityAvg", "stats.qualityStdDev", "stats.heterozygosityRate");
 
         List<String> mapStatsKeys = Arrays.asList("stats.chromosomeCount", "stats.typeCount", "stats.genotypeCount", "stats.depthCount",
                 "stats.biotypeCount", "stats.clinicalSignificanceCount", "stats.consequenceTypeCount");
 
         // Default annotation set id
-        String id = query.getString("stats.id", "ALL");
+        String id = query.getString(SampleDBAdaptor.STATS_ID, "ALL");
 
         List<String> annotationList = new LinkedList<>();
         for (String statsKey : simpleStatsKeys) {
@@ -1355,7 +1345,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (!annotationList.isEmpty()) {
-            query.remove("stats.id");
+            query.remove(SampleDBAdaptor.STATS_ID);
             query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
         }
 

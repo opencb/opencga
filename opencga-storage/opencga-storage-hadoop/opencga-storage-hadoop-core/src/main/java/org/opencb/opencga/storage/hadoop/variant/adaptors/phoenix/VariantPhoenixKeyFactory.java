@@ -215,12 +215,12 @@ public class VariantPhoenixKeyFactory {
         String reference = null;
         String alternate = null;
         try {
-            chromosome = resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column());
-            start = resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column());
-            reference = resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column());
-            alternate = resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column());
+            chromosome = resultSet.getString(VariantPhoenixSchema.VariantColumn.CHROMOSOME.column());
+            start = resultSet.getInt(VariantPhoenixSchema.VariantColumn.POSITION.column());
+            reference = resultSet.getString(VariantPhoenixSchema.VariantColumn.REFERENCE.column());
+            alternate = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALTERNATE.column());
 
-            String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
+            String type = resultSet.getString(VariantPhoenixSchema.VariantColumn.TYPE.column());
 
             return buildVariant(chromosome, start, reference, alternate, type);
         } catch (RuntimeException | SQLException e) {

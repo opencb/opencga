@@ -21,8 +21,8 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -79,6 +79,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         // The variables stored as will appear inside the array
         ID("id", TEXT, ""),
         VALUE("value", TEXT, ""),
+        VARIABLE_KEYS("vkeys", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("vs", DOUBLE, ""),
         ANNOTATION_SET_NAME("as", TEXT, ""),
         ARRAY_LEVEL("_al", INTEGER_ARRAY, ""),
@@ -945,7 +946,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                                 .append(AnnotationSetParams.ID.key(), key)
                                 .append(AnnotationSetParams.VARIABLE_SET_ID.key(), variableTypeMap.getLong(variableSet));
                         if (StringUtils.isNotEmpty(annotationSet)) {
-                            queryDocument.append(AnnotationSetParams.ANNOTATION_SET_NAME.key, annotationSet);
+                            queryDocument.append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet);
                         }
                         queryDocument.putAll(valueList.get(0));
 

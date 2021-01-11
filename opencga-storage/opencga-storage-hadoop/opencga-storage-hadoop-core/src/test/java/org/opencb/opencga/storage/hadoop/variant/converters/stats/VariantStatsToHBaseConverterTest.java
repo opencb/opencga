@@ -28,7 +28,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -93,7 +93,7 @@ public class VariantStatsToHBaseConverterTest {
         for (Cell cell : cells) {
             byte[] value = CellUtil.cloneValue(cell);
             String col = Bytes.toString(CellUtil.cloneQualifier(cell));
-            if (col.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
+            if (col.endsWith(VariantPhoenixSchema.COHORT_STATS_PROTOBUF_SUFFIX)) {
                 convert = toJava.convert(value);
             }
         }

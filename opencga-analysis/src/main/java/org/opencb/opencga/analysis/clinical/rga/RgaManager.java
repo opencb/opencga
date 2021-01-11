@@ -8,7 +8,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 public class RgaManager {
 
     public OpenCGAResult<KnockoutByIndividual> individualQuery(String study, Query query, QueryOptions options, String token) {
-        xxxx
+        return null;
     }
 
 }

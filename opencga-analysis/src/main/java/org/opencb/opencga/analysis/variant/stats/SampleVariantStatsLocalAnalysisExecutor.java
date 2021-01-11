@@ -43,6 +43,11 @@ import java.util.List;
 public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements StorageToolExecutor {
 
     @Override
+    public int getMaxBatchSize() {
+        return 10000;
+    }
+
+    @Override
     public void run() throws ToolException {
 
         VariantStorageManager variantStorageManager = getVariantStorageManager();

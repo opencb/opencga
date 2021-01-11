@@ -30,8 +30,8 @@ public class CohortGenerateParams {
     }
 
     public Cohort toCohort() {
-        return new Cohort(id, type, null, description, null, annotationSets, 0, status != null ? status.toCustomStatus() : null, null,
-                attributes);
+        return new Cohort(id, type, null, description, null, 0, annotationSets, 0, status != null ? status.toCustomStatus() : null,
+                null, attributes);
     }
 
     @Override

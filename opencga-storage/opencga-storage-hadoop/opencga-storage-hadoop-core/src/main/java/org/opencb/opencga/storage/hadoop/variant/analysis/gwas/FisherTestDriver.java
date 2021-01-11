@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

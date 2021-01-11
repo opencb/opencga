@@ -17,7 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -82,6 +82,7 @@ import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.rga.RgaQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
@@ -101,6 +102,7 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.rga.RgaQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILTER_DESCR;
 
 /**
  * Created by imedina on 17/08/16.
@@ -939,6 +941,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -953,6 +956,8 @@ public class VariantWebService extends AnalysisWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
+            logger.debug("Mutational Signature query = " + query);
+
             if (!query.containsKey(SAMPLE.key())) {
                 return createErrorResponse(new Exception("Missing sample name"));
             }
@@ -965,6 +970,8 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
+            executor.setOpenCgaHome(opencgaHome);
+
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
@@ -1247,8 +1254,8 @@ public class VariantWebService extends AnalysisWebService {
                 SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
                         Collections.singletonList(params.getSample()),
                         null,
-                        params.getVariantStatsQuery(),
-                        params.getOutdir()
+                        params.getOutdir(), true, false, params.getVariantStatsId(), params.getVariantStatsDescription(), null,
+                        params.getVariantStatsQuery()
                 );
 
                 DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,

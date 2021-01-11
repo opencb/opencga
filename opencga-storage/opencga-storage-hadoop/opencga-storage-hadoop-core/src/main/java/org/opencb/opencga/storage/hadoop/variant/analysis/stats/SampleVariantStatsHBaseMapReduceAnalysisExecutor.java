@@ -1,16 +1,17 @@
 package org.opencb.opencga.storage.hadoop.variant.analysis.stats;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.storage.hadoop.variant.stats.SampleVariantStatsDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -19,6 +20,9 @@ import java.util.List;
         source = ToolExecutor.Source.HBASE)
 public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
         extends SampleVariantStatsAnalysisExecutor implements HadoopVariantStorageToolExecutor {
+
+    private static final int MAX_SAMPLES_BATCH_SIZE = 4000;
+    private static Logger logger = LoggerFactory.getLogger(SampleVariantStatsHBaseMapReduceAnalysisExecutor.class);
 
     @Override
     public void run() throws ToolException {
@@ -48,10 +52,15 @@ public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
                     studyId,
                     null,
                     params
-            ), engine.getOptions(), "Calculate sample variant stats");
-        } catch (VariantQueryException | StorageEngineException e) {
+            ), "Calculate sample variant stats");
+
+        } catch (Exception e) {
             throw new ToolExecutorException(e);
         }
     }
 
+    @Override
+    public int getMaxBatchSize() {
+        return MAX_SAMPLES_BATCH_SIZE;
+    }
 }

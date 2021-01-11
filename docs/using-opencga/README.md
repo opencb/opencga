@@ -1,6 +1,8 @@
 # Using OpenCGA
 
-## RESTful Web Services <a id="UsingOpenCGA-RESTfulWebServices"></a>
+## Overview <a id="UsingOpenCGA-RESTfulWebServices"></a>
+
+### REST Web Services
 
 OpenCGA implements a comprehensive and well-designed REST web service API, this consists of more than 200 web services to allow querying and operating data in OpenCGA. You can get more info at [RESTful Web Services](http://docs.opencb.org/display/opencga/RESTful+Web+Services) page.
 
@@ -119,10 +121,6 @@ There is no possible clinical data in this study. This is a _WGS aggregated_ dat
 We simulated two different disorders and few phenotypes for the different members of the family. To be documented soon.
 
 #### platinum <a id="UsingOpenCGA-platinum"></a>
-
-To be documented soon.
-
-#### rams\_cml <a id="UsingOpenCGA-rams_cml"></a>
 
 To be documented soon.
 

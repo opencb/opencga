@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.study;
 
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Result;
@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
@@ -573,12 +573,12 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     /**
-     * Given a study and the value of the fillMissingColumnValue {@link VariantPhoenixHelper::getFillMissingColumn}, gets a list of
+     * Given a study and the value of the fillMissingColumnValue {@link VariantPhoenixSchema ::getFillMissingColumn}, gets a list of
      * booleans, one per sample, ordered by the position in the StudyEntry indicating if that sample has known information for that
      * position, of if it is unknown.
      *
      * @param studyMetadata The study configuration
-     * @param fillMissingColumnValue    Value of the column {@link VariantPhoenixHelper::getFillMissingColumn} containing the last
+     * @param fillMissingColumnValue    Value of the column {@link VariantPhoenixSchema ::getFillMissingColumn} containing the last
      *                                  file updated by the fillMissing task
      * @return List of boolean values, one per sample.
      */

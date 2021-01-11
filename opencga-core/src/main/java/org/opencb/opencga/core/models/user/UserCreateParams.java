@@ -52,7 +52,7 @@ public class UserCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", email='").append(email).append('\'');
-        sb.append(", password='").append(password).append('\'');
+        sb.append(", password='").append("********").append('\'');
         sb.append(", organization='").append(organization).append('\'');
         sb.append('}');
         return sb.toString();

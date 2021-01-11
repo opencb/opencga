@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.annotation.annotators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -185,10 +186,16 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                 }
                 for (VariantAnnotation variantAnnotation : queryResult.getResult()) {
                     Variant variant = iterator.next();
+                    String annotationAlternate = variantAnnotation.getAlternate();
+                    if (annotationAlternate.equals(VariantBuilder.DUP_ALT)
+                            && variant.getAlternate().equals(VariantBuilder.DUP_TANDEM_ALT)) {
+                        // Annotator might remove the ":TANDEM". Put it back
+                        annotationAlternate = VariantBuilder.DUP_TANDEM_ALT;
+                    }
                     if (!variant.getChromosome().equals(variantAnnotation.getChromosome())
                             || !variant.getStart().equals(variantAnnotation.getStart())
                             || !variant.getReference().equals(variantAnnotation.getReference())
-                            || !variant.getAlternate().equals(variantAnnotation.getAlternate())) {
+                            || !variant.getAlternate().equals(annotationAlternate)) {
                         throw unexpectedVariantOrderException(variant, variantAnnotation.getChromosome() + ':'
                                 + variantAnnotation.getStart() + ':'
                                 + variantAnnotation.getReference() + ':'

@@ -51,7 +51,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -170,28 +170,28 @@ public class VariantHbaseTestUtils {
                 os.println("Variant = " + variant + "  " + Bytes.toStringBinary(result.getRow()));
                 for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(family).entrySet()) {
                     String key = Bytes.toString(entry.getKey());
-                    PhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
+                    PhoenixHelper.Column column = VariantPhoenixSchema.VariantColumn.getColumn(key);
                     if (column != null) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", "
                                 + column.getPDataType().toObject(entry.getValue())
                          + ", ts:" + result.getColumnLatestCell(family, column.bytes()).getTimestamp());
-                    } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
+                    } else if (key.endsWith(VariantPhoenixSchema.COHORT_STATS_PROTOBUF_SUFFIX)) {
 //                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
-                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)
-                            || key.endsWith(VariantPhoenixHelper.COHORT_STATS_FREQ_SUFFIX)
-                            || key.endsWith(VariantPhoenixHelper.VARIANT_SCORE_SUFIX)) {
+                    } else if (key.startsWith(VariantPhoenixSchema.POPULATION_FREQUENCY_PREFIX)
+                            || key.endsWith(VariantPhoenixSchema.COHORT_STATS_FREQ_SUFFIX)
+                            || key.endsWith(VariantPhoenixSchema.VARIANT_SCORE_SUFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixSchema.STUDY_SUFIX)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixHelper.FILE_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixSchema.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixSchema.FILE_SUFIX)) {
                         os.println("\t" + key + " = " + result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, entry.getKey()).getTimestamp()+", " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_MAF_SUFFIX)
-                            || key.endsWith(VariantPhoenixHelper.COHORT_STATS_MGF_SUFFIX)) {
+                    } else if (key.endsWith(VariantPhoenixSchema.COHORT_STATS_MAF_SUFFIX)
+                            || key.endsWith(VariantPhoenixSchema.COHORT_STATS_MGF_SUFFIX)) {
                         os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
+                    } else if (key.startsWith(VariantPhoenixSchema.RELEASE_PREFIX)) {
                         os.println("\t" + key + " = " + PBoolean.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.FILL_MISSING_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixSchema.FILL_MISSING_SUFIX)) {
                         os.println("\t" + key + " = " + PInteger.INSTANCE.toObject(entry.getValue()));
                     } else if (entry.getValue().length == 4) {
                         Object o = null;

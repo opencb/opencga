@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -33,7 +33,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
@@ -49,7 +49,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.extractFileIdOrNull;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.extractFileIdOrNull;
 
 public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
     private static final String NUM_FILES = "numFiles";
@@ -84,7 +84,7 @@ public class CheckVariantStatsDriver extends AbstractVariantsTableDriver {
         }
 
         scan.setFilter(new QualifierFilter(CompareFilter.CompareOp.EQUAL,
-                new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixHelper.buildStudyColumnsPrefix(getStudyId())))));
+                new BinaryPrefixComparator(Bytes.toBytes(VariantPhoenixSchema.buildStudyColumnsPrefix(getStudyId())))));
 
         // ^1_[^_]*_F$
 //        String regex = "^" + buildStudyColumnsPrefix(getStudyId()) + "[^" + COLUMN_KEY_SEPARATOR_STR + "]*" + FILE_SUFIX + "$";

@@ -1,3 +1,7 @@
+---
+description: Metadata and Clinical Data Database
+---
+
 # Catalog
 
 ## Overview <a id="CatalogandSecurity-Overview"></a>

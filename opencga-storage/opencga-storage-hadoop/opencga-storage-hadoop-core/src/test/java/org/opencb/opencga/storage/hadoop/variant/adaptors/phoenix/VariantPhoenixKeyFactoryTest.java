@@ -78,15 +78,15 @@ public class VariantPhoenixKeyFactoryTest {
 
     public byte[] generateVariantRowKeyPhoenix(Variant variant) {
 
-        Set<VariantPhoenixHelper.VariantColumn> nullableColumn = new HashSet<>(Arrays.asList(
-                VariantPhoenixHelper.VariantColumn.REFERENCE,
-                VariantPhoenixHelper.VariantColumn.ALTERNATE
+        Set<VariantPhoenixSchema.VariantColumn> nullableColumn = new HashSet<>(Arrays.asList(
+                VariantPhoenixSchema.VariantColumn.REFERENCE,
+                VariantPhoenixSchema.VariantColumn.ALTERNATE
         ));
 
         PTableImpl table;
         try {
             List<PColumn> columns = new ArrayList<>();
-            for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {
+            for (PhoenixHelper.Column column : VariantPhoenixSchema.PRIMARY_KEY) {
                 columns.add(PColumnImpl.createFromProto(PTableProtos.PColumn.newBuilder()
                         .setColumnNameBytes(ByteStringer.wrap(PNameFactory.newName(column.column()).getBytes()))
                         .setDataType(column.getPDataType().getSqlTypeName())

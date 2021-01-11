@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
@@ -52,6 +53,7 @@ public class FileCommandOptions {
     public UploadCommandOptions uploadCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public LinkCommandOptions linkCommandOptions;
+    public LinkRunCommandOptions linkRunCommandOptions;
 //    public RelinkCommandOptions relinkCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
@@ -94,6 +96,7 @@ public class FileCommandOptions {
         this.refreshCommandOptions = new RefreshCommandOptions();
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
+        this.linkRunCommandOptions = new LinkRunCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
@@ -366,6 +369,32 @@ public class FileCommandOptions {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
+        public List<String> inputs;
+
+//        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
+//        public String uri;
+
+        @Parameter(names = {"--path"}, description = "Virtual path within catalog where the file or folder will be linked (root folder if empty)", arity = 1)
+        public String path;
+
+        @Parameter(names = {"-d", "--description"}, description = "Brief description that will be attached to the files in catalog", arity = 1)
+        public String description;
+
+        @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
+        public boolean parents;
+    }
+
+
+    @Parameters(commandNames = {"link-run"}, commandDescription = "Link an external file or folder into catalog. Creates an asynchronous job.")
+    public class LinkRunCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = new GeneralCliOptions.JobOptions();
 
         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
         public List<String> inputs;
