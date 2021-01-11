@@ -117,31 +117,27 @@ class RgaUtils {
             float value = Float.parseFloat(keyOpValue.getValue());
             switch (keyOpValue.getOp()) {
                 case "<":
-                    for (Float popFreq : POP_FREQS) {
-                        if (popFreq < value) {
-                            values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
-                        }
+                    for (int i = 0; POP_FREQS.get(i) < value; i++) {
+                        Float popFreq = POP_FREQS.get(i);
+                        values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
                     }
                     break;
                 case "<=":
-                    for (Float popFreq : POP_FREQS) {
-                        if (popFreq <= value) {
-                            values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
-                        }
+                    for (int i = 0; POP_FREQS.get(i) <= value; i++) {
+                        Float popFreq = POP_FREQS.get(i);
+                        values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
                     }
                     break;
                 case ">":
-                    for (Float popFreq : POP_FREQS) {
-                        if (popFreq > value) {
-                            values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
-                        }
+                    for (int i = POP_FREQS.size() - 1; POP_FREQS.get(i) > value; i--) {
+                        Float popFreq = POP_FREQS.get(i);
+                        values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
                     }
                     break;
                 case ">=":
-                    for (Float popFreq : POP_FREQS) {
-                        if (popFreq >= value) {
-                            values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
-                        }
+                    for (int i = POP_FREQS.size() - 1; POP_FREQS.get(i) >= value; i--) {
+                        Float popFreq = POP_FREQS.get(i);
+                        values.add(encode(keyOpValue.getKey().toUpperCase() + SEPARATOR + popFreq));
                     }
                     break;
                 default:

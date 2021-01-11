@@ -37,8 +37,8 @@ public class RgaQueryParams implements QueryParam {
     public static final String TRANSCRIPT_ID_DESCR = "Filter by transcript id.";
     public static final RgaQueryParams TRANSCRIPT_ID = new RgaQueryParams("transcriptId", Type.TEXT, TRANSCRIPT_ID_DESCR);
 
-    public static final String BIOTYPE_DESCR = "Filter by biotype.";
-    public static final RgaQueryParams BIOTYPE = new RgaQueryParams("biotype", Type.TEXT, BIOTYPE_DESCR);
+    public static final String TRANSCRIPT_BIOTYPE_DESCR = "Filter by transcript biotype.";
+    public static final RgaQueryParams TRANSCRIPT_BIOTYPE = new RgaQueryParams("tbiotype", Type.TEXT, TRANSCRIPT_BIOTYPE_DESCR);
 
     public static final String VARIANTS_DESCR = "Filter by variant id.";
     public static final RgaQueryParams VARIANTS = new RgaQueryParams("variants", Type.TEXT_ARRAY, VARIANTS_DESCR);

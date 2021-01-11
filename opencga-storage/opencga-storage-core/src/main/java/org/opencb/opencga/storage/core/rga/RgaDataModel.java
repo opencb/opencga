@@ -2,86 +2,163 @@ package org.opencb.opencga.storage.core.rga;
 
 import org.apache.solr.client.solrj.beans.Field;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class RgaDataModel {
 
-    @Field
+    @Field(ID)
     private String id;
 
-    @Field("indId")
+    @Field(INDIVIDUAL_ID)
     private String individualId;
 
-    @Field
+    @Field(SAMPLE_ID)
     private String sampleId;
 
-    @Field
+    @Field(SEX)
     private String sex;
 
-    @Field("pheno")
+    @Field(PHENOTYPES)
     private List<String> phenotypes;
 
-    @Field("disor")
+    @Field(DISORDERS)
     private List<String> disorders;
 
-    @Field
+    @Field(GENE_ID)
     private String geneId;
 
-    @Field
+    @Field(GENE_NAME)
     private String geneName;
 
-    @Field("transcId")
+    @Field(GENE_BIOTYPE)
+    private String geneBiotype;
+
+    @Field(CHROMOSOME)
+    private String chromosome;
+
+    @Field(STRAND)
+    private String strand;
+
+    @Field(START)
+    private int start;
+
+    @Field(END)
+    private int end;
+
+    @Field(TRANSCRIPT_ID)
     private String transcriptId;
 
-    @Field
-    private String biotype;
+    @Field(TRANSCRIPT_BIOTYPE)
+    private String transcriptBiotype;
 
-    @Field
+    @Field(VARIANTS)
     private List<String> variants;
 
-    @Field("koTypes")
+    @Field(KNOCKOUT_TYPES)
     private List<String>  knockoutTypes;
 
-    @Field
+    @Field(FILTERS)
     private List<String> filters;
 
-    @Field("ct")
+    @Field(CONSEQUENCE_TYPES)
     private List<String> consequenceTypes;
 
-    @Field("popFreqs_*")
+    @Field(POPULATION_FREQUENCIES)
     private Map<String, List<Float>> populationFrequencies;
 
-    @Field("cFilters")
+    @Field(COMPOUND_FILTERS)
     private List<String> compoundFilters;
 
-    @Field("pheJson")
+    @Field(PHENOTYPE_JSON)
     private List<String> phenotypeJson;
 
-    @Field("disJson")
+    @Field(DISORDER_JSON)
     private List<String> disorderJson;
 
-    @Field("varJson")
+    @Field(VARIANT_JSON)
     private List<String> variantJson;
+
+    public static final String ID = "id";
+    public static final String INDIVIDUAL_ID = "iId";
+    public static final String SAMPLE_ID = "sId";
+    public static final String SEX = "sex";
+    public static final String PHENOTYPES = "pheno";
+    public static final String DISORDERS = "dis";
+    public static final String GENE_ID = "gId";
+    public static final String GENE_NAME = "gName";
+    public static final String GENE_BIOTYPE = "gBio";
+    public static final String CHROMOSOME = "chr";
+    public static final String STRAND = "str";
+    public static final String START = "start";
+    public static final String END = "end";
+    public static final String TRANSCRIPT_ID = "tId";
+    public static final String TRANSCRIPT_BIOTYPE = "tBio";
+    public static final String VARIANTS = "var";
+    public static final String KNOCKOUT_TYPES = "ko";
+    public static final String FILTERS = "fl";
+    public static final String CONSEQUENCE_TYPES = "ct";
+    public static final String POPULATION_FREQUENCIES = "pf_*";
+    public static final String COMPOUND_FILTERS = "cF";
+    public static final String PHENOTYPE_JSON = "phenoJ";
+    public static final String DISORDER_JSON = "disJ";
+    public static final String VARIANT_JSON = "varJ";
+
+    public static final Map<String, String> ABBREVIATIONS;
+
+    static {
+        ABBREVIATIONS = new HashMap<>();
+
+        ABBREVIATIONS.put(ID, "id");
+        ABBREVIATIONS.put(INDIVIDUAL_ID, "individualId");
+        ABBREVIATIONS.put(SAMPLE_ID, "sampleId");
+        ABBREVIATIONS.put(SEX, "sex");
+        ABBREVIATIONS.put(PHENOTYPES, "phenotypes");
+        ABBREVIATIONS.put(DISORDERS, "disorders");
+        ABBREVIATIONS.put(GENE_ID, "geneId");
+        ABBREVIATIONS.put(GENE_NAME, "geneName");
+        ABBREVIATIONS.put(GENE_BIOTYPE, "geneBiotype");
+        ABBREVIATIONS.put(CHROMOSOME, "chromosome");
+        ABBREVIATIONS.put(STRAND, "strand");
+        ABBREVIATIONS.put(START, "start");
+        ABBREVIATIONS.put(END, "end");
+        ABBREVIATIONS.put(TRANSCRIPT_ID, "transcriptId");
+        ABBREVIATIONS.put(TRANSCRIPT_BIOTYPE, "tbiotype");
+        ABBREVIATIONS.put(VARIANTS, "variants");
+        ABBREVIATIONS.put(KNOCKOUT_TYPES, "knockoutTypes");
+        ABBREVIATIONS.put(FILTERS, "filters");
+        ABBREVIATIONS.put(CONSEQUENCE_TYPES, "consequenceTypes");
+        ABBREVIATIONS.put(POPULATION_FREQUENCIES, "populationFrequencies");
+        ABBREVIATIONS.put(COMPOUND_FILTERS, "compoundFilters");
+        ABBREVIATIONS.put(PHENOTYPE_JSON, "phenotypeJson");
+        ABBREVIATIONS.put(DISORDER_JSON, "disorderJson");
+        ABBREVIATIONS.put(VARIANT_JSON, "variantJson");
+    }
 
     public RgaDataModel() {
     }
 
-    public RgaDataModel(String id, String sampleId, String individualId, String sex, List<String> phenotypes, List<String> disorders,
-                        String geneId, String geneName, String transcriptId, String biotype, List<String> variants,
-                        List<String> knockoutTypes, List<String> filters, List<String> consequenceTypes,
-                        Map<String, List<Float>> populationFrequencies, List<String> compoundFilters, List<String> phenotypeJson,
-                        List<String> disorderJson, List<String> variantJson) {
+    public RgaDataModel(String id, String individualId, String sampleId, String sex, List<String> phenotypes, List<String> disorders,
+                        String geneId, String geneName, String geneBiotype, String chromosome, String strand, int start, int end,
+                        String transcriptId, String transcriptBiotype, List<String> variants, List<String> knockoutTypes,
+                        List<String> filters, List<String> consequenceTypes, Map<String, List<Float>> populationFrequencies,
+                        List<String> compoundFilters, List<String> phenotypeJson, List<String> disorderJson, List<String> variantJson) {
         this.id = id;
-        this.sampleId = sampleId;
         this.individualId = individualId;
+        this.sampleId = sampleId;
         this.sex = sex;
         this.phenotypes = phenotypes;
         this.disorders = disorders;
         this.geneId = geneId;
         this.geneName = geneName;
+        this.geneBiotype = geneBiotype;
+        this.chromosome = chromosome;
+        this.strand = strand;
+        this.start = start;
+        this.end = end;
         this.transcriptId = transcriptId;
-        this.biotype = biotype;
+        this.transcriptBiotype = transcriptBiotype;
         this.variants = variants;
         this.knockoutTypes = knockoutTypes;
         this.filters = filters;
@@ -104,13 +181,22 @@ public class RgaDataModel {
         sb.append(", disorders=").append(disorders);
         sb.append(", geneId='").append(geneId).append('\'');
         sb.append(", geneName='").append(geneName).append('\'');
+        sb.append(", geneBiotype='").append(geneBiotype).append('\'');
+        sb.append(", chromosome='").append(chromosome).append('\'');
+        sb.append(", strand='").append(strand).append('\'');
+        sb.append(", start=").append(start);
+        sb.append(", end=").append(end);
         sb.append(", transcriptId='").append(transcriptId).append('\'');
-        sb.append(", biotype='").append(biotype).append('\'');
+        sb.append(", transcriptBiotype='").append(transcriptBiotype).append('\'');
         sb.append(", variants=").append(variants);
         sb.append(", knockoutTypes=").append(knockoutTypes);
         sb.append(", filters=").append(filters);
         sb.append(", consequenceTypes=").append(consequenceTypes);
         sb.append(", populationFrequencies=").append(populationFrequencies);
+        sb.append(", compoundFilters=").append(compoundFilters);
+        sb.append(", phenotypeJson=").append(phenotypeJson);
+        sb.append(", disorderJson=").append(disorderJson);
+        sb.append(", variantJson=").append(variantJson);
         sb.append('}');
         return sb.toString();
     }
@@ -124,21 +210,21 @@ public class RgaDataModel {
         return this;
     }
 
-    public String getSampleId() {
-        return sampleId;
-    }
-
-    public RgaDataModel setSampleId(String sampleId) {
-        this.sampleId = sampleId;
-        return this;
-    }
-
     public String getIndividualId() {
         return individualId;
     }
 
     public RgaDataModel setIndividualId(String individualId) {
         this.individualId = individualId;
+        return this;
+    }
+
+    public String getSampleId() {
+        return sampleId;
+    }
+
+    public RgaDataModel setSampleId(String sampleId) {
+        this.sampleId = sampleId;
         return this;
     }
 
@@ -187,6 +273,51 @@ public class RgaDataModel {
         return this;
     }
 
+    public String getGeneBiotype() {
+        return geneBiotype;
+    }
+
+    public RgaDataModel setGeneBiotype(String geneBiotype) {
+        this.geneBiotype = geneBiotype;
+        return this;
+    }
+
+    public String getChromosome() {
+        return chromosome;
+    }
+
+    public RgaDataModel setChromosome(String chromosome) {
+        this.chromosome = chromosome;
+        return this;
+    }
+
+    public String getStrand() {
+        return strand;
+    }
+
+    public RgaDataModel setStrand(String strand) {
+        this.strand = strand;
+        return this;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public RgaDataModel setStart(int start) {
+        this.start = start;
+        return this;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public RgaDataModel setEnd(int end) {
+        this.end = end;
+        return this;
+    }
+
     public String getTranscriptId() {
         return transcriptId;
     }
@@ -196,12 +327,12 @@ public class RgaDataModel {
         return this;
     }
 
-    public String getBiotype() {
-        return biotype;
+    public String getTranscriptBiotype() {
+        return transcriptBiotype;
     }
 
-    public RgaDataModel setBiotype(String biotype) {
-        this.biotype = biotype;
+    public RgaDataModel setTranscriptBiotype(String transcriptBiotype) {
+        this.transcriptBiotype = transcriptBiotype;
         return this;
     }
 

@@ -92,7 +92,7 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
             KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
             knockoutGene.addTranscripts(Collections.singletonList(knockoutTranscript));
 
-            knockoutTranscript.setBiotype(rgaDataModel.getBiotype());
+            knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
             List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
             for (String variantJson : rgaDataModel.getVariantJson()) {
                 try {
@@ -169,10 +169,10 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                     Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
                     String id = knockoutByIndividual.getId() + "_" + gene.getId() + "_" + transcript.getId();
-                    RgaDataModel model = new RgaDataModel(id, knockoutByIndividual.getSampleId(), knockoutByIndividual.getId(),
-                            knockoutByIndividual.getSex().name(), phenotypes, disorders, gene.getId(), gene.getName(), transcript.getId(),
-                            transcript.getBiotype(), variantIds, knockoutTypes, filters, consequenceTypes, popFreqs, compoundFilters,
-                            phenotypeJson, disorderJson, variantJson);
+                    RgaDataModel model = new RgaDataModel(id, knockoutByIndividual.getId(),  knockoutByIndividual.getSampleId(),
+                            knockoutByIndividual.getSex().name(), phenotypes, disorders, gene.getId(), gene.getName(), "", "", "", 0, 0,
+                            transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes, filters, consequenceTypes, popFreqs,
+                            compoundFilters, phenotypeJson, disorderJson, variantJson);
                     result.add(model);
                 }
             }
@@ -184,8 +184,10 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
     private Map<String, List<Float>> getPopulationFrequencies(KnockoutTranscript transcript) {
         Map<String, List<Float>> popFreqs = new HashMap<>();
 
-        String thousandGenomeKey = "popFreqs" + RgaUtils.SEPARATOR + RgaUtils.THOUSAND_GENOMES_STUDY;
-        String gnomadGenomeKey = "popFreqs" + RgaUtils.SEPARATOR + RgaUtils.GNOMAD_GENOMES_STUDY;
+        String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
+
+        String thousandGenomeKey = pfKey + RgaUtils.THOUSAND_GENOMES_STUDY;
+        String gnomadGenomeKey = pfKey + RgaUtils.GNOMAD_GENOMES_STUDY;
 
         if (!transcript.getVariants().isEmpty()) {
             popFreqs.put(thousandGenomeKey, new ArrayList<>(transcript.getVariants().size()));

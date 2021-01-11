@@ -191,7 +191,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "geneId", value = GENE_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneName", value = GENE_NAME_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "transcriptId", value = TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "biotype", value = BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "biotype", value = TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = VARIANTS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockout", value = KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),

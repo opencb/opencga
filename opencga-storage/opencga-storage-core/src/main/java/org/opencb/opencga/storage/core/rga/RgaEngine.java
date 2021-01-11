@@ -382,6 +382,24 @@ public class RgaEngine implements Closeable {
         SolrQuery solrQuery = queryParser.parse(query, queryOptions);
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
+        /*
+        *    try {
+                FacetQueryParser facetQueryParser = new FacetQueryParser();
+
+                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
+                String jsonFacet = facetQueryParser.parse(facetQuery);
+
+                solrQuery.set("json.facet", jsonFacet);
+                solrQuery.setRows(0);
+                solrQuery.setStart(0);
+                solrQuery.setFields();
+
+                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
+            } catch (Exception e) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
+            }
+        * */
+
         DataResult<FacetField> facetResult;
         try {
             facetResult = solrCollection.facet(solrQuery, null);

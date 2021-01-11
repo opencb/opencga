@@ -58,6 +58,9 @@ public class RgaEngineTest {
                     JacksonUtils.getDefaultObjectMapper().writeValueAsString(result.getResults().get(i)));
         }
 
+        result = rgaEngine.individualQuery(collection, new Query(), new QueryOptions());
+        assertEquals(2, result.getNumResults());
+
         Query query = new Query(RgaQueryParams.DISORDERS.key(), "disorderId1");
         result = rgaEngine.individualQuery(collection, query, new QueryOptions());
         assertEquals(1, result.getNumResults());

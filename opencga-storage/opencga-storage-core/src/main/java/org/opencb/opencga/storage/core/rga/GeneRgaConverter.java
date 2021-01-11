@@ -56,7 +56,7 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
 
             // Add new transcript
             KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
-            knockoutTranscript.setBiotype(rgaDataModel.getBiotype());
+            knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
 
             knockoutIndividual.addTranscripts(Collections.singletonList(knockoutTranscript));
 
