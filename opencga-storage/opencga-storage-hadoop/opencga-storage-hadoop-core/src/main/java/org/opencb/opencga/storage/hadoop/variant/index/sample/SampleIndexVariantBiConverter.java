@@ -225,9 +225,9 @@ public class SampleIndexVariantBiConverter {
             while (nextIndex() != fileIndexCount) {
                 // Move index
                 fileIndexIdx++;
-                short fileIndex = gtEntry.getFileIndex(fileIndexIdx);
-                if (!isMultiFileIndex(fileIndex)) {
-                    // If the index is not multifile, move counter
+                short prevFileIndex = gtEntry.getFileIndex(fileIndexIdx - 1);
+                if (!isMultiFileIndex(prevFileIndex)) {
+                    // If the previous fileIndex was not multifile, move counter
                     fileIndexCount++;
                 }
             }
