@@ -3,12 +3,10 @@ package org.opencb.opencga.storage.hadoop.variant.index.query;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
@@ -41,7 +39,7 @@ public class SampleIndexQuery {
     private final Map<String, boolean[]> fatherFilter;
     /** For each sample with mother filter, indicates all the valid GTs codes. **/
     private final Map<String, boolean[]> motherFilter;
-    private final Map<String, SampleFileIndexQuery> fileFilterMap;
+    private final Map<String, Values<SampleFileIndexQuery>> fileFilterMap;
     private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
     private final boolean onlyDeNovo;
@@ -72,7 +70,7 @@ public class SampleIndexQuery {
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
                             Set<String> multiFileSamplesSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
-                            Map<String, SampleFileIndexQuery> fileFilterMap,
+                            Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
         this.regions = regions;
@@ -151,13 +149,15 @@ public class SampleIndexQuery {
         return motherFilter.getOrDefault(sample, EMPTY_PARENT_FILTER);
     }
 
-    public Map<String, SampleFileIndexQuery> getSampleFileIndexQueryMap() {
+    public Map<String, Values<SampleFileIndexQuery>> getSampleFileIndexQueryMap() {
         return fileFilterMap;
     }
 
-    public SampleFileIndexQuery getSampleFileIndexQuery(String sample) {
-        SampleFileIndexQuery sampleFileIndexQuery = fileFilterMap.get(sample);
-        return sampleFileIndexQuery == null ? new SampleFileIndexQuery(sample) : sampleFileIndexQuery;
+    public Values<SampleFileIndexQuery> getSampleFileIndexQuery(String sample) {
+        Values<SampleFileIndexQuery> sampleFileIndexQuery = fileFilterMap.get(sample);
+        return sampleFileIndexQuery == null
+                ? new Values<>(null, Collections.singletonList(new SampleFileIndexQuery(sample)))
+                : sampleFileIndexQuery;
     }
 
 //    public byte getFileIndex(String sample) {
@@ -166,7 +166,10 @@ public class SampleIndexQuery {
 //    }
 
     public boolean emptyFileIndex() {
-        return fileFilterMap.isEmpty() || fileFilterMap.values().stream().allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
+        return fileFilterMap.isEmpty() || fileFilterMap.values()
+                .stream()
+                .flatMap(Values::stream)
+                .allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
     }
 
     public byte getAnnotationIndexMask() {

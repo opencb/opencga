@@ -248,22 +248,62 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     }
 
     private boolean filterFile(SampleIndexEntryIterator variants) {
-        if (query.getFileIndexMask() == EMPTY_MASK || !variants.hasFileIndex()) {
+        if (query.emptyFileIndex() || !variants.hasFileIndex()) {
             return true;
         }
-        if (filterFile(variants.nextFileIndexEntry())) {
-            return true;
-        }
-        while (variants.isMultiFileIndex()) {
-            if (filterFile(variants.nextMultiFileIndexEntry())) {
+        if (query.getSampleFileIndexQuery().getOperation() == null || query.getSampleFileIndexQuery().getOperation() == OR) {
+            if (filterFileAnyMatch(variants.nextFileIndexEntry())) {
                 return true;
+            }
+            while (variants.isMultiFileIndex()) {
+                if (filterFileAnyMatch(variants.nextMultiFileIndexEntry())) {
+                    return true;
+                }
+            }
+        } else {
+            boolean[] passedFilters = new boolean[query.getSampleFileIndexQuery().size()];
+            if (filterFileAllMatch(passedFilters, variants.nextFileIndexEntry())) {
+                return true;
+            }
+            while (variants.isMultiFileIndex()) {
+                if (filterFileAllMatch(passedFilters, variants.nextMultiFileIndexEntry())) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
-    private boolean filterFile(short fileIndex) {
-        SampleFileIndexQuery fileQuery = query.getSampleFileIndexQuery();
+    private boolean filterFileAllMatch(boolean[] passedFilters, short fileIndexEntry) {
+        int numPass = 0;
+        for (int i = 0; i < query.getSampleFileIndexQuery().size(); i++) {
+            if (!passedFilters[i]) {
+                SampleFileIndexQuery fileIndexQuery = query.getSampleFileIndexQuery().get(i);
+                passedFilters[i] = filterFile(fileIndexEntry, fileIndexQuery);
+                if (passedFilters[i]) {
+                    numPass++;
+                }
+            } else {
+                numPass++;
+            }
+        }
+        return numPass == passedFilters.length;
+    }
+
+    private boolean filterFileAnyMatch(short fileIndex) {
+        // Return true if any file filter matches
+        // return query.getSampleFileIndexQuery().stream().anyMatch(sampleFileIndexQuery -> filterFile(fileIndex, sampleFileIndexQuery));
+        for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
+            if (filterFile(fileIndex, sampleFileIndexQuery)) {
+                // Any match
+                return true;
+            }
+        }
+        // No match
+        return false;
+    }
+
+    private boolean filterFile(short fileIndex, SampleFileIndexQuery fileQuery) {
         int v = fileIndex & fileQuery.getFileIndexMask();
 
         return (!fileQuery.hasFileIndexMask1() || fileQuery.getValidFileIndex1()[getByte1(v)])

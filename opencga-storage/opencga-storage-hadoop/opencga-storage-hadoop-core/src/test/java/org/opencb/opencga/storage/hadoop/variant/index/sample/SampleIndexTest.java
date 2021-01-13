@@ -249,7 +249,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void testQueryFileIndex() throws Exception {
         testQueryFileIndex(new Query(TYPE.key(), "SNV"));
-        testQueryFileIndex(new Query(TYPE.key(), "SNP"));
+//        testQueryFileIndex(new Query(TYPE.key(), "SNP"));
         testQueryFileIndex(new Query(TYPE.key(), "INDEL"));
         testQueryFileIndex(new Query(TYPE.key(), "SNV,INDEL"));
         testQueryFileIndex(new Query(FILTER.key(), "PASS"));
@@ -275,6 +275,53 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 new Query()
                         .append(STUDY.key(), STUDY_NAME_2)
                         .append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
+    }
+
+    @Test
+    public void testMultiFileFilters() throws Exception {
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-1.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterA"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterB"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=FilterA,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterA"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS;chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        // 22:20780030:-:C
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600")
+                        .append(SAMPLE_DATA.key(), "NA19600:DS=2.005"));
+
+        // 22:36591380::A:G
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=FilterB,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterB"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600")
+                        .append(SAMPLE_DATA.key(), "NA19600:DS=1.005"));
     }
 
     @Test

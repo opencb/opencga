@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
@@ -232,11 +233,11 @@ public class SampleIndexEntryFilterTest {
         return getSingleSampleIndexQuery(annotationIndexQuery, Collections.emptyMap());
     }
 
-    private SingleSampleIndexQuery getSingleSampleIndexQuery(Map<String, SampleFileIndexQuery> fileFilterMap) {
-        return getSingleSampleIndexQuery(null, fileFilterMap);
-    }
+//    private SingleSampleIndexQuery getSingleSampleIndexQuery(Map<String, SampleFileIndexQuery> fileFilterMap) {
+//        return getSingleSampleIndexQuery(null, fileFilterMap);
+//    }
 
-    private SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery, Map<String, SampleFileIndexQuery> fileFilterMap) {
+    private SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery, Map<String, Values<SampleFileIndexQuery>> fileFilterMap) {
         return new SampleIndexQuery(
                 Collections.emptyList(), null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), false, VariantQueryUtils.QueryOperation.AND)
                 .forSample("S1");

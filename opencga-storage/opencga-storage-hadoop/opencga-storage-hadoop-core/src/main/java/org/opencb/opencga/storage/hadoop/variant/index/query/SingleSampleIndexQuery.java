@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.core.variant.query.Values;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,11 +13,12 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
 
     private final String sample;
     private final List<String> gts;
-    private final SampleFileIndexQuery sampleFileIndexQuery;
+    private final Values<SampleFileIndexQuery> sampleFileIndexQuery;
     private final boolean[] fatherFilter;
     private final boolean[] motherFilter;
     private final boolean mendelianError;
     private final boolean multiFileSample;
+    private final boolean emptyFileIndex;
 
     protected SingleSampleIndexQuery(SampleIndexQuery query, String sample) {
         this(query, sample, query.getSamplesMap().get(sample));
@@ -44,11 +45,12 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         motherFilter = getMotherFilter(sample);
         sampleFileIndexQuery = getSampleFileIndexQuery(sample);
         mendelianError = query.getMendelianErrorSet().contains(sample);
+        emptyFileIndex = sampleFileIndexQuery.isEmpty() || sampleFileIndexQuery.stream().allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
     }
 
     @Override
     public boolean emptyFileIndex() {
-        return sampleFileIndexQuery.getFileIndexMask() == EMPTY_MASK;
+        return emptyFileIndex;
     }
 
     public String getSample() {
@@ -83,19 +85,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         return motherFilter != EMPTY_PARENT_FILTER;
     }
 
-    public short getFileIndexMask() {
-        return sampleFileIndexQuery.getFileIndexMask();
-    }
-
-    public byte getFileIndexMask1() {
-        return (byte) IndexUtils.getByte1(sampleFileIndexQuery.getFileIndexMask());
-    }
-
-    public byte getFileIndexMask2() {
-        return (byte) IndexUtils.getByte2(sampleFileIndexQuery.getFileIndexMask());
-    }
-
-    public SampleFileIndexQuery getSampleFileIndexQuery() {
+    public Values<SampleFileIndexQuery> getSampleFileIndexQuery() {
         return sampleFileIndexQuery;
     }
 

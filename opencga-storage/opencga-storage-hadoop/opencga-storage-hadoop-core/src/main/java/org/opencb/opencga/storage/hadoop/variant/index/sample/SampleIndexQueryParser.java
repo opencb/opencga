@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
@@ -359,10 +358,10 @@ public class SampleIndexQueryParser {
             }
 
         }
-        Map<String, SampleFileIndexQuery> fileIndexMap = new HashMap<>(samplesMap.size());
+        Map<String, Values<SampleFileIndexQuery>> fileIndexMap = new HashMap<>(samplesMap.size());
         for (String sample : samplesMap.keySet()) {
-            SampleFileIndexQuery fileIndexQuery =
-                    parseFileQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex);
+            Values<SampleFileIndexQuery> fileIndexQuery =
+                    parseFilesQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex);
 
             fileIndexMap.put(sample, fileIndexQuery);
         }
@@ -509,9 +508,9 @@ public class SampleIndexQueryParser {
     }
 
 
-    protected SampleFileIndexQuery parseFileQuery(Query query, int studyId, String sample,
-                                                  boolean multiFileSample, boolean partialFilesIndex) {
-        return parseFileQuery(query, sample, multiFileSample, partialFilesIndex, s -> {
+    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
+                                                         boolean multiFileSample, boolean partialFilesIndex) {
+        return parseFilesQuery(query, sample, multiFileSample, partialFilesIndex, s -> {
             Integer sampleId = metadataManager.getSampleId(studyId, s);
             List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
             List<String> fileNames = new ArrayList<>(fileIds.size());
@@ -520,8 +519,45 @@ public class SampleIndexQueryParser {
             }
             return fileNames;
         });
-
     }
+
+    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
+                                                         Function<String, List<String>> filesFromSample) {
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
+        List<String> filesFromFileData = fileDataParsedQuery.getValues(KeyValues::getKey);
+
+        boolean splitFileDataQuery = false;
+        if (fileDataParsedQuery.getOperation() == QueryOperation.AND) {
+            splitFileDataQuery = true;
+        } else if (fileDataParsedQuery.getOperation() == QueryOperation.OR && multiFileSample) {
+            List<String> files = filesFromSample.apply(sample);
+            if (files.containsAll(filesFromFileData)) {
+                // All samples from the query are from the same sample (aka multi-query sample)
+                splitFileDataQuery = true;
+            }
+        }
+        if (splitFileDataQuery) {
+            List<SampleFileIndexQuery> fileIndexQueries = new ArrayList<>(filesFromFileData.size());
+            boolean fileDataCovered = true;
+            for (String fileFromFileData : filesFromFileData) {
+                Query subQuery = new Query(query);
+//                    subQuery.remove(FILE.key());
+                subQuery.put(FILE_DATA.key(), fileDataParsedQuery.getValue(kv -> kv.getKey().equals(fileFromFileData)).toQuery());
+                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialFilesIndex, filesFromSample));
+                if (isValidParam(subQuery, FILE_DATA)) {
+                    // This subquery did not remove the fileData, so it's not fully covered. Can't remove the fileData filter.
+                    fileDataCovered = false;
+                }
+            }
+            if (fileDataCovered && !partialFilesIndex) {
+                query.remove(FILE_DATA.key());
+            }
+            return new Values<>(fileDataParsedQuery.getOperation(), fileIndexQueries);
+        }
+        return new Values<>(null,
+                Collections.singletonList(parseFileQuery(query, sample, multiFileSample, partialFilesIndex, filesFromSample)));
+    }
+
     protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
                                                   Function<String, List<String>> filesFromSample) {
         short fileIndexMask = 0;
@@ -559,7 +595,7 @@ public class SampleIndexQueryParser {
                 filesFromQuery = filesQuery.getValues();
             } else if (isValidParam(query, FILE_DATA)) {
                 ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileData = parseFileData(query);
-                filesFromQuery = fileData.getValues().stream().map(KeyValues::getKey).collect(Collectors.toList());
+                filesFromQuery = fileData.getValues(KeyValues::getKey);
             } else {
                 filesFromQuery = null;
             }
@@ -577,7 +613,7 @@ public class SampleIndexQueryParser {
         boolean filterPass = false;
         boolean filterPassCovered = false;
         if (isValidParam(query, FILTER)) {
-            List<String> filterValues = splitValue(query, FILTER).getValues();
+            Values<String> filterValues = splitValue(query, FILTER);
 
             if (filterValues.size() == 1) {
                 if (filterValues.get(0).equals(VCFConstants.PASSES_FILTERS_v4)) {
@@ -591,12 +627,14 @@ public class SampleIndexQueryParser {
                     filterPassCovered = true;
                 } else if (!isNegated(filterValues.get(0))) {
                     // Non negated filter, other than PASS
+                    filterPass = false;
                     fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
                 }
             } else {
                 if (!filterValues.contains(VCFConstants.PASSES_FILTERS_v4)) {
-                    if (filterValues.stream().noneMatch(VariantQueryUtils::isNegated)) {
+                    if (filterValues.getValues().stream().noneMatch(VariantQueryUtils::isNegated)) {
                         // None negated filter, without PASS
+                        filterPass = false;
                         fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
                     }
                 } // else --> Mix PASS and other filters. Can not use index
@@ -624,8 +662,10 @@ public class SampleIndexQueryParser {
             }
         }
 
+        boolean fileDataCovered = true;
         RangeQuery dpQuery = null;
         if (isValidParam(query, FILE_DATA)) {
+            //ParsedQuery<KeyValues< FileId , KeyOpValue< INFO , Value >>>
             ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = parseFileData(query);
             if (parsedQuery.getOperation() != QueryOperation.OR) {
                 Map<String, KeyValues<String, KeyOpValue<String, String>>> fileDataMap =
@@ -633,6 +673,10 @@ public class SampleIndexQueryParser {
                 // Lazy get files from sample
                 if (files == null) {
                     files = filesFromSample.apply(sample);
+                }
+                if (!files.containsAll(fileDataMap.keySet())) {
+                    // Some of the files in FileData filter are not from this sample.
+                    fileDataCovered = false;
                 }
                 for (String file : files) {
                     KeyValues<String, KeyOpValue<String, String>> keyValues = fileDataMap.get(file);
@@ -645,13 +689,24 @@ public class SampleIndexQueryParser {
                             double dpValue = Double.parseDouble(keyOpValue.getValue());
                             dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
                             fileIndexMask |= VariantFileIndexConverter.DP_MASK;
+                            if (!dpQuery.isExactQuery()) {
+                                fileDataCovered = false;
+                            }
                         } else if (keyOpValue.getKey().equals(StudyEntry.FILTER)) {
                             if (keyOpValue.getValue().equals(VCFConstants.PASSES_FILTERS_v4)) {
                                 filterPass = true;
                                 fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
-                            } else if (keyOpValue.getValue().equals(NOT + VCFConstants.PASSES_FILTERS_v4)) {
-                                filterPass = false;
-                                fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
+                            } else {
+                                // Only covered when filtering by PASS
+                                fileDataCovered = false;
+                                Values<String> filterValues = splitValues(keyOpValue.getValue());
+                                if (!filterValues.contains(VCFConstants.PASSES_FILTERS_v4)) {
+                                    if (filterValues.getValues().stream().noneMatch(VariantQueryUtils::isNegated)) {
+                                        // None negated filter, without PASS
+                                        filterPass = false;
+                                        fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
+                                    }
+                                } // else --> Mix PASS and other filters. Can not use index
                             }
                         } else if (keyOpValue.getKey().equals(StudyEntry.QUAL)) {
                             fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
@@ -659,41 +714,47 @@ public class SampleIndexQueryParser {
                             double value = Double.parseDouble(keyOpValue.getValue());
                             qualQuery = getRangeQuery(keyOpValue.getOp(), value,
                                     SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
+                            if (!qualQuery.isExactQuery()) {
+                                fileDataCovered = false;
+                            }
+                        } else {
+                            // Unknown key
+                            fileDataCovered = false;
                         }
                     }
                 }
+            } else {
+                fileDataCovered = false;
             }
+        }
+        if (fileDataCovered && !partialFilesIndex) {
+            query.remove(FILE_DATA.key());
         }
 
         if (isValidParam(query, SAMPLE_DATA)) {
-            Pair<QueryOperation, Map<String, String>> pair = parseSampleData(query);
-            QueryOperation formatOp = pair.getKey();
-            Map<String, String> format = pair.getValue();
-            String values = format.get(sample);
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataQuery = parseSampleData(query);
+            QueryOperation sampleDataOp = sampleDataQuery.getOperation();
+            KeyValues<String, KeyOpValue<String, String>> sampleDataFilter = sampleDataQuery.getValue(kv -> kv.getKey().equals(sample));
 
-            if (StringUtils.isNotEmpty(values) && formatOp != QueryOperation.OR) {
-                List<String> sampleFormatFilters = splitValues(values).getValues();
-                for (String value : sampleFormatFilters) {
-                    KeyOpValue<String, String> keyOpValue = VariantQueryUtils.parseKeyOpValue(value);
+            if (!sampleDataFilter.isEmpty() && sampleDataOp != QueryOperation.OR) {
+                for (KeyOpValue<String, String> keyOpValue : sampleDataFilter) {
                     if (keyOpValue.getKey().equals(VCFConstants.DEPTH_KEY)) {
                         String op = keyOpValue.getOp();
                         double dpValue = Double.parseDouble(keyOpValue.getValue());
                         dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
                         fileIndexMask |= VariantFileIndexConverter.DP_MASK;
                         if (dpQuery.isExactQuery() && !partialFilesIndex) {
-                            if (sampleFormatFilters.size() == 1) {
-                                format.remove(sample);
-                                if (format.isEmpty()) {
-                                    query.remove(SAMPLE_DATA.key());
-                                } else {
-                                    String newFormatFilter = format.entrySet()
-                                            .stream()
-                                            .map(e -> e.getKey() + IS + e.getValue())
-                                            .collect(Collectors.joining(formatOp.separator()));
-                                    query.put(SAMPLE_DATA.key(), newFormatFilter);
-                                }
+                            if (sampleDataFilter.size() == 1) {
+                                sampleDataQuery.getValues().remove(sampleDataFilter);
                             }
                         }
+                    }
+                }
+                if (!partialFilesIndex) {
+                    if (sampleDataQuery.isEmpty()) {
+                        query.remove(SAMPLE_DATA.key());
+                    } else {
+                        query.put(SAMPLE_DATA.key(), sampleDataQuery.toQuery());
                     }
                 }
             }
@@ -841,6 +902,12 @@ public class SampleIndexQueryParser {
                 ctFilterCoveredBySummary = true;
                 ctCovered = true;
                 annotationIndex |= MISSENSE_VARIANT_MASK;
+                // Ensure not filtering by gene, and not combining with other params
+                if (completeIndex && !isValidParam(query, GENE)) {
+                    if (simpleCombination(combination)) {
+                        query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                    }
+                }
             }
 
             // Do not use ctIndex if the CT filter is covered by the summary

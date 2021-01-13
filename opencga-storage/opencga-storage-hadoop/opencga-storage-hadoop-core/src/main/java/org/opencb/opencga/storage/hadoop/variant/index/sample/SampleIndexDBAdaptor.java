@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
@@ -565,7 +566,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                 }
-                if (includeAll || query.getFileIndexMask() != EMPTY_MASK) {
+                if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
                 if (/*includeAll ||*/ query.hasFatherFilter() || query.hasMotherFilter()) {
@@ -601,20 +602,25 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         for (PopulationFrequencyQuery pf : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
             logger.info("PopFreq         = " + pf);
         }
-        if (query.getSampleFileIndexQuery().hasFileIndexMask1()) {
-            boolean[] validFileIndex = query.getSampleFileIndexQuery().getValidFileIndex1();
-            for (int i = 0; i < validFileIndex.length; i++) {
-                if (validFileIndex[i]) {
-                    logger.info("FileIndex1       = " + IndexUtils.maskToString(query.getFileIndexMask1(), (byte) i));
+        for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
+            if (sampleFileIndexQuery.hasFileIndexMask1()) {
+                boolean[] validFileIndex = sampleFileIndexQuery.getValidFileIndex1();
+                for (int i = 0; i < validFileIndex.length; i++) {
+                    if (validFileIndex[i]) {
+                        logger.info("FileIndex1       = " + IndexUtils.maskToString(sampleFileIndexQuery.getFileIndexMask1(), (byte) i));
+                    }
                 }
             }
-        }
-        if (query.getSampleFileIndexQuery().hasFileIndexMask2()) {
-            boolean[] validFileIndex2 = query.getSampleFileIndexQuery().getValidFileIndex2();
-            for (int i = 0; i < validFileIndex2.length; i++) {
-                if (validFileIndex2[i]) {
-                    logger.info("FileIndex2       = " + IndexUtils.maskToString(query.getFileIndexMask2(), (byte) i));
+            if (sampleFileIndexQuery.hasFileIndexMask2()) {
+                boolean[] validFileIndex2 = sampleFileIndexQuery.getValidFileIndex2();
+                for (int i = 0; i < validFileIndex2.length; i++) {
+                    if (validFileIndex2[i]) {
+                        logger.info("FileIndex2       = " + IndexUtils.maskToString(sampleFileIndexQuery.getFileIndexMask2(), (byte) i));
+                    }
                 }
+            }
+            if (query.getSampleFileIndexQuery().getOperation() != null) {
+                logger.info("FileIndex " + query.getSampleFileIndexQuery().getOperation());
             }
         }
         if (query.hasFatherFilter()) {

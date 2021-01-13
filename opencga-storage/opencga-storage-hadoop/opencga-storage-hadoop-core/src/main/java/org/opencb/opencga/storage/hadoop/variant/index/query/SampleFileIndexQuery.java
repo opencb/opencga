@@ -44,11 +44,13 @@ public class SampleFileIndexQuery {
     public short getFileIndexMask() {
         return fileIndexMask;
     }
-    public int getFileIndexMask1() {
-        return IndexUtils.getByte1(fileIndexMask);
+
+    public byte getFileIndexMask1() {
+        return (byte) IndexUtils.getByte1(fileIndexMask);
     }
-    public int getFileIndexMask2() {
-        return IndexUtils.getByte2(fileIndexMask);
+
+    public byte getFileIndexMask2() {
+        return (byte) IndexUtils.getByte2(fileIndexMask);
     }
 
     public boolean hasFileIndexMask1() {
