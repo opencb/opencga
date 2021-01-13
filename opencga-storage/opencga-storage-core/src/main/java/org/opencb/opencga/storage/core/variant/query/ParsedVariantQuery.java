@@ -78,6 +78,10 @@ public class ParsedVariantQuery {
     public static class VariantStudyQuery {
         private ParsedQuery<String> studies;
         private ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes;
+//        // SAMPLE : [ KEY OP VALUE ] *
+        private ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery;
+//        // Merged genotype and sample_data filters
+//        private Values<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleFilters;
         private StudyMetadata defaultStudy;
 
         public VariantStudyQuery() {
@@ -98,6 +102,15 @@ public class ParsedVariantQuery {
 
         public VariantStudyQuery setGenotypes(ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes) {
             this.genotypes = genotypes;
+            return this;
+        }
+
+        public ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> getSampleDataQuery() {
+            return sampleDataQuery;
+        }
+
+        public VariantStudyQuery setSampleDataQuery(ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery) {
+            this.sampleDataQuery = sampleDataQuery;
             return this;
         }
 

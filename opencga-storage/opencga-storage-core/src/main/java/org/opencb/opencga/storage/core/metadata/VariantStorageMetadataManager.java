@@ -804,6 +804,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return sampleIds;
     }
 
+    public int getSampleIdOrFail(int studyId, Object sampleObj) {
+        Integer sampleId = getSampleId(studyId, sampleObj, false);
+        if (sampleId == null) {
+            throw VariantQueryException.sampleNotFound(sampleObj, getStudyName(studyId));
+        }
+        return sampleId;
+    }
+
     public Integer getSampleId(int studyId, Object sampleObj) {
         return getSampleId(studyId, sampleObj, false);
     }
