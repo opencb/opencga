@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.rga.RgaManager;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -40,8 +41,10 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.storage.core.rga.RgaQueryParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -65,6 +68,7 @@ public class ClinicalWebService extends AnalysisWebService {
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
+    private final RgaManager rgaManager;
 
     public ClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -73,6 +77,7 @@ public class ClinicalWebService extends AnalysisWebService {
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
+        rgaManager = new RgaManager(catalogManager, storageEngineFactory);
     }
 
 //    public ClinicalWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
@@ -613,6 +618,108 @@ public class ClinicalWebService extends AnalysisWebService {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    //-------------------------------------------------------------------------
+    // R E C E S S I V E      G E N E       A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    @GET
+    @Path("/rga/individual/query")
+    @ApiOperation(value = "Query individual RGA", response = KnockoutByIndividual.class)
+    @ApiImplicitParams({
+            // Query options
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+
+            @ApiImplicitParam(name = "sampleId", value = RgaQueryParams.SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "individualId", value = RgaQueryParams.INDIVIDUAL_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sex", value = RgaQueryParams.SEX_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "phenotypes", value = RgaQueryParams.PHENOTYPES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "disorders", value = RgaQueryParams.DISORDERS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneId", value = RgaQueryParams.GENE_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneName", value = RgaQueryParams.GENE_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneBiotype", value = RgaQueryParams.GENE_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "chromosome", value = RgaQueryParams.CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "start", value = RgaQueryParams.START_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "end", value = RgaQueryParams.END_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "populationFrequency", value = RgaQueryParams.POPULATION_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "consequenceType", value = RgaQueryParams.CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query")
+    })
+    public Response rgaIndividualQuery(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr
+    ) {
+        // Get all query options
+        return run(() -> {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = RgaQueryParams.getQueryParams(queryOptions);
+
+            return rgaManager.individualQuery(studyStr, query, queryOptions, token);
+        });
+    }
+
+    @GET
+    @Path("/rga/gene/query")
+    @ApiOperation(value = "Query gene RGA", response = KnockoutByIndividual.class)
+    @ApiImplicitParams({
+            // Query options
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+
+            @ApiImplicitParam(name = "sampleId", value = RgaQueryParams.SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "individualId", value = RgaQueryParams.INDIVIDUAL_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sex", value = RgaQueryParams.SEX_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "phenotypes", value = RgaQueryParams.PHENOTYPES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "disorders", value = RgaQueryParams.DISORDERS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneId", value = RgaQueryParams.GENE_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneName", value = RgaQueryParams.GENE_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneBiotype", value = RgaQueryParams.GENE_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "chromosome", value = RgaQueryParams.CHROMOSOME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "start", value = RgaQueryParams.START_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "end", value = RgaQueryParams.END_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "populationFrequency", value = RgaQueryParams.POPULATION_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "consequenceType", value = RgaQueryParams.CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query")
+    })
+    public Response rgaGeneQuery(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr
+    ) {
+        // Get all query options
+        return run(() -> {
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = RgaQueryParams.getQueryParams(queryOptions);
+
+            return rgaManager.geneQuery(studyStr, query, queryOptions, token);
+        });
+    }
+
+    @POST
+    @Path("/rga/index/run")
+    @ApiOperation(value = TieringInterpretationAnalysis.DESCRIPTION, response = Job.class)
+    public Response rgaIndexRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String file,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = TieringInterpretationAnalysisParams.DESCRIPTION, required = true) TieringInterpretationAnalysisParams params) {
+        return submitJob(TieringInterpretationAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     //-------------------------------------------------------------------------

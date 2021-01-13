@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.rga;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
 
 import java.util.HashMap;
@@ -34,17 +35,29 @@ public class RgaQueryParams implements QueryParam {
     public static final String GENE_NAME_DESCR = "Filter by gene name.";
     public static final RgaQueryParams GENE_NAME = new RgaQueryParams("geneName", Type.TEXT, GENE_NAME_DESCR);
 
+    public static final String GENE_BIOTYPE_DESCR = "Filter by gene biotype.";
+    public static final RgaQueryParams GENE_BIOTYPE = new RgaQueryParams("geneBiotype", Type.TEXT, GENE_BIOTYPE_DESCR);
+
+    public static final String CHROMOSOME_DESCR = "Filter by chromosome.";
+    public static final RgaQueryParams CHROMOSOME = new RgaQueryParams("chromosome", Type.TEXT, CHROMOSOME_DESCR);
+
+    public static final String START_DESCR = "Filter by start position.";
+    public static final RgaQueryParams START = new RgaQueryParams("start", Type.TEXT, START_DESCR);
+
+    public static final String END_DESCR = "Filter by end position.";
+    public static final RgaQueryParams END = new RgaQueryParams("end", Type.TEXT, END_DESCR);
+
     public static final String TRANSCRIPT_ID_DESCR = "Filter by transcript id.";
     public static final RgaQueryParams TRANSCRIPT_ID = new RgaQueryParams("transcriptId", Type.TEXT, TRANSCRIPT_ID_DESCR);
 
     public static final String TRANSCRIPT_BIOTYPE_DESCR = "Filter by transcript biotype.";
-    public static final RgaQueryParams TRANSCRIPT_BIOTYPE = new RgaQueryParams("tbiotype", Type.TEXT, TRANSCRIPT_BIOTYPE_DESCR);
+    public static final RgaQueryParams TRANSCRIPT_BIOTYPE = new RgaQueryParams("transcriptBiotype", Type.TEXT, TRANSCRIPT_BIOTYPE_DESCR);
 
     public static final String VARIANTS_DESCR = "Filter by variant id.";
     public static final RgaQueryParams VARIANTS = new RgaQueryParams("variants", Type.TEXT_ARRAY, VARIANTS_DESCR);
 
     public static final String KNOCKOUT_DESCR = "Filter by knockout type.";
-    public static final RgaQueryParams KNOCKOUT = new RgaQueryParams("knockout", Type.TEXT, KNOCKOUT_DESCR);
+    public static final RgaQueryParams KNOCKOUT = new RgaQueryParams("knockoutType", Type.TEXT, KNOCKOUT_DESCR);
 
     public static final String FILTER_DESCR = "Filter by filter (PASS, NOT_PASS).";
     public static final RgaQueryParams FILTER = new RgaQueryParams("filter", Type.TEXT, FILTER_DESCR);
@@ -83,5 +96,16 @@ public class RgaQueryParams implements QueryParam {
 
     public static RgaQueryParams valueOf(String param) {
         return VALUES_MAP.get(param);
+    }
+
+    public static Query getQueryParams(Map<String, ?> options) {
+        Query query = new Query();
+        for (String key : options.keySet()) {
+            if (VALUES_MAP.containsKey(key)) {
+                query.put(key, options.get(key));
+                options.remove(key);
+            }
+        }
+        return query;
     }
 }

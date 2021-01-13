@@ -16,6 +16,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,9 +35,20 @@ public class RgaEngineTest {
     public void before() throws IOException {
         try (InputStream is = RgaEngineTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
             storageConfiguration = StorageConfiguration.load(is);
-            storageConfiguration.getSearch().setConfigSet("opencga-rga-configset-" + GitRepositoryState.get().getBuildVersion());
         }
     }
+
+//    @Test
+//    public void load1000g() throws Exception {
+//        System.out.println(storageConfiguration.getRga());
+//        RgaEngine rgaEngine = new RgaEngine(storageConfiguration);
+//
+//        if (!rgaEngine.exists("rga-short")) {
+//            rgaEngine.create("rga-short");
+//        }
+//        rgaEngine.load("rga-short", Paths.get("/data/datasets/knockout/knockout.individuals.json"));
+//    }
+
 
     @Test
     public void testIndividualQuery() throws Exception {
@@ -179,7 +191,7 @@ public class RgaEngineTest {
         QueryOptions options = new QueryOptions(QueryOptions.FACET, RgaQueryParams.DISORDERS.key());
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, new Query(), options);
         assertEquals(1, facetFieldDataResult.getNumResults());
-        assertEquals("disorders", facetFieldDataResult.first().getName());
+        assertEquals(RgaDataModel.DISORDERS, facetFieldDataResult.first().getName());
         assertEquals(4, facetFieldDataResult.first().getBuckets().size());
     }
 

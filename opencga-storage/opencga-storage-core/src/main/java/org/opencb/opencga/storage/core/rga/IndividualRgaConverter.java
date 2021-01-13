@@ -168,7 +168,7 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                             .distinct().collect(Collectors.toList());
                     Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
-                    String id = knockoutByIndividual.getId() + "_" + gene.getId() + "_" + transcript.getId();
+                    String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
                     RgaDataModel model = new RgaDataModel(id, knockoutByIndividual.getId(),  knockoutByIndividual.getSampleId(),
                             knockoutByIndividual.getSex().name(), phenotypes, disorders, gene.getId(), gene.getName(), "", "", "", 0, 0,
                             transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes, filters, consequenceTypes, popFreqs,
@@ -245,10 +245,10 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                 independentTerms.add(ct);
             }
             // PF - Population frequencies
+            List<String> pf = new LinkedList<>();
+            boolean gnomad = false;
+            boolean thousandG = false;
             if (variant.getPopulationFrequencies() != null) {
-                List<String> pf = new ArrayList<>(variant.getPopulationFrequencies().size());
-                boolean gnomad = false;
-                boolean thousandG = false;
                 for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
                     if (populationFrequency.getPopulation().equals("ALL")) {
                         if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
@@ -264,14 +264,14 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                         }
                     }
                 }
-                if (!thousandG) {
-                    pf.add(RgaUtils.encode(RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0));
-                }
-                if (!gnomad) {
-                    pf.add(RgaUtils.encode(RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0));
-                }
-                independentTerms.add(pf);
             }
+            if (!thousandG) {
+                pf.add(RgaUtils.encode(RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0f));
+            }
+            if (!gnomad) {
+                pf.add(RgaUtils.encode(RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0f));
+            }
+            independentTerms.add(pf);
 
             if (variant.getKnockoutType() == KnockoutVariant.KnockoutType.COMP_HET) {
                 compoundHeterozygousVariantList.add(independentTerms);

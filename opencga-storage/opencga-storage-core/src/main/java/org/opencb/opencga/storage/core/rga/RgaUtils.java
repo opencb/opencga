@@ -57,8 +57,7 @@ class RgaUtils {
 
         // POPULATION FREQUENCY
         POP_FREQ_STUDIES = Arrays.asList(THOUSAND_GENOMES_STUDY, GNOMAD_GENOMES_STUDY);
-        POP_FREQS = Arrays.asList(0f, 0.00001f, 0.00002f, 0.00005f, 0.0001f, 0.0002f, 0.0005f, 0.001f, 0.002f, 0.005f, 0.01f, 0.02f, 0.05f,
-                0.1f, 0.2f, 0.5f, 1f);
+        POP_FREQS = Arrays.asList(0f, 0.0001f, 0.0005f, 0.001f, 0.005f, 0.01f, 0.05f, 1f);
         for (int i = 1; i <= POP_FREQ_STUDIES.size(); i++) {
             String popFreqStudy = POP_FREQ_STUDIES.get(i - 1);
             for (int j = 1; j <= POP_FREQS.size(); j++) {
@@ -76,7 +75,7 @@ class RgaUtils {
 
     static String getPopulationFrequencyKey(Float popFreq) throws RgaException {
         for (Float freq : POP_FREQS) {
-            if (popFreq < freq) {
+            if (popFreq <= freq) {
                 return String.valueOf(freq);
             }
         }

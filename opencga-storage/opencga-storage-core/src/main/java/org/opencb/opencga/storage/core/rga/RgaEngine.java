@@ -20,7 +20,6 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.RgaException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +38,11 @@ public class RgaEngine implements Closeable {
     private IndividualRgaConverter individualRgaConverter;
     private GeneRgaConverter geneConverter;
     private StorageConfiguration storageConfiguration;
-    private int insertBatchSize;
 
     private Logger logger;
 
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
-    public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
+    private static final int KNOCKOUT_BATCH_SIZE = 25;
 
     public RgaEngine(StorageConfiguration storageConfiguration) {
         this.individualRgaConverter = new IndividualRgaConverter();
@@ -52,13 +50,8 @@ public class RgaEngine implements Closeable {
         this.queryParser = new RgaQueryParser();
         this.storageConfiguration = storageConfiguration;
 
-        this.solrManager = new SolrManager(storageConfiguration.getSearch().getHosts(), storageConfiguration.getSearch().getMode(),
-                storageConfiguration.getSearch().getTimeout());
-
-        // Set internal insert batch size from configuration and default value
-        insertBatchSize = storageConfiguration.getSearch().getInsertBatchSize() > 0
-                ? storageConfiguration.getSearch().getInsertBatchSize()
-                : DEFAULT_INSERT_BATCH_SIZE;
+        this.solrManager = new SolrManager(storageConfiguration.getRga().getHosts(), storageConfiguration.getRga().getMode(),
+                storageConfiguration.getRga().getTimeout());
 
         logger = LoggerFactory.getLogger(RgaEngine.class);
     }
@@ -67,44 +60,44 @@ public class RgaEngine implements Closeable {
         return solrManager.isAlive(collection);
     }
 
-    public void create(String dbName) throws VariantSearchException {
+    public void create(String dbName) throws RgaException {
         try {
-            solrManager.create(dbName, this.storageConfiguration.getSearch().getConfigSet());
+            solrManager.create(dbName, this.storageConfiguration.getRga().getConfigSet());
         } catch (SolrException e) {
-            throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
+            throw new RgaException("Error creating Solr collection '" + dbName + "'", e);
         }
     }
 
-    public void create(String dbName, String configSet) throws VariantSearchException {
+    public void create(String dbName, String configSet) throws RgaException {
         try {
             solrManager.create(dbName, configSet);
         } catch (SolrException e) {
-            throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
+            throw new RgaException("Error creating Solr collection '" + dbName + "'", e);
         }
     }
 
 
-    public boolean exists(String dbName) throws VariantSearchException {
+    public boolean exists(String dbName) throws RgaException {
         try {
             return solrManager.exists(dbName);
         } catch (SolrException e) {
-            throw new VariantSearchException("Error asking if Solr collection '" + dbName + "' exists", e);
+            throw new RgaException("Error asking if Solr collection '" + dbName + "' exists", e);
         }
     }
 
-    public boolean existsCore(String coreName) throws VariantSearchException {
+    public boolean existsCore(String coreName) throws RgaException {
         try {
             return solrManager.existsCore(coreName);
         } catch (SolrException e) {
-            throw new VariantSearchException("Error asking if Solr core '" + coreName + "' exists", e);
+            throw new RgaException("Error asking if Solr core '" + coreName + "' exists", e);
         }
     }
 
-    public boolean existsCollection(String collectionName) throws VariantSearchException {
+    public boolean existsCollection(String collectionName) throws RgaException {
         try {
-            return solrManager.existsCollection(collectionName);
+            return solrManager.exists(collectionName);
         } catch (SolrException e) {
-            throw new VariantSearchException("Error asking if Solr collection '" + collectionName + "' exists", e);
+            throw new RgaException("Error asking if Solr collection '" + collectionName + "' exists", e);
         }
     }
 
@@ -237,17 +230,17 @@ public class RgaEngine implements Closeable {
 //     * @param query        Query
 //     * @param queryOptions Query options
 //     * @return Solr VariantSearch iterator
-//     * @throws VariantSearchException VariantSearchException
+//     * @throws RgaException RgaException
 //     * @throws IOException   IOException
 //     */
 //    public SolrVariantDBIterator iterator(String collection, Query query, QueryOptions queryOptions)
-//            throws VariantSearchException, IOException {
+//            throws RgaException, IOException {
 //        try {
 //            SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
 //            return new SolrVariantDBIterator(solrManager.getSolrClient(), collection, solrQuery,
 //                    new VariantSearchToVariantConverter(VariantField.getIncludeFields(queryOptions)));
 //        } catch (SolrServerException e) {
-//            throw new VariantSearchException("Error getting variant iterator", e);
+//            throw new RgaException("Error getting variant iterator", e);
 //        }
 //    }
 
@@ -314,7 +307,7 @@ public class RgaEngine implements Closeable {
 //            // Gene management
 //            if (facetQuery.contains("genes[")
 //                    && (facetQuery.contains("genes;") || facetQuery.contains("genes>>") || facetQuery.endsWith("genes"))) {
-//                throw new VariantSearchException("Invalid gene facet query: " + facetQuery);
+//                throw new RgaException("Invalid gene facet query: " + facetQuery);
 //            }
 
             try {
@@ -430,7 +423,7 @@ public class RgaEngine implements Closeable {
     private void loadJson(String collection, Path path) throws IOException, SolrServerException {
         // This opens json and json.gz files automatically
         try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
-            List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(insertBatchSize);
+            List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(KNOCKOUT_BATCH_SIZE);
             int count = 0;
             String line;
             ObjectReader objectReader = new ObjectMapper().readerFor(KnockoutByIndividual.class);
@@ -438,16 +431,16 @@ public class RgaEngine implements Closeable {
                 KnockoutByIndividual knockoutByIndividual = objectReader.readValue(line);
                 knockoutByIndividualList.add(knockoutByIndividual);
                 count++;
-                if (count % insertBatchSize == 0) {
-                    logger.debug("Loading knockoutByIndividual from '{}', {} entries loaded", path, count);
+                if (count % KNOCKOUT_BATCH_SIZE == 0) {
                     insert(collection, knockoutByIndividualList);
+                    logger.info("Loaded {} knockoutByIndividual entries from '{}'", count, path);
                     knockoutByIndividualList.clear();
                 }
             }
 
             // Insert the remaining entries
             if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-                logger.debug("Loading remaining knockoutByIndividual from '{}', {} entries loaded", path, count);
+                logger.info("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
                 insert(collection, knockoutByIndividualList);
             }
         }

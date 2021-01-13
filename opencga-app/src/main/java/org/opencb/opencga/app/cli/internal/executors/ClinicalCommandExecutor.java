@@ -24,6 +24,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
@@ -84,11 +86,24 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 cancerTiering();
                 break;
 
+            case RGA_INDEX_RUN_COMMAND:
+                rgaIndex();
+                break;
+
             default:
                 logger.error("Subcommand not valid");
                 break;
 
         }
+    }
+
+    private void rgaIndex() throws ToolException {
+        ClinicalCommandOptions.RgaSecondaryIndexCommandOptions options = clinicalCommandOptions.rgaSecondaryIndexCommandOptions;
+        Path outDir = Paths.get(options.outdir);
+        ObjectMap params = new ObjectMap()
+                .append(RgaAnalysis.STUDY_PARAM, options.study)
+                .append(RgaAnalysis.FILE_PARAM, options.file);
+        toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
 

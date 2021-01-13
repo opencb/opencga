@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -30,6 +31,7 @@ public class ClinicalCommandOptions {
     public TeamCommandOptions teamCommandOptions;
     public ZettaCommandOptions zettaCommandOptions;
     public CancerTieringCommandOptions cancerTieringCommandOptions;
+    public RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -48,6 +50,7 @@ public class ClinicalCommandOptions {
         this.teamCommandOptions = new TeamCommandOptions();
         this.zettaCommandOptions = new ZettaCommandOptions();
         this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
+        this.rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
     }
 
     @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
@@ -242,6 +245,24 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
         public boolean primary;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription = RgaAnalysis.DESCRIPTION)
+    public class RgaSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String RGA_INDEX_RUN_COMMAND = RgaAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
+
+        @Parameter(names = {"--" + RgaAnalysis.FILE_PARAM}, description = "Json file containing the KnockoutByIndividual information", required = true, arity = 1)
+        public String file;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
         public String outdir;

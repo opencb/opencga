@@ -568,30 +568,30 @@
     <fieldType name="float" class="solr.TrieFloatField" positionIncrementGap="0" docValues="true" precisionStep="0"/>
 
     <!-- Recessive Gene Analysis fields -->
-    <field name="iId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="sId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="individualId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="sampleId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="sex" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="pheno" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="dis" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="gId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="gName" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="gBio" type="string" indexed="false" stored="true" multiValued="false"/>
-    <field name="chr" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="str" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="phenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="disorders" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="geneId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="geneBiotype" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="strand" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
-    <field name="tId" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="tBio" type="string" indexed="false" stored="true" multiValued="false"/>
-    <field name="var" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="ko" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="fl" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="ct" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cF" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="phenoJ" type="string" indexed="false" stored="true" multiValued="true"/>
-    <field name="disJ" type="string" indexed="false" stored="true" multiValued="true"/>
-    <field name="varJ" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="transcriptId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="transcriptBiotype" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="variants" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="knockoutTypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="filters" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="consequenceTypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="compoundFilters" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="phenotypeJson" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="disorderJson" type="string" indexed="false" stored="true" multiValued="true"/>
+    <field name="variantJson" type="string" indexed="false" stored="true" multiValued="true"/>
 
-    <dynamicField name="pf_*" type="float" indexed="true" stored="true" multiValued="true"/>
+    <dynamicField name="populationFrequencies_*" type="float" indexed="true" stored="true" multiValued="true"/>
     <!--
        The field 'filter' contains info about the KnockoutType, filter, consequence type and population frequencies:
             [KO, KO__FILTER, KO__FILTER__CT, KO__FILTER__CT__PF]

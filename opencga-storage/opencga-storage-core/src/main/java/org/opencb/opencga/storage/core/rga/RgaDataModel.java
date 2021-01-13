@@ -2,139 +2,107 @@ package org.opencb.opencga.storage.core.rga;
 
 import org.apache.solr.client.solrj.beans.Field;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class RgaDataModel {
 
-    @Field(ID)
+    @Field
     private String id;
 
-    @Field(INDIVIDUAL_ID)
+    @Field
     private String individualId;
 
-    @Field(SAMPLE_ID)
+    @Field
     private String sampleId;
 
-    @Field(SEX)
+    @Field
     private String sex;
 
-    @Field(PHENOTYPES)
+    @Field
     private List<String> phenotypes;
 
-    @Field(DISORDERS)
+    @Field
     private List<String> disorders;
 
-    @Field(GENE_ID)
+    @Field
     private String geneId;
 
-    @Field(GENE_NAME)
+    @Field
     private String geneName;
 
-    @Field(GENE_BIOTYPE)
+    @Field
     private String geneBiotype;
 
-    @Field(CHROMOSOME)
+    @Field
     private String chromosome;
 
-    @Field(STRAND)
+    @Field
     private String strand;
 
-    @Field(START)
+    @Field
     private int start;
 
-    @Field(END)
+    @Field
     private int end;
 
-    @Field(TRANSCRIPT_ID)
+    @Field
     private String transcriptId;
 
-    @Field(TRANSCRIPT_BIOTYPE)
+    @Field
     private String transcriptBiotype;
 
-    @Field(VARIANTS)
+    @Field
     private List<String> variants;
 
-    @Field(KNOCKOUT_TYPES)
+    @Field
     private List<String>  knockoutTypes;
 
-    @Field(FILTERS)
+    @Field
     private List<String> filters;
 
-    @Field(CONSEQUENCE_TYPES)
+    @Field
     private List<String> consequenceTypes;
 
     @Field(POPULATION_FREQUENCIES)
     private Map<String, List<Float>> populationFrequencies;
 
-    @Field(COMPOUND_FILTERS)
+    @Field
     private List<String> compoundFilters;
 
-    @Field(PHENOTYPE_JSON)
+    @Field
     private List<String> phenotypeJson;
 
-    @Field(DISORDER_JSON)
+    @Field
     private List<String> disorderJson;
 
-    @Field(VARIANT_JSON)
+    @Field
     private List<String> variantJson;
 
     public static final String ID = "id";
-    public static final String INDIVIDUAL_ID = "iId";
-    public static final String SAMPLE_ID = "sId";
+    public static final String INDIVIDUAL_ID = "individualId";
+    public static final String SAMPLE_ID = "sampleId";
     public static final String SEX = "sex";
-    public static final String PHENOTYPES = "pheno";
-    public static final String DISORDERS = "dis";
-    public static final String GENE_ID = "gId";
-    public static final String GENE_NAME = "gName";
-    public static final String GENE_BIOTYPE = "gBio";
-    public static final String CHROMOSOME = "chr";
-    public static final String STRAND = "str";
+    public static final String PHENOTYPES = "phenotypes";
+    public static final String DISORDERS = "disorders";
+    public static final String GENE_ID = "geneId";
+    public static final String GENE_NAME = "geneName";
+    public static final String GENE_BIOTYPE = "geneBiotype";
+    public static final String CHROMOSOME = "chromosome";
+    public static final String STRAND = "strand";
     public static final String START = "start";
     public static final String END = "end";
-    public static final String TRANSCRIPT_ID = "tId";
-    public static final String TRANSCRIPT_BIOTYPE = "tBio";
-    public static final String VARIANTS = "var";
-    public static final String KNOCKOUT_TYPES = "ko";
-    public static final String FILTERS = "fl";
-    public static final String CONSEQUENCE_TYPES = "ct";
-    public static final String POPULATION_FREQUENCIES = "pf_*";
-    public static final String COMPOUND_FILTERS = "cF";
-    public static final String PHENOTYPE_JSON = "phenoJ";
-    public static final String DISORDER_JSON = "disJ";
-    public static final String VARIANT_JSON = "varJ";
-
-    public static final Map<String, String> ABBREVIATIONS;
-
-    static {
-        ABBREVIATIONS = new HashMap<>();
-
-        ABBREVIATIONS.put(ID, "id");
-        ABBREVIATIONS.put(INDIVIDUAL_ID, "individualId");
-        ABBREVIATIONS.put(SAMPLE_ID, "sampleId");
-        ABBREVIATIONS.put(SEX, "sex");
-        ABBREVIATIONS.put(PHENOTYPES, "phenotypes");
-        ABBREVIATIONS.put(DISORDERS, "disorders");
-        ABBREVIATIONS.put(GENE_ID, "geneId");
-        ABBREVIATIONS.put(GENE_NAME, "geneName");
-        ABBREVIATIONS.put(GENE_BIOTYPE, "geneBiotype");
-        ABBREVIATIONS.put(CHROMOSOME, "chromosome");
-        ABBREVIATIONS.put(STRAND, "strand");
-        ABBREVIATIONS.put(START, "start");
-        ABBREVIATIONS.put(END, "end");
-        ABBREVIATIONS.put(TRANSCRIPT_ID, "transcriptId");
-        ABBREVIATIONS.put(TRANSCRIPT_BIOTYPE, "tbiotype");
-        ABBREVIATIONS.put(VARIANTS, "variants");
-        ABBREVIATIONS.put(KNOCKOUT_TYPES, "knockoutTypes");
-        ABBREVIATIONS.put(FILTERS, "filters");
-        ABBREVIATIONS.put(CONSEQUENCE_TYPES, "consequenceTypes");
-        ABBREVIATIONS.put(POPULATION_FREQUENCIES, "populationFrequencies");
-        ABBREVIATIONS.put(COMPOUND_FILTERS, "compoundFilters");
-        ABBREVIATIONS.put(PHENOTYPE_JSON, "phenotypeJson");
-        ABBREVIATIONS.put(DISORDER_JSON, "disorderJson");
-        ABBREVIATIONS.put(VARIANT_JSON, "variantJson");
-    }
+    public static final String TRANSCRIPT_ID = "transcriptId";
+    public static final String TRANSCRIPT_BIOTYPE = "transcriptBiotype";
+    public static final String VARIANTS = "variants";
+    public static final String KNOCKOUT_TYPES = "knockoutTypes";
+    public static final String FILTERS = "filters";
+    public static final String CONSEQUENCE_TYPES = "consequenceTypes";
+    public static final String POPULATION_FREQUENCIES = "populationFrequencies_*";
+    public static final String COMPOUND_FILTERS = "compoundFilters";
+    public static final String PHENOTYPE_JSON = "phenotypeJson";
+    public static final String DISORDER_JSON = "disorderJson";
+    public static final String VARIANT_JSON = "variantJson";
 
     public RgaDataModel() {
     }
