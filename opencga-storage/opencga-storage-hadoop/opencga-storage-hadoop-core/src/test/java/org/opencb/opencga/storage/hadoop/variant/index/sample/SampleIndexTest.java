@@ -485,10 +485,30 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testCount() throws StorageEngineException {
+        /*
+            6    31_000_000
+            6    32_000_000
+            8    144_000_000
+            9    139_000_000
+            19   14_000_000
+         */
         List<Query> queries = Arrays.asList(
                 new Query(),
                 new Query(REGION.key(), "chr1").append(ANNOT_BIOTYPE.key(), "protein_coding"),
-                new Query(REGION.key(), Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000)))
+                new Query(REGION.key(), Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("6", 31_200_000, 31_800_000),
+                        new Region("6", 33_200_000, 34_800_000),
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000)))
         );
 
         for (String study : studies) {

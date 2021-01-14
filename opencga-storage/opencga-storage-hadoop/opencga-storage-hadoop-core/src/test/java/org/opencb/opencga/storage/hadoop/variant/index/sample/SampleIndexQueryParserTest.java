@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
@@ -34,6 +35,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.groupRegions;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.validSampleIndexQuery;
 
 /**
@@ -1133,5 +1135,35 @@ public class SampleIndexQueryParserTest {
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
+    }
+
+    @Test
+    public void testGroupRegions() {
+        List<List<Region>> groups = groupRegions(Arrays.asList(
+                new Region("8", 144_700_000, 144_995_738),
+                new Region("6", 33_200_000, 34_800_000),
+                new Region("8", 144_671_680, 144_690_000),
+                new Region("6", 31_200_000, 31_800_000),
+                new Region("8", 145_100_000, 146_100_000)));
+        assertEquals(Arrays.asList(
+                Arrays.asList(new Region("6", 31_200_000, 31_800_000)),
+                Arrays.asList(new Region("6", 33_200_000, 34_800_000)),
+                Arrays.asList(new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000))
+        ), groups);
+
+        groups = groupRegions(Arrays.asList(
+                new Region("6", 33_200_000, 34_800_000),
+                new Region("6", 31_200_000, 33_800_000),
+                new Region("8", 144_671_680, 144_690_000),
+                new Region("8", 144_700_000, 144_995_738),
+                new Region("8", 145_100_000, 146_100_000)));
+        assertEquals(Arrays.asList(
+                Arrays.asList(new Region("6", 31_200_000, 34_800_000)),
+                Arrays.asList(new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000))
+        ), groups);
     }
 }

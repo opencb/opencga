@@ -7,6 +7,7 @@ import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
@@ -28,7 +29,7 @@ public class SampleIndexQuery {
         }
     }
 
-    private final List<Region> regions;
+    private final Collection<List<Region>> regionGroups;
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
@@ -45,8 +46,8 @@ public class SampleIndexQuery {
     private final boolean onlyDeNovo;
     private final QueryOperation queryOperation;
 
-    public SampleIndexQuery(List<Region> regions, SampleIndexQuery query) {
-        this.regions = regions;
+    public SampleIndexQuery(Collection<List<Region>> regionGroups, SampleIndexQuery query) {
+        this.regionGroups = regionGroups;
         this.variantTypes = query.variantTypes;
         this.study = query.study;
         this.samplesMap = query.samplesMap;
@@ -61,19 +62,20 @@ public class SampleIndexQuery {
         this.queryOperation = query.queryOperation;
     }
 
-    public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
-        this(regions, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
+    public SampleIndexQuery(Collection<List<Region>> regionGroups, String study, Map<String, List<String>> samplesMap,
+                            QueryOperation queryOperation) {
+        this(regionGroups, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(),
                 new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
     }
 
-    public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
-                            Set<String> multiFileSamplesSet,
+    public SampleIndexQuery(Collection<List<Region>> regionGroups, Set<VariantType> variantTypes, String study,
+                            Map<String, List<String>> samplesMap, Set<String> multiFileSamplesSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
-        this.regions = regions;
+        this.regionGroups = regionGroups;
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
@@ -88,8 +90,12 @@ public class SampleIndexQuery {
         this.queryOperation = queryOperation;
     }
 
+    public Collection<List<Region>> getRegionGroups() {
+        return regionGroups;
+    }
+
     public List<Region> getRegions() {
-        return regions;
+        return regionGroups.stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
     public Set<VariantType> getVariantTypes() {

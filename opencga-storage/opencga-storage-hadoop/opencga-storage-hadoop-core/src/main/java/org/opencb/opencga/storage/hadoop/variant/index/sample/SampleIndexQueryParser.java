@@ -76,8 +76,7 @@ public class SampleIndexQueryParser {
                 for (String gt : gts) {
                     // Despite invalid genotypes (i.e. genotypes not in the index) can be used to filter within AND queries,
                     // we require at least one sample where all the genotypes are valid
-                    valid &= SampleIndexSchema.validGenotype(gt);
-                    valid &= !isNegated(gt);
+                    valid &= !isNegated(gt) && SampleIndexSchema.validGenotype(gt);
                 }
                 anyValid |= valid;
                 allValid &= valid;
@@ -422,11 +421,53 @@ public class SampleIndexQueryParser {
                 query.remove(GENE.key());
             }
         }
-        regions = mergeRegions(regions);
+        List<List<Region>> regionGroups = groupRegions(regions);
 
-        return new SampleIndexQuery(regions, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
+        return new SampleIndexQuery(regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
+    }
+
+    /**
+     * Merge and group regions by chunk start.
+     * Concurrent groups of regions are merged into one single group.
+     * Resulting groups are sorted using {@link VariantQueryUtils#REGION_COMPARATOR}.
+     * Each group will be translated to a SCAN.
+     *
+     * @param regions List of regions to group
+     * @return Grouped regions
+     */
+    public static List<List<Region>> groupRegions(List<Region> regions) {
+        regions = mergeRegions(regions);
+        List<List<Region>> regionGroups = new ArrayList<>(regions
+                .stream()
+                .collect(Collectors.groupingBy(r -> r.getChromosome() + "_" + SampleIndexSchema.getChunkStart(r.getStart())))
+                .values());
+
+        if (!regionGroups.isEmpty()) {
+            regionGroups.forEach(l -> l.sort(REGION_COMPARATOR));
+            regionGroups.sort(Comparator.comparing(l -> l.get(0), REGION_COMPARATOR));
+
+            //Merge consecutive groups
+            Iterator<List<Region>> iterator = regionGroups.iterator();
+            List<Region> prevGroup = iterator.next();
+            while (iterator.hasNext()) {
+                List<Region> group = iterator.next();
+                Region prevRegion = prevGroup.get(prevGroup.size() - 1);
+                Region region = group.get(0);
+                // Merge if the distance between groups is less than 1 batch size
+                // TODO: This rule could be changed to reduce the number of small queries, even if more data is fetched.
+                if (region.getChromosome().equals(prevRegion.getChromosome())
+                        && Math.abs(region.getStart() - prevRegion.getEnd()) < SampleIndexSchema.BATCH_SIZE) {
+                    // Merge groups
+                    prevGroup.addAll(group);
+                    iterator.remove();
+                } else {
+                    prevGroup = group;
+                }
+            }
+        }
+        return regionGroups;
     }
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {

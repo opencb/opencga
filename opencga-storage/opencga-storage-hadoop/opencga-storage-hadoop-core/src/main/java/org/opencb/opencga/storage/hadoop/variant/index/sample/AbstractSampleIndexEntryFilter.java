@@ -32,9 +32,9 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
  */
 public abstract class AbstractSampleIndexEntryFilter<T> {
 
-    private SingleSampleIndexQuery query;
-    private Region regionFilter;
-    private Logger logger = LoggerFactory.getLogger(AbstractSampleIndexEntryFilter.class);
+    private final SingleSampleIndexQuery query;
+    private final List<Region> regionsFilter;
+    private final Logger logger = LoggerFactory.getLogger(AbstractSampleIndexEntryFilter.class);
 
     private final List<Integer> annotationIndexPositions;
 
@@ -60,9 +60,9 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         this(query, null);
     }
 
-    public AbstractSampleIndexEntryFilter(SingleSampleIndexQuery query, Region regionFilter) {
+    public AbstractSampleIndexEntryFilter(SingleSampleIndexQuery query, List<Region> regionsFilter) {
         this.query = query;
-        this.regionFilter = regionFilter;
+        this.regionsFilter = regionsFilter == null || regionsFilter.isEmpty() ? null : regionsFilter;
 
         int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndex()});
 
@@ -128,7 +128,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         int numVariants = 0;
         // Use countIterator only if don't need to filter by region or by type
         boolean countIterator = count
-                && regionFilter == null
+                && regionsFilter == null
                 && CollectionUtils.isEmpty(query.getVariantTypes())
                 && !query.isMultiFileSample();
         for (SampleIndexGtEntry gtEntry : gts.values()) {
@@ -437,7 +437,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     private T filter(T v) {
         Variant variant = toVariant(v);
         //Test region filter (if any)
-        if (regionFilter == null || regionFilter.contains(variant.getChromosome(), variant.getStart())) {
+        if (filterRegion(variant)) {
 
             // Test type filter (if any)
             if (CollectionUtils.isEmpty(query.getVariantTypes()) || query.getVariantTypes().contains(variant.getType())) {
@@ -445,6 +445,19 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             }
         }
         return null;
+    }
+
+    private boolean filterRegion(Variant variant) {
+        if (regionsFilter == null) {
+            // No region filter defined. Skip filter.
+            return true;
+        }
+        for (Region region : regionsFilter) {
+            if (region.contains(variant.getChromosome(), variant.getStart())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

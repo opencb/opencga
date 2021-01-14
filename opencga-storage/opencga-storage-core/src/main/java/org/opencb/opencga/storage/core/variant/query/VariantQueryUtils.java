@@ -141,6 +141,10 @@ public final class VariantQueryUtils {
     public static final String OP_GT = ">";
     public static final String OP_LT = "<";
 
+    public static final Comparator<Region> REGION_COMPARATOR = Comparator.comparing(Region::getChromosome)
+            .thenComparing(Region::getStart)
+            .thenComparing(Region::getEnd);
+
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
     public enum QueryOperation {
