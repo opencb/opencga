@@ -5,10 +5,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.config.Catalog;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -53,7 +55,7 @@ public class RgaManager extends StorageManager {
         return rgaEngine.geneQuery(collection, query, options);
     }
 
-    public void index(String studyStr, String path, String token) throws CatalogException, RgaException, IOException {
+    public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         try {
@@ -63,11 +65,13 @@ public class RgaManager extends StorageManager {
             throw new CatalogException("Only owners or admins can index", e.getCause());
         }
 
+        File file = catalogManager.getFileManager().get(studyStr, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+
         String collectionName = getCollectionName(study.getFqn());
-        index(collectionName, Paths.get(path));
+        index(collectionName, Paths.get(file.getUri()));
     }
 
-    void index(String collection, Path path) throws RgaException, IOException {
+    private void index(String collection, Path path) throws RgaException, IOException {
         try {
             if (!rgaEngine.exists(collection)) {
                 rgaEngine.create(collection);
@@ -86,6 +90,6 @@ public class RgaManager extends StorageManager {
     }
 
     private String getCollectionName(String study) {
-        return catalogManager.getConfiguration().getDatabasePrefix() + "__" + study.replace("@", "_").replace(":", "_");
+        return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-" + study.replace("@", "_").replace(":", "_");
     }
 }

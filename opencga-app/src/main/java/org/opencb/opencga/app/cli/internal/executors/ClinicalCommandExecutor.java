@@ -36,6 +36,7 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfigurati
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -100,9 +101,9 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
     private void rgaIndex() throws ToolException {
         ClinicalCommandOptions.RgaSecondaryIndexCommandOptions options = clinicalCommandOptions.rgaSecondaryIndexCommandOptions;
         Path outDir = Paths.get(options.outdir);
-        ObjectMap params = new ObjectMap()
-                .append(RgaAnalysis.STUDY_PARAM, options.study)
-                .append(RgaAnalysis.FILE_PARAM, options.file);
+        ObjectMap params = new RgaAnalysisParams(options.file)
+                .toObjectMap(options.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, options.study);
         toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 

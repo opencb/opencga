@@ -433,14 +433,14 @@ public class RgaEngine implements Closeable {
                 count++;
                 if (count % KNOCKOUT_BATCH_SIZE == 0) {
                     insert(collection, knockoutByIndividualList);
-                    logger.info("Loaded {} knockoutByIndividual entries from '{}'", count, path);
+                    logger.debug("Loaded {} knockoutByIndividual entries from '{}'", count, path);
                     knockoutByIndividualList.clear();
                 }
             }
 
             // Insert the remaining entries
             if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-                logger.info("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
+                logger.debug("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
                 insert(collection, knockoutByIndividualList);
             }
         }

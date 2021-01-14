@@ -13,6 +13,7 @@ import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.BasicVariantQueryOptions;
 
 import java.util.List;
@@ -261,7 +262,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
-        @Parameter(names = {"--" + RgaAnalysis.FILE_PARAM}, description = "Json file containing the KnockoutByIndividual information", required = true, arity = 1)
+        @Parameter(names = {"--" + RgaAnalysisParams.FILE}, description = "Json file containing the KnockoutByIndividual information", required = true, arity = 1)
         public String file;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
