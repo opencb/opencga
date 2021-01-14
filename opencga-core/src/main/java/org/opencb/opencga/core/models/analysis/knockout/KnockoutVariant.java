@@ -53,6 +53,20 @@ public class KnockoutVariant {
         this.populationFrequencies = populationFrequencies;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("KnockoutVariant{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", genotype='").append(genotype).append('\'');
+        sb.append(", filter='").append(filter).append('\'');
+        sb.append(", qual='").append(qual).append('\'');
+        sb.append(", knockoutType=").append(knockoutType);
+        sb.append(", populationFrequencies=").append(populationFrequencies);
+        sb.append(", sequenceOntologyTerms=").append(sequenceOntologyTerms);
+        sb.append('}');
+        return sb.toString();
+    }
+
     public String getId() {
         return id;
     }

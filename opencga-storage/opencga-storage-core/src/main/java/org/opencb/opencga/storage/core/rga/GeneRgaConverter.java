@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.rga;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
@@ -40,9 +41,11 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
 
             KnockoutByGene knockoutByGene = result.get(rgaDataModel.getGeneId());
             KnockoutByGene.KnockoutIndividual knockoutIndividual = null;
-            for (KnockoutByGene.KnockoutIndividual individual : knockoutByGene.getIndividuals()) {
-                if (individual.getId().equals(rgaDataModel.getIndividualId())) {
-                    knockoutIndividual = individual;
+            if (StringUtils.isNotEmpty(rgaDataModel.getIndividualId())) {
+                for (KnockoutByGene.KnockoutIndividual individual : knockoutByGene.getIndividuals()) {
+                    if (rgaDataModel.getIndividualId().equals(individual.getId())) {
+                        knockoutIndividual = individual;
+                    }
                 }
             }
             if (knockoutIndividual == null) {

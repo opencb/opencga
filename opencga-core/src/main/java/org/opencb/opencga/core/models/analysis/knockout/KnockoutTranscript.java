@@ -37,6 +37,20 @@ public class KnockoutTranscript {
         this.id = id;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("KnockoutTranscript{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", chromosome='").append(chromosome).append('\'');
+        sb.append(", start=").append(start);
+        sb.append(", end=").append(end);
+        sb.append(", biotype='").append(biotype).append('\'');
+        sb.append(", strand='").append(strand).append('\'');
+        sb.append(", variants=").append(variants);
+        sb.append('}');
+        return sb.toString();
+    }
+
     public String getId() {
         return id;
     }

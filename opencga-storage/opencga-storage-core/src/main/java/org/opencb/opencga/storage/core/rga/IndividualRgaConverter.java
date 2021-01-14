@@ -40,25 +40,33 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                 knockoutByIndividual.setId(rgaDataModel.getIndividualId());
                 knockoutByIndividual.setSampleId(rgaDataModel.getSampleId());
                 knockoutByIndividual.setSex(IndividualProperty.Sex.valueOf(rgaDataModel.getSex()));
-                List<Phenotype> phenotypes = new ArrayList<>(rgaDataModel.getPhenotypeJson().size());
-                for (String phenotype : rgaDataModel.getPhenotypeJson()) {
-                    try {
-                        phenotypes.add(JacksonUtils.getDefaultObjectMapper().readValue(phenotype, Phenotype.class));
-                    } catch (JsonProcessingException e) {
-                        logger.warn("Could not parse Phenotypes: {}", e.getMessage(), e);
+                if (rgaDataModel.getPhenotypeJson() != null) {
+                    List<Phenotype> phenotypes = new ArrayList<>(rgaDataModel.getPhenotypeJson().size());
+                    for (String phenotype : rgaDataModel.getPhenotypeJson()) {
+                        try {
+                            phenotypes.add(JacksonUtils.getDefaultObjectMapper().readValue(phenotype, Phenotype.class));
+                        } catch (JsonProcessingException e) {
+                            logger.warn("Could not parse Phenotypes: {}", e.getMessage(), e);
+                        }
                     }
+                    knockoutByIndividual.setPhenotypes(phenotypes);
+                } else {
+                    knockoutByIndividual.setPhenotypes(Collections.emptyList());
                 }
-                knockoutByIndividual.setPhenotypes(phenotypes);
 
-                List<Disorder> disorders = new ArrayList<>(rgaDataModel.getDisorderJson().size());
-                for (String disorder : rgaDataModel.getDisorderJson()) {
-                    try {
-                        disorders.add(JacksonUtils.getDefaultObjectMapper().readValue(disorder, Disorder.class));
-                    } catch (JsonProcessingException e) {
-                        logger.warn("Could not parse Disorders: {}", e.getMessage(), e);
+                if (rgaDataModel.getDisorderJson() != null) {
+                    List<Disorder> disorders = new ArrayList<>(rgaDataModel.getDisorderJson().size());
+                    for (String disorder : rgaDataModel.getDisorderJson()) {
+                        try {
+                            disorders.add(JacksonUtils.getDefaultObjectMapper().readValue(disorder, Disorder.class));
+                        } catch (JsonProcessingException e) {
+                            logger.warn("Could not parse Disorders: {}", e.getMessage(), e);
+                        }
                     }
+                    knockoutByIndividual.setDisorders(disorders);
+                } else {
+                    knockoutByIndividual.setDisorders(Collections.emptyList());
                 }
-                knockoutByIndividual.setDisorders(disorders);
 
                 List<KnockoutByIndividual.KnockoutGene> geneList = new LinkedList<>();
                 KnockoutByIndividual.KnockoutGene knockoutGene = new KnockoutByIndividual.KnockoutGene();
