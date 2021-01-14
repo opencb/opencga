@@ -142,14 +142,18 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
             except requests.exceptions.ConnectionError:
                 sleep(1)
                 r = requests.get(url, headers=header)
-
         elif method == 'post':
             try:
                 r = requests.post(url, json=data, headers=header)
             except requests.exceptions.ConnectionError:
                 sleep(1)
                 r = requests.post(url, json=data, headers=header)
-
+        elif method == 'delete':
+            try:
+                r = requests.delete(url, headers=header)
+            except requests.exceptions.ConnectionError:
+                sleep(1)
+                r = requests.delete(url, headers=header)
         else:
             raise NotImplementedError('method: ' + method + ' not implemented.')
 
