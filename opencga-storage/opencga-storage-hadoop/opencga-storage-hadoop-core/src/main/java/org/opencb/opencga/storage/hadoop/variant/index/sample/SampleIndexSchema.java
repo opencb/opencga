@@ -292,8 +292,14 @@ public final class SampleIndexSchema {
                 case ".|." :
                 case "." :
                     return false;
-                default:
+                case "1/1" :
+                case "0/1" :
+                case "1|1" :
+                case "0|1" :
+                case "1|0" :
                     return true;
+                default:
+                    return GenotypeClass.MAIN_ALT.test(gt);
             }
         }
         return false;

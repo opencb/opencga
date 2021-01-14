@@ -240,7 +240,7 @@ public class VariantSearchUtils {
             Map<String, String> formatMap = Collections.emptyMap();
             if (isValidParam(query, VariantQueryParam.SAMPLE_DATA)) {
                 validFormatFilter = true;
-                formatMap = parseSampleData(query).getValue();
+                formatMap = parseSampleDataOLD(query).getValue();
 
                 for (String formatFilters : formatMap.values()) {
                     for (String formatFilter : splitValue(formatFilters).getValue()) {

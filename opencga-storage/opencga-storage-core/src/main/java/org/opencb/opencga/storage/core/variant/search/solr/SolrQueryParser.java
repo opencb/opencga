@@ -781,7 +781,7 @@ public class SolrQueryParser {
                         "Missing study parameter when filtering by 'format'");
             }
 
-            Pair<QueryOperation, Map<String, String>> parsedSampleFormats = parseSampleData(query);
+            Pair<QueryOperation, Map<String, String>> parsedSampleFormats = parseSampleDataOLD(query);
             String logicOpStr = parsedSampleFormats.getKey() == QueryOperation.AND ? " AND " : " OR ";
             StringBuilder sb = new StringBuilder();
             sb.append("(");

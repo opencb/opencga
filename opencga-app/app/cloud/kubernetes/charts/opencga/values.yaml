@@ -67,7 +67,7 @@ rest:
 
   image:
     repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   imagePullSecrets: []
 
@@ -139,13 +139,8 @@ master:
   replicaCount: 1
 
   image:
-<<<<<<< HEAD
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-base:2.1.0-SNAPSHOT-hdp3.1
-=======
     repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
->>>>>>> release-2.0.0
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   imagePullSecrets: []
 
@@ -193,13 +188,8 @@ master:
 init:
   name: init
   image:
-<<<<<<< HEAD
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-init:2.1.0-SNAPSHOT-hdp3.1
-=======
     repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
->>>>>>> release-2.0.0
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   podSecurityContext: {}
   # fsGroup: 2000

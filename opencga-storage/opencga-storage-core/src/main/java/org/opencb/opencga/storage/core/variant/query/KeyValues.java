@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.opencb.commons.datastore.core.QueryParam;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class KeyValues<K, V> extends Values<V> {
 
@@ -40,6 +41,10 @@ public class KeyValues<K, V> extends Values<V> {
         return sb.toString();
     }
 
+    public Values<V> toValues() {
+        return new Values<>(operation, values);
+    }
+
     @Override
     public void toQuery(StringBuilder sb) {
         if (key instanceof QueryParam) {
@@ -62,5 +67,10 @@ public class KeyValues<K, V> extends Values<V> {
         sb.append("' IS ");
         super.describe(sb);
         sb.append(" )");
+    }
+
+    public <KR> KeyValues<KR, V> mapKey(Function<K, KR> map) {
+        KR newK = map.apply(key);
+        return new KeyValues<>(newK, operation, values);
     }
 }

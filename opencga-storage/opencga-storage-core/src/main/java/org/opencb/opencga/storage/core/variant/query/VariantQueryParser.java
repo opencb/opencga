@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -107,6 +106,19 @@ public class VariantQueryParser {
             }
 
             studyQuery.setGenotypes(new ParsedQuery<>(GENOTYPE, op, values));
+        }
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataQuery = parseSampleData(query);
+        if (sampleDataQuery.isNotEmpty()) {
+            ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQueryWithMetadata
+                    = new ParsedQuery<>(sampleDataQuery.getKey(), sampleDataQuery.getOperation(), new ArrayList<>(sampleDataQuery.size()));
+            for (KeyValues<String, KeyOpValue<String, String>> keyValues : sampleDataQuery) {
+                sampleDataQueryWithMetadata.getValues().add(
+                        keyValues.mapKey(sample -> {
+                            int sampleId = metadataManager.getSampleIdOrFail(defaultStudy.getId(), sample);
+                            return metadataManager.getSampleMetadata(defaultStudy.getId(), sampleId);
+                        }));
+            }
+            studyQuery.setSampleDataQuery(sampleDataQueryWithMetadata);
         }
 
         return variantQuery;
@@ -275,11 +287,11 @@ public class VariantQueryParser {
         if (isValidParam(query, SAMPLE_DATA)) {
             extractGenotypeFromFormatFilter(query);
 
-            Pair<QueryOperation, Map<String, String>> pair = parseSampleData(query);
-            formatOperator = pair.getKey();
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleData = parseSampleData(query);
+            formatOperator = sampleData.getOperation();
 
-            for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
-                String sampleName = entry.getKey();
+            for (KeyValues<String, KeyOpValue<String, String>> sampleDataFilter : sampleData.getValues()) {
+                String sampleName = sampleDataFilter.getKey();
                 if (defaultStudy == null) {
                     throw VariantQueryException.missingStudyForSample(sampleName, metadataManager.getStudyNames());
                 }
@@ -287,13 +299,11 @@ public class VariantQueryParser {
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sampleName, defaultStudy.getName());
                 }
-                List<String> formats = splitValues(entry.getValue()).getValues();
-                for (String format : formats) {
-                    KeyOpValue<String, String> keyOpValue = parseKeyOpValue(format);
-                    VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("FORMAT", keyOpValue.getKey());
+                for (KeyOpValue<String, String> formatFilter : sampleDataFilter) {
+                    VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("FORMAT", formatFilter.getKey());
                     if (line == null) {
                         throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
-                                "FORMAT field \"" + keyOpValue.getKey() + "\" not found. Available keys in study: "
+                                "FORMAT field \"" + formatFilter.getKey() + "\" not found. Available keys in study: "
                                         + defaultStudy.getVariantHeaderLines("FORMAT").keySet());
                     }
                 }

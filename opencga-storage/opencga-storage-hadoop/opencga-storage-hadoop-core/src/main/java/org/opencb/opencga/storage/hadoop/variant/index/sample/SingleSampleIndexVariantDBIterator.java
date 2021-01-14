@@ -8,12 +8,12 @@ import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -29,20 +29,20 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
     protected int count = 0;
 
     public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexDBAdaptor dbAdaptor) {
-        List<Region> regions;
-        if (CollectionUtils.isEmpty(query.getRegions())) {
+        Collection<List<Region>> regionGroups;
+        if (CollectionUtils.isEmpty(query.getRegionGroups())) {
             // If no regions are defined, get a list of one null element to initialize the stream.
-            regions = Collections.singletonList(null);
+            regionGroups = Collections.singletonList(null);
         } else {
-            regions = VariantQueryUtils.mergeRegions(query.getRegions());
+            regionGroups = query.getRegionGroups();
         }
 
-        Iterator<Iterator<Variant>> iterators = regions.stream()
-                .map(region -> {
-                    // One scan per region
-                    Scan scan = dbAdaptor.parse(query, region);
+        Iterator<Iterator<Variant>> iterators = regionGroups.stream()
+                .map(regions -> {
+                    // One scan per region group
+                    Scan scan = dbAdaptor.parse(query, regions);
                     HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(dbAdaptor.getConfiguration());
-                    SampleIndexEntryFilter filter = dbAdaptor.buildSampleIndexEntryFilter(query, region);
+                    SampleIndexEntryFilter filter = dbAdaptor.buildSampleIndexEntryFilter(query, regions);
                     try {
                         ResultScanner scanner = table.getScanner(scan);
                         addCloseable(scanner);

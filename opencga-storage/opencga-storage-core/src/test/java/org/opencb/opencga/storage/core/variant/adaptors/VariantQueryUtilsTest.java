@@ -275,7 +275,7 @@ public class VariantQueryUtilsTest extends GenericTest {
     }
 
     protected void checkParseSampleData(Query query, QueryOperation expectedOperation, String ...expected) {
-        Pair<QueryOperation, Map<String, String>> pair = parseSampleData(query);
+        Pair<QueryOperation, Map<String, String>> pair = parseSampleDataOLD(query);
         QueryOperation operation = pair.getKey();
         Map<String, String> map = pair.getValue();
 
