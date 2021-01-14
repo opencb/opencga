@@ -50,7 +50,6 @@ public class KnockoutVariant {
         this.knockoutType = knockoutType;
         this.populationFrequencies = populationFrequencies;
         this.sequenceOntologyTerms = sequenceOntologyTerms;
-        this.populationFrequencies = populationFrequencies;
     }
 
     @Override

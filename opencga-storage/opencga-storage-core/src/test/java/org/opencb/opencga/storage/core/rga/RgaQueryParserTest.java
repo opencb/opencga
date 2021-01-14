@@ -93,5 +93,25 @@ public class RgaQueryParserTest {
                 .append(RgaQueryParams.FILTER.key(), "PASS");
         parse = parser.parse(query, QueryOptions.empty());
         assertEquals(RgaDataModel.COMPOUND_FILTERS + ":( ( HOA__P__P1-1 || HEA__P__P1-1 || HOA__P__P1-2 || HEA__P__P1-2 || HOA__P__P1-3 || HEA__P__P1-3 ) && ( HOA__P__P2-8 || HEA__P__P2-8 ) )", parse.get("fq"));
+
+        query = new Query()
+                .append(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<0.001")
+                .append(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET);
+        parse = parser.parse(query, QueryOptions.empty());
+        assertEquals(RgaDataModel.COMPOUND_FILTERS + ":( CH__P__P__P1-1 || CH__NP__NP__P1-1 || CH__NP__P__P1-1 || CH__P__P__P1-2 || CH__NP__NP__P1-2 || CH__NP__P__P1-2 || CH__P__P__P1-3 || CH__NP__NP__P1-3 || CH__NP__P__P1-3 )", parse.get("fq"));
+
+        query = new Query()
+                .append(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<0.001")
+                .append(RgaQueryParams.FILTER.key(), "PASS")
+                .append(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET);
+        parse = parser.parse(query, QueryOptions.empty());
+        assertEquals(RgaDataModel.COMPOUND_FILTERS + ":( CH__P__P__P1-1 || CH__P__P__P1-2 || CH__P__P__P1-3 )", parse.get("fq"));
+
+        query = new Query()
+                .append(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<=0.001")
+                .append(RgaQueryParams.FILTER.key(), "PASS")
+                .append(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET);
+        parse = parser.parse(query, QueryOptions.empty());
+        assertEquals(RgaDataModel.COMPOUND_FILTERS + ":( CH__P__P__P1-1 || CH__P__P__P1-2 || CH__P__P__P1-3 || CH__P__P__P1-4 )", parse.get("fq"));
     }
 }

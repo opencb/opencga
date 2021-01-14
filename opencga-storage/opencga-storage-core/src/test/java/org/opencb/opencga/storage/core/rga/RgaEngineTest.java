@@ -11,8 +11,10 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.RgaException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,18 +39,6 @@ public class RgaEngineTest {
             storageConfiguration = StorageConfiguration.load(is);
         }
     }
-
-//    @Test
-//    public void load1000g() throws Exception {
-//        System.out.println(storageConfiguration.getRga());
-//        RgaEngine rgaEngine = new RgaEngine(storageConfiguration);
-//
-//        if (!rgaEngine.exists("rga-short")) {
-//            rgaEngine.create("rga-short");
-//        }
-//        rgaEngine.load("rga-short", Paths.get("/data/datasets/knockout/knockout.individuals.json"));
-//    }
-
 
     @Test
     public void testIndividualQuery() throws Exception {
