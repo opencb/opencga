@@ -1,11 +1,11 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Iterators;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
-import org.apache.hadoop.hbase.util.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
