@@ -860,9 +860,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
 
-        OpenCGAResult deleteResult = catalogManager.getJobManager().delete(studyFqn, Collections.singletonList(search.first().getId()),
-                QueryOptions.empty(), token);
-        assertEquals(1, deleteResult.getNumDeleted());
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("stop the job");
+        catalogManager.getJobManager().delete(studyFqn, Collections.singletonList(search.first().getId()), QueryOptions.empty(), token);
     }
 
     @Test

@@ -1316,7 +1316,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(8, annotDataResult.getNumResults());
 
         for (Sample sample : annotDataResult.getResults()) {
-            assertEquals(null, sample.getId());
+            assertEquals(null, sample.getIndividualId());
             assertTrue(!sample.getAnnotationSets().isEmpty());
         }
     }
