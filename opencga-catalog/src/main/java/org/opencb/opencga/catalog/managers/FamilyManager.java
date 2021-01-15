@@ -362,7 +362,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if (query.containsKey(IndividualDBAdaptor.QueryParams.SAMPLES.key())) {
             if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
                 Query newQuery = new Query()
-                        .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
+                        .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
+                                query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
                 OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
                         .search(study.getFqn(), newQuery, options, sessionId);
