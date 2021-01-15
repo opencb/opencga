@@ -2046,6 +2046,16 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void searchIndividualsBySampleWithNoSamples() throws CatalogException {
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1")
+                .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"))), new QueryOptions(), token);
+
+        OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(studyFqn,
+                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ""), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
+    }
+
+    @Test
     public void searchSamplesDifferentVersions() throws CatalogException {
         catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(), token);
         catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), QueryOptions.empty(), token);

@@ -341,7 +341,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
         // We change the MEMBERS parameters for MEMBER_UID which is what the DBAdaptor understands
-        if (StringUtils.isNotEmpty(query.getString(FamilyDBAdaptor.QueryParams.MEMBERS.key()))) {
+        if (query.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
             String userId = userManager.getUserId(sessionId);
 
             List<Individual> memberList = catalogManager.getIndividualManager().internalGet(study.getUid(),
@@ -359,22 +359,25 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         // We look for the individuals containing those samples
-        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
-            Query newQuery = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
-            OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
-                    .search(study.getFqn(), newQuery, options, sessionId);
+        if (query.containsKey(IndividualDBAdaptor.QueryParams.SAMPLES.key())) {
+            if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
+                Query newQuery = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()));
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.UID.key());
+                OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
+                        .search(study.getFqn(), newQuery, options, sessionId);
+
+                if (individualResult.getNumResults() == 0) {
+                    // Add -1 to query so no results are obtained
+                    query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), -1);
+                } else {
+                    // Look for the individuals containing those samples
+                    query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(),
+                            individualResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList()));
+                }
+            }
 
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-            if (individualResult.getNumResults() == 0) {
-                // Add -1 to query so no results are obtained
-                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), -1);
-            } else {
-                // Look for the individuals containing those samples
-                query.put(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(),
-                        individualResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList()));
-            }
         }
     }
 
