@@ -20,7 +20,7 @@ public class RgaQueryParserTest {
     }
 
     @Test
-    public void parse() throws RgaException {
+    public void parseComplexFilters() throws RgaException {
         Query query = new Query(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<0.001");
         SolrQuery parse = parser.parse(query, QueryOptions.empty());
         assertEquals(RgaDataModel.POPULATION_FREQUENCIES + ":( P1-1 || P1-2 || P1-3 )", parse.get("fq"));
@@ -113,5 +113,16 @@ public class RgaQueryParserTest {
                 .append(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET);
         parse = parser.parse(query, QueryOptions.empty());
         assertEquals(RgaDataModel.COMPOUND_FILTERS + ":( CH__P__P__P1-1 || CH__P__P__P1-2 || CH__P__P__P1-3 || CH__P__P__P1-4 )", parse.get("fq"));
+    }
+
+    @Test
+    public void consequenceTypeParserTest() throws RgaException {
+        Query query = new Query(RgaQueryParams.CONSEQUENCE_TYPE.key(), "SO:0001891,SO:0001822");
+        SolrQuery parse = parser.parse(query, QueryOptions.empty());
+        assertEquals(RgaDataModel.CONSEQUENCE_TYPES + ":( SO\\:0001891 || SO\\:0001822 )", parse.get("fq"));
+
+        query = new Query(RgaQueryParams.CONSEQUENCE_TYPE.key(), "regulatory_region_amplification,inframe_deletion");
+        parse = parser.parse(query, QueryOptions.empty());
+        assertEquals(RgaDataModel.CONSEQUENCE_TYPES + ":( SO\\:0001891 || SO\\:0001822 )", parse.get("fq"));
     }
 }

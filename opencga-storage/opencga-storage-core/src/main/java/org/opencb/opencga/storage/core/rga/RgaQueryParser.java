@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.rga;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrException;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
@@ -108,6 +109,7 @@ public class RgaQueryParser {
         //-------------------------------------
         // Query processing
         //-------------------------------------
+        fixQuery(query);
 
         parseStringValue(query, SAMPLE_ID, RgaDataModel.SAMPLE_ID, filterList);
         parseStringValue(query, INDIVIDUAL_ID, RgaDataModel.INDIVIDUAL_ID, filterList);
@@ -129,6 +131,35 @@ public class RgaQueryParser {
         logger.debug("query     : " + printQuery(query));
         logger.debug("solrQuery : " + solrQuery);
         return solrQuery;
+    }
+
+    private void fixQuery(Query query) {
+        if (query.containsKey(CONSEQUENCE_TYPE.key())) {
+            // Convert CONSEQUENCE TYPES to full SO Terms so they can be successfully processed
+            List<String> orConsequenceTypeList = query.getAsStringList(CONSEQUENCE_TYPE.key(), ",");
+            List<String> andConsequenceTypeList = query.getAsStringList(CONSEQUENCE_TYPE.key(), ";");
+
+            List<String> consequenceTypeList;
+            String separator;
+            if (orConsequenceTypeList.size() >= andConsequenceTypeList.size()) {
+                consequenceTypeList = orConsequenceTypeList;
+                separator = ",";
+            } else {
+                consequenceTypeList = andConsequenceTypeList;
+                separator = ";";
+            }
+
+            List<String> result = new ArrayList<>(consequenceTypeList.size());
+            for (String ct : consequenceTypeList) {
+                if (ct.startsWith("SO:")) {
+                    result.add(ct);
+                } else {
+                    result.add(ConsequenceTypeMappings.getSoAccessionString(ct));
+                }
+            }
+
+            query.put(CONSEQUENCE_TYPE.key(), StringUtils.join(result, separator));
+        }
     }
 
     private void parseFilterValue(Query query, List<String> filterList) throws RgaException {
