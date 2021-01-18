@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.rga;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,105 +30,47 @@ public class RgaQueryParser {
      * Create a SolrQuery object from Query and QueryOptions.
      *
      * @param query         Query
-     * @param queryOptions  Query Options
      * @return              SolrQuery
      * @throws RgaException RgaException.
      */
-    public SolrQuery parse(Query query, QueryOptions queryOptions) throws RgaException {
+    public SolrQuery parseQuery(Query query) throws RgaException {
         SolrQuery solrQuery = new SolrQuery();
 
+        Query finalQuery = new Query(query);
+        fixQuery(finalQuery);
+
         List<String> filterList = new ArrayList<>();
-
-        //-------------------------------------
-        // QueryOptions processing
-        //-------------------------------------
-
-        // Facet management, (including facet ranges, nested facets and aggregation functions)
-        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            try {
-                FacetQueryParser facetQueryParser = new FacetQueryParser();
-
-                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
-                String jsonFacet = facetQueryParser.parse(facetQuery);
-
-                solrQuery.set("json.facet", jsonFacet);
-                solrQuery.setRows(0);
-                solrQuery.setStart(0);
-                solrQuery.setFields();
-
-                logger.debug(">>>>>> Solr Facet: " + solrQuery.toString());
-            } catch (Exception e) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
-            }
-        } else {
-            // If the query is not a facet we must set the proper include, limit, skip and sort
-            // Get the correct includes
-//            String[] includes;
-//            if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-//                includes = solrIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE));
-//            } else {
-//                if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-//                    includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
-//                } else {
-//                    // We want all possible fields
-//                    includes = getSolrIncludeFromExclude(Collections.emptyList());
-//                }
-//            }
-//            includes = ArrayUtils.removeAllOccurences(includes, "release");
-//            includes = includeFieldsWithMandatory(includes);
-//            solrQuery.setFields(includes);
-//
-//            // Add Solr fields from the variant includes, i.e.: includeSample, includeFormat,...
-//            List<String> solrFieldsToInclude = getSolrFieldsFromVariantIncludes(query, queryOptions);
-//            for (String solrField : solrFieldsToInclude) {
-//                solrQuery.addField(solrField);
-//            }
-
-            if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-                for (String include : queryOptions.getAsStringList(QueryOptions.INCLUDE)) {
-                    solrQuery.addField(include);
-                }
-            } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-//                    includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
-            }
-
-            if (queryOptions.containsKey(QueryOptions.LIMIT)) {
-                solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
-            }
-
-            if (queryOptions.containsKey(QueryOptions.SKIP)) {
-                solrQuery.setStart(queryOptions.getInt(QueryOptions.SKIP));
-            }
-
-//            if (queryOptions.containsKey(QueryOptions.SORT)) {
-//                solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
-//            }
-        }
-
-        //-------------------------------------
-        // Query processing
-        //-------------------------------------
-        fixQuery(query);
-
-        parseStringValue(query, SAMPLE_ID, RgaDataModel.SAMPLE_ID, filterList);
-        parseStringValue(query, INDIVIDUAL_ID, RgaDataModel.INDIVIDUAL_ID, filterList);
-        parseStringValue(query, SEX, RgaDataModel.SEX, filterList);
-        parseStringValue(query, PHENOTYPES, RgaDataModel.PHENOTYPES, filterList);
-        parseStringValue(query, DISORDERS, RgaDataModel.DISORDERS, filterList);
-        parseStringValue(query, GENE_ID, RgaDataModel.GENE_ID, filterList);
-        parseStringValue(query, GENE_NAME, RgaDataModel.GENE_NAME, filterList);
-        parseStringValue(query, TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_ID, filterList);
-        parseStringValue(query, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
-        parseStringValue(query, VARIANTS, RgaDataModel.VARIANTS, filterList);
-        parseFilterValue(query, filterList);
+        parseStringValue(finalQuery, SAMPLE_ID, RgaDataModel.SAMPLE_ID, filterList);
+        parseStringValue(finalQuery, INDIVIDUAL_ID, RgaDataModel.INDIVIDUAL_ID, filterList);
+        parseStringValue(finalQuery, SEX, RgaDataModel.SEX, filterList);
+        parseStringValue(finalQuery, PHENOTYPES, RgaDataModel.PHENOTYPES, filterList);
+        parseStringValue(finalQuery, DISORDERS, RgaDataModel.DISORDERS, filterList);
+        parseStringValue(finalQuery, GENE_ID, RgaDataModel.GENE_ID, filterList);
+        parseStringValue(finalQuery, GENE_NAME, RgaDataModel.GENE_NAME, filterList);
+        parseStringValue(finalQuery, TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_ID, filterList);
+        parseStringValue(finalQuery, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
+        parseStringValue(finalQuery, VARIANTS, RgaDataModel.VARIANTS, filterList);
+        parseFilterValue(finalQuery, filterList);
 
         // Create Solr query, adding filter queries and fields to show
         solrQuery.setQuery("*:*");
         filterList.forEach(solrQuery::addFilterQuery);
 
         logger.debug("----------------------");
-        logger.debug("query     : " + printQuery(query));
+        logger.debug("query     : " + printQuery(finalQuery));
         logger.debug("solrQuery : " + solrQuery);
+        return solrQuery;
+    }
+
+    public SolrQuery parseOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            for (String include : queryOptions.getAsStringList(QueryOptions.INCLUDE)) {
+                solrQuery.addField(include);
+            }
+        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+//                    includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+        }
+
         return solrQuery;
     }
 
@@ -232,55 +173,6 @@ public class RgaQueryParser {
         buildComplexQuery(Collections.singletonList(koValue), generateSortedCombinations(filterValues),
                 generateSortedCombinations(ctValues), popFreqQueryList, filterList);
 
-//        if (ctValues.isEmpty() && popFreqQueryList.isEmpty()) {
-//            // KT + FILTER
-//            List<String> orFilterList = new LinkedList<>();
-//            for (String filterVal : filterValues) {
-//                orFilterList.add(koValue + SEPARATOR + filterVal);
-//            }
-//            parseStringValue(orFilterList, RgaDataModel.COMPOUND_FILTERS, filterList, "||");
-//        } else if (!ctValues.isEmpty() && !popFreqQueryList.isEmpty()) {
-//            // KT + FILTER + CT + POP_FREQ
-//            List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-//            for (List<String> tmpPopFreqList : popFreqQueryList) {
-//                List<String> orQueryList = new LinkedList<>();
-//                for (String popFreq : tmpPopFreqList) {
-//                    for (String filterVal : generateSortedCombinations(filterValues)) {
-//                        for (String ctValue : generateSortedCombinations(ctValues)) {
-//                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
-//                        }
-//                    }
-//                }
-//                parseStringValue(orQueryList, "", andQueryList, "||");
-//            }
-//            parseStringValue(andQueryList, RgaDataModel.COMPOUND_FILTERS, filterList, "&&");
-//        } else if (!ctValues.isEmpty()) {
-//            // KT + FILTER + CT
-//            List<String> orFilterList = new LinkedList<>();
-//            for (String koValue : koValues) {
-//                for (String filterVal : filterValues) {
-//                    for (String ctValue : ctValues) {
-//                        orFilterList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue);
-//                    }
-//                }
-//            }
-//            parseStringValue(orFilterList, RgaDataModel.COMPOUND_FILTERS, filterList, "||");
-//        } else { // POP_FREQ not empty
-//            // KT + FILTER + POP_FREQ
-//            List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-//            for (List<String> tmpPopFreqList : popFreqQueryList) {
-//                List<String> orQueryList = new LinkedList<>();
-//                for (String popFreq : tmpPopFreqList) {
-//                    for (String koValue : koValues) {
-//                        for (String filterVal : filterValues) {
-//                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
-//                        }
-//                    }
-//                }
-//                parseStringValue(orQueryList, "", andQueryList, "||");
-//            }
-//            parseStringValue(andQueryList, RgaDataModel.COMPOUND_FILTERS, filterList, "&&");
-//        }
     }
 
     private void buildComplexQueryFilter(List<String> filterList, List<String> knockoutList, String filterValue, List<String> ctList,
@@ -392,93 +284,6 @@ public class RgaQueryParser {
         return new ArrayList<>(results);
     }
 
-//    private void buildComplexQueryFilter(List<String> filterList, List<String> knockoutValues, String filterValue, List<String> ctValues,
-//                                         List<String> popFreqValues) throws RgaException {
-//        List<List<String>> filters = new LinkedList<>();
-//
-//        // Pop. freq
-//        List<List<String>> popFreqQueryList = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
-//        for (List<String> sublist : popFreqQueryList) {
-//            replicateFilters(filters, sublist.size());
-//            addFilterValues(filters, sublist);
-//        }
-//
-//        // CT
-//        if (!ctValues.isEmpty()) {
-//            List<String> encodedCTValues = new ArrayList<>(ctValues.size());
-//            for (String ctValue : ctValues) {
-//                String encodedValue = String.valueOf(VariantQueryUtils.parseConsequenceType(ctValue));
-//                encodedCTValues.add(encodedValue);
-//            }
-//            replicateFilters(filters, encodedCTValues.size());
-//            addFilterValues(filters, encodedCTValues);
-//        }
-//
-//        // Filter
-//        List<String> filterValues;
-//        if (StringUtils.isNotEmpty(filterValue)) {
-//            filterValues = Collections.singletonList(filterValue);
-//        } else {
-//            if (!filters.isEmpty()) {
-//                filterValues = Arrays.asList("PASS", "NOT_PASS");
-//            } else {
-//                filterValues = Collections.emptyList();
-//            }
-//        }
-//        filterValues = RgaUtils.parseFilterQuery(filterValues);
-//        replicateFilters(filters, filterValues.size());
-//        addFilterValues(filters, filterValues);
-//
-//        // KT
-//        if (knockoutValues.isEmpty() && !filters.isEmpty()) {
-//            knockoutValues = Arrays.asList(COMP_HET.name(), DELETION_OVERLAP.name(), HET_ALT.name(), HOM_ALT.name());
-//        }
-//        knockoutValues = RgaUtils.parseKnockoutTypeQuery(knockoutValues);
-//        replicateFilters(filters, knockoutValues.size());
-//        addFilterValues(filters, knockoutValues);
-//
-//        if (!filters.isEmpty()) {
-//            filterList.add("cF:" + parseQueryFilter(filters));
-//        }
-//    }
-
-    private void addFilterValues(List<List<String>> filters, List<String> values) {
-        int size = values.size();
-        for (int i = 0; i < filters.size(); i += size) {
-            for (int j = 0; j < values.size(); j++) {
-                filters.get(i + j).add(0, values.get(j));
-            }
-        }
-    }
-
-    private void replicateFilters(List<List<String>> filters, int size) {
-        if (filters.isEmpty()) {
-            if (size > 0) {
-                for (int i = 0; i < size; i++) {
-                    filters.add(new LinkedList<>());
-                }
-            }
-        } else {
-            if (size > 1) {
-                // Replicate filters as many times as new elements we will need to add
-                int numberOfCopies = size - 1;
-
-                List<List<String>> replicatedFilterList = new LinkedList<>();
-
-                for (int i = 0; i < numberOfCopies; i++) {
-                    List<List<String>> tmpFilters = new ArrayList<>(filters.size());
-                    for (List<String> filter : filters) {
-                        tmpFilters.add(new ArrayList<>(filter));
-                    }
-
-                    replicatedFilterList.addAll(tmpFilters);
-                }
-
-                filters.addAll(replicatedFilterList);
-            }
-        }
-    }
-
     private void parseStringValue(Query query, RgaQueryParams queryParam, String storageKey, List<String> filterList) {
         parseStringValue(query, queryParam, storageKey, filterList, "||");
     }
@@ -511,7 +316,7 @@ public class RgaQueryParser {
         return result;
     }
 
-    private String parseFacet(String facetQuery) {
+    public String parseFacet(String facetQuery) {
         StringBuilder sb = new StringBuilder();
         String[] facets = facetQuery.split(FacetQueryParser.FACET_SEPARATOR);
 
@@ -537,60 +342,6 @@ public class RgaQueryParser {
 
         return sb.toString();
     }
-
-    private String parseQueryFilter(List<String> filters) {
-        StringBuilder builder = new StringBuilder();
-        if (filters.size() > 1) {
-            builder.append("( ");
-        }
-        for (int i = 0; i < filters.size(); i++) {
-            if (i != 0) {
-                builder.append("|| ");
-            }
-            builder.append(filters.get(i)).append(" ");
-        }
-        if (filters.size() > 1) {
-            builder.append(")");
-        }
-
-        return builder.toString();
-    }
-
-//    private String parseQueryFilter(List<List<String>> filters) {
-//        StringBuilder builder = new StringBuilder();
-//        if (filters.size() > 1) {
-//            builder.append("( ");
-//        }
-//        for (int i = 0; i < filters.size(); i++) {
-//            if (i != 0) {
-//                builder.append("|| ");
-//            }
-//            List<String> filter = filters.get(i);
-//            builder.append(StringUtils.join(filter, SEPARATOR)).append(" ");
-//        }
-//        if (filters.size() > 1) {
-//            builder.append(")");
-//        }
-//
-//        return builder.toString();
-//    }
-
-//    private String parseFacet(String facet, String categoryName) {
-//        if (facet.contains("(")) {
-//            // Aggregation function
-//            return facet.replace(categoryName, "").replace("[", "").replace("]", "");
-//        } else if (facet.contains("..")) {
-//            // Range
-//            Matcher matcher = FACET_RANGE_PATTERN.matcher(facet);
-//            if (matcher.find()) {
-//                return matcher.group(2) + "[" + matcher.group(3) + "]:" + matcher.group(4);
-//            } else {
-//                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
-//            }
-//        }
-//        // Nothing to do
-//        return facet;
-//    }
 
     private String toSolrSchemaFields(String facet) {
 //        if (facet.contains(CHROM_DENSITY)) {

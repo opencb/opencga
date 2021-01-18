@@ -177,7 +177,9 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                     Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
                     String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
-                    RgaDataModel model = new RgaDataModel(id, knockoutByIndividual.getId(),  knockoutByIndividual.getSampleId(),
+                    String individualId = StringUtils.isNotEmpty(knockoutByIndividual.getId()) ? knockoutByIndividual.getId()
+                            : knockoutByIndividual.getSampleId();
+                    RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(),
                             knockoutByIndividual.getSex().name(), phenotypes, disorders, gene.getId(), gene.getName(), "", "", "", 0, 0,
                             transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes, filters, consequenceTypes, popFreqs,
                             compoundFilters, phenotypeJson, disorderJson, variantJson);

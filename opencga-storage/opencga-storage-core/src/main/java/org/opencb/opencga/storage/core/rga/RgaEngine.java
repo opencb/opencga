@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.core.rga;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -29,12 +28,14 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class RgaEngine implements Closeable {
 
     private SolrManager solrManager;
-    private RgaQueryParser queryParser;
+    private RgaQueryParser parser;
     private IndividualRgaConverter individualRgaConverter;
     private GeneRgaConverter geneConverter;
     private StorageConfiguration storageConfiguration;
@@ -47,7 +48,7 @@ public class RgaEngine implements Closeable {
     public RgaEngine(StorageConfiguration storageConfiguration) {
         this.individualRgaConverter = new IndividualRgaConverter();
         this.geneConverter = new GeneRgaConverter();
-        this.queryParser = new RgaQueryParser();
+        this.parser = new RgaQueryParser();
         this.storageConfiguration = storageConfiguration;
 
         this.solrManager = new SolrManager(storageConfiguration.getRga().getHosts(), storageConfiguration.getRga().getMode(),
@@ -157,19 +158,42 @@ public class RgaEngine implements Closeable {
      */
     public OpenCGAResult<KnockoutByIndividual> individualQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        SolrQuery solrQuery = queryParser.parse(query, queryOptions);
+        SolrQuery solrQuery = fixQuery(collection, query, queryOptions);
+        solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByIndividual> queryResult;
         try {
             DataResult<RgaDataModel> result = solrCollection.query(solrQuery, RgaDataModel.class);
             List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(result.getResults());
             queryResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), knockoutByIndividuals.size(), knockoutByIndividuals,
-                    result.getNumMatches());
+                    -1);
         } catch (SolrServerException e) {
             throw new RgaException("Error executing KnockoutByIndividual query", e);
         }
 
         return new OpenCGAResult<>(queryResult);
+    }
+
+    private SolrQuery fixQuery(String collection, Query query, QueryOptions queryOptions) throws IOException, RgaException {
+        int limit = queryOptions.getInt(QueryOptions.LIMIT);
+        int skip = queryOptions.getInt(QueryOptions.SKIP);
+        if (limit > 0 || skip > 0) {
+            // Perform first a facet to obtain all the different sample ids there are available
+            QueryOptions facetOptions = new QueryOptions()
+                    .append(QueryOptions.SKIP, skip)
+                    .append(QueryOptions.LIMIT, limit)
+                    .append(QueryOptions.FACET, RgaQueryParams.SAMPLE_ID.key());
+            DataResult<FacetField> facetFieldDataResult = facetedQuery(collection, query, facetOptions);
+
+            // Add only the samples obtained after the facet
+            List<String> sampleIds = facetFieldDataResult.first().getBuckets().stream().map(FacetField.Bucket::getValue)
+                    .collect(Collectors.toList());
+            query.append(RgaQueryParams.SAMPLE_ID.key(), sampleIds);
+        }
+
+        SolrQuery solrQuery = parser.parseQuery(query);
+        parser.parseOptions(queryOptions, solrQuery);
+        return solrQuery;
     }
 
     /**
@@ -184,7 +208,8 @@ public class RgaEngine implements Closeable {
      */
     public OpenCGAResult<KnockoutByGene> geneQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        SolrQuery solrQuery = queryParser.parse(query, queryOptions);
+        SolrQuery solrQuery = parser.parseQuery(query);
+        solrQuery = parser.parseOptions(queryOptions, solrQuery);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByGene> queryResult;
         try {
@@ -211,7 +236,8 @@ public class RgaEngine implements Closeable {
      */
     public OpenCGAResult<RgaDataModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        SolrQuery solrQuery = queryParser.parse(query, queryOptions);
+        SolrQuery solrQuery = parser.parseQuery(query);
+        solrQuery = parser.parseOptions(queryOptions, solrQuery);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<RgaDataModel> queryResult;
         try {
@@ -256,7 +282,8 @@ public class RgaEngine implements Closeable {
     public SolrNativeIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
             throws RgaException {
         try {
-            SolrQuery solrQuery = queryParser.parse(query, queryOptions);
+            SolrQuery solrQuery = parser.parseQuery(query);
+            solrQuery = parser.parseOptions(queryOptions, solrQuery);
             return new SolrNativeIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
             throw new RgaException("Error getting KnockoutByIndividual iterator (native)", e);
@@ -272,7 +299,7 @@ public class RgaEngine implements Closeable {
      * @throws IOException IOException
      */
     public long count(String collection, Query query) throws RgaException, IOException {
-        SolrQuery solrQuery = queryParser.parse(query, QueryOptions.empty());
+        SolrQuery solrQuery = parser.parseQuery(query);
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
         try {
@@ -294,93 +321,15 @@ public class RgaEngine implements Closeable {
      */
     public DataResult<FacetField> facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        // Pre-processing
-        //   - As "genes" contains, for each gene: gene names, Ensembl gene ID and all its Ensembl transcript IDs,
-        //     we do not have to repeat counts for all of them, by default, only for gene names
-        //   - consequenceType is replaced by soAcc (i.e., by the field name in the Solr schema)
-        boolean replaceSoAcc = false;
-        boolean replaceGenes = false;
-        Map<String, Set<String>> includingValuesMap = new HashMap<>();
-        if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
-            String facetQuery = queryOptions.getString(QueryOptions.FACET);
+        SolrQuery solrQuery = parser.parseQuery(query);
 
-//            // Gene management
-//            if (facetQuery.contains("genes[")
-//                    && (facetQuery.contains("genes;") || facetQuery.contains("genes>>") || facetQuery.endsWith("genes"))) {
-//                throw new RgaException("Invalid gene facet query: " + facetQuery);
-//            }
-
+        if (queryOptions.containsKey(QueryOptions.FACET)
+                && org.apache.commons.lang3.StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             try {
-                includingValuesMap = new FacetQueryParser().getIncludingValuesMap(facetQuery);
-            } catch (Exception e) {
-                throw new RgaException("Error parsing faceted query", e);
-            }
-
-//            if (!facetQuery.contains("genes[") && facetQuery.contains("genes")) {
-//                // Force to query genes by prefix ENSG
-//                queryOptions.put(QueryOptions.FACET, facetQuery.replace("genes", "genes[ENSG0*]"));
-//                replaceGenes = true;
-//            }
-
-            // Consequence type management
-//            facetQuery = queryOptions.getString(QueryOptions.FACET);
-//            if (facetQuery.contains("consequenceType")) {
-//                replaceSoAcc = true;
-//
-//                facetQuery = facetQuery.replace("consequenceType", "soAcc");
-//                queryOptions.put(QueryOptions.FACET, facetQuery);
-//
-//                String[] split = facetQuery.split("soAcc\\[");
-//                if (split.length > 1 || facetQuery.startsWith("soAcc[")) {
-//                    int start = 0;
-//                    StringBuilder newFacetQuery = new StringBuilder();
-//                    if (!facetQuery.startsWith("soAcc[")) {
-//                        newFacetQuery.append(split[0]);
-//                        start = 1;
-//                    }
-//                    for (int i = start; i < split.length; i++) {
-//                        newFacetQuery.append("soAcc");
-//
-//                        // Manage values to include
-//                        int index = split[i].indexOf("]");
-//                        String strValues = split[i].substring(0, index);
-//                        String[] arrValues = strValues.split(",");
-//                        List<String> soAccs = new ArrayList<>();
-//                        for (String value: arrValues) {
-//                            String val = value.replace("SO:", "");
-//                            try {
-//                                // Try to get SO accession, and if it is a valid SO accession
-//                                int soAcc = Integer.parseInt(val);
-//                                if (ConsequenceTypeMappings.accessionToTerm.containsKey(soAcc)) {
-//                                    soAccs.add(String.valueOf(soAcc));
-//                                }
-//                            } catch (NumberFormatException e) {
-//                                // Otherwise, it is treated as a SO term, and check if it is a valid SO term
-//                                if (ConsequenceTypeMappings.termToAccession.containsKey(val)) {
-//                                    soAccs.add(String.valueOf(ConsequenceTypeMappings.termToAccession.get(val)));
-//                                }
-//                            }
-//                        }
-//                        if (ListUtils.isNotEmpty(soAccs)) {
-//                            newFacetQuery.append("[").append(StringUtils.join(soAccs, ",")).append("]");
-//                        }
-//                    }
-//                    queryOptions.put(QueryOptions.FACET, newFacetQuery.toString());
-//                }
-//            }
-//        }
-        }
-
-        // Query
-        SolrQuery solrQuery = queryParser.parse(query, queryOptions);
-        SolrCollection solrCollection = solrManager.getCollection(collection);
-
-        /*
-        *    try {
                 FacetQueryParser facetQueryParser = new FacetQueryParser();
 
-                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
-                String jsonFacet = facetQueryParser.parse(facetQuery);
+                String facetQuery = parser.parseFacet(queryOptions.getString(QueryOptions.FACET));
+                String jsonFacet = facetQueryParser.parse(facetQuery, queryOptions);
 
                 solrQuery.set("json.facet", jsonFacet);
                 solrQuery.setRows(0);
@@ -391,8 +340,9 @@ public class RgaEngine implements Closeable {
             } catch (Exception e) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Solr parse exception: " + e.getMessage(), e);
             }
-        * */
+        }
 
+        SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<FacetField> facetResult;
         try {
             facetResult = solrCollection.facet(solrQuery, null);
