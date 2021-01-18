@@ -208,8 +208,8 @@ public class RgaEngine implements Closeable {
      */
     public OpenCGAResult<KnockoutByGene> geneQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        SolrQuery solrQuery = parser.parseQuery(query);
-        solrQuery = parser.parseOptions(queryOptions, solrQuery);
+        SolrQuery solrQuery = fixQuery(collection, query, queryOptions);
+        solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByGene> queryResult;
         try {
@@ -236,8 +236,8 @@ public class RgaEngine implements Closeable {
      */
     public OpenCGAResult<RgaDataModel> nativeQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        SolrQuery solrQuery = parser.parseQuery(query);
-        solrQuery = parser.parseOptions(queryOptions, solrQuery);
+        SolrQuery solrQuery = fixQuery(collection, query, queryOptions);
+        solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<RgaDataModel> queryResult;
         try {
@@ -282,10 +282,10 @@ public class RgaEngine implements Closeable {
     public SolrNativeIterator nativeIterator(String collection, Query query, QueryOptions queryOptions)
             throws RgaException {
         try {
-            SolrQuery solrQuery = parser.parseQuery(query);
-            solrQuery = parser.parseOptions(queryOptions, solrQuery);
+            SolrQuery solrQuery = fixQuery(collection, query, queryOptions);
+            solrQuery.setRows(Integer.MAX_VALUE);
             return new SolrNativeIterator(solrManager.getSolrClient(), collection, solrQuery);
-        } catch (SolrServerException e) {
+        } catch (SolrServerException | IOException e) {
             throw new RgaException("Error getting KnockoutByIndividual iterator (native)", e);
         }
     }

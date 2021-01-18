@@ -12,6 +12,7 @@ In order to upload all of them, you need to execute the following commands:
 
 ```
 $ ./bin/solr zk upconfig -n opencga-variant-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-variant-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
+$ ./bin/solr zk upconfig -n opencga-rga-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-rga-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
 $ ./bin/solr zk upconfig -n opencga-cohort-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-cohort-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
 $ ./bin/solr zk upconfig -n opencga-family-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-family-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983
 $ ./bin/solr zk upconfig -n opencga-file-configset-REPLACEME_OPENCGA_VERSION -d ~/opencga/build/misc/solr/opencga-file-configset-REPLACEME_OPENCGA_VERSION -z localhost:9983

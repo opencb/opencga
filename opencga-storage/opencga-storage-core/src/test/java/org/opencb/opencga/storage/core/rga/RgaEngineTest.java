@@ -18,8 +18,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.rga.RgaUtilsTest.createKnockoutByIndividual;
 
 public class RgaEngineTest {
@@ -92,6 +91,35 @@ public class RgaEngineTest {
                 .append(RgaQueryParams.CONSEQUENCE_TYPE.key(), "SO:0001891");
         result = rgaEngine.individualQuery(collection, query, new QueryOptions());
         assertEquals(1, result.getNumResults());
+    }
+
+    @Test
+    public void testLimitAndSkip() throws Exception {
+        RgaEngine rgaEngine = solr.configure(storageConfiguration);
+
+        String collection = solr.coreName;
+        rgaEngine.create(collection);
+
+        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
+        knockoutByIndividualList.add(createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(createKnockoutByIndividual(2));
+
+        rgaEngine.insert(collection, knockoutByIndividualList);
+        OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, new Query(), new QueryOptions());
+
+        assertEquals(2, result.getNumResults());
+        for (int i = 0; i < knockoutByIndividualList.size(); i++) {
+            assertEquals(JacksonUtils.getDefaultObjectMapper().writeValueAsString(knockoutByIndividualList.get(i)),
+                    JacksonUtils.getDefaultObjectMapper().writeValueAsString(result.getResults().get(i)));
+        }
+
+        result = rgaEngine.individualQuery(collection, new Query(), new QueryOptions(QueryOptions.LIMIT, 1));
+        assertEquals(1, result.getNumResults());
+        String individualId = result.first().getId();
+
+        result = rgaEngine.individualQuery(collection, new Query(), new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP, 1));
+        assertEquals(1, result.getNumResults());
+        assertNotEquals(individualId, result.first().getId());
     }
 
     @Test

@@ -9,6 +9,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.opencb.opencga.storage.core.rga.RgaDataModel.*;
+
 class RgaUtils {
 
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<?<=?|>>?=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
@@ -23,6 +25,9 @@ class RgaUtils {
 
     public static final String THOUSAND_GENOMES_STUDY = "1kG_phase3";
     public static final String GNOMAD_GENOMES_STUDY = "GNOMAD_GENOMES";
+
+    public static final Set<String> ALL_PARAMS;
+    public static final Map<String, Set<String>> PARAM_TYPES;
 
     static {
         ENCODE_MAP = new HashMap<>();
@@ -71,6 +76,66 @@ class RgaUtils {
         for (Map.Entry<String, String> entry : ENCODE_MAP.entrySet()) {
             DECODE_MAP.put(entry.getValue(), entry.getKey());
         }
+
+        // All params
+        ALL_PARAMS = new HashSet<>();
+        ALL_PARAMS.add(RgaDataModel.ID);
+        ALL_PARAMS.add(RgaDataModel.INDIVIDUAL_ID);
+        ALL_PARAMS.add(RgaDataModel.SAMPLE_ID);
+        ALL_PARAMS.add(RgaDataModel.SEX);
+        ALL_PARAMS.add(RgaDataModel.PHENOTYPES);
+        ALL_PARAMS.add(RgaDataModel.DISORDERS);
+        ALL_PARAMS.add(RgaDataModel.GENE_ID);
+        ALL_PARAMS.add(RgaDataModel.GENE_NAME);
+        ALL_PARAMS.add(RgaDataModel.GENE_BIOTYPE);
+        ALL_PARAMS.add(RgaDataModel.CHROMOSOME);
+        ALL_PARAMS.add(RgaDataModel.STRAND);
+        ALL_PARAMS.add(RgaDataModel.START);
+        ALL_PARAMS.add(RgaDataModel.END);
+        ALL_PARAMS.add(RgaDataModel.TRANSCRIPT_ID);
+        ALL_PARAMS.add(RgaDataModel.TRANSCRIPT_BIOTYPE);
+        ALL_PARAMS.add(RgaDataModel.VARIANTS);
+        ALL_PARAMS.add(RgaDataModel.KNOCKOUT_TYPES);
+        ALL_PARAMS.add(RgaDataModel.FILTERS);
+        ALL_PARAMS.add(RgaDataModel.CONSEQUENCE_TYPES);
+        ALL_PARAMS.add(RgaDataModel.POPULATION_FREQUENCIES);
+        ALL_PARAMS.add(RgaDataModel.COMPOUND_FILTERS);
+        ALL_PARAMS.add(PHENOTYPE_JSON);
+        ALL_PARAMS.add(DISORDER_JSON);
+        ALL_PARAMS.add(VARIANT_JSON);
+
+        PARAM_TYPES = new HashMap<>();
+        // Variant params
+        Set<String> params = new HashSet<>();
+        params.add(VARIANTS);
+        params.add(KNOCKOUT_TYPES);
+        params.add(FILTERS);
+        params.add(CONSEQUENCE_TYPES);
+        params.add(POPULATION_FREQUENCIES);
+        params.add(COMPOUND_FILTERS);
+        params.add(PHENOTYPE_JSON);
+        params.add(DISORDER_JSON);
+        params.add(VARIANT_JSON);
+        PARAM_TYPES.put("variants", params);
+
+        // Transcript params
+        params = new HashSet<>();
+        params.add(TRANSCRIPT_ID);
+        params.add(TRANSCRIPT_BIOTYPE);
+        params.addAll(PARAM_TYPES.get("variants"));
+        PARAM_TYPES.put("transcripts", params);
+
+        // Gene params
+        params = new HashSet<>();
+        params.add(GENE_ID);
+        params.add(GENE_NAME);
+        params.add(GENE_BIOTYPE);
+        params.add(CHROMOSOME);
+        params.add(STRAND);
+        params.add(START);
+        params.add(END);
+        params.addAll(PARAM_TYPES.get("transcripts"));
+        PARAM_TYPES.put("genes", params);
     }
 
     static String getPopulationFrequencyKey(Float popFreq) throws RgaException {
@@ -182,5 +247,7 @@ class RgaUtils {
             return new KeyOpValue<>(null, "=", value.trim());
         }
     }
+
+
 
 }
