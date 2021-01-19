@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.KeyValueUtil;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -92,7 +93,12 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
         if (maxKeyValueSize > 0) {
             for (List<Cell> list : put.getFamilyCellMap().values()) {
                 for (Cell cell : list) {
-                    if (cell.getSerializedSize() > maxKeyValueSize) {
+                    if (KeyValueUtil.length(
+                            cell.getRowLength(),
+                            cell.getFamilyLength(),
+                            cell.getQualifierLength(),
+                            cell.getValueLength(),
+                            cell.getTagsLength(), true) > maxKeyValueSize) {
                         throw new IllegalArgumentException("KeyValue size too large");
                     }
                 }
