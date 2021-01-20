@@ -791,7 +791,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         }
                         sampleToFileIdxMap.put(sample, sampleEntry.getFileIndex());
                         List<String> sampleData = sampleEntry.getData();
-                        if (gtIndex == null || !(sampleData.get(0).equals(UNKNOWN_GENOTYPE) && sampleData.get(0).equals(NA_GT_VALUE))) {
+                        if (gtIndex == null || (!sampleData.get(0).equals(UNKNOWN_GENOTYPE) && !sampleData.get(0).equals(NA_GT_VALUE))) {
                             se.addSampleData(sample, sampleData);
                         } else {
                             // Add dummy GT for this sample
