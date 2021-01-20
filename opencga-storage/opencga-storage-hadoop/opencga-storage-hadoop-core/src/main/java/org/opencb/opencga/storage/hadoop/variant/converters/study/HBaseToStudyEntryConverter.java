@@ -820,15 +820,16 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             for (String sample : newSe.getSamplesName()) {
 
                 List<String> sampleData = newSe.getSampleData(sample);
+                // Restore special genotypes
+                if (specialGenotypes.containsKey(sample)) {
+                    sampleData.set(0, specialGenotypes.get(sample));
+                }
                 if (sample.contains("_ISSUE+")) {
                     int idx1 = sample.lastIndexOf("_");
                     int idx2 = sample.lastIndexOf("+");
                     int fileId = Integer.parseInt(sample.substring(idx2 + 1));
                     String sampleName = sample.substring(0, idx1);
-                    // Restore special genotypes
-                    if (specialGenotypes.containsKey(sampleName)) {
-                        sampleData.set(0, specialGenotypes.get(sampleName));
-                    }
+
                     for (IssueEntry issue : studyEntry.getIssues()) {
                         if (issue.getSample().getFileIndex().equals(fileId) && issue.getSample().getSampleId().equals(sampleName)) {
                             issue.getSample().setData(sampleData);
@@ -837,10 +838,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                     }
 
                 } else {
-                    // Restore special genotypes
-                    if (specialGenotypes.containsKey(sample)) {
-                        sampleData.set(0, specialGenotypes.get(sample));
-                    }
                     studyEntry.addSampleData(sample, sampleData);
                     // Preserve "fileIndex", which is, actually, the fileId
                     studyEntry.getSample(sample).setFileIndex(sampleToFileIdxMap.get(sample));
