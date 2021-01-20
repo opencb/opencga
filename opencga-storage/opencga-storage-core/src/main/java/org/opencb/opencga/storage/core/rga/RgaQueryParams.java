@@ -103,9 +103,14 @@ public class RgaQueryParams implements QueryParam {
         for (String key : options.keySet()) {
             if (VALUES_MAP.containsKey(key)) {
                 query.put(key, options.get(key));
-                options.remove(key);
             }
         }
+
+        // Remove from options the keys added to the query object
+        for (String key : query.keySet()) {
+            options.remove(key);
+        }
+
         return query;
     }
 }
