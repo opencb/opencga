@@ -1152,8 +1152,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 return executor;
             }
         }
-        // This should never happen, as the DBAdaptorVariantQueryExecutor can always run the query
-        throw new VariantQueryException("No VariantAggregationExecutor found to run the query!");
+        String facet = options == null ? null : options.getString(QueryOptions.FACET);
+        // This should rarely happen
+        logger.warn("Unable to run aggregation facet '" + facet + "' with query " + VariantQueryUtils.printQuery(query));
+        throw new VariantQueryException("No VariantAggregationExecutor found to run the query!").setQuery(query);
     }
 
     @Override

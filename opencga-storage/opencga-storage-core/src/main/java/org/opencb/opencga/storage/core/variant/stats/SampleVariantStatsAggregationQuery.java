@@ -47,7 +47,7 @@ public class SampleVariantStatsAggregationQuery {
             throw new VariantQueryException("Missing sample");
         }
         int studyId = engine.getMetadataManager().getStudyId(studyStr);
-        int sampleId = engine.getMetadataManager().getSampleId(studyId, sample);
+        int sampleId = engine.getMetadataManager().getSampleIdOrFail(studyId, sample);
 
         Query query;
         if (inputQuery == null) {
