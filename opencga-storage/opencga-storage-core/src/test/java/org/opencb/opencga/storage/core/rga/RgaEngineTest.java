@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
@@ -187,6 +188,23 @@ public class RgaEngineTest {
                 .append(RgaQueryParams.CONSEQUENCE_TYPE.key(), "SO:0001891");
         result = rgaEngine.geneQuery(collection, query, new QueryOptions());
         assertEquals(2, result.getNumResults());
+    }
+
+    @Test
+    public void testVariantQuery() throws Exception {
+        RgaEngine rgaEngine = solr.configure(storageConfiguration);
+
+        String collection = solr.coreName;
+        rgaEngine.create(collection);
+
+        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
+        knockoutByIndividualList.add(createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(createKnockoutByIndividual(2));
+
+        rgaEngine.insert(collection, knockoutByIndividualList);
+        OpenCGAResult<KnockoutByVariant> result = rgaEngine.variantQuery(collection, new Query(), new QueryOptions());
+
+        assertEquals(6, result.getNumResults());
     }
 
     @Test

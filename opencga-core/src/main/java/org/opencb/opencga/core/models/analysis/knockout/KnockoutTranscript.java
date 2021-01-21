@@ -37,6 +37,17 @@ public class KnockoutTranscript {
         this.id = id;
     }
 
+    public KnockoutTranscript(String id, String chromosome, int start, int end, String biotype, String strand,
+                              List<KnockoutVariant> variants) {
+        this.id = id;
+        this.chromosome = chromosome;
+        this.start = start;
+        this.end = end;
+        this.biotype = biotype;
+        this.strand = strand;
+        this.variants = variants;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("KnockoutTranscript{");

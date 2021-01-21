@@ -38,14 +38,13 @@ public class KnockoutByIndividual {
     }
 
     public KnockoutByIndividual(String id, String sampleId, Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders,
-                                GeneKnockoutByIndividualStats stats, Map<String, KnockoutGene> genesMap) {
+                                GeneKnockoutByIndividualStats stats) {
         this.id = id;
         this.sampleId = sampleId;
         this.sex = sex;
         this.phenotypes = phenotypes;
         this.disorders = disorders;
         this.stats = stats;
-        this.genesMap = genesMap;
     }
 
     @Override
@@ -206,6 +205,16 @@ public class KnockoutByIndividual {
         private Map<String, KnockoutTranscript> transcriptsMap = new HashMap<>(); // Internal only
 
         public KnockoutGene() {
+        }
+
+        public KnockoutGene(String id, String name, String chromosome, int start, int end, String biotype, String strand) {
+            this.id = id;
+            this.name = name;
+            this.chromosome = chromosome;
+            this.start = start;
+            this.end = end;
+            this.biotype = biotype;
+            this.strand = strand;
         }
 
         public KnockoutGene(String name) {

@@ -10,6 +10,7 @@ import org.opencb.opencga.core.config.Catalog;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -53,6 +54,14 @@ public class RgaManager extends StorageManager {
         // TODO: Check Permissions
         String collection = getCollectionName(study.getFqn());
         return rgaEngine.geneQuery(collection, query, options);
+    }
+
+    public OpenCGAResult<KnockoutByVariant> variantQuery(String studyStr, Query query, QueryOptions options, String token)
+            throws CatalogException, IOException, RgaException {
+        Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+        // TODO: Check Permissions
+        String collection = getCollectionName(study.getFqn());
+        return rgaEngine.variantQuery(collection, query, options);
     }
 
     public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {

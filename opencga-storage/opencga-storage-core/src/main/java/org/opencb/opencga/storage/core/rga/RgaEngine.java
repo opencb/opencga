@@ -16,6 +16,7 @@ import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.RgaException;
@@ -38,6 +39,7 @@ public class RgaEngine implements Closeable {
     private RgaQueryParser parser;
     private IndividualRgaConverter individualRgaConverter;
     private GeneRgaConverter geneConverter;
+    private VariantRgaConverter variantConverter;
     private StorageConfiguration storageConfiguration;
 
     private Logger logger;
@@ -48,6 +50,7 @@ public class RgaEngine implements Closeable {
     public RgaEngine(StorageConfiguration storageConfiguration) {
         this.individualRgaConverter = new IndividualRgaConverter();
         this.geneConverter = new GeneRgaConverter();
+        this.variantConverter = new VariantRgaConverter();
         this.parser = new RgaQueryParser();
         this.storageConfiguration = storageConfiguration;
 
@@ -208,7 +211,8 @@ public class RgaEngine implements Closeable {
      */
     public OpenCGAResult<KnockoutByGene> geneQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        SolrQuery solrQuery = fixQuery(collection, query, queryOptions);
+        SolrQuery solrQuery = parser.parseQuery(query);
+        parser.parseOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByGene> queryResult;
@@ -219,6 +223,36 @@ public class RgaEngine implements Closeable {
                     result.getNumMatches());
         } catch (SolrServerException e) {
             throw new RgaException("Error executing KnockoutByGene query", e);
+        }
+
+        return new OpenCGAResult<>(queryResult);
+    }
+
+    /**
+     * Return the list of KnockoutByVariant objects from a Solr core/collection given a query.
+     *
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options
+     * @return List of KnockoutByVariant objects
+     * @throws RgaException RgaException
+     * @throws IOException   IOException
+     */
+    public OpenCGAResult<KnockoutByVariant> variantQuery(String collection, Query query, QueryOptions queryOptions)
+            throws RgaException, IOException {
+        SolrQuery solrQuery = parser.parseQuery(query);
+        parser.parseOptions(queryOptions, solrQuery);
+        solrQuery.setRows(Integer.MAX_VALUE);
+        SolrCollection solrCollection = solrManager.getCollection(collection);
+        DataResult<KnockoutByVariant> queryResult;
+        try {
+            DataResult<RgaDataModel> result = solrCollection.query(solrQuery, RgaDataModel.class);
+            List<KnockoutByVariant> knockoutByVariants = variantConverter.convertToDataModelType(result.getResults(),
+                    query.getAsStringList(RgaQueryParams.VARIANTS.key()));
+            queryResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), knockoutByVariants.size(), knockoutByVariants,
+                    -1);
+        } catch (SolrServerException e) {
+            throw new RgaException("Error executing KnockoutByVariant query", e);
         }
 
         return new OpenCGAResult<>(queryResult);
