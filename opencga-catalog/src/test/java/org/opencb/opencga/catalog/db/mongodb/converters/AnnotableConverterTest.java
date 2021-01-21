@@ -52,7 +52,7 @@ public class AnnotableConverterTest {
         myMap.put("a", "hello");
         List<Document> document2 = annotableConverter.annotationToDB(variableSet, "annotName", myMap);
         assertEquals(1, document2.size());
-        assertEquals(5, document2.get(0).size());
+        assertEquals(6, document2.get(0).size());
         assertEquals("a", document2.get(0).get(AnnotationConverter.ID));
         assertEquals("annotName", document2.get(0).get(AnnotationConverter.ANNOTATION_SET_NAME));
         assertEquals(1L, document2.get(0).get(AnnotationConverter.VARIABLE_SET));
@@ -93,7 +93,7 @@ public class AnnotableConverterTest {
         List<Document> document = annotableConverter.annotationToDB(vs, "annotName", myMap);
 
         assertEquals(1, document.size());
-        assertEquals(7, document.get(0).size());
+        assertEquals(8, document.get(0).size());
         assertEquals(5, ((List) document.get(0).get(AnnotationConverter.VALUE)).size());
         assertEquals(Arrays.asList(true, false, false, true, true), document.get(0).get(AnnotationConverter.VALUE));
         assertEquals(Arrays.asList(Arrays.asList(1, 1), Arrays.asList(1, 1), 0, Arrays.asList(0, 1)),
@@ -134,7 +134,7 @@ public class AnnotableConverterTest {
         List<Document> document = annotableConverter.annotationToDB(vs, "annotName", myMap);
 
         assertEquals(1, document.size());
-        assertEquals(7, document.get(0).size());
+        assertEquals(8, document.get(0).size());
         assertEquals(5, ((List) document.get(0).get(AnnotationConverter.VALUE)).size());
         assertEquals(Arrays.asList(true, false, false, false, true), document.get(0).get(AnnotationConverter.VALUE));
         assertEquals(Arrays.asList(Arrays.asList(2), 0, 0, Arrays.asList(3)), document.get(0).get(AnnotationConverter.COUNT_ELEMENTS));
@@ -234,17 +234,17 @@ public class AnnotableConverterTest {
             for (Document document : myDocList) {
                 switch ((String) document.get(AnnotationConverter.ID)) {
                     case "a.ab1.ab1c1":
-                        assertEquals(7, document.size());
+                        assertEquals(8, document.size());
                         assertEquals(Arrays.asList(true, false, false), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(3), document.get(AnnotationConverter.COUNT_ELEMENTS));
                         assertEquals(Arrays.asList(2), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
                     case "a.ab1.ab1c2":
-                        assertEquals(5, document.size());
+                        assertEquals(6, document.size());
                         assertEquals("hello world", document.get(AnnotationConverter.VALUE));
                         break;
                     case "a.ab2.ab2c1.ab2c1d1":
-                        assertEquals(7, document.size());
+                        assertEquals(8, document.size());
                         assertEquals(Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(Arrays.asList(4), Arrays.asList(4), Arrays.asList(1)),
                                 document.get(AnnotationConverter.COUNT_ELEMENTS));
@@ -252,13 +252,13 @@ public class AnnotableConverterTest {
                         assertEquals(Arrays.asList(1, 3), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
                     case "a.ab2.ab2c1.ab2c1d2":
-                        assertEquals(7, document.size());
+                        assertEquals(8, document.size());
                         assertEquals(Arrays.asList("hello ab2c1d2 1", "hello ab2c1d2 2"), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(1, 1, 0), document.get(AnnotationConverter.COUNT_ELEMENTS));
                         assertEquals(Arrays.asList(1), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
                     case "a.ab3.ab3c1.ab3c1d1":
-                        assertEquals(7, document.size());
+                        assertEquals(8, document.size());
                         assertEquals(Arrays.asList(Arrays.asList("hello"), Arrays.asList("hello2", "bye2"),
                                 Arrays.asList("byeee2", "hellooo2")), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(Arrays.asList(1, 0), Arrays.asList(1, 1)), document.get(AnnotationConverter
@@ -266,7 +266,7 @@ public class AnnotableConverterTest {
                         assertEquals(Arrays.asList(1, 2), document.get(AnnotationConverter.ARRAY_LEVEL));
                         break;
                     case "a.ab3.ab3c1.ab3c1d2":
-                        assertEquals(7, document.size());
+                        assertEquals(8, document.size());
                         assertEquals(Arrays.asList(2.0, 4.0, 24.0), document.get(AnnotationConverter.VALUE));
                         assertEquals(Arrays.asList(Arrays.asList(1, 1), Arrays.asList(0, 1)),
                                 document.get(AnnotationConverter.COUNT_ELEMENTS));

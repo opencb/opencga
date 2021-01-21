@@ -17,7 +17,7 @@ COPY ${BUILD_PATH}/conf/* /opt/opencga/init/test/
 
 # Install python requirements
 RUN pip3 install -r /opt/opencga/init/requirements.txt
-RUN chmod +x /opt/opencga/init/setup.sh
+RUN chmod +x /opt/opencga/init/setup.sh /opt/opencga/init/setup-hadoop.sh
 
 # Run tests on config script
 # If this line fails then a configuration change has a bug

@@ -682,6 +682,7 @@ public class VariantQueryParser {
             if (multiallelic) {
                 String regex = genotype.toString()
                         .replace(".", "\\.")
+                        .replace("|", "\\|")
                         .replace("2", "([2-9]|[0-9][0-9])"); // Replace allele "2" with "any number >= 2")
                 Pattern pattern = Pattern.compile(regex);
                 for (String loadedGenotype : loadedGenotypes) {

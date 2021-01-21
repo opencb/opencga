@@ -1316,7 +1316,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(8, annotDataResult.getNumResults());
 
         for (Sample sample : annotDataResult.getResults()) {
-            assertEquals(null, sample.getId());
+            assertEquals(null, sample.getIndividualId());
             assertTrue(!sample.getAnnotationSets().isEmpty());
         }
     }
@@ -2043,6 +2043,16 @@ public class SampleManagerTest extends AbstractManagerTest {
         Individual individual = catalogManager.getIndividualManager().search(studyFqn,
                 new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), "sample1"), QueryOptions.empty(), token).first();
         assertEquals("Individual1", individual.getId());
+    }
+
+    @Test
+    public void searchIndividualsBySampleWithNoSamples() throws CatalogException {
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1")
+                .setSamples(Arrays.asList(new Sample().setId("sample1"), new Sample().setId("sample2"))), new QueryOptions(), token);
+
+        OpenCGAResult<Individual> search = catalogManager.getIndividualManager().search(studyFqn,
+                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ""), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
     }
 
     @Test

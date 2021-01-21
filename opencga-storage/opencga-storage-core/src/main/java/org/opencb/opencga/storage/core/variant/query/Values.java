@@ -95,7 +95,7 @@ public class Values<V> implements QueryElement, Iterable<V> {
             if (value instanceof QueryElement) {
                 ((QueryElement) value).toQuery(sb);
             } else {
-                sb.append(value);
+                sb.append(QueryElement.objectToString(value));
             }
         }
     }
@@ -115,7 +115,7 @@ public class Values<V> implements QueryElement, Iterable<V> {
             if (value instanceof QueryElement) {
                 ((QueryElement) value).describe(sb);
             } else {
-                sb.append("'").append(value).append("'");
+                sb.append("'").append(QueryElement.objectToString(value)).append("'");
             }
         }
         if (externalParentesis) {

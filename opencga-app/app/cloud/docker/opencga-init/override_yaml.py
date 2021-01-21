@@ -6,6 +6,7 @@ parser = configargparse.ArgumentParser(auto_env_var_prefix="INIT_")
 parser.add_argument("--config-path", help="path to the configuration.yml file", default="/opt/opencga/conf/configuration.yml")
 parser.add_argument("--client-config-path", help="path to the client-configuration.yml file", default="/opt/opencga/conf/client-configuration.yml")
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
+parser.add_argument("--database-prefix", required=False)
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
 parser.add_argument("--cellbase-rest-url", required=False, help="Cellbase rest server hosting the cellbase service")
@@ -31,9 +32,10 @@ parser.add_argument("--k8s-volumes-pvc-variants", required=False)
 parser.add_argument("--k8s-volumes-pvc-analysisconf", required=False)
 parser.add_argument("--max-concurrent-jobs", required=False)
 parser.add_argument("--variant-default-engine", required=False, default="hadoop")
-parser.add_argument("--hadoop-ssh-dns", required=True)
-parser.add_argument("--hadoop-ssh-user", required=True)
-parser.add_argument("--hadoop-ssh-pass", required=True)
+parser.add_argument("--variant-options", required=False, action="append", nargs='*')
+parser.add_argument("--hadoop-ssh-dns", required=False)
+parser.add_argument("--hadoop-ssh-user", required=False)
+parser.add_argument("--hadoop-ssh-pass", required=False)
 parser.add_argument("--hadoop-ssh-key", required=False)
 parser.add_argument("--hadoop-ssh-remote-opencga-home", required=False)
 parser.add_argument("--health-check-interval", required=False)
@@ -76,6 +78,14 @@ if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
 storage_config["variant"]["defaultEngine"] = args.variant_default_engine
 storage_config["variant"]["options"]["annotator"] = "cellbase"
 
+if args.variant_options is not None:
+    # print("variant options: ", args.variant_options)
+    for options in args.variant_options:
+        for option in options:
+            # print("option: ", option)
+            kv = option.split("=")
+            storage_config["variant"]["options"][kv[0]] = kv[1]
+
 # Inject Hadoop ssh configuration
 for _, storage_engine in enumerate(storage_config["variant"]["engines"]):
 
@@ -97,6 +107,9 @@ for _, storage_engine in enumerate(storage_config["variant"]["engines"]):
 
 with open(args.config_path) as f:
     config = yaml.safe_load(f)
+
+if args.database_prefix:
+    config["databasePrefix"] = args.database_prefix
 
 # Inject catalog database
 catalog_hosts = args.catalog_database_hosts.replace('\"','').replace('[','').replace(']','').split(",")

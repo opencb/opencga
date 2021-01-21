@@ -162,17 +162,17 @@ public class TemplateManager {
 
     public void validate(TemplateConfiguration template) throws ClientException {
         // Check version
-        String versionReal = openCGAClient.getMetaClient().about().firstResult().getString("Version");
-        String version;
-        if (versionReal.contains("-")) {
-            logger.warn("Using development OpenCGA version: " + versionReal);
-            version = versionReal.split("-")[0];
+        String version = openCGAClient.getMetaClient().about().firstResult().getString("Version");
+        String versionShort;
+        if (version.contains("-")) {
+            logger.warn("Using development OpenCGA version: " + version);
+            versionShort = version.split("-")[0];
         } else {
-            version = versionReal;
+            versionShort = version;
         }
         String templateVersion = template.getVersion();
-        if (!version.equals(templateVersion)) {
-            throw new IllegalArgumentException("Version mismatch! Expected " + templateVersion + " but found " + version);
+        if (!version.equals(templateVersion) && !versionShort.equals(templateVersion)) {
+            throw new IllegalArgumentException("Version mismatch! Expected " + templateVersion + " but found " + versionShort);
         }
 
         // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
