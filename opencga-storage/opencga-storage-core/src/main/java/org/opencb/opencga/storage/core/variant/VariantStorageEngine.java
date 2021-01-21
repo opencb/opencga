@@ -54,6 +54,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
@@ -1062,7 +1063,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             return getVariantQueryParser().preProcessQuery(originalQuery, options);
         } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
+            throw VariantQueryException.internalException(e).setQuery(originalQuery);
+        }
+    }
+
+    public ParsedVariantQuery parseQuery(Query originalQuery, QueryOptions options) {
+        try {
+            return getVariantQueryParser().parseQuery(originalQuery, options);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e).setQuery(originalQuery);
         }
     }
 
