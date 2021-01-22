@@ -307,13 +307,8 @@ public class OpenCGAWSServer {
     }
 
     private static void initLogger(java.nio.file.Path configDirPath) {
-        String logDir = System.getProperty("opencga.log.dir");
+        String logDir = configuration.getLogDir();
         boolean logFileEnabled;
-        if (StringUtils.isBlank(logDir)) {
-            logDir = configuration.getLogDir();
-        } else {
-            configuration.setLogDir(logDir);
-        }
 
         if (StringUtils.isNotBlank(configuration.getLogLevel())) {
             Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);

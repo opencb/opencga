@@ -18,6 +18,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -249,7 +250,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void testQueryFileIndex() throws Exception {
         testQueryFileIndex(new Query(TYPE.key(), "SNV"));
-        testQueryFileIndex(new Query(TYPE.key(), "SNP"));
+//        testQueryFileIndex(new Query(TYPE.key(), "SNP"));
         testQueryFileIndex(new Query(TYPE.key(), "INDEL"));
         testQueryFileIndex(new Query(TYPE.key(), "SNV,INDEL"));
         testQueryFileIndex(new Query(FILTER.key(), "PASS"));
@@ -275,6 +276,53 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 new Query()
                         .append(STUDY.key(), STUDY_NAME_2)
                         .append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
+    }
+
+    @Test
+    public void testMultiFileFilters() throws Exception {
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-1.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterA"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterB"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=FilterA,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterA"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS;chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        // 22:20780030:-:C
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600")
+                        .append(SAMPLE_DATA.key(), "NA19600:DS=2.005"));
+
+        // 22:36591380::A:G
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=FilterB,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterB"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600")
+                        .append(SAMPLE_DATA.key(), "NA19600:DS=1.005"));
     }
 
     @Test
@@ -438,10 +486,30 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testCount() throws StorageEngineException {
+        /*
+            6    31_000_000
+            6    32_000_000
+            8    144_000_000
+            9    139_000_000
+            19   14_000_000
+         */
         List<Query> queries = Arrays.asList(
                 new Query(),
                 new Query(REGION.key(), "chr1").append(ANNOT_BIOTYPE.key(), "protein_coding"),
-                new Query(REGION.key(), Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000)))
+                new Query(REGION.key(), Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("6", 31_200_000, 31_800_000),
+                        new Region("6", 33_200_000, 34_800_000),
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000)))
         );
 
         for (String study : studies) {
@@ -509,6 +577,16 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+    }
+
+    @Test
+    public void testSampleVariantStats() throws Exception {
+        for (String study : studies) {
+            for (String sample : sampleNames.get(study)) {
+                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null);
+                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+            }
+        }
     }
 
 

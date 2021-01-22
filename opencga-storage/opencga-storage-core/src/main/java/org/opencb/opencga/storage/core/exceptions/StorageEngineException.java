@@ -86,10 +86,14 @@ public class StorageEngineException extends Exception {
     public static StorageEngineException alreadyLoadedSamples(String fileName, List<String> samples) {
         StringBuilder sb = new StringBuilder();
         sb.append("Unable to load file '").append(fileName).append("'. ");
-        if (samples != null && samples.size() == 1) {
-            sb.append("Sample '").append(samples.get(0)).append("' is ");
-        } else {
+        if (samples == null) {
             sb.append("Samples from this file are ");
+        } else if (samples.size() == 1) {
+            sb.append("Sample '").append(samples.get(0)).append("' is ");
+        } else if (samples.size() < 30) {
+            sb.append("Samples ").append(samples).append(" from this file are ");
+        } else {
+            sb.append(samples.size()).append(" samples from this file are ");
         }
         sb.append("already loaded. "
                 + "This variant storage does not allow to load multiple files from the same sample in the same study. "

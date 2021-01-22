@@ -1713,24 +1713,31 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     private void fixQuery(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
 
-        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
-            Individual ind = internalGet(study.getUid(), query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()),
-                    INCLUDE_INDIVIDUAL_IDS, userId).first();
+        if (query.containsKey(IndividualDBAdaptor.QueryParams.FATHER.key())) {
+            if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {
+                Individual ind = internalGet(study.getUid(), query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()),
+                        INCLUDE_INDIVIDUAL_IDS, userId).first();
+                query.append(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), ind.getUid());
+            }
             query.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
-            query.append(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), ind.getUid());
         }
-        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
-            Individual ind = internalGet(study.getUid(), query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()),
-                    INCLUDE_INDIVIDUAL_IDS, userId).first();
+        if (query.containsKey(IndividualDBAdaptor.QueryParams.MOTHER.key())) {
+            if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()))) {
+                Individual ind = internalGet(study.getUid(), query.getString(IndividualDBAdaptor.QueryParams.MOTHER.key()),
+                        INCLUDE_INDIVIDUAL_IDS, userId).first();
+                query.append(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), ind.getUid());
+            }
             query.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            query.append(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), ind.getUid());
         }
-        if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
-            OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                    query.getAsStringList(IndividualDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
+        if (query.containsKey(IndividualDBAdaptor.QueryParams.SAMPLES.key())) {
+            if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.SAMPLES.key()))) {
+                OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                        query.getAsStringList(IndividualDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, userId,
+                        true);
+                query.append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
+                        .collect(Collectors.toList()));
+            }
             query.remove(IndividualDBAdaptor.QueryParams.SAMPLES.key());
-            query.append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
-                    .collect(Collectors.toList()));
         }
     }
 

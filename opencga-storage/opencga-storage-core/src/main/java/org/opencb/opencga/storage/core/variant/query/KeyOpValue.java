@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.query;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
 
 public class KeyOpValue<K, V> extends OpValue<V> {
 
@@ -50,31 +51,31 @@ public class KeyOpValue<K, V> extends OpValue<V> {
 
     @Override
     public void toQuery(StringBuilder sb) {
-        sb.append(key);
+        sb.append(QueryElement.objectToString(key));
         if (StringUtils.isEmpty(op)) {
             sb.append("=");
         } else {
             sb.append(op);
         }
-        sb.append(value);
+        sb.append(QueryElement.objectToString(value));
     }
 
     @Override
     public void describe(StringBuilder sb) {
-        if (key instanceof String) {
-            sb.append("( '").append(key).append("' ");
+        if (key instanceof String || key instanceof StudyResourceMetadata<?>) {
+            sb.append("( '").append(QueryElement.objectToDescriptionString(key)).append("' ");
         } else {
-            sb.append("( ").append(key).append(" ");
+            sb.append("( ").append(QueryElement.objectToDescriptionString(key)).append(" ");
         }
         if (StringUtils.isEmpty(op)) {
             sb.append("=");
         } else {
             sb.append(op);
         }
-        if (value instanceof String) {
-            sb.append(" '").append(value).append("' )");
+        if (value instanceof String || value instanceof StudyResourceMetadata<?>) {
+            sb.append(" '").append(QueryElement.objectToDescriptionString(value)).append("' )");
         } else {
-            sb.append(" ").append(value).append(" )");
+            sb.append(" ").append(QueryElement.objectToDescriptionString(value)).append(" )");
         }
     }
 }

@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class K8SExecutor implements BatchExecutor {
 
     public static final String K8S_MASTER_NODE = "k8s.masterUrl";
+    public static final String K8S_CLIENT_TIMEOUT = "k8s.clientTimeout";
     public static final String K8S_IMAGE_NAME = "k8s.imageName";
     public static final String K8S_IMAGE_PULL_POLICY = "k8s.imagePullPolicy";
     public static final String K8S_IMAGE_PULL_SECRETS = "k8s.imagePullSecrets";
@@ -55,6 +56,7 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_NODE_SELECTOR = "k8s.nodeSelector";
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
     public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
+    public static final int DEFAULT_TIMEOUT = 30000; // in ms
 
     private static final Volume DOCKER_GRAPH_STORAGE_VOLUME = new VolumeBuilder()
             .withName("docker-graph-storage")
@@ -102,7 +104,13 @@ public class K8SExecutor implements BatchExecutor {
         this.volumeMounts = buildVolumeMounts(execution.getOptions().getList(K8S_VOLUME_MOUNTS));
         this.volumes = buildVolumes(execution.getOptions().getList(K8S_VOLUMES));
         this.tolerations = buildTolelrations(execution.getOptions().getList(K8S_TOLERATIONS));
-        this.k8sConfig = new ConfigBuilder().withMasterUrl(k8sClusterMaster).build();
+        this.k8sConfig = new ConfigBuilder()
+                .withMasterUrl(k8sClusterMaster)
+                // Connection timeout in ms (0 for no timeout)
+                .withConnectionTimeout(execution.getOptions().getInt(K8S_CLIENT_TIMEOUT, DEFAULT_TIMEOUT))
+                // Read timeout in ms
+                .withRequestTimeout(execution.getOptions().getInt(K8S_CLIENT_TIMEOUT, 30000))
+                .build();
         this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
@@ -446,7 +454,7 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     private KubernetesClient getKubernetesClient() {
-        return kubernetesClient == null ? new DefaultKubernetesClient(k8sConfig).inNamespace(namespace) : this.kubernetesClient;
+        return kubernetesClient;
     }
 
 }

@@ -10,20 +10,20 @@
 # Get configuration depending on the prog name
 case $(basename "$PRG") in
   "opencga-admin.sh")
-    JAVA_HEAP=${JAVA_HEAP:-"8192m"}
-    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
-    OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
+    export JAVA_HEAP=${JAVA_HEAP:-"8192m"}
+    export OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
+    export OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
   "opencga-internal.sh")
-    JAVA_HEAP=${JAVA_HEAP:-"12288m"}
-    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.internal.xml
-    OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
+    export JAVA_HEAP=${JAVA_HEAP:-"12288m"}
+    export OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.internal.xml
+    export OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
 #  "opencga.sh")
   *)
-    JAVA_HEAP=${JAVA_HEAP:-"2048m"}
-    OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
-    OPENCGA_LOG_DIR=""
+    export JAVA_HEAP=${JAVA_HEAP:-"2048m"}
+    export OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
+    export OPENCGA_LOG_DIR=""
     ;;
 esac
 
