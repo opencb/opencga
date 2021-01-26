@@ -26,8 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
-import org.opencb.cellbase.core.api.GeneDBAdaptor;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
@@ -85,7 +84,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
 
         if (StringUtils.isEmpty(analysisParams.getBiotype())) {
             if (CollectionUtils.isEmpty(analysisParams.getGene()) && CollectionUtils.isEmpty(analysisParams.getPanel())) {
-                analysisParams.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
+                analysisParams.setBiotype(VariantAnnotationConstants.PROTEIN_CODING);
             }
         }
 
@@ -111,13 +110,13 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                 // No genes or panel given.
                 // Get genes by biotype
                 List<String> biotypes = new ArrayList<>(Arrays.asList(analysisParams.getBiotype().split(",")));
-                if (biotypes.contains(VariantAnnotationUtils.PROTEIN_CODING)) {
+                if (biotypes.contains(VariantAnnotationConstants.PROTEIN_CODING)) {
                     allProteinCoding = true;
                     proteinCodingGenes.add(VariantQueryUtils.ALL);
-                    biotypes.remove(VariantAnnotationUtils.PROTEIN_CODING);
+                    biotypes.remove(VariantAnnotationConstants.PROTEIN_CODING);
                 }
                 if (!biotypes.isEmpty()) {
-                    Query query = new Query(GeneDBAdaptor.QueryParams.TRANSCRIPT_BIOTYPE.key(), String.join(",", biotypes));
+                    Query query = new Query(org.opencb.cellbase.core.ParamConstants.TRANSCRIPT_BIOTYPES_PARAM, String.join(",", biotypes));
                     for (Gene gene : cellBaseUtils.getCellBaseClient().getGeneClient().search(query, queryOptions).allResults()) {
                         otherGenes.add(gene.getName());
                     }
@@ -149,10 +148,10 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                             .map(Transcript::getBiotype)
                             .filter(biotypeFilter)
                             .collect(Collectors.toSet());
-                    if (biotypes.contains(VariantAnnotationUtils.PROTEIN_CODING)) {
+                    if (biotypes.contains(VariantAnnotationConstants.PROTEIN_CODING)) {
                         proteinCodingGenes.add(gene.getName());
                     }
-                    if (biotypes.size() == 1 && !biotypes.contains(VariantAnnotationUtils.PROTEIN_CODING) || biotypes.size() > 1) {
+                    if (biotypes.size() == 1 && !biotypes.contains(VariantAnnotationConstants.PROTEIN_CODING) || biotypes.size() > 1) {
                         otherGenes.add(gene.getName());
                     }
                 }
@@ -271,7 +270,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     KnockoutByGene knockoutByGene = reader.readValue(org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath()));
                     QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "transcripts,annotation.expression");
                     Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
-                            .search(new Query(GeneDBAdaptor.QueryParams.NAME.key(), knockoutByGene.getName()), queryOptions).firstResult();
+                            .search(new Query("name", knockoutByGene.getName()), queryOptions).firstResult();
                     knockoutByGene.setId(gene.getId());
                     knockoutByGene.setName(gene.getName());
                     knockoutByGene.setChromosome(gene.getChromosome());

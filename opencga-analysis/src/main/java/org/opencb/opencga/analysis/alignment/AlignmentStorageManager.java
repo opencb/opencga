@@ -32,7 +32,6 @@ import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.models.FileInfo;
@@ -278,8 +277,7 @@ public class AlignmentStorageManager extends StorageManager {
             CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
                     .toClientConfiguration());
             GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-            QueryResponse<Gene> response = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty());
-            Gene gene = response.firstResult();
+            Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
             if (gene != null) {
                 List<TranscriptCoverageStats> transcriptCoverageStatsList = new ArrayList<>();
                 // Create region from gene coordinates
@@ -476,9 +474,9 @@ public class AlignmentStorageManager extends StorageManager {
         CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
                 .toClientConfiguration());
         GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-        QueryResponse<Gene> response = geneClient.get(genes, QueryOptions.empty());
-        if (CollectionUtils.isNotEmpty(response.allResults())) {
-            for (Gene gene : response.allResults()) {
+        List<Gene> response = geneClient.get(genes, QueryOptions.empty()).allResults();
+        if (CollectionUtils.isNotEmpty(response)) {
+            for (Gene gene : response) {
                 // Create region from gene coordinates
                 Region region = null;
                 if (onlyExons) {
@@ -537,8 +535,7 @@ public class AlignmentStorageManager extends StorageManager {
         CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
                 .toClientConfiguration());
         GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-        QueryResponse<Gene> response = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty());
-        Gene gene = response.firstResult();
+        Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
         if (gene != null) {
             // Create region from gene coordinates
             if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {

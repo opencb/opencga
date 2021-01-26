@@ -17,7 +17,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfigu
 import java.util.*;
 
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.*;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
 
 /**

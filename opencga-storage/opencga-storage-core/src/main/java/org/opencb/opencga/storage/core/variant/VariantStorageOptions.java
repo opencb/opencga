@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.config.ConfigurationOption;
 
@@ -25,6 +26,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     TRANSFORM_ISOLATE("transform.isolate", false), // Do not store file in metadata
     NORMALIZATION_SKIP("normalization.skip", false), // Do not run normalization
     NORMALIZATION_REFERENCE_GENOME("normalization.referenceGenome"),
+    NORMALIZATION_EXTENSIONS("normalization.extensions", ParamConstants.NONE),
 
     DEDUPLICATION_POLICY("deduplication.policy", "maxQual"),
     DEDUPLICATION_BUFFER_SIZE("deduplication.bufferSize", 100),

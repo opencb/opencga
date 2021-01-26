@@ -1224,9 +1224,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
-                                + ".clinicalSignificance", 1),
-                new ObjectMap(onBackgroundSparse).append(NAME, "clinvar"));
+                                + ".variantClassification.clinicalSignificance", 1),
+                new ObjectMap(onBackgroundSparse).append(NAME, "clinical"));
 
         // Conserved region score (phastCons, phylop, gerp)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD

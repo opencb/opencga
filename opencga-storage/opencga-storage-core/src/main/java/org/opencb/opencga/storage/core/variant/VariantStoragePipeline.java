@@ -22,6 +22,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -34,7 +35,10 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
+import org.opencb.biodata.tools.variant.VariantReferenceBlockCreatorTask;
+import org.opencb.biodata.tools.variant.VariantSorterTask;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.biodata.tools.variant.normalizer.extensions.VariantNormalizerExtensionFactory;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -44,9 +48,11 @@ import org.opencb.commons.io.avro.AvroEncoder;
 import org.opencb.commons.io.avro.AvroFileWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -57,7 +63,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
@@ -214,9 +219,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         String fileName = UriUtils.fileName(input);
         String studyId = String.valueOf(getStudyId());
-        boolean generateReferenceBlocks = options.getBoolean(VariantStorageOptions.GVCF.key(), false);
-        // Do not run parallelParse when generating reference blocks, as the task is stateful
-        boolean parallelParse = !generateReferenceBlocks;
 
         int batchSize = options.getInt(
                 VariantStorageOptions.TRANSFORM_BATCH_SIZE.key(),
@@ -285,28 +287,19 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         logger.info("Using HTSJDK to read variants.");
         Pair<VCFHeader, VCFHeaderVersion> header = variantReaderUtils.readHtsHeader(input, stdin);
 
-        VariantNormalizer.VariantNormalizerConfig normalizerConfig;
+        boolean parallelParse = true;
+        Task<Variant, Variant> normalizer;
         if (getOptions().getBoolean(NORMALIZATION_SKIP.key())) {
-            normalizerConfig = null;
+            normalizer = null;
         } else {
-            normalizerConfig = new VariantNormalizer.VariantNormalizerConfig()
-                    .setReuseVariants(true)
-                    .setNormalizeAlleles(true)
-                    .setDecomposeMNVs(false)
-                    .setGenerateReferenceBlocks(generateReferenceBlocks);
-            String referenceGenome = getOptions().getString(NORMALIZATION_REFERENCE_GENOME.key());
-            if (StringUtils.isNotEmpty(referenceGenome)) {
-                try {
-                    logger.info("Enable left alignment with reference genome file '{}'", referenceGenome);
-                    normalizerConfig.enableLeftAlign(referenceGenome);
-                } catch (IOException e) {
-                    throw StorageEngineException.ioException(e);
-                }
-            }
+            boolean generateReferenceBlocks = options.getBoolean(VariantStorageOptions.GVCF.key(), false);
+            // Do not run parallelParse when generating reference blocks, as the task is stateful
+            parallelParse = !generateReferenceBlocks;
+            normalizer = initNormalizer(metadata);
         }
+
         Supplier<Task<String, Variant>> task = () ->
-                new VariantTransformTask(header.getKey(), header.getValue(), studyId, metadata, statsCalculator, generateReferenceBlocks,
-                        normalizerConfig)
+                new VariantTransformTask(header.getKey(), header.getValue(), studyId, metadata, statsCalculator, normalizer)
                 .setFailOnError(failOnError)
                 .addMalformedErrorHandler(malformedHandler)
                 .setIncludeSrc(false);
@@ -379,6 +372,49 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
 
         return outputVariantsFile;
+    }
+
+    protected Task<Variant, Variant> initNormalizer(VariantFileMetadata metadata) throws StorageEngineException {
+        boolean generateReferenceBlocks = options.getBoolean(GVCF.key(), false);
+        Collection<String> enabledExtensions = getOptions()
+                .getAsStringList(NORMALIZATION_EXTENSIONS.key(),
+                        NORMALIZATION_EXTENSIONS.defaultValue());
+        VariantNormalizer.VariantNormalizerConfig normalizerConfig = new VariantNormalizer.VariantNormalizerConfig()
+                .setReuseVariants(true)
+                .setNormalizeAlleles(true)
+                .setDecomposeMNVs(false)
+                .setGenerateReferenceBlocks(generateReferenceBlocks);
+        String referenceGenome = getOptions().getString(NORMALIZATION_REFERENCE_GENOME.key());
+        if (StringUtils.isNotEmpty(referenceGenome)) {
+            try {
+                logger.info("Enable left alignment with reference genome file '{}'", referenceGenome);
+                normalizerConfig.enableLeftAlign(referenceGenome);
+            } catch (IOException e) {
+                throw StorageEngineException.ioException(e);
+            }
+        }
+
+        Task<Variant, Variant> normalizer = new VariantNormalizer(normalizerConfig)
+                .configure(metadata.getHeader());
+        if (generateReferenceBlocks) {
+            normalizer = normalizer
+                    .then(new VariantSorterTask(100)) // Sort before generating reference blocks
+                    .then(new VariantReferenceBlockCreatorTask(metadata.getHeader()));
+        }
+        if (CollectionUtils.isNotEmpty(enabledExtensions)) {
+            VariantNormalizerExtensionFactory extensionFactory;
+            if (enabledExtensions.size() == 1 && enabledExtensions.contains(ParamConstants.ALL)) {
+                extensionFactory = new VariantNormalizerExtensionFactory();
+            } else {
+                extensionFactory = new VariantNormalizerExtensionFactory(new HashSet<>(enabledExtensions));
+            }
+            Task<Variant, Variant> extension = extensionFactory.buildExtensions(metadata);
+            if (extension != null) {
+                normalizer = normalizer.then(extension);
+            }
+        }
+
+        return normalizer;
     }
 
     protected <W> ParallelTaskRunner<?, W> buildTransformPtr(boolean parallelParse,
