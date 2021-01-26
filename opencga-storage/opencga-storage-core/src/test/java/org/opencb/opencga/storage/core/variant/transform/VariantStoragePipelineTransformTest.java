@@ -16,11 +16,17 @@
 
 package org.opencb.opencga.storage.core.variant.transform;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.tools.variant.normalizer.extensions.VafVariantNormalizerExtension;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.commons.utils.FileUtils;
@@ -213,6 +219,37 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         assertEquals(2, list.size());
         assertEquals("1:1-10000:N:.", list.get(0).toString());
         assertEquals("1:31001-54321:N:.", list.get(1).toString());
+    }
+
+    @Test
+    public void transformNormalizeExtensions() throws Exception {
+        URI outputUri = newOutputUri();
+
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
+        variantStorageManager.getOptions().put(VariantStorageOptions.NORMALIZATION_EXTENSIONS.key(), "VAF");
+        variantStorageManager.getOptions().put(VariantStorageOptions.STUDY.key(), "study1");
+
+        URI platinumFile = getPlatinumFile(0);
+
+        StoragePipelineResult result = variantStorageManager.index(Collections.singletonList(platinumFile), outputUri, true, true, true).get(0);
+        List<Variant> list = variantStorageManager.getVariantReaderUtils().getVariantReader(result.getTransformResult(), null)
+                .stream()
+                .filter(v -> !v.getType().equals(VariantType.NO_VARIATION))
+                .collect(Collectors.toList());
+        for (Variant variant : list) {
+            StudyEntry studyEntry = variant.getStudies().get(0);
+//            System.out.println(variant + " = " + variant.toJson());
+            assertThat(studyEntry.getSampleDataKeys(), CoreMatchers.hasItem(VafVariantNormalizerExtension.EXT_VAF));
+            int idx = studyEntry.getSampleDataKeys().indexOf(VafVariantNormalizerExtension.EXT_VAF);
+            assertNotNull(studyEntry.getSample(0).getData().get(idx));
+            assertNotEquals("", studyEntry.getSample(0).getData().get(idx));
+        }
+
+        VariantFileMetadata variantFileMetadata = variantStorageManager.getVariantReaderUtils().readVariantFileMetadata(result.getTransformResult());
+        List<VariantFileHeaderComplexLine> header = variantFileMetadata.getHeader().getComplexLines().stream()
+                .filter(f -> f.getKey().equals("FORMAT") && f.getId().equals(VafVariantNormalizerExtension.EXT_VAF))
+                .collect(Collectors.toList());
+        assertEquals(1, header.size());
     }
 
     public int countLines(File outputFile) throws IOException {
