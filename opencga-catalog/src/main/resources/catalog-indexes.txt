@@ -84,6 +84,7 @@
 {"collection": "sample", "fields": {"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1}, "options": {"background": true}}
 
 {"collection": "sample", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collection": "individual", "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "individual", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
@@ -111,6 +112,7 @@
 {"collection": "individual", "fields": {"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1}, "options": {"background": true}}
 
 {"collection": "individual", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collection": "cohort", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
