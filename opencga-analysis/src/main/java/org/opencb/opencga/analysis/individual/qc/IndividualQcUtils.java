@@ -137,7 +137,7 @@ public class IndividualQcUtils {
         if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
             assembly = projectQueryResult.first().getOrganism().getAssembly();
         }
-        if (org.apache.commons.lang.StringUtils.isNotEmpty(assembly)) {
+        if (StringUtils.isNotEmpty(assembly)) {
             assembly = assembly.toLowerCase();
         }
         return assembly;

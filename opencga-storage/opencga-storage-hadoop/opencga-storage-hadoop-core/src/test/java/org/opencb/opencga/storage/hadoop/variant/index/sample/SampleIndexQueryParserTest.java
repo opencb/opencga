@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -29,9 +29,9 @@ import java.util.*;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.ANTISENSE;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.PROTEIN_CODING;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.ANTISENSE;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.PROTEIN_CODING;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
@@ -905,7 +905,7 @@ public class SampleIndexQueryParserTest {
         assertFalse(query.isEmpty()); // Not all samples annotated
 
         // Use CT column
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.STOP_LOST));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.STOP_LOST));
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
@@ -913,13 +913,13 @@ public class SampleIndexQueryParserTest {
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.STOP_LOST));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.STOP_LOST));
         parseAnnotationIndexQuery(query, false);
         indexQuery = parseAnnotationIndexQuery(query, false);
         assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.MATURE_MIRNA_VARIANT));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
         assertFalse(query.isEmpty()); // Imprecise CT value
@@ -932,19 +932,19 @@ public class SampleIndexQueryParserTest {
         Query query;
         SampleAnnotationIndexQuery indexQuery;
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING);
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING + "," + VariantAnnotationUtils.MIRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING + "," + VariantAnnotationConstants.MIRNA);
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING + "," + VariantAnnotationUtils.MIRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING + "," + VariantAnnotationConstants.MIRNA);
         parseAnnotationIndexQuery(query, false);
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.LINCRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.LINCRNA);
         parseAnnotationIndexQuery(query, true);
         assertFalse(query.isEmpty()); // Imprecise BT value
     }
@@ -1112,7 +1112,7 @@ public class SampleIndexQueryParserTest {
         // The combination is covered
         // The params can not be removed from the query, as the CT is filter is only an approximation
         // BT has to remain to check the combination.
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationUtils.FIVE_PRIME_UTR_VARIANT)
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.FIVE_PRIME_UTR_VARIANT)
                 .append(ANNOT_BIOTYPE.key(), "protein_coding,miRNA");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());

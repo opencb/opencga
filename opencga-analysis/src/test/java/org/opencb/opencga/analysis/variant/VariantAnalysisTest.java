@@ -29,7 +29,7 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -580,7 +580,7 @@ public class VariantAnalysisTest {
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSampleIds());
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
-        params.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
+        params.setBiotype(VariantAnnotationConstants.PROTEIN_CODING);
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);

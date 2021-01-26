@@ -12,6 +12,7 @@ import org.opencb.biodata.models.variant.avro.Score;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.ListUtils;
@@ -321,11 +322,11 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
     private List<Variant> annotatedVariants(List<Variant> variants, String studyId) throws IOException {
         CellBaseClient cellBaseClient = new CellBaseClient(variantStorageEngine.getConfiguration().getCellbase().toClientConfiguration());
-        QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
+        CellBaseDataResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
 
         // Set annotations
         for (int i = 0; i < variants.size(); i++) {
-            variants.get(i).setAnnotation(queryResponse.getResponse().get(i).first());
+            variants.get(i).setAnnotation(queryResponse.getResponses().get(i).first());
             variants.get(i).getStudies().get(0).setStudyId(studyId);
         }
         return variants;

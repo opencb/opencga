@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.Variant;
@@ -29,13 +30,12 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.ANNOTATION_FIELD;
 
 /**
  * Created by jacobo on 13/01/15.
@@ -133,9 +133,9 @@ public class DocumentToVariantAnnotationConverter
     public static final String SCORE_DESCRIPTION_FIELD = "desc";
 
     public static final String CLINICAL_DATA_FIELD = "clinical";
-    public static final String CLINICAL_COSMIC_FIELD = "cosmic";
-    public static final String CLINICAL_GWAS_FIELD = "gwas";
-    public static final String CLINICAL_CLINVAR_FIELD = "clinvar";
+//    public static final String CLINICAL_COSMIC_FIELD = "cosmic";
+//    public static final String CLINICAL_GWAS_FIELD = "gwas";
+//    public static final String CLINICAL_CLINVAR_FIELD = "clinvar";
 
     public static final String FUNCTIONAL_SCORE = "fn_score";
     public static final String FUNCTIONAL_CADD_RAW_FIELD = "fn_cadd_r";
@@ -188,8 +188,6 @@ public class DocumentToVariantAnnotationConverter
         SCORE_FIELD_MAP = Collections.unmodifiableMap(scoreFieldMap);
     }
 
-    private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter
-            = new VariantTraitAssociationToEvidenceEntryConverter();
     private Integer annotationId = null;
     private Map<Integer, String> annotationIds = Collections.emptyMap();
 
@@ -249,7 +247,7 @@ public class DocumentToVariantAnnotationConverter
                                 soAccessionNames.add(ConsequenceTypeMappings.accessionToTerm.get(so));
                             }
                         } else {
-                            soAccessionNames.add(ConsequenceTypeMappings.accessionToTerm.get(ct.get(CT_SO_ACCESSION_FIELD)));
+                            soAccessionNames.add(ConsequenceTypeMappings.accessionToTerm.get(ct.getInteger(CT_SO_ACCESSION_FIELD)));
                         }
                     }
 
@@ -430,8 +428,7 @@ public class DocumentToVariantAnnotationConverter
 
         //Clinical Data
         if (object.containsKey(CLINICAL_DATA_FIELD)) {
-            va.setVariantTraitAssociation(parseClinicalData((Document) object.get(CLINICAL_DATA_FIELD)));
-            va.setTraitAssociation(traitAssociationConverter.convert(va.getVariantTraitAssociation()));
+            va.setTraitAssociation(parseClinicalData(object.get(CLINICAL_DATA_FIELD)));
         }
 
         if (customAnnotation != null) {
@@ -526,8 +523,9 @@ public class DocumentToVariantAnnotationConverter
             exonOverlapList.add(e);
         }
 
-        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, exonOverlapList,
-                transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon, proteinVariantAnnotation, soTerms);
+        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, ensemblGeneId, ensemblTranscriptId, strand, biotype, null,
+                exonOverlapList, transcriptAnnotationFlags, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon,
+                proteinVariantAnnotation, soTerms);
     }
 
     private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, int aaPosition,
@@ -543,52 +541,29 @@ public class DocumentToVariantAnnotationConverter
         }
     }
 
-    private VariantTraitAssociation parseClinicalData(Document clinicalData) {
-        if (clinicalData != null) {
-            int size = 0;
-            VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-            List cosmicDBList = (List) clinicalData.get(CLINICAL_COSMIC_FIELD);
-            if (cosmicDBList != null) {
-                List<Cosmic> cosmicList = new ArrayList<>(cosmicDBList.size());
-                for (Object object : cosmicDBList) {
-                    Cosmic cosmic = jsonObjectMapper.convertValue(object, Cosmic.class);
-                    for (int i = 0; i < cosmic.getSchema().getFields().size(); i++) {
-                        if (cosmic.get(i) == null) {
-                            cosmic.put(i, "");
-                        }
-                    }
-                    cosmicList.add(cosmic);
+    private List<EvidenceEntry> parseClinicalData(Object clinicalData) {
+        if (clinicalData instanceof List) {
+            List documents = (List) clinicalData;
+            List<EvidenceEntry> evidenceEntries = new ArrayList<>(documents.size());
+            for (Object object : documents) {
+                try {
+                    EvidenceEntry evidenceEntry = jsonObjectMapper.convertValue(object, EvidenceEntry.class);
+//                    for (int i = 0; i < evidenceEntry.getSchema().getFields().size(); i++) {
+//                        if (evidenceEntry.get(i) == null) {
+//                            evidenceEntry.put(i, "");
+//                        }
+//                    }
+                    evidenceEntries.add(evidenceEntry);
+                } catch (Exception e) {
+                    logger.warn("Error parsing evidence entry: " + e.getMessage());
+                    logger.debug("Error parsing evidence entry", e);
                 }
-                size += cosmicList.size();
-                variantTraitAssociation.setCosmic(cosmicList);
             }
-            List gwasDBList = (List) clinicalData.get(CLINICAL_GWAS_FIELD);
-            if (gwasDBList != null) {
-                List<Gwas> gwasList = new ArrayList<>(gwasDBList.size());
-                for (Object object : gwasDBList) {
-                    gwasList.add(jsonObjectMapper.convertValue(object, Gwas.class));
-                }
-                size += gwasList.size();
-                variantTraitAssociation.setGwas(gwasList);
-            }
-            List clinvarDBList = (List) clinicalData.get(CLINICAL_CLINVAR_FIELD);
-            if (clinvarDBList != null) {
-                List<ClinVar> clinvarList = new ArrayList<>(clinvarDBList.size());
-                for (Object object : clinvarDBList) {
-                    clinvarList.add(jsonObjectMapper.convertValue(object, ClinVar.class));
-                }
-                size += clinvarList.size();
-                variantTraitAssociation.setClinvar(clinvarList);
-            }
-            if (size > 0) {
-                return variantTraitAssociation;
-            } else {
-                return null;
+            if (!evidenceEntries.isEmpty()) {
+                return evidenceEntries;
             }
         }
-
         return null;
-
     }
 
     public Map<String, AdditionalAttribute> convertAdditionalAttributesToDataModelType(Document customAnnotation) {
@@ -862,31 +837,15 @@ public class DocumentToVariantAnnotationConverter
         }
 
         //Clinical Data
-        Document clinicalDocument = new Document();
-        if (variantAnnotation.getVariantTraitAssociation() != null) {
-            putNotNull(clinicalDocument, CLINICAL_COSMIC_FIELD,
-                    generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmic()));
-            if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
-                variantAnnotation.getVariantTraitAssociation().getCosmic()
+        if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
+            document.put(CLINICAL_DATA_FIELD, generateClinicalDBList(variantAnnotation.getTraitAssociation()));
+
+            if (variantAnnotation.getTraitAssociation() != null) {
+                variantAnnotation.getTraitAssociation()
                         .stream()
-                        .map(Cosmic::getMutationId)
-                        .filter(StringUtils::isNotEmpty)
-                        .forEach(mutationId -> xrefs.add(convertXrefToStorage(mutationId, "COSMIC")));
+                        .filter(e -> StringUtils.isNotEmpty(e.getId()))
+                        .forEach(e -> xrefs.add(convertXrefToStorage(e.getId(), e.getSource() != null ? e.getSource().getName() : null)));
             }
-            putNotNull(clinicalDocument, CLINICAL_GWAS_FIELD,
-                    generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwas()));
-            putNotNull(clinicalDocument, CLINICAL_CLINVAR_FIELD,
-                    generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvar()));
-            if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
-                variantAnnotation.getVariantTraitAssociation().getClinvar()
-                        .stream()
-                        .map(ClinVar::getAccession)
-                        .filter(StringUtils::isNotEmpty)
-                        .forEach(accession -> xrefs.add(convertXrefToStorage(accession, "ClinVar")));
-            }
-        }
-        if (!clinicalDocument.isEmpty()) {
-            document.put(CLINICAL_DATA_FIELD, clinicalDocument);
         }
 
         if (variantAnnotation.getRepeat() != null && !variantAnnotation.getRepeat().isEmpty()) {
