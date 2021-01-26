@@ -189,7 +189,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
 
         sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
-        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
+        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::init));
         sample.getInternal().setStatus(new Status());
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
 

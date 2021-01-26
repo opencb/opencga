@@ -52,7 +52,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
                 new IndividualPopulation("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
 
         individual.setUid(300)
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(new IndividualInternal(new Status("READY")))
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(IndividualInternal.init())
                 .setLifeStatus(IndividualProperty.LifeStatus.ABORTED)
                 .setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2"))).setParentalConsanguinity(true);
 

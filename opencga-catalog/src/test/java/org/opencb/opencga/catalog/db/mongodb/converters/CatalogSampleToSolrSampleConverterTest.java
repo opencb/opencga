@@ -22,10 +22,10 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.sample.SampleInternal;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -53,7 +53,7 @@ public class CatalogSampleToSolrSampleConverterTest {
 
         Sample sample = new Sample();
         new Status("READY");
-        sample.setUid(500).setRelease(3).setVersion(2).setInternal(new SampleInternal(new Status()))
+        sample.setUid(500).setRelease(3).setVersion(2).setInternal(SampleInternal.init())
                 .setSomatic(true).setCreationDate(TimeUtils.getTime())
                 .setAnnotationSets(AnnotationHelper.createAnnotation());
 
