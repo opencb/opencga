@@ -79,6 +79,12 @@ public class RgaDataModel {
     @Field
     private List<String> variantJson;
 
+    @Field
+    private List<String> authorised;
+
+    @Field
+    private List<String> unauthorised;
+
     public static final String ID = "id";
     public static final String INDIVIDUAL_ID = "individualId";
     public static final String SAMPLE_ID = "sampleId";
@@ -103,6 +109,8 @@ public class RgaDataModel {
     public static final String PHENOTYPE_JSON = "phenotypeJson";
     public static final String DISORDER_JSON = "disorderJson";
     public static final String VARIANT_JSON = "variantJson";
+    public static final String AUTHORISED = "authorised";
+    public static final String UNAUTHORISED = "unauthorised";
 
     public RgaDataModel() {
     }
@@ -111,7 +119,8 @@ public class RgaDataModel {
                         String geneId, String geneName, String geneBiotype, String chromosome, String strand, int start, int end,
                         String transcriptId, String transcriptBiotype, List<String> variants, List<String> knockoutTypes,
                         List<String> filters, List<String> consequenceTypes, Map<String, List<Float>> populationFrequencies,
-                        List<String> compoundFilters, List<String> phenotypeJson, List<String> disorderJson, List<String> variantJson) {
+                        List<String> compoundFilters, List<String> phenotypeJson, List<String> disorderJson, List<String> variantJson,
+                        List<String> authorised, List<String> unauthorised) {
         this.id = id;
         this.individualId = individualId;
         this.sampleId = sampleId;
@@ -136,6 +145,8 @@ public class RgaDataModel {
         this.phenotypeJson = phenotypeJson;
         this.disorderJson = disorderJson;
         this.variantJson = variantJson;
+        this.authorised = authorised;
+        this.unauthorised = unauthorised;
     }
 
     @Override
@@ -165,6 +176,8 @@ public class RgaDataModel {
         sb.append(", phenotypeJson=").append(phenotypeJson);
         sb.append(", disorderJson=").append(disorderJson);
         sb.append(", variantJson=").append(variantJson);
+        sb.append(", authorised=").append(authorised);
+        sb.append(", unauthorised=").append(unauthorised);
         sb.append('}');
         return sb.toString();
     }
@@ -382,6 +395,24 @@ public class RgaDataModel {
 
     public RgaDataModel setVariantJson(List<String> variantJson) {
         this.variantJson = variantJson;
+        return this;
+    }
+
+    public List<String> getAuthorised() {
+        return authorised;
+    }
+
+    public RgaDataModel setAuthorised(List<String> authorised) {
+        this.authorised = authorised;
+        return this;
+    }
+
+    public List<String> getUnauthorised() {
+        return unauthorised;
+    }
+
+    public RgaDataModel setUnauthorised(List<String> unauthorised) {
+        this.unauthorised = unauthorised;
         return this;
     }
 }

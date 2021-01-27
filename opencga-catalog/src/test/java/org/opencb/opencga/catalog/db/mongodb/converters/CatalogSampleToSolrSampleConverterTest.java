@@ -16,23 +16,26 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.map.HashedMap;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
+import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleInternal;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -43,10 +46,21 @@ import static org.junit.Assert.assertNull;
 public class CatalogSampleToSolrSampleConverterTest {
 
     @Test
-    public void SampleToSolrTest() {
+    public void SampleToSolrTest() throws JsonProcessingException {
+        ObjectMapper objectMapper = JacksonUtils.getDefaultObjectMapper();
 
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
+        List<Map<String, Object>> studyAclEntry = Arrays.asList(
+                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user1", EnumSet.noneOf(StudyAclEntry.StudyPermissions.class))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user2", EnumSet.allOf(StudyAclEntry.StudyPermissions.class))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user3", EnumSet.allOf(StudyAclEntry.StudyPermissions.class))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new StudyAclEntry("user4", EnumSet.noneOf(StudyAclEntry.StudyPermissions.class))), Map.class)
+        );
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("OPENCGA_ACL", SolrConverterUtil.parseInternalOpenCGAAcls(studyAclEntry));
+        study.setAttributes(attributes);
+
         Individual individual = new Individual();
         individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).
                 setPopulation(new IndividualPopulation("valencian", "", ""));
@@ -57,7 +71,12 @@ public class CatalogSampleToSolrSampleConverterTest {
                 .setSomatic(true).setCreationDate(TimeUtils.getTime())
                 .setAnnotationSets(AnnotationHelper.createAnnotation());
 
-        Map<String, Object> attributes = new HashedMap();
+        List<Map> sampleAclEntry = Arrays.asList(
+                objectMapper.readValue(objectMapper.writeValueAsString(new SampleAclEntry("user1", EnumSet.of(SampleAclEntry.SamplePermissions.VIEW, SampleAclEntry.SamplePermissions.UPDATE))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new SampleAclEntry("user2", EnumSet.noneOf(SampleAclEntry.SamplePermissions.class))), Map.class)
+        );
+        attributes = new HashMap<>();
+        attributes.put("OPENCGA_ACL", sampleAclEntry);
         attributes.put("individual", individual);
         sample.setAttributes(attributes);
 

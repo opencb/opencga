@@ -1,7 +1,5 @@
 package org.opencb.opencga.storage.core.rga;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -24,13 +22,10 @@ import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RgaEngine implements Closeable {
@@ -45,7 +40,6 @@ public class RgaEngine implements Closeable {
     private Logger logger;
 
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
-    private static final int KNOCKOUT_BATCH_SIZE = 25;
 
     public RgaEngine(StorageConfiguration storageConfiguration) {
         this.individualRgaConverter = new IndividualRgaConverter();
@@ -110,12 +104,17 @@ public class RgaEngine implements Closeable {
      *
      * @param collection Solr collection where to insert
      * @param knockoutByIndividualList List of knockoutByIndividual to insert
+     * @param grantedPermissionMemberList Map containing the list of members for which permissions are satisfied.
+     * @param deniedPermissionMemberList Map containing the list of members for which permissions are revoked.
      * @throws IOException   IOException
      * @throws SolrServerException SolrServerException
      */
-    public void insert(String collection, List<KnockoutByIndividual> knockoutByIndividualList) throws IOException, SolrServerException {
+    public void insert(String collection, List<KnockoutByIndividual> knockoutByIndividualList,
+                       Map<String, List<String>> grantedPermissionMemberList, Map<String, List<String>> deniedPermissionMemberList)
+            throws IOException, SolrServerException {
         if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-            List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList);
+            List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList,
+                    grantedPermissionMemberList, deniedPermissionMemberList);
 
             if (!rgaDataModelList.isEmpty()) {
                 UpdateResponse updateResponse;
@@ -126,28 +125,6 @@ public class RgaEngine implements Closeable {
             }
         }
     }
-
-    /**
-     * Load a Solr core/collection from a Avro or JSON file.
-     *
-     * @param collection Collection name
-     * @param path        Path to the file to load
-     * @throws IOException            IOException
-     * @throws RgaException RgaException
-     */
-    public void load(String collection, Path path) throws IOException, RgaException {
-        String fileName = path.getFileName().toString();
-        if (fileName.endsWith("json") || fileName.endsWith("json.gz")) {
-            try {
-                loadJson(collection, path);
-            } catch (SolrServerException e) {
-                throw new RgaException("Error loading KnockoutIndividual from JSON file.", e);
-            }
-        } else {
-            throw new RgaException("File format " + path + " not supported. Please, use JSON file format.");
-        }
-    }
-
 
     /**
      * Return the list of KnockoutByIndividual objects from a Solr core/collection given a query.
@@ -391,43 +368,6 @@ public class RgaEngine implements Closeable {
     @Override
     public void close() throws IOException {
         solrManager.close();
-    }
-
-    /*-------------------------------------
-     *  P R I V A T E    M E T H O D S
-     -------------------------------------*/
-
-    /**
-     * Load a JSON file into the Solr core/collection.
-     *
-     * @param path Path to the JSON file
-     * @throws IOException
-     * @throws SolrException
-     */
-    private void loadJson(String collection, Path path) throws IOException, SolrServerException {
-        // This opens json and json.gz files automatically
-        try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
-            List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(KNOCKOUT_BATCH_SIZE);
-            int count = 0;
-            String line;
-            ObjectReader objectReader = new ObjectMapper().readerFor(KnockoutByIndividual.class);
-            while ((line = bufferedReader.readLine()) != null) {
-                KnockoutByIndividual knockoutByIndividual = objectReader.readValue(line);
-                knockoutByIndividualList.add(knockoutByIndividual);
-                count++;
-                if (count % KNOCKOUT_BATCH_SIZE == 0) {
-                    insert(collection, knockoutByIndividualList);
-                    logger.debug("Loaded {} knockoutByIndividual entries from '{}'", count, path);
-                    knockoutByIndividualList.clear();
-                }
-            }
-
-            // Insert the remaining entries
-            if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-                logger.debug("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
-                insert(collection, knockoutByIndividualList);
-            }
-        }
     }
 
     public SolrManager getSolrManager() {

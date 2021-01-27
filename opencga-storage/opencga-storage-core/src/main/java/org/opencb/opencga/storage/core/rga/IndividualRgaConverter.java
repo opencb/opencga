@@ -123,10 +123,18 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
 
     @Override
     public List<RgaDataModel> convertToStorageType(List<KnockoutByIndividual> knockoutByIndividualList) {
+        throw new UnsupportedOperationException("Must call to overloaded method passing map of permissions");
+    }
+
+    public List<RgaDataModel> convertToStorageType(List<KnockoutByIndividual> knockoutByIndividualList,
+                                                   Map<String, List<String>> grantedPermissionMemberList,
+                                                   Map<String, List<String>> deniedPermissionMemberList) {
         List<RgaDataModel> result = new LinkedList<>();
         for (KnockoutByIndividual knockoutByIndividual : knockoutByIndividualList) {
+            String id = knockoutByIndividual.getId();
             try {
-                result.addAll(convertToStorageType(knockoutByIndividual));
+                result.addAll(convertToStorageType(knockoutByIndividual, grantedPermissionMemberList.get(id),
+                        deniedPermissionMemberList.get(id)));
             } catch (RgaException | JsonProcessingException e) {
                 logger.warn("Could not parse KnockoutByIndividualList: {}", e.getMessage(), e);
             }
@@ -134,9 +142,13 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
         return result;
     }
 
-    private List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual)
+    private List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual, List<String> authorisedMembers,
+                                                    List<String> unauthorisedMembers)
             throws RgaException, JsonProcessingException {
         List<RgaDataModel> result = new LinkedList<>();
+
+        List<String> authorisedList = authorisedMembers != null ? authorisedMembers : Collections.emptyList();
+        List<String> unauthorisedList = unauthorisedMembers != null ? unauthorisedMembers : Collections.emptyList();
 
         if (knockoutByIndividual.getGenes() != null) {
             for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
@@ -182,7 +194,7 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                     RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(),
                             knockoutByIndividual.getSex().name(), phenotypes, disorders, gene.getId(), gene.getName(), "", "", "", 0, 0,
                             transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes, filters, consequenceTypes, popFreqs,
-                            compoundFilters, phenotypeJson, disorderJson, variantJson);
+                            compoundFilters, phenotypeJson, disorderJson, variantJson, authorisedList, unauthorisedList);
                     result.add(model);
                 }
             }
