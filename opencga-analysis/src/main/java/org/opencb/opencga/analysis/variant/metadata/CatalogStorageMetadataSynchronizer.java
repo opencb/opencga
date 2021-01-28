@@ -394,9 +394,12 @@ public class CatalogStorageMetadataSynchronizer {
                 indexedFilesUris.add(toUri(path));
             }
             int numFiles = 0;
+            logger.info("Synchronize {} files", indexedFilesUris.size());
             while (!indexedFilesUris.isEmpty()) {
-                Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), indexedFilesUris);
                 int numPendingFiles = indexedFilesUris.size();
+                List<String> indexedFilesUrisSubset = indexedFilesUris.subList(0, Math.min(500, indexedFilesUris.size()));
+                logger.info("Synchronize {}/{} files", indexedFilesUrisSubset.size(), indexedFilesUris.size());
+                Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), indexedFilesUrisSubset);
                 try (DBIterator<File> iterator = catalogManager.getFileManager()
                         .iterator(study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
                     while (iterator.hasNext()) {
