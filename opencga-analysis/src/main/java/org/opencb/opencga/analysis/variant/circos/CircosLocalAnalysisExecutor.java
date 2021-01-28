@@ -356,6 +356,14 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
                 while (iterator.hasNext()) {
                     Variant v = iterator.next();
+                    if (StringUtils.isEmpty(v.getReference())) {
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
+                    } else if (StringUtils.isEmpty(v.getAlternate())){
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
+                    } else {
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
+                    }
+                    /*
                     switch (v.getType()) {
                         case INSERTION: {
                             pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
@@ -376,6 +384,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             break;
                         }
                     }
+                    */
                 }
             }
         } catch(Exception e){
