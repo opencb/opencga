@@ -31,6 +31,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.slf4j.Logger;
@@ -43,7 +44,6 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
-//import org.opencb.opencga.core.common.ArrayUtils;
 
 /**
  * Created by imedina on 14/11/16.
@@ -55,7 +55,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private static final String FIELD_SEP = " -- ";
 
     private Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
-    private final VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
     private Set<VariantField> includeFields;
 
     private Map<String, StudyEntry> studyEntryMap;
@@ -63,7 +62,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private List<String> other = new ArrayList<>();
 
     public VariantSearchToVariantConverter() {
-        evidenceEntryConverter = new VariantTraitAssociationToEvidenceEntryConverter();
     }
 
     public VariantSearchToVariantConverter(Set<VariantField> includeFields) {
@@ -533,9 +531,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // set HPO, ClinVar and Cosmic
         if (variantSearchModel.getTraits() != null) {
-            Map<String, ClinVar> clinVarMap = new HashMap<>();
-            List<ClinVar> clinVarList = new ArrayList<>();
-            List<Cosmic> cosmicList = new ArrayList<>();
+            Map<String, EvidenceEntry> clinVarMap = new HashMap<>();
+            List<EvidenceEntry> evidenceEntries = new ArrayList<>();
             List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
 
             for (String trait : variantSearchModel.getTraits()) {
@@ -551,24 +548,47 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         break;
                     case "CV":
                         // Variant trait: CV -- accession -- trait -- clinicalSignificance
-                        if (!clinVarMap.containsKey(fields[1])) {
-                            String clinicalSignificance = "";
+                        String accession = fields[1];
+                        String clinvarTrait = fields[2];
+                        EvidenceEntry clinVar = clinVarMap.get(accession);
+                        if (clinVar == null) {
+                            clinVar = new EvidenceEntry();
+                            clinVar.setId(accession);
+                            clinVar.setSource(new EvidenceSource("clinvar", null, null));
+                            clinVar.setUrl(accession.startsWith("RCV")
+                                    ? "https://www.ncbi.nlm.nih.gov/clinvar/" + accession
+                                    : null);
                             if (fields.length > 3 && StringUtils.isNotEmpty(fields[3])) {
-                                clinicalSignificance = fields[3];
+                                String clinicalSignificance = fields[3];
+                                clinVar.setVariantClassification(
+                                        VariantTraitAssociationToEvidenceEntryConverter.getVariantClassification(clinicalSignificance));
                             }
-                            ClinVar clinVar = new ClinVar(fields[1], clinicalSignificance, new ArrayList<>(), new ArrayList<>(), "");
-                            clinVarMap.put(fields[1], clinVar);
-                            clinVarList.add(clinVar);
+                            clinVar.setHeritableTraits(new LinkedList<>());
+                            evidenceEntries.add(clinVar);
+                            clinVarMap.put(accession, clinVar);
                         }
-                        clinVarMap.get(fields[1]).getTraits().add(fields[2]);
+                        if (StringUtils.isNotEmpty(clinvarTrait)) {
+                            if (clinvarTrait.startsWith("{")) {
+                                try {
+                                    clinVar.getHeritableTraits()
+                                            .add(JacksonUtils.getDefaultObjectMapper().readValue(trait, HeritableTrait.class));
+                                } catch (JsonProcessingException ignore) {
+                                    logger.debug("Error parsing trait", ignore);
+                                }
+                            }
+                            clinVar.getHeritableTraits().add(new HeritableTrait(clinvarTrait, ModeOfInheritance.NA));
+                        }
                         break;
                     case "CM":
                         // Variant trait: CM -- mutation id -- primary histology -- histology subtype
-                        Cosmic cosmic = new Cosmic();
-                        cosmic.setMutationId(fields[1]);
-                        cosmic.setPrimaryHistology(fields[2]);
-                        cosmic.setHistologySubtype(fields[3]);
-                        cosmicList.add(cosmic);
+                        EvidenceEntry cosmic = new EvidenceEntry();
+                        cosmic.setSource(new EvidenceSource("cosmic", null, null));
+                        String mutationId = fields[1];
+                        String primaryHistology = fields[2];
+                        String histologySubtype = fields[3];
+                        cosmic.setId(mutationId);
+                        cosmic.setSomaticInformation(new SomaticInformation(null, null, primaryHistology, histologySubtype, null, null));
+                        evidenceEntries.add(cosmic);
                         break;
                     case "KW":
                     case "PD":
@@ -579,28 +599,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         break;
                     }
                 }
-            }
-
-            // TODO to be removed in next versions
-            VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-            // This fills the old data model: variantTraitAssociation
-            if (CollectionUtils.isNotEmpty(clinVarList)) {
-                variantTraitAssociation.setClinvar(clinVarList);
-            }
-            if (CollectionUtils.isNotEmpty(cosmicList)) {
-                variantTraitAssociation.setCosmic(cosmicList);
-            }
-            variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
-
-            // This fills the new data model: traitAssociation
-            List<EvidenceEntry> evidenceEntries = new ArrayList<>();
-            // Clinvar -> traitAssociation
-            for (ClinVar clinvar: clinVarList) {
-                evidenceEntries.add(evidenceEntryConverter.fromClinVar(clinvar));
-            }
-            // Cosmic -> traitAssociation
-            for (Cosmic cosmic: cosmicList) {
-                evidenceEntries.add(evidenceEntryConverter.fromCosmic(cosmic));
             }
             variantAnnotation.setTraitAssociation(evidenceEntries);
 

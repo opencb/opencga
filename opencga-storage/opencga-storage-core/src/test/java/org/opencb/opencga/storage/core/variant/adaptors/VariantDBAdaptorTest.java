@@ -571,10 +571,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
                         hasItem(with("EnsemblGene", ConsequenceType::getEnsemblGeneId, is("ENSG00000250026"))))),
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B"))))),
-                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
-                        with("Cosmic", VariantTraitAssociation::getCosmic,
-                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
+                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B")))))
+//                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
+//                        with("Cosmic", VariantTraitAssociation::getCosmic,
+//                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
         )));
 
     }

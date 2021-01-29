@@ -19,7 +19,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -51,9 +51,9 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.THREE_PRIME_UTR_VARIANT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.THREE_PRIME_UTR_VARIANT;
 
 /**
  * Created on 12/04/19.
@@ -474,12 +474,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertEquals("sample_index_table", result.getSource());
 
         query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)))
-                .append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+                .append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.PROTEIN_CODING);
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
         query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)) + "," + THREE_PRIME_UTR_VARIANT)
-                .append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+                .append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.PROTEIN_CODING);
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertNotEquals("sample_index_table", result.getSource());
     }

@@ -250,7 +250,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         watch.stop();
 
         return new OpenCGAResult<>((int) watch.getTime(), Collections.emptyList(), 1,
-                Arrays.asList(org.apache.commons.lang.StringUtils.join(lines, "\n")), 1);
+                Arrays.asList(StringUtils.join(lines, "\n")), 1);
     }
 
     //-------------------------------------------------------------------------

@@ -31,21 +31,20 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
-import org.opencb.biodata.tools.variant.VariantNormalizer;
-import org.opencb.biodata.tools.variant.VariantReferenceBlockCreatorTask;
-import org.opencb.biodata.tools.variant.VariantSorterTask;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
@@ -74,8 +73,7 @@ public class VariantTransformTask implements Task<String, Variant> {
 
     public VariantTransformTask(VariantFactory factory,
                                 String studyId, VariantFileMetadata fileMetadata,
-                                VariantSetStatsCalculator variantStatsTask,
-                                boolean generateReferenceBlocks, VariantNormalizer.VariantNormalizerConfig normalizerConfig) {
+                                VariantSetStatsCalculator variantStatsTask, Task<Variant, Variant> normalizer) {
         this.factory = factory;
         this.fileMetadata = fileMetadata;
         this.metadata = fileMetadata.toVariantStudyMetadata(studyId);
@@ -83,14 +81,12 @@ public class VariantTransformTask implements Task<String, Variant> {
 
         this.vcfCodec = null;
         this.converter = null;
-        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks, normalizerConfig);
-
+        this.normalizer = normalizer;
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
                                 String studyId, VariantFileMetadata fileMetadata,
-                                VariantSetStatsCalculator variantStatsTask,
-                                boolean generateReferenceBlocks, VariantNormalizer.VariantNormalizerConfig normalizerConfig) {
+                                VariantSetStatsCalculator variantStatsTask, Task<Variant, Variant> normalizer) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.fileMetadata = fileMetadata;
@@ -99,31 +95,16 @@ public class VariantTransformTask implements Task<String, Variant> {
         this.vcfCodec = new FullVcfCodec();
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(studyId, fileMetadata.getId(), fileMetadata.getSampleIds());
-        this.normalizer = initNormalizer(fileMetadata, generateReferenceBlocks, normalizerConfig);
-    }
-
-    private Task<Variant, Variant> initNormalizer(VariantFileMetadata fileMetadata, boolean generateReferenceBlocks,
-                                                  VariantNormalizer.VariantNormalizerConfig normalizerConfig) {
-        Task<Variant, Variant> normalizer;
-        if (normalizerConfig == null) {
-            // Do not normalize
-            normalizer = t -> t;
-        } else {
-            normalizer = new VariantNormalizer(normalizerConfig)
-                    .configure(fileMetadata.getHeader());
-        }
-        if (generateReferenceBlocks) {
-            normalizer = normalizer
-                    .then(new VariantSorterTask(100)) // Sort before generating reference blocks
-                    .then(new VariantReferenceBlockCreatorTask(fileMetadata.getHeader()));
-        }
-        return normalizer;
+        this.normalizer = normalizer;
     }
 
     @Override
-    public void pre() {
+    public void pre() throws Exception {
         synchronized (variantStatsTask) {
             variantStatsTask.pre();
+        }
+        if (normalizer != null) {
+            normalizer.pre();
         }
     }
 
@@ -235,9 +216,12 @@ public class VariantTransformTask implements Task<String, Variant> {
     }
 
     @Override
-    public void post() {
+    public void post() throws Exception {
         synchronized (variantStatsTask) {
             variantStatsTask.post();
+        }
+        if (normalizer != null) {
+            normalizer.post();
         }
         logger.debug("Time txt2hts: " + this.htsConvertTime.get());
         logger.debug("Time hts2biodata: " + this.biodataConvertTime.get());

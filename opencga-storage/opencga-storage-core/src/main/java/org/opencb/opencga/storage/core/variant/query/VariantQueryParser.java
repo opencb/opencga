@@ -9,7 +9,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -210,9 +210,9 @@ public class VariantQueryParser {
                 }
                 if (enumValue == null) {
                     String key = clinicalSignificance.toLowerCase();
-                    if (VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.containsKey(key)) {
+                    if (VariantAnnotationConstants.CLINVAR_CLINSIG_TO_ACMG.containsKey(key)) {
                         // No value set
-                        enumValue = VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.get(key);
+                        enumValue = VariantAnnotationConstants.CLINVAR_CLINSIG_TO_ACMG.get(key);
                     }
                 }
                 if (enumValue != null) {

@@ -26,12 +26,12 @@ public class KnockoutByIndividual {
 
     private String id;
     private String sampleId;
+    // father / mother
     private Sex sex;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
     private GeneKnockoutByIndividualStats stats;
-
     private Map<String, KnockoutGene> genesMap = new HashMap<>();
 
     public KnockoutByIndividual() {

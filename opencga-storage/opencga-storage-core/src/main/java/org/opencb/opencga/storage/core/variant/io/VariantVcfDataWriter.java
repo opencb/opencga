@@ -729,30 +729,30 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                             }
                         }
                         break;
-                    case "clinvar":
-                        if (variant.getAnnotation().getVariantTraitAssociation() != null
-                                && variant.getAnnotation().getVariantTraitAssociation().getClinvar() != null) {
-                            stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getClinvar().stream()
-                                    .map(ClinVar::getTraits).flatMap(Collection::stream)
-                                    .collect(Collectors.joining(",")));
-                        }
-                        break;
-                    case "cosmic":
-                        if (variant.getAnnotation().getVariantTraitAssociation() != null
-                                && variant.getAnnotation().getVariantTraitAssociation().getCosmic() != null) {
-                            stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getCosmic().stream()
-                                    .map(Cosmic::getPrimarySite)
-                                    .collect(Collectors.joining(",")));
-                        }
-                        break;
-                    case "gwas":
-                        if (variant.getAnnotation().getVariantTraitAssociation() != null
-                                && variant.getAnnotation().getVariantTraitAssociation().getGwas() != null) {
-                            stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getGwas().stream()
-                                    .map(Gwas::getTraits).flatMap(Collection::stream)
-                                    .collect(Collectors.joining(",")));
-                        }
-                        break;
+//                    case "clinvar":
+//                        if (variant.getAnnotation().getVariantTraitAssociation() != null
+//                                && variant.getAnnotation().getVariantTraitAssociation().getClinvar() != null) {
+//                            stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getClinvar().stream()
+//                                    .map(ClinVar::getTraits).flatMap(Collection::stream)
+//                                    .collect(Collectors.joining(",")));
+//                        }
+//                        break;
+//                    case "cosmic":
+//                        if (variant.getAnnotation().getVariantTraitAssociation() != null
+//                                && variant.getAnnotation().getVariantTraitAssociation().getCosmic() != null) {
+//                            stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getCosmic().stream()
+//                                    .map(Cosmic::getPrimarySite)
+//                                    .collect(Collectors.joining(",")));
+//                        }
+//                        break;
+//                    case "gwas":
+//                        if (variant.getAnnotation().getVariantTraitAssociation() != null
+//                                && variant.getAnnotation().getVariantTraitAssociation().getGwas() != null) {
+//                            stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getGwas().stream()
+//                                    .map(Gwas::getTraits).flatMap(Collection::stream)
+//                                    .collect(Collectors.joining(",")));
+//                        }
+//                        break;
                     case "drugInteraction":
                         stringBuilder.append(variant.getAnnotation().getGeneDrugInteraction().stream()
                                 .map(GeneDrugInteraction::getDrugName).collect(Collectors.joining(",")));

@@ -32,8 +32,12 @@ import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.CellBaseDataResponse;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
@@ -531,9 +535,9 @@ public class VariantSearchManager {
         Map<String, String> ensemblGeneIdToGeneName = null;
         if (replaceGenes) {
             List<String> ensemblGeneIds = getEnsemblGeneIds(facetResult.getResults());
-            QueryResponse<Gene> geneQueryResponse = cellBaseClient.getGeneClient().get(ensemblGeneIds, QueryOptions.empty());
+            CellBaseDataResponse<Gene> geneCellBaseDataResponse = cellBaseClient.getGeneClient().get(ensemblGeneIds, QueryOptions.empty());
             ensemblGeneIdToGeneName = new HashMap<>();
-            for (Gene gene: geneQueryResponse.allResults()) {
+            for (Gene gene: geneCellBaseDataResponse.allResults()) {
                 ensemblGeneIdToGeneName.put(gene.getId(), gene.getName());
             }
         }

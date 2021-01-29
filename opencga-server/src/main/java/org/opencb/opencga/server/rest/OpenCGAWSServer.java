@@ -53,6 +53,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
@@ -353,6 +354,14 @@ public class OpenCGAWSServer {
             }
         } catch (Exception e) {
             logger.error("Error closing CatalogManager", e);
+        }
+        try {
+            if (ClinicalWebService.rgaManagerAtomicRef.get() != null) {
+                logger.info("| * Closing RgaManager");
+                ClinicalWebService.rgaManagerAtomicRef.get().close();
+            }
+        } catch (Exception e) {
+            logger.error("Error closing RgaManager", e);
         }
         logger.info("| OpenCGA destroyed");
         logger.info("========================================================================\n");

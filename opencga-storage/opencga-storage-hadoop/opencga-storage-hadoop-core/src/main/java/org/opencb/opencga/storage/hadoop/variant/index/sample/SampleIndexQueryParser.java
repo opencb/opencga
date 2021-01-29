@@ -7,7 +7,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -897,12 +897,12 @@ public class SampleIndexQueryParser {
             soNames = soNames.stream()
                     .map(ct -> ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)))
                     .collect(Collectors.toList());
-            if (!soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)
-                    && !soNames.contains(VariantAnnotationUtils.REGULATORY_REGION_VARIANT)
-                    && !soNames.contains(VariantAnnotationUtils.TF_BINDING_SITE_VARIANT)) {
+            if (!soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)
+                    && !soNames.contains(VariantAnnotationConstants.REGULATORY_REGION_VARIANT)
+                    && !soNames.contains(VariantAnnotationConstants.TF_BINDING_SITE_VARIANT)) {
                 // All ct values but "intergenic_variant" and "regulatory_region_variant" are in genes (i.e. non-intergenic)
                 intergenic = false;
-            } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)) {
+            } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)) {
                 intergenic = true;
             }
             boolean ctFilterCoveredBySummary = false;
@@ -919,7 +919,7 @@ public class SampleIndexQueryParser {
                 }
             }
             if (LOF_EXTENDED_SET.containsAll(soNames)) {
-                boolean proteinCodingOnly = query.getString(ANNOT_BIOTYPE.key()).equals(VariantAnnotationUtils.PROTEIN_CODING);
+                boolean proteinCodingOnly = query.getString(ANNOT_BIOTYPE.key()).equals(VariantAnnotationConstants.PROTEIN_CODING);
                 ctFilterCoveredBySummary = soNames.size() == LOF_EXTENDED_SET.size();
                 annotationIndex |= LOF_EXTENDED_MASK;
                 // If all present, remove consequenceType filter
@@ -939,7 +939,7 @@ public class SampleIndexQueryParser {
                     annotationIndex |= LOFE_PROTEIN_CODING_MASK;
                 }
             }
-            if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
+            if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationConstants.MISSENSE_VARIANT)) {
                 ctFilterCoveredBySummary = true;
                 ctCovered = true;
                 annotationIndex |= MISSENSE_VARIANT_MASK;

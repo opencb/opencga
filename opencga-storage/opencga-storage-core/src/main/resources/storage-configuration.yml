@@ -82,6 +82,11 @@ variant:
     transform.compression: "gzip"
     transform.failOnMalformed: true
 
+    normalization.skip: false         # Skip normalization
+    normalization.referenceGenome: "" # Reference genome localization for improved normalization
+    normalization.extensions: []      # Enable VariantNormalizerExtensions
+    #  - "VAF" # Compute EXT_VAF for each sample. Variant Allele Fraction (VAF), several variant callers supported
+
     load.batchSize: 100
     load.numThreads: 6
 
