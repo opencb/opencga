@@ -6,7 +6,6 @@ import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.core.config.Catalog;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
@@ -18,15 +17,13 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.RgaException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.rga.RgaEngine;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
 
-public class RgaManager extends StorageManager {
+public class RgaManager extends StorageManager implements AutoCloseable {
 
     private final RgaEngine rgaEngine;
 
@@ -100,5 +97,10 @@ public class RgaManager extends StorageManager {
 
     private String getCollectionName(String study) {
         return catalogManager.getConfiguration().getDatabasePrefix() + "-rga-" + study.replace("@", "_").replace(":", "_");
+    }
+
+    @Override
+    public void close() throws Exception {
+        rgaEngine.close();
     }
 }

@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
@@ -69,7 +70,7 @@ public class ClinicalWebService extends AnalysisWebService {
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
-    private final RgaManager rgaManager;
+    public static final AtomicReference<RgaManager> rgaManagerAtomicRef = new AtomicReference<>();
 
     public ClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -78,7 +79,20 @@ public class ClinicalWebService extends AnalysisWebService {
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory, opencgaHome);
         catalogInterpretationManager = catalogManager.getInterpretationManager();
         clinicalManager = catalogManager.getClinicalAnalysisManager();
-        rgaManager = new RgaManager(catalogManager, storageEngineFactory);
+    }
+
+    private RgaManager getRgaManager() {
+        RgaManager rgaManager = rgaManagerAtomicRef.get();
+        if (rgaManager == null) {
+            synchronized (rgaManagerAtomicRef) {
+                rgaManager = rgaManagerAtomicRef.get();
+                if (rgaManager == null) {
+                    rgaManager = new RgaManager(catalogManager, storageEngineFactory);
+                    rgaManagerAtomicRef.set(rgaManager);
+                }
+            }
+        }
+        return rgaManager;
     }
 
 //    public ClinicalWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
@@ -663,7 +677,7 @@ public class ClinicalWebService extends AnalysisWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = RgaQueryParams.getQueryParams(queryOptions);
 
-            return rgaManager.individualQuery(studyStr, query, queryOptions, token);
+            return getRgaManager().individualQuery(studyStr, query, queryOptions, token);
         });
     }
 
@@ -705,7 +719,7 @@ public class ClinicalWebService extends AnalysisWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = RgaQueryParams.getQueryParams(queryOptions);
 
-            return rgaManager.geneQuery(studyStr, query, queryOptions, token);
+            return getRgaManager().geneQuery(studyStr, query, queryOptions, token);
         });
     }
 
@@ -747,7 +761,7 @@ public class ClinicalWebService extends AnalysisWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = RgaQueryParams.getQueryParams(queryOptions);
 
-            return rgaManager.variantQuery(studyStr, query, queryOptions, token);
+            return getRgaManager().variantQuery(studyStr, query, queryOptions, token);
         });
     }
 
