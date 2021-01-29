@@ -23,6 +23,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -356,6 +357,14 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
                 while (iterator.hasNext()) {
                     Variant v = iterator.next();
+                    if (StringUtils.isEmpty(v.getReference())) {
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
+                    } else if (StringUtils.isEmpty(v.getAlternate())){
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
+                    } else {
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
+                    }
+                    /*
                     switch (v.getType()) {
                         case INSERTION: {
                             pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
@@ -376,6 +385,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             break;
                         }
                     }
+                    */
                 }
             }
         } catch(Exception e){
@@ -428,28 +438,39 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
                 while (iterator.hasNext()) {
                     Variant v = iterator.next();
+
+                    String variantType = v.getType() != null ? v.getType().name() : "";
+                    if (CollectionUtils.isNotEmpty(v.getStudies()) && CollectionUtils.isNotEmpty(v.getStudies().get(0).getFiles())) {
+                        for (FileEntry file : v.getStudies().get(0).getFiles()) {
+                            if (file.getData() != null && file.getData().containsKey("EXT_SVTYPE")) {
+                                variantType = file.getData().get("EXT_SVTYPE");
+                                break;
+                            }
+                        }
+                    }
+
                     String type = null;
-                    switch (v.getType()) {
-                        case DELETION: {
+                    switch (variantType) {
+                        case "DELETION": {
                             type = "DEL";
                             break;
                         }
-                        case BREAKEND:
-                        case TRANSLOCATION: {
+                        case "BREAKEND":
+                        case "TRANSLOCATION": {
                             type = "BND";
                             break;
                         }
-                        case DUPLICATION: {
+                        case "DUPLICATION": {
                             type = "DUP";
                             break;
                         }
-                        case INVERSION: {
+                        case "INVERSION": {
                             type = "INV";
                             break;
                         }
                         default: {
                             // Sanity check
-                            pwOut.println(v.toString() + "\tUnknown type: " + v.getType() + ". Valid values: " + DELETION + ", " + BREAKEND
+                            pwOut.println(v.toString() + "\tUnknown type: " + variantType + ". Valid values: " + DELETION + ", " + BREAKEND
                             + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
 
                             break;
@@ -466,13 +487,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                                     pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
                                             + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
                                 } else {
-                                    pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + v.getType() + ")");
+                                    pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + variantType + ")");
                                 }
                             } else {
-                                pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + v.getType() + ")");
+                                pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + variantType + ")");
                             }
                         } else {
-                            pwOut.println(v.toString() + "\tSV is empy (variant type: " + v.getType() + ")");
+                            pwOut.println(v.toString() + "\tSV is empy (variant type: " + variantType + ")");
                         }
                     }
                 }
