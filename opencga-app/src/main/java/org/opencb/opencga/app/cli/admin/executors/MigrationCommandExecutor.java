@@ -81,6 +81,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             case "v2.0.0":
                 v2_0_0();
                 break;
+            case "v2.0.1":
+                v2_0_1();
+                break;
             default:
                 logger.error("Subcommand '{}' not valid", subCommandString);
                 break;
@@ -437,6 +440,22 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         }
     }
 
+
+    private void v2_0_1() throws Exception {
+        MigrationCommandOptions.MigrateV2_0_1CommandOptions options = migrationCommandOptions.getMigrateV201CommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            // Check admin password
+            catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+
+            // 1. Catalog Javascript migration
+            logger.info("Starting Catalog migration for 2.0.1");
+            runMigration(catalogManager, appHome + "/misc/migration/v2.0.1/", "opencga_catalog_v2.0.0_to_v2.0.1.js");
+        }
+    }
+
+
     private boolean needsMigration(MongoDBCollection metaCollection, int version, int release) {
         fetchUpdateVersionVariables(metaCollection);
         return (this.version < version || (this.version == version && this.release <= release));
@@ -511,9 +530,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         input.close();
 
         if (p.exitValue() == 0) {
-            logger.info("Finished Catalog migration");
+            logger.info("Finished Javascript catalog migration");
         } else {
-            throw new CatalogException("Error migrating catalog database!");
+            throw new CatalogException("Error with Javascript catalog migrating!");
         }
     }
 
