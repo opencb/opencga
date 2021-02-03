@@ -33,7 +33,7 @@ if (versionNeedsUpdate(20001, 1)) {
         migrateCollection("individual", query, projection, initialiseAnnotationSetArrays);
         migrateCollection("cohort", query, projection, initialiseAnnotationSetArrays);
         migrateCollection("family", query, projection, initialiseAnnotationSetArrays);
-    });
+    }, "Ensure AnnotationSet arrays are initialised");
 
     runUpdate(function () {
         // Ensure all values from _al (array level) and _c (count) are of type NumberInt
@@ -95,7 +95,7 @@ if (versionNeedsUpdate(20001, 1)) {
         migrateCollection("individual", query, projection, checkEntry);
         migrateCollection("cohort", query, projection, checkEntry);
         migrateCollection("family", query, projection, checkEntry);
-    });
+    }, "Ensure AnnotationSet meta information is properly typed");
 
     setOpenCGAVersion("2.0.1", 20001, 1);
 }
