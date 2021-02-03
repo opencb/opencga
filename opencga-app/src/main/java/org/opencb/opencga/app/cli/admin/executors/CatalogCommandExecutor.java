@@ -17,11 +17,18 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.master.monitor.MonitorService;
 
 import javax.ws.rs.client.Client;
@@ -53,6 +60,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         switch (subCommandString) {
             case "install":
                 install();
+                break;
+            case "status":
+                status();
                 break;
             case "delete":
                 delete();
@@ -99,6 +109,56 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
         catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
+    }
+
+    private void status() throws CatalogException, JsonProcessingException {
+        AdminCliOptionsParser.StatusCatalogCommandOptions commandOptions = catalogCommandOptions.statusCatalogCommandOptions;
+        validateConfiguration(commandOptions);
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+//        if (StringUtils.isEmpty(commandOptions.commonOptions.adminPassword)) {
+//            throw new CatalogException("No admin password found. Please, insert your password.");
+//        }
+        ObjectMap result = new ObjectMap();
+        if (catalogManager.getDatabaseStatus()) {
+            result.put("mongodbStatus", true);
+            result.put("catalogDBName", catalogManager.getCatalogDatabase());
+            if (catalogManager.existsCatalogDB()) {
+                result.put("installed", true);
+
+//                // check login
+//                catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
+
+                MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
+                MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
+                Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
+
+                result.put("creationDate", metaDocument.get("creationDate"));
+                result.put("version", metaDocument.get("version"));
+
+                Object fullVersion = metaDocument.get("_fullVersion");
+                int version = 20000;
+                int release = 4;
+                int lastJavaUpdate = 0;
+                int lastJsUpdate = 0;
+                if (fullVersion != null) {
+                    version = ((Document) fullVersion).getInteger("version");
+                    release = ((Document) fullVersion).getInteger("release");
+                    lastJavaUpdate = ((Document) fullVersion).getInteger("lastJavaUpdate");
+                    lastJsUpdate = ((Document) fullVersion).getInteger("lastJsUpdate");
+                }
+                result.put("versionNumeric", version);
+                result.put("release", release);
+                result.put("lastJsUpdate", lastJsUpdate);
+                result.put("lastJavaUpdate", lastJavaUpdate);
+            } else {
+                result.put("installed", false);
+            }
+        } else {
+            result.put("mongodbStatus", false);
+            result.put("installed", false);
+        }
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
     }
 
     private void install() throws CatalogException, URISyntaxException {

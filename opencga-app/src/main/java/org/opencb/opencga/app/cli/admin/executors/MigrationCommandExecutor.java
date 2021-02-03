@@ -413,7 +413,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
                 List<Project> projects = catalogManager.getProjectManager()
                         .get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "id,fqn"), adminToken).getResults();
-                String theProject = options.commonOptions.params.get(ParamConstants.PROJECT_PARAM);
+                String theProject = options.commonOptions.commonOptions.params.get(ParamConstants.PROJECT_PARAM);
                 for (Project project : projects) {
                     if (project.getFqn().startsWith(ParamConstants.OPENCGA_USER_ID)) {
                         // Skip opencga projects.
@@ -427,7 +427,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     VariantStorage200MigrationToolParams toolParams = new VariantStorage200MigrationToolParams()
                             .setRemoveSpanDeletions(true)
                             .setProject(project.getFqn());
-                    toolParams.updateParams(new ObjectMap(options.commonOptions.params));
+                    toolParams.updateParams(new ObjectMap(options.commonOptions.commonOptions.params));
                     Job job = catalogManager.getJobManager()
                             .submit(ADMIN_STUDY_FQN, VariantStorage200MigrationTool.ID, Enums.Priority.HIGH, toolParams.toParams(), adminToken)
                             .first();
