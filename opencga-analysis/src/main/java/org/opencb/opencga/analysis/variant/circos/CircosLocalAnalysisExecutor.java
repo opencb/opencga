@@ -460,7 +460,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             type = "BND";
                             break;
                         }
-                        case "DUPLICATION": {
+                        case "TANDEM_DUPLICATION": {
                             type = "DUP";
                             break;
                         }
@@ -471,7 +471,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         default: {
                             // Sanity check
                             pwOut.println(v.toString() + "\tUnknown type: " + variantType + ". Valid values: " + DELETION + ", " + BREAKEND
-                            + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
+                            + ", " + TRANSLOCATION + ", " + TANDEM_DUPLICATION + ", " + INVERSION);
 
                             break;
                         }
