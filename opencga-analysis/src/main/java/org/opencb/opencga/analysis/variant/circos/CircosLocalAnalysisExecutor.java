@@ -429,7 +429,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 Query rearrangementQuery = new Query(query);
                 rearrangementQuery.putAll(trackQuery);
 
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv,studies");
 
                 logger.info("REARRANGEMENT track, query: " + rearrangementQuery.toJson());
                 logger.info("REARRANGEMENT track, query options: " + queryOptions.toJson());
@@ -449,52 +449,23 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         }
                     }
 
-                    String type = null;
-                    switch (variantType) {
-                        case "DELETION": {
-                            type = "DEL";
-                            break;
-                        }
-                        case "BREAKEND":
-                        case "TRANSLOCATION": {
-                            type = "BND";
-                            break;
-                        }
-                        case "DUPLICATION": {
-                            type = "DUP";
-                            break;
-                        }
-                        case "INVERSION": {
-                            type = "INV";
-                            break;
-                        }
-                        default: {
-                            // Sanity check
-                            pwOut.println(v.toString() + "\tUnknown type: " + variantType + ". Valid values: " + DELETION + ", " + BREAKEND
-                            + ", " + TRANSLOCATION + ", " + DUPLICATION + ", " + INVERSION);
-
-                            break;
-                        }
-                    }
-
-                    if (type != null) {
-                        // Check structural variation
-                        StructuralVariation sv = v.getSv();
-                        if (sv != null) {
-                            if (sv.getBreakend() != null) {
-                                if (sv.getBreakend().getMate() != null) {
-                                    BreakendMate mate = sv.getBreakend().getMate();
-                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
-                                            + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t" + type);
-                                } else {
-                                    pwOut.println(v.toString() + "\tBreakend mate is empy (variant type: " + variantType + ")");
-                                }
+                    // Check structural variation
+                    StructuralVariation sv = v.getSv();
+                    if (sv != null) {
+                        if (sv.getBreakend() != null) {
+                            if (sv.getBreakend().getMate() != null) {
+                                BreakendMate mate = sv.getBreakend().getMate();
+                                pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
+                                        + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t"
+                                        + variantType);
                             } else {
-                                pwOut.println(v.toString() + "\tBreakend is empy (variant type: " + variantType + ")");
+                                pwOut.println(v.toString() + "\tBreakend mate is empty (variant type: " + variantType + ")");
                             }
                         } else {
-                            pwOut.println(v.toString() + "\tSV is empy (variant type: " + variantType + ")");
+                            pwOut.println(v.toString() + "\tBreakend is empty (variant type: " + variantType + ")");
                         }
+                    } else {
+                        pwOut.println(v.toString() + "\tSV is empty (variant type: " + variantType + ")");
                     }
                 }
             }
@@ -532,7 +503,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         } else if ("INDEL".equals(track.getType())) {
             query.put("type", "INSERTION,DELETION,INDEL");
         } else if ("REARRANGEMENT".equals(track.getType())) {
-            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,BREAKEND");
+            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,TANDEM_DUPLICATION,BREAKEND");
         } else if ("SNV".equals(track.getType())) {
             query.put("type", "SNV");
         } else {
