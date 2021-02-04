@@ -34,6 +34,7 @@ You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/o
 
 * Implement a new component **Recessive Gene Analyse** to analyze knockout genes
 * Implement a **pathogenic variant database** for all the reported variants
+* Implement a **case re-analysis** to automatically check clinical cases
 
 #### Analysis Framework
 
