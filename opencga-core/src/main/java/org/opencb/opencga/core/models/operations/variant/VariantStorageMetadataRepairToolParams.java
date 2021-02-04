@@ -29,7 +29,9 @@ public class VariantStorageMetadataRepairToolParams extends ToolParams {
     private List<What> what;
 
     public enum What {
-        SAMPLE_FILE_ID
+        SAMPLE_FILE_ID,
+        CHECK_COHORT_ALL,
+        REPAIR_COHORT_ALL,
     }
 
     public List<String> getStudies() {

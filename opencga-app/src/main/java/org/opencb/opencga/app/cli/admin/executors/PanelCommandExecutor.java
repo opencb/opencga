@@ -25,7 +25,7 @@ public class PanelCommandExecutor extends CommandExecutor {
     private AdminCliOptionsParser.PanelCommandOptions panelCommandOptions;
 
     public PanelCommandExecutor(AdminCliOptionsParser.PanelCommandOptions panelCommandOptions) {
-        super(panelCommandOptions.commonOptions);
+        super(panelCommandOptions.commonOptions.commonOptions);
         this.panelCommandOptions = panelCommandOptions;
     }
 

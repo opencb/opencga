@@ -750,10 +750,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         storageEngineFactory.close();
     }
 
-    public Boolean synchronizeCatalogStudyFromStorage(String study, List<String> files, String token)
+    public boolean synchronizeCatalogStudyFromStorage(String study, List<String> files, String token)
             throws CatalogException, StorageEngineException {
-        return secureOperation("synchronizeCatalogStudyFromStorage", study, new ObjectMap() ,token, engine -> {
-            String studySqn = getStudyFqn(study, token);
+        String studySqn = getStudyFqn(study, token);
+        return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap() ,token, engine -> {
             CatalogStorageMetadataSynchronizer synchronizer =
                     new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager());
             if (CollectionUtils.isEmpty(files)) {

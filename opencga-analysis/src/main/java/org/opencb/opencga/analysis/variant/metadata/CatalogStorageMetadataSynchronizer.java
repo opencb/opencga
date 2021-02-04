@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
@@ -255,12 +256,16 @@ public class CatalogStorageMetadataSynchronizer {
                     }
                     catalogManager.getCohortManager().setStatus(study.getName(), defaultCohortName, status, null, sessionId);
                 }
-                QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), "SET"));
+                logger.info("Update cohort " + defaultCohortName);
+                QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
+                        ParamUtils.BasicUpdateAction.SET));
                 catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
                         new CohortUpdateParams().setSamples(new ArrayList<>(cohortFromStorage)),
                         true, options, sessionId);
                 modified = true;
             }
+        } else {
+            logger.info("Cohort " + defaultCohortName + " not found in variant storage");
         }
 
         Map<String, CohortMetadata> calculatedStats = new HashMap<>();
@@ -394,9 +399,12 @@ public class CatalogStorageMetadataSynchronizer {
                 indexedFilesUris.add(toUri(path));
             }
             int numFiles = 0;
+            logger.info("Synchronize {} files", indexedFilesUris.size());
             while (!indexedFilesUris.isEmpty()) {
-                Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), indexedFilesUris);
                 int numPendingFiles = indexedFilesUris.size();
+                List<String> indexedFilesUrisSubset = indexedFilesUris.subList(0, Math.min(2000, indexedFilesUris.size()));
+                logger.info("Synchronize {}/{} files", indexedFilesUrisSubset.size(), indexedFilesUris.size());
+                Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), indexedFilesUrisSubset);
                 try (DBIterator<File> iterator = catalogManager.getFileManager()
                         .iterator(study.getName(), query, INDEXED_FILES_QUERY_OPTIONS, sessionId)) {
                     while (iterator.hasNext()) {
@@ -404,7 +412,7 @@ public class CatalogStorageMetadataSynchronizer {
                         modified = synchronizeIndexedFile(study, sessionId, modified, fileSamplesMap, file);
 
                         // Remove processed file from list of uris
-                        indexedFilesUris.remove(file.getUri().toString());
+                        indexedFilesUrisSubset.remove(file.getUri().toString());
                         numFiles++;
                     }
                 } catch (MongoServerException e) {
@@ -414,9 +422,16 @@ public class CatalogStorageMetadataSynchronizer {
                     }
                     logger.warn("Catch exception " + e.toString() + ". Continue");
                 }
+                if (!indexedFilesUrisSubset.isEmpty()) {
+                    logger.warn("Unable to find {} files in catalog: {}", indexedFilesUrisSubset.size(), indexedFilesUrisSubset);
+                    // Discard not found files
+                    indexedFilesUrisSubset.clear();
+                }
             }
             if (numFiles != indexedFilesFromStorage.size()) {
-                logger.warn("Some files were not found in catalog given their file uri");
+                logger.warn("{} out of {} files were not found in catalog given their file uri",
+                        indexedFilesFromStorage.size() - numFiles,
+                        indexedFilesFromStorage.size());
             }
         }
 
