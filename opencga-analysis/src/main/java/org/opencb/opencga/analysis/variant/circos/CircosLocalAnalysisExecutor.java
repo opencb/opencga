@@ -429,7 +429,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 Query rearrangementQuery = new Query(query);
                 rearrangementQuery.putAll(trackQuery);
 
-                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv");
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv,studies");
 
                 logger.info("REARRANGEMENT track, query: " + rearrangementQuery.toJson());
                 logger.info("REARRANGEMENT track, query options: " + queryOptions.toJson());
