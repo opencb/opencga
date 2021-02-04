@@ -41,6 +41,18 @@ clinical:
   timeout: ${OPENCGA.STORAGE.CLINICAL.TIMEOUT}
   insertBatchSize: 1000
 
+## Recessive Gene Analysis database.
+rga:
+  # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
+  #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
+  #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
+  hosts:
+    - ${OPENCGA.STORAGE.RGA.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+  configSet: "${OPENCGA.STORAGE.RGA.CONFIG_SET}"
+  mode: "cloud"
+  timeout: ${OPENCGA.STORAGE.RGA.TIMEOUT}
+  insertBatchSize: 1000
+
 benchmark:
   numRepetitions: 20           # Number of query repetitions
   concurrency: 5               # Number of concurrent threads

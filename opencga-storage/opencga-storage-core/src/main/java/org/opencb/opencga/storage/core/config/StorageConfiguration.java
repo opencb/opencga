@@ -43,6 +43,7 @@ public class StorageConfiguration {
     private CacheConfiguration cache;
     private SearchConfiguration search;
     private SearchConfiguration clinical;
+    private SearchConfiguration rga;
     private ObjectMap alignment;
     private StorageEnginesConfiguration variant;
     private IOConfiguration io;
@@ -60,6 +61,7 @@ public class StorageConfiguration {
         this.cache = new CacheConfiguration();
         this.search = new SearchConfiguration();
         this.clinical = new SearchConfiguration();
+        this.rga = new SearchConfiguration();
     }
 
 
@@ -139,6 +141,7 @@ public class StorageConfiguration {
         sb.append(", cache=").append(cache);
         sb.append(", search=").append(search);
         sb.append(", clinical=").append(clinical);
+        sb.append(", rga=").append(rga);
         sb.append(", benchmark=").append(benchmark);
         sb.append('}');
         return sb.toString();
@@ -186,6 +189,15 @@ public class StorageConfiguration {
 
     public StorageConfiguration setClinical(SearchConfiguration clinical) {
         this.clinical = clinical;
+        return this;
+    }
+
+    public SearchConfiguration getRga() {
+        return rga;
+    }
+
+    public StorageConfiguration setRga(SearchConfiguration rga) {
+        this.rga = rga;
         return this;
     }
 
