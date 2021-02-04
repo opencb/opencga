@@ -14,23 +14,31 @@ You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/o
 
 #### General
 
-* Implement a **Centralised Log** analytic solution, we are planning to use Kibana _\*\*_
+* Implement a **Centralised Log** analytic solution
+* Migrate **CI/CD** to GitHub Actions
 
 #### Catalog
 
-* Implement a new **Action** system, Catalog will notify to a message queue _\(RabbitMQ, Apache Kafka\),_ this will allow other applications to know what's going on
+* Implement a new **Action** system to reduce human interaction
+* Allow the definition and execution of **Pipelines**
 * Improve **RESTful** web services by adding standardise **error codes** to the response, this will improve debugging
 
 **Variant Storage Engine**
 
-* Extend consequence type and population frequency filter in the sample genotype index
-* Improve sample genotype index for clinical and cancer by filtering by cosmic or VAF
-* Allow the index of custom INFO or FORMAT fields 
+* Allow the implementation of **extension** in the Variant Index pipeline. Implement a first **variant index extension** to parse VAF, DEPTH and SVTYPE from several callers not following the VCF specification
+* Make some **sample genotype indexes configurable**, such as population frequency filter
+* Improve some **sample genotype indexes**
 * Implement a new **Cache** functionality, some sample and family-based variant queries and analysis can take up to few seconds, since this data is read-only this could be easily cached
 
 #### Clinical
 
+* Implement a new component **Recessive Gene Analyse** to analyze knockout genes
+* Implement a **pathogenic variant database** for all the reported variants
+
 #### Analysis Framework
+
+* Improve the **queue configuration** allowing the definition of different queues
+* Improve the **Job execution** daemon
 
 #### Others
 
