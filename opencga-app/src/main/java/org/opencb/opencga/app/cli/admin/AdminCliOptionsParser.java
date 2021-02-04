@@ -36,6 +36,7 @@ import java.util.List;
  */
 public class AdminCliOptionsParser extends CliOptionsParser {
 
+    private final GeneralCliOptions.CommonCommandOptions generalCommonCommandOptions;
     private final AdminCommonCommandOptions commonCommandOptions;
     private final IgnorePasswordCommonCommandOptions noPasswordCommonCommandOptions;
 
@@ -53,6 +54,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public AdminCliOptionsParser() {
         jCommander.setProgramName("opencga-admin.sh");
 
+        generalCommonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         commonCommandOptions = new AdminCommonCommandOptions();
         noPasswordCommonCommandOptions = new IgnorePasswordCommonCommandOptions();
 
@@ -61,6 +63,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander catalogSubCommands = jCommander.getCommands().get("catalog");
         catalogSubCommands.addCommand("demo", catalogCommandOptions.demoCatalogCommandOptions);
         catalogSubCommands.addCommand("install", catalogCommandOptions.installCatalogCommandOptions);
+        catalogSubCommands.addCommand("status", catalogCommandOptions.statusCatalogCommandOptions);
         catalogSubCommands.addCommand("delete", catalogCommandOptions.deleteCatalogCommandOptions);
         catalogSubCommands.addCommand("index", catalogCommandOptions.indexCatalogCommandOptions);
         catalogSubCommands.addCommand("clean", catalogCommandOptions.cleanCatalogCommandOptions);
@@ -130,7 +133,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
                 return ((GeneralCliOptions.CommonCommandOptions) objects.get(0)).help;
             }
         }
-        return commonCommandOptions.help || noPasswordCommonCommandOptions.help;
+        return generalCommonCommandOptions.help;
     }
 
 
@@ -143,7 +146,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean help;
 
         public JCommander getSubCommand() {
-            return jCommander.getCommands().get(getCommand()).getCommands().get(getSubCommand());
+            return jCommander.getCommands().get(getCommand()).getCommands().get(getParsedSubCommand());
         }
 
         public String getParsedSubCommand() {
@@ -154,7 +157,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     /**
      * This class contains all those common parameters available for all 'subcommands'
      */
-    public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
+    public class AdminCommonCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.generalCommonCommandOptions;
 
         @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, password = true, arity = 0)
         public String adminPassword;
@@ -164,11 +170,13 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     /**
      * This class contains all those common parameters available for all 'subcommands' that do not need the password parameter.
      */
-    public class IgnorePasswordCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
+    public class IgnorePasswordCommonCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.generalCommonCommandOptions;
 
         @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, arity = 0)
         public boolean adminPassword;
-
     }
 
 
@@ -178,22 +186,24 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     @Parameters(commandNames = {"catalog"}, commandDescription = "Implements different tools interact with Catalog database")
     public class CatalogCommandOptions extends CommandOptions {
 
-        public DemoCatalogCommandOptions demoCatalogCommandOptions;
-        public InstallCatalogCommandOptions installCatalogCommandOptions;
-        public DeleteCatalogCommandOptions deleteCatalogCommandOptions;
-        public IndexCatalogCommandOptions indexCatalogCommandOptions;
-        public CleanCatalogCommandOptions cleanCatalogCommandOptions;
-        public StatsCatalogCommandOptions statsCatalogCommandOptions;
-        public DumpCatalogCommandOptions dumpCatalogCommandOptions;
-        public ExportCatalogCommandOptions exportCatalogCommandOptions;
-        public ImportCatalogCommandOptions importCatalogCommandOptions;
-        public DaemonCatalogCommandOptions daemonCatalogCommandOptions;
+        public final DemoCatalogCommandOptions demoCatalogCommandOptions;
+        public final StatusCatalogCommandOptions statusCatalogCommandOptions;
+        public final InstallCatalogCommandOptions installCatalogCommandOptions;
+        public final DeleteCatalogCommandOptions deleteCatalogCommandOptions;
+        public final IndexCatalogCommandOptions indexCatalogCommandOptions;
+        public final CleanCatalogCommandOptions cleanCatalogCommandOptions;
+        public final StatsCatalogCommandOptions statsCatalogCommandOptions;
+        public final DumpCatalogCommandOptions dumpCatalogCommandOptions;
+        public final ExportCatalogCommandOptions exportCatalogCommandOptions;
+        public final ImportCatalogCommandOptions importCatalogCommandOptions;
+        public final DaemonCatalogCommandOptions daemonCatalogCommandOptions;
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public CatalogCommandOptions() {
             this.demoCatalogCommandOptions = new DemoCatalogCommandOptions();
             this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
+            this.statusCatalogCommandOptions = new StatusCatalogCommandOptions();
             this.deleteCatalogCommandOptions = new DeleteCatalogCommandOptions();
             this.indexCatalogCommandOptions = new IndexCatalogCommandOptions();
             this.cleanCatalogCommandOptions = new CleanCatalogCommandOptions();
@@ -276,7 +286,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public PanelAppCommandOptions panelAppCommandOptions;
         public CancerGeneCensusCommandOptions cancerGeneCensusCommandOptions;
 
-        public GeneralCliOptions.CommonCommandOptions  commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+        public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         public PanelCommandOptions() {
             this.panelAppCommandOptions = new PanelAppCommandOptions();
@@ -293,7 +303,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public RestServerCommandOptions restServerCommandOptions;
         public GrpcServerCommandOptions grpcServerCommandOptions;
 
-        public GeneralCliOptions.CommonCommandOptions  commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+        public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         public ServerCommandOptions() {
             this.restServerCommandOptions = new RestServerCommandOptions();
@@ -374,6 +384,13 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             super();
             this.commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
         }
+    }
+
+    @Parameters(commandNames = {"status"}, commandDescription = "Check Catalog database installation status")
+    public class StatusCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public IgnorePasswordCommonCommandOptions commonOptions = noPasswordCommonCommandOptions;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the Catalog database")
@@ -692,7 +709,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class PanelAppCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+        public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1, required = true)
         public String outdir;
@@ -702,7 +719,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class CancerGeneCensusCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+        public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", arity = 1, required = true)
         public String outdir;
@@ -718,7 +735,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+        public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "Start OpenCGA REST server", arity = 0)
         public boolean start;
@@ -737,7 +754,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
+        public IgnorePasswordCommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "Start OpenCGA gRPC server", arity = 0)
         public boolean start;

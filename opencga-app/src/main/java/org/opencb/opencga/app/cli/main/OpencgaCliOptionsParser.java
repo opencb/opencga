@@ -332,7 +332,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
             JCommander jCommander2 = jCommander.getCommands().get(parsedCommand);
             List<Object> objects = jCommander2.getObjects();
             if (!objects.isEmpty() && objects.get(0) instanceof AdminCliOptionsParser.AdminCommonCommandOptions) {
-                return ((AdminCliOptionsParser.AdminCommonCommandOptions) objects.get(0)).help;
+                return ((AdminCliOptionsParser.AdminCommonCommandOptions) objects.get(0)).commonOptions.help;
             }
         }
         return commonCommandOptions.help;

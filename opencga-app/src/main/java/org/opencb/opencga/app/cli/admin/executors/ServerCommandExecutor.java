@@ -40,7 +40,7 @@ public class ServerCommandExecutor extends CommandExecutor {
     private AdminCliOptionsParser.ServerCommandOptions serverCommandOptions;
 
     public ServerCommandExecutor(AdminCliOptionsParser.ServerCommandOptions serverCommandOptions) {
-        super(serverCommandOptions.commonOptions);
+        super(serverCommandOptions.commonOptions.commonOptions);
         this.serverCommandOptions = serverCommandOptions;
     }
 
