@@ -28,8 +28,8 @@ public class KnockoutVariant {
     private String filter;
     private String qual;
     private KnockoutType knockoutType;
-    private List<SequenceOntologyTerm> sequenceOntologyTerms;
     private List<PopulationFrequency> populationFrequencies;
+    private List<SequenceOntologyTerm> sequenceOntologyTerms;
 
     public enum KnockoutType {
         HOM_ALT,
@@ -42,15 +42,28 @@ public class KnockoutVariant {
     }
 
     public KnockoutVariant(String id, String genotype, String filter, String qual, KnockoutType knockoutType,
-                           List<SequenceOntologyTerm> sequenceOntologyTerms,
-                           List<PopulationFrequency> populationFrequencies) {
+                           List<SequenceOntologyTerm> sequenceOntologyTerms, List<PopulationFrequency> populationFrequencies) {
         this.id = id;
         this.genotype = genotype;
         this.filter = filter;
         this.qual = qual;
         this.knockoutType = knockoutType;
-        this.sequenceOntologyTerms = sequenceOntologyTerms;
         this.populationFrequencies = populationFrequencies;
+        this.sequenceOntologyTerms = sequenceOntologyTerms;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("KnockoutVariant{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", genotype='").append(genotype).append('\'');
+        sb.append(", filter='").append(filter).append('\'');
+        sb.append(", qual='").append(qual).append('\'');
+        sb.append(", knockoutType=").append(knockoutType);
+        sb.append(", populationFrequencies=").append(populationFrequencies);
+        sb.append(", sequenceOntologyTerms=").append(sequenceOntologyTerms);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {

@@ -177,6 +177,13 @@ public class KnockoutByGene {
             }
             return this;
         }
+
+        public KnockoutIndividual addTranscripts(Collection<KnockoutTranscript> transcripts) {
+            for (KnockoutTranscript transcript : transcripts) {
+                transcriptsMap.put(transcript.getId(), transcript);
+            }
+            return this;
+        }
     }
 
 }

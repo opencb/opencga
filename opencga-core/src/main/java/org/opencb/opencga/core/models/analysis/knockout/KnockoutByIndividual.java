@@ -24,7 +24,6 @@ import java.util.*;
 
 public class KnockoutByIndividual {
 
-
     private String id;
     private String sampleId;
     // father / mother
@@ -34,6 +33,33 @@ public class KnockoutByIndividual {
 
     private GeneKnockoutByIndividualStats stats;
     private Map<String, KnockoutGene> genesMap = new HashMap<>();
+
+    public KnockoutByIndividual() {
+    }
+
+    public KnockoutByIndividual(String id, String sampleId, Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders,
+                                GeneKnockoutByIndividualStats stats) {
+        this.id = id;
+        this.sampleId = sampleId;
+        this.sex = sex;
+        this.phenotypes = phenotypes;
+        this.disorders = disorders;
+        this.stats = stats;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("KnockoutByIndividual{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", sampleId='").append(sampleId).append('\'');
+        sb.append(", sex=").append(sex);
+        sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", disorders=").append(disorders);
+        sb.append(", stats=").append(stats);
+        sb.append(", genesMap=").append(genesMap);
+        sb.append('}');
+        return sb.toString();
+    }
 
     public String getId() {
         return id;
@@ -93,6 +119,18 @@ public class KnockoutByIndividual {
         return genesMap.values();
     }
 
+    public KnockoutByIndividual addGene(KnockoutGene gene) {
+        genesMap.put(gene.getName(), gene);
+        return this;
+    }
+
+    public KnockoutByIndividual addGenes(Collection<KnockoutGene> genes) {
+        for (KnockoutGene gene : genes) {
+            genesMap.put(gene.getName(), gene);
+        }
+        return this;
+    }
+
     public KnockoutGene getGene(String gene) {
         return genesMap.computeIfAbsent(gene, KnockoutGene::new);
     }
@@ -116,6 +154,16 @@ public class KnockoutByIndividual {
 
         public GeneKnockoutByIndividualStats() {
             byType = new EnumMap<>(KnockoutVariant.KnockoutType.class);
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("GeneKnockoutByIndividualStats{");
+            sb.append("numGenes=").append(numGenes);
+            sb.append(", numTranscripts=").append(numTranscripts);
+            sb.append(", byType=").append(byType);
+            sb.append('}');
+            return sb.toString();
         }
 
         public int getNumGenes() {
@@ -159,8 +207,33 @@ public class KnockoutByIndividual {
         public KnockoutGene() {
         }
 
+        public KnockoutGene(String id, String name, String chromosome, int start, int end, String biotype, String strand) {
+            this.id = id;
+            this.name = name;
+            this.chromosome = chromosome;
+            this.start = start;
+            this.end = end;
+            this.biotype = biotype;
+            this.strand = strand;
+        }
+
         public KnockoutGene(String name) {
             this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("KnockoutGene{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", name='").append(name).append('\'');
+            sb.append(", chromosome='").append(chromosome).append('\'');
+            sb.append(", start=").append(start);
+            sb.append(", end=").append(end);
+            sb.append(", biotype='").append(biotype).append('\'');
+            sb.append(", strand='").append(strand).append('\'');
+            sb.append(", transcriptsMap=").append(transcriptsMap);
+            sb.append('}');
+            return sb.toString();
         }
 
         public String getId() {

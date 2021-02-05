@@ -134,6 +134,7 @@
                 <includes>
                     <include>${storage.configuration.file}</include>
                     <include>managed-schema</include>
+                    <include>rga/managed-schema</include>
                 </includes>
             </resource>
         </resources>

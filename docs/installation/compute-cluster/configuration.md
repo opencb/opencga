@@ -9,9 +9,5 @@ For Hadoop configuration ...
 
 ## configuration.yml
 
-
-
 ## storage-configuration.yml
-
-
 
