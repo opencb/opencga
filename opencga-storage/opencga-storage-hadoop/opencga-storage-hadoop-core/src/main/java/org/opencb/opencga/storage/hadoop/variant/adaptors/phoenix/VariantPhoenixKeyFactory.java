@@ -143,6 +143,10 @@ public class VariantPhoenixKeyFactory {
         return rk;
     }
 
+    public static String buildSymbolicAlternate(Variant v) {
+        return buildSymbolicAlternate(v.getReference(), v.getAlternate(), v.getEnd(), v.getSv());
+    }
+
     // visible for test
     public static String buildSymbolicAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
         if (sv != null) {

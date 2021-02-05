@@ -572,7 +572,7 @@ public class VariantSqlQueryParser {
             sb.append("('").append(checkStringValue(variant.getChromosome())).append("', ")
                     .append(variant.getStart()).append(", ")
                     .append('\'').append(checkStringValue(variant.getReference())).append("', ")
-                    .append('\'').append(checkStringValue(variant.getAlternate())).append("') ");
+                    .append('\'').append(checkStringValue(VariantPhoenixKeyFactory.buildSymbolicAlternate(variant))).append("') ");
             if (iterator.hasNext()) {
                 sb.append(',');
             }
