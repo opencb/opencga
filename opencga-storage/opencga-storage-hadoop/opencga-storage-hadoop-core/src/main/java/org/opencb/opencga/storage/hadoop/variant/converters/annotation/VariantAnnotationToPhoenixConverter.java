@@ -291,13 +291,13 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         }
 
         VariantType variantType = VariantBuilder.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
-        if (StringUtils.isNotBlank(variantAnnotation.getId())) {
-            if (variantType.equals(VariantType.SNV)) {
-                variantType = VariantType.SNP;
-            } else if (variantType.equals(VariantType.MNV)) {
-                variantType = VariantType.MNP;
-            }
-        }
+//        if (StringUtils.isNotBlank(variantAnnotation.getId())) {
+//            if (variantType.equals(VariantType.SNV)) {
+//                variantType = VariantType.SNP;
+//            } else if (variantType.equals(VariantType.MNV)) {
+//                variantType = VariantType.MNP;
+//            }
+//        }
         map.put(TYPE, variantType.toString());
 
         return map;
