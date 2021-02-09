@@ -358,10 +358,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+            // Do not modify input options
+            // ignore count when creating an iterator.
+            options.put(QueryOptions.COUNT, false);
         }
 
         boolean archiveIterator = options.getBoolean("archive", false);
-        boolean hbaseIterator = options.getBoolean(NATIVE, VariantHBaseQueryParser.isSupportedQuery(variantQuery.getQuery()));
+        boolean nativeSupportedQuery = VariantHBaseQueryParser.isSupportedQuery(variantQuery.getQuery());
+        boolean hbaseIterator = nativeSupportedQuery && options.getBoolean(NATIVE, nativeSupportedQuery);
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
         if (archiveIterator) {
