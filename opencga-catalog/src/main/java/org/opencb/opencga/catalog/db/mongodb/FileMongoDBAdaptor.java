@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -85,11 +86,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
      *
      * @param fileCollection MongoDB connection to the file collection.
      * @param deletedFileCollection MongoDB connection to the file collection containing the deleted documents.
+     * @param configuration Configuration file.
      * @param dbAdaptorFactory Generic dbAdaptorFactory containing all the different collections.
      */
-    public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection,
+    public FileMongoDBAdaptor(MongoDBCollection fileCollection, MongoDBCollection deletedFileCollection, Configuration configuration,
                               MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(FileMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(FileMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
         this.deletedFileCollection = deletedFileCollection;
@@ -1209,13 +1211,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
             if (containsAnnotationQuery(query)) {
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(),
-                        Enums.Resource.FILE));
+                        Enums.Resource.FILE, configuration));
             } else {
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW.name(),
-                        Enums.Resource.FILE));
+                        Enums.Resource.FILE, configuration));
             }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user));
+            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
 
             query.remove(ParamConstants.ACL_PARAM);
         }

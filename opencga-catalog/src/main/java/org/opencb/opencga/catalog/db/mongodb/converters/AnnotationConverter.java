@@ -253,11 +253,11 @@ public class AnnotationConverter {
                                         // that goes to every different element of the array
                                         int total = 0;
                                         for (Object o : ((List) count)) {
-                                            total += (int) o;
+                                            total += ((Number) o).intValue();
                                         }
                                         count = total;
                                     }
-                                    int numberOfElements = (Integer) count;
+                                    int numberOfElements = ((Number) count).intValue();
 
                                     if (numberOfElements > 0) {
                                         if (fromDBToMap.getArrayLevel().size() > 1) {

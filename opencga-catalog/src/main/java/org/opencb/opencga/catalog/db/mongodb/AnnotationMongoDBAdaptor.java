@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Variable;
@@ -62,9 +63,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
     private final AnnotationConverter annotationConverter;
 
-    AnnotationMongoDBAdaptor(Logger logger) {
-        super(logger);
-
+    AnnotationMongoDBAdaptor(Configuration configuration, Logger logger) {
+        super(configuration, logger);
         this.annotationConverter = new AnnotationConverter();
     }
 

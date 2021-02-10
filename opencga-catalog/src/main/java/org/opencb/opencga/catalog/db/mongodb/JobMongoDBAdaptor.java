@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.job.Job;
@@ -70,9 +71,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private static final String PRIVATE_PRIORITY = "_priority";
     private static final String PRIVATE_STUDY_UIDS = "_studyUids";
 
-    public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection,
+    public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection, Configuration configuration,
                              MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
         this.deletedJobCollection = deletedJobCollection;
@@ -790,9 +791,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
             // Get the document query needed to check the permissions as well
             andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobAclEntry.JobPermissions.VIEW.name(),
-                    Enums.Resource.JOB));
+                    Enums.Resource.JOB, configuration));
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.JOB, user));
+            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.JOB, user, configuration));
 
             query.remove(ParamConstants.ACL_PARAM);
         }

@@ -80,6 +80,9 @@ server:
     port: ${OPENCGA.SERVER.GRPC.PORT}
     logFile: null
 
+optimizations:
+  simplifyPermissions: ${OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS}
+
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
   maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.

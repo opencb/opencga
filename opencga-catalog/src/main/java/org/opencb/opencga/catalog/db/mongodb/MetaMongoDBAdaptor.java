@@ -56,8 +56,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     private final MongoDBCollection metaCollection;
     private static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
-    public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
+    public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, Configuration configuration,
+                              MongoDBAdaptorFactory dbAdaptorFactory) {
+        super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaMongoDBCollection;
     }

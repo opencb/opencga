@@ -73,7 +73,7 @@ public class AuthorizationMongoDBAdaptorTest {
         user2 = MongoDBAdaptorTest.user2;
         user3 = MongoDBAdaptorTest.user3;
         dbAdaptorFactory = dbAdaptorTest.catalogDBAdaptor;
-        aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory);
+        aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory, dbAdaptorTest.getConfiguration());
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
