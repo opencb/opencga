@@ -61,6 +61,7 @@ public class SampleAnnotationIndexQuery {
                     + "[" + position + "] population='" + study + ':' + population + '\''
                     + ", query [" + minValueInclusive + ", " + maxValueExclusive + ")"
                     + ", code [" + minCodeInclusive + ", " + maxCodeExclusive + ")"
+                    + ", exact: " + exactQuery
                     + '}';
         }
     }

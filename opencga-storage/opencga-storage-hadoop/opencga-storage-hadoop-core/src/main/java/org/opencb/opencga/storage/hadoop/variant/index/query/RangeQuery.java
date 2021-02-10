@@ -72,6 +72,7 @@ public class RangeQuery {
         return "RangeQuery{"
                 + "query [" + minValueInclusive + ", " + maxValueExclusive + ")"
                 + ", code [" + minCodeInclusive + ", " + maxCodeExclusive + ")"
+                + ", exact: " + exactQuery
                 + '}';
     }
 }

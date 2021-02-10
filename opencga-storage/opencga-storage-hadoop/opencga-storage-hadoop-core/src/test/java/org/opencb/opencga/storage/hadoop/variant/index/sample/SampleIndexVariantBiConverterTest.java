@@ -62,6 +62,9 @@ public class SampleIndexVariantBiConverterTest {
     @Test
     public void testConvertSYMBOLIC() throws Exception {
         testConvertVariant("1:12345678<12345678<12345678-12345800<12345800<12345800:-:<DEL>", true, null);
+        testConvertVariant("1:12345678<12345678<12345678:A:AAT]4:90265517]", true, null);
+        testConvertVariant("1:12345678<12345678<12345678:-:AT]4:90265517]", true, null);
+        testConvertVariant("1:12345678<12345678<12345678:-:.]4:90265517]", true, null);
     }
 
     protected void testConvertVariant(final String ref, final String alt, boolean withSeparator, Integer expectedLength) throws Exception {
@@ -89,6 +92,8 @@ public class SampleIndexVariantBiConverterTest {
         List<Variant> variants = converter.toVariants(chromosome, batchStart, bytes, offset, actualLength * 2 + (withSeparator ? 1 : 0));
         assertEquals(variant, variants.get(0));
         assertEquals(variant, variants.get(1));
+        assertEquals(variant.toString(), variants.get(0).toString());
+        assertEquals(variant.toString(), variants.get(1).toString());
 
         // Test convert in byte stream
         ByteArrayOutputStream os = new ByteArrayOutputStream(200);
@@ -100,6 +105,8 @@ public class SampleIndexVariantBiConverterTest {
         variants = converter.toVariants(chromosome, batchStart, bytes, offset, os.size() - offset);
         assertEquals(variant, variants.get(0));
         assertEquals(variant, variants.get(1));
+        assertEquals(variant.toString(), variants.get(0).toString());
+        assertEquals(variant.toString(), variants.get(1).toString());
 
     }
 
