@@ -262,6 +262,30 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertTrue(!groups.get(groupAdmin).getUserIds().contains(externalUser));
     }
 
+    @Test
+    public void adminUserRemovesFromAdminsGroup() throws CatalogException {
+        thrown.expectMessage("Only the owner");
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.BasicUpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(studyAdminUser2)), studyAdmin1SessionId);
+    }
+
+    @Test
+    public void adminUserAddsFromAdminsGroup() throws CatalogException {
+        thrown.expectMessage("Only the owner");
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(externalUser)), studyAdmin1SessionId);
+    }
+
+    @Test
+    public void adminUserSetsFromAdminsGroup() throws CatalogException {
+        thrown.expectMessage("Only the owner");
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.BasicUpdateAction.SET,
+                new GroupUpdateParams(Collections.singletonList(studyAdminUser1)), studyAdmin1SessionId);
+    }
+
 //    @Test
 //    public void addMemberToTheBelongingGroup() throws CatalogException {
 //        catalogManager.addUsersToGroup(studyFqn, groupAdmin, externalUser, ownerSessionId);

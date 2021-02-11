@@ -1376,6 +1376,11 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
+    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, String memberIds, StudyAclParams aclParams,
+                                                              ParamUtils.AclAction action, String token) throws CatalogException {
+        return updateAcl(Collections.singletonList(studyId), memberIds, aclParams, action, token);
+    }
+
     public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, StudyAclParams aclParams,
                                                               ParamUtils.AclAction action, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);

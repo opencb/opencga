@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
+import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
@@ -124,6 +125,30 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Sample sample = catalogManager.getSampleManager().get(studyFqn, link.first().getSampleIds().get(0), QueryOptions.empty(), token).first();
         assertEquals("cram_with_crai_index.cram", sample.getFileIds().get(0));
+    }
+
+    @Test
+    public void testLinkAnalystUser() throws CatalogException {
+        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", "analyst", "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, token);
+        String analystToken = catalogManager.getUserManager().login("analyst", "analyst").getToken();
+
+        String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
+        File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
+        assertEquals(File.Format.FASTA, referenceFile.getFormat());
+        assertEquals(File.Bioformat.REFERENCE_GENOME, referenceFile.getBioformat());
+    }
+
+    @Test
+    public void testLinkUserWithNoWritePermissions() throws CatalogException {
+        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", "view_user", "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
+        String analystToken = catalogManager.getUserManager().login("view_user", "view_user").getToken();
+
+        String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
+        File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
+        assertEquals(File.Format.FASTA, referenceFile.getFormat());
+        assertEquals(File.Bioformat.REFERENCE_GENOME, referenceFile.getBioformat());
     }
 
     @Test
