@@ -890,7 +890,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
             stopWatch.reset();
-            checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), token);
+            checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), auditAction, token);
             auditAttributes.append("checkPermissionsTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
             storageStopWatch = StopWatch.createStarted();
@@ -938,11 +938,23 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     // package protected for test visibility
     Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
-                                                      String token)
+                                                      String token) throws CatalogException {
+        return checkSamplesPermissions(query, queryOptions, mm, null, token);
+    }
+
+    Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
+                                                      Enums.Action auditAction, String token)
             throws CatalogException {
         final Map<String, List<String>> samplesMap = new HashMap<>();
         String userId = catalogManager.getUserManager().getUserId(token);
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
+        if (auditAction == Enums.Action.FACET) {
+            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, VariantField.getIncludeFields(null))) {
+                // General facet query. Do not check samples.
+                returnedFields = Collections.emptySet();
+            }
+        }
+
         if (!returnedFields.contains(VariantField.STUDIES_SAMPLES) && !returnedFields.contains(VariantField.STUDIES_FILES)) {
             if (isValidParam(query, STUDY)) {
                 ParsedQuery<String> studies = VariantQueryUtils.splitValue(query, STUDY);
@@ -1011,8 +1023,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                     .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
                             new QueryOptions()
                                     .append(INCLUDE, SampleDBAdaptor.QueryParams.ID.key())
-                                    .append(SORT, "id")
-                                    .append(ORDER, ASCENDING)
+//                                    .append(SORT, "id")
+//                                    .append(ORDER, ASCENDING)
                                     .append("lazy", true), token);
 
                     List<String> includeSamples = new LinkedList<>();
