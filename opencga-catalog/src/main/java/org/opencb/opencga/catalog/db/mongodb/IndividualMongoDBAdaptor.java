@@ -704,7 +704,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
-            Individual individual = checkOnlyOneIndividualMatches(clientSession, query);
+            Individual individual = checkOnlyOneIndividualMatches(clientSession, query,
+                    new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
 
             // Check that the new individual name is still unique
             long studyId = getStudyId(individual.getUid());
@@ -760,7 +761,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
             // That can only be done to one individual...
-            Individual individual = checkOnlyOneIndividualMatches(clientSession, query);
+            Individual individual = checkOnlyOneIndividualMatches(clientSession, query,
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.SAMPLE_UIDS.key(), QueryParams.SAMPLE_VERSION.key())));
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
             ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SAMPLES.key(),
@@ -851,13 +853,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
     }
 
-    private Individual checkOnlyOneIndividualMatches(ClientSession clientSession, Query query)
+    private Individual checkOnlyOneIndividualMatches(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query tmpQuery = new Query(query);
         // We take out ALL_VERSION from query just in case we get multiple results from the same individual...
         tmpQuery.remove(Constants.ALL_VERSIONS);
 
-        OpenCGAResult<Individual> individualDataResult = get(clientSession, tmpQuery, new QueryOptions());
+        OpenCGAResult<Individual> individualDataResult = get(clientSession, tmpQuery, options);
         if (individualDataResult.getNumResults() == 0) {
             throw new CatalogDBException("Update individual: No individual found to be updated");
         }

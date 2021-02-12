@@ -146,9 +146,10 @@ public class FileManagerTest extends AbstractManagerTest {
         String analystToken = catalogManager.getUserManager().login("view_user", "view_user").getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
-        File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
-        assertEquals(File.Format.FASTA, referenceFile.getFormat());
-        assertEquals(File.Bioformat.REFERENCE_GENOME, referenceFile.getBioformat());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("WRITE_FILES");
+        fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
     }
 
     @Test

@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -1412,6 +1413,73 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testUpdateIndividualSamples() throws CatalogException {
+        Sample sample = new Sample().setId("sample1");
+        Sample sample2 = new Sample().setId("sample2");
+        Sample sample3 = new Sample().setId("sample3");
+        catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample3, QueryOptions.empty(), token);
+
+        Individual individual = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual"),
+                Arrays.asList(sample.getId(), sample2.getId()), QueryOptions.empty(), token).first();
+        assertEquals(2, individual.getSamples().size());
+        assertEquals(2, individual.getSamples().stream().map(Sample::getId)
+                .filter(s -> Arrays.asList(sample.getId(), sample2.getId()).contains(s)).count());
+
+        // Increase sample2 version
+        catalogManager.getSampleManager().update(studyFqn, sample2.getId(), new SampleUpdateParams(),
+                new QueryOptions(ParamConstants.INCREMENT_VERSION_PARAM, true), token);
+
+        // Add sample2 (with new version) and sample3
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        IndividualUpdateParams updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(sample2.getId(), sample3.getId()));
+        OpenCGAResult<Individual> update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
+        assertEquals(1, update.getNumUpdated());
+
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        assertEquals(3, individual.getSamples().size());
+        assertEquals(3, individual.getSamples().stream().map(Sample::getId)
+                .filter(s -> Arrays.asList(sample.getId(), sample2.getId(), sample3.getId()).contains(s)).count());
+        // Sample1 and sample3 should have version 1
+        assertEquals(2, individual.getSamples().stream().map(Sample::getVersion)
+                .filter(s -> s == 1).count());
+        // And sample2 should be in version 2
+        assertEquals(1, individual.getSamples().stream().map(Sample::getVersion)
+                .filter(s -> s == 2).count());
+
+        // Remove Sample2
+        actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        updateParams = new IndividualUpdateParams().setSamples(Collections.singletonList(sample2.getId()));
+        update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
+        assertEquals(1, update.getNumUpdated());
+
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, individual.getSamples().size());
+        assertEquals(2, individual.getSamples().stream().map(Sample::getId)
+                .filter(s -> Arrays.asList(sample.getId(), sample3.getId()).contains(s)).count());
+
+        // Set sample and sample2
+        actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(sample.getId(), sample2.getId()));
+        update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
+        assertEquals(1, update.getNumUpdated());
+
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, individual.getSamples().size());
+        assertEquals(2, individual.getSamples().stream().map(Sample::getId)
+                .filter(s -> Arrays.asList(sample.getId(), sample2.getId()).contains(s)).count());
+
+    }
+
+        @Test
     public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
         Sample sample = new Sample().setId("sample1");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);

@@ -323,10 +323,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    private Map<Long, Integer> checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId)
+    private void checkSamplesNotInUseInOtherIndividual(Set<Long> sampleIds, long studyId, Long individualId)
             throws CatalogException {
-        Map<Long, Integer> currentSamples = new HashMap<>();
-
         // Check if any of the existing samples already belong to an individual
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleIds)
@@ -339,10 +337,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             List<String> usedSamples = new ArrayList<>();
             for (Individual individual1 : queryResult.getResults()) {
                 if (individualId != null && individualId == individual1.getUid()) {
-                    // It already belongs to the proper individual.
-                    for (Sample sample : individual1.getSamples()) {
-                        currentSamples.put(sample.getUid(), sample.getVersion());
-                    }
                     continue;
                 }
                 if (individual1.getSamples() != null) {
@@ -359,8 +353,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         + "individuals: " + StringUtils.join(usedSamples, ", "));
             }
         }
-
-        return currentSamples;
     }
 
     @Override
@@ -1348,43 +1340,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             List<Sample> sampleList = catalogManager.getSampleManager().internalGet(studyUid, sampleStringList,
                     SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
 
-            Map<Long, Integer> existingSamplesInIndividual = checkSamplesNotInUseInOtherIndividual(
-                    sampleList.stream().map(Sample::getUid).collect(Collectors.toSet()), studyUid, individualUid);
+            // Check those samples are not in use by other individuals
+            checkSamplesNotInUseInOtherIndividual(sampleList.stream().map(Sample::getUid).collect(Collectors.toSet()), studyUid,
+                    individualUid);
 
-            List<Sample> updatedSamples = new ArrayList<>();
-            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
-            String action = (String) actionMap.getOrDefault(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
-                    ParamUtils.BasicUpdateAction.ADD.name());
-            if (ParamUtils.BasicUpdateAction.ADD.name().equals(action)) {
-                // We will convert the ADD action into a SET to remove existing samples with older versions and replace them for the
-                // newest ones
-                Iterator<Sample> iterator = sampleList.iterator();
-                while (iterator.hasNext()) {
-                    Sample sample = iterator.next();
-                    // We check if the sample is already present in the individual. If so, and the current version is higher than the
-                    // one stored, we will change the version to the current one.
-                    if (existingSamplesInIndividual.containsKey(sample.getUid())
-                            && existingSamplesInIndividual.get(sample.getUid()) < sample.getVersion()) {
-                        existingSamplesInIndividual.put(sample.getUid(), sample.getVersion());
-
-                        // We remove the sample from the list to avoid duplicities
-                        iterator.remove();
-                    }
-                }
-                for (Map.Entry<Long, Integer> entry : existingSamplesInIndividual.entrySet()) {
-                    updatedSamples.add(new Sample().setUid(entry.getKey()).setVersion(entry.getValue()));
-                }
-
-                updatedSamples.addAll(sampleList);
-
-                // Replace action
-                actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET.name());
-            }
-            // We add the rest of the samples the user want to add
-            updatedSamples.addAll(sampleList);
-
-            // Update the parameters with the proper list of samples
-            parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), updatedSamples);
+            // Pass the DBAdaptor the corresponding list of Sample objects
+            parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getFather())) {
