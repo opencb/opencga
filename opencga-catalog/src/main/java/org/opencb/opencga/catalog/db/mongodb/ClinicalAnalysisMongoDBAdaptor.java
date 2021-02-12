@@ -883,7 +883,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case DISORDER:
-                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
+                        List<Bson> queryList = new ArrayList<>();
+                        addAutoOrQuery(DISORDER_ID.key(), queryParam.key(), queryCopy, DISORDER_ID.type(), queryList);
+                        addAutoOrQuery(DISORDER_NAME.key(), queryParam.key(), queryCopy, DISORDER_NAME.type(), queryList);
+                        andBsonList.add(Filters.or(queryList));
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -892,7 +895,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case INDIVIDUAL:
-                        List<Bson> queryList = new ArrayList<>();
+                        queryList = new ArrayList<>();
                         addAutoOrQuery(PROBAND_UID.key(), queryParam.key(), queryCopy, PROBAND_UID.type(), queryList);
                         addAutoOrQuery(FAMILY_MEMBERS_UID.key(), queryParam.key(), queryCopy, FAMILY_MEMBERS_UID.type(), queryList);
                         andBsonList.add(Filters.or(queryList));

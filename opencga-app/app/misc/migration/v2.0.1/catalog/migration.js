@@ -220,6 +220,8 @@ if (versionNeedsUpdate(20001, 1)) {
 
         print('Adjusting clinical indexes...');
         db.clinical.createIndex({"studyUid": 1, "_acl": 1}, {"background": true});
+        db.clinical.createIndex({"disorder.id": 1, "studyUid": 1}, {"background": true});
+        db.clinical.createIndex({"disorder.name": 1, "studyUid": 1}, {"background": true});
 
         db.clinical.dropIndex({"studyUid": 1});
         db.clinical.dropIndex({"_acl": 1, "studyUid": 1});

@@ -48,7 +48,9 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         DUE_DATE("dueDate", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
-        DISORDER("disorder", TEXT_ARRAY, ""),
+        DISORDER("disorder", OBJECT, ""),
+        DISORDER_ID("disorder.id", TEXT, ""),
+        DISORDER_NAME("disorder.name", TEXT, ""),
         TYPE("type", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

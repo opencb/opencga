@@ -157,6 +157,8 @@
 {"collection": "clinical", "fields": {"family.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"dueDate": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"disorder.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"disorder.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"priority.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"flags.id": 1, "studyUid": 1}, "options": {"background": true}}
