@@ -235,13 +235,13 @@ public enum GenotypeClass implements Predicate<String> {
         return gts.stream().filter(predicate).collect(Collectors.toList());
     }
 
-    public static List<String> filter(Collection<String> gts, List<String> loadedGts) {
-        return filter(gts, loadedGts, Arrays.asList("0/0", "./."));
+    public static List<String> filter(Collection<String> genotypesFilter, List<String> loadedGts) {
+        return filter(genotypesFilter, loadedGts, Arrays.asList("0/0", "./."));
     }
 
-    public static List<String> filter(Collection<String> gts, List<String> loadedGts, List<String> defaultGts) {
-        Set<String> filteredGts = new LinkedHashSet<>(gts.size());
-        for (String gt : gts) {
+    public static List<String> filter(Collection<String> genotypesFilter, List<String> loadedGts, List<String> defaultGts) {
+        Set<String> filteredGts = new LinkedHashSet<>(genotypesFilter.size());
+        for (String gt : genotypesFilter) {
             GenotypeClass genotypeClass = GenotypeClass.from(gt);
             if (gt.equals(NONE_GT_VALUE) || gt.equals(NA_GT_VALUE) || gt.equals(UNKNOWN_GENOTYPE)) {
                 filteredGts.add(gt);
