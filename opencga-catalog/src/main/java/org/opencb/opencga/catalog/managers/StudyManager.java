@@ -1478,11 +1478,11 @@ public class StudyManager extends AbstractManager {
                             members, permissions);
                     break;
                 case RESET:
-                    aclResult = OpenCGAResult.empty();
-                    for (Study study : studies) {
-                        authorizationManager.resetPermissionsFromAllEntities(study.getUid(), members);
-                        aclResult.append(authorizationManager.getAllStudyAcls(userId, study.getUid()));
-                    }
+                    aclResult = authorizationManager.removeStudyAcls(studies
+                                    .stream()
+                                    .map(Study::getUid)
+                                    .collect(Collectors.toList()),
+                            members, null);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

@@ -371,8 +371,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyAclUpdateParams params) {
