@@ -88,6 +88,18 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         assertEquals(4, search.getNumResults());
         assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
+
+        query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getUuid());
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        assertEquals(4, search.getNumResults());
+        assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
+
+        query = new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), file.getPath());
+        search = catalogManager.getSampleManager().search(studyFqn, query, SampleManager.INCLUDE_SAMPLE_IDS, token);
+        assertEquals(4, search.getNumResults());
+        assertTrue(search.getResults().stream().map(Sample::getId).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685")));
     }
 
     @Test

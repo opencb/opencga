@@ -325,15 +325,64 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Fix query if it contains any annotation
         AnnotationUtils.fixQueryAnnotationSearch(study, query);
 
-//        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-//        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()))) {
-//            OpenCGAResult<Individual> queryResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-//                    query.getAsStringList(SampleDBAdaptor.QueryParams.INDIVIDUAL.key()), IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId,
-//                    false);
-//            query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), queryResult.getResults().stream().map(Individual::getUid)
-//                    .collect(Collectors.toList()));
-//            query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
-//        }
+        // The files introduced could be either ids, paths or uuids. As so, we should use the smart resolutor to do this.
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.FILE_IDS.key()))) {
+            List<String> fileIds = query.getAsStringList(SampleDBAdaptor.QueryParams.FILE_IDS.key());
+            boolean queryFileManager = false;
+            for (String fileId : fileIds) {
+                if (!fileId.contains(":")) {
+                    // In sample documents, we only store fileIds. If it does not contain ":", we will assume it is not a fileId, so we will
+                    // query FileManager
+                    queryFileManager = true;
+                    break;
+                }
+            }
+
+            if (queryFileManager) {
+                // Obtain the corresponding fileIds
+                InternalGetDataResult<File> result = catalogManager.getFileManager().internalGet(study.getUid(),
+                        query.getAsStringList(SampleDBAdaptor.QueryParams.FILE_IDS.key()),
+                        FileManager.INCLUDE_FILE_IDS, userId, true);
+                if (result.getMissing() == null || result.getMissing().isEmpty()) {
+                    // We have obtained all the results, so we add them to the query object
+                    query.put(SampleDBAdaptor.QueryParams.FILE_IDS.key(), result.getResults().stream().map(File::getId)
+                            .collect(Collectors.toList()));
+                } else {
+                    // We must not fail because of the additional file query, but this query should not get any results
+                    logger.warn("Missing files: {}\nChanged query to ensure no results are returned", result.getMissing());
+                    query.put(SampleDBAdaptor.QueryParams.UID.key(), -1);
+                    query.remove(SampleDBAdaptor.QueryParams.FILE_IDS.key());
+                }
+            }
+        }
+
+        // The individuals introduced could be either ids or uuids. As so, we should use the smart resolutor to do this.
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))) {
+            List<String> individualIds = query.getAsStringList(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+            // In sample documents we store individual ids, so we will only do an additional query if user is passing an individual uuid
+            boolean queryIndividualManager = false;
+            for (String individualId : individualIds) {
+                if (UuidUtils.isOpenCgaUuid(individualId)) {
+                    queryIndividualManager = true;
+                }
+            }
+
+            if (queryIndividualManager) {
+                InternalGetDataResult<Individual> result = catalogManager.getIndividualManager().internalGet(study.getUid(),
+                        query.getAsStringList(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()),
+                        IndividualManager.INCLUDE_INDIVIDUAL_IDS, userId, true);
+                if (result.getMissing() == null || result.getMissing().isEmpty()) {
+                    // We have obtained all the results, so we add them to the query object
+                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), result.getResults().stream().map(Individual::getId)
+                            .collect(Collectors.toList()));
+                } else {
+                    // We must not fail because of the additional individual query, but this query should not get any results
+                    logger.warn("Missing individuals: {}\nChanged query to ensure no results are returned", result.getMissing());
+                    query.put(SampleDBAdaptor.QueryParams.UID.key(), -1);
+                    query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                }
+            }
+        }
     }
 
     @Override

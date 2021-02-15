@@ -75,10 +75,10 @@ public class UuidUtils {
         return new UUID(mostSignificantBits, leastSignificantBits).toString();
     }
 
-    public static boolean isOpenCgaUuid(String token) {
-        if (token.length() == 36) {
+    public static boolean isOpenCgaUuid(String id) {
+        if (id.length() == 36) {
             try {
-                Matcher matcher = UUID_PATTERN.matcher(token);
+                Matcher matcher = UUID_PATTERN.matcher(id);
                 return matcher.find();
             } catch (BufferUnderflowException e) {
                 return false;
