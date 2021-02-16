@@ -904,7 +904,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if ((parameters.size() == 1 && !parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
             authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
-                    FamilyAclEntry.FamilyPermissions.UPDATE);
+                    FamilyAclEntry.FamilyPermissions.WRITE);
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {

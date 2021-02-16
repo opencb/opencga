@@ -593,9 +593,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
             assertEquals(2, result.size());
             assertTrue(result.keySet().containsAll(Arrays.asList("user2", "user3")));
             assertTrue(result.get("user2").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.UPDATE.name())));
+                    SampleAclEntry.SamplePermissions.WRITE.name())));
             assertTrue(result.get("user3").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.UPDATE.name())));
+                    SampleAclEntry.SamplePermissions.WRITE.name())));
         }
 
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
@@ -640,9 +640,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
             assertEquals(2, result.size());
             assertTrue(result.keySet().containsAll(Arrays.asList("user2", "user3")));
             assertTrue(result.get("user2").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.UPDATE.name())));
+                    SampleAclEntry.SamplePermissions.WRITE.name())));
             assertTrue(result.get("user3").containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(),
-                    SampleAclEntry.SamplePermissions.UPDATE.name())));
+                    SampleAclEntry.SamplePermissions.WRITE.name())));
         }
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.REMOVE,

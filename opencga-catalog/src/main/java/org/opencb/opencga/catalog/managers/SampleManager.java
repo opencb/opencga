@@ -952,7 +952,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         if ((parameters.size() == 1 && !parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
             authorizationManager.checkSamplePermission(study.getUid(), sample.getUid(), userId,
-                    SampleAclEntry.SamplePermissions.UPDATE);
+                    SampleAclEntry.SamplePermissions.WRITE);
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
@@ -1247,7 +1247,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     List<String> propagatedPermissions = new LinkedList<>();
                     for (String permission : allPermissions) {
                         if (SampleAclEntry.SamplePermissions.VIEW.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.UPDATE.name().equals(permission)
+                                || SampleAclEntry.SamplePermissions.WRITE.name().equals(permission)
                                 || SampleAclEntry.SamplePermissions.DELETE.name().equals(permission)
                                 || SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name().equals(permission)
                                 || SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS.name().equals(permission)

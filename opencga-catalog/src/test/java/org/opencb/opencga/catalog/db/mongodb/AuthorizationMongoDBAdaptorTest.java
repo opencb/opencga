@@ -85,7 +85,7 @@ public class AuthorizationMongoDBAdaptorTest {
         acls.put(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(),
-                SampleAclEntry.SamplePermissions.UPDATE.name()
+                SampleAclEntry.SamplePermissions.WRITE.name()
         ));
         aclDBAdaptor.setAcls(Arrays.asList(s1.getUid()), acls, Enums.Resource.SAMPLE);
     }
@@ -209,7 +209,7 @@ public class AuthorizationMongoDBAdaptorTest {
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList(user2.getId()), Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(1, sampleAcl.first().get(user2.getId()).size());
-        assertTrue(sampleAcl.first().get(user2.getId()).containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.UPDATE.name())));
+        assertTrue(sampleAcl.first().get(user2.getId()).containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.WRITE.name())));
     }
 
     @Test

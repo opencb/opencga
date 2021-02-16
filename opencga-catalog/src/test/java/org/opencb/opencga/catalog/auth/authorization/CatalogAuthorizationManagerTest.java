@@ -890,7 +890,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         // member user wants to know the samples for which he has UPDATE permissions
         // He should have UPDATE permissions in the same samples where he has DELETE permissions
-        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.UPDATE.name());
+        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.WRITE.name());
         results = sampleManager.search(studyFqn, query, options, memberSessionId).getResults();
         System.out.println(results.stream().map(Sample::getId).collect(Collectors.toSet()));
         assertEquals(8, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());

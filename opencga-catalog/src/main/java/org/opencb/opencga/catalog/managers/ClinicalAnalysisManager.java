@@ -1138,7 +1138,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getConfiguration().getClinical();
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
@@ -1799,7 +1799,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 List<String> propagatedPermissions = new LinkedList<>();
                 for (String permission : allPermissions) {
                     if (ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name().equals(permission)
-                            || ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE.name().equals(permission)) {
+                            || ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE.name().equals(permission)) {
                         propagatedPermissions.add(permission);
                     }
                 }

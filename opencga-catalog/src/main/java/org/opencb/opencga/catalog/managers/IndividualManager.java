@@ -1312,7 +1312,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         if ((parameters.size() == 1 && !parameters.containsKey(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
             authorizationManager.checkIndividualPermission(studyUid, individualUid, userId,
-                    IndividualAclEntry.IndividualPermissions.UPDATE);
+                    IndividualAclEntry.IndividualPermissions.WRITE);
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {

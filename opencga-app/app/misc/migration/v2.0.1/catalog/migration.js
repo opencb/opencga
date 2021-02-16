@@ -232,6 +232,57 @@ if (versionNeedsUpdate(20001, 1)) {
         db.panel.dropIndex({"studyUid": 1});
     }, "Fix indexes");
 
+    runUpdate(function () {
+        function fixPermissionString(aclList) {
+            var anyUpdate = false;
+            var acls = [];
+            for (var acl of aclList) {
+                acls.push(acl.replace("UPDATE", "WRITE"));
+                if (acl.indexOf("UPDATE") > -1) {
+                    anyUpdate = true;
+                }
+            }
+            return {
+                'toUpdate': anyUpdate,
+                'acl': acls
+            }
+        }
+
+        function fixPermissions(bulk, doc) {
+            var toset = {};
+            if (isNotEmptyArray(doc['_acl'])) {
+                var result = fixPermissionString(doc['_acl']);
+                if (result['toUpdate']) {
+                    toset['_acl'] = result['acl'];
+                }
+            }
+            if (isNotEmptyArray(doc['_userAcls'])) {
+                var result = fixPermissionString(doc['_userAcls']);
+                if (result['toUpdate']) {
+                    toset['_userAcls'] = result['acl'];
+                }
+            }
+
+            if (Object.keys(toset).length > 0) {
+                bulk.find({"_id": doc._id}).updateOne({"$set": toset});
+            }
+        }
+
+        var query = {
+            '_acl': {"$exists": true, "$ne": []},
+            '_userAcls': {"$exists": true, "$ne": []}
+        };
+
+        var projection = {'_acl': 1, '_userAcls': 1};
+
+        migrateCollection("job", query, projection, fixPermissions);
+        migrateCollection("sample", query, projection, fixPermissions);
+        migrateCollection("individual", query, projection, fixPermissions);
+        migrateCollection("family", query, projection, fixPermissions);
+        migrateCollection("cohort", query, projection, fixPermissions);
+        migrateCollection("panel", query, projection, fixPermissions);
+        migrateCollection("clinical", query, projection, fixPermissions);
+    }, "Fix Update/Write ACL permissions");
 
     setOpenCGAVersion("2.0.1", 20001, 1);
 }

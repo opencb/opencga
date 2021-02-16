@@ -29,8 +29,8 @@ public class SampleAclEntry extends AbstractAclEntry<SampleAclEntry.SamplePermis
 
     public enum SamplePermissions {
         VIEW(Collections.emptyList()),
-        UPDATE(Collections.singletonList(VIEW)),
-        DELETE(Arrays.asList(VIEW, UPDATE)),
+        WRITE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, WRITE)),
         VIEW_ANNOTATIONS(Collections.singletonList(VIEW)),
         WRITE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, VIEW)),
         DELETE_ANNOTATIONS(Arrays.asList(VIEW_ANNOTATIONS, WRITE_ANNOTATIONS, VIEW)),
