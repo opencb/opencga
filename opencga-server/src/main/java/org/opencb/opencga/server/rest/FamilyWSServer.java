@@ -32,10 +32,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.family.FamilyAclUpdateParams;
-import org.opencb.opencga.core.models.family.FamilyCreateParams;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.job.Job;
 
 import javax.servlet.http.HttpServletRequest;
@@ -372,14 +369,13 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
+            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberList,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
+            @ApiParam(value = "Propagate family permissions to related individuals and samples", defaultValue = "NO") @QueryParam("propagate") FamilyAclParams.Propagate propagate,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyAclUpdateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new FamilyAclUpdateParams());
-            AclParams familyAclParams = new AclParams(params.getPermissions());
-            List<String> idList = getIdList(params.getFamily(), false);
-            return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, action, token));
+            FamilyAclParams aclParams = new FamilyAclParams(params.getPermissions(), params.getFamily(), params.getIndividual(), params.getSample(), propagate);
+            return createOkResponse(familyManager.updateAcl(studyStr, aclParams, memberList, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

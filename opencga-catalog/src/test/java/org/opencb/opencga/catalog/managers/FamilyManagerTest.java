@@ -41,19 +41,20 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyAclParams;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -183,7 +184,7 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
-    public void getFamilyWithOnlyAllowedMembers() throws CatalogException, IOException {
+    public void testPropagateFamilyPermission() throws CatalogException {
         createDummyFamily("Martinez-Martinez", true);
 
         catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
@@ -195,7 +196,68 @@ public class FamilyManagerTest extends GenericTest {
         } catch (CatalogAuthorizationException ignored) {
         }
 
-        familyManager.updateAcl(STUDY, Collections.singletonList("Martinez-Martinez"), "user2", new AclParams("VIEW"),
+        familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null, FamilyAclParams.Propagate.NO), "user2",
+                ParamUtils.AclAction.SET, sessionIdUser);
+        DataResult<Family> familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(0, familyDataResult.first().getMembers().size());
+        int nsamples = 0;
+        for (Individual member : familyDataResult.first().getMembers()) {
+            nsamples += member.getSamples().size();
+        }
+        assertEquals(0, nsamples);
+
+        familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null, FamilyAclParams.Propagate.YES), "user2",
+                ParamUtils.AclAction.SET, sessionIdUser);
+        familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(5, familyDataResult.first().getMembers().size());
+        List<Sample> sampleList = new ArrayList<>(3);
+        for (Individual member : familyDataResult.first().getMembers()) {
+            sampleList.addAll(member.getSamples());
+        }
+        assertEquals(3, sampleList.size());
+
+        OpenCGAResult<Map<String, List<String>>> acls = catalogManager.getSampleManager().getAcls(STUDY,
+                sampleList.stream().map(Sample::getId).collect(Collectors.toList()), "user2", false, sessionIdUser);
+        for (Map<String, List<String>> result : acls.getResults()) {
+            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
+            assertFalse(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()));
+        }
+
+        familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null,
+                        FamilyAclParams.Propagate.YES_AND_VARIANT_VIEW), "user2", ParamUtils.AclAction.SET, sessionIdUser);
+        familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(5, familyDataResult.first().getMembers().size());
+        sampleList = new ArrayList<>(3);
+        for (Individual member : familyDataResult.first().getMembers()) {
+            sampleList.addAll(member.getSamples());
+        }
+        assertEquals(3, sampleList.size());
+
+        acls = catalogManager.getSampleManager().getAcls(STUDY, sampleList.stream().map(Sample::getId).collect(Collectors.toList()),
+                "user2", false, sessionIdUser);
+        for (Map<String, List<String>> result : acls.getResults()) {
+            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
+            assertTrue(result.get("user2").contains(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()));
+        }
+    }
+
+    @Test
+    public void getFamilyWithOnlyAllowedMembers2() throws CatalogException, IOException {
+        createDummyFamily("Martinez-Martinez", true);
+
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
+        String token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+
+        try {
+            familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+            fail("Expected authorization exception. user2 should not be able to see the study");
+        } catch (CatalogAuthorizationException ignored) {
+        }
+
+        familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null, FamilyAclParams.Propagate.NO), "user2",
                 ParamUtils.AclAction.SET, sessionIdUser);
         DataResult<Family> familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
@@ -420,6 +482,17 @@ public class FamilyManagerTest extends GenericTest {
     * */
 
     private DataResult<Family> createDummyFamily(String familyName, boolean createMissingMembers) throws CatalogException {
+        if (createMissingMembers) {
+            Sample sample1 = new Sample().setId("sample1");
+            catalogManager.getSampleManager().create(STUDY, sample1, QueryOptions.empty(), sessionIdUser);
+
+            Sample sample2 = new Sample().setId("sample2");
+            catalogManager.getSampleManager().create(STUDY, sample2, QueryOptions.empty(), sessionIdUser);
+
+            Sample sample3 = new Sample().setId("sample3");
+            catalogManager.getSampleManager().create(STUDY, sample3, QueryOptions.empty(), sessionIdUser);
+        }
+
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
 
@@ -458,7 +531,18 @@ public class FamilyManagerTest extends GenericTest {
         Family family = new Family(familyName, familyName, null, null, members, "", 5,
                 Collections.emptyList(), Collections.emptyMap());
 
-        return familyManager.create(STUDY, family, memberIds, QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, memberIds, QueryOptions.empty(), sessionIdUser);
+
+        if (createMissingMembers) {
+            catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
+                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample1")), QueryOptions.empty(), sessionIdUser);
+            catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
+                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample2")), QueryOptions.empty(), sessionIdUser);
+            catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
+                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample3")), QueryOptions.empty(), sessionIdUser);
+        }
+
+        return familyOpenCGAResult;
     }
 
     @Test
