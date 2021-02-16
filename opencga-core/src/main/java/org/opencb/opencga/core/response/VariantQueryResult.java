@@ -29,10 +29,16 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@JsonIgnoreProperties({"samples", "numTotalSamples", "numSamples", "source", "approximateCount", "approximateCountSamplingSize"})
+@JsonIgnoreProperties({"samples", "numTotalSamples", "numSamples", "source",
+        "approximateCount",
+        "approximateCountSamplingSize",
+        "fetchTime",
+        "convertTime"})
 public class VariantQueryResult<T> extends OpenCGAResult<T> {
 
     private static final String SAMPLES = "samples";
+    private static final String FETCH_TIME = "fetchTime";
+    private static final String CONVERT_TIME = "convertTime";
     private static final String NUM_TOTAL_SAMPLES = "numTotalSamples";
     private static final String NUM_SAMPLES = "numSamples";
     private static final String SOURCE = "source";
@@ -42,15 +48,15 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
     public VariantQueryResult() {
     }
 
-    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<Event> events, List<T> result,
+    public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result,
                               Map<String, List<String>> samples, String source) {
-        this(dbTime, numResults, numMatches, events, result, samples, source, null, null, null);
+        this(time, numResults, numMatches, events, result, samples, source, null, null, null);
     }
 
-    public VariantQueryResult(int dbTime, int numResults, long numMatches, List<Event> events, List<T> result,
+    public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result,
                               Map<String, List<String>> samples, String source, Boolean approximateCount,
                               Integer approximateCountSamplingSize, Integer numTotalSamples) {
-        super(dbTime, events, numResults, result, numMatches);
+        super((int) time, events, numResults, result, numMatches);
         setSamples(samples);
         setSource(source);
         setApproximateCount(approximateCount);
@@ -97,6 +103,24 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         } else {
             return ((Map<String, List<String>>) o);
         }
+    }
+
+    public Long getFetchTime() {
+        return getAttributes().containsKey(FETCH_TIME) ? getAttributes().getLong(FETCH_TIME) : null;
+    }
+
+    public VariantQueryResult<T> setFetchTime(long fetchTime) {
+        getAttributes().put(FETCH_TIME, fetchTime);
+        return this;
+    }
+
+    public Long getConvertTime() {
+        return getAttributes().containsKey(CONVERT_TIME) ? getAttributes().getLong(CONVERT_TIME) : null;
+    }
+
+    public VariantQueryResult<T> setConvertTime(long convertTime) {
+        getAttributes().put(CONVERT_TIME, convertTime);
+        return this;
     }
 
     public VariantQueryResult<T> setSamples(Map<String, List<String>> samples) {
