@@ -607,8 +607,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
-        Query query = inputQuery == null ? new Query() : new Query(inputQuery);
-        QueryOptions queryOptions = inputQueryOptions == null ? new QueryOptions() : new QueryOptions(inputQueryOptions);
+        Query query = VariantQueryUtils.copy(inputQuery);
+        QueryOptions queryOptions = VariantQueryUtils.copy(inputQueryOptions);
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 

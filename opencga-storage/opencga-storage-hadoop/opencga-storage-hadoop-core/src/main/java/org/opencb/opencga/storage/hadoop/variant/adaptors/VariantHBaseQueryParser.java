@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -31,16 +30,20 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
@@ -51,11 +54,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.ANNOTATION_ID;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.buildFileColumnKey;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.buildSampleColumnKey;
 
@@ -335,28 +337,26 @@ public class VariantHBaseQueryParser {
 
         Map<String, Integer> studies = metadataManager.getStudies(null);
         Set<String> studyNames = studies.keySet();
-        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
-
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
-
-            Filter f1 = existingColumnFilter(INDEX_NOT_SYNC.bytes());
-            Filter f2 = existingColumnFilter(INDEX_UNKNOWN.bytes());
-            filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
-
-
-            long ts = metadataManager.getProjectMetadata().getAttributes()
-                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
-            if (ts > 0 && scan.getStartRow() == HConstants.EMPTY_START_ROW) {
-                try {
-                    scan.setTimeRange(ts, Long.MAX_VALUE);
-                } catch (IOException e) {
-                    throw VariantQueryException.internalException(e);
-                }
-            } // Otherwise, get all variants
-
-        }
+//        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+//            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
+//            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
+//            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
+//
+//            Filter f1 = existingColumnFilter(INDEX_NOT_SYNC.bytes());
+//            Filter f2 = existingColumnFilter(INDEX_UNKNOWN.bytes());
+//            filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
+//
+//
+//            long ts = metadataManager.getProjectMetadata().getAttributes()
+//                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+//            if (ts > 0 && scan.getStartRow() == HConstants.EMPTY_START_ROW) {
+//                try {
+//                    scan.setTimeRange(ts, Long.MAX_VALUE);
+//                } catch (IOException e) {
+//                    throw VariantQueryException.internalException(e);
+//                }
+//            } // Otherwise, get all variants
+//        }
 
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (VariantQueryProjection.StudyVariantQueryProjection study : selectElements.getStudies().values()) {

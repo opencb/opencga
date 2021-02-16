@@ -628,7 +628,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         StopWatch stopWatch = StopWatch.createStarted();
                         final int limit = options.getInt(QueryOptions.LIMIT, 10);
                         int skip = options.getInt(SKIP, 0);
-                        int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 10);
+                        // Make initial batchLimit shorter
+                        int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 3 + skip);
                         int batchSkip = 0;
 
                         String studyFqn = query.getString(STUDY.key());
