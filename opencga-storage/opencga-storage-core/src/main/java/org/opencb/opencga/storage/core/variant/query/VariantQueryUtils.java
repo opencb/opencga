@@ -1351,13 +1351,13 @@ public final class VariantQueryUtils {
     }
 
     public static QueryOptions addDefaultLimit(QueryOptions queryOptions, ObjectMap configuration) {
-        return addDefaultLimit(QueryOptions.LIMIT, queryOptions == null ? new QueryOptions() : queryOptions,
+        return addDefaultLimit(QueryOptions.LIMIT, nonNull(queryOptions),
                 configuration.getInt(QUERY_LIMIT_MAX.key(), QUERY_LIMIT_MAX.defaultValue()),
                 configuration.getInt(QUERY_LIMIT_DEFAULT.key(), QUERY_LIMIT_DEFAULT.defaultValue()), "variants");
     }
 
     public static Query addDefaultSampleLimit(Query query, ObjectMap configuration) {
-        return addDefaultLimit(SAMPLE_LIMIT.key(), query == null ? new Query() : query,
+        return addDefaultLimit(SAMPLE_LIMIT.key(), nonNull(query),
                 configuration.getInt(QUERY_SAMPLE_LIMIT_MAX.key(), QUERY_SAMPLE_LIMIT_MAX.defaultValue()),
                 configuration.getInt(QUERY_SAMPLE_LIMIT_DEFAULT.key(), QUERY_SAMPLE_LIMIT_DEFAULT.defaultValue()),
                 "samples");
@@ -1374,6 +1374,23 @@ public final class VariantQueryUtils {
         limit = (limit >= 0) ? limit : limitDefault;
         objectMap.put(limitKey,  limit);
         return objectMap;
+    }
+
+
+    public static QueryOptions copy(QueryOptions queryOptions) {
+        return queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
+    }
+
+    public static QueryOptions nonNull(QueryOptions queryOptions) {
+        return queryOptions == null ? new QueryOptions() : queryOptions;
+    }
+
+    public static Query copy(Query query) {
+        return query == null ? new Query() : new Query(query);
+    }
+
+    public static Query nonNull(Query query) {
+        return query == null ? new Query() : query;
     }
 
 }

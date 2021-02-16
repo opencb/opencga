@@ -1120,6 +1120,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return               A FacetedQueryResult with the result of the query
      */
     public DataResult<FacetField> facet(Query query, QueryOptions options) {
+        query = copy(query);
+        options = copy(options);
+        // Hardcode INCLUDE to simplify preProcess operation, as the query does not return any study data.
+        options.put(QueryOptions.INCLUDE, VariantField.ID.fieldName());
         addDefaultLimit(options, getOptions());
         query = preProcessQuery(query, options);
         return getVariantAggregationExecutor(query, options).aggregation(query, options);
