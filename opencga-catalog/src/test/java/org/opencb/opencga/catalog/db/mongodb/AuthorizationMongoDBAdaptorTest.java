@@ -103,12 +103,16 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor.resetMembersFromAllEntries(studyId, Arrays.asList(user1.getId(), user2.getId()));
 
         aclDBAdaptor.addToMembers(studyId, Arrays.asList("user1", "user2", "user3"), Collections.singletonList(
-                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Arrays.asList("VIEW", "UPDATE"), Enums.Resource.SAMPLE)));
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()),
+                        Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name()),
+                        Enums.Resource.SAMPLE)));
         aclDBAdaptor.addToMembers(studyId, Arrays.asList("user4"), Collections.singletonList(
                 new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Collections.emptyList(), Enums.Resource.SAMPLE)));
         // We attempt to store the same permissions
         aclDBAdaptor.addToMembers(studyId, Arrays.asList("user1", "user2", "user3"), Collections.singletonList(
-                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()), Arrays.asList("VIEW", "UPDATE"), Enums.Resource.SAMPLE)));
+                new AuthorizationManager.CatalogAclParams(Arrays.asList(s1.getUid()),
+                        Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name()),
+                        Enums.Resource.SAMPLE)));
 
         DataResult<Map<String, List<String>>> sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
@@ -117,9 +121,11 @@ public class AuthorizationMongoDBAdaptorTest {
         sampleAcl = aclDBAdaptor.get(s1.getUid(), Arrays.asList("user1", "user2"), Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(2, sampleAcl.first().size());
-        assertTrue(sampleAcl.first().get("user1").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertTrue(sampleAcl.first().get("user1")
+                .containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name())));
         assertEquals(2, sampleAcl.first().get("user1").size());
-        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertTrue(sampleAcl.first().get("user2")
+                .containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name())));
         assertEquals(2, sampleAcl.first().get("user2").size());
 
         aclDBAdaptor.setToMembers(studyId, Arrays.asList("user1"), Collections.singletonList(
@@ -130,7 +136,8 @@ public class AuthorizationMongoDBAdaptorTest {
 
         assertTrue(sampleAcl.first().get("user1").contains("DELETE"));
         assertEquals(1, sampleAcl.first().get("user1").size());
-        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertTrue(sampleAcl.first().get("user2")
+                .containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name())));
         assertEquals(2, sampleAcl.first().get("user2").size());
 
         // Remove one permission from one user
@@ -155,7 +162,8 @@ public class AuthorizationMongoDBAdaptorTest {
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(2, sampleAcl.first().size());
 
-        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertTrue(sampleAcl.first().get("user2")
+                .containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name())));
         assertEquals(2, sampleAcl.first().get("user2").size());
         assertEquals(0, sampleAcl.first().get("user4").size());
 
@@ -165,7 +173,8 @@ public class AuthorizationMongoDBAdaptorTest {
         sampleAcl = aclDBAdaptor.get(s1.getUid(), null, Enums.Resource.SAMPLE);
         assertEquals(1, sampleAcl.getNumResults());
         assertEquals(1, sampleAcl.first().size());
-        assertTrue(sampleAcl.first().get("user2").containsAll(Arrays.asList("VIEW", "UPDATE")));
+        assertTrue(sampleAcl.first().get("user2")
+                .containsAll(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name())));
         assertEquals(2, sampleAcl.first().get("user2").size());
     }
 

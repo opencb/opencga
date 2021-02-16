@@ -522,7 +522,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testCreatePermissionRules() throws CatalogException {
         PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
-                Arrays.asList("VIEW", "UPDATE"));
+                Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name()));
         DataResult<PermissionRule> permissionRulesDataResult = catalogManager.getStudyManager().createPermissionRule(
                 studyFqn, Enums.Entity.SAMPLES, rules, token);
         assertEquals(1, permissionRulesDataResult.getNumResults());
@@ -551,7 +551,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdatePermissionRulesNonExistingUser() throws CatalogException {
         PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user20"),
-                Arrays.asList("VIEW", "UPDATE"));
+                Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name()));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("does not exist");
         catalogManager.getStudyManager().createPermissionRule(studyFqn, Enums.Entity.SAMPLES, rules, token);
@@ -560,7 +560,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdatePermissionRulesNonExistingGroup() throws CatalogException {
         PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "@group"),
-                Arrays.asList("VIEW", "UPDATE"));
+                Arrays.asList(SampleAclEntry.SamplePermissions.VIEW.name(), SampleAclEntry.SamplePermissions.WRITE.name()));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getStudyManager().createPermissionRule(studyFqn, Enums.Entity.SAMPLES, rules, token);
@@ -582,7 +582,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null, "VIEW,UPDATE");
+        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null,
+                SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.WRITE.name());
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
                 .collect(Collectors.toList());
@@ -630,7 +631,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null, "VIEW,UPDATE");
+        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null,
+                SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.WRITE.name());
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
         DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
