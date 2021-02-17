@@ -588,7 +588,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .map(Sample::getId)
                 .collect(Collectors.toList());
         DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, false, token);
+                sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (Map<String, List<String>> result : sampleAclResult.getResults()) {
             assertEquals(2, result.size());
@@ -636,7 +636,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
         DataResult<Map<String, List<String>>> sampleAclResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, false, token);
+                sampleIds, "user2,user3", sampleAclParams, ParamUtils.AclAction.SET, token);
         assertEquals(sampleIds.size(), sampleAclResult.getNumResults());
         for (Map<String, List<String>> result : sampleAclResult.getResults()) {
             assertEquals(2, result.size());

@@ -50,6 +50,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.*;
@@ -1188,7 +1189,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new StudyAclParams("", null), SET, token);
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("s_1"), "@myGroup",
-                new SampleAclParams(null, null, null, "VIEW"), SET, false, token);
+                new SampleAclParams(null, null, null, "VIEW"), SET, token);
 
         DataResult<Sample> search = catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(),
                 sessionIdUser2);
@@ -1994,13 +1995,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(individualId, sample.getIndividualId());
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, false, token);
+                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, token);
 
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
         assertEquals(null, sample.getAttributes().get("OPENCGA_INDIVIDUAL"));
 
-        catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("SAMPLE_1"), "user2",
-                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, true, token);
+        catalogManager.getIndividualManager().updateAcl(studyFqn, Collections.emptyList(), "user2",
+                new IndividualAclParams(sampleId1, IndividualAclEntry.IndividualPermissions.VIEW.name()), SET, false, token);
         sample = catalogManager.getSampleManager().get(studyFqn, "SAMPLE_1", new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
@@ -2009,7 +2010,6 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new QueryOptions(SAMPLE_INCLUDE_INDIVIDUAL_PARAM, true), sessionIdUser2).first();
         assertEquals(individualId, ((Individual) sample.getAttributes().get("OPENCGA_INDIVIDUAL")).getId());
         assertEquals(sampleId1, sample.getId());
-
     }
 
     @Test
@@ -2192,41 +2192,16 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testAssignPermissionsWithPropagationAndNoIndividual() throws CatalogException {
+    public void testAssignPermissions() throws CatalogException {
         Sample sample = new Sample().setId("sample");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);
 
         DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample"), "user2", new SampleAclParams(null, null, null, "VIEW"), SET, true, token);
+                Arrays.asList("sample"), "user2", new SampleAclParams(null, null, null, "VIEW"), SET, token);
         assertEquals(1, dataResult.getNumResults());
         assertEquals(1, dataResult.first().size());
         assertEquals(1, dataResult.first().get("user2").size());
         assertTrue(dataResult.first().get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
-    }
-
-    // Two samples, one related to one individual and the other does not have any individual associated
-    @Test
-    public void testAssignPermissionsWithPropagationWithIndividualAndNoIndividual() throws CatalogException {
-        Individual individual = new Individual().setId("individual").setSamples(Collections.singletonList(new Sample().setId("sample")));
-        catalogManager.getIndividualManager().create(studyFqn, individual, QueryOptions.empty(), token);
-
-        Sample sample2 = new Sample().setId("sample2");
-        catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
-
-        DataResult<Map<String, List<String>>> dataResult = catalogManager.getSampleManager().updateAcl(studyFqn,
-                Arrays.asList("sample", "sample2"), "user2", new SampleAclParams(null, null, null, "VIEW"), SET, true, token);
-        assertEquals(2, dataResult.getNumResults());
-        assertEquals(1, dataResult.first().size());
-        assertEquals(1, dataResult.first().get("user2").size());
-        assertTrue(dataResult.getResults().get(0).get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
-        assertTrue(dataResult.getResults().get(1).get("user2").contains(SampleAclEntry.SamplePermissions.VIEW.name()));
-
-        DataResult<Map<String, List<String>>> individualAcl = catalogManager.getIndividualManager().getAcls(studyFqn,
-                Collections.singletonList("individual"), "user2", false, token);
-        assertEquals(1, individualAcl.getNumResults());
-        assertEquals(1, individualAcl.first().size());
-        assertEquals(1, individualAcl.first().get("user2").size());
-        assertTrue(individualAcl.first().get("user2").contains(IndividualAclEntry.IndividualPermissions.VIEW.name()));
     }
 
 }

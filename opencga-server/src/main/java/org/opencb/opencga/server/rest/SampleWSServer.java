@@ -377,11 +377,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
-            @ApiParam(value = "Propagate sample permissions to related individuals", defaultValue = "false") @QueryParam("propagate") boolean propagate,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
                     SampleAclUpdateParams params) {
@@ -390,7 +388,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             SampleAclParams sampleAclParams = new SampleAclParams(
                     params.getIndividual(), params.getFile(), params.getCohort(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
-            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, action, propagate, token));
+            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

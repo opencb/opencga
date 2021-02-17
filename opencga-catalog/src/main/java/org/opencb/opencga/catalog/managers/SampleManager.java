@@ -1110,7 +1110,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> sampleStringList, String memberList,
                                                               SampleAclParams sampleAclParams, ParamUtils.AclAction action,
-                                                              boolean propagate, String token) throws CatalogException {
+                                                              String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1120,7 +1120,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("memberList", memberList)
                 .append("sampleAclParams", sampleAclParams)
                 .append("action", action)
-                .append("propagate", propagate)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1223,44 +1222,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             List<Long> sampleUids = batchSampleList.stream().map(Sample::getUid).collect(Collectors.toList());
-            List<AuthorizationManager.CatalogAclParams> aclParamsList = new LinkedList<>();
+            List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
             AuthorizationManager.CatalogAclParams.addToList(sampleUids, permissions, Enums.Resource.SAMPLE, aclParamsList);
 
             try {
-                if (propagate) {
-                    // Obtain the whole list of implicity permissions
-                    Set<String> allPermissions = new HashSet<>(permissions);
-                    if (action == ParamUtils.AclAction.ADD || action == ParamUtils.AclAction.SET) {
-                        // We also fetch the implicit permissions just in case
-                        allPermissions.addAll(permissions
-                                .stream()
-                                .map(SampleAclEntry.SamplePermissions::valueOf)
-                                .map(SampleAclEntry.SamplePermissions::getImplicitPermissions)
-                                .flatMap(List::stream)
-                                .collect(Collectors.toSet())
-                                .stream().map(Enum::name)
-                                .collect(Collectors.toSet())
-                        );
-                    }
-
-                    // Only propagate VIEW, WRITE and DELETE permissions
-                    List<String> propagatedPermissions = new LinkedList<>();
-                    for (String permission : allPermissions) {
-                        if (SampleAclEntry.SamplePermissions.VIEW.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.WRITE.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.DELETE.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS.name().equals(permission)) {
-                            propagatedPermissions.add(permission);
-                        }
-                    }
-
-                    List<Long> individualUids = getIndividualsUidsFromSampleUids(study.getUid(), sampleUids);
-                    AuthorizationManager.CatalogAclParams.addToList(individualUids, propagatedPermissions, Enums.Resource.INDIVIDUAL,
-                            aclParamsList);
-                }
-
                 OpenCGAResult<Map<String, List<String>>> queryResults;
                 switch (action) {
                     case SET:
