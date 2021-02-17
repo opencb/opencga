@@ -255,13 +255,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
         }
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        query = preProcessQuery(query, queryOptions);
         if (outputFormat == VariantOutputFormat.VCF || outputFormat == VariantOutputFormat.VCF_GZ) {
             if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
                 query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
             }
         }
-        exporter.export(outputFile, outputFormat, variantsFile, query, queryOptions);
+        ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
+        exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
     /**
