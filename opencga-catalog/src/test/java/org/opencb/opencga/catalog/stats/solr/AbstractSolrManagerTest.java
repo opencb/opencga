@@ -115,9 +115,9 @@ public class AbstractSolrManagerTest extends GenericTest {
                 sessionIdAdmin).first();
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",
-                new SampleAclParams(null, null, null, "VIEW,VIEW_ANNOTATIONS"), ParamUtils.AclAction.ADD, sessionIdAdmin);
+                new SampleAclParams(null, null, null, null, "VIEW,VIEW_ANNOTATIONS"), ParamUtils.AclAction.ADD, sessionIdAdmin);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample2"), "@study_allow",
-                new SampleAclParams(null, null, null, ""), ParamUtils.AclAction.SET, sessionIdAdmin);
+                new SampleAclParams(null, null, null, null, ""), ParamUtils.AclAction.SET, sessionIdAdmin);
 
         // Cohorts
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("cohort1").setSamples(Arrays.asList(sample1, sample2, sample3)),

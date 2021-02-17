@@ -582,7 +582,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null,
+        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null, null,
                 SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.WRITE.name());
         List<String> sampleIds = sampleDataResult.getResults().stream()
                 .map(Sample::getId)
@@ -631,7 +631,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(sampleDataResult.getNumResults() > 0);
 
         // Assign permissions to all the samples
-        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null,
+        SampleAclParams sampleAclParams = new SampleAclParams(null, null, null, null,
                 SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.WRITE.name());
         List<String> sampleIds = sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 

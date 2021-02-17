@@ -386,7 +386,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleAclUpdateParams());
             SampleAclParams sampleAclParams = new SampleAclParams(
-                    params.getIndividual(), params.getFile(), params.getCohort(), params.getPermissions());
+                    params.getIndividual(), params.getFamily(), params.getFile(), params.getCohort(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, action, token));
         } catch (Exception e) {
