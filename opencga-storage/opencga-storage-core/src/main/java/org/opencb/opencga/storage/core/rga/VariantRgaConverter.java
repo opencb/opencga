@@ -15,6 +15,54 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
     private Logger logger;
     private IndividualRgaConverter individualRgaConverter;
 
+    // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByIndividual fields
+    private static final Map<String, List<String>> CONVERTER_MAP;
+
+    static {
+        CONVERTER_MAP = new HashMap<>();
+        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
+        CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.SAMPLE_ID));
+        CONVERTER_MAP.put("individuals.sex", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.SEX));
+        CONVERTER_MAP.put("individuals.phenotypes", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
+        CONVERTER_MAP.put("individuals.disorders", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
+        CONVERTER_MAP.put("individuals.stats", Collections.emptyList());
+        CONVERTER_MAP.put("individuals.genesMap.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID));
+        CONVERTER_MAP.put("individuals.genesMap.name", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.GENE_NAME));
+        CONVERTER_MAP.put("individuals.genesMap.chromosome", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CHROMOSOME));
+        CONVERTER_MAP.put("individuals.genesMap.biotype", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.GENE_BIOTYPE));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.chromosome", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CHROMOSOME));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.start", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.START));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.end", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.END));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.biotype", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_BIOTYPE));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.strand", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.id", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.filter", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.knockoutType", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.KNOCKOUT_TYPES));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.populationFrequencies", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES));
+    }
+
     public VariantRgaConverter() {
         this.logger = LoggerFactory.getLogger(VariantRgaConverter.class);
         this.individualRgaConverter = new IndividualRgaConverter();
@@ -131,5 +179,40 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
     @Override
     public List<RgaDataModel> convertToStorageType(List<KnockoutByVariant> knockoutByVariants) {
         return null;
+    }
+
+
+    public List<String> getIncludeFields(List<String> includeFields) {
+        Set<String> toInclude = new HashSet<>();
+        for (String includeField : includeFields) {
+            for (String fieldKey : CONVERTER_MAP.keySet()) {
+                if (fieldKey.startsWith(includeField)) {
+                    toInclude.addAll(CONVERTER_MAP.get(fieldKey));
+                }
+            }
+        }
+        return new ArrayList<>(toInclude);
+    }
+
+    public List<String> getIncludeFromExcludeFields(List<String> excludeFields) {
+        Set<String> excludedFields = new HashSet<>();
+
+        for (String excludeField : excludeFields) {
+            for (String fieldKey : CONVERTER_MAP.keySet()) {
+                if (fieldKey.startsWith(excludeField)) {
+                    excludedFields.add(fieldKey);
+                }
+            }
+        }
+
+        // Add everything that was not excluded
+        Set<String> toInclude = new HashSet<>();
+        for (String field : CONVERTER_MAP.keySet()) {
+            if (!excludedFields.contains(field)) {
+                toInclude.addAll(CONVERTER_MAP.get(field));
+            }
+        }
+
+        return new ArrayList<>(toInclude);
     }
 }

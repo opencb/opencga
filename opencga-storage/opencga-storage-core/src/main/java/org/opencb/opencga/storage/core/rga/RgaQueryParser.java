@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.storage.core.exceptions.RgaException;
@@ -59,18 +58,6 @@ public class RgaQueryParser {
         logger.debug("----------------------");
         logger.debug("query     : " + printQuery(finalQuery));
         logger.debug("solrQuery : " + solrQuery);
-        return solrQuery;
-    }
-
-    public SolrQuery parseOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
-        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
-            for (String include : queryOptions.getAsStringList(QueryOptions.INCLUDE)) {
-                solrQuery.addField(include);
-            }
-        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-//                    includes = getSolrIncludeFromExclude(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
-        }
-
         return solrQuery;
     }
 

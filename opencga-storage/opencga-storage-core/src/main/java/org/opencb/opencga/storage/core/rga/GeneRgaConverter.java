@@ -16,6 +16,49 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
 
     private Logger logger;
 
+    // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByGene fields
+    private static final Map<String, List<String>> CONVERTER_MAP;
+
+    static {
+        CONVERTER_MAP = new HashMap<>();
+        CONVERTER_MAP.put("id", Collections.singletonList(RgaDataModel.GENE_ID));
+        CONVERTER_MAP.put("name", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
+        CONVERTER_MAP.put("chromosome", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME));
+        CONVERTER_MAP.put("start", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.START));
+        CONVERTER_MAP.put("end", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.END));
+        CONVERTER_MAP.put("strand", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.STRAND));
+        CONVERTER_MAP.put("biotype", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.GENE_BIOTYPE));
+        CONVERTER_MAP.put("annotation", Collections.emptyList());
+        CONVERTER_MAP.put("individuals.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SAMPLE_ID));
+        CONVERTER_MAP.put("individuals.transcriptsMap.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID));
+        CONVERTER_MAP.put("individuals.transcriptsMap.chromosome", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CHROMOSOME));
+        CONVERTER_MAP.put("individuals.transcriptsMap.start", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.START));
+        CONVERTER_MAP.put("individuals.transcriptsMap.end", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.END));
+        CONVERTER_MAP.put("individuals.transcriptsMap.biotype", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_BIOTYPE));
+        CONVERTER_MAP.put("individuals.transcriptsMap.strand", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
+        CONVERTER_MAP.put("individuals.transcriptsMap.variants.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_JSON));
+        CONVERTER_MAP.put("individuals.transcriptsMap.variants.genotype", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON));
+        CONVERTER_MAP.put("individuals.transcriptsMap.variants.filter", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.FILTERS));
+        CONVERTER_MAP.put("individuals.transcriptsMap.variants.qual", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON));
+        CONVERTER_MAP.put("individuals.transcriptsMap.variants.knockoutType", Arrays.asList(RgaDataModel.GENE_ID,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.KNOCKOUT_TYPES));
+        CONVERTER_MAP.put("individuals.transcriptsMap.variants.populationFrequencies", Arrays.asList(RgaDataModel.GENE_ID,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.POPULATION_FREQUENCIES));
+        CONVERTER_MAP.put("individuals.transcriptsMap.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.GENE_ID,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.CONSEQUENCE_TYPES));
+    }
+
     public GeneRgaConverter() {
         this.logger = LoggerFactory.getLogger(GeneRgaConverter.class);
     }
@@ -57,23 +100,27 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
                 knockoutByGene.addIndividual(knockoutIndividual);
             }
 
-            // Add new transcript
-            KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
-            knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
+            if (StringUtils.isNotEmpty(rgaDataModel.getTranscriptId())) {
+                // Add new transcript
+                KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
+                knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
 
-            knockoutIndividual.addTranscripts(Collections.singletonList(knockoutTranscript));
+                knockoutIndividual.addTranscripts(Collections.singletonList(knockoutTranscript));
 
-            List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
-            for (String variantJson : rgaDataModel.getVariantJson()) {
-                try {
-                    KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
-                            KnockoutVariant.class);
-                    knockoutVariantList.add(knockoutVariant);
-                } catch (JsonProcessingException e) {
-                    logger.warn("Could not parse KnockoutVariants: {}", e.getMessage(), e);
+                if (rgaDataModel.getVariantJson() != null) {
+                    List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
+                    for (String variantJson : rgaDataModel.getVariantJson()) {
+                        try {
+                            KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
+                                    KnockoutVariant.class);
+                            knockoutVariantList.add(knockoutVariant);
+                        } catch (JsonProcessingException e) {
+                            logger.warn("Could not parse KnockoutVariants: {}", e.getMessage(), e);
+                        }
+                    }
+                    knockoutTranscript.setVariants(knockoutVariantList);
                 }
             }
-            knockoutTranscript.setVariants(knockoutVariantList);
         }
 
         return new ArrayList<>(result.values());
@@ -82,6 +129,41 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
     @Override
     public List<RgaDataModel> convertToStorageType(List<KnockoutByGene> object) {
         return null;
+    }
+
+
+    public List<String> getIncludeFields(List<String> includeFields) {
+        Set<String> toInclude = new HashSet<>();
+        for (String includeField : includeFields) {
+            for (String fieldKey : CONVERTER_MAP.keySet()) {
+                if (fieldKey.startsWith(includeField)) {
+                    toInclude.addAll(CONVERTER_MAP.get(fieldKey));
+                }
+            }
+        }
+        return new ArrayList<>(toInclude);
+    }
+
+    public List<String> getIncludeFromExcludeFields(List<String> excludeFields) {
+        Set<String> excludedFields = new HashSet<>();
+
+        for (String excludeField : excludeFields) {
+            for (String fieldKey : CONVERTER_MAP.keySet()) {
+                if (fieldKey.startsWith(excludeField)) {
+                    excludedFields.add(fieldKey);
+                }
+            }
+        }
+
+        // Add everything that was not excluded
+        Set<String> toInclude = new HashSet<>();
+        for (String field : CONVERTER_MAP.keySet()) {
+            if (!excludedFields.contains(field)) {
+                toInclude.addAll(CONVERTER_MAP.get(field));
+            }
+        }
+
+        return new ArrayList<>(toInclude);
     }
 
 }

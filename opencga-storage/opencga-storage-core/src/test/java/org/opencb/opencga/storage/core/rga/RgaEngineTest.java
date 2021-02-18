@@ -8,15 +8,14 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
+import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -93,6 +92,90 @@ public class RgaEngineTest {
                 .append(RgaQueryParams.CONSEQUENCE_TYPE.key(), "SO:0001891");
         result = rgaEngine.individualQuery(collection, query, new QueryOptions());
         assertEquals(1, result.getNumResults());
+    }
+
+    @Test
+    public void testIncludeExcludeIndividualQuery() throws Exception {
+        RgaEngine rgaEngine = solr.configure(storageConfiguration);
+
+        String collection = solr.coreName;
+        rgaEngine.create(collection);
+
+        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
+        knockoutByIndividualList.add(createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(createKnockoutByIndividual(2));
+
+        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("sampleId", "disorders", "genesMap.name"));
+        OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, new Query(), options);
+        assertEquals(2, result.getNumResults());
+        for (int i = 0; i < knockoutByIndividualList.size(); i++) {
+            assertNotNull(result.getResults().get(i).getId());
+            assertTrue(result.getResults().get(i).getPhenotypes().isEmpty());
+            assertNotNull(result.getResults().get(i).getSampleId());
+            assertNotNull(result.getResults().get(i).getDisorders());
+            assertNotNull(result.getResults().get(i).getGenes());
+            for (KnockoutByIndividual.KnockoutGene gene : result.getResults().get(i).getGenes()) {
+                assertNotNull(gene.getId());
+                assertNotNull(gene.getName());
+                assertNull(gene.getStrand());
+                assertTrue(gene.getTranscripts().isEmpty());
+            }
+        }
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList("sampleId", "disorders", "genesMap.name",
+                "genesMap.transcriptsMap.variants"));
+        result = rgaEngine.individualQuery(collection, new Query(), options);
+        assertEquals(2, result.getNumResults());
+        for (int i = 0; i < knockoutByIndividualList.size(); i++) {
+            assertNotNull(result.getResults().get(i).getId());
+            assertFalse(result.getResults().get(i).getPhenotypes().isEmpty());
+            assertNull(result.getResults().get(i).getSampleId());
+            assertTrue(result.getResults().get(i).getDisorders().isEmpty());
+            assertNotNull(result.getResults().get(i).getGenes());
+            for (KnockoutByIndividual.KnockoutGene gene : result.getResults().get(i).getGenes()) {
+                assertNotNull(gene.getId());
+                assertNull(gene.getName());
+//                assertNotNull(gene.getStrand());
+                assertFalse(gene.getTranscripts().isEmpty());
+                for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                    assertNotNull(transcript.getId());
+                    assertNotNull(transcript.getBiotype());
+                    assertTrue(transcript.getVariants().isEmpty());
+                }
+            }
+        }
+
+        // It should be not possible to completely exclude knockoutType without excluding the whole variant information
+        options = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList("sampleId", "disorders", "genesMap.name",
+                "genesMap.transcriptsMap.variants.knockoutType"));
+        result = rgaEngine.individualQuery(collection, new Query(), options);
+        assertEquals(2, result.getNumResults());
+        for (int i = 0; i < knockoutByIndividualList.size(); i++) {
+            assertNotNull(result.getResults().get(i).getId());
+            assertFalse(result.getResults().get(i).getPhenotypes().isEmpty());
+            assertNull(result.getResults().get(i).getSampleId());
+            assertTrue(result.getResults().get(i).getDisorders().isEmpty());
+            assertNotNull(result.getResults().get(i).getGenes());
+            for (KnockoutByIndividual.KnockoutGene gene : result.getResults().get(i).getGenes()) {
+                assertNotNull(gene.getId());
+                assertNull(gene.getName());
+//                assertNotNull(gene.getStrand());
+                assertFalse(gene.getTranscripts().isEmpty());
+                for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                    assertNotNull(transcript.getId());
+                    assertNotNull(transcript.getBiotype());
+                    assertFalse(transcript.getVariants().isEmpty());
+                    for (KnockoutVariant variant : transcript.getVariants()) {
+                        assertNotNull(variant.getId());
+                        assertNotNull(variant.getKnockoutType());
+                        assertFalse(variant.getPopulationFrequencies().isEmpty());
+                    }
+                }
+            }
+        }
+
     }
 
     @Test
@@ -192,6 +275,85 @@ public class RgaEngineTest {
     }
 
     @Test
+    public void testIncludeExcludeGeneQuery() throws Exception {
+        RgaEngine rgaEngine = solr.configure(storageConfiguration);
+
+        String collection = solr.coreName;
+        rgaEngine.create(collection);
+
+        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
+        knockoutByIndividualList.add(createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(createKnockoutByIndividual(2));
+
+        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("name", "individuals.transcriptsMap.chromosome"));
+        OpenCGAResult<KnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), options);
+        assertEquals(4, result.getNumResults());
+        for (KnockoutByGene gene : result.getResults()) {
+            assertNotNull(gene.getId());
+            assertNotNull(gene.getName());
+            assertNull(gene.getBiotype());
+            for (KnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
+                assertNotNull(individual.getId());
+                assertNull(individual.getSampleId());
+                for (KnockoutTranscript transcript : individual.getTranscripts()) {
+                    assertNotNull(transcript.getId());
+//                    assertNotNull(transcript.getChromosome());
+                    assertNull(transcript.getBiotype());
+                    assertTrue(transcript.getVariants().isEmpty());
+                }
+            }
+        }
+
+        options = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList("name", "individuals.transcriptsMap.chromosome",
+                "individuals.transcriptsMap.variants"));
+        result = rgaEngine.geneQuery(collection, new Query(), options);
+        assertEquals(4, result.getNumResults());
+        for (KnockoutByGene gene : result.getResults()) {
+            assertNotNull(gene.getId());
+            assertNull(gene.getName());
+//            assertNotNull(gene.getBiotype());
+            for (KnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
+                assertNotNull(individual.getId());
+                assertNotNull(individual.getSampleId());
+                for (KnockoutTranscript transcript : individual.getTranscripts()) {
+                    assertNotNull(transcript.getId());
+                    assertNull(transcript.getChromosome());
+                    assertNotNull(transcript.getBiotype());
+                    assertTrue(transcript.getVariants().isEmpty());
+                }
+            }
+        }
+
+        // It should be not possible to completely exclude knockoutType without excluding the whole variant information
+        options = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList("name", "individuals.transcriptsMap.chromosome",
+                "individuals.transcriptsMap.variants.knockoutType"));
+        result = rgaEngine.geneQuery(collection, new Query(), options);
+        assertEquals(4, result.getNumResults());
+        for (KnockoutByGene gene : result.getResults()) {
+            assertNotNull(gene.getId());
+            assertNull(gene.getName());
+//            assertNotNull(gene.getBiotype());
+            for (KnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
+                assertNotNull(individual.getId());
+                assertNotNull(individual.getSampleId());
+                for (KnockoutTranscript transcript : individual.getTranscripts()) {
+                    assertNotNull(transcript.getId());
+                    assertNull(transcript.getChromosome());
+                    assertNotNull(transcript.getBiotype());
+                    assertFalse(transcript.getVariants().isEmpty());
+                    for (KnockoutVariant variant : transcript.getVariants()) {
+                        assertNotNull(variant.getId());
+                        assertNotNull(variant.getKnockoutType());
+                        assertFalse(variant.getPopulationFrequencies().isEmpty());
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     public void testVariantQuery() throws Exception {
         RgaEngine rgaEngine = solr.configure(storageConfiguration);
 
@@ -207,6 +369,104 @@ public class RgaEngineTest {
 
         assertEquals(6, result.getNumResults());
     }
+
+    @Test
+    public void testIncludeExcludeVariantQuery() throws Exception {
+        RgaEngine rgaEngine = solr.configure(storageConfiguration);
+
+        String collection = solr.coreName;
+        rgaEngine.create(collection);
+
+        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
+        knockoutByIndividualList.add(createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(createKnockoutByIndividual(2));
+
+        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("individuals.sampleId", "individuals.disorders",
+                "individuals.genesMap.name"));
+        OpenCGAResult<KnockoutByVariant> result = rgaEngine.variantQuery(collection, new Query(), options);
+        assertEquals(6, result.getNumResults());
+        for (KnockoutByVariant variant : result.getResults()) {
+            assertNotNull(variant.getId());
+            for (KnockoutByIndividual individual : variant.getIndividuals()) {
+                assertNotNull(individual.getId());
+                assertTrue(individual.getPhenotypes().isEmpty());
+                assertNotNull(individual.getSampleId());
+                assertNotNull(individual.getDisorders());
+                assertNotNull(individual.getGenes());
+                for (KnockoutByIndividual.KnockoutGene gene : individual.getGenes()) {
+                    assertNotNull(gene.getId());
+                    assertNotNull(gene.getName());
+                    assertNull(gene.getStrand());
+                    assertFalse(gene.getTranscripts().isEmpty());
+                }
+
+            }
+        }
+
+        // Not possible excluding variants object because that's basic for this data model
+        options = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList("individuals.sampleId", "individuals.disorders",
+                "individuals.genesMap.name", "individuals.genesMap.transcriptsMap.variants"));
+        result = rgaEngine.variantQuery(collection, new Query(), options);
+        assertEquals(6, result.getNumResults());
+        for (KnockoutByVariant variant : result.getResults()) {
+            assertNotNull(variant.getId());
+            for (KnockoutByIndividual individual : variant.getIndividuals()) {
+                assertNotNull(individual.getId());
+                assertFalse(individual.getPhenotypes().isEmpty());
+                assertNull(individual.getSampleId());
+                assertTrue(individual.getDisorders().isEmpty());
+                assertNotNull(individual.getGenes());
+                for (KnockoutByIndividual.KnockoutGene gene : individual.getGenes()) {
+                    assertNotNull(gene.getId());
+                    assertNull(gene.getName());
+//                assertNotNull(gene.getStrand());
+                    assertFalse(gene.getTranscripts().isEmpty());
+                    for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                        assertNotNull(transcript.getId());
+                        assertNotNull(transcript.getBiotype());
+                        assertFalse(transcript.getVariants().isEmpty());
+                    }
+
+                }
+            }
+        }
+
+        // It should be not possible to completely exclude knockoutType without excluding the whole variant information
+        options = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList("individuals.sampleId", "individuals.disorders",
+                "individuals.genesMap.name", "individuals.genesMap.transcriptsMap.variants.knockoutType"));
+        result = rgaEngine.variantQuery(collection, new Query(), options);
+        assertEquals(6, result.getNumResults());
+        for (KnockoutByVariant variant : result.getResults()) {
+            assertNotNull(variant.getId());
+            for (KnockoutByIndividual individual : variant.getIndividuals()) {
+                assertNotNull(individual.getId());
+                assertFalse(individual.getPhenotypes().isEmpty());
+                assertNull(individual.getSampleId());
+                assertTrue(individual.getDisorders().isEmpty());
+                assertNotNull(individual.getGenes());
+                for (KnockoutByIndividual.KnockoutGene gene : individual.getGenes()) {
+                    assertNotNull(gene.getId());
+                    assertNull(gene.getName());
+//                assertNotNull(gene.getStrand());
+                    assertFalse(gene.getTranscripts().isEmpty());
+                    for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                        assertNotNull(transcript.getId());
+                        assertNotNull(transcript.getBiotype());
+                        assertFalse(transcript.getVariants().isEmpty());
+                        for (KnockoutVariant tmpVariant : transcript.getVariants()) {
+                            assertNotNull(tmpVariant.getId());
+                            assertNotNull(tmpVariant.getKnockoutType());
+                            assertFalse(tmpVariant.getPopulationFrequencies().isEmpty());
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
 
     @Test
     public void testFacet() throws Exception {

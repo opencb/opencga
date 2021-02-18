@@ -139,6 +139,7 @@ public class RgaEngine implements Closeable {
     public OpenCGAResult<KnockoutByIndividual> individualQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
         SolrQuery solrQuery = fixQuery(collection, query, queryOptions);
+        fixIndividualOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByIndividual> queryResult;
@@ -152,6 +153,42 @@ public class RgaEngine implements Closeable {
         }
 
         return new OpenCGAResult<>(queryResult);
+    }
+
+    private void fixIndividualOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            for (String include : individualRgaConverter.getIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE))) {
+                solrQuery.addField(include);
+            }
+        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            for (String include : individualRgaConverter.getIncludeFromExcludeFields(queryOptions.getAsStringList(QueryOptions.EXCLUDE))) {
+                solrQuery.addField(include);
+            }
+        }
+    }
+
+    private void fixGeneOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            for (String include : geneConverter.getIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE))) {
+                solrQuery.addField(include);
+            }
+        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            for (String include : geneConverter.getIncludeFromExcludeFields(queryOptions.getAsStringList(QueryOptions.EXCLUDE))) {
+                solrQuery.addField(include);
+            }
+        }
+    }
+
+    private void fixVariantOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            for (String include : variantConverter.getIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE))) {
+                solrQuery.addField(include);
+            }
+        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            for (String include : variantConverter.getIncludeFromExcludeFields(queryOptions.getAsStringList(QueryOptions.EXCLUDE))) {
+                solrQuery.addField(include);
+            }
+        }
     }
 
     private SolrQuery fixQuery(String collection, Query query, QueryOptions queryOptions) throws IOException, RgaException {
@@ -172,7 +209,6 @@ public class RgaEngine implements Closeable {
         }
 
         SolrQuery solrQuery = parser.parseQuery(query);
-        parser.parseOptions(queryOptions, solrQuery);
         return solrQuery;
     }
 
@@ -189,7 +225,7 @@ public class RgaEngine implements Closeable {
     public OpenCGAResult<KnockoutByGene> geneQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
         SolrQuery solrQuery = parser.parseQuery(query);
-        parser.parseOptions(queryOptions, solrQuery);
+        fixGeneOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByGene> queryResult;
@@ -218,7 +254,7 @@ public class RgaEngine implements Closeable {
     public OpenCGAResult<KnockoutByVariant> variantQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
         SolrQuery solrQuery = parser.parseQuery(query);
-        parser.parseOptions(queryOptions, solrQuery);
+        fixVariantOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByVariant> queryResult;
