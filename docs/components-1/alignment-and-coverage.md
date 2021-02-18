@@ -39,5 +39,5 @@ The tutorial [Working with Alignment Data](http://docs.opencb.org/display/opencg
 
 Next image shows the OpenCGA RESTfull web services to manage alignment data:
 
-![](../.gitbook/assets/analysis.alignment.webservices%20%281%29%20%281%29.png)
+![](../.gitbook/assets/analysis.alignment.webservices%20%281%29%20%281%29%20%281%29.png)
 
