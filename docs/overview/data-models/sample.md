@@ -2,7 +2,7 @@
 
 ## Overview
 
-Sample data model ... 
+Sample data model ...
 
 ## Data Models
 
@@ -262,11 +262,7 @@ This object describes how the sample was processed in the lab.
 
 ### SampleCollection
 
-
-
 ### SampleQualityControl
-
-
 
 ## Example
 

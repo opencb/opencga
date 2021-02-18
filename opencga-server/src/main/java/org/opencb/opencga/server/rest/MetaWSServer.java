@@ -157,7 +157,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         newHealthCheckResults.put(SOLR, "");
 
         try {
-            if (catalogManager.getDatabaseStatus()) {
+            if (catalogManager.getCatalogDatabaseStatus()) {
                 newHealthCheckResults.put(CATALOG_MONGO_DB, OKAY);
             } else {
                 newHealthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);

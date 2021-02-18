@@ -122,10 +122,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
-            VariantType.INDEL, /* VariantType.INSERTION, VariantType.DELETION,*/
+            VariantType.INDEL,
             VariantType.MNV, VariantType.MNP,
             VariantType.INSERTION, VariantType.DELETION,
-            VariantType.CNV, VariantType.DUPLICATION, VariantType.TRANSLOCATION,
+            VariantType.CNV,
+            VariantType.COPY_NUMBER, VariantType.COPY_NUMBER_LOSS, VariantType.COPY_NUMBER_GAIN,
+            VariantType.DUPLICATION, VariantType.TANDEM_DUPLICATION, VariantType.TRANSLOCATION,
             VariantType.BREAKEND,
             VariantType.SV, VariantType.SYMBOLIC
     );

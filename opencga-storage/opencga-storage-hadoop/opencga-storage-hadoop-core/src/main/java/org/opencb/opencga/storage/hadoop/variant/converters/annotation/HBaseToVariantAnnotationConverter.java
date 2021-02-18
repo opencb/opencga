@@ -297,10 +297,15 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
                     variantAnnotation = objectMapper.readValue(valueArray, valueOffset, valueLength,
                             VariantAnnotation.class);
                 } catch (IOException e) {
-                    byte[] destination = new byte[valueLength];
-                    System.arraycopy(valueArray, valueOffset, destination, 0, valueLength);
-                    byte[] value = CompressionUtils.decompress(destination);
-                    variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                    try {
+                        byte[] destination = new byte[valueLength];
+                        System.arraycopy(valueArray, valueOffset, destination, 0, valueLength);
+                        byte[] value = CompressionUtils.decompress(destination);
+                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                    } catch (Exception e1) {
+                        e1.addSuppressed(e);
+                        throw e1;
+                    }
                 }
             } else {
                 // Value is compressed. Decompress and parse

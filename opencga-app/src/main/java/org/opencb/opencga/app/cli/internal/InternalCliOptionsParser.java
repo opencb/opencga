@@ -105,7 +105,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
 
     public InternalCliOptionsParser() {
-        jCommander.setProgramName("opencga-analysis.sh");
+        jCommander.setProgramName("opencga-internal.sh");
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
@@ -217,6 +217,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
+        fileSubCommands.addCommand("postlink", fileCommandOptions.postlinkCommandOptions);
         fileSubCommands.addCommand("secondary-index", fileCommandOptions.secondaryIndex);
         fileSubCommands.addCommand("tsv-load", fileCommandOptions.tsvLoad);
 
@@ -451,7 +452,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
             System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
             System.err.println("");
-            System.err.println("Usage:       opencga-analysis.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("Usage:       opencga-internal.sh [-h|--help] [--version] <command> [options]");
             System.err.println("");
             System.err.println("Commands:");
             printMainUsage();
@@ -460,14 +461,14 @@ public class InternalCliOptionsParser extends CliOptionsParser {
             String parsedSubCommand = getSubCommand();
             if (parsedSubCommand.isEmpty()) {
                 System.err.println("");
-                System.err.println("Usage:   opencga-analysis.sh " + parsedCommand + " <subcommand> [options]");
+                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " <subcommand> [options]");
                 System.err.println("");
                 System.err.println("Subcommands:");
                 printCommands(jCommander.getCommands().get(parsedCommand));
                 System.err.println("");
             } else {
                 System.err.println("");
-                System.err.println("Usage:   opencga-analysis.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
+                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
                 System.err.println("");
                 System.err.println("Options:");
                 CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));

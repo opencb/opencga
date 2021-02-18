@@ -35,7 +35,7 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
 
 
     public AdminCommandExecutor(AdminCliOptionsParser.AdminCommonCommandOptions options) {
-        super(options);
+        super(options.commonOptions);
         this.adminPassword = options.adminPassword;
     }
 

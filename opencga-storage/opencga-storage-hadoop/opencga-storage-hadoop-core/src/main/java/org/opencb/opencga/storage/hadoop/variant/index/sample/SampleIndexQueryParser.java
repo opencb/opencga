@@ -866,7 +866,8 @@ public class SampleIndexQueryParser {
      * Builds the SampleAnnotationIndexQuery given a VariantQuery.
      *
      * @param query Input VariantQuery. If the index is complete, covered filters could be removed from here.
-     * @param completeIndex Indicates if the index is complete for the samples in the query.
+     * @param completeIndex Indicates if the annotation index is complete for the samples in the query.
+     *                      Otherwise, the index can only be used as a hint, and should be completed with further filtering.
      * @return SampleAnnotationIndexQuery
      */
     protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
