@@ -957,7 +957,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             aggregation.add(Aggregates.match(Filters.and(bsonList)));
         }
 
-        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
+        QueryOptions options = filterOptions(queryOptions, FILTER_ROUTE_STUDIES);
+        fixAclProjection(options);
+
+        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, options);
 
         List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0))
                 .collect(Collectors.toList());
@@ -1013,7 +1016,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             aggregation.add(Aggregates.match(Filters.and(bsonList)));
         }
 
-        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
+        QueryOptions options = filterOptions(queryOptions, FILTER_ROUTE_STUDIES);
+        fixAclProjection(options);
+
+        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, options);
         if (queryResult.getNumResults() == 0) {
             return endQuery(startTime, Collections.emptyList());
         }
@@ -1682,6 +1688,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             qOptions.put(QueryOptions.INCLUDE, includeList);
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
+        fixAclProjection(qOptions);
 
         Bson bson = parseQuery(query);
 

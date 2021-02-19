@@ -993,6 +993,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         qOptions = removeAnnotationProjectionOptions(qOptions);
         qOptions = filterQueryOptions(qOptions, SampleManager.INCLUDE_SAMPLE_IDS.getAsStringList(QueryOptions.INCLUDE));
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
+        fixAclProjection(qOptions);
 
 //        if (isQueryingIndividualFields(finalQuery)) {
 //            OpenCGAResult<Individual> individualDataResult;
