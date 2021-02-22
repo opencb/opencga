@@ -636,6 +636,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         QueryOptions options = new QueryOptions(queryOptions);
 
         filterOptions(options, FILTER_ROUTE_JOBS);
+        fixAclProjection(options);
         if (options.containsKey(QueryOptions.SORT)) {
             // If the user is sorting by priority, we will point to the private priority stored as integers to properly sort
             List<String> sortList = options.getAsStringList(QueryOptions.SORT);

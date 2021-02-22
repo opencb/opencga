@@ -850,6 +850,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         qOptions = removeInnerProjections(qOptions, QueryParams.MEMBERS.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
+        fixAclProjection(qOptions);
 
         logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {

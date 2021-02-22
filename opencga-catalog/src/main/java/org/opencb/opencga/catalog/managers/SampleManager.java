@@ -46,6 +46,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -58,7 +59,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -1110,7 +1110,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> sampleStringList, String memberList,
                                                               SampleAclParams sampleAclParams, ParamUtils.AclAction action,
-                                                              boolean propagate, String token) throws CatalogException {
+                                                              String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1120,7 +1120,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("memberList", memberList)
                 .append("sampleAclParams", sampleAclParams)
                 .append("action", action)
-                .append("propagate", propagate)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
@@ -1131,15 +1130,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             int count = 0;
             count += sampleStringList != null && !sampleStringList.isEmpty() ? 1 : 0;
             count += StringUtils.isNotEmpty(sampleAclParams.getIndividual()) ? 1 : 0;
+            count += StringUtils.isNotEmpty(sampleAclParams.getFamily()) ? 1 : 0;
             count += StringUtils.isNotEmpty(sampleAclParams.getCohort()) ? 1 : 0;
             count += StringUtils.isNotEmpty(sampleAclParams.getFile()) ? 1 : 0;
 
             if (count > 1) {
-                throw new CatalogException("Update ACL: Only one of these parameters are allowed: sample, individual, file or cohort per "
-                        + "query.");
+                throw new CatalogException("Update ACL: Only one of these parameters are allowed: sample, individual, family, file or "
+                        + "cohort per query.");
             } else if (count == 0) {
-                throw new CatalogException("Update ACL: At least one of these parameters should be provided: sample, individual, file or "
-                        + "cohort");
+                throw new CatalogException("Update ACL: At least one of these parameters should be provided: sample, individual, family,"
+                        + " file or cohort");
             }
 
             if (action == null) {
@@ -1159,6 +1159,24 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 Set<String> sampleSet = new HashSet<>();
                 for (Individual individual : indDataResult.getResults()) {
                     sampleSet.addAll(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()));
+                }
+                sampleStringList = new ArrayList<>();
+                sampleStringList.addAll(sampleSet);
+            }
+
+            if (StringUtils.isNotEmpty(sampleAclParams.getFamily())) {
+                OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(studyId,
+                        Arrays.asList(sampleAclParams.getFamily().split(",")), FamilyManager.INCLUDE_FAMILY_MEMBERS, token);
+
+                Set<String> sampleSet = new HashSet<>();
+                for (Family family : familyDataResult.getResults()) {
+                    if (family.getMembers() != null) {
+                        for (Individual individual : family.getMembers()) {
+                            if (individual.getSamples() != null) {
+                                sampleSet.addAll(individual.getSamples().stream().map(Sample::getId).collect(Collectors.toSet()));
+                            }
+                        }
+                    }
                 }
                 sampleStringList = new ArrayList<>();
                 sampleStringList.addAll(sampleSet);
@@ -1223,44 +1241,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
 
             List<Long> sampleUids = batchSampleList.stream().map(Sample::getUid).collect(Collectors.toList());
-            List<AuthorizationManager.CatalogAclParams> aclParamsList = new LinkedList<>();
+            List<AuthorizationManager.CatalogAclParams> aclParamsList = new ArrayList<>();
             AuthorizationManager.CatalogAclParams.addToList(sampleUids, permissions, Enums.Resource.SAMPLE, aclParamsList);
 
             try {
-                if (propagate) {
-                    // Obtain the whole list of implicity permissions
-                    Set<String> allPermissions = new HashSet<>(permissions);
-                    if (action == ParamUtils.AclAction.ADD || action == ParamUtils.AclAction.SET) {
-                        // We also fetch the implicit permissions just in case
-                        allPermissions.addAll(permissions
-                                .stream()
-                                .map(SampleAclEntry.SamplePermissions::valueOf)
-                                .map(SampleAclEntry.SamplePermissions::getImplicitPermissions)
-                                .flatMap(List::stream)
-                                .collect(Collectors.toSet())
-                                .stream().map(Enum::name)
-                                .collect(Collectors.toSet())
-                        );
-                    }
-
-                    // Only propagate VIEW, WRITE and DELETE permissions
-                    List<String> propagatedPermissions = new LinkedList<>();
-                    for (String permission : allPermissions) {
-                        if (SampleAclEntry.SamplePermissions.VIEW.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.WRITE.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.DELETE.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS.name().equals(permission)
-                                || SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS.name().equals(permission)) {
-                            propagatedPermissions.add(permission);
-                        }
-                    }
-
-                    List<Long> individualUids = getIndividualsUidsFromSampleUids(study.getUid(), sampleUids);
-                    AuthorizationManager.CatalogAclParams.addToList(individualUids, propagatedPermissions, Enums.Resource.INDIVIDUAL,
-                            aclParamsList);
-                }
-
                 OpenCGAResult<Map<String, List<String>>> queryResults;
                 switch (action) {
                     case SET:
@@ -1313,7 +1297,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
-            throws CatalogException, IOException {
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId, new QueryOptions(QueryOptions.INCLUDE,

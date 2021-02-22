@@ -22,16 +22,18 @@ public class SampleAclUpdateParams extends AclParams {
 
     private String sample;
     private String individual;
+    private String family;
     private String file;
     private String cohort;
 
     public SampleAclUpdateParams() {
     }
 
-    public SampleAclUpdateParams(String sample, String individual, String file, String cohort, String permissions) {
+    public SampleAclUpdateParams(String sample, String individual, String family, String file, String cohort, String permissions) {
         super(permissions);
         this.sample = sample;
         this.individual = individual;
+        this.family = family;
         this.file = file;
         this.cohort = cohort;
     }
@@ -41,6 +43,7 @@ public class SampleAclUpdateParams extends AclParams {
         final StringBuilder sb = new StringBuilder("SampleAclUpdateParams{");
         sb.append("sample='").append(sample).append('\'');
         sb.append(", individual='").append(individual).append('\'');
+        sb.append(", family='").append(family).append('\'');
         sb.append(", file='").append(file).append('\'');
         sb.append(", cohort='").append(cohort).append('\'');
         sb.append(", permissions='").append(permissions).append('\'');
@@ -63,6 +66,15 @@ public class SampleAclUpdateParams extends AclParams {
 
     public SampleAclUpdateParams setIndividual(String individual) {
         this.individual = individual;
+        return this;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public SampleAclUpdateParams setFamily(String family) {
+        this.family = family;
         return this;
     }
 

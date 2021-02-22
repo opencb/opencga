@@ -1134,6 +1134,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         QueryOptions options = removeAnnotationProjectionOptions(qOptions);
         options = filterOptions(options, FILTER_ROUTE_FILES);
         options = changeProjectionKey(options, QueryParams.SAMPLE_IDS.key(), PRIVATE_SAMPLES);
+        fixAclProjection(options);
         return options;
     }
 

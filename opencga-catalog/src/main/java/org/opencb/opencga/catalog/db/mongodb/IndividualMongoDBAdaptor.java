@@ -1172,6 +1172,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // FIXME we should be able to remove this now safely
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
+        fixAclProjection(qOptions);
 
         logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
