@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
@@ -67,9 +68,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     private final MongoDBCollection deletedUserCollection;
     private ProjectConverter projectConverter;
 
-    public ProjectMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection,
+    public ProjectMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
                                  MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
         this.deletedUserCollection = deletedUserCollection;

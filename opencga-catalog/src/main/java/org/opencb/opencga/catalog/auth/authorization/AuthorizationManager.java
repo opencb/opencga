@@ -210,6 +210,19 @@ public interface AuthorizationManager {
      *
      * @param studyId study id.
      * @param fileId file id.
+     * @return a list of FileAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
+     */
+    default OpenCGAResult<Map<String, List<String>>> getAllFileAcls(long studyId, long fileId) throws CatalogException {
+        return getAllFileAcls(studyId, fileId, "", false);
+    }
+
+    /**
+     * Return all the ACLs defined for the file.
+     *
+     *
+     * @param studyId study id.
+     * @param fileId file id.
      * @param userId user id asking for the ACLs.
      * @param checkPermission Boolean indicating whether to check the SHARE permission and possibly fail or not. Added to be able to
      *                        propagate permissions to children files/folders when a user with WRITE permissions links or creates but it

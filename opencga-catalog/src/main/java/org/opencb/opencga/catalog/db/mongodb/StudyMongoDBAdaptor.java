@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -78,9 +79,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private StudyConverter studyConverter;
     private VariableSetConverter variableSetConverter;
 
-    public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBCollection deletedStudyCollection,
+    public StudyMongoDBAdaptor(MongoDBCollection studyCollection, MongoDBCollection deletedStudyCollection, Configuration configuration,
                                MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(StudyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.studyCollection = studyCollection;
         this.deletedStudyCollection = deletedStudyCollection;
@@ -956,7 +957,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             aggregation.add(Aggregates.match(Filters.and(bsonList)));
         }
 
-        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
+        QueryOptions options = filterOptions(queryOptions, FILTER_ROUTE_STUDIES);
+        fixAclProjection(options);
+
+        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, options);
 
         List<VariableSet> variableSets = parseObjects(queryResult, Study.class).stream().map(study -> study.getVariableSets().get(0))
                 .collect(Collectors.toList());
@@ -1012,7 +1016,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             aggregation.add(Aggregates.match(Filters.and(bsonList)));
         }
 
-        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, filterOptions(queryOptions, FILTER_ROUTE_STUDIES));
+        QueryOptions options = filterOptions(queryOptions, FILTER_ROUTE_STUDIES);
+        fixAclProjection(options);
+
+        DataResult<Document> queryResult = studyCollection.aggregate(aggregation, options);
         if (queryResult.getNumResults() == 0) {
             return endQuery(startTime, Collections.emptyList());
         }
@@ -1681,6 +1688,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             qOptions.put(QueryOptions.INCLUDE, includeList);
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_STUDIES);
+        fixAclProjection(qOptions);
 
         Bson bson = parseQuery(query);
 

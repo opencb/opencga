@@ -263,9 +263,6 @@ class MongoDBUtils {
                 }
                 if (listName.equals("include")) {
                     filteredList.add(PRIVATE_UID);
-                    if (options.getBoolean(DBAdaptor.INCLUDE_ACLS)) {
-                        filteredList.add(AuthorizationMongoDBAdaptor.QueryParams.ACL.key());
-                    }
                 } else if (listName.equals("exclude")) {
                     filteredList.remove(PRIVATE_UID);
                 }
@@ -273,6 +270,22 @@ class MongoDBUtils {
             }
         }
         return filteredOptions;
+    }
+
+    static void fixAclProjection(QueryOptions options) {
+        if (options == null) {
+            return;
+        }
+
+        if (options.getBoolean(DBAdaptor.INCLUDE_ACLS)) {
+            List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+
+            if (!includeList.isEmpty()) {
+                List<String> toInclude = new ArrayList<>(includeList);
+                toInclude.add(AuthorizationMongoDBAdaptor.QueryParams.ACL.key());
+                options.put(QueryOptions.INCLUDE, toInclude);
+            }
+        }
     }
 
     static void filterBooleanParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {

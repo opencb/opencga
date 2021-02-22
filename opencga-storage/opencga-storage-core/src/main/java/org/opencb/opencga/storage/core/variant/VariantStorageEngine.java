@@ -255,13 +255,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
         }
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        query = preProcessQuery(query, queryOptions);
         if (outputFormat == VariantOutputFormat.VCF || outputFormat == VariantOutputFormat.VCF_GZ) {
             if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
                 query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
             }
         }
-        exporter.export(outputFile, outputFormat, variantsFile, query, queryOptions);
+        ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
+        exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
     /**
@@ -607,8 +607,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
-        Query query = inputQuery == null ? new Query() : new Query(inputQuery);
-        QueryOptions queryOptions = inputQueryOptions == null ? new QueryOptions() : new QueryOptions(inputQueryOptions);
+        Query query = VariantQueryUtils.copy(inputQuery);
+        QueryOptions queryOptions = VariantQueryUtils.copy(inputQueryOptions);
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
@@ -1120,6 +1120,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return               A FacetedQueryResult with the result of the query
      */
     public DataResult<FacetField> facet(Query query, QueryOptions options) {
+        query = copy(query);
+        options = copy(options);
+        // Hardcode INCLUDE to simplify preProcess operation, as the query does not return any study data.
+        options.put(QueryOptions.INCLUDE, VariantField.ID.fieldName());
         addDefaultLimit(options, getOptions());
         query = preProcessQuery(query, options);
         return getVariantAggregationExecutor(query, options).aggregation(query, options);

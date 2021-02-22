@@ -22,6 +22,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -94,6 +96,8 @@ import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.FILE_GET_QUERY_OPTIONS;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE;
+import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE_DEFAULT;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public class VariantStorageManager extends StorageManager implements AutoCloseable {
@@ -609,11 +613,127 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         Query query = new Query(options)
                 .append(VariantQueryParam.STUDY.key(), study);
         query.remove(GENOTYPE.key());
-        return secure(query, options, token, Enums.Action.SAMPLE_DATA, engine -> {
-            String studyFqn = query.getString(STUDY.key());
-            options.putAll(query);
-            return engine.getSampleData(variant, studyFqn, options);
-        });
+
+        if (isValidParam(query, INCLUDE_SAMPLE) && !VariantQueryUtils.isAll(query.getString(INCLUDE_SAMPLE.key()))) {
+            return secure(query, options, token, Enums.Action.SAMPLE_DATA, engine -> {
+                String studyFqn = query.getString(STUDY.key());
+                options.putAll(query);
+                return engine.getSampleData(variant, studyFqn, options);
+            });
+        } else {
+            // Skip sample permission check. Run check with results
+            options.put(VariantField.SUMMARY, true);
+            return secure(query, options, token, Enums.Action.SAMPLE_DATA,
+                    (VariantReadOperationWithAudit<DataResult<Variant>>) (engine, auditAttributes) -> {
+                        StopWatch stopWatch = StopWatch.createStarted();
+                        final int limit = options.getInt(QueryOptions.LIMIT, 10);
+                        int skip = options.getInt(SKIP, 0);
+                        // Make initial batchLimit shorter
+                        int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 3 + skip);
+                        int batchSkip = 0;
+
+                        String studyFqn = query.getString(STUDY.key());
+                        options.putAll(query);
+                        options.put(LIMIT, batchLimit);
+                        options.put(SKIP, batchSkip);
+                        Variant variantResult = null;
+
+                        List<SampleEntry> sampleEntries = new ArrayList<>(limit);
+                        List<FileEntry> fileEntries = new ArrayList<>(limit);
+                        LinkedHashMap<String, Integer> fileEntriesPosition = new LinkedHashMap<>(limit);
+
+                        // Get sample data in batches, then check permissions, join and return.
+                        boolean moreResults;
+                        do {
+                            options.put(LIMIT, batchLimit);
+                            options.put(SKIP, batchSkip);
+                            DataResult<Variant> result = engine.getSampleData(variant, studyFqn, new QueryOptions(options));
+
+                            if (variantResult == null) {
+                                variantResult = result.first();
+                            }
+                            StudyEntry thisStudyEntry = result.first().getStudies().get(0);
+                            if (thisStudyEntry.getSamples().isEmpty()) {
+                                // End of the story, break loop
+                                break;
+                            }
+
+                            // Trim results
+                            List<String> samplesInResult = thisStudyEntry.getSamples()
+                                    .stream()
+                                    .map(SampleEntry::getSampleId)
+                                    .collect(Collectors.toList());
+                            moreResults = samplesInResult.size() == batchLimit;
+
+                            StopWatch checkPermissionsStopWatch = StopWatch.createStarted();
+                            String userId = catalogManager.getUserManager().getUserId(token);
+                            List<String> validSamples = catalogManager.getSampleManager()
+                                    .search(study,
+                                            new Query(SampleDBAdaptor.QueryParams.ID.key(), samplesInResult)
+                                                    .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
+                                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token)
+                                    .getResults()
+                                    .stream()
+                                    .map(Sample::getId)
+                                    .sorted()
+                                    .collect(Collectors.toList());
+                            auditAttributes.put("checkSamplePermissionsTimeMillis",
+                                    checkPermissionsStopWatch.getTime(TimeUnit.MILLISECONDS)
+                                            + auditAttributes.getInt("checkSamplePermissionsTimeMillis", 0));
+                            List<String> samplesToReturn;
+                            if (skip > validSamples.size()) {
+                                samplesToReturn = Collections.emptyList();
+                                skip -= validSamples.size();
+                            } else {
+                                // limit is always more than sampleEntries.size, as required by the while
+                                int remainingLimit = limit - sampleEntries.size();
+                                samplesToReturn = validSamples.subList(skip, Math.min(skip + remainingLimit, validSamples.size()));
+                                skip = 0;
+                            }
+                            if (!samplesToReturn.isEmpty()) {
+                                for (SampleEntry sample : thisStudyEntry.getSamples()) {
+                                    if (samplesToReturn.contains(sample.getSampleId())) {
+                                        sampleEntries.add(sample);
+                                        if (sample.getFileIndex() != null) {
+                                            FileEntry file = thisStudyEntry.getFile(sample.getFileIndex());
+                                            if (fileEntriesPosition.putIfAbsent(file.getFileId(), fileEntriesPosition.size()) == null) {
+                                                // New file, add to fileEntries
+                                                fileEntries.add(file);
+                                            }
+                                            sample.setFileIndex(fileEntriesPosition.get(file.getFileId()));
+                                        }
+                                    }
+                                }
+                            }
+                            batchLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
+                            batchSkip += batchLimit;
+                        } while (moreResults && sampleEntries.size() < limit);
+
+
+                        variantResult.getStudies().get(0).setSamples(sampleEntries);
+                        variantResult.getStudies().get(0).setFiles(fileEntries);
+
+                        ObjectMap attributes = new ObjectMap();
+//                        VariantStats stats = variantResult.getStudies().get(0).getStats(StudyEntry.DEFAULT_COHORT);
+//                        if (stats != null) {
+//                            List<String> genotypesFilter = new ArrayList<>(options.getAsStringList(GENOTYPE.key()));
+//                            if (genotypesFilter.isEmpty()) {
+//                                genotypesFilter.add(GenotypeClass.MAIN_ALT.name());
+//                            }
+//                            int expectedSamplesCount = 0;
+//                            List<String> gtsInVariant = new ArrayList<>(stats.getGenotypeCount().keySet());
+//                            List<String> genotypesToReturn = GenotypeClass.filter(genotypesFilter, gtsInVariant);
+//                            for (String gt : genotypesToReturn) {
+//                                expectedSamplesCount += stats.getGenotypeCount().getOrDefault(gt, 0);
+//                            }
+//                        }
+//                        result.getAttributes().put(NUM_SAMPLES.key(), samplesToReturn.size());
+//                        result.getAttributes().put(NUM_TOTAL_SAMPLES.key(), validSamples.size());
+
+                        return new DataResult<>(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
+                                new ArrayList<>(), 1, Collections.singletonList(variantResult), 1, attributes);
+                    });
+        }
     }
 
     public StudyMetadata getStudyMetadata(String study, String token)
@@ -769,7 +889,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     // Permission related methods
 
     private interface VariantReadOperation<R> {
-        R apply(VariantStorageEngine engine) throws StorageEngineException;
+        R apply(VariantStorageEngine engine) throws CatalogException, StorageEngineException;
+    }
+
+    private interface VariantReadOperationWithAudit<R> extends VariantReadOperation<R> {
+        default R apply(VariantStorageEngine engine) throws CatalogException, StorageEngineException {
+            return apply(engine, empty());
+        }
+
+        R apply(VariantStorageEngine engine, ObjectMap auditAttributes) throws CatalogException, StorageEngineException;
     }
 
     private interface VariantOperationFunction<R> {
@@ -889,12 +1017,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             DataStore dataStore = getDataStore(study, token);
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
-            stopWatch.reset();
-            checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), token);
+            stopWatch = StopWatch.createStarted();
+            checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), auditAction, token);
             auditAttributes.append("checkPermissionsTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
             storageStopWatch = StopWatch.createStarted();
-            result = supplier.apply(variantStorageEngine);
+            if (supplier instanceof VariantReadOperationWithAudit) {
+                result = ((VariantReadOperationWithAudit<R>) supplier).apply(variantStorageEngine, auditAttributes);
+            } else {
+                result = supplier.apply(variantStorageEngine);
+            }
             return result;
         } catch (Exception e) {
             exception = e;
@@ -938,11 +1070,23 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     // package protected for test visibility
     Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
-                                                      String token)
+                                                      String token) throws CatalogException {
+        return checkSamplesPermissions(query, queryOptions, mm, null, token);
+    }
+
+    Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
+                                                      Enums.Action auditAction, String token)
             throws CatalogException {
         final Map<String, List<String>> samplesMap = new HashMap<>();
         String userId = catalogManager.getUserManager().getUserId(token);
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
+        if (auditAction == Enums.Action.FACET) {
+            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, VariantField.getIncludeFields(null))) {
+                // General facet query. Do not check samples.
+                returnedFields = Collections.emptySet();
+            }
+        }
+
         if (!returnedFields.contains(VariantField.STUDIES_SAMPLES) && !returnedFields.contains(VariantField.STUDIES_FILES)) {
             if (isValidParam(query, STUDY)) {
                 ParsedQuery<String> studies = VariantQueryUtils.splitValue(query, STUDY);
@@ -1011,8 +1155,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                     .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
                             new QueryOptions()
                                     .append(INCLUDE, SampleDBAdaptor.QueryParams.ID.key())
-                                    .append(SORT, "id")
-                                    .append(ORDER, ASCENDING)
+//                                    .append(SORT, "id")
+//                                    .append(ORDER, ASCENDING)
                                     .append("lazy", true), token);
 
                     List<String> includeSamples = new LinkedList<>();

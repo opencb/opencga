@@ -91,8 +91,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
             ",");
     private final String DENY_SAMPLE_PERMISSIONS = "";
 
-    private final SampleAclParams allSamplePermissions = new SampleAclParams(null, null, null, ALL_SAMPLE_PERMISSIONS);
-    private final SampleAclParams noSamplePermissions = new SampleAclParams(null, null, null, DENY_SAMPLE_PERMISSIONS);
+    private final SampleAclParams allSamplePermissions = new SampleAclParams(null, null, null, null, ALL_SAMPLE_PERMISSIONS);
+    private final SampleAclParams noSamplePermissions = new SampleAclParams(null, null, null, null, DENY_SAMPLE_PERMISSIONS);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -192,15 +192,15 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 QueryOptions.empty(), ownerSessionId);
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp1.getId()), externalUser, allSamplePermissions,
-                ParamUtils.AclAction.SET, false, ownerSessionId);
+                ParamUtils.AclAction.SET, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp3.getId()), externalUser, noSamplePermissions,
-                ParamUtils.AclAction.SET, false, ownerSessionId);
+                ParamUtils.AclAction.SET, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp2.getId()), "*", noSamplePermissions,
-                ParamUtils.AclAction.SET, false, ownerSessionId);
+                ParamUtils.AclAction.SET, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp5.getId()), externalUser, noSamplePermissions,
-                ParamUtils.AclAction.SET, false, ownerSessionId);
+                ParamUtils.AclAction.SET, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp6.getId()), "@members", allSamplePermissions,
-                ParamUtils.AclAction.SET, false, ownerSessionId);
+                ParamUtils.AclAction.SET, ownerSessionId);
     }
 
     @After
@@ -260,6 +260,30 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         groups = getGroupMap();
         assertTrue(groups.get(groupMember).getUserIds().contains(externalUser));
         assertTrue(!groups.get(groupAdmin).getUserIds().contains(externalUser));
+    }
+
+    @Test
+    public void adminUserRemovesFromAdminsGroup() throws CatalogException {
+        thrown.expectMessage("Only the owner");
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.BasicUpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(studyAdminUser2)), studyAdmin1SessionId);
+    }
+
+    @Test
+    public void adminUserAddsFromAdminsGroup() throws CatalogException {
+        thrown.expectMessage("Only the owner");
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(externalUser)), studyAdmin1SessionId);
+    }
+
+    @Test
+    public void adminUserSetsFromAdminsGroup() throws CatalogException {
+        thrown.expectMessage("Only the owner");
+        thrown.expect(CatalogAuthorizationException.class);
+        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.BasicUpdateAction.SET,
+                new GroupUpdateParams(Collections.singletonList(studyAdminUser1)), studyAdmin1SessionId);
     }
 
 //    @Test
@@ -698,7 +722,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         StudyAclParams aclParams = new StudyAclParams("", null);
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), ownerUser, aclParams, ADD, ownerSessionId);
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp1.getId()), ownerUser, noSamplePermissions, SET,
-                false, ownerSessionId);
+                ownerSessionId);
 
         sample = catalogManager.getSampleManager().get(studyFqn, smp1.getId(), null, ownerSessionId);
         assertEquals(1, sample.getNumResults());
@@ -752,7 +776,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void readSampleForbiddenForExternalUser() throws CatalogException {
         catalogManager.getSampleManager().updateAcl(String.valueOf(studyFqn), Arrays.asList(smp2.getId()), externalUser,
-                new SampleAclParams(null, null, null, ""), SET, false, ownerSessionId);
+                new SampleAclParams(null, null, null, null, ""), SET, ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(studyFqn, smp2.getId(), null, externalSessionId);
     }
@@ -772,7 +796,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         // Share the sample with the group
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp4.getId()), newGroup, allSamplePermissions, SET,
-                false, ownerSessionId);
+                ownerSessionId);
 
         DataResult<Sample> sample = catalogManager.getSampleManager().get(studyFqn, smp4.getId(), null, sessionId);
         assertEquals(1, sample.getNumResults());
@@ -801,7 +825,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void adminShareSampleWithOtherUser() throws CatalogException {
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList(smp4.getId()), externalUser, allSamplePermissions,
-                SET, false, studyAdmin1SessionId);
+                SET, studyAdmin1SessionId);
         DataResult<Sample> sample = catalogManager.getSampleManager().get(studyFqn, smp4.getId(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
     }
@@ -847,14 +871,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         sampleManager.create(studyFqn, new Sample().setId("s5"), QueryOptions.empty(), ownerSessionId);
 
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser,
-                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.DELETE.name()), SET, false, ownerSessionId);
+                new SampleAclParams(null, null, null, null, SampleAclEntry.SamplePermissions.DELETE.name()), SET, ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser,
-                new SampleAclParams(null, null, null, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name()), SET, false,
+                new SampleAclParams(null, null, null, null, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name()), SET,
                 ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s3"), memberUser, new SampleAclParams(
-                null, null, null, SampleAclEntry.SamplePermissions.DELETE.name()), SET, false, ownerSessionId);
+                null, null, null, null, SampleAclEntry.SamplePermissions.DELETE.name()), SET, ownerSessionId);
         sampleManager.updateAcl(studyFqn, Collections.singletonList("s4"), memberUser, new SampleAclParams(
-                null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, false, ownerSessionId);
+                null, null, null, null, SampleAclEntry.SamplePermissions.VIEW.name()), SET, ownerSessionId);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
 
@@ -866,7 +890,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         // member user wants to know the samples for which he has UPDATE permissions
         // He should have UPDATE permissions in the same samples where he has DELETE permissions
-        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.UPDATE.name());
+        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.WRITE.name());
         results = sampleManager.search(studyFqn, query, options, memberSessionId).getResults();
         System.out.println(results.stream().map(Sample::getId).collect(Collectors.toSet()));
         assertEquals(8, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());

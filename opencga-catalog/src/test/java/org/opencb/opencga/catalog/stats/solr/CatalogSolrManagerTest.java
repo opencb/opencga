@@ -30,9 +30,13 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.*;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.family.FamilyAclParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -383,6 +387,52 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(new Query(), queryOptions);
         catalogSolrManager.insertCatalogCollection(individualDBIterator, new CatalogIndividualToSolrIndividualConverter(study),
                 CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+    }
+
+    @Test
+    public void testInsertFamilies() throws CatalogException {
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual1"), Collections.singletonList("sample1"),
+                QueryOptions.empty(), sessionIdOwner);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual2"), Collections.singletonList("sample2"),
+                QueryOptions.empty(), sessionIdOwner);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual3"), Collections.singletonList("sample3"),
+                QueryOptions.empty(), sessionIdOwner);
+
+        catalogManager.getFamilyManager().create(studyFqn, new Family().setId("family1"), Collections.singletonList("individual1"),
+                QueryOptions.empty(), sessionIdOwner);
+        catalogManager.getFamilyManager().create(studyFqn, new Family().setId("family2"), Collections.singletonList("individual2"),
+                QueryOptions.empty(), sessionIdOwner);
+        catalogManager.getFamilyManager().create(studyFqn, new Family().setId("family3"), Collections.singletonList("individual3"),
+                QueryOptions.empty(), sessionIdOwner);
+
+        catalogManager.getFamilyManager().updateAcl(studyFqn, new FamilyAclParams(FamilyAclEntry.FamilyPermissions.VIEW.name(), "family1",
+                null, null, FamilyAclParams.Propagate.YES), "user1", ADD, sessionIdOwner);
+        catalogManager.getFamilyManager().updateAcl(studyFqn, new FamilyAclParams(FamilyAclEntry.FamilyPermissions.WRITE.name(), "family1",
+                null, null, FamilyAclParams.Propagate.YES), "user2", ADD, sessionIdOwner);
+        catalogManager.getFamilyManager().updateAcl(studyFqn, new FamilyAclParams("", "family1",
+                null, null, FamilyAclParams.Propagate.YES), "user3", ADD, sessionIdOwner);
+
+        // Index family in solr
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+        QueryOptions familyQueryOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.UUID.key(),
+                        FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
+                        FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
+                        FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                        FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
+                .append(DBAdaptor.INCLUDE_ACLS, true)
+                .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
+
+        FamilyDBAdaptor familyDBAdaptor = factory.getCatalogFamilyDBAdaptor();
+        DBIterator<Family> familyDBIterator = familyDBAdaptor.iterator(new Query(), familyQueryOptions);
+        catalogSolrManager.insertCatalogCollection(familyDBIterator, new CatalogFamilyToSolrFamilyConverter(study),
+                CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+
+
     }
 
     @Test

@@ -126,7 +126,7 @@ public class VariantQueryParser {
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
         // Copy input query! Do not modify original query!
-        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+        Query query = VariantQueryUtils.copy(originalQuery);
 
         preProcessAnnotationParams(query);
 

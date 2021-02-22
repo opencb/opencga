@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
@@ -25,7 +26,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
@@ -45,7 +45,8 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantExporterTest extends VariantStorageBaseTest implements DummyVariantStorageTest {
+@Ignore
+public abstract class VariantExporterTest extends VariantStorageBaseTest {
 
     @Before
     public void setUp() throws Exception {

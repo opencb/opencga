@@ -29,8 +29,8 @@ public class PanelAclEntry extends AbstractAclEntry<PanelAclEntry.PanelPermissio
 
     public enum PanelPermissions {
         VIEW(Collections.emptyList()),
-        UPDATE(Collections.singletonList(VIEW)),
-        DELETE(Arrays.asList(VIEW, UPDATE));
+        WRITE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, WRITE));
 
         private List<PanelPermissions> implicitPermissions;
 

@@ -98,7 +98,10 @@ public class AnnotableConverterTest {
         assertEquals(Arrays.asList(true, false, false, true, true), document.get(0).get(AnnotationConverter.VALUE));
         assertEquals(Arrays.asList(Arrays.asList(1, 1), Arrays.asList(1, 1), 0, Arrays.asList(0, 1)),
                 document.get(0).get(AnnotationConverter.COUNT_ELEMENTS));
+        // Check data type
+        assertTrue(((List) (((List) document.get(0).get(AnnotationConverter.COUNT_ELEMENTS)).get(0))).get(0) instanceof Integer);
         assertEquals(Arrays.asList(0, 1), document.get(0).get(AnnotationConverter.ARRAY_LEVEL));
+        assertTrue(((List) document.get(0).get(AnnotationConverter.ARRAY_LEVEL)).get(0) instanceof Integer);
         assertEquals("annotName", document.get(0).get(AnnotationConverter.ANNOTATION_SET_NAME));
         assertEquals("a.b.c", document.get(0).get(AnnotationConverter.ID));
         assertEquals(1L, document.get(0).get(AnnotationConverter.VARIABLE_SET));
