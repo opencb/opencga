@@ -11,6 +11,7 @@ import com.microsoft.graph.models.extensions.DirectoryObject;
 import com.microsoft.graph.models.extensions.IGraphServiceClient;
 import com.microsoft.graph.requests.extensions.GraphServiceClient;
 import com.microsoft.graph.requests.extensions.IDirectoryObjectCollectionWithReferencesPage;
+import com.microsoft.graph.requests.extensions.IGroupCollectionPage;
 import com.nimbusds.jose.Header;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.oauth2.sdk.ParseException;
@@ -418,9 +419,15 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     @Override
     public void healthCheck(AuthenticationStatus authenticationStatus) {
         try {
-            this.oidcProviderMetadata.getUserInfoEndpointURI().toURL().openStream().close();
-            authenticationStatus.setUrl(this.oidcProviderMetadata.getUserInfoEndpointURI().toString());
-            authenticationStatus.setStatus(HealthCheckResponse.Status.OK);
+            // We try to fetch one random group
+            IGroupCollectionPage iGroupCollectionPage = this.graphServiceClient.groups().buildRequest().top(1).get();
+            if (!iGroupCollectionPage.getCurrentPage().isEmpty()) {
+                authenticationStatus.setUrl(this.graphServiceClient.groups().getRequestUrl());
+                authenticationStatus.setStatus(HealthCheckResponse.Status.OK);
+            } else {
+                authenticationStatus.setStatus(HealthCheckResponse.Status.DEGRADED);
+                authenticationStatus.setException("Queried groups but could not obtain any results");
+            }
         } catch (Exception e) {
             authenticationStatus.setStatus(HealthCheckResponse.Status.DOWN);
             authenticationStatus.setException(e.getMessage());
