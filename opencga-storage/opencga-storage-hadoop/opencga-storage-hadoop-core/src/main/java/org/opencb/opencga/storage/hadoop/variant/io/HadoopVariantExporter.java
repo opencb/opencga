@@ -15,15 +15,16 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,19 +52,29 @@ public class HadoopVariantExporter extends VariantExporter {
     }
 
     @Override
-    public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile, Query query,
-                       QueryOptions queryOptions)
+    public void export(@Nullable URI outputFileUri, VariantWriterFactory.VariantOutputFormat outputFormat, URI variantsFile,
+                       ParsedVariantQuery variantQuery)
             throws IOException, StorageEngineException {
         VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
 
+        Query query = variantQuery.getInputQuery();
+        QueryOptions queryOptions = variantQuery.getInputOptions();
         boolean smallQuery = false;
-        ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
-        if (xrefs.getVariants().size() < 2000) {
-            if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)
-                    && xrefs.getGenes().isEmpty()
-                    && xrefs.getIds().isEmpty()
-                    && xrefs.getOtherXrefs().isEmpty()) {
+        if (!queryOptions.getBoolean("skipSmallQuery", false)) {
+            ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+            if (xrefs.getVariants().size() > 0 && xrefs.getVariants().size() < 2000) {
+                if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)
+                        && xrefs.getGenes().isEmpty()
+                        && xrefs.getIds().isEmpty()
+                        && xrefs.getOtherXrefs().isEmpty()) {
+                    logger.info("Query for {} variants. Consider small query. Skip MapReduce", xrefs.getVariants().size());
+                    smallQuery = true;
+                }
+            }
+            if (SampleIndexQueryParser.validSampleIndexQuery(query) && variantQuery.getStudyQuery().countSamplesInFilter() < 25) {
+                logger.info("Query with {} samples. Consider small query. Skip MapReduce",
+                        variantQuery.getStudyQuery().countSamplesInFilter());
                 smallQuery = true;
             }
         }
@@ -73,7 +84,7 @@ public class HadoopVariantExporter extends VariantExporter {
                 || smallQuery
                 || queryOptions.getBoolean("skipMapReduce", false)
                 || (!(ioConnector instanceof HDFSIOConnector) && !(ioConnector instanceof LocalIOConnector))) {
-            super.export(outputFileUri, outputFormat, variantsFile, query, queryOptions);
+            super.export(outputFileUri, outputFormat, variantsFile, variantQuery);
         } else {
             Path outputPath = new Path(outputFileUri);
             FileSystem fileSystem = outputPath.getFileSystem(dbAdaptor.getConfiguration());

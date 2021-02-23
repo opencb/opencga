@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -77,8 +78,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     private IndividualConverter individualConverter;
 
     public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBCollection deletedIndividualCollection,
-                                    MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(IndividualMongoDBAdaptor.class));
+                                    Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
+        super(configuration, LoggerFactory.getLogger(IndividualMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
         this.deletedIndividualCollection = deletedIndividualCollection;
@@ -704,7 +705,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
-            Individual individual = checkOnlyOneIndividualMatches(clientSession, query);
+            Individual individual = checkOnlyOneIndividualMatches(clientSession, query,
+                    new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
 
             // Check that the new individual name is still unique
             long studyId = getStudyId(individual.getUid());
@@ -766,7 +768,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
             // That can only be done to one individual...
-            Individual individual = checkOnlyOneIndividualMatches(clientSession, query);
+            Individual individual = checkOnlyOneIndividualMatches(clientSession, query,
+                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.SAMPLE_UIDS.key(), QueryParams.SAMPLE_VERSION.key())));
 
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
             ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SAMPLES.key(),
@@ -857,13 +860,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
     }
 
-    private Individual checkOnlyOneIndividualMatches(ClientSession clientSession, Query query)
+    private Individual checkOnlyOneIndividualMatches(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query tmpQuery = new Query(query);
         // We take out ALL_VERSION from query just in case we get multiple results from the same individual...
         tmpQuery.remove(Constants.ALL_VERSIONS);
 
-        OpenCGAResult<Individual> individualDataResult = get(clientSession, tmpQuery, new QueryOptions());
+        OpenCGAResult<Individual> individualDataResult = get(clientSession, tmpQuery, options);
         if (individualDataResult.getNumResults() == 0) {
             throw new CatalogDBException("Update individual: No individual found to be updated");
         }
@@ -1176,6 +1179,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // FIXME we should be able to remove this now safely
         qOptions = filterOptions(qOptions, FILTER_ROUTE_INDIVIDUALS);
+        fixAclProjection(qOptions);
 
         logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
@@ -1258,13 +1262,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
             if (containsAnnotationQuery(query)) {
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL));
+                        IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
             } else {
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualAclEntry.IndividualPermissions.VIEW.name(),
-                        Enums.Resource.INDIVIDUAL));
+                        Enums.Resource.INDIVIDUAL, configuration));
             }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.INDIVIDUAL, user));
+            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.INDIVIDUAL, user,
+                    configuration));
 
             query.remove(ParamConstants.ACL_PARAM);
         }

@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.User;
@@ -67,9 +68,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     private static final String PRIVATE_PASSWORD = "_password";
 
-    public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection,
+    public UserMongoDBAdaptor(MongoDBCollection userCollection, MongoDBCollection deletedUserCollection, Configuration configuration,
                               MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(UserMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(UserMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
         this.deletedUserCollection = deletedUserCollection;

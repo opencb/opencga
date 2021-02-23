@@ -160,10 +160,10 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600"), "*",
                 new SampleAclParams().setPermissions(SampleAclEntry.SamplePermissions.VIEW.name()), // View is not enough
-                ADD, false, sessionId);
+                ADD, sessionId);
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19660"), "*",
                 new SampleAclParams().setPermissions(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()), // ViewVariants without VIEW should be enough
-                ADD, false, sessionId);
+                ADD, sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
@@ -181,7 +181,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
                         .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
-                ADD, false, sessionId);
+                ADD, sessionId);
 
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
@@ -208,7 +208,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
                         .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
-                ADD, false, sessionId);
+                ADD, sessionId);
 
         // Filter sample "NA19601" is unauthorized, even if the result is not returned
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1")
@@ -228,7 +228,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getSampleManager().updateAcl(studyFqn, Arrays.asList("NA19600", "NA19660"), "*",
                 new SampleAclParams()
                         .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
-                ADD, false, sessionId);
+                ADD, sessionId);
 
         // Include sample "NA19601" is unauthorized
         Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1")

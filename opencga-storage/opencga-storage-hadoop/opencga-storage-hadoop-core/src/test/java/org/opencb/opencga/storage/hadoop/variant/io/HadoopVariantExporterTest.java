@@ -134,8 +134,9 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         String fileName = "variants.vcf.gz";
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, new Query(STUDY.key(), study1), new QueryOptions());
-            copyToLocal(fileName, uri);
-        }
+
+        copyToLocal(fileName, uri);
+    }
 
     @Test
     public void exportTped() throws Exception {
@@ -165,11 +166,23 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     }
 
     @Test
+    public void exportIndexSmallQuery() throws Exception {
+        String fileName = "some_variants.sample_index.avro";
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
+                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1"),
+                new QueryOptions());
+
+        copyToLocal(fileName, uri);
+    }
+
+    @Test
     public void exportIndex() throws Exception {
         String fileName = "some_variants.sample_index.avro";
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.AVRO,
-                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1"), new QueryOptions());
+                null, new Query(STUDY.key(), study1).append(GENOTYPE.key(), "NA12877:0/1;NA12878:1/1"),
+                new QueryOptions("skipSmallQuery", true));
 
         copyToLocal(fileName, uri);
     }

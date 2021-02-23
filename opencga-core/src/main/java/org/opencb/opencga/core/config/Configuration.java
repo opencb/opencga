@@ -52,6 +52,8 @@ public class Configuration {
     private Analysis analysis;
     private Panel panel;
 
+    private Optimizations optimizations;
+
     private ServerConfiguration server;
     private Authentication authentication;
 
@@ -73,6 +75,7 @@ public class Configuration {
         catalog = new Catalog();
         analysis = new Analysis();
         panel = new Panel();
+        optimizations = new Optimizations();
         server = new ServerConfiguration();
         authentication = new Authentication();
     }
@@ -174,6 +177,9 @@ public class Configuration {
                     case "OPENCGA_CATALOG_SEARCH_BATCH":
                         configuration.getCatalog().getSearchEngine().getOptions().put("insertBatchSize", value);
                         break;
+                    case "OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS":
+                        configuration.getOptimizations().setSimplifyPermissions(Boolean.parseBoolean(value));
+                        break;
                     case "OPENCGA_SERVER_REST_PORT":
                         configuration.getServer().getRest().setPort(Integer.parseInt(value));
                         break;
@@ -202,6 +208,7 @@ public class Configuration {
         sb.append(", email=").append(email);
         sb.append(", catalog=").append(catalog);
         sb.append(", panel=").append(panel);
+        sb.append(", optimizations=").append(optimizations);
         sb.append(", server=").append(server);
         sb.append(", authentication=").append(authentication);
         sb.append('}');
@@ -355,6 +362,15 @@ public class Configuration {
 
     public Configuration setPanel(Panel panel) {
         this.panel = panel;
+        return this;
+    }
+
+    public Optimizations getOptimizations() {
+        return optimizations;
+    }
+
+    public Configuration setOptimizations(Optimizations optimizations) {
+        this.optimizations = optimizations;
         return this;
     }
 

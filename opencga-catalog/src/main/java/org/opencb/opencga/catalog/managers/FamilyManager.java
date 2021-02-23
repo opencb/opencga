@@ -48,13 +48,14 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -84,6 +85,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     public static final QueryOptions INCLUDE_FAMILY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
             FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key()));
+    public static final QueryOptions INCLUDE_FAMILY_MEMBERS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.UUID.key(),
+            FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+            FamilyDBAdaptor.QueryParams.MEMBERS.key()));
 
     FamilyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -904,7 +909,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if ((parameters.size() == 1 && !parameters.containsKey(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
             authorizationManager.checkFamilyPermission(study.getUid(), family.getUid(), userId,
-                    FamilyAclEntry.FamilyPermissions.UPDATE);
+                    FamilyAclEntry.FamilyPermissions.WRITE);
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
@@ -1117,24 +1122,32 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> familyStrList, String memberList,
-                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
-            throws CatalogException {
+    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, FamilyAclParams aclParams, String memberList,
+                                                              ParamUtils.AclAction action, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
-                .append("familyStrList", familyStrList)
-                .append("memberList", memberList)
                 .append("aclParams", aclParams)
+                .append("memberList", memberList)
                 .append("action", action)
                 .append("token", token);
         String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
+        List<Family> familyList = null;
         try {
-            if (familyStrList == null || familyStrList.isEmpty()) {
-                throw new CatalogException("Update ACL: Missing family parameter");
+            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
+
+            int count = 0;
+            count += aclParams.getFamily() != null && !aclParams.getFamily().isEmpty() ? 1 : 0;
+            count += aclParams.getIndividual() != null && !aclParams.getIndividual().isEmpty() ? 1 : 0;
+            count += aclParams.getSample() != null && !aclParams.getSample().isEmpty() ? 1 : 0;
+
+            if (count > 1) {
+                throw new CatalogException("Update ACL: Only one of these parameters are allowed: family, individual or sample per query.");
+            } else if (count == 0) {
+                throw new CatalogException("Update ACL: At least one of these parameters should be provided: family, individual or sample");
             }
 
             if (action == null) {
@@ -1147,9 +1160,25 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 checkPermissions(permissions, FamilyAclEntry.FamilyPermissions::valueOf);
             }
 
-            List<Family> familyList = internalGet(study.getUid(), familyStrList, INCLUDE_FAMILY_IDS, user, false).getResults();
+            String individualStr = aclParams.getIndividual();
+            if (StringUtils.isNotEmpty(aclParams.getSample())) {
+                OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().get(studyId, aclParams.getSample(),
+                        new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()), token);
+                individualStr = sampleResult.getResults().stream().map(Sample::getIndividualId).collect(Collectors.joining(","));
+            }
 
-            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), user);
+            if (StringUtils.isNotEmpty(individualStr)) {
+                familyList = catalogManager.getFamilyManager().search(studyId,
+                        new Query(FamilyDBAdaptor.QueryParams.MEMBERS.key(), individualStr), FamilyManager.INCLUDE_FAMILY_MEMBERS, token)
+                        .getResults();
+            } else if (StringUtils.isNotEmpty(aclParams.getFamily())) {
+                familyList = catalogManager.getFamilyManager().get(studyId, Arrays.asList(aclParams.getFamily().split(",")),
+                        FamilyManager.INCLUDE_FAMILY_MEMBERS, token).getResults();
+            }
+
+            if (familyList == null || familyList.isEmpty()) {
+                throw new CatalogException("No families found to set permissions");
+            }
 
             // Validate that the members are actually valid members
             List<String> members;
@@ -1161,24 +1190,60 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
             checkMembers(study.getUid(), members);
 
+            List<AuthorizationManager.CatalogAclParams> aclParamsList = new LinkedList<>();
             List<Long> familyUids = familyList.stream().map(Family::getUid).collect(Collectors.toList());
-            AuthorizationManager.CatalogAclParams catalogAclParams = new AuthorizationManager.CatalogAclParams(familyUids, permissions,
-                    Enums.Resource.FAMILY);
+            aclParamsList.add(new AuthorizationManager.CatalogAclParams(familyUids, permissions, Enums.Resource.FAMILY));
+
+            if (aclParams.getPropagate() == FamilyAclParams.Propagate.YES
+                    || aclParams.getPropagate() == FamilyAclParams.Propagate.YES_AND_VARIANT_VIEW) {
+                // Obtain the list of members and samples
+                Set<Long> memberUids = new HashSet<>();
+                Set<Long> sampleUids = new HashSet<>();
+                for (Family family : familyList) {
+                    if (family.getMembers() != null) {
+                        for (Individual member : family.getMembers()) {
+                            memberUids.add(member.getUid());
+                            if (member.getSamples() != null) {
+                                for (Sample sample : member.getSamples()) {
+                                    sampleUids.add(sample.getUid());
+                                }
+                            }
+                        }
+                    }
+                }
+                if (!memberUids.isEmpty()) {
+                    // Add permissions to those individuals
+                    aclParamsList.add(new AuthorizationManager.CatalogAclParams(new ArrayList<>(memberUids), permissions,
+                            Enums.Resource.INDIVIDUAL));
+                }
+
+                if (!sampleUids.isEmpty()) {
+                    // Add permissions to those samples
+                    List<String> samplePermissions = new ArrayList<>(permissions);
+                    if (aclParams.getPropagate() == FamilyAclParams.Propagate.YES_AND_VARIANT_VIEW) {
+                        samplePermissions.add(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name());
+                    }
+                    aclParamsList.add(new AuthorizationManager.CatalogAclParams(new ArrayList<>(sampleUids), samplePermissions,
+                            Enums.Resource.SAMPLE));
+                }
+            }
 
             OpenCGAResult<Map<String, List<String>>> aclResults;
             switch (action) {
                 case SET:
-                    aclResults = authorizationManager.setAcls(study.getUid(), members, catalogAclParams);
+                    aclResults = authorizationManager.setAcls(study.getUid(), members, aclParamsList);
                     break;
                 case ADD:
-                    aclResults = authorizationManager.addAcls(study.getUid(), members, catalogAclParams);
+                    aclResults = authorizationManager.addAcls(study.getUid(), members, aclParamsList);
                     break;
                 case REMOVE:
-                    aclResults = authorizationManager.removeAcls(members, catalogAclParams);
+                    aclResults = authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 case RESET:
-                    catalogAclParams.setPermissions(null);
-                    aclResults = authorizationManager.removeAcls(members, catalogAclParams);
+                    for (AuthorizationManager.CatalogAclParams auxAclParams : aclParamsList) {
+                        auxAclParams.setPermissions(null);
+                    }
+                    aclResults = authorizationManager.removeAcls(members, aclParamsList);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");
@@ -1191,9 +1256,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
             return aclResults;
         } catch (CatalogException e) {
-            if (familyStrList != null) {
-                for (String familyId : familyStrList) {
-                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, familyId, "",
+            if (familyList != null) {
+                for (Family family : familyList) {
+                    auditManager.audit(operationId, user, Enums.Action.UPDATE_ACLS, Enums.Resource.FAMILY, family.getId(), "",
                             study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                     e.getError()), new ObjectMap());
                 }

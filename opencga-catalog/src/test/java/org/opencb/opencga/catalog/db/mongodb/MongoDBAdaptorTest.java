@@ -125,7 +125,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         db.getDb().drop();
         mongoManager.close();
 
-        catalogDBAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database);
+        catalogDBAdaptor = new MongoDBAdaptorFactory(configuration);
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
         catalogProjectDBAdaptor = catalogDBAdaptor.getCatalogProjectDbAdaptor();
@@ -248,7 +248,10 @@ public class MongoDBAdaptorTest extends GenericTest {
 
     }
 
-    /*
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+/*
     @Test
     public void initializeInitializedDB() throws CatalogDBException {
         assertTrue(catalogDBAdaptor.isCatalogDBReady());

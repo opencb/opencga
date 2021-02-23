@@ -22,10 +22,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -99,33 +96,52 @@ public class TreeQuery {
         if (open != close) {
             throw new IllegalArgumentException("Malformed query '" + q + "'");
         }
-        if (open == 0) {
+        if (open > 0) {
+            return parseNodes(q);
+        } else {
             if (q.startsWith(NOT)) {
-                return new ComplementNode(parse(q.replaceFirst(NOT, "")));
+                return new ComplementNode(parseQueryNode(q.replaceFirst(NOT, "")));
+            } else {
+                return parseQueryNode(q);
             }
+        }
 
-            Query query = new Query();
-            for (String token : q.split(" " + AND + " ")) {
-                token = token.replace(" ", "");
+    }
+
+    private static Node parseQueryNode(String q) {
+        if (q.contains(OR)) {
+            List<Node> unionNodes = new ArrayList<>();
+            for (String token : q.split(" " + OR + " ")) {
+                unionNodes.add(parseQueryNode(token));
+            }
+            return new UnionNode(unionNodes);
+        }
+        Query query = new Query();
+        for (String token : q.split(" " + AND + " ")) {
+            token = token.replace(" ", "");
 
 //                String[] split = token.split(":", 2);
 //                query.put(split[0], split[1]);
 
-                String[] split = VariantQueryUtils.splitOperator(token);
-                String key = split[0];
-                String op = split[1];
-                String value = split[2];
-                if (key == null) {
-                    throw new IllegalArgumentException("Invalid filter '" + token + "'");
-                }
-                if (!op.equals("=") && !op.equals("==")) {
-                    value = op + value;
-                }
-                query.put(key, value);
+            String[] split = VariantQueryUtils.splitOperator(token);
+            String key = split[0];
+            String op = split[1];
+            String value = split[2];
+            if (key == null) {
+                throw new IllegalArgumentException("Invalid filter '" + token + "'");
             }
-            return new QueryNode(query);
+            if (!op.equals("=") && !op.equals("==")) {
+                value = op + value;
+            }
+            if (query.put(key, value) != null) {
+                throw new IllegalArgumentException("Query param '" + key + "' found multiple times in statement '" + q + "'.");
+//                        + "Please, rebuild the query adding brackets. e.g. 'key=A AND key=B' -> '(key=A) AND (key=B)'");
+            }
         }
+        return new QueryNode(query);
+    }
 
+    private static Node parseNodes(String q) {
 //        if (q.charAt(0) != '(') {
 //            throw new IllegalArgumentException("Malformed query '" + q + "'");
 //        }
