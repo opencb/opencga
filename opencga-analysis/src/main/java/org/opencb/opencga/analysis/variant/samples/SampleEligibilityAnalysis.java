@@ -54,6 +54,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
@@ -95,6 +96,8 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY_SEGREGATION);
         INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.SAMPLE_ANNOTATION);
     }
+
+    public static final String FILE_NAME_PREFIX = "sampleEligibilityAnalysisResult";
 
     @Override
     protected void check() throws Exception {
@@ -203,15 +206,19 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 .setIndividuals(new ArrayList<>(samplesResult.size()));
 
         if (!samplesResult.isEmpty()) {
-          // TODO: Iterator should work here
-//                Iterator<Individual> it = getCatalogManager().getIndividualManager()
-//                        .iterator(studyFqn,
-//                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
-//                                new QueryOptions(), getToken());
             Iterator<Individual> it = getCatalogManager().getIndividualManager()
-                    .search(studyFqn,
+                    .iterator(studyFqn,
                             new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesResult),
-                            new QueryOptions(), getToken()).getResults().iterator();
+                            new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                                    IndividualDBAdaptor.QueryParams.ID.key(),
+                                    IndividualDBAdaptor.QueryParams.NAME.key(),
+                                    IndividualDBAdaptor.QueryParams.SEX.key(),
+                                    IndividualDBAdaptor.QueryParams.DISORDERS.key(),
+                                    IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                                    IndividualDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key(),
+                                    IndividualDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
+                                    IndividualDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.SOMATIC.key()
+                            )), getToken());
             Set<String> missingSamples = new HashSet<>(samplesResult);
             while (it.hasNext()) {
                 Individual individual = it.next();
@@ -235,10 +242,15 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             }
             if (!missingSamples.isEmpty()) {
                 logger.warn("Individual not found for {} samples", missingSamples.size());
-                List<Sample> results = catalogManager.getSampleManager()
-                        .get(studyFqn, new ArrayList<>(missingSamples), new QueryOptions(), getToken())
-                        .getResults();
-                for (Sample sample : results) {
+                Iterator<Sample> samples = catalogManager.getSampleManager()
+                        .iterator(studyFqn, new Query(SampleDBAdaptor.QueryParams.ID.key(), new ArrayList<>(missingSamples)),
+                                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                                        SampleDBAdaptor.QueryParams.ID.key(),
+                                        SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
+                                        SampleDBAdaptor.QueryParams.SOMATIC.key()
+                                )), getToken());
+                while (samples.hasNext()) {
+                    Sample sample = samples.next();
                     analysisResult.getIndividuals().add(new SampleEligibilityAnalysisResult.ElectedIndividual()
                             .setName(sample.getId())
                             .setId(sample.getId())
@@ -253,11 +265,19 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 }
             }
         }
-        String fileNamePrefix = "sampleEligibilityAnalysisResult";
-        File resultFile = getOutDir().resolve(fileNamePrefix + ".json").toFile();
-        new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValue(resultFile, analysisResult);
 
-        try (PrintStream out = new PrintStream(getOutDir().resolve(fileNamePrefix + ".tsv").toFile())) {
+        printTsv(samplesResult, analysisResult);
+        printJson(analysisResult);
+
+    }
+
+    private void printJson(SampleEligibilityAnalysisResult analysisResult) throws IOException {
+        File resultFile = getOutDir().resolve(FILE_NAME_PREFIX + ".json").toFile();
+        new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL).writeValue(resultFile, analysisResult);
+    }
+
+    private void printTsv(Set<String> samplesResult, SampleEligibilityAnalysisResult analysisResult) throws FileNotFoundException {
+        try (PrintStream out = new PrintStream(getOutDir().resolve(FILE_NAME_PREFIX + ".tsv").toFile())) {
             out.println("##study=" + analysisResult.getStudy());
             out.println("##query=" + analysisResult.getQuery());
             out.println("##num_samples=" + samplesResult.size());
