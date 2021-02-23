@@ -98,6 +98,10 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
         return timeFetching;
     }
 
+    public final long getTime(TimeUnit timeUnit) {
+        return getTimeConverting(timeUnit) + getTimeFetching(timeUnit);
+    }
+
     public final long getTimeFetching(TimeUnit timeUnit) {
         return timeUnit.convert(getTimeFetching(), TimeUnit.NANOSECONDS);
     }

@@ -208,16 +208,16 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     protected List<String> getSteps() {
         if (numBatches == 1) {
             if (toolParams.isIndex()) {
-                return Arrays.asList(getId(), "index");
+                return Arrays.asList("calculate", "index");
             } else {
-                return Collections.singletonList(getId());
+                return Collections.singletonList("calculate");
             }
         } else {
             List<String> steps = new ArrayList<>();
-            for (int batch = 0; batch < numBatches; batch++) {
-                steps.add(getId() + "-batch-" + batch);
+            for (int batch = 1; batch <= numBatches; batch++) {
+                steps.add("calculate-" + batch);
                 if (toolParams.isIndex()) {
-                    steps.add("index-batch-" + batch);
+                    steps.add("index-" + batch);
                 }
             }
             return steps;
@@ -226,19 +226,19 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected void run() throws ToolException {
-        for (int batch = 0; batch < numBatches; batch++) {
-            List<String> batchSamples = batches.get(batch);
+        for (int batch = 1; batch <= numBatches; batch++) {
+            List<String> batchSamples = batches.get(batch - 1);
             String stepName;
             if (numBatches == 1) {
-                stepName = getId();
+                stepName = "calculate";
             } else {
-                stepName = getId() + "-batch-" + batch;
-                logger.info("Sample stats batch {}/{} with {} samples", batch + 1, numBatches, batchSamples.size());
+                stepName = "calculate-" + batch;
+                logger.info("Sample stats batch {}/{} with {} samples", batch, numBatches, batchSamples.size());
             }
 
             Path tmpOutputFile;
             Path outputFile = getOutDir().resolve(getId() + ".json");
-            if (batch == 0) {
+            if (batch == 1) {
                 tmpOutputFile = outputFile;
             } else {
                 tmpOutputFile = getScratchDir().resolve(getId() + ".batch_" + batch + ".json");
@@ -267,7 +267,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                 if (numBatches == 1) {
                     stepName = "index";
                 } else {
-                    stepName = "index-batch-" + batch;
+                    stepName = "index-" + batch;
                 }
                 step(stepName, () -> {
                     Map<String, String> queryMap = toolParams.getVariantQuery().toQuery().entrySet()

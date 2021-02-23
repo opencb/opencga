@@ -440,7 +440,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.samtoolsCommandOptions.targetRegionFile,
                 alignmentCommandOptions.samtoolsCommandOptions.readsNotSelectedFilename,
                 alignmentCommandOptions.samtoolsCommandOptions.outdir,
-                alignmentCommandOptions.samtoolsCommandOptions.commonOptions.params
+                alignmentCommandOptions.samtoolsCommandOptions.samtoolsParams
         );
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.samtoolsCommandOptions.study);
 

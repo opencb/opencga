@@ -447,17 +447,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
 
-//        boolean pendingVariants = !overwrite;
-        boolean pendingVariants = true;
-
-        if (pendingVariants) {
-            logger.info("Get variants to index from pending variants table");
-            logger.info("Query: " + query.toJson());
-            return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
-        } else {
-            logger.info("Get variants to index");
-            return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
-        }
+        logger.info("Get variants to index from pending variants table");
+        logger.info("Query: " + query.toJson());
+        return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
     }
 
     @Override
