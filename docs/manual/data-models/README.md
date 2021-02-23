@@ -13,18 +13,18 @@ All OpenCGA Data Models have been designed to follow some principles:
 1. Parent-Child List - Parent resources have a list of Child resources objects in their data models.
 2. Chid-Parent reference - String ids from Parents referenced in Child data model.
 3. Annotation Sets
-4. String id is mandatory for any resource. A unique uuid is generated for each instance of a resource created, which is immutable. ​
+4. String id is mandatory for any resource. A unique UUID is generated for each instance of a resource created, which is immutable. ​
 5. Each resource has a version, release, creationDate and modificationDate attribute which is immutable.
 
 
-
-## Implementation
 
 ### Diagram
 
 ![](../../.gitbook/assets/catalog_data_models_v13.png)
 
 ## Common Data Models
+
+Some data models are used ...
 
 ### Annotation Set
 
