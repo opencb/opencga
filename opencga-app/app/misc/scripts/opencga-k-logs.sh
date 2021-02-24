@@ -37,7 +37,7 @@ value="$2"
 case $key in
     -h|--help)
     printUsage
-    return 0
+    exit 0
     ;;
     --verbose)
     set -x
