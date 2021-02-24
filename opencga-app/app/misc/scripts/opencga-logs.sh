@@ -33,7 +33,7 @@ while [ $# -gt 0 ]; do
   case $key in
   -h | --help)
     printUsage
-    return 0
+    exit 0
     ;;
   -n | --tail)
     LINES="${value}"
