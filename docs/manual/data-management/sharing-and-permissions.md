@@ -1,5 +1,7 @@
 # Sharing and Permissions
 
+[http://docs.opencb.org/display/opencga/Sharing+and+Permissions](http://docs.opencb.org/display/opencga/Sharing+and+Permissions)
+
 <table>
   <thead>
     <tr>
