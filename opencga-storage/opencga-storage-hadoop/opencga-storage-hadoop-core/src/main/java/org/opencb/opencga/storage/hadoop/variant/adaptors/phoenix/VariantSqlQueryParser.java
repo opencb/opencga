@@ -466,7 +466,7 @@ public class VariantSqlQueryParser {
                 regionFilters.addAll(geneRegionFilters);
             } else if (skipGeneRegions) {
                 // Add combinedFilters as normal filters
-                otherFilters.addAll(combinedFilters);
+                otherFilters.add(appendFilters(combinedFilters, QueryOperation.OR));
             } else {
                 regionFilters.add(appendFilters(Arrays.asList(
                         appendFilters(geneRegionFilters, QueryOperation.OR),
