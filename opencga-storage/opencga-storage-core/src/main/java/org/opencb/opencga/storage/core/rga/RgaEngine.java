@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RgaEngine implements Closeable {
@@ -104,17 +103,12 @@ public class RgaEngine implements Closeable {
      *
      * @param collection Solr collection where to insert
      * @param knockoutByIndividualList List of knockoutByIndividual to insert
-     * @param grantedPermissionMemberList Map containing the list of members for which permissions are satisfied.
-     * @param deniedPermissionMemberList Map containing the list of members for which permissions are revoked.
      * @throws IOException   IOException
      * @throws SolrServerException SolrServerException
      */
-    public void insert(String collection, List<KnockoutByIndividual> knockoutByIndividualList,
-                       Map<String, List<String>> grantedPermissionMemberList, Map<String, List<String>> deniedPermissionMemberList)
-            throws IOException, SolrServerException {
+    public void insert(String collection, List<KnockoutByIndividual> knockoutByIndividualList) throws IOException, SolrServerException {
         if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-            List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList,
-                    grantedPermissionMemberList, deniedPermissionMemberList);
+            List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList);
 
             if (!rgaDataModelList.isEmpty()) {
                 UpdateResponse updateResponse;

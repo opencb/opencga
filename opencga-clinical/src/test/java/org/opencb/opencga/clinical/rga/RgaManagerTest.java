@@ -104,7 +104,7 @@ public class RgaManagerTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
     }
 
     private String getCollectionName() {

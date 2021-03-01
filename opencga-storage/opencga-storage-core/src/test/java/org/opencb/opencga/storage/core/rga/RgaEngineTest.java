@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -47,7 +46,7 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
         OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, new Query(), new QueryOptions());
 
         assertEquals(2, result.getNumResults());
@@ -105,7 +104,7 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("sampleId", "disorders", "genesMap.name"));
         OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, new Query(), options);
@@ -189,7 +188,7 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
         OpenCGAResult<KnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), new QueryOptions());
 
         assertEquals(4, result.getNumResults());
@@ -256,7 +255,7 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("name", "individuals.transcriptsMap.chromosome"));
         OpenCGAResult<KnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), options);
@@ -335,7 +334,7 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
         OpenCGAResult<KnockoutByVariant> result = rgaEngine.variantQuery(collection, new Query(), new QueryOptions());
 
         assertEquals(6, result.getNumResults());
@@ -352,7 +351,7 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("individuals.sampleId", "individuals.disorders",
                 "individuals.genesMap.name"));
@@ -450,7 +449,7 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(1));
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
-        rgaEngine.insert(collection, knockoutByIndividualList, Collections.emptyMap(), Collections.emptyMap());
+        rgaEngine.insert(collection, knockoutByIndividualList);
 
         QueryOptions options = new QueryOptions(QueryOptions.FACET, RgaQueryParams.DISORDERS.key());
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, new Query(), options);
