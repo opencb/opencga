@@ -138,7 +138,7 @@ public class RgaEngine implements Closeable {
      */
     public OpenCGAResult<KnockoutByIndividual> individualQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
-        SolrQuery solrQuery = fixQuery(collection, query, queryOptions);
+        SolrQuery solrQuery = parser.parseQuery(query);
         fixIndividualOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
@@ -191,6 +191,7 @@ public class RgaEngine implements Closeable {
         }
     }
 
+    @Deprecated
     private SolrQuery fixQuery(String collection, Query query, QueryOptions queryOptions) throws IOException, RgaException {
         int limit = queryOptions.getInt(QueryOptions.LIMIT);
         int skip = queryOptions.getInt(QueryOptions.SKIP);

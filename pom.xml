@@ -38,6 +38,7 @@
         <module>opencga-storage</module>
         <module>opencga-client</module>
         <module>opencga-server</module>
+        <module>opencga-clinical</module>
     </modules>
 
     <properties>

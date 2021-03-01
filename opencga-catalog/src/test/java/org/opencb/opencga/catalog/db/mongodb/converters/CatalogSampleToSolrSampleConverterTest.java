@@ -72,7 +72,7 @@ public class CatalogSampleToSolrSampleConverterTest {
                 .setAnnotationSets(AnnotationHelper.createAnnotation());
 
         List<Map> sampleAclEntry = Arrays.asList(
-                objectMapper.readValue(objectMapper.writeValueAsString(new SampleAclEntry("user1", EnumSet.of(SampleAclEntry.SamplePermissions.VIEW, SampleAclEntry.SamplePermissions.UPDATE))), Map.class),
+                objectMapper.readValue(objectMapper.writeValueAsString(new SampleAclEntry("user1", EnumSet.of(SampleAclEntry.SamplePermissions.VIEW, SampleAclEntry.SamplePermissions.WRITE))), Map.class),
                 objectMapper.readValue(objectMapper.writeValueAsString(new SampleAclEntry("user2", EnumSet.noneOf(SampleAclEntry.SamplePermissions.class))), Map.class)
         );
         attributes = new HashMap<>();
