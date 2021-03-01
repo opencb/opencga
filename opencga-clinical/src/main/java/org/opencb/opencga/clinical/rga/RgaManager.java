@@ -72,6 +72,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
+        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         if (!auxQuery.containsKey("sampleId") && !auxQuery.containsKey("individualId")) {
@@ -87,31 +88,40 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         }
 
         // From the list of sample ids the user wants to retrieve data from, we filter those for which the user has permissions
-        Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
-        if (auxQuery.containsKey("individualId")) {
-            sampleQuery.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), auxQuery.get("individualId"));
-        } else {
-            sampleQuery.put(SampleDBAdaptor.QueryParams.ID.key(), auxQuery.get("sampleId"));
+        Query sampleQuery = new Query();
+        if (!isOwnerOrAdmin) {
+            sampleQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
+                    + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
         }
+        List<String> samples;
+        if (!isOwnerOrAdmin || !auxQuery.containsKey("sampleId")) {
+            if (auxQuery.containsKey("individualId")) {
+                sampleQuery.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), auxQuery.get("individualId"));
+            } else {
+                sampleQuery.put(SampleDBAdaptor.QueryParams.ID.key(), auxQuery.get("sampleId"));
+            }
 
-        OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
-        if (authorisedSampleIdResult.getNumResults() == 0) {
-            return OpenCGAResult.empty(KnockoutByIndividual.class);
+            OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                    SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+            if (authorisedSampleIdResult.getNumResults() == 0) {
+                return OpenCGAResult.empty(KnockoutByIndividual.class);
+            }
+            samples = (List<String>) authorisedSampleIdResult.getResults();
+        } else {
+            samples = auxQuery.getAsStringList("sampleId");
         }
 
         int limit = options.getInt(QueryOptions.LIMIT, AbstractManager.DEFAULT_LIMIT);
         int skip = options.getInt(QueryOptions.SKIP);
 
         List<String> sampleIds;
-        if (skip == 0 && limit > authorisedSampleIdResult.getNumResults()) {
-            sampleIds = (List<String>) authorisedSampleIdResult.getResults();
-        } else if (skip > authorisedSampleIdResult.getNumResults()) {
+        if (skip == 0 && limit > samples.size()) {
+            sampleIds = samples;
+        } else if (skip > samples.size()) {
             return OpenCGAResult.empty(KnockoutByIndividual.class);
         } else {
-            int to = Math.min(authorisedSampleIdResult.getNumResults(), skip + limit);
-            sampleIds = (List<String>) authorisedSampleIdResult.getResults().subList(skip, to);
+            int to = Math.min(samples.size(), skip + limit);
+            sampleIds = samples.subList(skip, to);
         }
         auxQuery.put("sampleId", sampleIds);
 
@@ -124,6 +134,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
+        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         // 1st. we perform a facet to get the different gene ids matching the user query and using the skip and limit values
@@ -133,60 +144,41 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
         DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
         List<String> geneIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
-
-//        ExecutorService threadPool = Executors.newFixedThreadPool(2);
-//        List<Future<Boolean>> futureList = new ArrayList<>(2);
-//        futureList.add(threadPool.submit(getNamedThread("Authorised sample ids",
-//                () -> {
-//                    System.out.println("hello");
-//                    return true;
-//                })));
-//        futureList.add(threadPool.submit(getNamedThread("Solr Gene query",
-//                () -> {
-//            return true;
-//                })));
-//        threadPool.shutdown();
-//
-//        try {
-//            threadPool.awaitTermination(20, TimeUnit.SECONDS);
-//            if (!threadPool.isTerminated()) {
-//                for (Future<Boolean> future : futureList) {
-//                    future.cancel(true);
-//                }
-//            }
-//        } catch (InterruptedException e) {
-//            throw new RgaException("Error launching threads when executing gene query analysis", e);
-//        }
-
-        // 2. Check permissions
         auxQuery.put(RgaDataModel.GENE_ID, geneIds);
-        // TODO: This should be done with Futures so it is done in parallel with step 4 (Also, this can be skipped if the user is admin)
-        result = rgaEngine.facetedQuery(collection, auxQuery, new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID));
-        List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
-        // 3. Get list of sample ids for which the user has permissions
-        Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-        OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
-        Set<String> authorisedSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+        Set<String> authorisedSampleIds = Collections.emptySet();
+        if (!isOwnerOrAdmin) {
+            // 2. Check permissions
+            result = rgaEngine.facetedQuery(collection, auxQuery, new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID));
+            List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+
+            // 3. Get list of sample ids for which the user has permissions
+            Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
+                    + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+            OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                    SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+            authorisedSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+        }
 
         // 4. Solr gene query
         OpenCGAResult<KnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, options);
-
-        // 5. Filter out individual or samples for which user does not have permissions
-        for (KnockoutByGene knockout : knockoutResult.getResults()) {
-            List<KnockoutByGene.KnockoutIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
-            for (KnockoutByGene.KnockoutIndividual individual : knockout.getIndividuals()) {
-                if (authorisedSampleIds.contains(individual.getSampleId())) {
-                    individualList.add(individual);
+        if (isOwnerOrAdmin) {
+            return knockoutResult;
+        } else {
+            // 5. Filter out individual or samples for which user does not have permissions
+            for (KnockoutByGene knockout : knockoutResult.getResults()) {
+                List<KnockoutByGene.KnockoutIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
+                for (KnockoutByGene.KnockoutIndividual individual : knockout.getIndividuals()) {
+                    if (authorisedSampleIds.contains(individual.getSampleId())) {
+                        individualList.add(individual);
+                    }
                 }
+                knockout.setIndividuals(individualList);
             }
-            knockout.setIndividuals(individualList);
-        }
 
-        return knockoutResult;
+            return knockoutResult;
+        }
     }
 
     public OpenCGAResult<KnockoutByVariant> variantQuery(String studyStr, Query query, QueryOptions options, String token)
@@ -195,6 +187,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
+        Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         // 1st. we perform a facet to get the different variant ids matching the user query and using the skip and limit values
@@ -204,36 +197,41 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
         DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
         List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
-
-        // 2. Check permissions
         auxQuery.put(RgaDataModel.VARIANTS, variantIds);
-        // TODO: This should be done with Futures so it is done in parallel with step 4 (Also, this can be skipped if the user is admin)
-        result = rgaEngine.facetedQuery(collection, auxQuery, new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID));
-        List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
-        // 3. Get list of sample ids for which the user has permissions
-        Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
-        OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
-        Set<String> authorisedSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+        Set<String> authorisedSampleIds = Collections.emptySet();
+        if (!isOwnerOrAdmin) {
+            // 2. Check permissions
+            result = rgaEngine.facetedQuery(collection, auxQuery, new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID));
+            List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+
+            // 3. Get list of sample ids for which the user has permissions
+            Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
+                    + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                    .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+            OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                    SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+            authorisedSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+        }
 
         // 4. Solr gene query
         OpenCGAResult<KnockoutByVariant> knockoutResult = rgaEngine.variantQuery(collection, auxQuery, options);
-
-        // 5. Filter out individual or samples for which user does not have permissions
-        for (KnockoutByVariant knockout : knockoutResult.getResults()) {
-            List<KnockoutByIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
-            for (KnockoutByIndividual individual : knockout.getIndividuals()) {
-                if (authorisedSampleIds.contains(individual.getSampleId())) {
-                    individualList.add(individual);
+        if (isOwnerOrAdmin) {
+            return knockoutResult;
+        } else {
+            // 5. Filter out individual or samples for which user does not have permissions
+            for (KnockoutByVariant knockout : knockoutResult.getResults()) {
+                List<KnockoutByIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
+                for (KnockoutByIndividual individual : knockout.getIndividuals()) {
+                    if (authorisedSampleIds.contains(individual.getSampleId())) {
+                        individualList.add(individual);
+                    }
                 }
+                knockout.setIndividuals(individualList);
             }
-            knockout.setIndividuals(individualList);
-        }
 
-        return knockoutResult;
+            return knockoutResult;
+        }
     }
 
     public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {
