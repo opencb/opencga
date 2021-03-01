@@ -122,7 +122,7 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
             KnockoutByIndividual knockoutByIndividual = result.get(rgaDataModel.getIndividualId());
             KnockoutByIndividual.KnockoutGene knockoutGene = null;
             for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
-                if (gene.getId().equals(rgaDataModel.getGeneId())) {
+                if (StringUtils.isNotEmpty(gene.getId()) && gene.getId().equals(rgaDataModel.getGeneId())) {
                     knockoutGene = gene;
                 }
             }
