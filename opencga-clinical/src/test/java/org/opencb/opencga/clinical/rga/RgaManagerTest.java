@@ -10,9 +10,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
@@ -146,9 +146,9 @@ public class RgaManagerTest {
 
     @Test
     public void testGeneQueryPermissions() throws CatalogException, IOException, RgaException {
-        OpenCGAResult<KnockoutByGene> result = rgaManager.geneQuery(study, new Query(), QueryOptions.empty(), ownerToken);
+        OpenCGAResult<RgaKnockoutByGene> result = rgaManager.geneQuery(study, new Query(), QueryOptions.empty(), ownerToken);
         assertEquals(4, result.getNumResults());
-        for (KnockoutByGene gene : result.getResults()) {
+        for (RgaKnockoutByGene gene : result.getResults()) {
             assertEquals(1, gene.getIndividuals().size());
         }
 
@@ -160,9 +160,9 @@ public class RgaManagerTest {
                 ParamUtils.AclAction.ADD, ownerToken);
         result = rgaManager.geneQuery(study, new Query(), QueryOptions.empty(), userToken);
         assertEquals(4, result.getNumResults());
-        List<KnockoutByGene> genes = result.getResults().stream().filter(g -> !g.getIndividuals().isEmpty()).collect(Collectors.toList());
+        List<RgaKnockoutByGene> genes = result.getResults().stream().filter(g -> !g.getIndividuals().isEmpty()).collect(Collectors.toList());
         assertEquals(2, genes.size());
-        for (KnockoutByGene gene : genes) {
+        for (RgaKnockoutByGene gene : genes) {
             assertEquals(1, gene.getIndividuals().size());
             assertEquals("sample1", gene.getIndividuals().get(0).getSampleId());
         }
@@ -170,7 +170,7 @@ public class RgaManagerTest {
 
     @Test
     public void testGeneQueryLimit() throws CatalogException, IOException, RgaException {
-        OpenCGAResult<KnockoutByGene> result = rgaManager.geneQuery(study, new Query(), new QueryOptions(QueryOptions.LIMIT, 1),
+        OpenCGAResult<RgaKnockoutByGene> result = rgaManager.geneQuery(study, new Query(), new QueryOptions(QueryOptions.LIMIT, 1),
                 ownerToken);
         assertEquals("geneId1", result.first().getId());
         assertEquals(1, result.getNumResults());
@@ -179,12 +179,12 @@ public class RgaManagerTest {
 
     @Test
     public void testGeneQuerySkip() throws CatalogException, IOException, RgaException {
-        OpenCGAResult<KnockoutByGene> result = rgaManager.geneQuery(study, new Query(), new QueryOptions(QueryOptions.SKIP, 1),
+        OpenCGAResult<RgaKnockoutByGene> result = rgaManager.geneQuery(study, new Query(), new QueryOptions(QueryOptions.SKIP, 1),
                 ownerToken);
         assertEquals(3, result.getNumResults());
-        assertTrue(result.getResults().stream().map(KnockoutByGene::getId).collect(Collectors.toSet())
+        assertTrue(result.getResults().stream().map(RgaKnockoutByGene::getId).collect(Collectors.toSet())
                 .containsAll(Arrays.asList("geneId11", "geneId12", "geneId2")));
-        for (KnockoutByGene gene : result.getResults()) {
+        for (RgaKnockoutByGene gene : result.getResults()) {
             assertEquals(1, gene.getIndividuals().size());
         }
     }

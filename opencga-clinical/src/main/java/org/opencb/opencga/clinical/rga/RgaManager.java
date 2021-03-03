@@ -16,7 +16,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.clinical.StorageManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.file.File;
@@ -128,7 +128,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         return rgaEngine.individualQuery(collection, auxQuery, options);
     }
 
-    public OpenCGAResult<KnockoutByGene> geneQuery(String studyStr, Query query, QueryOptions options, String token)
+    public OpenCGAResult<RgaKnockoutByGene> geneQuery(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -148,7 +148,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
             DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
             if (result.getNumResults() == 0) {
-                return OpenCGAResult.empty(KnockoutByGene.class);
+                return OpenCGAResult.empty(RgaKnockoutByGene.class);
             }
             List<String> geneIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.GENE_ID, geneIds);
@@ -183,14 +183,14 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         }
 
         // 4. Solr gene query
-        OpenCGAResult<KnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, options);
+        OpenCGAResult<RgaKnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, options);
         if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
             return knockoutResult;
         } else {
             // 5. Filter out individual or samples for which user does not have permissions
-            for (KnockoutByGene knockout : knockoutResult.getResults()) {
-                List<KnockoutByGene.KnockoutIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
-                for (KnockoutByGene.KnockoutIndividual individual : knockout.getIndividuals()) {
+            for (RgaKnockoutByGene knockout : knockoutResult.getResults()) {
+                List<RgaKnockoutByGene.KnockoutIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
+                for (RgaKnockoutByGene.KnockoutIndividual individual : knockout.getIndividuals()) {
                     if (includeIndividualIds.contains(individual.getId())) {
                         individualList.add(individual);
                     }

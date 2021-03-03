@@ -43,6 +43,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.storage.core.rga.RgaQueryParams;
@@ -684,7 +686,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @GET
     @Path("/rga/gene/query")
-    @ApiOperation(value = "Query gene RGA", response = KnockoutByIndividual.class)
+    @ApiOperation(value = "Query gene RGA", response = RgaKnockoutByGene.class)
     @ApiImplicitParams({
             // Query options
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
@@ -728,7 +730,7 @@ public class ClinicalWebService extends AnalysisWebService {
 
     @GET
     @Path("/rga/variant/query")
-    @ApiOperation(value = "Query variant RGA", response = KnockoutByIndividual.class)
+    @ApiOperation(value = "Query variant RGA", response = KnockoutByVariant.class)
     @ApiImplicitParams({
             // Query options
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),

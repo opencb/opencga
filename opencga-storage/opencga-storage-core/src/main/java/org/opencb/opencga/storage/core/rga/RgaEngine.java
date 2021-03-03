@@ -12,7 +12,7 @@ import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -208,29 +208,29 @@ public class RgaEngine implements Closeable {
     }
 
     /**
-     * Return the list of KnockoutByGene objects from a Solr core/collection given a query.
+     * Return the list of RgaKnockoutByGene objects from a Solr core/collection given a query.
      *
      * @param collection   Collection name
      * @param query        Query
      * @param queryOptions Query options
-     * @return List of KnockoutByGene objects
+     * @return List of RgaKnockoutByGene objects
      * @throws RgaException RgaException
      * @throws IOException   IOException
      */
-    public OpenCGAResult<KnockoutByGene> geneQuery(String collection, Query query, QueryOptions queryOptions)
+    public OpenCGAResult<RgaKnockoutByGene> geneQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
         SolrQuery solrQuery = parser.parseQuery(query);
         fixGeneOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
         SolrCollection solrCollection = solrManager.getCollection(collection);
-        DataResult<KnockoutByGene> queryResult;
+        DataResult<RgaKnockoutByGene> queryResult;
         try {
             DataResult<RgaDataModel> result = solrCollection.query(solrQuery, RgaDataModel.class);
-            List<KnockoutByGene> knockoutByGeneList = geneConverter.convertToDataModelType(result.getResults());
+            List<RgaKnockoutByGene> knockoutByGeneList = geneConverter.convertToDataModelType(result.getResults());
             queryResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), knockoutByGeneList.size(), knockoutByGeneList,
                     result.getNumMatches());
         } catch (SolrServerException e) {
-            throw new RgaException("Error executing KnockoutByGene query", e);
+            throw new RgaException("Error executing RgaKnockoutByGene query", e);
         }
 
         return new OpenCGAResult<>(queryResult);

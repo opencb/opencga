@@ -189,10 +189,10 @@ public class RgaEngineTest {
         knockoutByIndividualList.add(createKnockoutByIndividual(2));
 
         rgaEngine.insert(collection, knockoutByIndividualList);
-        OpenCGAResult<KnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), new QueryOptions());
+        OpenCGAResult<RgaKnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), new QueryOptions());
 
         assertEquals(4, result.getNumResults());
-        for (KnockoutByGene resultResult : result.getResults()) {
+        for (RgaKnockoutByGene resultResult : result.getResults()) {
             assertEquals(1, resultResult.getIndividuals().size());
             assertTrue(resultResult.getIndividuals().get(0).getId().equals("id1")
                     || resultResult.getIndividuals().get(0).getId().equals("id2"));
@@ -201,7 +201,7 @@ public class RgaEngineTest {
         Query query = new Query(RgaQueryParams.DISORDERS.key(), "disorderId1");
         result = rgaEngine.geneQuery(collection, query, new QueryOptions());
         assertEquals(2, result.getNumResults());
-        for (KnockoutByGene resultResult : result.getResults()) {
+        for (RgaKnockoutByGene resultResult : result.getResults()) {
             assertEquals(1, resultResult.getIndividuals().size());
             assertEquals("id1", resultResult.getIndividuals().get(0).getId());
         }
@@ -209,7 +209,7 @@ public class RgaEngineTest {
         query = new Query(RgaQueryParams.DISORDERS.key(), "disorderId2");
         result = rgaEngine.geneQuery(collection, query, new QueryOptions());
         assertEquals(2, result.getNumResults());
-        for (KnockoutByGene resultResult : result.getResults()) {
+        for (RgaKnockoutByGene resultResult : result.getResults()) {
             assertEquals(1, resultResult.getIndividuals().size());
             assertEquals("id2", resultResult.getIndividuals().get(0).getId());
         }
@@ -221,7 +221,7 @@ public class RgaEngineTest {
         query = new Query(RgaQueryParams.CONSEQUENCE_TYPE.key(), "SO:0001891");
         result = rgaEngine.geneQuery(collection, query, new QueryOptions());
         assertEquals(4, result.getNumResults());
-        for (KnockoutByGene resultResult : result.getResults()) {
+        for (RgaKnockoutByGene resultResult : result.getResults()) {
             assertEquals(1, resultResult.getIndividuals().size());
             assertTrue(resultResult.getIndividuals().get(0).getId().equals("id1")
                     || resultResult.getIndividuals().get(0).getId().equals("id2"));
@@ -258,13 +258,13 @@ public class RgaEngineTest {
         rgaEngine.insert(collection, knockoutByIndividualList);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("name", "individuals.transcriptsMap.chromosome"));
-        OpenCGAResult<KnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), options);
+        OpenCGAResult<RgaKnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), options);
         assertEquals(4, result.getNumResults());
-        for (KnockoutByGene gene : result.getResults()) {
+        for (RgaKnockoutByGene gene : result.getResults()) {
             assertNotNull(gene.getId());
             assertNotNull(gene.getName());
             assertNull(gene.getBiotype());
-            for (KnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
+            for (RgaKnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
                 assertNotNull(individual.getId());
                 assertNull(individual.getSampleId());
                 for (KnockoutTranscript transcript : individual.getTranscripts()) {
@@ -280,11 +280,11 @@ public class RgaEngineTest {
                 "individuals.transcriptsMap.variants"));
         result = rgaEngine.geneQuery(collection, new Query(), options);
         assertEquals(4, result.getNumResults());
-        for (KnockoutByGene gene : result.getResults()) {
+        for (RgaKnockoutByGene gene : result.getResults()) {
             assertNotNull(gene.getId());
             assertNull(gene.getName());
 //            assertNotNull(gene.getBiotype());
-            for (KnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
+            for (RgaKnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
                 assertNotNull(individual.getId());
                 assertNotNull(individual.getSampleId());
                 for (KnockoutTranscript transcript : individual.getTranscripts()) {
@@ -301,11 +301,11 @@ public class RgaEngineTest {
                 "individuals.transcriptsMap.variants.knockoutType"));
         result = rgaEngine.geneQuery(collection, new Query(), options);
         assertEquals(4, result.getNumResults());
-        for (KnockoutByGene gene : result.getResults()) {
+        for (RgaKnockoutByGene gene : result.getResults()) {
             assertNotNull(gene.getId());
             assertNull(gene.getName());
 //            assertNotNull(gene.getBiotype());
-            for (KnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
+            for (RgaKnockoutByGene.KnockoutIndividual individual : gene.getIndividuals()) {
                 assertNotNull(individual.getId());
                 assertNotNull(individual.getSampleId());
                 for (KnockoutTranscript transcript : individual.getTranscripts()) {

@@ -4,19 +4,20 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGene>, List<RgaDataModel>> {
+public class GeneRgaConverter implements ComplexTypeConverter<List<RgaKnockoutByGene>, List<RgaDataModel>> {
 
     private Logger logger;
 
-    // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByGene fields
+    // This object contains the list of solr fields that are required in order to fully build each of the RgaKnockoutByGene fields
     private static final Map<String, List<String>> CONVERTER_MAP;
 
     static {
@@ -66,11 +67,11 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
     }
 
     @Override
-    public List<KnockoutByGene> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
-        Map<String, KnockoutByGene> result = new HashMap<>();
+    public List<RgaKnockoutByGene> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
+        Map<String, RgaKnockoutByGene> result = new HashMap<>();
         for (RgaDataModel rgaDataModel : rgaDataModelList) {
             if (!result.containsKey(rgaDataModel.getGeneId())) {
-                KnockoutByGene knockoutByGene = new KnockoutByGene();
+                RgaKnockoutByGene knockoutByGene = new RgaKnockoutByGene();
                 knockoutByGene.setId(rgaDataModel.getGeneId());
                 knockoutByGene.setName(rgaDataModel.getGeneName());
 //                knockoutByGene.setChromosome(xxxxx);
@@ -81,25 +82,27 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
 //                knockoutByGene.setAnnotation(xxxx);
 
                 knockoutByGene.setIndividuals(new LinkedList<>());
+                knockoutByGene.setNumIndividuals(0);
                 result.put(rgaDataModel.getGeneId(), knockoutByGene);
             }
 
-            KnockoutByGene knockoutByGene = result.get(rgaDataModel.getGeneId());
-            KnockoutByGene.KnockoutIndividual knockoutIndividual = null;
+            RgaKnockoutByGene knockoutByGene = result.get(rgaDataModel.getGeneId());
+            RgaKnockoutByGene.KnockoutIndividual knockoutIndividual = null;
             if (StringUtils.isNotEmpty(rgaDataModel.getIndividualId())) {
-                for (KnockoutByGene.KnockoutIndividual individual : knockoutByGene.getIndividuals()) {
+                for (RgaKnockoutByGene.KnockoutIndividual individual : knockoutByGene.getIndividuals()) {
                     if (rgaDataModel.getIndividualId().equals(individual.getId())) {
                         knockoutIndividual = individual;
                     }
                 }
             }
             if (knockoutIndividual == null) {
-                knockoutIndividual = new KnockoutByGene.KnockoutIndividual();
+                knockoutIndividual = new RgaKnockoutByGene.KnockoutIndividual();
                 knockoutIndividual.setId(rgaDataModel.getIndividualId());
                 knockoutIndividual.setSampleId(rgaDataModel.getSampleId());
                 knockoutIndividual.setTranscripts(new LinkedList<>());
 
                 knockoutByGene.addIndividual(knockoutIndividual);
+                knockoutByGene.setNumIndividuals(knockoutByGene.getNumIndividuals() + 1);
             }
 
             if (StringUtils.isNotEmpty(rgaDataModel.getTranscriptId())) {
@@ -129,7 +132,7 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<KnockoutByGen
     }
 
     @Override
-    public List<RgaDataModel> convertToStorageType(List<KnockoutByGene> object) {
+    public List<RgaDataModel> convertToStorageType(List<RgaKnockoutByGene> object) {
         return null;
     }
 
