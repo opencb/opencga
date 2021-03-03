@@ -5,6 +5,7 @@ import java.util.List;
 public class KnockoutByVariant {
 
     private String id;
+    private int numIndividuals;
     private List<KnockoutByIndividual> individuals;
 
     public KnockoutByVariant() {
@@ -12,6 +13,7 @@ public class KnockoutByVariant {
 
     public KnockoutByVariant(String id, List<KnockoutByIndividual> individuals) {
         this.id = id;
+        this.numIndividuals = individuals != null ? individuals.size() : 0;
         this.individuals = individuals;
     }
 
@@ -19,6 +21,7 @@ public class KnockoutByVariant {
     public String toString() {
         final StringBuilder sb = new StringBuilder("KnockoutByVariant{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", numIndividuals=").append(numIndividuals);
         sb.append(", individuals=").append(individuals);
         sb.append('}');
         return sb.toString();
@@ -30,6 +33,15 @@ public class KnockoutByVariant {
 
     public KnockoutByVariant setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public int getNumIndividuals() {
+        return numIndividuals;
+    }
+
+    public KnockoutByVariant setNumIndividuals(int numIndividuals) {
+        this.numIndividuals = numIndividuals;
         return this;
     }
 

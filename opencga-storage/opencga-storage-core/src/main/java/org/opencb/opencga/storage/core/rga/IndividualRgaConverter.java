@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 public class IndividualRgaConverter implements ComplexTypeConverter<List<KnockoutByIndividual>, List<RgaDataModel>> {
 
-    private Logger logger;
+    private static Logger logger;
 
     // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByIndividual fields
     private static final Map<String, List<String>> CONVERTER_MAP;
@@ -60,10 +60,11 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                 RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES, RgaDataModel.VARIANT_JSON));
         CONVERTER_MAP.put("genesMap.transcriptsMap.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES, RgaDataModel.VARIANT_JSON));
+
+        logger = LoggerFactory.getLogger(IndividualRgaConverter.class);
     }
 
     public IndividualRgaConverter() {
-        this.logger = LoggerFactory.getLogger(IndividualRgaConverter.class);
     }
 
     @Override
@@ -74,87 +75,8 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
         for (RgaDataModel rgaDataModel : rgaDataModelList) {
             if (!result.containsKey(rgaDataModel.getIndividualId())) {
                 knockoutByIndividualOrder.add(rgaDataModel.getIndividualId());
-
-                KnockoutByIndividual knockoutByIndividual = new KnockoutByIndividual();
-                knockoutByIndividual.setId(rgaDataModel.getIndividualId());
-                knockoutByIndividual.setSampleId(rgaDataModel.getSampleId());
-                knockoutByIndividual.setSex(rgaDataModel.getSex() != null ? IndividualProperty.Sex.valueOf(rgaDataModel.getSex()) : null);
-                if (rgaDataModel.getPhenotypeJson() != null) {
-                    List<Phenotype> phenotypes = new ArrayList<>(rgaDataModel.getPhenotypeJson().size());
-                    for (String phenotype : rgaDataModel.getPhenotypeJson()) {
-                        try {
-                            phenotypes.add(JacksonUtils.getDefaultObjectMapper().readValue(phenotype, Phenotype.class));
-                        } catch (JsonProcessingException e) {
-                            logger.warn("Could not parse Phenotypes: {}", e.getMessage(), e);
-                        }
-                    }
-                    knockoutByIndividual.setPhenotypes(phenotypes);
-                } else {
-                    knockoutByIndividual.setPhenotypes(Collections.emptyList());
-                }
-
-                if (rgaDataModel.getDisorderJson() != null) {
-                    List<Disorder> disorders = new ArrayList<>(rgaDataModel.getDisorderJson().size());
-                    for (String disorder : rgaDataModel.getDisorderJson()) {
-                        try {
-                            disorders.add(JacksonUtils.getDefaultObjectMapper().readValue(disorder, Disorder.class));
-                        } catch (JsonProcessingException e) {
-                            logger.warn("Could not parse Disorders: {}", e.getMessage(), e);
-                        }
-                    }
-                    knockoutByIndividual.setDisorders(disorders);
-                } else {
-                    knockoutByIndividual.setDisorders(Collections.emptyList());
-                }
-
-                List<KnockoutByIndividual.KnockoutGene> geneList = new LinkedList<>();
-                KnockoutByIndividual.KnockoutGene knockoutGene = new KnockoutByIndividual.KnockoutGene();
-                knockoutGene.setId(rgaDataModel.getGeneId());
-                knockoutGene.setName(rgaDataModel.getGeneName());
-                knockoutGene.setTranscripts(new LinkedList<>());
-                geneList.add(knockoutGene);
-
-                knockoutByIndividual.setGenes(geneList);
-
-                result.put(rgaDataModel.getIndividualId(), knockoutByIndividual);
             }
-
-            KnockoutByIndividual knockoutByIndividual = result.get(rgaDataModel.getIndividualId());
-            KnockoutByIndividual.KnockoutGene knockoutGene = null;
-            for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
-                if (StringUtils.isNotEmpty(gene.getId()) && gene.getId().equals(rgaDataModel.getGeneId())) {
-                    knockoutGene = gene;
-                }
-            }
-            if (knockoutGene == null) {
-                knockoutGene = new KnockoutByIndividual.KnockoutGene();
-                knockoutGene.setId(rgaDataModel.getGeneId());
-                knockoutGene.setName(rgaDataModel.getGeneName());
-                knockoutGene.setTranscripts(new LinkedList<>());
-
-                knockoutByIndividual.addGene(knockoutGene);
-            }
-
-            if (StringUtils.isNotEmpty(rgaDataModel.getTranscriptId())) {
-                // Add new transcript
-                KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
-                knockoutGene.addTranscripts(Collections.singletonList(knockoutTranscript));
-
-                knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
-                if (rgaDataModel.getVariantJson() != null) {
-                    List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
-                    for (String variantJson : rgaDataModel.getVariantJson()) {
-                        try {
-                            KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
-                                    KnockoutVariant.class);
-                            knockoutVariantList.add(knockoutVariant);
-                        } catch (JsonProcessingException e) {
-                            logger.warn("Could not parse KnockoutVariants: {}", e.getMessage(), e);
-                        }
-                    }
-                    knockoutTranscript.setVariants(knockoutVariantList);
-                }
-            }
+            extractKnockoutByIndividualMap(rgaDataModel, result);
         }
 
         List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(knockoutByIndividualOrder.size());
@@ -162,6 +84,104 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
             knockoutByIndividualList.add(result.get(id));
         }
         return knockoutByIndividualList;
+    }
+
+    public static void extractKnockoutByIndividualMap(RgaDataModel rgaDataModel, Map<String, KnockoutByIndividual> result) {
+        extractKnockoutByIndividualMap(rgaDataModel, new HashSet<>(), result);
+    }
+
+    /**
+     * Extract a map containing the processed KnockoutByindividuals.
+     *
+     * @param rgaDataModel RgaDataModel instance.
+     * @param variantIds Set of variant ids to be included in the result. If empty, include all of them.
+     * @param result Map containing the KnockoutByIndividual's processed.
+     */
+    public static void extractKnockoutByIndividualMap(RgaDataModel rgaDataModel, Set<String> variantIds,
+                                                      Map<String, KnockoutByIndividual> result) {
+        if (!result.containsKey(rgaDataModel.getIndividualId())) {
+            KnockoutByIndividual knockoutByIndividual = new KnockoutByIndividual();
+            knockoutByIndividual.setId(rgaDataModel.getIndividualId());
+            knockoutByIndividual.setSampleId(rgaDataModel.getSampleId());
+            knockoutByIndividual.setSex(rgaDataModel.getSex() != null ? IndividualProperty.Sex.valueOf(rgaDataModel.getSex()) : null);
+            if (rgaDataModel.getPhenotypeJson() != null) {
+                List<Phenotype> phenotypes = new ArrayList<>(rgaDataModel.getPhenotypeJson().size());
+                for (String phenotype : rgaDataModel.getPhenotypeJson()) {
+                    try {
+                        phenotypes.add(JacksonUtils.getDefaultObjectMapper().readValue(phenotype, Phenotype.class));
+                    } catch (JsonProcessingException e) {
+                        logger.warn("Could not parse Phenotypes: {}", e.getMessage(), e);
+                    }
+                }
+                knockoutByIndividual.setPhenotypes(phenotypes);
+            } else {
+                knockoutByIndividual.setPhenotypes(Collections.emptyList());
+            }
+
+            if (rgaDataModel.getDisorderJson() != null) {
+                List<Disorder> disorders = new ArrayList<>(rgaDataModel.getDisorderJson().size());
+                for (String disorder : rgaDataModel.getDisorderJson()) {
+                    try {
+                        disorders.add(JacksonUtils.getDefaultObjectMapper().readValue(disorder, Disorder.class));
+                    } catch (JsonProcessingException e) {
+                        logger.warn("Could not parse Disorders: {}", e.getMessage(), e);
+                    }
+                }
+                knockoutByIndividual.setDisorders(disorders);
+            } else {
+                knockoutByIndividual.setDisorders(Collections.emptyList());
+            }
+
+            List<KnockoutByIndividual.KnockoutGene> geneList = new LinkedList<>();
+            KnockoutByIndividual.KnockoutGene knockoutGene = new KnockoutByIndividual.KnockoutGene();
+            knockoutGene.setId(rgaDataModel.getGeneId());
+            knockoutGene.setName(rgaDataModel.getGeneName());
+            knockoutGene.setTranscripts(new LinkedList<>());
+            geneList.add(knockoutGene);
+
+            knockoutByIndividual.setGenes(geneList);
+
+            result.put(rgaDataModel.getIndividualId(), knockoutByIndividual);
+        }
+
+        KnockoutByIndividual knockoutByIndividual = result.get(rgaDataModel.getIndividualId());
+        KnockoutByIndividual.KnockoutGene knockoutGene = null;
+        for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
+            if (StringUtils.isNotEmpty(gene.getId()) && gene.getId().equals(rgaDataModel.getGeneId())) {
+                knockoutGene = gene;
+            }
+        }
+        if (knockoutGene == null) {
+            knockoutGene = new KnockoutByIndividual.KnockoutGene();
+            knockoutGene.setId(rgaDataModel.getGeneId());
+            knockoutGene.setName(rgaDataModel.getGeneName());
+            knockoutGene.setTranscripts(new LinkedList<>());
+
+            knockoutByIndividual.addGene(knockoutGene);
+        }
+
+        if (StringUtils.isNotEmpty(rgaDataModel.getTranscriptId())) {
+            // Add new transcript
+            KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
+            knockoutGene.addTranscripts(Collections.singletonList(knockoutTranscript));
+
+            knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
+            if (rgaDataModel.getVariantJson() != null) {
+                List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
+                for (String variantJson : rgaDataModel.getVariantJson()) {
+                    try {
+                        KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
+                                KnockoutVariant.class);
+                        if (variantIds.isEmpty() || variantIds.contains(knockoutVariant.getId())) {
+                            knockoutVariantList.add(knockoutVariant);
+                        }
+                    } catch (JsonProcessingException e) {
+                        logger.warn("Could not parse KnockoutVariants: {}", e.getMessage(), e);
+                    }
+                }
+                knockoutTranscript.setVariants(knockoutVariantList);
+            }
+        }
     }
 
     public List<RgaDataModel> convertToStorageType(List<KnockoutByIndividual> knockoutByIndividualList) {

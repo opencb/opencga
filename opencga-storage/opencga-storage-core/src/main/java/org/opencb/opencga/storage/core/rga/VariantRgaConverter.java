@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.rga;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
@@ -20,25 +21,23 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
 
     static {
         CONVERTER_MAP = new HashMap<>();
-        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
+        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.SAMPLE_ID));
-        CONVERTER_MAP.put("individuals.sex", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.SEX));
+                RgaDataModel.SAMPLE_ID));
+        CONVERTER_MAP.put("individuals.sex", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SEX));
         CONVERTER_MAP.put("individuals.phenotypes", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
+                RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
         CONVERTER_MAP.put("individuals.disorders", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
+                RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
         CONVERTER_MAP.put("individuals.stats", Collections.emptyList());
         CONVERTER_MAP.put("individuals.genesMap.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID));
+                RgaDataModel.GENE_ID));
         CONVERTER_MAP.put("individuals.genesMap.name", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.GENE_NAME));
+                RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
         CONVERTER_MAP.put("individuals.genesMap.chromosome", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CHROMOSOME));
+                RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME));
         CONVERTER_MAP.put("individuals.genesMap.biotype", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.GENE_BIOTYPE));
+                RgaDataModel.GENE_ID, RgaDataModel.GENE_BIOTYPE));
         CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID));
         CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.chromosome", Arrays.asList(RgaDataModel.VARIANT_JSON,
@@ -74,6 +73,51 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
     }
 
     public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList, List<String> variantList) {
+        Set<String> variantIds = new HashSet<>(variantList);
+
+        // In this list, we will store the keys of result in the order they have been processed so order is kept
+        List<String> variantOrder = new LinkedList<>();
+        Map<String, Set<String>> result = new HashMap<>();
+
+        Map<String, KnockoutByIndividual> individualMap = new HashMap<>();
+        for (RgaDataModel rgaDataModel : rgaDataModelList) {
+            List<String> auxVariantIds = new LinkedList<>();
+            for (String variant : rgaDataModel.getVariants()) {
+                if (variantIds.isEmpty() || variantIds.contains(variant)) {
+                    auxVariantIds.add(variant);
+                    if (!result.containsKey(variant)) {
+                        // The variant will be processed, so we add it to the order list
+                        variantOrder.add(variant);
+                    }
+                    break;
+                }
+            }
+            if (!auxVariantIds.isEmpty()) {
+                IndividualRgaConverter.extractKnockoutByIndividualMap(rgaDataModel, variantIds, individualMap);
+            }
+            for (String auxVariantId : auxVariantIds) {
+                if (!result.containsKey(auxVariantId)) {
+                    result.put(auxVariantId, new HashSet<>());
+                }
+                if (StringUtils.isNotEmpty(rgaDataModel.getIndividualId())) {
+                    result.get(auxVariantId).add(rgaDataModel.getIndividualId());
+                }
+            }
+
+        }
+
+        List<KnockoutByVariant> knockoutVariantList = new ArrayList<>(variantOrder.size());
+        for (String variantId : variantOrder) {
+            List<KnockoutByIndividual> individualList = new ArrayList<>(result.get(variantId).size());
+            for (String individualId : result.get(variantId)) {
+                individualList.add(individualMap.get(individualId));
+            }
+            knockoutVariantList.add(new KnockoutByVariant(variantId, individualList));
+        }
+        return knockoutVariantList;
+    }
+
+    public List<KnockoutByVariant> convertToDataModelaType(List<RgaDataModel> rgaDataModelList, List<String> variantList) {
         Set<String> variantIds = new HashSet<>(variantList);
 
         List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(rgaDataModelList);
