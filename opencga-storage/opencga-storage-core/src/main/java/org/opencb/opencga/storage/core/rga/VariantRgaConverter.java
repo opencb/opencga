@@ -25,6 +25,8 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
         CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.SAMPLE_ID));
         CONVERTER_MAP.put("individuals.sex", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SEX));
+        CONVERTER_MAP.put("individuals.numParents", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.NUM_PARENTS));
         CONVERTER_MAP.put("individuals.phenotypes", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
         CONVERTER_MAP.put("individuals.disorders", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.INDIVIDUAL_ID,

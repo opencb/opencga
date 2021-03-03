@@ -33,6 +33,7 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
         CONVERTER_MAP.put("sex", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SEX));
         CONVERTER_MAP.put("phenotypes", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
         CONVERTER_MAP.put("disorders", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
+        CONVERTER_MAP.put("numParents", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.NUM_PARENTS));
         CONVERTER_MAP.put("stats", Collections.emptyList());
         CONVERTER_MAP.put("genesMap.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID));
         CONVERTER_MAP.put("genesMap.name", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
@@ -246,10 +247,20 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                     String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
                     String individualId = StringUtils.isNotEmpty(knockoutByIndividual.getId()) ? knockoutByIndividual.getId()
                             : knockoutByIndividual.getSampleId();
+
+                    int numParents = 0;
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherId())) {
+                        numParents++;
+                    }
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getMotherId())) {
+                        numParents++;
+                    }
+
                     RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(),
-                            knockoutByIndividual.getSex().name(), phenotypes, disorders, gene.getId(), gene.getName(), "", "", "", 0, 0,
-                            transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes, filters, consequenceTypes, popFreqs,
-                            compoundFilters, phenotypeJson, disorderJson, variantJson);
+                            knockoutByIndividual.getSex().name(), phenotypes, disorders, knockoutByIndividual.getFatherId(),
+                            knockoutByIndividual.getMotherId(), numParents, gene.getId(), gene.getName(), "", "",
+                            "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes,
+                            filters, consequenceTypes, popFreqs, compoundFilters, phenotypeJson, disorderJson, variantJson);
                     result.add(model);
                 }
             }

@@ -29,6 +29,9 @@ public class RgaQueryParams implements QueryParam {
     public static final String DISORDERS_DESCR = "Filter by disorders.";
     public static final RgaQueryParams DISORDERS = new RgaQueryParams("disorders", Type.TEXT_ARRAY, DISORDERS_DESCR);
 
+    public static final String NUM_PARENTS_DESCR = "Filter by the number of parents registered.";
+    public static final RgaQueryParams NUM_PARENTS = new RgaQueryParams("numParents", Type.INTEGER, NUM_PARENTS_DESCR);
+
     public static final String GENE_ID_DESCR = "Filter by gene id.";
     public static final RgaQueryParams GENE_ID = new RgaQueryParams("geneId", Type.TEXT, GENE_ID_DESCR);
 
@@ -68,6 +71,9 @@ public class RgaQueryParams implements QueryParam {
 
     public static final String CONSEQUENCE_TYPE_DESCR = "Filter by consequence type.";
     public static final RgaQueryParams CONSEQUENCE_TYPE = new RgaQueryParams("consequenceType", Type.TEXT, CONSEQUENCE_TYPE_DESCR);
+
+    public static final String INCLUDE_INDIVIDUAL_DESCR = "Include only the comma separated list of individuals to the response";
+    public static final String INCLUDE_INDIVIDUAL = "includeIndividual";
 
     public RgaQueryParams(String key, Type type, String description) {
         this.key = key;

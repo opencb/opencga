@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.rga.RgaDataModel;
 import org.opencb.opencga.storage.core.rga.RgaEngine;
+import org.opencb.opencga.storage.core.rga.RgaQueryParams;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,7 +50,6 @@ public class RgaManager extends StorageManager implements AutoCloseable {
     private final RgaEngine rgaEngine;
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
-    public static final String INCLUDE_INDIVIDUAL_OPTION = "includeIndividual";
 
     public RgaManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         super(catalogManager, storageEngineFactory);
@@ -134,7 +134,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
-        List<String> includeIndividuals = options.getAsStringList(INCLUDE_INDIVIDUAL_OPTION);
+        List<String> includeIndividuals = options.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
@@ -208,7 +208,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
-        List<String> includeIndividuals = options.getAsStringList(INCLUDE_INDIVIDUAL_OPTION);
+        List<String> includeIndividuals = options.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();

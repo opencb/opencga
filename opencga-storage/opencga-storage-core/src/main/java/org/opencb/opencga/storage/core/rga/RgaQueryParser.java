@@ -44,10 +44,14 @@ public class RgaQueryParser {
         parseStringValue(finalQuery, SEX, RgaDataModel.SEX, filterList);
         parseStringValue(finalQuery, PHENOTYPES, RgaDataModel.PHENOTYPES, filterList);
         parseStringValue(finalQuery, DISORDERS, RgaDataModel.DISORDERS, filterList);
+        parseStringValue(finalQuery, CHROMOSOME, RgaDataModel.CHROMOSOME, filterList);
+        parseStringValue(finalQuery, START, RgaDataModel.START, filterList);
+        parseStringValue(finalQuery, END, RgaDataModel.END, filterList);
+        parseStringValue(finalQuery, NUM_PARENTS, RgaDataModel.NUM_PARENTS, filterList);
         parseStringValue(finalQuery, GENE_ID, RgaDataModel.GENE_ID, filterList);
         parseStringValue(finalQuery, GENE_NAME, RgaDataModel.GENE_NAME, filterList);
         parseStringValue(finalQuery, TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_ID, filterList);
-        parseStringValue(finalQuery, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
+//        parseStringValue(finalQuery, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
         parseStringValue(finalQuery, VARIANTS, RgaDataModel.VARIANTS, filterList);
         parseFilterValue(finalQuery, filterList);
 

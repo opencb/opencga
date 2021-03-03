@@ -26,6 +26,15 @@ public class RgaDataModel {
     private List<String> disorders;
 
     @Field
+    private String fatherId;
+
+    @Field
+    private String motherId;
+
+    @Field
+    private int numParents;
+
+    @Field
     private String geneId;
 
     @Field
@@ -85,6 +94,9 @@ public class RgaDataModel {
     public static final String SEX = "sex";
     public static final String PHENOTYPES = "phenotypes";
     public static final String DISORDERS = "disorders";
+    public static final String MOTHER_ID = "motherId";
+    public static final String FATHER_ID = "fatherId";
+    public static final String NUM_PARENTS = "numParents";
     public static final String GENE_ID = "geneId";
     public static final String GENE_NAME = "geneName";
     public static final String GENE_BIOTYPE = "geneBiotype";
@@ -110,16 +122,20 @@ public class RgaDataModel {
     }
 
     public RgaDataModel(String id, String individualId, String sampleId, String sex, List<String> phenotypes, List<String> disorders,
-                        String geneId, String geneName, String geneBiotype, String chromosome, String strand, int start, int end,
-                        String transcriptId, String transcriptBiotype, List<String> variants, List<String> knockoutTypes,
-                        List<String> filters, List<String> consequenceTypes, Map<String, List<Float>> populationFrequencies,
-                        List<String> compoundFilters, List<String> phenotypeJson, List<String> disorderJson, List<String> variantJson) {
+                        String fatherId, String motherId, int numParents, String geneId, String geneName, String geneBiotype,
+                        String chromosome, String strand, int start, int end, String transcriptId, String transcriptBiotype,
+                        List<String> variants, List<String> knockoutTypes, List<String> filters, List<String> consequenceTypes,
+                        Map<String, List<Float>> populationFrequencies, List<String> compoundFilters, List<String> phenotypeJson,
+                        List<String> disorderJson, List<String> variantJson) {
         this.id = id;
         this.individualId = individualId;
         this.sampleId = sampleId;
         this.sex = sex;
         this.phenotypes = phenotypes;
         this.disorders = disorders;
+        this.fatherId = fatherId;
+        this.motherId = motherId;
+        this.numParents = numParents;
         this.geneId = geneId;
         this.geneName = geneName;
         this.geneBiotype = geneBiotype;
@@ -149,6 +165,9 @@ public class RgaDataModel {
         sb.append(", sex='").append(sex).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
+        sb.append(", fatherId='").append(fatherId).append('\'');
+        sb.append(", motherId='").append(motherId).append('\'');
+        sb.append(", numParents=").append(numParents);
         sb.append(", geneId='").append(geneId).append('\'');
         sb.append(", geneName='").append(geneName).append('\'');
         sb.append(", geneBiotype='").append(geneBiotype).append('\'');
@@ -222,6 +241,33 @@ public class RgaDataModel {
 
     public RgaDataModel setDisorders(List<String> disorders) {
         this.disorders = disorders;
+        return this;
+    }
+
+    public String getFatherId() {
+        return fatherId;
+    }
+
+    public RgaDataModel setFatherId(String fatherId) {
+        this.fatherId = fatherId;
+        return this;
+    }
+
+    public String getMotherId() {
+        return motherId;
+    }
+
+    public RgaDataModel setMotherId(String motherId) {
+        this.motherId = motherId;
+        return this;
+    }
+
+    public int getNumParents() {
+        return numParents;
+    }
+
+    public RgaDataModel setNumParents(int numParents) {
+        this.numParents = numParents;
         return this;
     }
 
