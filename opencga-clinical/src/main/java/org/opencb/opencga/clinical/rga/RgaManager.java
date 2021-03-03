@@ -28,7 +28,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.RgaException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
-import org.opencb.opencga.storage.core.rga.GeneRgaConverter;
 import org.opencb.opencga.storage.core.rga.RgaDataModel;
 import org.opencb.opencga.storage.core.rga.RgaEngine;
 
@@ -37,7 +36,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
@@ -237,7 +239,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
                 // 2. Check permissions
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
                         new QueryOptions(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_ID).append(QueryOptions.LIMIT, -1));
-                List<String> individualIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+                List<String> individualIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue)
+                        .collect(Collectors.toList());
 
                 // 3. Get list of individual ids for which the user has permissions
                 Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
