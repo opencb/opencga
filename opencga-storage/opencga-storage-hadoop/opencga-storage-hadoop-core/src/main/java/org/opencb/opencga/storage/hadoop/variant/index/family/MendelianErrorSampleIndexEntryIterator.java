@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntryIterator;
@@ -53,7 +54,7 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
-    public short nextFileIndexEntry() {
+    public BitBuffer nextFileIndexEntry() {
         return getGtIterator().nextFileIndexEntry();
     }
 
@@ -63,7 +64,7 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
-    public short nextMultiFileIndexEntry() {
+    public BitBuffer nextMultiFileIndexEntry() {
         return getGtIterator().nextMultiFileIndexEntry();
     }
 
@@ -125,7 +126,7 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     @Override
     public SampleVariantIndexEntry nextSampleVariantIndexEntry() {
         AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
-        short fileIndex = 0;
+        BitBuffer fileIndex = null;
         if (hasFileIndex()) {
             fileIndex = nextFileIndexEntry();
         }

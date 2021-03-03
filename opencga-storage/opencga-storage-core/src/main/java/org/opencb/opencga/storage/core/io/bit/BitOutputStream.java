@@ -53,6 +53,10 @@ public class BitOutputStream {
         }
     }
 
+//    public void write(BitBuffer bitBuffer) {
+//        //TODO
+//    }
+
     public byte[] toByteArray() {
         if (bufferCapacity != Byte.SIZE) {
             os.write(buffer);
@@ -68,5 +72,15 @@ public class BitOutputStream {
 
     private static int mask(int i) {
         return (1 << i) - 1;
+    }
+
+    public BitBuffer toBitBuffer() {
+        int extraBitLength = 0;
+        if (bufferCapacity != Byte.SIZE) {
+            os.write(buffer);
+            extraBitLength = bufferCapacity;
+        }
+        byte[] bytes = os.toByteArray();
+        return new BitBuffer(bytes, 0, (bytes.length) * Byte.SIZE - extraBitLength);
     }
 }

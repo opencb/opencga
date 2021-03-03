@@ -4,10 +4,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
@@ -274,7 +276,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         return false;
     }
 
-    private boolean filterFileAllMatch(boolean[] passedFilters, short fileIndexEntry) {
+    private boolean filterFileAllMatch(boolean[] passedFilters, BitBuffer fileIndexEntry) {
         int numPass = 0;
         for (int i = 0; i < query.getSampleFileIndexQuery().size(); i++) {
             if (!passedFilters[i]) {
@@ -290,7 +292,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         return numPass == passedFilters.length;
     }
 
-    private boolean filterFileAnyMatch(short fileIndex) {
+    private boolean filterFileAnyMatch(BitBuffer fileIndex) {
         // Return true if any file filter matches
         // return query.getSampleFileIndexQuery().stream().anyMatch(sampleFileIndexQuery -> filterFile(fileIndex, sampleFileIndexQuery));
         for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
@@ -303,11 +305,13 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         return false;
     }
 
-    private boolean filterFile(short fileIndex, SampleFileIndexQuery fileQuery) {
-        int v = fileIndex & fileQuery.getFileIndexMask();
-
-        return (!fileQuery.hasFileIndexMask1() || fileQuery.getValidFileIndex1()[getByte1(v)])
-                && (!fileQuery.hasFileIndexMask2() || fileQuery.getValidFileIndex2()[getByte2(v)]);
+    private boolean filterFile(BitBuffer fileIndex, SampleFileIndexQuery fileQuery) {
+        for (IndexFieldFilter filter : fileQuery.getFilters()) {
+            if (!filter.readAndTest(fileIndex)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static boolean isNonIntergenic(byte summaryIndex) {

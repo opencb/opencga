@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.util.*;
@@ -18,21 +19,26 @@ public class SampleIndexEntryPutBuilder {
     private final Map<String, SampleIndexGtEntryBuilder> gts;
     private final SampleIndexVariantBiConverter variantConverter;
     private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
+    private SampleIndexConfiguration configuration;
+    private FileIndex fileIndex;
 
-    public SampleIndexEntryPutBuilder(int sampleId, Variant variant) {
-        this(sampleId, variant.getChromosome(), SampleIndexSchema.getChunkStart(variant.getStart()));
+    public SampleIndexEntryPutBuilder(int sampleId, Variant variant, SampleIndexConfiguration configuration) {
+        this(sampleId, variant.getChromosome(), SampleIndexSchema.getChunkStart(variant.getStart()), configuration);
     }
 
-    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position) {
+    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, SampleIndexConfiguration configuration) {
         this.sampleId = sampleId;
         this.chromosome = chromosome;
         this.position = position;
         gts = new HashMap<>();
         variantConverter = new SampleIndexVariantBiConverter();
+        this.configuration = configuration;
+        fileIndex = this.configuration.getFileIndex();
     }
 
-    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, Map<String, TreeSet<SampleVariantIndexEntry>> map) {
-        this(sampleId, chromosome, position);
+    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, SampleIndexConfiguration configuration,
+                                      Map<String, TreeSet<SampleVariantIndexEntry>> map) {
+        this(sampleId, chromosome, position, configuration);
         for (Map.Entry<String, TreeSet<SampleVariantIndexEntry>> entry : map.entrySet()) {
             gts.put(entry.getKey(), new SampleIndexGtEntryBuilder(entry.getKey(), entry.getValue()));
         }
@@ -76,8 +82,8 @@ public class SampleIndexEntryPutBuilder {
             SortedSet<SampleVariantIndexEntry> gtEntries = gtBuilder.getEntries();
             String gt = gtBuilder.getGt();
 
-            byte[] fileMask = new byte[gtEntries.size() * VariantFileIndexConverter.BYTES];
-            int i = 0;
+            BitBuffer fileIndexBuffer = new BitBuffer(fileIndex.getBitsLength() * gtEntries.size());
+            int offset = 0;
 
             SampleVariantIndexEntry prev = null;
             List<Variant> variants = new ArrayList<>(gtEntries.size());
@@ -87,10 +93,10 @@ public class SampleIndexEntryPutBuilder {
                     variants.add(variant);
                 } else {
                     // Mark previous variant as MultiFile
-                    VariantFileIndexConverter.setMultiFile(fileMask, i - VariantFileIndexConverter.BYTES);
+                    FileIndex.setMultiFile(fileIndexBuffer, offset - fileIndex.getBitsLength());
                 }
-                Bytes.putAsShort(fileMask, i, gtEntry.getFileIndex());
-                i += VariantFileIndexConverter.BYTES;
+                fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
+                offset += fileIndex.getBitsLength();
                 prev = gtEntry;
             }
 
@@ -98,7 +104,7 @@ public class SampleIndexEntryPutBuilder {
 
             put.addColumn(family, SampleIndexSchema.toGenotypeColumn(gt), variantsBytes);
             put.addColumn(family, SampleIndexSchema.toGenotypeCountColumn(gt), Bytes.toBytes(variants.size()));
-            put.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt), fileMask);
+            put.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt), fileIndexBuffer.getBuffer());
         }
         int discrepancies = 0;
 

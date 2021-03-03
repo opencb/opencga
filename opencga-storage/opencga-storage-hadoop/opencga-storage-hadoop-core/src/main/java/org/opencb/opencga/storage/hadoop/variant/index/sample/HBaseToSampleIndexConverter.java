@@ -6,6 +6,8 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.commons.Converter;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
+import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
@@ -25,10 +27,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
 
     private final SampleIndexVariantBiConverter converter;
     private final SampleIndexConfiguration configuration;
+    private final int fileDataIndexesBitsLength;
 
     public HBaseToSampleIndexConverter(SampleIndexConfiguration configuration) {
         this.configuration = configuration;
         converter = new SampleIndexVariantBiConverter();
+        fileDataIndexesBitsLength = configuration.getFileIndex().getBitsLength();
     }
 
     public static Pair<String, String> parsePendingColumn(byte[] column) {
@@ -138,14 +142,16 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
                 TreeSet<SampleVariantIndexEntry> values = new TreeSet<>();
                 mapVariantFileIndex.put(gt, values);
-                int i = cell.getValueOffset();
+                BitInputStream bis = new BitInputStream(
+                        cell.getValueArray(),
+                        cell.getValueOffset(),
+                        cell.getValueLength());
                 for (Variant variant : map.get(gt)) {
-                    short fileIndex;
+                    BitBuffer fileIndex;
                     do {
-                        fileIndex = Bytes.toShort(cell.getValueArray(), i);
+                        fileIndex = bis.readBitBuffer(fileDataIndexesBitsLength);
                         values.add(new SampleVariantIndexEntry(variant, fileIndex));
-                        i += VariantFileIndexConverter.BYTES;
-                    } while (VariantFileIndexConverter.isMultiFile(fileIndex));
+                    } while (FileIndex.isMultiFile(fileIndex));
                 }
             }
         }

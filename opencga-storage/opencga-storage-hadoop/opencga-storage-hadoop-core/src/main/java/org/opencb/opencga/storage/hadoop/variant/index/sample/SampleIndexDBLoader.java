@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -40,8 +41,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final byte[] family;
     private final ObjectMap options;
     private final SampleIndexDBAdaptor dbAdaptor;
-    private final VariantFileIndexConverter variantFileIndexConverter = new VariantFileIndexConverter();;
+    private final VariantFileIndexConverter variantFileIndexConverter;;
     private final boolean excludeGenotypes;
+    private final SampleIndexConfiguration configuration;
 
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
                                String tableName, VariantStorageMetadataManager metadataManager,
@@ -85,6 +87,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 EXCLUDE_GENOTYPES.key(),
                 EXCLUDE_GENOTYPES.defaultValue());
         this.dbAdaptor = dbAdaptor;
+        configuration = dbAdaptor.getConfiguration();
+        variantFileIndexConverter = new VariantFileIndexConverter(configuration);
     }
 
     private class Chunk implements Iterable<SampleIndexEntryPutBuilder> {
@@ -107,7 +111,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                         merging = true;
                     }
                 } else {
-                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position);
+                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, configuration);
                 }
                 samples.add(builder);
             }
@@ -137,7 +141,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                     throw new IllegalArgumentException("Already loaded variant " + variantIndexEntry.getVariant());
                 }
             }
-            if (VariantFileIndexConverter.isMultiFile(variantIndexEntry.getFileIndex())) {
+            if (FileIndex.isMultiFile(variantIndexEntry.getFileIndex())) {
                 throw new IllegalArgumentException("Unexpected multi-file at variant " + variantIndexEntry.getVariant());
             }
             sampleEntry.add(gt, variantIndexEntry);
@@ -197,7 +201,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 if (validVariant(variant) && validGenotype(gt)) {
                     genotypes.add(gt);
                     Chunk chunk = buffer.computeIfAbsent(indexChunk, Chunk::new);
-                    short fileIndexValue = variantFileIndexConverter.createFileIndexValue(sampleIdx, fileIdxMap[sampleIdx], variant);
+                    BitBuffer fileIndexValue = variantFileIndexConverter.createFileIndexValue(sampleIdx, fileIdxMap[sampleIdx], variant);
                     SampleVariantIndexEntry indexEntry = new SampleVariantIndexEntry(variant, fileIndexValue);
                     chunk.addVariant(sampleIdx, gt, indexEntry);
                 }

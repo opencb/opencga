@@ -175,7 +175,7 @@ public class SampleIndexQuery {
         return fileFilterMap.isEmpty() || fileFilterMap.values()
                 .stream()
                 .flatMap(Values::stream)
-                .allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
+                .allMatch(SampleFileIndexQuery::isEmpty);
     }
 
     public byte getAnnotationIndexMask() {

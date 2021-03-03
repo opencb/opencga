@@ -1,8 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,11 +18,11 @@ public class SampleVariantIndexEntryTest {
     public void testComparator() {
 
         List<SampleVariantIndexEntry> expected = Arrays.asList(
-                new SampleVariantIndexEntry(new Variant("1:100:A:C"), (short) 0),
-                new SampleVariantIndexEntry(new Variant("1:200:A:C"), VariantFileIndexConverter.setMultiFile((short) (1 << 4))),
-                new SampleVariantIndexEntry(new Variant("1:200:A:C"), (short) (2 << 4)),
-                new SampleVariantIndexEntry(new Variant("1:200:A:C"), (short) (3 << 4)),
-                new SampleVariantIndexEntry(new Variant("1:300:A:C"), (short) 0)
+                newVariantIndexEntry("1:100:A:C", 0),
+                newVariantIndexEntry("1:200:A:C", ((1 << 4)), true),
+                newVariantIndexEntry("1:200:A:C", (2 << 4)),
+                newVariantIndexEntry("1:200:A:C", (3 << 4)),
+                newVariantIndexEntry("1:300:A:C", 0)
         );
 
         for (int i = 0; i < 10; i++) {
@@ -33,5 +35,19 @@ public class SampleVariantIndexEntryTest {
         }
 
 
+    }
+
+    protected SampleVariantIndexEntry newVariantIndexEntry(String s, int i) {
+        return newVariantIndexEntry(s, i, false);
+    }
+
+    protected SampleVariantIndexEntry newVariantIndexEntry(String s, int i, boolean multiFileIndex) {
+        byte[] v = new byte[4];
+        Bytes.putInt(v, 0, i);
+        BitBuffer fileIndex = new BitBuffer(v);
+        if (multiFileIndex) {
+            FileIndex.setMultiFile(fileIndex, 0);
+        }
+        return new SampleVariantIndexEntry(new Variant(s), fileIndex);
     }
 }

@@ -284,8 +284,12 @@ public class SampleIndexEntry {
             return fileIndex;
         }
 
-        public short getFileIndex(int idx) {
-            return Bytes.toShort(fileIndex, fileIndexOffset + idx * Short.BYTES);
+        public int getFileIndexOffset() {
+            return fileIndexOffset;
+        }
+
+        public int getFileIndexLength() {
+            return fileIndexLength;
         }
 
         public SampleIndexGtEntry setFileIndex(byte[] fileIndex) {
@@ -489,8 +493,7 @@ public class SampleIndexEntry {
             return count == that.count
                     && Objects.equals(gt, that.gt)
                     && Arrays.equals(annotationCounts, that.annotationCounts)
-                    && Bytes.equals(fileIndex, fileIndexOffset, that.fileIndexLength,
-                        that.fileIndex, that.fileIndexOffset, that.fileIndexLength)
+                    && fileIndex.equals(that.fileIndex)
                     && Bytes.equals(variants, variantsOffset, that.variantsLength,
                         that.variants, that.variantsOffset, that.variantsLength)
                     && Bytes.equals(annotationIndex, annotationIndexOffset, that.annotationIndexLength,

@@ -19,6 +19,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -356,6 +357,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private final Map<Integer, SampleMetadata> samples = new HashMap<>();
         private final Set<Integer> files = new HashSet<>();
         private boolean hasGenotype;
+        private final SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
 
         private final Map<Integer, SampleIndexEntryPutBuilder> samplesMap = new HashMap<>();
         private boolean partialScan;
@@ -364,7 +366,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         protected void setup(Context context) throws IOException, InterruptedException {
             new GenomeHelper(context.getConfiguration());
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
-            fileIndexConverter = new VariantFileIndexConverter();
+            fileIndexConverter = new VariantFileIndexConverter(sampleIndexConfiguration);
 
             int[] sampleIds = context.getConfiguration().getInts(SAMPLES);
             if (sampleIds == null || sampleIds.length == 0) {
@@ -411,7 +413,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             Variant variant = variantRow.getVariant();
 
             // Get fileIndex for each file
-            Map<Integer, Short> fileIndexMap = new HashMap<>();
+            Map<Integer, BitBuffer> fileIndexMap = new HashMap<>();
 
             variantRow.forEachFile(fileColumn -> {
                 if (partialScan && !this.files.contains(fileColumn.getFileId())) {
@@ -421,7 +423,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 }
                 Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn.raw(), fixedAttributes);
 
-                short fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), 0, fileAttributes, null);
+                BitBuffer fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), 0, fileAttributes, null);
 
                 fileIndexMap.put(fileColumn.getFileId(), fileIndexValue);
             });
@@ -449,7 +451,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 }
                 if (validGt) {
                     SampleIndexEntryPutBuilder builder = samplesMap.computeIfAbsent(sampleId,
-                            s -> new SampleIndexEntryPutBuilder(s, variant));
+                            s -> new SampleIndexEntryPutBuilder(s, variant, sampleIndexConfiguration));
                     List<Integer> files;
                     int filePosition;
                     if (sampleMetadata.isMultiFileSample()) {
@@ -469,11 +471,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     // Add fileIndex value for this genotype
                     boolean fileFound = false;
                     for (Integer fileId : files) {
-                        Short fileIndex = fileIndexMap.get(fileId);
+                        BitBuffer fileIndex = fileIndexMap.get(fileId);
                         if (fileIndex != null) {
                             fileFound = true;
                             if (filePosition > 0) {
-                                fileIndex = VariantFileIndexConverter.setFilePosition(fileIndex, filePosition);
+                                FileIndex.setFilePosition(fileIndex, filePosition);
                             }
                             builder.add(gt, new SampleVariantIndexEntry(variant, fileIndex));
                             if (samplesToCount.contains(sampleId)) {

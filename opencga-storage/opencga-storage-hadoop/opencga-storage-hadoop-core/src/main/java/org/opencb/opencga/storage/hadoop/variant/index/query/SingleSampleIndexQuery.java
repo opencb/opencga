@@ -7,8 +7,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
-
 public class SingleSampleIndexQuery extends SampleIndexQuery {
 
     private final String sample;
@@ -45,7 +43,7 @@ public class SingleSampleIndexQuery extends SampleIndexQuery {
         motherFilter = getMotherFilter(sample);
         sampleFileIndexQuery = getSampleFileIndexQuery(sample);
         mendelianError = query.getMendelianErrorSet().contains(sample);
-        emptyFileIndex = sampleFileIndexQuery.isEmpty() || sampleFileIndexQuery.stream().allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
+        emptyFileIndex = sampleFileIndexQuery.isEmpty() || sampleFileIndexQuery.stream().allMatch(SampleFileIndexQuery::isEmpty);
     }
 
     @Override

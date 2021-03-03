@@ -11,7 +11,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfigu
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -37,8 +36,8 @@ public class AnnotationIndexConverterTest {
                 "STUDY:POP_5",
                 "STUDY:POP_6"
         );
-        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
-                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration();
+        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
 
         converter = new AnnotationIndexConverter(configuration);
     }
@@ -166,8 +165,8 @@ public class AnnotationIndexConverterTest {
     @Test(expected = IllegalArgumentException.class)
     public void testDuplicatedPopulations() {
         List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
-        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
-                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration();
+        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
         new AnnotationIndexConverter(configuration);
     }
 

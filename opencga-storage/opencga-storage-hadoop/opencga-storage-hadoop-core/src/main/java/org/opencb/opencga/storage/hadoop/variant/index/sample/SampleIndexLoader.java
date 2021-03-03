@@ -27,13 +27,21 @@ public class SampleIndexLoader {
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final MRExecutor mrExecutor;
     private final VariantStorageMetadataManager metadataManager;
+    private final SampleIndexConfiguration configuration;
     private Logger logger = LoggerFactory.getLogger(SampleIndexLoader.class);
 
+    @Deprecated
     public SampleIndexLoader(HBaseVariantTableNameGenerator tableNameGenerator,
                              VariantStorageMetadataManager metadataManager, MRExecutor mrExecutor) {
+        this(tableNameGenerator, metadataManager, mrExecutor, SampleIndexConfiguration.defaultConfiguration());
+    }
+
+    public SampleIndexLoader(HBaseVariantTableNameGenerator tableNameGenerator,
+                             VariantStorageMetadataManager metadataManager, MRExecutor mrExecutor, SampleIndexConfiguration configuration) {
         this.tableNameGenerator = tableNameGenerator;
         this.mrExecutor = mrExecutor;
         this.metadataManager = metadataManager;
+        this.configuration = configuration;
     }
 
     public void buildSampleIndex(String study, List<String> samples, ObjectMap options)

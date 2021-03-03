@@ -3,31 +3,31 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
 import java.util.Objects;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.MULTI_FILE_MASK;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.FileIndex.isMultiFile;
 
 public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEntry> {
 
     private final Variant variant;
     private final String genotype;
-    private final short fileIndex;
+    private final BitBuffer fileIndex;
     private final AnnotationIndexEntry annotationIndexEntry;
     private final Integer meCode;
 
-    public SampleVariantIndexEntry(Variant variant, short fileIndex) {
+    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex) {
         this(variant, fileIndex, null, null);
     }
 
-    public SampleVariantIndexEntry(Variant variant, short fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry) {
+    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry) {
         this(variant, fileIndex, genotype, annotationIndexEntry, null);
     }
 
-    public SampleVariantIndexEntry(Variant variant, short fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
+    public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex, String genotype, AnnotationIndexEntry annotationIndexEntry,
                                    Integer meCode) {
         if (CollectionUtils.isEmpty(variant.getImpl().getStudies())) {
             this.variant = variant;
@@ -56,7 +56,7 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
         return variant;
     }
 
-    public short getFileIndex() {
+    public BitBuffer getFileIndex() {
         return fileIndex;
     }
 
@@ -76,12 +76,12 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
     public int compareTo(SampleVariantIndexEntry o) {
         int compare = INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(variant, o.variant);
         if (compare == 0) {
-            if (IndexUtils.testIndexAny(fileIndex, MULTI_FILE_MASK)) {
+            if (isMultiFile(fileIndex)) {
                 return -1;
-            } else if (IndexUtils.testIndexAny(o.fileIndex, MULTI_FILE_MASK)) {
+            } else if (isMultiFile(o.fileIndex)) {
                 return 1;
             } else {
-                return Short.compare(fileIndex, o.fileIndex);
+                return fileIndex.compareTo(o.fileIndex);
             }
         }
         return compare;
@@ -96,7 +96,7 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
             return false;
         }
         SampleVariantIndexEntry that = (SampleVariantIndexEntry) o;
-        return fileIndex == that.fileIndex && Objects.equals(variant, that.variant);
+        return fileIndex.equals(that.fileIndex) && Objects.equals(variant, that.variant);
     }
 
     @Override

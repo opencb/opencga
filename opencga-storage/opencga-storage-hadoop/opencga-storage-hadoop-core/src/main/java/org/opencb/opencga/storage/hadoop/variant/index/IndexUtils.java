@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
 /**
@@ -14,8 +15,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 public final class IndexUtils {
 
     public static final byte EMPTY_MASK = 0;
-    public static final double DELTA = 0.0000001;
-    public static final int MAX = 500000;
 
     private IndexUtils() {
     }
@@ -28,12 +27,12 @@ public final class IndexUtils {
         return binaryToString(s, Short.SIZE);
     }
 
-    protected static String binaryToString(int number, int i) {
+    public static String binaryToString(int number, int bits) {
         String str = Integer.toBinaryString(number);
-        if (str.length() > i) {
-            str = str.substring(str.length() - i);
+        if (str.length() > bits) {
+            str = str.substring(str.length() - bits);
         }
-        return StringUtils.leftPad(str, i, '0');
+        return StringUtils.leftPad(str, bits, '0');
     }
 
     public static String maskToString(byte[] maskAndIndex) {
@@ -88,6 +87,10 @@ public final class IndexUtils {
     }
 
     public static boolean testIndexAny(short indexValue, short indexMask) {
+        return indexMask == 0 || (indexValue & indexMask) != 0;
+    }
+
+    public static boolean testIndexAny(int indexValue, int indexMask) {
         return indexMask == 0 || (indexValue & indexMask) != 0;
     }
 
@@ -149,7 +152,7 @@ public final class IndexUtils {
             case ">=":
             case ">>=":
                 // Index is using operator ">". To use ">=" operator, need to subtract a DELTA to the value
-                value -= DELTA;
+                value -= RangeIndexFieldFilter.DELTA;
             case ">":
             case ">>":
                 if (value >= indexThreshold) {
@@ -157,36 +160,6 @@ public final class IndexUtils {
                 } else {
                     return null;
                 }
-            default:
-                throw new VariantQueryException("Unknown query operator" + op);
-        }
-    }
-
-    public static double[] queryRange(String op, double value) {
-        return queryRange(op, value, Double.MIN_VALUE, Double.MAX_VALUE);
-    }
-
-    public static double[] queryRange(String op, double value, double min, double max) {
-        switch (op) {
-            case "":
-            case "=":
-            case "==":
-                return new double[]{value, value + DELTA};
-            case "<=":
-            case "<<=":
-                // Range is with exclusive end. For inclusive "<=" operator, need to add a DELTA to the value
-                value += DELTA;
-            case "<":
-            case "<<":
-                return new double[]{min, value};
-
-            case ">":
-            case ">>":
-                // Range is with inclusive start. For exclusive ">" operator, need to add a DELTA to the value
-                value += DELTA;
-            case ">=":
-            case ">>=":
-                return new double[]{value, max};
             default:
                 throw new VariantQueryException("Unknown query operator" + op);
         }
@@ -229,50 +202,15 @@ public final class IndexUtils {
         return counts;
     }
 
-    public static byte[] getRangeCodes(double[] queryRange, double[] thresholds) {
-        return new byte[]{getRangeCode(queryRange[0], thresholds), getRangeCodeExclusive(queryRange[1], thresholds)};
-    }
-
-    public static byte getRangeCodeExclusive(double queryValue, double[] thresholds) {
-        return (byte) (1 + getRangeCode(queryValue - DELTA, thresholds));
-    }
-
-    /**
-     * Gets the range code given a value and a list of ranges.
-     * Each point in the array indicates a range threshold.
-     *
-     * range 1 = ( -inf , th[0] )       ~   value < th[0]
-     * range 2 = [ th[0] , th[1] )      ~   value >= th[0] && value < th[1]
-     * range n = [ th[n-1] , +inf )     ~   value >= th[n-1]
-     *
-     * @param value     Value to convert
-     * @param thresholds    List of thresholds
-     * @return range code
-     */
-    public static byte getRangeCode(double value, double[] thresholds) {
-        byte code = (byte) (thresholds.length);
-        for (byte i = 0; i < thresholds.length; i++) {
-            if (lessThan(value, thresholds[i])) {
-                code = i;
-                break;
-            }
-        }
-        return code;
-    }
-
-    public static boolean lessThan(double a, double b) {
-        return a < b && !equalsTo(a, b);
-    }
-
-    public static boolean equalsTo(double a, double b) {
-        return Math.abs(a - b) < (DELTA / 10);
-    }
-
     public static int getByte1(int v) {
         return v & 0xFF;
     }
 
     public static int getByte2(int v) {
         return getByte1(v >> Byte.SIZE);
+    }
+
+    public static int log2(int i) {
+        return 31 - Integer.numberOfLeadingZeros(i);
     }
 }

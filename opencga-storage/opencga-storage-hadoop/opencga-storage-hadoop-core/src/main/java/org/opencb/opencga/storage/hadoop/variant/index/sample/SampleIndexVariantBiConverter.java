@@ -5,9 +5,9 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.isGenotypeColumn;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.MULTI_FILE_MASK;
 
 /**
  * Created on 11/04/19.
@@ -165,19 +164,21 @@ public class SampleIndexVariantBiConverter {
 
     private abstract static class SampleIndexGtEntryIterator implements SampleIndexEntryIterator {
         protected SampleIndexEntry.SampleIndexGtEntry gtEntry;
-        private SampleIndexConfiguration configuration;
+        private final SampleIndexConfiguration configuration;
         private BitInputStream popFreq;
         private BitInputStream ctBtIndex;
         private int nonIntergenicCount;
         private int clinicalCount;
+        private BitInputStream fileIndex;
         private int fileIndexCount; // Number of fileIndex elements visited
         private int fileIndexIdx;   // Index over file index array. Index of last visited fileIndex
 
         // Reuse the annotation index entry. Avoid create a new instance for each variant.
         private final AnnotationIndexEntry annotationIndexEntry;
         private int annotationIndexEntryIdx;
+        private int fileDataIndexesBitsLength;
 
-        SampleIndexGtEntryIterator() {
+        SampleIndexGtEntryIterator(SampleIndexConfiguration configuration) {
             nonIntergenicCount = 0;
             clinicalCount = 0;
             annotationIndexEntry = new AnnotationIndexEntry();
@@ -185,10 +186,12 @@ public class SampleIndexVariantBiConverter {
             annotationIndexEntryIdx = -1;
             fileIndexIdx = 0;
             fileIndexCount = 0;
+            this.configuration = configuration;
+            fileDataIndexesBitsLength = configuration.getFileIndex().getBitsLength();
         }
 
         SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
-            this();
+            this(configuration);
             this.gtEntry = gtEntry;
             this.ctBtIndex = gtEntry.getCtBtIndex() == null
                     ? null
@@ -198,7 +201,11 @@ public class SampleIndexVariantBiConverter {
                     : new BitInputStream(gtEntry.getPopulationFrequencyIndex(),
                     gtEntry.getPopulationFrequencyIndexOffset(),
                     gtEntry.getPopulationFrequencyIndexLength());
-            this.configuration = configuration;
+            this.fileIndex = gtEntry.getFileIndex() == null
+                    ? null
+                    : new BitInputStream(gtEntry.getFileIndex(),
+                    gtEntry.getFileIndexOffset(),
+                    gtEntry.getFileIndexLength());
         }
 
         @Override
@@ -213,20 +220,19 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public boolean isMultiFileIndex() {
-            short fileIndex = gtEntry.getFileIndex(nextFileIndex());
-            return isMultiFileIndex(fileIndex);
+            return isMultiFileIndex(nextFileIndex());
         }
 
-        public boolean isMultiFileIndex(short fileIndex) {
-            return IndexUtils.testIndexAny(fileIndex, MULTI_FILE_MASK);
+        public boolean isMultiFileIndex(int i) {
+//            configuration.getFileIndex().getMultiFileIndex().readAndDecode()
+            return FileIndex.isMultiFile(fileIndex, i * fileDataIndexesBitsLength);
         }
 
         private int nextFileIndex() {
             while (nextIndex() != fileIndexCount) {
                 // Move index
                 fileIndexIdx++;
-                short prevFileIndex = gtEntry.getFileIndex(fileIndexIdx - 1);
-                if (!isMultiFileIndex(prevFileIndex)) {
+                if (!isMultiFileIndex(fileIndexIdx - 1)) {
                     // If the previous fileIndex was not multifile, move counter
                     fileIndexCount++;
                 }
@@ -235,18 +241,22 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public short nextFileIndexEntry() {
-            return gtEntry.getFileIndex(nextFileIndex());
+        public BitBuffer nextFileIndexEntry() {
+            return getFileIndex(nextFileIndex());
         }
 
         @Override
-        public short nextMultiFileIndexEntry() {
+        public BitBuffer nextMultiFileIndexEntry() {
             if (isMultiFileIndex()) {
                 fileIndexIdx++;
                 return nextFileIndexEntry();
             } else {
                 throw new NoSuchElementException();
             }
+        }
+
+        private BitBuffer getFileIndex(int i) {
+            return fileIndex.getBitBuffer(i * fileDataIndexesBitsLength, fileDataIndexesBitsLength);
         }
 
         @Override
@@ -411,7 +421,7 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public short nextFileIndexEntry() {
+        public BitBuffer nextFileIndexEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 
@@ -421,7 +431,7 @@ public class SampleIndexVariantBiConverter {
         }
 
         @Override
-        public short nextMultiFileIndexEntry() {
+        public BitBuffer nextMultiFileIndexEntry() {
             throw new NoSuchElementException("Empty iterator");
         }
 

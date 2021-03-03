@@ -1,79 +1,41 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.core.IndexFieldConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
+
+import java.util.Collections;
+import java.util.List;
 
 public class SampleFileIndexQuery {
 
     private final String sampleName;
-    private final short fileIndexMask;
-    private final RangeQuery qualQuery;
-    private final RangeQuery dpQuery;
-    private final boolean hasFileIndexMask1;
-    private final boolean hasFileIndexMask2;
-
-    private final boolean[] validFileIndex1;
-    private final boolean[] validFileIndex2;
+    private final List<IndexFieldFilter> filters;
 
     public SampleFileIndexQuery(String sampleName) {
-        this.sampleName = sampleName;
-        fileIndexMask = IndexUtils.EMPTY_MASK;
-        qualQuery = null;
-        dpQuery = null;
-        validFileIndex1 = new boolean[1 << Byte.SIZE];
-        validFileIndex2 = new boolean[1 << Byte.SIZE];
-        hasFileIndexMask1 = false;
-        hasFileIndexMask2 = false;
+        this(sampleName, Collections.emptyList());
     }
 
-    public SampleFileIndexQuery(String sampleName, short fileIndexMask, RangeQuery qualQuery, RangeQuery dpQuery,
-                                boolean[] validFileIndex1, boolean[] validFileIndex2) {
+    public SampleFileIndexQuery(String sampleName, List<IndexFieldFilter> filters) {
         this.sampleName = sampleName;
-        this.fileIndexMask = fileIndexMask;
-        this.hasFileIndexMask1 = IndexUtils.getByte1(fileIndexMask) != IndexUtils.EMPTY_MASK;
-        this.hasFileIndexMask2 = IndexUtils.getByte2(fileIndexMask) != IndexUtils.EMPTY_MASK;
-        this.qualQuery = qualQuery;
-        this.dpQuery = dpQuery;
-        this.validFileIndex1 = validFileIndex1;
-        this.validFileIndex2 = validFileIndex2;
+        this.filters = filters;
     }
 
     public String getSampleName() {
         return sampleName;
     }
 
-    public short getFileIndexMask() {
-        return fileIndexMask;
+    public List<IndexFieldFilter> getFilters() {
+        return filters;
     }
 
-    public byte getFileIndexMask1() {
-        return (byte) IndexUtils.getByte1(fileIndexMask);
+    public IndexFieldFilter getFilter(IndexFieldConfiguration.Source source, String key) {
+        return filters.stream()
+                .filter(i -> i.getIndex().getSource().equals(source) && i.getIndex().getKey().equals(key))
+                .findFirst()
+                .orElse(null);
     }
 
-    public byte getFileIndexMask2() {
-        return (byte) IndexUtils.getByte2(fileIndexMask);
-    }
-
-    public boolean hasFileIndexMask1() {
-        return hasFileIndexMask1;
-    }
-
-    public boolean hasFileIndexMask2() {
-        return hasFileIndexMask2;
-    }
-
-    public boolean[] getValidFileIndex1() {
-        return validFileIndex1;
-    }
-
-    public boolean[] getValidFileIndex2() {
-        return validFileIndex2;
-    }
-
-    public RangeQuery getQualQuery() {
-        return qualQuery;
-    }
-
-    public RangeQuery getDpQuery() {
-        return dpQuery;
+    public boolean isEmpty() {
+        return filters.isEmpty();
     }
 }

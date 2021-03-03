@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOper
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
@@ -131,7 +132,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 // If empty, should find none. Return empty iterator
                 return VariantDBIterator.emptyIterator();
             } else {
-                logger.info("Single sample indexes iterator");
+                logger.info("Single sample indexes iterator : " + sample);
                 SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, gts));
                 return applyLimitSkip(iterator, options);
             }
@@ -225,7 +226,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     protected SampleIndexEntryPutBuilder queryByGtBuilder(int study, int sample, String chromosome, int position)
             throws IOException {
         Result result = queryByGtInternal(study, sample, chromosome, position);
-        return new SampleIndexEntryPutBuilder(sample, chromosome, position, converter.convertToMapSampleVariantIndex(result));
+        return new SampleIndexEntryPutBuilder(sample, chromosome, position, configuration,
+                converter.convertToMapSampleVariantIndex(result));
     }
 
     private Result queryByGtInternal(int study, int sample, String chromosome, int position) throws IOException {
@@ -614,21 +616,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             logger.info("PopFreq         = " + pf);
         }
         for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
-            if (sampleFileIndexQuery.hasFileIndexMask1()) {
-                boolean[] validFileIndex = sampleFileIndexQuery.getValidFileIndex1();
-                for (int i = 0; i < validFileIndex.length; i++) {
-                    if (validFileIndex[i]) {
-                        logger.info("FileIndex1       = " + IndexUtils.maskToString(sampleFileIndexQuery.getFileIndexMask1(), (byte) i));
-                    }
-                }
-            }
-            if (sampleFileIndexQuery.hasFileIndexMask2()) {
-                boolean[] validFileIndex2 = sampleFileIndexQuery.getValidFileIndex2();
-                for (int i = 0; i < validFileIndex2.length; i++) {
-                    if (validFileIndex2[i]) {
-                        logger.info("FileIndex2       = " + IndexUtils.maskToString(sampleFileIndexQuery.getFileIndexMask2(), (byte) i));
-                    }
-                }
+            for (IndexFieldFilter filter : sampleFileIndexQuery.getFilters()) {
+                logger.info("Filter       = " + filter);
             }
             if (query.getSampleFileIndexQuery().getOperation() != null) {
                 logger.info("FileIndex " + query.getSampleFileIndexQuery().getOperation());
