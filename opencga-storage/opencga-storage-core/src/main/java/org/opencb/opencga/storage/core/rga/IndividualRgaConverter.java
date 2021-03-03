@@ -183,11 +183,16 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
         if (knockoutByIndividual.getGenes() != null) {
             for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
                 for (KnockoutTranscript transcript : gene.getTranscripts()) {
-                    List<String> compoundFilters = processFilters(transcript);
                     List<String> variantJson = new ArrayList<>(transcript.getVariants().size());
                     for (KnockoutVariant variant : transcript.getVariants()) {
+                        // Only keep population frequencies from ALL
+                        if (variant.getPopulationFrequencies() != null) {
+                            variant.getPopulationFrequencies().removeIf(popFreq -> !popFreq.getPopulation().equals("ALL"));
+                        }
                         variantJson.add(JacksonUtils.getDefaultObjectMapper().writeValueAsString(variant));
                     }
+
+                    List<String> compoundFilters = processFilters(transcript);
 
                     List<String> phenotypes = populatePhenotypes(knockoutByIndividual.getPhenotypes());
                     List<String> disorders = populateDisorders(knockoutByIndividual.getDisorders());
