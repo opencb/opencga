@@ -237,7 +237,10 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                             .getIndividualManager()
                             .search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
                                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                                            IndividualDBAdaptor.QueryParams.ID.key(),
                                             IndividualDBAdaptor.QueryParams.SEX.key(),
+                                            IndividualDBAdaptor.QueryParams.FATHER.key(),
+                                            IndividualDBAdaptor.QueryParams.MOTHER.key(),
                                             IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                                             IndividualDBAdaptor.QueryParams.DISORDERS.key()
                                     )),
@@ -246,6 +249,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     if (individual != null) {
                         sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), individual.getId());
                         knockoutByIndividual.setId(individual.getId());
+                        if (individual.getFather() != null) {
+                            knockoutByIndividual.setFatherId(individual.getFather().getId());
+                        }
+                        if (individual.getMother() != null) {
+                            knockoutByIndividual.setMotherId(individual.getMother().getId());
+                        }
                         knockoutByIndividual.setSex(individual.getSex());
                         knockoutByIndividual.setDisorders(individual.getDisorders());
                         knockoutByIndividual.setPhenotypes(individual.getPhenotypes());

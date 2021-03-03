@@ -26,7 +26,8 @@ public class KnockoutByIndividual {
 
     private String id;
     private String sampleId;
-    // father / mother
+    private String motherId;
+    private String fatherId;
     private Sex sex;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
@@ -52,6 +53,8 @@ public class KnockoutByIndividual {
         final StringBuilder sb = new StringBuilder("KnockoutByIndividual{");
         sb.append("id='").append(id).append('\'');
         sb.append(", sampleId='").append(sampleId).append('\'');
+        sb.append(", motherId='").append(motherId).append('\'');
+        sb.append(", fatherId='").append(fatherId).append('\'');
         sb.append(", sex=").append(sex);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
@@ -76,6 +79,24 @@ public class KnockoutByIndividual {
 
     public KnockoutByIndividual setSampleId(String sampleId) {
         this.sampleId = sampleId;
+        return this;
+    }
+
+    public String getMotherId() {
+        return motherId;
+    }
+
+    public KnockoutByIndividual setMotherId(String motherId) {
+        this.motherId = motherId;
+        return this;
+    }
+
+    public String getFatherId() {
+        return fatherId;
+    }
+
+    public KnockoutByIndividual setFatherId(String fatherId) {
+        this.fatherId = fatherId;
         return this;
     }
 
