@@ -141,7 +141,7 @@ public class KnockoutByIndividual {
         } else {
             genesMap = new HashMap<>(genes.size());
             for (KnockoutGene gene : genes) {
-                genesMap.put(gene.getName(), gene);
+                genesMap.put(gene.getId(), gene);
             }
         }
         return this;

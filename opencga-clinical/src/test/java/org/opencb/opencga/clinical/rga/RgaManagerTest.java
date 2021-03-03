@@ -119,9 +119,9 @@ public class RgaManagerTest {
         // Grant permissions to sample1
         catalogManager.getIndividualManager().updateAcl(study, Collections.emptyList(), "user2", new IndividualAclParams("sample1",
                 IndividualAclEntry.IndividualPermissions.VIEW.name()), ParamUtils.AclAction.ADD, false, ownerToken);
-        catalogManager.getSampleManager().updateAcl(study, Collections.singletonList("sample1"), "user2", new SampleAclParams("", "", "", "",
-                SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()),
-                ParamUtils.AclAction.ADD, ownerToken);
+        catalogManager.getSampleManager().updateAcl(study, Collections.singletonList("sample1"), "user2",
+                new SampleAclParams("", "", "", "", SampleAclEntry.SamplePermissions.VIEW.name() + ","
+                        + SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()), ParamUtils.AclAction.ADD, ownerToken);
         result = rgaManager.individualQuery(study, new Query(), QueryOptions.empty(), userToken);
         assertEquals(1, result.getNumResults());
         assertEquals("sample1", result.first().getSampleId());
