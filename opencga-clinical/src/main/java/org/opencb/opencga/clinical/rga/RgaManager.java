@@ -75,6 +75,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
+        QueryOptions queryOptions = setDefaultLimit(options);
+
         if (!auxQuery.containsKey("sampleId") && !auxQuery.containsKey("individualId")) {
             // 1st. we perform a facet to get the different sample ids matching the user query
             DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
@@ -111,8 +113,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             samples = auxQuery.getAsStringList("sampleId");
         }
 
-        int limit = options.getInt(QueryOptions.LIMIT, AbstractManager.DEFAULT_LIMIT);
-        int skip = options.getInt(QueryOptions.SKIP);
+        int limit = queryOptions.getInt(QueryOptions.LIMIT, AbstractManager.DEFAULT_LIMIT);
+        int skip = queryOptions.getInt(QueryOptions.SKIP);
 
         List<String> sampleIds;
         if (skip == 0 && limit > samples.size()) {
@@ -125,7 +127,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         }
         auxQuery.put("sampleId", sampleIds);
 
-        return rgaEngine.individualQuery(collection, auxQuery, options);
+        return rgaEngine.individualQuery(collection, auxQuery, queryOptions);
     }
 
     public OpenCGAResult<RgaKnockoutByGene> geneQuery(String studyStr, Query query, QueryOptions options, String token)
@@ -134,7 +136,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
-        List<String> includeIndividuals = options.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
+        QueryOptions queryOptions = setDefaultLimit(options);
+        List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
@@ -143,8 +146,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         if (!auxQuery.containsKey(RgaDataModel.GENE_ID)) {
             // 1st. we perform a facet to get the different gene ids matching the user query and using the skip and limit values
             QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaDataModel.GENE_ID);
-            facetOptions.putIfNotNull(QueryOptions.LIMIT, options.get(QueryOptions.LIMIT));
-            facetOptions.putIfNotNull(QueryOptions.SKIP, options.get(QueryOptions.SKIP));
+            facetOptions.putIfNotNull(QueryOptions.LIMIT, queryOptions.get(QueryOptions.LIMIT));
+            facetOptions.putIfNotNull(QueryOptions.SKIP, queryOptions.get(QueryOptions.SKIP));
 
             DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
             if (result.getNumResults() == 0) {
@@ -183,7 +186,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         }
 
         // 4. Solr gene query
-        OpenCGAResult<RgaKnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, options);
+        OpenCGAResult<RgaKnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, queryOptions);
         if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
             return knockoutResult;
         } else {
@@ -208,7 +211,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
-        List<String> includeIndividuals = options.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
+        QueryOptions queryOptions = setDefaultLimit(options);
+
+        List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
@@ -217,8 +222,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         if (!auxQuery.containsKey(RgaDataModel.VARIANTS)) {
             // 1st. we perform a facet to get the different variant ids matching the user query and using the skip and limit values
             QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS);
-            facetOptions.putIfNotNull(QueryOptions.LIMIT, options.get(QueryOptions.LIMIT));
-            facetOptions.putIfNotNull(QueryOptions.SKIP, options.get(QueryOptions.SKIP));
+            facetOptions.putIfNotNull(QueryOptions.LIMIT, queryOptions.get(QueryOptions.LIMIT));
+            facetOptions.putIfNotNull(QueryOptions.SKIP, queryOptions.get(QueryOptions.SKIP));
 
             DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
             List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
@@ -255,7 +260,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         }
 
         // 4. Solr gene query
-        OpenCGAResult<KnockoutByVariant> knockoutResult = rgaEngine.variantQuery(collection, auxQuery, options);
+        OpenCGAResult<KnockoutByVariant> knockoutResult = rgaEngine.variantQuery(collection, auxQuery, queryOptions);
         if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
             return knockoutResult;
         } else {
@@ -272,6 +277,14 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
             return knockoutResult;
         }
+    }
+
+    private QueryOptions setDefaultLimit(QueryOptions options) {
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        if (!queryOptions.containsKey(QueryOptions.LIMIT)) {
+            queryOptions.put(QueryOptions.LIMIT, AbstractManager.DEFAULT_LIMIT);
+        }
+        return queryOptions;
     }
 
     public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {

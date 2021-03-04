@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
