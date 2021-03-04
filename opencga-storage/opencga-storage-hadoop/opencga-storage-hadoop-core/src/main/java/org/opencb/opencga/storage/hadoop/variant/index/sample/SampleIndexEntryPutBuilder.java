@@ -93,7 +93,7 @@ public class SampleIndexEntryPutBuilder {
                     variants.add(variant);
                 } else {
                     // Mark previous variant as MultiFile
-                    FileIndex.setMultiFile(fileIndexBuffer, offset - fileIndex.getBitsLength());
+                    fileIndex.setMultiFile(fileIndexBuffer, offset - fileIndex.getBitsLength());
                 }
                 fileIndexBuffer.setBitBuffer(gtEntry.getFileIndex(), offset);
                 offset += fileIndex.getBitsLength();

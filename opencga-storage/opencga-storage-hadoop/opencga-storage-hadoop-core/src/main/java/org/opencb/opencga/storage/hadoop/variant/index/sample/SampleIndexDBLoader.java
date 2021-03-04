@@ -141,7 +141,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                     throw new IllegalArgumentException("Already loaded variant " + variantIndexEntry.getVariant());
                 }
             }
-            if (FileIndex.isMultiFile(variantIndexEntry.getFileIndex())) {
+            if (configuration.getFileIndex().isMultiFile(variantIndexEntry.getFileIndex())) {
                 throw new IllegalArgumentException("Unexpected multi-file at variant " + variantIndexEntry.getVariant());
             }
             sampleEntry.add(gt, variantIndexEntry);

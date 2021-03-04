@@ -15,30 +15,41 @@ import java.util.List;
 
 public class FileIndex extends Index {
 
-    private static final int DEFAULT_FILE_POSITION_SIZE_BITS = 4;
-
-    private static final IndexField<Boolean> MULTI_FILE_INDEX = new CategoricalIndexField<>(
-            new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "multiFile", IndexFieldConfiguration.Type.CATEGORICAL), 0,
-            new Boolean[]{false, true}, false);
-
     private final List<IndexField<?>> fixedFields;
     private final List<IndexField<String>> customFields;
+    private final IndexField<Boolean> multiFileIndex;
     private final IndexField<VariantType> typeIndex;
     private final IndexField<Integer> filePositionIndex;
 
-    public FileIndex(SampleIndexConfiguration configuration) {
-        this(configuration.getFileIndexFieldsConfiguration(), DEFAULT_FILE_POSITION_SIZE_BITS);
+    public FileIndex(SampleIndexConfiguration.FileIndexConfiguration fileIndexConfiguration) {
+        this(fileIndexConfiguration.getCustomFields(),
+                fileIndexConfiguration.getFilePositionBits(),
+                fileIndexConfiguration.isFixedFieldsFirst());
     }
 
-    public FileIndex(List<IndexFieldConfiguration> customFieldConfigurations, int filePositionSizeBits) {
-        filePositionIndex = buildFilePositionIndexField(MULTI_FILE_INDEX, filePositionSizeBits);
-        typeIndex = buildVariantTypeIndexField(filePositionIndex);
-        this.fixedFields = Arrays.asList(
-                MULTI_FILE_INDEX,
-                filePositionIndex,
-                typeIndex);
+    public FileIndex(List<IndexFieldConfiguration> customFieldConfigurations, int filePositionSizeBits, boolean fixedFieldsFirst) {
+        if (fixedFieldsFirst) {
+            multiFileIndex = buildMultiFile(null);
+            filePositionIndex = buildFilePositionIndexField(multiFileIndex, filePositionSizeBits);
+            typeIndex = buildVariantTypeIndexField(filePositionIndex);
+            this.fixedFields = Arrays.asList(
+                    multiFileIndex,
+                    filePositionIndex,
+                    typeIndex);
 
-        this.customFields = buildStringIndexFields(this.fixedFields, customFieldConfigurations);
+            this.customFields = buildCustomIndexFields(this.fixedFields, customFieldConfigurations);
+        } else {
+            this.customFields = buildCustomIndexFields(Collections.emptyList(), customFieldConfigurations);
+
+            multiFileIndex = buildMultiFile(customFields.get(customFields.size() - 1));
+            filePositionIndex = buildFilePositionIndexField(multiFileIndex, filePositionSizeBits);
+            typeIndex = buildVariantTypeIndexField(filePositionIndex);
+            this.fixedFields = Arrays.asList(
+                    multiFileIndex,
+                    filePositionIndex,
+                    typeIndex);
+
+        }
 
         this.fields = new ArrayList<>(fixedFields.size() + customFields.size());
         this.fields.addAll(fixedFields);
@@ -60,7 +71,7 @@ public class FileIndex extends Index {
     }
 
     public IndexField<Boolean> getMultiFileIndex() {
-        return MULTI_FILE_INDEX;
+        return multiFileIndex;
     }
 
     public IndexField<Integer> getFilePositionIndex() {
@@ -75,22 +86,22 @@ public class FileIndex extends Index {
         return getMultiFileIndex().readAndDecode(bitBuffer);
     }
 
-    public static boolean isMultiFile(BitBuffer fileIndex) {
-        return MULTI_FILE_INDEX.readAndDecode(fileIndex);
+    public boolean isMultiFile(BitBuffer fileIndex) {
+        return getMultiFileIndex().readAndDecode(fileIndex);
     }
 
-    public static boolean isMultiFile(BitBuffer fileIndex, int bitOffset) {
-        int code = fileIndex.getIntPartial(bitOffset + MULTI_FILE_INDEX.getBitOffset(), MULTI_FILE_INDEX.getBitLength());
-        return MULTI_FILE_INDEX.decode(code);
+    public boolean isMultiFile(BitBuffer fileIndex, int bitOffset) {
+        int code = fileIndex.getIntPartial(bitOffset + getMultiFileIndex().getBitOffset(), getMultiFileIndex().getBitLength());
+        return getMultiFileIndex().decode(code);
     }
 
-    public static void setMultiFile(BitBuffer bitBuffer, int bitOffset) {
+    public void setMultiFile(BitBuffer bitBuffer, int bitOffset) {
         setMultiFile(bitBuffer, bitOffset, true);
     }
 
-    public static void setMultiFile(BitBuffer bitBuffer, int bitOffset, boolean value) {
-        bitBuffer.setIntPartial(MULTI_FILE_INDEX.encode(value),
-                MULTI_FILE_INDEX.getBitOffset() + bitOffset, MULTI_FILE_INDEX.getBitLength());
+    public void setMultiFile(BitBuffer bitBuffer, int bitOffset, boolean value) {
+        bitBuffer.setIntPartial(getMultiFileIndex().encode(value),
+                getMultiFileIndex().getBitOffset() + bitOffset, getMultiFileIndex().getBitLength());
     }
 
     @Deprecated
@@ -99,11 +110,18 @@ public class FileIndex extends Index {
 //        fileIndex.setBytePartial(((byte) filePosition), FILE_POSITION_SHIFT, FILE_POSITION_SIZE);
     }
 
+    protected CategoricalIndexField<Boolean> buildMultiFile(IndexField<?> prevIndex) {
+        return new CategoricalIndexField<>(
+                new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "multiFile", IndexFieldConfiguration.Type.CATEGORICAL),
+                prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()),
+                new Boolean[]{false, true}, false);
+    }
+
     private CategoricalIndexField<VariantType> buildVariantTypeIndexField(IndexField<?> prevIndex) {
         return new CategoricalIndexField<>(
                 new IndexFieldConfiguration(IndexFieldConfiguration.Source.VARIANT, VariantQueryParam.TYPE.key(),
                         IndexFieldConfiguration.Type.CATEGORICAL),
-                prevIndex.getBitOffset() + prevIndex.getBitLength(),
+                prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()),
                 VariantTypeIndexCodec.TYPE_NUM_VALUES, new VariantTypeIndexCodec());
     }
 
@@ -112,7 +130,7 @@ public class FileIndex extends Index {
         return new CategoricalIndexField<>(
                 new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "filePosition",
                         IndexFieldConfiguration.Type.CATEGORICAL),
-                prevIndex.getBitOffset() + prevIndex.getBitLength(), maxValues,
+                prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()), maxValues,
                 new IndexCodec<Integer>() {
                     @Override
                     public int encode(Integer value) {
@@ -135,8 +153,8 @@ public class FileIndex extends Index {
                 });
     }
 
-    private static List<IndexField<String>> buildStringIndexFields(List<IndexField<?>> fixedIndexFields,
-                                                                  List<IndexFieldConfiguration> configurations) {
+    private static List<IndexField<String>> buildCustomIndexFields(List<IndexField<?>> fixedIndexFields,
+                                                                   List<IndexFieldConfiguration> configurations) {
         int bitOffset = 0;
         for (IndexField<?> indexField : fixedIndexFields) {
             if (indexField.getBitOffset() != bitOffset) {
@@ -148,14 +166,14 @@ public class FileIndex extends Index {
 
         List<IndexField<String>> list = new ArrayList<>();
         for (IndexFieldConfiguration conf : configurations) {
-            IndexField<String> stringIndexField = buildStringIndexField(conf, bitOffset);
+            IndexField<String> stringIndexField = buildCustomIndexField(conf, bitOffset);
             list.add(stringIndexField);
             bitOffset += stringIndexField.getBitLength();
         }
         return list;
     }
 
-    private static IndexField<String> buildStringIndexField(IndexFieldConfiguration conf, int bitOffset) {
+    private static IndexField<String> buildCustomIndexField(IndexFieldConfiguration conf, int bitOffset) {
         switch (conf.getType()) {
             case RANGE:
                 return new RangeIndexField(conf, bitOffset, conf.getThresholds()).from(s -> {

@@ -9,7 +9,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import java.util.Objects;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.FileIndex.isMultiFile;
 
 public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEntry> {
 
@@ -18,6 +17,8 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
     private final BitBuffer fileIndex;
     private final AnnotationIndexEntry annotationIndexEntry;
     private final Integer meCode;
+    private final SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
+
 
     public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex) {
         this(variant, fileIndex, null, null);
@@ -76,9 +77,9 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
     public int compareTo(SampleVariantIndexEntry o) {
         int compare = INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(variant, o.variant);
         if (compare == 0) {
-            if (isMultiFile(fileIndex)) {
+            if (configuration.getFileIndex().isMultiFile(fileIndex)) {
                 return -1;
-            } else if (isMultiFile(o.fileIndex)) {
+            } else if (configuration.getFileIndex().isMultiFile(o.fileIndex)) {
                 return 1;
             } else {
                 return fileIndex.compareTo(o.fileIndex);

@@ -27,12 +27,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
 
     private final SampleIndexVariantBiConverter converter;
     private final SampleIndexConfiguration configuration;
-    private final int fileDataIndexesBitsLength;
+    private final FileIndex fileIndex;
 
     public HBaseToSampleIndexConverter(SampleIndexConfiguration configuration) {
         this.configuration = configuration;
         converter = new SampleIndexVariantBiConverter();
-        fileDataIndexesBitsLength = configuration.getFileIndex().getBitsLength();
+        fileIndex = configuration.getFileIndex();
     }
 
     public static Pair<String, String> parsePendingColumn(byte[] column) {
@@ -149,9 +149,9 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 for (Variant variant : map.get(gt)) {
                     BitBuffer fileIndex;
                     do {
-                        fileIndex = bis.readBitBuffer(fileDataIndexesBitsLength);
+                        fileIndex = bis.readBitBuffer(this.fileIndex.getBitsLength());
                         values.add(new SampleVariantIndexEntry(variant, fileIndex));
-                    } while (FileIndex.isMultiFile(fileIndex));
+                    } while (this.fileIndex.isMultiFile(fileIndex));
                 }
             }
         }

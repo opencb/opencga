@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
@@ -13,6 +14,12 @@ import java.util.List;
 
 public class SampleVariantIndexEntryTest {
 
+    private FileIndex fileIndex;
+
+    @Before
+    public void setUp() throws Exception {
+        fileIndex = SampleIndexConfiguration.defaultConfiguration().getFileIndex();
+    }
 
     @Test
     public void testComparator() {
@@ -46,7 +53,7 @@ public class SampleVariantIndexEntryTest {
         Bytes.putInt(v, 0, i);
         BitBuffer fileIndex = new BitBuffer(v);
         if (multiFileIndex) {
-            FileIndex.setMultiFile(fileIndex, 0);
+            this.fileIndex.setMultiFile(fileIndex, 0);
         }
         return new SampleVariantIndexEntry(new Variant(s), fileIndex);
     }

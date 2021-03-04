@@ -225,7 +225,7 @@ public class SampleIndexVariantBiConverter {
 
         public boolean isMultiFileIndex(int i) {
 //            configuration.getFileIndex().getMultiFileIndex().readAndDecode()
-            return FileIndex.isMultiFile(fileIndex, i * fileDataIndexesBitsLength);
+            return configuration.getFileIndex().isMultiFile(fileIndex, i * fileDataIndexesBitsLength);
         }
 
         private int nextFileIndex() {
