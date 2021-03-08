@@ -78,7 +78,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         studyEntry.setSampleDataKeys(Collections.singletonList("GT"));
 
 
-        studyEntry.setSamplesPosition(metadataManager.getSamplesPosition(studyMetadata, null));
+        studyEntry.setSamplesPosition(metadataManager.getSamplesPosition(studyMetadata));
         studyEntry.addSampleData("NA001", "GT", "0/0");
         studyEntry.addSampleData("NA002", "GT", "0/1");
         studyEntry.addSampleData("NA003", "GT", "1/1");

@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -59,6 +60,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                                                 Set<String> genotypes,
                                                 int sampleLimit) {
         StopWatch stopWatch = StopWatch.createStarted();
+        Set<VariantField> includeFields = VariantField.getIncludeFields(options);
 
         final Variant variant;
         if (VariantQueryUtils.isVariantId(variantStr)) {
@@ -154,13 +156,17 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 }
 
                 // Add Stats column
-                Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
-                PhoenixHelper.Column statsColumn = VariantPhoenixSchema.getStatsColumn(studyId, cohortId);
-                get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, statsColumn.bytes());
+                if (includeFields.contains(VariantField.STUDIES_STATS)) {
+                    Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
+                    PhoenixHelper.Column statsColumn = VariantPhoenixSchema.getStatsColumn(studyId, cohortId);
+                    get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, statsColumn.bytes());
+                }
 
                 // Add annotation column
-                PhoenixHelper.Column annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION;
-                get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, annotationColumn.bytes());
+                if (includeFields.contains(VariantField.ANNOTATION)) {
+                    PhoenixHelper.Column annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION;
+                    get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, annotationColumn.bytes());
+                }
 
                 // Get
                 Result result = table.get(get);
