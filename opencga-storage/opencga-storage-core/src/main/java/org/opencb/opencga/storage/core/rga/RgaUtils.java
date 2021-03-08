@@ -26,6 +26,9 @@ class RgaUtils {
     public static final String THOUSAND_GENOMES_STUDY = "1kG_phase3";
     public static final String GNOMAD_GENOMES_STUDY = "GNOMAD_GENOMES";
 
+    public static final String PASS = "PASS";
+    public static final String NOT_PASS = "NOT_PASS";
+
     public static final Set<String> ALL_PARAMS;
     public static final Map<String, Set<String>> PARAM_TYPES;
 
@@ -39,8 +42,8 @@ class RgaUtils {
         ENCODE_MAP.put(KnockoutVariant.KnockoutType.DELETION_OVERLAP.name(), "DO");
 
         // FILTER
-        ENCODE_MAP.put("PASS", "P");
-        ENCODE_MAP.put("NOT_PASS", "NP");
+        ENCODE_MAP.put(PASS, "P");
+        ENCODE_MAP.put(NOT_PASS, "NP");
 
         // CONSEQUENCE TYPE
         List<String> consequenceTypeList = Arrays.asList("start_retained_variant", "upstream_variant", "3_prime_UTR_variant",

@@ -217,13 +217,23 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
 
                     List<String> phenotypes = populatePhenotypes(knockoutByIndividual.getPhenotypes());
                     List<String> disorders = populateDisorders(knockoutByIndividual.getDisorders());
-                    List<String> phenotypeJson = new ArrayList<>(knockoutByIndividual.getPhenotypes().size());
-                    for (Phenotype phenotype : knockoutByIndividual.getPhenotypes()) {
-                        phenotypeJson.add(JacksonUtils.getDefaultObjectMapper().writeValueAsString(phenotype));
+                    List<String> phenotypeJson;
+                    if (knockoutByIndividual.getPhenotypes() != null) {
+                        phenotypeJson = new ArrayList<>(knockoutByIndividual.getPhenotypes().size());
+                        for (Phenotype phenotype : knockoutByIndividual.getPhenotypes()) {
+                            phenotypeJson.add(JacksonUtils.getDefaultObjectMapper().writeValueAsString(phenotype));
+                        }
+                    } else {
+                        phenotypeJson = Collections.emptyList();
                     }
-                    List<String> disorderJson = new ArrayList<>(knockoutByIndividual.getDisorders().size());
-                    for (Disorder disorder : knockoutByIndividual.getDisorders()) {
-                        disorderJson.add(JacksonUtils.getDefaultObjectMapper().writeValueAsString(disorder));
+                    List<String> disorderJson;
+                    if (knockoutByIndividual.getDisorders() != null) {
+                        disorderJson = new ArrayList<>(knockoutByIndividual.getDisorders().size());
+                        for (Disorder disorder : knockoutByIndividual.getDisorders()) {
+                            disorderJson.add(JacksonUtils.getDefaultObjectMapper().writeValueAsString(disorder));
+                        }
+                    } else {
+                        disorderJson = Collections.emptyList();
                     }
 
                     List<String> variantIds = transcript.getVariants().stream().map(KnockoutVariant::getId)
@@ -322,7 +332,11 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
             }
             // F - Filters
             if (StringUtils.isNotEmpty(variant.getFilter())) {
-                independentTerms.add(Collections.singletonList(RgaUtils.encode(variant.getFilter())));
+                if (variant.getFilter().equalsIgnoreCase(RgaUtils.PASS)) {
+                    independentTerms.add(Collections.singletonList(RgaUtils.encode(RgaUtils.PASS)));
+                } else {
+                    independentTerms.add(Collections.singletonList(RgaUtils.encode(RgaUtils.NOT_PASS)));
+                }
             }
             // CT - Consequence types
             if (variant.getSequenceOntologyTerms() != null) {
