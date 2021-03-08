@@ -266,10 +266,13 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                         numParents++;
                     }
 
-                    RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(),
-                            knockoutByIndividual.getSex().name(), phenotypes, disorders, knockoutByIndividual.getFatherId(),
-                            knockoutByIndividual.getMotherId(), numParents, gene.getId(), gene.getName(), "", "",
-                            "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes,
+                    String sex = knockoutByIndividual.getSex() != null
+                            ? knockoutByIndividual.getSex().name()
+                            : IndividualProperty.Sex.UNKNOWN.name();
+
+                    RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(), sex, phenotypes, disorders,
+                            knockoutByIndividual.getFatherId(), knockoutByIndividual.getMotherId(), numParents, gene.getId(),
+                            gene.getName(), "", "", "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes,
                             filters, consequenceTypes, popFreqs, compoundFilters, phenotypeJson, disorderJson, variantJson);
                     result.add(model);
                 }
