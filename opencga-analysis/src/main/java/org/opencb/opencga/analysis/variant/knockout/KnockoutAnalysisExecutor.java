@@ -52,6 +52,7 @@ public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
     private String sampleFileNamePattern;
     private String geneFileNamePattern;
     private String biotype;
+    private boolean skipGenesFile;
 
     public String getStudy() {
         return study;
@@ -150,6 +151,15 @@ public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
     public KnockoutAnalysisExecutor setDisorder(String disorder) {
         this.disorder = disorder;
         return this;
+    }
+
+    public KnockoutAnalysisExecutor setSkipGenesFile(boolean skipGenesFile) {
+        this.skipGenesFile = skipGenesFile;
+        return this;
+    }
+
+    public boolean getSkipGenesFile() {
+        return skipGenesFile;
     }
 
     public String getSampleFileNamePattern() {

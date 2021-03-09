@@ -1166,6 +1166,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR)
         public String qual;
+
+        @Parameter(names = {"--skip-genes-file"}, description = "Do not generate the results file by gene")
+        public boolean skipGenesFile;
     }
 
     @Parameters(commandNames = SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND, commandDescription = SampleEligibilityAnalysis.DESCRIPTION)

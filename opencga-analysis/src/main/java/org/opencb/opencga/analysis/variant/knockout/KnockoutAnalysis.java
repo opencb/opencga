@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -59,8 +60,8 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
     protected static final String KNOCKOUT_INDIVIDUALS_JSON = "knockout.individuals.json.gz";
     protected static final String KNOCKOUT_GENES_JSON = "knockout.genes.json.gz";
 
-    private final KnockoutAnalysisParams analysisParams = new KnockoutAnalysisParams();
-    private String studyFqn;
+    @ToolParams
+    protected final KnockoutAnalysisParams analysisParams = new KnockoutAnalysisParams();
 
     @Override
     protected List<String> getSteps() {
@@ -73,13 +74,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected void check() throws Exception {
-        analysisParams.updateParams(params);
-        studyFqn = getStudyFqn();
+        super.check();
         executorParams.put("executionMethod", params.getString("executionMethod", "auto"));
 
         if (CollectionUtils.isEmpty(analysisParams.getSample())
                 || analysisParams.getSample().size() == 1 && analysisParams.getSample().get(0).equals(ParamConstants.ALL)) {
-            analysisParams.setSample(new ArrayList<>(getVariantStorageManager().getIndexedSamples(studyFqn, getToken())));
+            analysisParams.setSample(new ArrayList<>(getVariantStorageManager().getIndexedSamples(getStudy(), getToken())));
         }
 
         if (StringUtils.isEmpty(analysisParams.getBiotype())) {
@@ -102,7 +102,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         List<String> otherGenes = new LinkedList<>();
 
         step("list-genes", () -> {
-            CellBaseUtils cellBaseUtils = getVariantStorageManager().getCellBaseUtils(studyFqn, token);
+            CellBaseUtils cellBaseUtils = getVariantStorageManager().getCellBaseUtils(getStudy(), token);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,name,chromosome,start,end,biotype,transcripts.biotype");
 
             boolean allProteinCoding = false;
@@ -135,7 +135,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                 if (CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
                     List<Panel> panels = getCatalogManager()
                             .getPanelManager()
-                            .get(studyFqn, analysisParams.getPanel(), new QueryOptions(), getToken())
+                            .get(getStudy(), analysisParams.getPanel(), new QueryOptions(), getToken())
                             .getResults();
                     for (Panel panel : panels) {
                         for (DiseasePanel.GenePanel gene : panel.getGenes()) {
@@ -171,15 +171,20 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         step("list-families", () -> {
             Query familyQuery = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), analysisParams.getSample());
             for (Family family : getCatalogManager().getFamilyManager()
-                    .search(studyFqn, familyQuery, new QueryOptions(), getToken()).getResults()) {
+                    .search(getStudy(), familyQuery, new QueryOptions(), getToken()).getResults()) {
                 if (family == null || StringUtils.isEmpty(family.getId())) {
                     continue;
                 }
-                List<List<String>> trios = variantStorageManager.getTriosFromFamily(studyFqn, family, true, getToken());
+                List<List<String>> trios = variantStorageManager.getTriosFromFamily(getStudy(), family, true, getToken());
                 for (List<String> trio : trios) {
                     String child = trio.get(2);
                     if (analysisParams.getSample().contains(child)) {
-                        triosMap.put(child, new Trio(family.getId(), trio.get(0), trio.get(1), child));
+                        String father = trio.get(0);
+                        String mother = trio.get(1);
+                        triosMap.put(child, new Trio(family.getId(),
+                                "-".equals(father) ? null : father,
+                                "-".equals(mother) ? null : mother,
+                                child));
                     }
                 }
             }
@@ -202,11 +207,11 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         });
 
         step(() -> {
-            setUpStorageEngineExecutor(studyFqn);
+            setUpStorageEngineExecutor(getStudy());
 //            MappingIterator<String> objectMappingIterator = JacksonUtils.getDefaultObjectMapper().reader().readValues(genesFile);
 //            List<String> genes = objectMappingIterator.readAll(new ArrayList<>());
             getToolExecutor(KnockoutAnalysisExecutor.class)
-                    .setStudy(studyFqn)
+                    .setStudy(getStudy())
                     .setSamples(analysisParams.getSample())
                     .setSampleFileNamePattern(getScratchDir().resolve("knockout.sample.{sample}.json.gz").toString())
                     .setGeneFileNamePattern(getScratchDir().resolve("knockout.gene.{gene}.json.gz").toString())
@@ -217,6 +222,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     .setQual(analysisParams.getQual())
                     .setCt(analysisParams.getConsequenceType())
                     .setTrios(triosMap)
+                    .setSkipGenesFile(analysisParams.isSkipGenesFile())
                     .execute();
         });
 
@@ -230,12 +236,14 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     .writer(new MinimalPrettyPrinter("\n"))
                     .forType(KnockoutByIndividual.class)
                     .writeValues(bufferedWriter)) {
+                int samples = 0;
+                int samplesWithoutIndividual = 0;
                 for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.sample..*.json.gz"), null)) {
                     KnockoutByIndividual knockoutByIndividual = reader.readValue(org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath()));
-
+                    samples++;
                     Individual individual = catalogManager
                             .getIndividualManager()
-                            .search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
+                            .search(getStudy(), new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
                                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                             IndividualDBAdaptor.QueryParams.ID.key(),
                                             IndividualDBAdaptor.QueryParams.SEX.key(),
@@ -246,7 +254,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                                     )),
                                     getToken())
                             .first();
-                    if (individual != null) {
+                    if (individual == null) {
+                        samplesWithoutIndividual++;
+                        logger.warn("Individual not found for sample '{}'", knockoutByIndividual.getSampleId());
+                        // Empty value for missing VariantFileIndexerOperationManagerindividuals
+                        sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), "");
+                    } else {
                         sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), individual.getId());
                         knockoutByIndividual.setId(individual.getId());
                         if (individual.getFather() != null) {
@@ -258,61 +271,67 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                         knockoutByIndividual.setSex(individual.getSex());
                         knockoutByIndividual.setDisorders(individual.getDisorders());
                         knockoutByIndividual.setPhenotypes(individual.getPhenotypes());
-                    } else {
-                        // Empty value for missing individuals
-                        sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), "");
                     }
                     writer.write(knockoutByIndividual);
                 }
+                addAttribute("samples", samples);
+                // get unique individuals
+                Set<String> individuals = new HashSet<>(sampleIdToIndividualIdMap.values());
+                individuals.remove("");
+                addAttribute("individuals", individuals.size());
+                addAttribute("samplesWithoutIndividual", samplesWithoutIndividual);
             }
 
-            reader = JacksonUtils.getDefaultObjectMapper().readerFor(KnockoutByGene.class);
-
-            try (BufferedWriter bufferedWriter = org.opencb.commons.utils.FileUtils.newBufferedWriter(getGenesOutputFile());
-                 SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
+            if (analysisParams.isSkipGenesFile()) {
+                logger.info("Skip genes file generation");
+            } else {
+                reader = JacksonUtils.getDefaultObjectMapper().readerFor(KnockoutByGene.class);
+                try (BufferedWriter bufferedWriter = org.opencb.commons.utils.FileUtils.newBufferedWriter(getGenesOutputFile());
+                     SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
 //                    .writerWithDefaultPrettyPrinter()
-                    .writer(new MinimalPrettyPrinter("\n"))
-                    .forType(KnockoutByGene.class)
-                    .writeValues(bufferedWriter)) {
-                CellBaseUtils cellBaseUtils = getVariantStorageManager().getCellBaseUtils(studyFqn, getToken());
-                for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.gene..*.json.gz"), null)) {
-                    KnockoutByGene knockoutByGene = reader.readValue(org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath()));
-                    QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "transcripts,annotation.expression");
-                    Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
-                            .search(new Query("name", knockoutByGene.getName()), queryOptions).firstResult();
-                    knockoutByGene.setId(gene.getId());
-                    knockoutByGene.setName(gene.getName());
-                    knockoutByGene.setChromosome(gene.getChromosome());
-                    knockoutByGene.setStart(gene.getStart());
-                    knockoutByGene.setEnd(gene.getEnd());
-                    knockoutByGene.setStrand(gene.getStrand());
-                    knockoutByGene.setBiotype(gene.getBiotype());
-                    knockoutByGene.setAnnotation(gene.getAnnotation());
-                    for (KnockoutByGene.KnockoutIndividual individual : knockoutByGene.getIndividuals()) {
-                        if (individual.getId() == null) {
-                            String individualId = sampleIdToIndividualIdMap.get(individual.getSampleId());
-                            if (individualId == null) {
-                                Individual individualObj = catalogManager
-                                        .getIndividualManager()
-                                        .search(studyFqn,
-                                                new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSampleId()),
-                                                new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
-                                                getToken())
-                                        .first();
-                                if (individualObj == null) {
-                                    // Empty value for missing individuals
-                                    individualId = "";
-                                } else {
-                                    individualId = individualObj.getId();
+                             .writer(new MinimalPrettyPrinter("\n"))
+                             .forType(KnockoutByGene.class)
+                             .writeValues(bufferedWriter)) {
+                    CellBaseUtils cellBaseUtils = getVariantStorageManager().getCellBaseUtils(getStudy(), getToken());
+                    for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.gene..*.json.gz"), null)) {
+                        KnockoutByGene knockoutByGene = reader.readValue(org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath()));
+                        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "transcripts,annotation.expression");
+                        Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
+                                .search(new Query("name", knockoutByGene.getName()), queryOptions).firstResult();
+                        knockoutByGene.setId(gene.getId());
+                        knockoutByGene.setName(gene.getName());
+                        knockoutByGene.setChromosome(gene.getChromosome());
+                        knockoutByGene.setStart(gene.getStart());
+                        knockoutByGene.setEnd(gene.getEnd());
+                        knockoutByGene.setStrand(gene.getStrand());
+                        knockoutByGene.setBiotype(gene.getBiotype());
+                        knockoutByGene.setAnnotation(gene.getAnnotation());
+                        for (KnockoutByGene.KnockoutIndividual individual : knockoutByGene.getIndividuals()) {
+                            if (individual.getId() == null) {
+                                String individualId = sampleIdToIndividualIdMap.get(individual.getSampleId());
+                                if (individualId == null) {
+                                    Individual individualObj = catalogManager
+                                            .getIndividualManager()
+                                            .search(getStudy(),
+                                                    new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSampleId()),
+                                                    new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()),
+                                                    getToken())
+                                            .first();
+                                    if (individualObj == null) {
+                                        // Empty value for missing individuals
+                                        individualId = "";
+                                    } else {
+                                        individualId = individualObj.getId();
+                                    }
+                                    sampleIdToIndividualIdMap.put(individual.getSampleId(), individualId);
                                 }
-                                sampleIdToIndividualIdMap.put(individual.getSampleId(), individualId);
-                            }
-                            if (!individualId.isEmpty()) {
-                                individual.setId(individualId);
+                                if (!individualId.isEmpty()) {
+                                    individual.setId(individualId);
+                                }
                             }
                         }
+                        writer.write(knockoutByGene);
                     }
-                    writer.write(knockoutByGene);
                 }
             }
         });

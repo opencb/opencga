@@ -314,6 +314,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.knockoutCommandOptions.consequenceType,
                         variantCommandOptions.knockoutCommandOptions.filter,
                         variantCommandOptions.knockoutCommandOptions.qual,
+                        variantCommandOptions.knockoutCommandOptions.skipGenesFile,
                         variantCommandOptions.knockoutCommandOptions.outdir),
                 getParams(variantCommandOptions.knockoutCommandOptions.study)
         );

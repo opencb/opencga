@@ -16,20 +16,26 @@
 
 package org.opencb.opencga.core.models.analysis.knockout;
 
-import org.opencb.biodata.models.variant.avro.PopulationFrequency;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.*;
 
-import java.util.List;
+import java.util.*;
 
 public class KnockoutVariant {
 
     private String id;
+    private VariantType type;
     private String genotype;
+    private Integer depth;
     private String filter;
     private String qual;
     private KnockoutType knockoutType;
     private List<PopulationFrequency> populationFrequencies;
     private List<SequenceOntologyTerm> sequenceOntologyTerms;
+    private List<ClinicalSignificance> clinicalSignificance;
 
     public enum KnockoutType {
         HOM_ALT,
@@ -41,15 +47,33 @@ public class KnockoutVariant {
     public KnockoutVariant() {
     }
 
-    public KnockoutVariant(String id, String genotype, String filter, String qual, KnockoutType knockoutType,
-                           List<SequenceOntologyTerm> sequenceOntologyTerms, List<PopulationFrequency> populationFrequencies) {
+    public KnockoutVariant(Variant variant, StudyEntry study, FileEntry file, SampleEntry sample, VariantAnnotation annotation,
+                           ConsequenceType ct, KnockoutType knockoutType) {
+        this.id = variant.toString();
+        this.type = variant.getType();
+        this.genotype = sample.getData().get(0);
+        this.depth = getDepth(study, file, sample);
+        this.filter = file.getData().get(StudyEntry.FILTER);
+        this.qual = file.getData().get(StudyEntry.QUAL);
+        this.knockoutType = knockoutType;
+        this.sequenceOntologyTerms = ct == null ? null : ct.getSequenceOntologyTerms();
+        this.populationFrequencies = annotation.getPopulationFrequencies();
+        this.clinicalSignificance = getClinicalSignificance(annotation);
+    }
+
+    public KnockoutVariant(String id, VariantType type, String genotype, Integer depth, String filter, String qual,
+                           KnockoutType knockoutType, List<SequenceOntologyTerm> sequenceOntologyTerms,
+                           List<PopulationFrequency> populationFrequencies, List<ClinicalSignificance> clinicalSignificance) {
         this.id = id;
+        this.type = type;
         this.genotype = genotype;
+        this.depth = depth;
         this.filter = filter;
         this.qual = qual;
         this.knockoutType = knockoutType;
-        this.populationFrequencies = populationFrequencies;
         this.sequenceOntologyTerms = sequenceOntologyTerms;
+        this.populationFrequencies = populationFrequencies;
+        this.clinicalSignificance = clinicalSignificance;
     }
 
     @Override
@@ -75,12 +99,30 @@ public class KnockoutVariant {
         return this;
     }
 
+    public VariantType getType() {
+        return type;
+    }
+
+    public KnockoutVariant setType(VariantType type) {
+        this.type = type;
+        return this;
+    }
+
     public String getGenotype() {
         return genotype;
     }
 
     public KnockoutVariant setGenotype(String genotype) {
         this.genotype = genotype;
+        return this;
+    }
+
+    public Integer getDepth() {
+        return depth;
+    }
+
+    public KnockoutVariant setDepth(Integer depth) {
+        this.depth = depth;
         return this;
     }
 
@@ -127,5 +169,40 @@ public class KnockoutVariant {
     public KnockoutVariant setPopulationFrequencies(List<PopulationFrequency> populationFrequencies) {
         this.populationFrequencies = populationFrequencies;
         return this;
+    }
+
+    public List<ClinicalSignificance> getClinicalSignificance() {
+        return clinicalSignificance;
+    }
+
+    public KnockoutVariant setClinicalSignificance(List<ClinicalSignificance> clinicalSignificance) {
+        this.clinicalSignificance = clinicalSignificance;
+        return this;
+    }
+
+
+    public static Integer getDepth(StudyEntry study, FileEntry file, SampleEntry sample) {
+        Integer dpId = study.getSampleDataKeyPosition(VCFConstants.DEPTH_KEY);
+        if (dpId != null) {
+            String dpStr = sample.getData().get(dpId);
+            if (StringUtils.isNumeric(dpStr)) {
+                return Integer.valueOf(dpStr);
+            }
+        }
+        return null;
+    }
+
+    public static List<ClinicalSignificance> getClinicalSignificance(VariantAnnotation annotation) {
+        if (annotation.getTraitAssociation() != null) {
+            Set<ClinicalSignificance> uniqueValues = new HashSet<>();
+            for (EvidenceEntry evidenceEntry : annotation.getTraitAssociation()) {
+                if (evidenceEntry.getVariantClassification() != null
+                        && evidenceEntry.getVariantClassification().getClinicalSignificance() != null) {
+                    uniqueValues.add(evidenceEntry.getVariantClassification().getClinicalSignificance());
+                }
+            }
+            return new ArrayList<>(uniqueValues);
+        }
+        return Collections.emptyList();
     }
 }

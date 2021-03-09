@@ -36,6 +36,11 @@ public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
         return this;
     }
 
+    /**
+     * Get the study Fully Qualified Name.
+     * The study is validated during {@link #check()}
+     * @return study FQN
+     */
     public String getStudy() {
         return study;
     }
