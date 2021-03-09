@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.opencb.opencga.core.models.AclParams;
 
 import java.util.Objects;
@@ -24,15 +25,17 @@ import java.util.Objects;
 public class SampleAclParams extends AclParams {
 
     private String individual;
+    private String family;
     private String file;
     private String cohort;
 
     public SampleAclParams() {
     }
 
-    public SampleAclParams(String individual, String file, String cohort, String permissions) {
+    public SampleAclParams(String individual, String family, String file, String cohort, String permissions) {
         super(permissions);
         this.individual = individual;
+        this.family = family;
         this.file = file;
         this.cohort = cohort;
     }
@@ -40,26 +43,29 @@ public class SampleAclParams extends AclParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleAclParams{");
-        sb.append("permissions='").append(permissions).append('\'');
-        sb.append(", individual='").append(individual).append('\'');
+        sb.append("individual='").append(individual).append('\'');
+        sb.append(", family='").append(family).append('\'');
         sb.append(", file='").append(file).append('\'');
         sb.append(", cohort='").append(cohort).append('\'');
+        sb.append(", permissions='").append(permissions).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof SampleAclParams)) {
-            return false;
-        }
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
         SampleAclParams that = (SampleAclParams) o;
-        return Objects.equals(individual, that.individual)
-                && Objects.equals(file, that.file)
-                && Objects.equals(cohort, that.cohort);
+
+        return new EqualsBuilder()
+                .append(individual, that.individual)
+                .append(family, that.family)
+                .append(file, that.file)
+                .append(cohort, that.cohort)
+                .isEquals();
     }
 
     @Override
@@ -73,6 +79,15 @@ public class SampleAclParams extends AclParams {
 
     public SampleAclParams setIndividual(String individual) {
         this.individual = individual;
+        return this;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public SampleAclParams setFamily(String family) {
+        this.family = family;
         return this;
     }
 

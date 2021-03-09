@@ -1210,7 +1210,8 @@ public class VariantWebService extends AnalysisWebService {
                 SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
                         Collections.singletonList(params.getSample()),
                         null,
-                        params.getOutdir(), true, false, params.getVariantStatsId(), params.getVariantStatsDescription(), params.getVariantStatsQuery()
+                        params.getOutdir(), true, false, params.getVariantStatsId(), params.getVariantStatsDescription(), null,
+                        params.getVariantStatsQuery()
                 );
 
                 DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,

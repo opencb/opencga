@@ -527,7 +527,7 @@ public class PanelManager extends ResourceManager<Panel> {
         }
 
         // Check update permissions
-        authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.UPDATE);
+        authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.WRITE);
 
         if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkAlias(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),

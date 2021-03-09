@@ -32,9 +32,9 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
  */
 public abstract class AbstractSampleIndexEntryFilter<T> {
 
-    private SingleSampleIndexQuery query;
-    private Region regionFilter;
-    private Logger logger = LoggerFactory.getLogger(AbstractSampleIndexEntryFilter.class);
+    private final SingleSampleIndexQuery query;
+    private final List<Region> regionsFilter;
+    private final Logger logger = LoggerFactory.getLogger(AbstractSampleIndexEntryFilter.class);
 
     private final List<Integer> annotationIndexPositions;
 
@@ -60,9 +60,9 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         this(query, null);
     }
 
-    public AbstractSampleIndexEntryFilter(SingleSampleIndexQuery query, Region regionFilter) {
+    public AbstractSampleIndexEntryFilter(SingleSampleIndexQuery query, List<Region> regionsFilter) {
         this.query = query;
-        this.regionFilter = regionFilter;
+        this.regionsFilter = regionsFilter == null || regionsFilter.isEmpty() ? null : regionsFilter;
 
         int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndex()});
 
@@ -128,7 +128,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         int numVariants = 0;
         // Use countIterator only if don't need to filter by region or by type
         boolean countIterator = count
-                && regionFilter == null
+                && regionsFilter == null
                 && CollectionUtils.isEmpty(query.getVariantTypes())
                 && !query.isMultiFileSample();
         for (SampleIndexGtEntry gtEntry : gts.values()) {
@@ -248,22 +248,62 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     }
 
     private boolean filterFile(SampleIndexEntryIterator variants) {
-        if (query.getFileIndexMask() == EMPTY_MASK || !variants.hasFileIndex()) {
+        if (query.emptyFileIndex() || !variants.hasFileIndex()) {
             return true;
         }
-        if (filterFile(variants.nextFileIndexEntry())) {
-            return true;
-        }
-        while (variants.isMultiFileIndex()) {
-            if (filterFile(variants.nextMultiFileIndexEntry())) {
+        if (query.getSampleFileIndexQuery().getOperation() == null || query.getSampleFileIndexQuery().getOperation() == OR) {
+            if (filterFileAnyMatch(variants.nextFileIndexEntry())) {
                 return true;
+            }
+            while (variants.isMultiFileIndex()) {
+                if (filterFileAnyMatch(variants.nextMultiFileIndexEntry())) {
+                    return true;
+                }
+            }
+        } else {
+            boolean[] passedFilters = new boolean[query.getSampleFileIndexQuery().size()];
+            if (filterFileAllMatch(passedFilters, variants.nextFileIndexEntry())) {
+                return true;
+            }
+            while (variants.isMultiFileIndex()) {
+                if (filterFileAllMatch(passedFilters, variants.nextMultiFileIndexEntry())) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
-    private boolean filterFile(short fileIndex) {
-        SampleFileIndexQuery fileQuery = query.getSampleFileIndexQuery();
+    private boolean filterFileAllMatch(boolean[] passedFilters, short fileIndexEntry) {
+        int numPass = 0;
+        for (int i = 0; i < query.getSampleFileIndexQuery().size(); i++) {
+            if (!passedFilters[i]) {
+                SampleFileIndexQuery fileIndexQuery = query.getSampleFileIndexQuery().get(i);
+                passedFilters[i] = filterFile(fileIndexEntry, fileIndexQuery);
+                if (passedFilters[i]) {
+                    numPass++;
+                }
+            } else {
+                numPass++;
+            }
+        }
+        return numPass == passedFilters.length;
+    }
+
+    private boolean filterFileAnyMatch(short fileIndex) {
+        // Return true if any file filter matches
+        // return query.getSampleFileIndexQuery().stream().anyMatch(sampleFileIndexQuery -> filterFile(fileIndex, sampleFileIndexQuery));
+        for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
+            if (filterFile(fileIndex, sampleFileIndexQuery)) {
+                // Any match
+                return true;
+            }
+        }
+        // No match
+        return false;
+    }
+
+    private boolean filterFile(short fileIndex, SampleFileIndexQuery fileQuery) {
         int v = fileIndex & fileQuery.getFileIndexMask();
 
         return (!fileQuery.hasFileIndexMask1() || fileQuery.getValidFileIndex1()[getByte1(v)])
@@ -397,7 +437,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     private T filter(T v) {
         Variant variant = toVariant(v);
         //Test region filter (if any)
-        if (regionFilter == null || regionFilter.contains(variant.getChromosome(), variant.getStart())) {
+        if (filterRegion(variant)) {
 
             // Test type filter (if any)
             if (CollectionUtils.isEmpty(query.getVariantTypes()) || query.getVariantTypes().contains(variant.getType())) {
@@ -405,6 +445,19 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             }
         }
         return null;
+    }
+
+    private boolean filterRegion(Variant variant) {
+        if (regionsFilter == null) {
+            // No region filter defined. Skip filter.
+            return true;
+        }
+        for (Region region : regionsFilter) {
+            if (region.contains(variant.getChromosome(), variant.getStart())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

@@ -74,6 +74,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
         DISORDERS("disorders", TEXT_ARRAY, ""),
         DISORDERS_ID("disorders.id", TEXT, ""),
+        DISORDERS_NAME("disorders.name", TEXT, ""),
 
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),

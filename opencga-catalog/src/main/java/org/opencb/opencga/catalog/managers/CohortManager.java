@@ -897,7 +897,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         if ((parameters.size() == 1 && !parameters.containsKey(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                 || parameters.size() > 1) {
             authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId,
-                    CohortAclEntry.CohortPermissions.UPDATE);
+                    CohortAclEntry.CohortPermissions.WRITE);
         }
 
         if (!allowModifyCohortAll) {
@@ -984,7 +984,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         try {
-            authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId, CohortAclEntry.CohortPermissions.UPDATE);
+            authorizationManager.checkCohortPermission(study.getUid(), cohort.getUid(), userId, CohortAclEntry.CohortPermissions.WRITE);
 
             if (status != null && !CohortStatus.isValid(status)) {
                 throw new CatalogException("The status " + status + " is not valid cohort status.");

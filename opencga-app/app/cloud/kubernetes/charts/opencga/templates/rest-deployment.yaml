@@ -9,12 +9,12 @@ spec:
   selector:
     matchLabels:
       app: {{  .Values.rest.name  }}
-      { { - include "opencga.selectorLabels" . | nindent 6 } }
+      {{- include "opencga.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{  .Values.rest.name  }}
-        { { - include "opencga.selectorLabels" . | nindent 8 } }
+        app: {{ .Values.rest.name  }}
+        {{- include "opencga.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.rest.imagePullSecrets }}
       imagePullSecrets:
@@ -27,7 +27,7 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.rest.securityContext | nindent 12 }}
-          image: "{{ .Values.rest.image.repository }}"
+          image: {{ tpl .Values.rest.image.repository . | quote }}
           imagePullPolicy: {{ .Values.rest.image.pullPolicy }}
           command: ["/bin/sh", "-c"]
           args:
@@ -81,7 +81,7 @@ spec:
             dockerd-entrypoint.sh &
             sleep 5
             umount /tmp
-            docker pull opencb/opencga-r:2.0.0
+            docker pull opencb/opencga-r:{{- .Chart.AppVersion }}
             sleep infinity
           env:
               - name: DOCKER_TLS_CERTDIR

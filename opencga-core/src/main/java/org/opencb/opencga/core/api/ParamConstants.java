@@ -145,9 +145,9 @@ public class ParamConstants {
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
     public static final String SAMPLE_INDIVIDUAL_ID_PARAM = "individualId";
-    public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
+    public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID or UUID";
     public static final String SAMPLE_FILE_IDS_PARAM = "fileIds";
-    public static final String SAMPLE_FILE_IDS_DESCRIPTION = "Comma separated list of file IDs";
+    public static final String SAMPLE_FILE_IDS_DESCRIPTION = "Comma separated list of file IDs, paths or UUIDs";
 
     public static final String SAMPLE_ID_PARAM = "id";
     public static final String SAMPLE_PARAM = "sample";

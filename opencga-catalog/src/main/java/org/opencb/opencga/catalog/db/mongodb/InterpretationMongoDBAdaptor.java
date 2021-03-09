@@ -45,6 +45,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationStatus;
@@ -69,8 +70,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     private InterpretationConverter interpretationConverter;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection deletedInterpretationCollection,
-                                        MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
+                                        Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
+        super(configuration, LoggerFactory.getLogger(InterpretationMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.clinicalDBAdaptor = dbAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationCollection = interpretationCollection;

@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -18,9 +19,12 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.*;
+
+import static org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams.What.*;
 
 @Tool(id = VariantStorageMetadataRepairTool.ID, description = VariantStorageMetadataRepairTool.DESCRIPTION,
         type = Tool.Type.OPERATION, scope = Tool.Scope.GLOBAL, resource = Enums.Resource.VARIANT)
@@ -80,10 +84,26 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
             }
         }
 
-        if (CollectionUtils.isEmpty(toolParams.getWhat())
-                || toolParams.getWhat().contains(VariantStorageMetadataRepairToolParams.What.SAMPLE_FILE_ID)) {
+        if (doWhat(SAMPLE_FILE_ID)) {
             rebuildSampleFileIds(metadataManager, study, studyId);
         }
+        if (doWhat(REPAIR_COHORT_ALL)) {
+            // Check and repair
+            if (!checkCohortAll(metadataManager, studyId)) {
+                rebuildCohortAll(metadataManager, studyId);
+            } else {
+                logger.info("Cohort " + StudyEntry.DEFAULT_COHORT + " OK. Nothing to repair.");
+            }
+        } else {
+            if (doWhat(CHECK_COHORT_ALL)) {
+                checkCohortAll(metadataManager, studyId);
+            }
+        }
+    }
+
+    private boolean doWhat(VariantStorageMetadataRepairToolParams.What what) {
+        return CollectionUtils.isEmpty(toolParams.getWhat())
+                || toolParams.getWhat().contains(what);
     }
 
     private void rebuildSampleFileIds(VariantStorageMetadataManager metadataManager, String study, Integer studyId)
@@ -133,6 +153,50 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
         }
         addAttribute(study + ".numSamples", samples.size());
         addAttribute(study + ".sampleFileIdRepairs", fixedSamples);
+    }
+
+    private boolean checkCohortAll(VariantStorageMetadataManager metadataManager, int studyId) {
+        Set<Integer> expectedSamples = new HashSet<>(metadataManager.getIndexedSamples(studyId));
+        Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
+        if (cohortId == null) {
+            if (expectedSamples.isEmpty()) {
+                return true;
+            } else {
+                logger.warn("Missing cohort " + StudyEntry.DEFAULT_COHORT + ". Need to repair");
+                return false;
+            }
+        }
+        CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(studyId, cohortId);
+        if (cohortMetadata.getSamples().size() == expectedSamples.size() && expectedSamples.containsAll(cohortMetadata.getSamples())) {
+            return true;
+        } else {
+            logger.warn("Samples mismatch in cohort " + StudyEntry.DEFAULT_COHORT + ". Need to repair");
+            List<String> extraSample = new LinkedList<>();
+            List<String> missingSample = new LinkedList<>();
+            for (Integer sample : cohortMetadata.getSamples()) {
+                if (!expectedSamples.contains(sample)) {
+                    extraSample.add(metadataManager.getSampleName(studyId, sample));
+                }
+            }
+            for (Integer sample : expectedSamples) {
+                if (!cohortMetadata.getSamples().contains(sample)) {
+                    missingSample.add(metadataManager.getSampleName(studyId, sample));
+                }
+            }
+            if (!extraSample.isEmpty()) {
+                logger.warn("Found {} extra samples : {}", extraSample.size(), extraSample);
+            }
+            if (!missingSample.isEmpty()) {
+                logger.warn("Found {} missing samples : {}", missingSample.size(), missingSample);
+            }
+            return false;
+        }
+    }
+
+    private void rebuildCohortAll(VariantStorageMetadataManager metadataManager, int studyId) throws StorageEngineException {
+        logger.info("Rebuild cohort ALL");
+        List<Integer> samples = metadataManager.getIndexedSamples(studyId);
+        metadataManager.setSamplesToCohort(studyId, StudyEntry.DEFAULT_COHORT, samples);
     }
 
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {

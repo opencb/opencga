@@ -141,6 +141,10 @@ public final class VariantQueryUtils {
     public static final String OP_GT = ">";
     public static final String OP_LT = "<";
 
+    public static final Comparator<Region> REGION_COMPARATOR = Comparator.comparing(Region::getChromosome)
+            .thenComparing(Region::getStart)
+            .thenComparing(Region::getEnd);
+
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
 
     public enum QueryOperation {
@@ -713,15 +717,46 @@ public final class VariantQueryUtils {
      *
      * @param query Query to parse
      * @return a pair with the internal QueryOperation (AND/OR) and a map between Samples and FORMAT filters.
+     * @deprecated use {@link #parseSampleData(Query)}
      */
-    public static Pair<QueryOperation, Map<String, String>> parseSampleData(Query query) {
+    @Deprecated
+    public static Pair<QueryOperation, Map<String, String>> parseSampleDataOLD(Query query) {
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = parseSampleData(query);
+        HashMap<String, String> map = new HashMap<>();
+        for (KeyValues<String, KeyOpValue<String, String>> sampleFilter : parsedQuery) {
+            map.put(sampleFilter.getKey(), sampleFilter.toValues().toQuery());
+        }
+        return Pair.of(parsedQuery.getOperation(), map);
+    }
+
+    /**
+     * Parse FORMAT param.
+     *
+     * @param query Query to parse
+     * @return a pair with the internal QueryOperation (AND/OR) and a map between Samples and FORMAT filters.
+     */
+    public static ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parseSampleData(Query query) {
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery;
         if (!isValidParam(query, SAMPLE_DATA)) {
-            return Pair.of(null, Collections.emptyMap());
+            return new ParsedQuery<>(SAMPLE_DATA, null, Collections.emptyList());
         }
         String value = query.getString(SAMPLE_DATA.key());
         if (value.contains(IS)) {
-            return parseMultiKeyValueFilterOLD(SAMPLE_DATA, value);
+            // SampleData with sample ID
+            // ( SAMPLE : ( KEY OP VALUE ) * ) *
+            Values<KeyOpValue<String, String>> partialParse = parseMultiKeyValueFilter(SAMPLE_DATA, value);
+            parsedQuery = new ParsedQuery<>(SAMPLE_DATA, partialParse.getOperation(), new ArrayList<>(partialParse.size()));
+            for (KeyOpValue<String, String> keyOpValue : partialParse) {
+                String sample = keyOpValue.getKey();
+                Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilterComparators(SAMPLE_DATA, keyOpValue.getValue());
+                parsedQuery.getValues().add(
+                        new KeyValues<>(sample, new Values<>(values.getOperation(), values.getValues()))
+                );
+            }
+            return parsedQuery;
         } else {
+            // SampleData without sample ID. Get sample ids from SAMPLE
+            // ( KEY OP VALUE ) *
             QueryOperation operator = checkOperator(value);
             QueryOperation samplesOperator;
 
@@ -761,23 +796,15 @@ public final class VariantQueryUtils {
                         "Missing \"" + SAMPLE.key() + "\" or \"" + GENOTYPE.key() + "\" param.");
             }
 
-            Map<String, String> map = new LinkedHashMap<>(samples.size());
+            parsedQuery = new ParsedQuery<>(SAMPLE_DATA, operator, new ArrayList<>(samples.size()));
             for (String sample : samples) {
-                map.put(sample, value);
+                Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilterComparators(SAMPLE_DATA, value);
+                parsedQuery.getValues().add(
+                        new KeyValues<>(sample, new Values<>(values.getOperation(), values.getValues()))
+                );
             }
-
-            return Pair.of(operator, map);
+            return parsedQuery;
         }
-    }
-
-    @Deprecated
-    private static Pair<QueryOperation, Map<String, String>> parseMultiKeyValueFilterOLD(VariantQueryParam param, String stringValue) {
-        Values<KeyOpValue<String, String>> values = parseMultiKeyValueFilter(param, stringValue, IS);
-        Map<String, String> map = new LinkedHashMap<>();
-        for (KeyOpValue<String, String> value : values.getValues()) {
-            map.put(value.getKey(), value.getValue());
-        }
-        return Pair.of(values.getOperation(), map);
     }
 
 //    private static KeyValues<String, String> parseMultiKeyValueFilter(VariantQueryParam param, String stringValue) {
@@ -955,7 +982,7 @@ public final class VariantQueryUtils {
     }
 
     public static Query extractGenotypeFromFormatFilter(Query query) {
-        Pair<QueryOperation, Map<String, String>> formatPair = parseSampleData(query);
+        Pair<QueryOperation, Map<String, String>> formatPair = parseSampleDataOLD(query);
 
         if (formatPair.getValue().values().stream().anyMatch(v -> v.contains("GT"))) {
             if (isValidParam(query, SAMPLE) || isValidParam(query, GENOTYPE)) {
@@ -1324,13 +1351,13 @@ public final class VariantQueryUtils {
     }
 
     public static QueryOptions addDefaultLimit(QueryOptions queryOptions, ObjectMap configuration) {
-        return addDefaultLimit(QueryOptions.LIMIT, queryOptions == null ? new QueryOptions() : queryOptions,
+        return addDefaultLimit(QueryOptions.LIMIT, nonNull(queryOptions),
                 configuration.getInt(QUERY_LIMIT_MAX.key(), QUERY_LIMIT_MAX.defaultValue()),
                 configuration.getInt(QUERY_LIMIT_DEFAULT.key(), QUERY_LIMIT_DEFAULT.defaultValue()), "variants");
     }
 
     public static Query addDefaultSampleLimit(Query query, ObjectMap configuration) {
-        return addDefaultLimit(SAMPLE_LIMIT.key(), query == null ? new Query() : query,
+        return addDefaultLimit(SAMPLE_LIMIT.key(), nonNull(query),
                 configuration.getInt(QUERY_SAMPLE_LIMIT_MAX.key(), QUERY_SAMPLE_LIMIT_MAX.defaultValue()),
                 configuration.getInt(QUERY_SAMPLE_LIMIT_DEFAULT.key(), QUERY_SAMPLE_LIMIT_DEFAULT.defaultValue()),
                 "samples");
@@ -1347,6 +1374,23 @@ public final class VariantQueryUtils {
         limit = (limit >= 0) ? limit : limitDefault;
         objectMap.put(limitKey,  limit);
         return objectMap;
+    }
+
+
+    public static QueryOptions copy(QueryOptions queryOptions) {
+        return queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
+    }
+
+    public static QueryOptions nonNull(QueryOptions queryOptions) {
+        return queryOptions == null ? new QueryOptions() : queryOptions;
+    }
+
+    public static Query copy(Query query) {
+        return query == null ? new Query() : new Query(query);
+    }
+
+    public static Query nonNull(Query query) {
+        return query == null ? new Query() : query;
     }
 
 }

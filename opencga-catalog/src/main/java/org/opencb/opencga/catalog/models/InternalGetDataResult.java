@@ -104,6 +104,15 @@ public class InternalGetDataResult<T> extends OpenCGAResult<T> {
             this.errorMsg = errorMsg;
         }
 
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Missing{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", errorMsg='").append(errorMsg).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
         public String getId() {
             return id;
         }

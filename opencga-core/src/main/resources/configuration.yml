@@ -80,6 +80,9 @@ server:
     port: ${OPENCGA.SERVER.GRPC.PORT}
     logFile: null
 
+optimizations:
+  simplifyPermissions: ${OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS}
+
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
   maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.
@@ -149,12 +152,13 @@ analysis:
 
      ## Kubernetes executor configuration example
      # k8s.masterUrl: "https://192.168.99.100:8443/"
-     # FOR Cluster Autoscaler and dedicated jobs agent pool:
-      k8s.imageName: "opencb/opencga-base:2.0.0-hdp3.1s"
+      k8s.clientTimeout: 30000 # ms
+      k8s.imageName: "opencb/opencga-base:${opencga.version}-hdp3.1"
       k8s.imagePullPolicy: "IfNotPresent"
 #      k8s.imagePullSecrets:
 #        name : "dockerhub-secrets-name"
       k8s.namespace: "default"
+      # FOR Cluster Autoscaler and dedicated jobs agent pool:
       k8s.requests:
         cpu: 3
         memory: "12G"

@@ -79,7 +79,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
             throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
-        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory);
+        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory, configuration);
 
         this.openRegister = configuration.isOpenRegister();
 

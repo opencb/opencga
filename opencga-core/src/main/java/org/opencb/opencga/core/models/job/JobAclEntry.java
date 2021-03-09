@@ -29,8 +29,8 @@ public class JobAclEntry extends AbstractAclEntry<JobAclEntry.JobPermissions> {
 
     public enum JobPermissions {
         VIEW(Collections.emptyList()),
-        UPDATE(Collections.singletonList(VIEW)),
-        DELETE(Arrays.asList(VIEW, UPDATE));
+        WRITE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, WRITE));
 
         private List<JobPermissions> implicitPermissions;
 

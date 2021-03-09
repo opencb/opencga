@@ -268,7 +268,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 new SampleVariantStatsAnalysisParams(
                         variantCommandOptions.sampleVariantStatsCommandOptions.sample,
                         variantCommandOptions.sampleVariantStatsCommandOptions.individual,
-                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir, variantCommandOptions.sampleVariantStatsCommandOptions.index, variantCommandOptions.sampleVariantStatsCommandOptions.indexOverwrite, variantCommandOptions.sampleVariantStatsCommandOptions.indexId, variantCommandOptions.sampleVariantStatsCommandOptions.indexDescription, variantQuery
+                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.index,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.indexOverwrite,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.indexId,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.indexDescription,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.batchSize,
+                        variantQuery
                 ),
                 getParams(variantCommandOptions.sampleVariantStatsCommandOptions.study));
     }

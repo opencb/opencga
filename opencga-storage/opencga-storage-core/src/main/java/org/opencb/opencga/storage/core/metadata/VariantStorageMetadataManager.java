@@ -23,6 +23,7 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -804,6 +805,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return sampleIds;
     }
 
+    public int getSampleIdOrFail(int studyId, Object sampleObj) {
+        Integer sampleId = getSampleId(studyId, sampleObj, false);
+        if (sampleId == null) {
+            throw VariantQueryException.sampleNotFound(sampleObj, getStudyName(studyId));
+        }
+        return sampleId;
+    }
+
     public Integer getSampleId(int studyId, Object sampleObj) {
         return getSampleId(studyId, sampleObj, false);
     }
@@ -855,13 +864,37 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     /**
      * Get a list of the samples to be returned, given a study and a list of samples to be returned.
-     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition(Map)}
+     * The result can be used as SamplesPosition in {@link StudyEntry#setSamplesPosition(Map)}
+     *
+     * @param sm                    Study metadata
+     * @return The samples IDs
+     */
+    public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm) {
+        return getSamplesPosition(sm, null);
+    }
+
+    /**
+     * Get a list of the samples to be returned, given a study and a list of samples to be returned.
+     * The result can be used as SamplesPosition in {@link StudyEntry#setSamplesPosition(Map)}
      *
      * @param sm                    Study metadata
      * @param includeSamples        List of samples to be included in the result
      * @return The samples IDs
      */
     public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples) {
+        return getSamplesPosition(sm, includeSamples, true);
+    }
+
+    /**
+     * Get a list of the samples to be returned, given a study and a list of samples to be returned.
+     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition(Map)}
+     *
+     * @param sm                    Study metadata
+     * @param includeSamples        List of samples to be included in the result
+     * @param indexedOnly           Include indexed samples only
+     * @return The samples IDs
+     */
+    public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples, boolean indexedOnly) {
         LinkedHashMap<String, Integer> samplesPosition;
         // If null, return ALL samples
         if (includeSamples == null) {
@@ -874,7 +907,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             samplesPosition = new LinkedHashMap<>(includeSamples.size());
             int index = 0;
             for (Object includeSampleObj : includeSamples) {
-                Integer sampleId = getSampleId(sm.getId(), includeSampleObj, true);
+                Integer sampleId = getSampleId(sm.getId(), includeSampleObj, indexedOnly);
                 if (sampleId == null) {
                     continue;
 //                    throw VariantQueryException.sampleNotFound(includeSampleObj, sm.getName());

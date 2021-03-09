@@ -79,8 +79,9 @@ public class VariantSearchUtils {
             )));
 
     private static final List<VariantField> UNSUPPORTED_VARIANT_FIELDS =
-            Arrays.asList(VariantField.STUDIES_FILES,
-                    VariantField.STUDIES_SAMPLES);
+            Arrays.asList(
+                    VariantField.STUDIES,
+                    VariantField.ANNOTATION);
 
     private static final Set<String> ACCEPTED_FORMAT_FILTERS = Collections.singleton("DP");
 
@@ -240,7 +241,7 @@ public class VariantSearchUtils {
             Map<String, String> formatMap = Collections.emptyMap();
             if (isValidParam(query, VariantQueryParam.SAMPLE_DATA)) {
                 validFormatFilter = true;
-                formatMap = parseSampleData(query).getValue();
+                formatMap = parseSampleDataOLD(query).getValue();
 
                 for (String formatFilters : formatMap.values()) {
                     for (String formatFilter : splitValue(formatFilters).getValue()) {

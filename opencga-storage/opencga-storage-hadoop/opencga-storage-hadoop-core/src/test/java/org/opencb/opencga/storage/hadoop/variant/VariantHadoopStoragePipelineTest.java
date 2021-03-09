@@ -184,7 +184,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
     @Test
     public void queryArchiveTable() {
         final int[] numVariants = {0};
-        Map<String, Integer> variantCounts = new HashMap<>();
+        Map<String, Long> variantCounts = new HashMap<>();
         System.out.println("Query from Archive table");
         dbAdaptor.archiveIterator(studyMetadata.getName(), fileMetadata.getId(), new Query(), new QueryOptions())
                 .forEachRemaining(variant -> {
@@ -193,7 +193,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                     variantCounts.compute(variant.getType().toString(), (s, integer) -> integer == null ? 1 : (integer + 1));
                 });
         System.out.println("End query from Archive table");
-        fileMetadata.getStats().getTypeCount().forEach((s, integer) -> assertEquals(integer, variantCounts.getOrDefault(s, 0)));
+        fileMetadata.getStats().getTypeCount().forEach((s, l) -> assertEquals(l, variantCounts.getOrDefault(s, 0L)));
         assertEquals(fileMetadata.getStats().getVariantCount().intValue(), numVariants[0]);
     }
 

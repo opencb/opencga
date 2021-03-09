@@ -5,6 +5,7 @@
 #COLOR=TRUE
 OPENCGA_LOGS_OPTS=""
 KUBECTL_LOG_OPTS=""
+KUBECTL_OPTS=""
 DEPLOYMENT=rest
 ALL_CONTAINERS=FALSE
 CONTAINER=""
@@ -15,6 +16,7 @@ printUsage() {
   echo ""
   echo "Options:"
   echo "            --context         STRING    Kubernetes context to use"
+  echo "            --namespace       STRING    Kubernetes namespace"
   echo "     -d     --deployment      STRING    Deployment name"
   echo "     -c     --container       STRING    Print logs from this container"
   echo "     -A     --all-containers            Get all containers' logs in the pod(s)"
@@ -35,7 +37,7 @@ value="$2"
 case $key in
     -h|--help)
     printUsage
-    return 0
+    exit 0
     ;;
     --verbose)
     set -x
@@ -43,7 +45,7 @@ case $key in
     shift # past argument
     ;;
     --context)
-    CONTEXT="--context ${value}"
+    KUBECTL_OPTS="${KUBECTL_OPTS} --context ${value} "
     shift # past argument
     shift # past value
     ;;
@@ -58,6 +60,11 @@ case $key in
     ;;
     -d|--deployment)
     DEPLOYMENT="${value}"
+    shift # past argument
+    shift # past value
+    ;;
+    --namespace)
+    KUBECTL_OPTS="${KUBECTL_OPTS} --namespace ${value} "
     shift # past argument
     shift # past value
     ;;
@@ -110,18 +117,18 @@ cd "$(dirname "$0")" || (echo "ERROR MOVING" && exit)
 trap "exit" INT TERM
 trap "kill 0" EXIT
 
-PODS=$(kubectl get pods --selector=app=${DEPLOYMENT} $CONTEXT -o name)
+PODS=$(kubectl get pods --selector=app=${DEPLOYMENT} ${KUBECTL_OPTS} -o name)
 if [ -z "$PODS" ]; then
   if [ "$IS_MASTER_DEPLOYMENT" = TRUE ]; then
     PODS="deployment/$DEPLOYMENT"
   else
-    echo "No pods found for deployment ${DEPLOYMENT} in context $CONTEXT"
+    echo "No pods found for deployment ${DEPLOYMENT}"
     exit 1;
   fi
 fi
 
 for pod in $PODS ; do
-    kubectl logs $CONTEXT ${KUBECTL_LOG_OPTS} "${pod}" | ./opencga-logs.sh --prefix "${pod}" ${OPENCGA_LOGS_OPTS} - &
+    kubectl logs ${KUBECTL_OPTS} ${KUBECTL_LOG_OPTS} "${pod}" | ./opencga-logs.sh --prefix "${pod}" ${OPENCGA_LOGS_OPTS} - &
 done
 
 wait

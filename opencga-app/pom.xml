@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.0.0</version>
+        <version>2.0.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -342,6 +342,21 @@
                                     <arg value="-i"/>
                                     <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
                                     <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
+                                </exec>
+
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/REPLACEME_OPENCGA_VERSION/${opencga.version}/"/>
+                                    <arg value="${build.dir}/misc/demo/main.yml"/>
+                                    <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>
+                                    <arg value="${build.dir}/cloud/kubernetes/charts/opencga/Chart.yaml"/>
+                                    <arg value="${build.dir}/cloud/azure/arm-kubernetes/solr/solr-setup.sh"/>
+                                </exec>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/REPLACEME_IVA_VERSION/${iva.version}/"/>
+                                    <arg value="${build.dir}/cloud/docker/opencga-demo/README.md"/>
+                                    <arg value="${build.dir}/cloud/kubernetes/charts/iva/Chart.yaml"/>
                                 </exec>
                             </target>
                         </configuration>

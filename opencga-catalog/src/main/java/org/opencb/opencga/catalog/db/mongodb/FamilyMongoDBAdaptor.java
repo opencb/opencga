@@ -44,6 +44,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -77,9 +78,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     private final MongoDBCollection deletedFamilyCollection;
     private FamilyConverter familyConverter;
 
-    public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBCollection deletedFamilyCollection,
+    public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBCollection deletedFamilyCollection, Configuration configuration,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(FamilyMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(FamilyMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.familyCollection = familyCollection;
         this.deletedFamilyCollection = deletedFamilyCollection;
@@ -849,6 +850,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
         qOptions = removeInnerProjections(qOptions, QueryParams.MEMBERS.key());
         qOptions = removeAnnotationProjectionOptions(qOptions);
+        fixAclProjection(qOptions);
 
         logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
@@ -971,13 +973,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
             if (containsAnnotationQuery(query)) {
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY));
+                        FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
             } else {
                 andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyAclEntry.FamilyPermissions.VIEW.name(),
-                        Enums.Resource.FAMILY));
+                        Enums.Resource.FAMILY, configuration));
             }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FAMILY, user));
+            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FAMILY, user, configuration));
 
             query.remove(ParamConstants.ACL_PARAM);
         }

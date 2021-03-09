@@ -54,7 +54,10 @@ class Test_init_script(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
-            env={**os.environ, "INIT_CLINICAL_HOSTS": "test-clinical-host"}, #Test that the auto import of environment vars is working
+            env={**os.environ,
+                 "INIT_CLINICAL_HOSTS": "test-clinical-host",
+                 "INIT_VARIANT_OPTIONS": "[ my_var_key_1=my_value_1, my.var.key_2=my.value.2,]"
+                 }, #Test that the auto import of environment vars is working
         )
         if res.returncode != 0:
             print("Error calling override_yaml.py:")
@@ -119,6 +122,31 @@ class Test_init_script(unittest.TestCase):
                 "storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"
             ],
             "test-hadoop-ssh-remote-opencga-home",
+        )
+        print("Variant options: ", storage_config["variant"]["options"])
+        # self.assertEqual(
+        #     storage_config["variant"]["options"][
+        #         "my_key"
+        #     ],
+        #     "my_value",
+        # )
+        # self.assertEqual(
+        #     storage_config["variant"]["options"][
+        #         "second_key"
+        #     ],
+        #     "my.otherValue",
+        # )
+        self.assertEqual(
+            storage_config["variant"]["options"][
+                "my_var_key_1"
+            ],
+            "my_value_1",
+        )
+        self.assertEqual(
+            storage_config["variant"]["options"][
+                "my.var.key_2"
+            ],
+            "my.value.2",
         )
         self.assertEqual(config["healthCheck"]["interval"], "30")
         self.assertEqual(

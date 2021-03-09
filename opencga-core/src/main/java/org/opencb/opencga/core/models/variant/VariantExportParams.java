@@ -27,8 +27,8 @@ public class VariantExportParams extends VariantQueryParams {
     private String variantsFile;
     private String include;
     private String exclude;
-    private int limit;
-    private int skip;
+    private Integer limit;
+    private Integer skip;
     private boolean summary;
 
     public VariantExportParams() {
@@ -106,20 +106,20 @@ public class VariantExportParams extends VariantQueryParams {
         return this;
     }
 
-    public int getLimit() {
+    public Integer getLimit() {
         return limit;
     }
 
-    public VariantExportParams setLimit(int limit) {
+    public VariantExportParams setLimit(Integer limit) {
         this.limit = limit;
         return this;
     }
 
-    public int getSkip() {
+    public Integer getSkip() {
         return skip;
     }
 
-    public VariantExportParams setSkip(int skip) {
+    public VariantExportParams setSkip(Integer skip) {
         this.skip = skip;
         return this;
     }

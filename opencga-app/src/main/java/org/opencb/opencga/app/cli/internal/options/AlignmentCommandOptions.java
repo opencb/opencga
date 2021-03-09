@@ -435,6 +435,9 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
+
+        @DynamicParameter(names = {"--samtools-params"}, description = "Samtools parameters e.g.:. --samtools-params stats-index=true")
+        public Map<String, String> samtoolsParams = new HashMap<>();
     }
 
     // Deeptools

@@ -381,6 +381,7 @@ public class VariantAnalysisTest {
                 .setSample(samples)
                 .setIndex(indexId != null)
                 .setIndexId(indexId)
+                .setBatchSize(2)
                 .setIndexOverwrite(indexOverwrite);
         params.getVariantQuery()
                 .appendQuery(query)

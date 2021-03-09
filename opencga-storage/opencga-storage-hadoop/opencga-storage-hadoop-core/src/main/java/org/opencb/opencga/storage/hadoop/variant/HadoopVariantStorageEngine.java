@@ -122,10 +122,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
-            VariantType.INDEL, /* VariantType.INSERTION, VariantType.DELETION,*/
+            VariantType.INDEL,
             VariantType.MNV, VariantType.MNP,
             VariantType.INSERTION, VariantType.DELETION,
-            VariantType.CNV, VariantType.DUPLICATION, VariantType.TRANSLOCATION,
+            VariantType.CNV,
+            VariantType.COPY_NUMBER, VariantType.COPY_NUMBER_LOSS, VariantType.COPY_NUMBER_GAIN,
+            VariantType.DUPLICATION, VariantType.TANDEM_DUPLICATION, VariantType.TRANSLOCATION,
             VariantType.BREAKEND,
             VariantType.SV, VariantType.SYMBOLIC
     );
@@ -445,17 +447,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
 
-//        boolean pendingVariants = !overwrite;
-        boolean pendingVariants = true;
-
-        if (pendingVariants) {
-            logger.info("Get variants to index from pending variants table");
-            logger.info("Query: " + query.toJson());
-            return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
-        } else {
-            logger.info("Get variants to index");
-            return super.getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor);
-        }
+        logger.info("Get variants to index from pending variants table");
+        logger.info("Query: " + query.toJson());
+        return new SecondaryIndexPendingVariantsManager(getDBAdaptor()).iterator(query);
     }
 
     @Override

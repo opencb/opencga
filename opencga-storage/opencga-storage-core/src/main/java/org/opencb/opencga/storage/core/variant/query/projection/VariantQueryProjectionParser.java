@@ -522,11 +522,11 @@ public class VariantQueryProjectionParser {
                 map.keySet().stream().map(Object::toString).forEach(samples::add);
             }
             if (VariantQueryUtils.isValidParam(query, SAMPLE_DATA)) {
-                Map<String, String> formatMap = VariantQueryUtils.parseSampleData(query).getValue();
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataQuery = VariantQueryUtils.parseSampleData(query);
                 if (samples == null) {
-                    samples = new ArrayList<>(formatMap.size());
+                    samples = new ArrayList<>(sampleDataQuery.size());
                 }
-                samples.addAll(formatMap.keySet());
+                samples.addAll(sampleDataQuery.getValues(KeyValues::getKey));
             }
             if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)) {
                 String value = query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key());

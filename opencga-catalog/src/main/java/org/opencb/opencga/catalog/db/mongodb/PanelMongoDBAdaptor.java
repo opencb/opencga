@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.panel.Panel;
@@ -57,9 +58,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     private final MongoDBCollection deletedPanelCollection;
     private PanelConverter panelConverter;
 
-    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection deletedPanelCollection,
+    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection deletedPanelCollection, Configuration configuration,
                                MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.deletedPanelCollection = deletedPanelCollection;
@@ -702,9 +703,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
             // Get the document query needed to check the permissions as well
             andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, PanelAclEntry.PanelPermissions.VIEW.name(),
-                    Enums.Resource.DISEASE_PANEL));
+                    Enums.Resource.DISEASE_PANEL, configuration));
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.DISEASE_PANEL, user));
+            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.DISEASE_PANEL, user,
+                    configuration));
 
             query.remove(ParamConstants.ACL_PARAM);
         }

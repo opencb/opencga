@@ -315,6 +315,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         String sampleName = getSampleName(studyMetadata.getId(), sampleId);
         Integer samplePosition = studyEntry.getSamplesPosition().get(sampleName);
+        if (samplePosition == null) {
+            logger.warn("Sample {} ({}) not found in sample positions map : {}", sampleName, sampleId, studyEntry.getSamplesPosition());
+            return;
+        }
         SampleEntry sampleEntry = new SampleEntry(null, sampleColumn.getFileId(), sampleData);
         SampleEntry oldSampleEntry = studyEntry.getSamples().set(samplePosition, sampleEntry);
         if (oldSampleEntry != null) {
@@ -733,7 +737,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             // Create one variant for each alternate with the samples data
             List<Variant> variants = new ArrayList<>(alternateFileIdMap.size());
 
-            Map<String, List<String>> samplesWithUnknownGenotype = new HashMap<>();
+            Map<String, String> specialGenotypes = new HashMap<>();
             Integer gtIndex = studyEntry.getSampleDataKeyPositions().get("GT");
             Map<String, Integer> sampleToFileIdxMap = new HashMap<>(studyEntry.getSamples().size());
             for (Map.Entry<String, List<String>> entry : alternateFileIdMap.entrySet()) {
@@ -791,17 +795,17 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                         }
                         sampleToFileIdxMap.put(sample, sampleEntry.getFileIndex());
                         List<String> sampleData = sampleEntry.getData();
-                        if (gtIndex == null || !sampleData.get(0).equals(UNKNOWN_GENOTYPE)) {
+                        if (gtIndex == null || (!sampleData.get(0).equals(UNKNOWN_GENOTYPE) && !sampleData.get(0).equals(NA_GT_VALUE))) {
                             se.addSampleData(sample, sampleData);
                         } else {
-                            // Add dummy data for this sample
-                            ArrayList<String> dummySampleData = new ArrayList<>();
-                            dummySampleData.add("0/0");
-                            for (int i = 1; i < studyEntry.getSampleDataKeys().size(); i++) {
+                            // Add dummy GT for this sample
+                            ArrayList<String> dummySampleData = new ArrayList<>(sampleData);
+                            dummySampleData.set(0, "0/0");
+                            for (int i = dummySampleData.size(); i < studyEntry.getSampleDataKeys().size(); i++) {
                                 dummySampleData.add("");
                             }
                             se.addSampleData(sample, dummySampleData);
-                            samplesWithUnknownGenotype.put(sample, sampleData);
+                            specialGenotypes.put(sample, sampleData.get(0));
                         }
                     }
                 }
@@ -818,22 +822,27 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             // Update samplesData information
             StudyEntry newSe = newVariant.getStudies().get(0);
             for (String sample : newSe.getSamplesName()) {
-                List<String> unknownGenotypeData = samplesWithUnknownGenotype.get(sample);
+
+                List<String> sampleData = newSe.getSampleData(sample);
+                // Restore special genotypes
+                if (specialGenotypes.containsKey(sample)) {
+                    sampleData.set(0, specialGenotypes.get(sample));
+                }
                 if (sample.contains("_ISSUE+")) {
                     int idx1 = sample.lastIndexOf("_");
                     int idx2 = sample.lastIndexOf("+");
                     int fileId = Integer.parseInt(sample.substring(idx2 + 1));
                     String sampleName = sample.substring(0, idx1);
+
                     for (IssueEntry issue : studyEntry.getIssues()) {
                         if (issue.getSample().getFileIndex().equals(fileId) && issue.getSample().getSampleId().equals(sampleName)) {
-                            issue.getSample().setData(newSe.getSampleData(sample));
+                            issue.getSample().setData(sampleData);
                             break;
                         }
                     }
-                } else if (unknownGenotypeData != null) {
-                    studyEntry.addSampleData(sample, unknownGenotypeData);
+
                 } else {
-                    studyEntry.addSampleData(sample, newSe.getSampleData(sample));
+                    studyEntry.addSampleData(sample, sampleData);
                     // Preserve "fileIndex", which is, actually, the fileId
                     studyEntry.getSample(sample).setFileIndex(sampleToFileIdxMap.get(sample));
                 }
@@ -957,10 +966,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
         return returnedSamplesPositionMap.computeIfAbsent(studyMetadata.getId(), studyId -> {
             if (configuration.getProjection() == null) {
-                return metadataManager.getSamplesPosition(studyMetadata, null);
+                return metadataManager.getSamplesPosition(studyMetadata);
             } else {
                 List<Integer> sampleIds = configuration.getProjection().getStudy(studyMetadata.getId()).getSamples();
-                return metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleIds));
+                return metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleIds), false);
             }
         });
     }

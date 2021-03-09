@@ -3,12 +3,11 @@ package org.opencb.opencga.storage.hadoop.variant.index.query;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
@@ -30,7 +29,7 @@ public class SampleIndexQuery {
         }
     }
 
-    private final List<Region> regions;
+    private final Collection<List<Region>> regionGroups;
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
@@ -41,14 +40,14 @@ public class SampleIndexQuery {
     private final Map<String, boolean[]> fatherFilter;
     /** For each sample with mother filter, indicates all the valid GTs codes. **/
     private final Map<String, boolean[]> motherFilter;
-    private final Map<String, SampleFileIndexQuery> fileFilterMap;
+    private final Map<String, Values<SampleFileIndexQuery>> fileFilterMap;
     private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
     private final boolean onlyDeNovo;
     private final QueryOperation queryOperation;
 
-    public SampleIndexQuery(List<Region> regions, SampleIndexQuery query) {
-        this.regions = regions;
+    public SampleIndexQuery(Collection<List<Region>> regionGroups, SampleIndexQuery query) {
+        this.regionGroups = regionGroups;
         this.variantTypes = query.variantTypes;
         this.study = query.study;
         this.samplesMap = query.samplesMap;
@@ -63,19 +62,20 @@ public class SampleIndexQuery {
         this.queryOperation = query.queryOperation;
     }
 
-    public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
-        this(regions, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
+    public SampleIndexQuery(Collection<List<Region>> regionGroups, String study, Map<String, List<String>> samplesMap,
+                            QueryOperation queryOperation) {
+        this(regionGroups, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(),
                 new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
     }
 
-    public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
-                            Set<String> multiFileSamplesSet,
+    public SampleIndexQuery(Collection<List<Region>> regionGroups, Set<VariantType> variantTypes, String study,
+                            Map<String, List<String>> samplesMap, Set<String> multiFileSamplesSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
-                            Map<String, SampleFileIndexQuery> fileFilterMap,
+                            Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
-        this.regions = regions;
+        this.regionGroups = regionGroups;
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
@@ -90,8 +90,12 @@ public class SampleIndexQuery {
         this.queryOperation = queryOperation;
     }
 
+    public Collection<List<Region>> getRegionGroups() {
+        return regionGroups;
+    }
+
     public List<Region> getRegions() {
-        return regions;
+        return regionGroups.stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
     public Set<VariantType> getVariantTypes() {
@@ -151,13 +155,15 @@ public class SampleIndexQuery {
         return motherFilter.getOrDefault(sample, EMPTY_PARENT_FILTER);
     }
 
-    public Map<String, SampleFileIndexQuery> getSampleFileIndexQueryMap() {
+    public Map<String, Values<SampleFileIndexQuery>> getSampleFileIndexQueryMap() {
         return fileFilterMap;
     }
 
-    public SampleFileIndexQuery getSampleFileIndexQuery(String sample) {
-        SampleFileIndexQuery sampleFileIndexQuery = fileFilterMap.get(sample);
-        return sampleFileIndexQuery == null ? new SampleFileIndexQuery(sample) : sampleFileIndexQuery;
+    public Values<SampleFileIndexQuery> getSampleFileIndexQuery(String sample) {
+        Values<SampleFileIndexQuery> sampleFileIndexQuery = fileFilterMap.get(sample);
+        return sampleFileIndexQuery == null
+                ? new Values<>(null, Collections.singletonList(new SampleFileIndexQuery(sample)))
+                : sampleFileIndexQuery;
     }
 
 //    public byte getFileIndex(String sample) {
@@ -166,7 +172,10 @@ public class SampleIndexQuery {
 //    }
 
     public boolean emptyFileIndex() {
-        return fileFilterMap.isEmpty() || fileFilterMap.values().stream().allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
+        return fileFilterMap.isEmpty() || fileFilterMap.values()
+                .stream()
+                .flatMap(Values::stream)
+                .allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
     }
 
     public byte getAnnotationIndexMask() {

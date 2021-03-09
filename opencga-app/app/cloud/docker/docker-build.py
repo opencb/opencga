@@ -167,10 +167,7 @@ org = args.org
 
 # get a list with all images
 if not args.images:
-    if hadoop_flavour:
-        images = ["base", "init", "r"]
-    else:
-        images = ["base", "init", "demo", "r"]
+    images = ["base", "init", "demo", "r"]
 else:
     imagesUnsorted = args.images.split(",")
     images = []
@@ -181,11 +178,6 @@ else:
         imagesUnsorted.remove("init")
         images += ["init"]
     images += imagesUnsorted
-
-if "demo" in images and hadoop_flavour:
-    error(("opencga-demo image requires storage-mongodb."
-        + " Rebuild again opencga with -Pstorage-mongodb or do not include demo image in --images"))
-
 
 if args.action == "build":
     login(loginRequired=False)

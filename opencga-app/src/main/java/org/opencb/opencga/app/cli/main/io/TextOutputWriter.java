@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.tools.result.ToolStep;
 
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -44,6 +45,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
+import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.DONE;
+import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -365,6 +368,21 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ID(new Table.TableColumnSchema<>("ID", Job::getId, 60)),
         TOOL_ID(new Table.TableColumnSchema<>("Tool id", job -> job.getTool().getId())),
         STATUS(new Table.TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName())),
+        STEP(new Table.TableColumnSchema<>("Step", job -> {
+            if (job.getInternal().getStatus().getName().equals(RUNNING)) {
+                String currentStep = job.getExecution().getStatus().getStep();
+                int currentStepPosition = 0;
+                for (int i = 0; i < job.getExecution().getSteps().size(); i++) {
+                    if (job.getExecution().getSteps().get(i).getId().equals(currentStep)) {
+                        currentStepPosition = i + 1;
+                        break;
+                    }
+                }
+                return job.getExecution().getStatus().getStep() + " " + currentStepPosition + "/" + job.getExecution().getSteps().size();
+            } else {
+                return null;
+            }
+        })),
         EVENTS(new Table.TableColumnSchema<>("Events", j -> {
             Map<Event.Type, Long> map = j.getExecution().getEvents().stream()
                     .collect(Collectors.groupingBy(Event::getType, Collectors.counting()));

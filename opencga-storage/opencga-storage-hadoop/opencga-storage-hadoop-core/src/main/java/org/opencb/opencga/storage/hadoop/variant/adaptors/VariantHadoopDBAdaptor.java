@@ -266,8 +266,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        VariantQueryResult<Variant> result = new VariantQueryResult<>(((int) iterator.getTimeFetching()), variants.size(),
-                numTotalResults, null, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+        VariantQueryResult<Variant> result = new VariantQueryResult<>(iterator.getTime(TimeUnit.MILLISECONDS), variants.size(),
+                numTotalResults, null, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
+                .setFetchTime(iterator.getTimeFetching(TimeUnit.MILLISECONDS))
+                .setConvertTime(iterator.getTimeConverting(TimeUnit.MILLISECONDS));
         return addSamplesMetadataIfRequested(result, query.getQuery(), options, getMetadataManager());
     }
 
@@ -358,10 +360,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public VariantDBIterator iterator(ParsedVariantQuery variantQuery, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+            // Do not modify input options
+            // ignore count when creating an iterator.
+            options.put(QueryOptions.COUNT, false);
         }
 
         boolean archiveIterator = options.getBoolean("archive", false);
-        boolean hbaseIterator = options.getBoolean(NATIVE, VariantHBaseQueryParser.isSupportedQuery(variantQuery.getQuery()));
+        boolean nativeSupportedQuery = VariantHBaseQueryParser.isSupportedQuery(variantQuery.getQuery());
+        boolean hbaseIterator = nativeSupportedQuery && options.getBoolean(NATIVE, nativeSupportedQuery);
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
         if (archiveIterator) {

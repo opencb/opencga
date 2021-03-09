@@ -5,6 +5,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 
 import java.util.Comparator;
+import java.util.List;
 
 public class SampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<Variant> {
 
@@ -12,8 +13,8 @@ public class SampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<Varia
         super(query);
     }
 
-    public SampleIndexEntryFilter(SingleSampleIndexQuery query, Region regionFilter) {
-        super(query, regionFilter);
+    public SampleIndexEntryFilter(SingleSampleIndexQuery query, List<Region> regions) {
+        super(query, regions);
     }
 
     @Override

@@ -33,7 +33,7 @@ while [ $# -gt 0 ]; do
   case $key in
   -h | --help)
     printUsage
-    return 0
+    exit 0
     ;;
   -n | --tail)
     LINES="${value}"
@@ -87,7 +87,7 @@ fi
 
 if [ "$FILE" = "-" ]; then
   if [ "$LINES" = "+1" ]; then
-    TAIL=FALSE;
+    TAIL=FALSE
   else
     echo "Unable to follow from standard input and tail with '--tail $LINES'"
   fi
@@ -184,7 +184,7 @@ EOM
   fi
 }
 
-if [ "$FILE" = "-" ]; then
+if [ "$FILE" = "-" ] | [ "$(echo "$FILE" | wc -w)" = "1" ]; then
   opencgaLogs "$FILE" "$LOG_PREFIX"
 else
   # See https://stackoverflow.com/a/22644006/2073398
@@ -192,7 +192,7 @@ else
   trap "kill 0" EXIT
 
   for i in $FILE; do
-    opencgaLogs "$i" "$(basename "$i") " &
+    opencgaLogs "$i" "${LOG_PREFIX}$(basename "$i") " &
   done
 
   wait

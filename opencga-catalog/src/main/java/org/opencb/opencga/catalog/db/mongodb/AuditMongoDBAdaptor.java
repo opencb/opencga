@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +43,8 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
 
     private final MongoDBCollection auditCollection;
 
-    public AuditMongoDBAdaptor(MongoDBCollection auditCollection) {
-        super(LoggerFactory.getLogger(AuditMongoDBAdaptor.class));
+    public AuditMongoDBAdaptor(MongoDBCollection auditCollection, Configuration configuration) {
+        super(configuration, LoggerFactory.getLogger(AuditMongoDBAdaptor.class));
         this.auditCollection = auditCollection;
     }
 

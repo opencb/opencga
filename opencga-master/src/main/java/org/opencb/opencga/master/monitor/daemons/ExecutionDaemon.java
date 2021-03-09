@@ -312,10 +312,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int handledRunningJobs = 0;
         try (DBIterator<Job> iterator = jobManager.iterator(runningJobsQuery, queryOptions, token)) {
             while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                Job job = iterator.next();
-                handledRunningJobs += checkRunningJob(job);
+                try {
+                    Job job = iterator.next();
+                    handledRunningJobs += checkRunningJob(job);
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
             }
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
         }
     }
@@ -365,10 +369,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int handledQueuedJobs = 0;
         try (DBIterator<Job> iterator = jobManager.iterator(queuedJobsQuery, queryOptions, token)) {
             while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                Job job = iterator.next();
-                handledQueuedJobs += checkQueuedJob(job);
+                try {
+                    Job job = iterator.next();
+                    handledQueuedJobs += checkQueuedJob(job);
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
             }
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
         }
     }
@@ -416,10 +424,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int handledPendingJobs = 0;
         try (DBIterator<Job> iterator = jobManager.iterator(pendingJobsQuery, queryOptions, token)) {
             while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                Job job = iterator.next();
-                handledPendingJobs += checkPendingJob(job);
+                try {
+                    Job job = iterator.next();
+                    handledPendingJobs += checkPendingJob(job);
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
             }
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
         }
     }

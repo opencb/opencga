@@ -174,7 +174,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void samtools() throws Exception {
         AlignmentCommandOptions.SamtoolsCommandOptions cliOptions = alignmentCommandOptions.samtoolsCommandOptions;
         ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
+        params.putAll(cliOptions.samtoolsParams);
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),

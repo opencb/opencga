@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest.admin;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,6 +30,7 @@ import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
@@ -198,16 +200,31 @@ public class AdminWSServer extends OpenCGAWSServer {
     @POST
     @Path("/catalog/indexStats")
     @ApiOperation(value = "Sync Catalog into the Solr", response = Boolean.class)
-    public Response syncSolr() {
+    public Response syncSolr(@ApiParam(value = "Collection to be indexed (file, sample, individual, family, cohort and/or job)." +
+            " If not provided, all of them will be indexed.") @QueryParam("collection") String collection) {
         try {
+            boolean isEmpty = StringUtils.isEmpty(collection);
+
             ObjectMap params = new ObjectMap();
             List<OpenCGAResult<Job>> results = new ArrayList<>(6);
-            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
-            results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            if (isEmpty || collection.equalsIgnoreCase("file")) {
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FileIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            }
+            if (isEmpty || collection.equalsIgnoreCase("sample")) {
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, SampleIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            }
+            if (isEmpty || collection.equalsIgnoreCase("individual")) {
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            }
+            if (isEmpty || collection.equalsIgnoreCase("family")) {
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            }
+            if (isEmpty || collection.equalsIgnoreCase("cohort")) {
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            }
+            if (isEmpty || collection.equalsIgnoreCase("job")) {
+                results.add(catalogManager.getJobManager().submit(ADMIN_STUDY_FQN, JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            }
             return createOkResponse(OpenCGAResult.merge(results));
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -5,27 +5,8 @@ echo "------------ OpenCGA INIT ------------"
 
 set -x
 
-FILE=/opt/volume/conf/hadoop
-if [ -d "$FILE" ]; then
-    echo "$FILE already exists"
-    echo "Copy jar-with-dependencies to hadoop"
-    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/*.jar "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
-else
-    sshpass -p "$INIT_HADOOP_SSH_PASS" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
-
-    # copy conf files from hdinsight cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
-    # place these files in /opt/opencga/conf/hadoop, by e.g.: (todo: change connection strings)
-    echo "Fetching HDInsight configuration"
-    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":/etc/hadoop/conf/* /opt/opencga/conf/hadoop
-    # same with /etc/hbase/conf, e.g.
-    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null -r "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":/etc/hbase/conf/* /opt/opencga/conf/hadoop
-
-    # Copy the OpenCGA installation directory to the hdinsights cluster
-    # TODO - Optimize this down to only required jars
-    sshpass -p "$INIT_HADOOP_SSH_PASS" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r /opt/opencga/ "$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
-
-    mkdir -p /opt/volume/conf/hadoop
-    cp -r /opt/opencga/conf/hadoop/* /opt/volume/conf/hadoop
+if find /opt/opencga/libs/opencga-storage-hadoop-deps-* &> /dev/null ; then
+    /opt/opencga/init/setup-hadoop.sh
 fi
 
 FILE=/opt/volume/conf/configuration.yml

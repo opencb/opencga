@@ -30,8 +30,8 @@ public class ClinicalAnalysisAclEntry extends AbstractAclEntry<ClinicalAnalysisA
 
     public enum ClinicalAnalysisPermissions {
         VIEW(Collections.emptyList()),
-        UPDATE(Collections.singletonList(VIEW)),
-        DELETE(Arrays.asList(VIEW, UPDATE));
+        WRITE(Collections.singletonList(VIEW)),
+        DELETE(Arrays.asList(VIEW, WRITE));
 
         private List<ClinicalAnalysisPermissions> implicitPermissions;
 

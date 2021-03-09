@@ -54,6 +54,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.*;
@@ -254,13 +255,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             metadataFactory = new VariantMetadataFactory(getMetadataManager());
         }
         VariantExporter exporter = newVariantExporter(metadataFactory);
-        query = preProcessQuery(query, queryOptions);
         if (outputFormat == VariantOutputFormat.VCF || outputFormat == VariantOutputFormat.VCF_GZ) {
             if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
                 query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
             }
         }
-        exporter.export(outputFile, outputFormat, variantsFile, query, queryOptions);
+        ParsedVariantQuery parsedVariantQuery = parseQuery(query, queryOptions);
+        exporter.export(outputFile, outputFormat, variantsFile, parsedVariantQuery);
     }
 
     /**
@@ -606,8 +607,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
-        Query query = inputQuery == null ? new Query() : new Query(inputQuery);
-        QueryOptions queryOptions = inputQueryOptions == null ? new QueryOptions() : new QueryOptions(inputQueryOptions);
+        Query query = VariantQueryUtils.copy(inputQuery);
+        QueryOptions queryOptions = VariantQueryUtils.copy(inputQueryOptions);
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
 
@@ -1062,7 +1063,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         try {
             return getVariantQueryParser().preProcessQuery(originalQuery, options);
         } catch (StorageEngineException e) {
-            throw VariantQueryException.internalException(e);
+            throw VariantQueryException.internalException(e).setQuery(originalQuery);
+        }
+    }
+
+    public ParsedVariantQuery parseQuery(Query originalQuery, QueryOptions options) {
+        try {
+            return getVariantQueryParser().parseQuery(originalQuery, options);
+        } catch (StorageEngineException e) {
+            throw VariantQueryException.internalException(e).setQuery(originalQuery);
         }
     }
 
@@ -1111,6 +1120,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return               A FacetedQueryResult with the result of the query
      */
     public DataResult<FacetField> facet(Query query, QueryOptions options) {
+        query = copy(query);
+        options = copy(options);
+        // Hardcode INCLUDE to simplify preProcess operation, as the query does not return any study data.
+        options.put(QueryOptions.INCLUDE, VariantField.ID.fieldName());
         addDefaultLimit(options, getOptions());
         query = preProcessQuery(query, options);
         return getVariantAggregationExecutor(query, options).aggregation(query, options);
@@ -1152,8 +1165,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 return executor;
             }
         }
-        // This should never happen, as the DBAdaptorVariantQueryExecutor can always run the query
-        throw new VariantQueryException("No VariantAggregationExecutor found to run the query!");
+        String facet = options == null ? null : options.getString(QueryOptions.FACET);
+        // This should rarely happen
+        logger.warn("Unable to run aggregation facet '" + facet + "' with query " + VariantQueryUtils.printQuery(query));
+        throw new VariantQueryException("No VariantAggregationExecutor found to run the query!").setQuery(query);
     }
 
     @Override

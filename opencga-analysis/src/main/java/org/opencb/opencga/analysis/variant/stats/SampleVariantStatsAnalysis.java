@@ -42,7 +42,10 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,7 +60,10 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     protected SampleVariantStatsAnalysisParams toolParams;
     private ArrayList<String> checkedSamplesList;
-    private Path outputFile;
+    private SampleVariantStatsAnalysisExecutor toolExecutor;
+    private List<List<String>> batches;
+    private int numBatches;
+    private int batchSize;
 
     @Override
     protected void check() throws Exception {
@@ -178,97 +184,154 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             logger.info("Indexing stats with ID=" + toolParams.getIndexId());
         }
 
-        outputFile = getOutDir().resolve(getId() + ".json");
+        toolExecutor = getToolExecutor(SampleVariantStatsAnalysisExecutor.class);
+        if (toolParams.getBatchSize() == null || toolParams.getBatchSize() > toolExecutor.getMaxBatchSize()) {
+            toolParams.setBatchSize(toolExecutor.getMaxBatchSize());
+        }
+        numBatches = (int) (Math.ceil(checkedSamplesList.size() / ((float) toolParams.getBatchSize())));
+        batchSize = (int) (Math.ceil(checkedSamplesList.size() / (float) numBatches));
+        if (numBatches > 1) {
+            logger.info("Execute sample stats in {} batches of {} samples", numBatches, batchSize);
+        }
+
+        if (numBatches > 1) {
+            batches = new ArrayList<>(numBatches);
+            for (int batch = 0; batch < numBatches; batch++) {
+                batches.add(checkedSamplesList.subList(batch * batchSize, Math.min(checkedSamplesList.size(), (batch + 1) * batchSize)));
+            }
+        } else {
+            batches = Collections.singletonList(checkedSamplesList);
+        }
     }
 
     @Override
     protected List<String> getSteps() {
-        if (toolParams.isIndex()) {
-            return Arrays.asList(getId(), "index");
+        if (numBatches == 1) {
+            if (toolParams.isIndex()) {
+                return Arrays.asList("calculate", "index");
+            } else {
+                return Collections.singletonList("calculate");
+            }
         } else {
-            return Collections.singletonList(getId());
+            List<String> steps = new ArrayList<>();
+            for (int batch = 1; batch <= numBatches; batch++) {
+                steps.add("calculate-" + batch);
+                if (toolParams.isIndex()) {
+                    steps.add("index-" + batch);
+                }
+            }
+            return steps;
         }
     }
 
     @Override
     protected void run() throws ToolException {
-        step(getId(), () -> {
-            if (checkedSamplesList.isEmpty()) {
-                return;
+        for (int batch = 1; batch <= numBatches; batch++) {
+            List<String> batchSamples = batches.get(batch - 1);
+            String stepName;
+            if (numBatches == 1) {
+                stepName = "calculate";
+            } else {
+                stepName = "calculate-" + batch;
+                logger.info("Sample stats batch {}/{} with {} samples", batch, numBatches, batchSamples.size());
             }
-            getToolExecutor(SampleVariantStatsAnalysisExecutor.class)
-                    .setOutputFile(outputFile)
-                    .setStudy(study)
-                    .setSampleNames(checkedSamplesList)
-                    .setVariantQuery(toolParams.getVariantQuery() == null ? new Query() : toolParams.getVariantQuery().toQuery())
-                    .execute();
-        });
-        if (toolParams.isIndex()) {
-            if (checkedSamplesList.isEmpty()) {
-                return;
+
+            Path tmpOutputFile;
+            Path outputFile = getOutDir().resolve(getId() + ".json");
+            if (batch == 1) {
+                tmpOutputFile = outputFile;
+            } else {
+                tmpOutputFile = getScratchDir().resolve(getId() + ".batch_" + batch + ".json");
             }
-            step("index", () -> {
-                Map<String, String> queryMap = toolParams.getVariantQuery().toQuery().entrySet()
-                        .stream()
-                        .filter(e -> e.getValue() != null)
-                        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+            step(stepName, () -> {
+                if (batchSamples.isEmpty()) {
+                    return;
+                }
+                toolExecutor
+                        .setOutputFile(tmpOutputFile)
+                        .setStudy(study)
+                        .setSampleNames(batchSamples)
+                        .setVariantQuery(toolParams.getVariantQuery() == null ? new Query() : toolParams.getVariantQuery().toQuery())
+                        .execute();
 
-                ObjectReader reader = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class);
-                try (MappingIterator<SampleVariantStats> it = reader.readValues(outputFile.toFile())) {
-                    while (it.hasNext()) {
-                        SampleVariantStats sampleVariantStats = it.next();
-                        SampleQualityControl qualityControl = getCatalogManager()
-                                .getSampleManager()
-                                .get(getStudy(), sampleVariantStats.getId(),
-                                        new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTORL.key()), getToken())
-                                .first()
-                                .getQualityControl();
-//                        SampleUpdateParams updateParams = new SampleUpdateParams()
-//                                .setQualityControl(new SampleQualityControl()
-//                                        .setVariantMetrics(new SampleVariantQualityControlMetrics()
-////                                                .setVcfFileIds() // TODO
-//                                                .setVariantStats(Collections.singletonList(new SampleQcVariantStats(
-//                                                                toolParams.getIndexId(),
-//                                                                toolParams.getIndexDescription(),
-//                                                                queryMap,
-//                                                                sampleVariantStats)
-//                                                        )
-//                                                )
-//                                        )
-//                                );
-                        SampleQcVariantStats o = new SampleQcVariantStats(
-                                toolParams.getIndexId(),
-                                toolParams.getIndexDescription(),
-                                queryMap,
-                                sampleVariantStats);
-                        if (qualityControl == null) {
-                            qualityControl = new SampleQualityControl();
-                        }
-                        if (qualityControl.getVariantMetrics() == null) {
-                            qualityControl.setVariantMetrics(new SampleVariantQualityControlMetrics());
-                        }
-                        if (CollectionUtils.isEmpty(qualityControl.getVariantMetrics().getVariantStats())) {
-                            qualityControl.getVariantMetrics().setVariantStats(Collections.singletonList(o));
-                        } else {
-                            boolean hasItem = false;
-                            for (int i = 0; i < qualityControl.getVariantMetrics().getVariantStats().size(); i++) {
-                                if (qualityControl.getVariantMetrics().getVariantStats().get(i).getId().equals(o.getId())) {
-                                    qualityControl.getVariantMetrics().getVariantStats().set(i, o);
-                                    hasItem = true;
-                                    break;
-                                }
-                            }
-                            if (!hasItem) {
-                                qualityControl.getVariantMetrics().getVariantStats().add(o);
-                            }
-                        }
-                        SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qualityControl);
-                        getCatalogManager().getSampleManager()
-                                .update(study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
-
+                if (tmpOutputFile != outputFile) {
+                    try (OutputStream os = Files.newOutputStream(outputFile, StandardOpenOption.APPEND)) {
+                        Files.copy(tmpOutputFile, os);
                     }
                 }
             });
+            if (toolParams.isIndex()) {
+                if (batchSamples.isEmpty()) {
+                    return;
+                }
+                if (numBatches == 1) {
+                    stepName = "index";
+                } else {
+                    stepName = "index-" + batch;
+                }
+                step(stepName, () -> {
+                    Map<String, String> queryMap = toolParams.getVariantQuery().toQuery().entrySet()
+                            .stream()
+                            .filter(e -> e.getValue() != null)
+                            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+
+                    ObjectReader reader = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class);
+                    try (MappingIterator<SampleVariantStats> it = reader.readValues(tmpOutputFile.toFile())) {
+                        while (it.hasNext()) {
+                            SampleVariantStats sampleVariantStats = it.next();
+                            SampleQualityControl qualityControl = getCatalogManager()
+                                    .getSampleManager()
+                                    .get(getStudy(), sampleVariantStats.getId(),
+                                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTORL.key()), getToken())
+                                    .first()
+                                    .getQualityControl();
+    //                        SampleUpdateParams updateParams = new SampleUpdateParams()
+    //                                .setQualityControl(new SampleQualityControl()
+    //                                        .setVariantMetrics(new SampleVariantQualityControlMetrics()
+    ////                                                .setVcfFileIds() // TODO
+    //                                                .setVariantStats(Collections.singletonList(new SampleQcVariantStats(
+    //                                                                toolParams.getIndexId(),
+    //                                                                toolParams.getIndexDescription(),
+    //                                                                queryMap,
+    //                                                                sampleVariantStats)
+    //                                                        )
+    //                                                )
+    //                                        )
+    //                                );
+                            SampleQcVariantStats o = new SampleQcVariantStats(
+                                    toolParams.getIndexId(),
+                                    toolParams.getIndexDescription(),
+                                    queryMap,
+                                    sampleVariantStats);
+                            if (qualityControl == null) {
+                                qualityControl = new SampleQualityControl();
+                            }
+                            if (qualityControl.getVariantMetrics() == null) {
+                                qualityControl.setVariantMetrics(new SampleVariantQualityControlMetrics());
+                            }
+                            if (CollectionUtils.isEmpty(qualityControl.getVariantMetrics().getVariantStats())) {
+                                qualityControl.getVariantMetrics().setVariantStats(Collections.singletonList(o));
+                            } else {
+                                boolean hasItem = false;
+                                for (int i = 0; i < qualityControl.getVariantMetrics().getVariantStats().size(); i++) {
+                                    if (qualityControl.getVariantMetrics().getVariantStats().get(i).getId().equals(o.getId())) {
+                                        qualityControl.getVariantMetrics().getVariantStats().set(i, o);
+                                        hasItem = true;
+                                        break;
+                                    }
+                                }
+                                if (!hasItem) {
+                                    qualityControl.getVariantMetrics().getVariantStats().add(o);
+                                }
+                            }
+                            SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qualityControl);
+                            getCatalogManager().getSampleManager()
+                                    .update(study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
+
+                        }
+                    }
+                });
+            }
         }
     }
 

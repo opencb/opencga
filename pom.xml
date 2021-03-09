@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -41,12 +41,13 @@
     </modules>
 
     <properties>
-        <opencga.version>2.0.0</opencga.version>
+        <opencga.version>2.0.1</opencga.version>
         <pyopencga.version>${opencga.version}</pyopencga.version>
+        <iva.version>2.1.0-beta</iva.version>
         <cellbase.version>4.8.0</cellbase.version>
-        <biodata.version>2.0.4</biodata.version>
-        <java-common-libs.version>4.0.4</java-common-libs.version>
-        <oskar.version>0.2.0-SNAPSHOT</oskar.version>
+        <biodata.version>2.0.5</biodata.version>
+        <java-common-libs.version>4.0.5</java-common-libs.version>
+        <oskar.version>0.2.0</oskar.version>
 <!--        <bionet.version>0.2.0-SNAPSHOT</bionet.version>-->
         <jackson.version>2.10.1</jackson.version>
         <jersey.version>2.25.1</jersey.version>
@@ -612,6 +613,9 @@
                 <OPENCGA.CATALOG.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.CATALOG.SEARCH.HOST>
                 <OPENCGA.CATALOG.SEARCH.TIMEOUT>30000</OPENCGA.CATALOG.SEARCH.TIMEOUT>
                 <OPENCGA.CATALOG.SEARCH.BATCH>2000</OPENCGA.CATALOG.SEARCH.BATCH>
+
+                <!-- Optimizations -->
+                <OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS>false</OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS>
 
                 <!-- Storage -->
                 <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>

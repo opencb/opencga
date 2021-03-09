@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Variable;
@@ -62,9 +63,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
     private final AnnotationConverter annotationConverter;
 
-    AnnotationMongoDBAdaptor(Logger logger) {
-        super(logger);
-
+    AnnotationMongoDBAdaptor(Configuration configuration, Logger logger) {
+        super(configuration, logger);
         this.annotationConverter = new AnnotationConverter();
     }
 
@@ -336,17 +336,19 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 // This variable will contain a map of variable set ids pointing to all the annotationSet ids using the variable set
                 Map<String, Set<String>> variableSetAnnotationsets = new HashMap<>();
                 Set<String> existingAnnotationSets = new HashSet<>();
-                for (Document document : annotationList) {
-                    String variableSetId = String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key()));
-                    String annSetId = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
+                if (annotationList != null) {
+                    for (Document document : annotationList) {
+                        String variableSetId = String.valueOf(document.getLong(AnnotationSetParams.VARIABLE_SET_ID.key()));
+                        String annSetId = document.getString(AnnotationSetParams.ANNOTATION_SET_NAME.key());
 
-                    annotationSetIdVariableSetUidMap.put(annSetId, variableSetId);
+                        annotationSetIdVariableSetUidMap.put(annSetId, variableSetId);
 
-                    if (!variableSetAnnotationsets.containsKey(variableSetId)) {
-                        variableSetAnnotationsets.put(variableSetId, new HashSet<>());
+                        if (!variableSetAnnotationsets.containsKey(variableSetId)) {
+                            variableSetAnnotationsets.put(variableSetId, new HashSet<>());
+                        }
+                        variableSetAnnotationsets.get(variableSetId).add(annSetId);
+                        existingAnnotationSets.add(annSetId);
                     }
-                    variableSetAnnotationsets.get(variableSetId).add(annSetId);
-                    existingAnnotationSets.add(annSetId);
                 }
                 if (internalAnnotationList != null) {
                     for (Document document : internalAnnotationList) {

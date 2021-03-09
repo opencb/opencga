@@ -21,20 +21,25 @@ import org.opencb.opencga.core.models.AclParams;
 public class FamilyAclUpdateParams extends AclParams {
 
     private String family;
+    private String individual;
+    private String sample;
 
     public FamilyAclUpdateParams() {
     }
 
-    public FamilyAclUpdateParams(String permissions, String family) {
+    public FamilyAclUpdateParams(String permissions, String family, String individual, String sample) {
         super(permissions);
         this.family = family;
+        this.individual = individual;
+        this.sample = sample;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyAclUpdateParams{");
         sb.append("family='").append(family).append('\'');
-        sb.append(", permissions='").append(permissions).append('\'');
+        sb.append(", individual='").append(individual).append('\'');
+        sb.append(", sample='").append(sample).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -45,6 +50,24 @@ public class FamilyAclUpdateParams extends AclParams {
 
     public FamilyAclUpdateParams setFamily(String family) {
         this.family = family;
+        return this;
+    }
+
+    public String getIndividual() {
+        return individual;
+    }
+
+    public FamilyAclUpdateParams setIndividual(String individual) {
+        this.individual = individual;
+        return this;
+    }
+
+    public String getSample() {
+        return sample;
+    }
+
+    public FamilyAclUpdateParams setSample(String sample) {
+        this.sample = sample;
         return this;
     }
 

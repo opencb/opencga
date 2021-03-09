@@ -147,6 +147,10 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public boolean getDatabaseStatus() {
+        return catalogDBAdaptorFactory.getDatabaseStatus();
+    }
+
+    public boolean getCatalogDatabaseStatus() {
         if (existsCatalogDB()) {
             return catalogDBAdaptorFactory.getDatabaseStatus();
         } else {
