@@ -17,7 +17,9 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -29,6 +31,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -45,6 +48,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -53,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -146,24 +151,128 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         return cohortDBAdaptor.get(query, options);
     }
 
-    @Deprecated
-    public OpenCGAResult<Cohort> create(long studyId, String name, Enums.CohortType type, String description, List<Sample> samples,
-                                        List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
-            throws CatalogException {
-        return create(String.valueOf(studyId), name, type, description, samples, annotationSetList, attributes, sessionId);
-    }
+    public OpenCGAResult<Cohort> create(String studyStr, CohortCreateParams cohortParams, String variableSetId, String variableId,
+                                        QueryOptions options, String token) throws CatalogException {
+        ParamUtils.checkObj(cohortParams, "CohortCreateParams");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-    public OpenCGAResult<Cohort> create(String studyId, String name, Enums.CohortType type, String description, List<Sample> samples,
-                                        List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
-            throws CatalogException {
-        Cohort cohort = new Cohort(name, type, "", description, samples, annotationSetList, -1, attributes);
-        return create(studyId, cohort, QueryOptions.empty(), sessionId);
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
+
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("cohortParams", cohortParams)
+                .append("variableSetId", variableSetId)
+                .append("variableId", variableId)
+                .append("options", options)
+                .append("token", token);
+
+        List<Cohort> cohorts = new LinkedList<>();
+        try {
+            if (StringUtils.isNotEmpty(variableId) && CollectionUtils.isNotEmpty(cohortParams.getSamples())) {
+                throw new CatalogParameterException("Can only create a cohort given list of sampleIds or a categorical variable name");
+            }
+
+            if (CollectionUtils.isNotEmpty(cohortParams.getSamples())) {
+                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), cohortParams.getSamples(),
+                        SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList, 0,
+                        cohortParams.getAnnotationSets(), 1,
+                        cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                        cohortParams.getAttributes()));
+
+            } else if (StringUtils.isNotEmpty(variableSetId)) {
+                // Look for variable set
+                VariableSet variableSet = null;
+                for (VariableSet auxVariableSet : study.getVariableSets()) {
+                    if (auxVariableSet.equals(variableSetId)) {
+                        variableSet = auxVariableSet;
+                        break;
+                    }
+                }
+                if (variableSet == null) {
+                    throw new CatalogException("VariableSet '" + variableSetId + "' not found.");
+                }
+
+                // Look for variable
+                // TODO: We should also look in nested variables
+                Variable variable = null;
+                for (Variable v : variableSet.getVariables()) {
+                    if (v.getId().equals(variableId)) {
+                        variable = v;
+                        break;
+                    }
+                }
+                if (variable == null) {
+                    throw new CatalogException("Variable '" + variableId + "' does not exist in VariableSet " + variableSet.getId());
+                }
+                if (variable.getType() != Variable.VariableType.CATEGORICAL) {
+                    throw new CatalogException("Variable '" + variableId + "' is not a categorical variable. Please, choose a categorical "
+                            + "variable");
+                }
+                for (String value : variable.getAllowedValues()) {
+                    OpenCGAResult<Sample> sampleResults = catalogManager.getSampleManager().search(study.getFqn(),
+                            new Query(Constants.ANNOTATION, variableSetId + ":" + variableId + "=" + value),
+                            SampleManager.INCLUDE_SAMPLE_IDS, token);
+
+                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
+                            sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
+                            cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                            cohortParams.getAttributes()));
+                }
+            } else {
+                //Create empty cohort
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
+                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
+            }
+        } catch (CatalogException e) {
+            auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        auditManager.initAuditBatch(operationId);
+        List<Event> eventList = new LinkedList<>();
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        for (Cohort cohort : cohorts) {
+            try {
+                validateNewCohort(study, cohort);
+                cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
+                auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
+                eventList.add(event);
+
+                logger.error("Could not create cohort {}: {}", cohort.getId(), e.getMessage(), e);
+                auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+        auditManager.finishAuditBatch(operationId);
+        stopWatch.stop();
+
+        Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(CohortDBAdaptor.QueryParams.UID.key(), cohorts.stream()
+                        .map(Cohort::getUid)
+                        .filter(uid -> uid > 0)
+                        .collect(Collectors.toList()));
+        OpenCGAResult<Cohort> result = cohortDBAdaptor.get(study.getUid(), query, options, userId);
+        result.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+        result.setEvents(eventList);
+
+        return result;
     }
 
     public OpenCGAResult<Cohort> generate(String studyStr, Query sampleQuery, Cohort cohort, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyStr)
@@ -201,6 +310,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -208,6 +318,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("options", options)
                 .append("token", token);
         try {
+            if (CollectionUtils.isNotEmpty(cohort.getSamples())) {
+                // Look for the samples
+                InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                        cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()), SampleManager.INCLUDE_SAMPLE_IDS,
+                        userId, false);
+                cohort.setSamples(sampleResult.getResults());
+            }
+
             OpenCGAResult<Cohort> cohortResult = privateCreate(study, cohort, options, userId);
             auditManager.auditCreate(userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -222,13 +340,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     OpenCGAResult<Cohort> privateCreate(Study study, Cohort cohort, QueryOptions options, String userId) throws CatalogException {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
-        validateNewCohort(study, cohort, userId);
+        validateNewCohort(study, cohort);
 
         cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
         return getCohort(study.getUid(), cohort.getUuid(), options);
     }
 
-    void validateNewCohort(Study study, Cohort cohort, String userId) throws CatalogException {
+    void validateNewCohort(Study study, Cohort cohort) throws CatalogException {
         ParamUtils.checkObj(cohort, "Cohort");
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
@@ -248,22 +366,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         validateNewAnnotationSets(study.getVariableSets(), cohort.getAnnotationSets());
 
         if (!cohort.getSamples().isEmpty()) {
-            // Remove possible duplicates
-            Map<String, Sample> sampleMap = new HashMap<>();
+            // Remove possible duplicates and ensure we have all the internal uids
+            Map<Long, Sample> sampleMap = new HashMap<>();
             for (Sample sample : cohort.getSamples()) {
-                sampleMap.put(sample.getId(), sample);
+                if (sample.getUid() <= 0) {
+                    throw new CatalogException("Internal error. Missing sample uid.");
+                }
+                sampleMap.put(sample.getUid(), sample);
             }
             cohort.setSamples(new ArrayList<>(sampleMap.values()));
-
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), cohort.getSamples().stream()
-                            .map(Sample::getUid)
-                            .collect(Collectors.toList()));
-            OpenCGAResult<Long> count = sampleDBAdaptor.count(query);
-            if (count.getNumMatches() != cohort.getSamples().size()) {
-                throw new CatalogException("Error: Some samples do not exist in the study " + study.getFqn());
-            }
         }
 
         cohort.setNumSamples(cohort.getSamples().size());

@@ -29,6 +29,7 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -162,10 +163,8 @@ public class VariantAnalysisTest {
                 }
             }
 
-            List<Sample> samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(0, 2), QueryOptions.empty(), token).getResults();
-            catalogManager.getCohortManager().create(STUDY, "c1", null, null, samples, null, null, token);
-            samples = catalogManager.getSampleManager().get(STUDY, file.getSampleIds().subList(2, 4), QueryOptions.empty(), token).getResults();
-            catalogManager.getCohortManager().create(STUDY, "c2", null, null, samples, null, null, token);
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1").setSamples(file.getSampleIds().subList(0, 2)), null, null, null, token);
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2").setSamples(file.getSampleIds().subList(2, 4)), null, null, null, token);
 
             Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
             Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());

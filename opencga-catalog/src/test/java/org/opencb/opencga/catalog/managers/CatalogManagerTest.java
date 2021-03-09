@@ -1154,7 +1154,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateCohortFail() throws CatalogException {
         thrown.expect(CatalogException.class);
-        List<Sample> sampleList = Arrays.asList(new Sample().setUid(23L), new Sample().setUid(4L), new Sample().setUid(5L));
+        List<Sample> sampleList = Arrays.asList(new Sample().setId("a"), new Sample().setId("b"), new Sample().setId("c"));
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY).setSamples(sampleList),
                 null, token);
     }

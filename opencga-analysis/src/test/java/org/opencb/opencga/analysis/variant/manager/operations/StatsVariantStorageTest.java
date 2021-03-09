@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -78,9 +79,8 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         for (int i = 0; i < coh.length; i++) {
             List<String> sampleIds = file.getSampleIds().subList(file.getSampleIds().size() / coh.length * i,
                     file.getSampleIds().size() / coh.length * (i + 1));
-            List<Sample> samples = catalogManager.getSampleManager().get(studyId, sampleIds, QueryOptions.empty(), sessionId).getResults();
-            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Enums.CohortType.CONTROL_SET, "", samples, null,
-                    null, sessionId).first();
+            Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh" + i,
+                    Enums.CohortType.CONTROL_SET, "", sampleIds, null, null, null), null, null, null, sessionId).first();
             coh[i] = cohort.getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
