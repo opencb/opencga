@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
@@ -37,6 +38,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual.Kno
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -46,6 +48,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -122,70 +125,93 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
 
     private class KnockoutBySampleExecutor {
         public void run() throws Exception {
-            Query baseQuery = new Query()
-                    .append(VariantQueryParam.STUDY.key(), getStudy())
-                    .append(VariantQueryParam.FILTER.key(), getFilter())
-                    .append(VariantQueryParam.QUAL.key(), getQual());
-            for (String sample : getSamples()) {
-                StopWatch stopWatch = StopWatch.createStarted();
-                logger.info("Processing sample {}", sample);
-                Map<String, KnockoutGene> knockoutGenes = new LinkedHashMap<>();
-                Trio trio = getTrios().get(sample);
+            Iterator<String> samplesIterator = getSamples().iterator();
+            ParallelTaskRunner<String, Void> ptr = new ParallelTaskRunner<>(
+                    batchSize -> {
+                        List<String> samples = new ArrayList<>(batchSize);
+                        for (int i = 0; i < batchSize && samplesIterator.hasNext(); i++) {
+                            samples.add(samplesIterator.next());
+                        }
+                        return samples;
+                    },
+                    samples -> {
+                        for (String sample : samples) {
+                            processSample(sample);
+                        }
+                        return null;
+                    }, null,
+                    ParallelTaskRunner.Config.builder()
+                            .setBatchSize(1)
+                            .setNumTasks(Runtime.getRuntime().availableProcessors())
+                            .build()
+            );
 
-                // Protein coding genes (if any)
-                if (allProteinCoding) {
-                    // All protein coding genes
-                    Query query = new Query(baseQuery)
-                            .append(VariantQueryParam.ANNOT_BIOTYPE.key(), PROTEIN_CODING)
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sample)
-                            .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), getCt());
-                    knockouts(query, sample, trio, knockoutGenes,
-                            getCts()::contains,
-                            b -> b.equals(PROTEIN_CODING),
-                            g -> true);
-                } else if (!getProteinCodingGenes().isEmpty()) {
-                    // Set of protein coding genes
-                    Query query = new Query(baseQuery)
-                            .append(VariantQueryParam.GENE.key(), getProteinCodingGenes())
-                            .append(VariantQueryParam.ANNOT_BIOTYPE.key(), PROTEIN_CODING)
-                            .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), getCt())
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sample);
-                    knockouts(query, sample, trio, knockoutGenes,
-                            getCts()::contains,
-                            b -> b.equals(PROTEIN_CODING),
-                            getProteinCodingGenes()::contains);
-                }
-
-                // Other genes (if any)
-                if (!getOtherGenes().isEmpty()) {
-                    Query query = new Query(baseQuery)
-                            .append(VariantQueryParam.ANNOT_BIOTYPE.key(), biotype)
-                            .append(VariantQueryParam.GENE.key(), getOtherGenes())
-                            .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sample);
-                    knockouts(query, sample, trio, knockoutGenes,
-                            ct -> true,  // Accept any CT
-                            biotype == null ? (b -> !b.equals(PROTEIN_CODING)) : new HashSet<>(biotype)::contains,
-                            getOtherGenes()::contains);
-                }
-
-                if (knockoutGenes.isEmpty()) {
-                    logger.info("No results for sample {}", sample);
-                } else {
-                    KnockoutByIndividual.GeneKnockoutByIndividualStats stats = getGeneKnockoutBySampleStats(knockoutGenes.values());
-                    writeSampleFile(new KnockoutByIndividual()
-                            .setSampleId(sample)
-                            .setStats(stats)
-                            .setGenes(knockoutGenes.values()));
-                }
-                logger.info("Sample {} processed in {}", sample, TimeUtils.durationToString(stopWatch));
-                logger.info("-----------------------------------------------------------");
-            }
+            ptr.run();
 
             if (getSkipGenesFile()) {
                 logger.info("Skip genes file transpose");
             } else {
                 transposeSampleToGeneOutputFiles();
             }
+        }
+
+        protected void processSample(String sample) throws Exception {
+            Query baseQuery = new Query()
+                    .append(VariantQueryParam.STUDY.key(), getStudy())
+                    .append(VariantQueryParam.FILTER.key(), getFilter())
+                    .append(VariantQueryParam.QUAL.key(), getQual());
+            StopWatch stopWatch = StopWatch.createStarted();
+            logger.info("Processing sample {}", sample);
+            Map<String, KnockoutGene> knockoutGenes = new LinkedHashMap<>();
+            Trio trio = getTrios().get(sample);
+
+            // Protein coding genes (if any)
+            if (allProteinCoding) {
+                // All protein coding genes
+                Query query = new Query(baseQuery)
+                        .append(VariantQueryParam.ANNOT_BIOTYPE.key(), PROTEIN_CODING)
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sample)
+                        .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), getCt());
+                knockouts(query, sample, trio, knockoutGenes,
+                        getCts()::contains,
+                        b -> b.equals(PROTEIN_CODING),
+                        g -> true);
+            } else if (!getProteinCodingGenes().isEmpty()) {
+                // Set of protein coding genes
+                Query query = new Query(baseQuery)
+                        .append(VariantQueryParam.GENE.key(), getProteinCodingGenes())
+                        .append(VariantQueryParam.ANNOT_BIOTYPE.key(), PROTEIN_CODING)
+                        .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), getCt())
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sample);
+                knockouts(query, sample, trio, knockoutGenes,
+                        getCts()::contains,
+                        b -> b.equals(PROTEIN_CODING),
+                        getProteinCodingGenes()::contains);
+            }
+
+            // Other genes (if any)
+            if (!getOtherGenes().isEmpty()) {
+                Query query = new Query(baseQuery)
+                        .append(VariantQueryParam.ANNOT_BIOTYPE.key(), biotype)
+                        .append(VariantQueryParam.GENE.key(), getOtherGenes())
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sample);
+                knockouts(query, sample, trio, knockoutGenes,
+                        ct -> true,  // Accept any CT
+                        biotype == null ? (b -> !b.equals(PROTEIN_CODING)) : new HashSet<>(biotype)::contains,
+                        getOtherGenes()::contains);
+            }
+
+            if (knockoutGenes.isEmpty()) {
+                logger.info("No results for sample {}", sample);
+            } else {
+                KnockoutByIndividual.GeneKnockoutByIndividualStats stats = getGeneKnockoutBySampleStats(knockoutGenes.values());
+                writeSampleFile(new KnockoutByIndividual()
+                        .setSampleId(sample)
+                        .setStats(stats)
+                        .setGenes(knockoutGenes.values()));
+            }
+            logger.info("Sample {} processed in {}", sample, TimeUtils.durationToString(stopWatch));
+            logger.info("-----------------------------------------------------------");
         }
 
         private void transposeSampleToGeneOutputFiles() throws IOException {
