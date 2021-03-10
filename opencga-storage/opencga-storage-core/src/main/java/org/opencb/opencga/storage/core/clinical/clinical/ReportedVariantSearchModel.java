@@ -15,6 +15,9 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
     @Field("caId")
     private String caId;
 
+    @Field("caType")
+    private String caType;
+
     @Field("caDisorderId")
     private String caDisorderId;
 
@@ -32,11 +35,38 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
     @Field("caProbandDisorders")
     private List<String> caProbandDisorders;
 
+    @Field("caProbandSampleIds")
+    private List<String> caProbandSampleIds;
+
     @Field("caFamilyId")
     private String caFamilyId;
 
     @Field("caFamilyMemberIds")
     private List<String> caFamilyMemberIds;
+
+    @Field("caAnalystId")
+    private String caAnalystId;
+
+    @Field("caPriority")
+    private String caPriority;
+
+    @Field("caFlags")
+    private String caFlags;
+
+    @Field("caQualityControl")
+    private String caQualityControl;
+
+    @Field("caStatus")
+    private String caStatus;
+
+    // TODO: Check if we need to also add the following fields
+    /*
+    private String creationDate;
+    private String modificationDate;
+    private String dueDate;
+    private int release;
+    *
+    * */
 
     // caInfo contains the following interpretation info (by lines):
     // descriptions (DS) and comments (CM)
@@ -56,23 +86,23 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
     @Field("intStatus")
     private String intStatus;
 
-    @Field("intSofwareName")
-    private String intSoftwareName;
+//    @Field("intSofwareName")
+//    private String intSoftwareName;
+//
+//    @Field("intSofwareVersion")
+//    private String intSoftwareVersion;
 
-    @Field("intSofwareVersion")
-    private String intSoftwareVersion;
+//    @Field("intAnalystName")
+//    private String intAnalystName;
+    @Field("intAnalystId")
+    private String intAnalystId;
 
-    @Field("intAnalystName")
-    private String intAnalystName;
+    @Field("intMethodNames")
+    private String intMethodNames;
 
     // intPanels contains both panel ID and name
     @Field("intPanels")
     private List<String> intPanels;
-
-    // intInfo contains the following interpretation info (by lines):
-    // descriptions (DS), analyst (AN), dependencies (DP), filters (FT), comments (CM) and attributes (AT)
-    @Field("intInfo")
-    private List<String> intInfo;
 
     @Field("intCreationDate")
     private long intCreationDate;
@@ -89,6 +119,11 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
     @Field("intCreationDayOfWeek")
     private String intCreationDayOfWeek;
 
+    // intInfo contains the following interpretation info (by lines):
+    // descriptions (DS), analyst (AN), dependencies (DP), filters (FT), comments (CM) and attributes (AT)
+    @Field("intInfo")
+    private List<String> intInfo;
+
     // intJson a JSON string containing all interpretation but the reported variant list
     @Field("intJson")
     private String intJson;
@@ -104,36 +139,117 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
     @Field("studyId")
     private String studyId;
 
+    @Field("studyFqn")
+    private String studyFqn;
+
     // JSON containing the array of Study and all their fields
     @Field("studyJson")
     private String studyJson;
 
-    // ---------- ReportedVariant ----------
+    // ---------- Findings ----------
 
-    @Field("rvPrimaryFinding")
-    private boolean rvPrimaryFinding;
+    @Field("fPrimary")
+    private boolean fPrimary;
 
-    @Field("rvStatus")
-    private String rvStatus;
+    @Field("fStatus")
+    private String fStatus;
 
-    @Field("rvDeNovoQualityScore")
-    private Double rvDeNovoQualityScore;
+//    @Field("rvDeNovoQualityScore")
+//    private Double rvDeNovoQualityScore;
 
-    @Field("rvComments")
-    private List<String> rvComments;
+    @Field("fInterpretationMethodNames")
+    private List<String> fInterpretationMethodNames;
 
-    // A JSON string containing all reported events
-    @Field("rvReportedEventsJson")
-    private String rvReportedEventsJson;
+    @Field("fComments")
+    private List<String> fComments;
+
+    // A JSON string containing all evidences
+    @Field("fEvidencesJson")
+    private String fEvidencesJson;
 
     // A JSON string containing all attributes
-    @Field("rvAttributesJson")
-    private String rvAttributesJson;
+    @Field("fAttributesJson")
+    private String fAttributesJson;
 
-    // ---------- ReportedEvent----------
+    // ---------- Evidences----------
 
-    @Field("rePhenotypes")
-    private List<String> rePhenotypes;
+    @Field("eInterpretationMethodName")
+    private String eInterpretationMethodName;
+
+    @Field("ePhenotypes")
+    private List<String> ePhenotypes;
+
+    @Field("eGenomicFeatureId")
+    private String eGenomicFeatureId;
+
+    @Field("eGenomicFeatureType")
+    private String eGenomicFeatureType;
+
+    @Field("eGenomicFeatureTranscriptId")
+    private String eGenomicFeatureTranscriptId;
+
+    @Field("eGenomicFeatureGeneName")
+    private String eGenomicFeatureGeneName;
+
+    @Field("eGenomicFeatureConsequenceTypes")
+    private List<String> eGenomicFeatureConsequenceTypes;
+
+    @Field("eGenomicFeatureXrefs")
+    private List<String> eGenomicFeatureXrefs;
+
+    @Field("eModeOfInheritance")
+    private String eModeOfInheritance;
+
+    @Field("ePanelId")
+    private String ePanelId;
+
+    @Field("eClassificationTier")
+    private String eClassificationTier;
+
+    @Field("eClassificationAcmg")
+    private List<String> eClassificationAcmg;
+
+    @Field("eClassificationClinicalSignificance")
+    private String eClassificationClinicalSignificance;
+
+    @Field("eClassificationDrugResponse")
+    private String eClassificationDrugResponse;
+
+    @Field("eClassificationTraitAssociation")
+    private String eClassificationTraitAssociation;
+
+    @Field("eClassificationFunctionalEffect")
+    private String eClassificationFunctionalEffect;
+
+    @Field("eClassificationTumorigenesis")
+    private String eClassificationTumoriGenesis;
+
+    @Field("eClassificationOther")
+    private List<String> eClassificationOther;
+
+    @Field("ePenetrance")
+    private String ePenetrance;
+
+    @Field("eScore")
+    private Double eScore;
+
+    @Field("eFullyExplainPhenotypes")
+    private boolean eFullyExplainPhenotypes;
+
+    @Field("eCompoundHeterozygousVariantIds")
+    private List<String> eCompoundHeterozygousVariantIds;
+
+    @Field("eRoleInCancer")
+    private String eRoleInCancer;
+
+    @Field("eActionable")
+    private boolean eActionable;
+
+    @Field("eJustification")
+    private String eJustification;
+
+
+
 
     @Field("reConsequenceTypeIds")
     private List<String> reConsequenceTypeIds;
