@@ -66,7 +66,7 @@ public class VariantSampleDataManager {
         genotypes = new HashSet<>(GenotypeClass.filter(genotypes, loadedGenotypes));
 
         List<String> includeSamples;
-        if (options.containsKey(VariantQueryParam.INCLUDE_SAMPLE.key())) {
+        if (options.get(VariantQueryParam.INCLUDE_SAMPLE.key()) != null) {
             includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
         } else {
             includeSamples = null;
@@ -79,6 +79,7 @@ public class VariantSampleDataManager {
             String variantStr, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
             int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
+        Set<VariantField> includeFields = VariantField.getIncludeFields(options);
         int studyId = metadataManager.getStudyId(study);
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
@@ -98,6 +99,8 @@ public class VariantSampleDataManager {
             queries++;
             Query query = new Query(VariantQueryParam.ID.key(), variantStr)
                     .append(VariantQueryParam.STUDY.key(), study)
+                    .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), options.get(VariantQueryParam.INCLUDE_GENOTYPE.key()))
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), options.get(VariantQueryParam.INCLUDE_SAMPLE_DATA.key()))
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
                     .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
             if (includeSamples != null && !includeSamples.isEmpty()) {
@@ -107,6 +110,16 @@ public class VariantSampleDataManager {
             QueryOptions variantQueryOptions;
             if (queries == 1) {
                 variantQueryOptions = new QueryOptions();
+                List<VariantField> excludes = new ArrayList<>(2);
+                if (!includeFields.contains(VariantField.ANNOTATION)) {
+                    excludes.add(VariantField.ANNOTATION);
+                }
+                if (!includeFields.contains(VariantField.STUDIES_STATS)) {
+                    excludes.add(VariantField.STUDIES_STATS);
+                }
+                if (!excludes.isEmpty()) {
+                    variantQueryOptions.put(QueryOptions.EXCLUDE, excludes);
+                }
             } else {
                 variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE,
                         Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));

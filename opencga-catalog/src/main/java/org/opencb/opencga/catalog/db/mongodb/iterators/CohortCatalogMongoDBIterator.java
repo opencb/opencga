@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.slf4j.Logger;
@@ -81,22 +82,6 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             next = filter.apply(next);
         }
 
-        Object origSampleList = next.get(CohortDBAdaptor.QueryParams.SAMPLES.key());
-        // If the cohort contains more than 100 samples, we will only leave the id and version information
-        if (origSampleList != null && ((List) origSampleList).size() > 100) {
-            List<Document> sampleList = new ArrayList<>();
-
-            for (Document sample : ((List<Document>) origSampleList)) {
-                sampleList.add(new Document()
-                        .append(SampleDBAdaptor.QueryParams.ID.key(), sample.get(SampleDBAdaptor.QueryParams.ID.key()))
-                        .append(SampleDBAdaptor.QueryParams.UID.key(), sample.get(SampleDBAdaptor.QueryParams.UID.key()))
-                        .append(SampleDBAdaptor.QueryParams.VERSION.key(), sample.get(SampleDBAdaptor.QueryParams.VERSION.key()))
-                );
-            }
-
-            next.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
-        }
-
         addAclInformation(next, options);
 
         if (converter != null) {
@@ -119,8 +104,10 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
 
         // Get next BUFFER_SIZE documents
         int counter = 0;
+        // If a cohort has more than 100 samples, we will set this to true so only sample ids are fetched
+        boolean fetchSampleIdsOnly = false;
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
-            Document cohortDocument = (Document) mongoCursor.next();
+            Document cohortDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
                 studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
@@ -134,6 +121,9 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             if (samples != null && !options.getBoolean(NATIVE_QUERY)) {
                 List<Document> sampleList = (List<Document>) samples;
                 if (!sampleList.isEmpty()) {
+                    if (sampleList.size() > 100) {
+                        fetchSampleIdsOnly = true;
+                    }
                     sampleList.forEach(sample -> sampleSet.add(sample.getLong(SampleDBAdaptor.QueryParams.UID.key())));
                 }
             }
@@ -143,12 +133,17 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             // Obtain all those samples
             Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), new ArrayList<>(sampleSet));
             List<Document> sampleList;
+
+            QueryOptions sampleOptions = fetchSampleIdsOnly
+                    ? new QueryOptions(SampleManager.INCLUDE_SAMPLE_IDS).append(NATIVE_QUERY, true)
+                    : new QueryOptions(sampleQueryOptions);
+
             try {
                 if (user != null) {
                     query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    sampleList = sampleDBAdaptor.nativeGet(clientSession, studyUid, query, sampleQueryOptions, user).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, studyUid, query, sampleOptions, user).getResults();
                 } else {
-                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the samples associated to the cohorts: {}", e.getMessage(), e);
@@ -179,7 +174,6 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             });
         }
     }
-
 
     private QueryOptions createSampleQueryOptions() {
         QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, true);

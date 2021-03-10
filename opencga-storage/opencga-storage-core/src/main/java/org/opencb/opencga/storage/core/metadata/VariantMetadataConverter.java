@@ -88,7 +88,7 @@ public class VariantMetadataConverter {
 
         Collection<String> sampleNames;
         if (returnedSamples == null) {
-            sampleNames = metadataManager.getSamplesPosition(studyMetadata, null).keySet();
+            sampleNames = metadataManager.getSamplesPosition(studyMetadata).keySet();
         } else {
             sampleNames = toSampleNames(studyMetadata, returnedSamples);
         }
