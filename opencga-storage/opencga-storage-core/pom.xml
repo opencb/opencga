@@ -124,6 +124,10 @@
             <version>11.0.0</version>
             <optional>${azure.optional}</optional>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-mongodb</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

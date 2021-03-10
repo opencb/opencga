@@ -3,19 +3,19 @@ package org.opencb.opencga.storage.core.clinical.clinical;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,8 +73,8 @@ public class InterpretationConverter {
         this.logger = LoggerFactory.getLogger(InterpretationConverter.class);
     }
 
-    public Interpretation toInterpretation(List<ReportedVariantSearchModel> reportedVariantSearchModels) {
-        if (ListUtils.isEmpty(reportedVariantSearchModels)) {
+    public Interpretation toInterpretation(List<ClinicalVariantSearchModel> clinicalVariantSearchModels) {
+        if (CollectionUtils.isEmpty(clinicalVariantSearchModels)) {
             logger.error("Empty list of reported variant search models");
             return null;
         }
@@ -84,32 +84,32 @@ public class InterpretationConverter {
 
         try {
             // We take the first reportedVariantSearchModel to initialize Interpretation
-            interpretation = interpretationReader.readValue(reportedVariantSearchModels.get(0).getIntJson());
+            interpretation = interpretationReader.readValue(clinicalVariantSearchModels.get(0).getIntJson());
         } catch (IOException e) {
             logger.error("Unable to convert JSON string to Interpretation object. Error: " + e.getMessage());
             return null;
         }
 
         // Add reported variants (both primary and secondary findings)
-        interpretation.setPrimaryFindings(new ArrayList<>(reportedVariantSearchModels.size()));
-        interpretation.setSecondaryFindings(new ArrayList<>(reportedVariantSearchModels.size()));
+        interpretation.setPrimaryFindings(new ArrayList<>(clinicalVariantSearchModels.size()));
+        interpretation.setSecondaryFindings(new ArrayList<>(clinicalVariantSearchModels.size()));
 
-        for (ReportedVariantSearchModel rvsm: reportedVariantSearchModels) {
-            ReportedVariant reportedVariant = toReportedVariant(rvsm);
-            if (rvsm.isRvPrimaryFinding()) {
-                interpretation.getPrimaryFindings().add(reportedVariant);
-            } else {
-                interpretation.getSecondaryFindings().add(reportedVariant);
-            }
+        for (ClinicalVariantSearchModel rvsm: clinicalVariantSearchModels) {
+            ClinicalVariant reportedVariant = toClinicalVariant(rvsm);
+//            if (rvsm.isRvPrimaryFinding()) {
+//                interpretation.getPrimaryFindings().add(reportedVariant);
+//            } else {
+//                interpretation.getSecondaryFindings().add(reportedVariant);
+//            }
         }
 
         return interpretation;
     }
 
-    public List<ReportedVariantSearchModel> toReportedVariantSearchList(Interpretation interpretation) {
+    public List<ClinicalVariantSearchModel> toReportedVariantSearchList(Interpretation interpretation) {
         ObjectMapper mapper = new ObjectMapper();
 
-        List<ReportedVariantSearchModel> output = new ArrayList<>();
+        List<ClinicalVariantSearchModel> output = new ArrayList<>();
 
         // ------ Init clinical analysis field variables -------
 
@@ -160,7 +160,7 @@ public class InterpretationConverter {
 
                     // Family members
                     caFamilyMemberIds = new ArrayList<>();
-                    for (org.opencb.opencga.core.models.Individual individual : ca.getFamily().getMembers()) {
+                    for (Individual individual : ca.getFamily().getMembers()) {
                         caFamilyMemberIds.add(individual.getId());
                     }
                 }
@@ -178,14 +178,14 @@ public class InterpretationConverter {
             intId = interpretation.getId();
 
             if (interpretation.getStatus() != null) {
-                intStatus = interpretation.getStatus().name();
+                intStatus = interpretation.getStatus().getId();
             }
 
             // Interpretation software name and version
-            if (interpretation.getSoftware() != null) {
-                intSoftwareName = interpretation.getSoftware().getName();
-                intSoftwareVersion = interpretation.getSoftware().getVersion();
-            }
+//            if (interpretation.getSoftware() != null) {
+//                intSoftwareName = interpretation.getSoftware().getName();
+//                intSoftwareVersion = interpretation.getSoftware().getVersion();
+//            }
 
             // Interpretation analyst
             if (interpretation.getAnalyst() != null) {
@@ -193,17 +193,17 @@ public class InterpretationConverter {
             }
 
             // Interpretation panel (ID and name)
-            if (ListUtils.isNotEmpty(interpretation.getPanels())) {
-                intPanels = new ArrayList<>();
-                for (DiseasePanel diseasePanel : interpretation.getPanels()) {
-                    if (StringUtils.isNotEmpty(diseasePanel.getId())) {
-                        intPanels.add(diseasePanel.getId());
-                    }
-                    if (StringUtils.isNotEmpty(diseasePanel.getName())) {
-                        intPanels.add(diseasePanel.getName());
-                    }
-                }
-            }
+//            if (ListUtils.isNotEmpty(interpretation.getPanels())) {
+//                intPanels = new ArrayList<>();
+//                for (DiseasePanel diseasePanel : interpretation.getPanels()) {
+//                    if (StringUtils.isNotEmpty(diseasePanel.getId())) {
+//                        intPanels.add(diseasePanel.getId());
+//                    }
+//                    if (StringUtils.isNotEmpty(diseasePanel.getName())) {
+//                        intPanels.add(diseasePanel.getName());
+//                    }
+//                }
+//            }
 
             // Store description, analysit, dependencies, versions, filters.... into the field 'info'
             intInfo = getInterpretationInfo(interpretation);
@@ -221,10 +221,10 @@ public class InterpretationConverter {
         }
 
         // Primary findings
-        output.addAll(createReportedVariantSearchModels(interpretation.getPrimaryFindings(), true));
+        output.addAll(createClinicalVariantSearchModels(interpretation.getPrimaryFindings(), true));
 
         // Secondary findings
-        output.addAll(createReportedVariantSearchModels(interpretation.getSecondaryFindings(), false));
+        output.addAll(createClinicalVariantSearchModels(interpretation.getSecondaryFindings(), false));
 
         // Update reported variant search model by setting the intBasicJson field
         setInterpretationJson(interpretation, output);
@@ -232,150 +232,150 @@ public class InterpretationConverter {
         return output;
     }
 
-    public ReportedVariant toReportedVariant(ReportedVariantSearchModel rvsm) {
-        ReportedVariant reportedVariant = (ReportedVariant) variantSearchToVariantConverter
+    public ClinicalVariant toClinicalVariant(ClinicalVariantSearchModel rvsm) {
+        ClinicalVariant clinicalVariant = (ClinicalVariant) variantSearchToVariantConverter
                 .convertToDataModelType(rvsm);
 
         // ------ Reported variant fields -------
 
         // Reported variant status
-        if (StringUtils.isNotEmpty(rvsm.getRvStatus())) {
-            reportedVariant.setStatus(ReportedVariant.Status.valueOf(rvsm.getRvStatus()));
-        }
+//        if (StringUtils.isNotEmpty(rvsm.getRvStatus())) {
+//            clinicalVariant.setStatus(ClinicalVariant.Status.valueOf(rvsm.getRvStatus()));
+//        }
 
         // Reported variant deNovoQualityScore
-        reportedVariant.setDeNovoQualityScore(rvsm.getRvDeNovoQualityScore());
+        //clinicalVariant.setDeNovoQualityScore(rvsm.getRvDeNovoQualityScore());
 
         // Reported variant comments
-        if (ListUtils.isNotEmpty(rvsm.getRvComments())) {
-            reportedVariant.setComments(new ArrayList<>());
-            for (String text: rvsm.getRvComments()) {
-                reportedVariant.getComments().add(decodeComment(text));
-            }
-        }
+//        if (ListUtils.isNotEmpty(rvsm.getRvComments())) {
+//            clinicalVariant.setComments(new ArrayList<>());
+//            for (String text: rvsm.getRvComments()) {
+//                clinicalVariant.getComments().add(decodeComment(text));
+//            }
+//        }
 
         // Reported variant attributes
-        if (StringUtils.isNotEmpty(rvsm.getRvAttributesJson())) {
-            try {
-                reportedVariant.setAttributes(mapReader.readValue(rvsm.getRvAttributesJson()));
-            } catch (IOException e) {
-                logger.error("Error converting from JSON string to reported variant attributes", e.getMessage());
-                return null;
-            }
-        }
+//        if (StringUtils.isNotEmpty(rvsm.getRvAttributesJson())) {
+//            try {
+//                clinicalVariant.setAttributes(mapReader.readValue(rvsm.getRvAttributesJson()));
+//            } catch (IOException e) {
+//                logger.error("Error converting from JSON string to reported variant attributes", e.getMessage());
+//                return null;
+//            }
+//        }
+//
+//        // Reported events
+//        if (StringUtils.isNotEmpty(rvsm.getRvReportedEventsJson())) {
+//            try {
+//                // Just, convert the JSON into the reported event list and set the field
+//                clinicalVariant.setEvidences(mapper.readValue(rvsm.getRvReportedEventsJson(),
+//                        mapper.getTypeFactory().constructCollectionType(List.class, ClinicalVariantEvidence.class)));
+//            } catch (IOException e) {
+//                logger.error("Error converting from JSON string to reported events. Error: " + e.getMessage());
+//                return null;
+//            }
+//        }
+//
+//        // Reported variant attributes
+//        if (StringUtils.isNotEmpty(rvsm.getRvAttributesJson())) {
+//            try {
+//                clinicalVariant.setAttributes(mapReader.readValue(rvsm.getRvAttributesJson()));
+//            } catch (IOException e) {
+//                logger.error("Error converting from JSON string to reported variant attributes. Error: " + e.getMessage());
+//                return null;
+//            }
+//        }
 
-        // Reported events
-        if (StringUtils.isNotEmpty(rvsm.getRvReportedEventsJson())) {
-            try {
-                // Just, convert the JSON into the reported event list and set the field
-                reportedVariant.setEvidences(mapper.readValue(rvsm.getRvReportedEventsJson(),
-                        mapper.getTypeFactory().constructCollectionType(List.class, ReportedEvent.class)));
-            } catch (IOException e) {
-                logger.error("Error converting from JSON string to reported events. Error: " + e.getMessage());
-                return null;
-            }
-        }
-
-        // Reported variant attributes
-        if (StringUtils.isNotEmpty(rvsm.getRvAttributesJson())) {
-            try {
-                reportedVariant.setAttributes(mapReader.readValue(rvsm.getRvAttributesJson()));
-            } catch (IOException e) {
-                logger.error("Error converting from JSON string to reported variant attributes. Error: " + e.getMessage());
-                return null;
-            }
-        }
-
-        return reportedVariant;
+        return clinicalVariant;
     }
 
-    private List<ReportedVariantSearchModel> createReportedVariantSearchModels(List<ReportedVariant> reportedVariants,
+    private List<ClinicalVariantSearchModel> createClinicalVariantSearchModels(List<ClinicalVariant> clinicalVariants,
                                                                                boolean arePrimaryFindings) {
-        List<ReportedVariantSearchModel> reportedVariantSearchModels = new ArrayList<>();
+        List<ClinicalVariantSearchModel> clinicalVariantSearchModels = new ArrayList<>();
 
-        if (CollectionUtils.isNotEmpty(reportedVariants)) {
-            for (ReportedVariant reportedVariant : reportedVariants) {
+        if (CollectionUtils.isNotEmpty(clinicalVariants)) {
+            for (ClinicalVariant clinicalVariant : clinicalVariants) {
                 // Set variant fields
-                ReportedVariantSearchModel rvsm = (ReportedVariantSearchModel) variantSearchToVariantConverter
-                        .convertToStorageType(reportedVariant);
+                ClinicalVariantSearchModel cvsm = (ClinicalVariantSearchModel) variantSearchToVariantConverter
+                        .convertToStorageType(clinicalVariant);
 
                 // ------ ClinicalAnalisys fields -------
-                rvsm.setCaJson(caJson);
-                rvsm.setCaId(caId);
-                rvsm.setCaDisorderId(caDisorderId);
-                rvsm.setCaFiles(caFilenames);
-                rvsm.setCaProbandId(caProbandId);
-                rvsm.setCaProbandDisorders(caProbandDisorders);
-                rvsm.setCaProbandPhenotypes(caProbandPhenotypes);
-                rvsm.setCaFamilyId(caFamilyId);
-                rvsm.setCaFamilyMemberIds(caFamilyMemberIds);
-                rvsm.setCaInfo(caInfo);
+                cvsm.setCaJson(caJson);
+                cvsm.setCaId(caId);
+                cvsm.setCaDisorderId(caDisorderId);
+                cvsm.setCaFiles(caFilenames);
+                cvsm.setCaProbandId(caProbandId);
+                cvsm.setCaProbandDisorders(caProbandDisorders);
+                cvsm.setCaProbandPhenotypes(caProbandPhenotypes);
+                cvsm.setCaFamilyId(caFamilyId);
+                cvsm.setCaFamilyMemberIds(caFamilyMemberIds);
+                cvsm.setCaInfo(caInfo);
 
                 // ------ Interpretaion fields -------
-                rvsm.setIntId(intId);
-                rvsm.setIntStatus(intStatus);
-                rvsm.setIntSoftwareName(intSoftwareName);
-                rvsm.setIntSoftwareVersion(intSoftwareVersion);
-                rvsm.setIntAnalystName(intAnalystName);
-                rvsm.setIntPanels(intPanels);
-                rvsm.setIntInfo(intInfo);
-                rvsm.setIntCreationDate(intCreationDate);
-                rvsm.setIntCreationYear(intCreationYear);
-                rvsm.setIntCreationMonth(intCreationMonth);
-                rvsm.setIntCreationDay(intCreationDay);
-                rvsm.setIntCreationDayOfWeek(intCreationDayOfWeek);
+                cvsm.setIntId(intId);
+                cvsm.setIntStatus(intStatus);
+//                cvsm.setIntSoftwareName(intSoftwareName);
+//                cvsm.setIntSoftwareVersion(intSoftwareVersion);
+//                cvsm.setIntAnalystName(intAnalystName);
+                cvsm.setIntPanels(intPanels);
+                cvsm.setIntInfo(intInfo);
+                cvsm.setIntCreationDate(intCreationDate);
+                cvsm.setIntCreationYear(intCreationYear);
+                cvsm.setIntCreationMonth(intCreationMonth);
+                cvsm.setIntCreationDay(intCreationDay);
+                cvsm.setIntCreationDayOfWeek(intCreationDayOfWeek);
 
                 // Interpretation field intBasic is set later
 
                 // ------ ReportedVariant fields -------
-                if (ListUtils.isNotEmpty(reportedVariant.getEvidences())) {
-                    try {
-                        // Reported event list as a JSON string
-                        rvsm.setRvReportedEventsJson(mapper.writeValueAsString(reportedVariant.getEvidences()));
-                    } catch (JsonProcessingException e) {
-                        logger.error("Unable to convert reported event list to JSON string. Error: " + e.getMessage());
-                        return null;
-                    }
+                if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
+//                    try {
+//                        // Reported event list as a JSON string
+//                        cvsm.setRvReportedEventsJson(mapper.writeValueAsString(clinicalVariant.getEvidences()));
+//                    } catch (JsonProcessingException e) {
+//                        logger.error("Unable to convert reported event list to JSON string. Error: " + e.getMessage());
+//                        return null;
+//                    }
                 }
 
-                // Reported variant primary finding
-                rvsm.setRvPrimaryFinding(arePrimaryFindings);
-
-                // Reported variant status
-                if (reportedVariant.getStatus() != null) {
-                    rvsm.setRvStatus(reportedVariant.getStatus().name());
-                }
-
-                // Reported variant deNovoQualityScore
-                rvsm.setRvDeNovoQualityScore(reportedVariant.getDeNovoQualityScore());
-
-                // Reported variant comments
-                if (ListUtils.isNotEmpty(reportedVariant.getComments())) {
-                    rvsm.setRvComments(getComments(reportedVariant.getComments()));
-                }
-
-                // Reported variant attributes as a JSON string
-                if (MapUtils.isNotEmpty(reportedVariant.getAttributes())) {
-                    try {
-                        rvsm.setRvAttributesJson(mapper.writeValueAsString(reportedVariant.getAttributes()));
-                    } catch (JsonProcessingException e) {
-                        logger.error("Unable to convert reported attributes map to JSON string. Error: " + e.getMessage());
-                        return null;
-                    }
-                }
+//                // Reported variant primary finding
+//                cvsm.setRvPrimaryFinding(arePrimaryFindings);
+//
+//                // Reported variant status
+//                if (clinicalVariant.getStatus() != null) {
+//                    cvsm.setRvStatus(clinicalVariant.getStatus().name());
+//                }
+//
+//                // Reported variant deNovoQualityScore
+//                //rvsm.setRvDeNovoQualityScore(reportedVariant.getDeNovoQualityScore());
+//
+//                // Reported variant comments
+//                if (ListUtils.isNotEmpty(clinicalVariant.getComments())) {
+//                    cvsm.setRvComments(getComments(clinicalVariant.getComments()));
+//                }
+//
+//                // Reported variant attributes as a JSON string
+//                if (MapUtils.isNotEmpty(clinicalVariant.getAttributes())) {
+//                    try {
+//                        cvsm.setRvAttributesJson(mapper.writeValueAsString(clinicalVariant.getAttributes()));
+//                    } catch (JsonProcessingException e) {
+//                        logger.error("Unable to convert reported attributes map to JSON string. Error: " + e.getMessage());
+//                        return null;
+//                    }
+//                }
 
                 // ------ ReportedEvent fields -------
-                setReportedEvents(reportedVariant.getEvidences(), rvsm);
+                setReportedEvents(clinicalVariant.getEvidences(), cvsm);
 
-                reportedVariantSearchModels.add(rvsm);
+                clinicalVariantSearchModels.add(cvsm);
             }
         }
-        return reportedVariantSearchModels;
+        return clinicalVariantSearchModels;
     }
 
 
-    private void setReportedEvents(List<ReportedEvent> evidences, ReportedVariantSearchModel rvsm) {
-        if (ListUtils.isNotEmpty(evidences)) {
+    private void setReportedEvents(List<ClinicalVariantEvidence> evidences, ClinicalVariantSearchModel rvsm) {
+        if (CollectionUtils.isNotEmpty(evidences)) {
             Set<String> aux = new HashSet<>();
             Map<String, List<String>> justification = new HashMap<>();
 
@@ -393,15 +393,15 @@ public class InterpretationConverter {
             Set<String> setOtherClass = new HashSet<>();
             Set<String> setRolesInCancer = new HashSet<>();
             Set<String> setTier = new HashSet<>();
-            for (ReportedEvent reportedEvent: evidences) {
+            for (ClinicalVariantEvidence evidence: evidences) {
                 // These structures will help us to manage the reported event justification
                 List<String> list;
                 List<List<String>> lists = new ArrayList<>();
 
                 // Phenotypes
-                if (CollectionUtils.isNotEmpty(reportedEvent.getPhenotypes())) {
+                if (CollectionUtils.isNotEmpty(evidence.getPhenotypes())) {
                     list = new ArrayList<>();
-                    for (Phenotype phenotype : reportedEvent.getPhenotypes()) {
+                    for (Phenotype phenotype : evidence.getPhenotypes()) {
                         list.add(phenotype.getId());
                     }
                     setPhenotypes.addAll(list);
@@ -409,51 +409,51 @@ public class InterpretationConverter {
                 }
 
                 // Consequence type IDs
-                if (CollectionUtils.isNotEmpty(reportedEvent.getConsequenceTypes())) {
-                    list = new ArrayList<>();
-                    for (SequenceOntologyTerm soTerm : reportedEvent.getConsequenceTypes()) {
-                        list.add(soTerm.getAccession());
-                    }
-                    setConsequenceTypeIds.addAll(list);
-                    lists.add(list);
-                }
+//                if (CollectionUtils.isNotEmpty(evidence.getConsequenceTypes())) {
+//                    list = new ArrayList<>();
+//                    for (SequenceOntologyTerm soTerm : evidence.getConsequenceTypes()) {
+//                        list.add(soTerm.getAccession());
+//                    }
+//                    setConsequenceTypeIds.addAll(list);
+//                    lists.add(list);
+//                }
 
                 // Xrefs
-                if (reportedEvent.getGenomicFeature() != null) {
-                    list = new ArrayList<>();
-                    if (StringUtils.isNotEmpty(reportedEvent.getGenomicFeature().getEnsemblGeneId())) {
-                        list.add(reportedEvent.getGenomicFeature().getEnsemblGeneId());
-                    }
-                    if (StringUtils.isNotEmpty(reportedEvent.getGenomicFeature().getEnsemblTranscriptId())) {
-                        list.add(reportedEvent.getGenomicFeature().getEnsemblTranscriptId());
-                    }
-                    if (StringUtils.isNotEmpty(reportedEvent.getGenomicFeature().getEnsemblRegulatoryId())) {
-                        list.add(reportedEvent.getGenomicFeature().getEnsemblRegulatoryId());
-                    }
-                    if (StringUtils.isNotEmpty(reportedEvent.getGenomicFeature().getGeneName())) {
-                        list.add(reportedEvent.getGenomicFeature().getGeneName());
-                    }
-                    if (MapUtils.isNotEmpty(reportedEvent.getGenomicFeature().getXrefs())) {
-                        list.addAll(reportedEvent.getGenomicFeature().getXrefs().values());
-                    }
-                    setXrefs.addAll(list);
-                    lists.add(list);
-                }
+//                if (evidence.getGenomicFeature() != null) {
+//                    list = new ArrayList<>();
+//                    if (StringUtils.isNotEmpty(evidence.getGenomicFeature().getEnsemblGeneId())) {
+//                        list.add(evidence.getGenomicFeature().getEnsemblGeneId());
+//                    }
+//                    if (StringUtils.isNotEmpty(evidence.getGenomicFeature().getEnsemblTranscriptId())) {
+//                        list.add(evidence.getGenomicFeature().getEnsemblTranscriptId());
+//                    }
+//                    if (StringUtils.isNotEmpty(evidence.getGenomicFeature().getEnsemblRegulatoryId())) {
+//                        list.add(evidence.getGenomicFeature().getEnsemblRegulatoryId());
+//                    }
+//                    if (StringUtils.isNotEmpty(evidence.getGenomicFeature().getGeneName())) {
+//                        list.add(evidence.getGenomicFeature().getGeneName());
+//                    }
+//                    if (MapUtils.isNotEmpty(evidence.getGenomicFeature().getXrefs())) {
+//                        list.addAll(evidence.getGenomicFeature().getXrefs().values());
+//                    }
+//                    setXrefs.addAll(list);
+//                    lists.add(list);
+//                }
 
                 // Panel IDs
-                if (StringUtils.isNotEmpty(reportedEvent.getPanelId())) {
+                if (StringUtils.isNotEmpty(evidence.getPanelId())) {
                     list = new ArrayList<>();
-                    list.add(reportedEvent.getPanelId());
+                    list.add(evidence.getPanelId());
                     setPanelIds.addAll(list);
                     lists.add(list);
                 }
 
                 // Variant classification
-                if (reportedEvent.getClassification() != null) {
+                if (evidence.getClassification() != null) {
                     // ACMG
-                    if (ListUtils.isNotEmpty(reportedEvent.getClassification().getAcmg())) {
+                    if (CollectionUtils.isNotEmpty(evidence.getClassification().getAcmg())) {
                         list = new ArrayList<>();
-                        for (String acmg : reportedEvent.getClassification().getAcmg()) {
+                        for (String acmg : evidence.getClassification().getAcmg()) {
                             list.add(acmg);
                         }
                         setAcmg.addAll(list);
@@ -461,49 +461,49 @@ public class InterpretationConverter {
                     }
 
                     // Clinical significance
-                    if (reportedEvent.getClassification().getClinicalSignificance() != null) {
+                    if (evidence.getClassification().getClinicalSignificance() != null) {
                         list = new ArrayList<>();
-                        list.add(reportedEvent.getClassification().getClinicalSignificance().toString());
+                        list.add(evidence.getClassification().getClinicalSignificance().toString());
                         setClinicalSig.addAll(list);
                         lists.add(list);
                     }
 
                     // Drug response
-                    if (reportedEvent.getClassification().getDrugResponse() != null) {
+                    if (evidence.getClassification().getDrugResponse() != null) {
                         list = new ArrayList<>();
-                        list.add(reportedEvent.getClassification().getDrugResponse().toString());
+                        list.add(evidence.getClassification().getDrugResponse().toString());
                         setDrugResponse.addAll(list);
                         lists.add(list);
                     }
 
                     // Trait association
-                    if (reportedEvent.getClassification().getTraitAssociation() != null) {
+                    if (evidence.getClassification().getTraitAssociation() != null) {
                         list = new ArrayList<>();
-                        list.add(reportedEvent.getClassification().getTraitAssociation().toString());
+                        list.add(evidence.getClassification().getTraitAssociation().toString());
                         setTraitAssoc.addAll(list);
                         lists.add(list);
                     }
 
                     // Functional effect
-                    if (reportedEvent.getClassification().getFunctionalEffect() != null) {
+                    if (evidence.getClassification().getFunctionalEffect() != null) {
                         list = new ArrayList<>();
-                        list.add(reportedEvent.getClassification().getFunctionalEffect().toString());
+                        list.add(evidence.getClassification().getFunctionalEffect().toString());
                         setFunctEffect.addAll(list);
                         lists.add(list);
                     }
 
                     // Tumorigenesis
-                    if (reportedEvent.getClassification().getTumorigenesis() != null) {
+                    if (evidence.getClassification().getTumorigenesis() != null) {
                         list = new ArrayList<>();
-                        list.add(reportedEvent.getClassification().getTumorigenesis().toString());
+                        list.add(evidence.getClassification().getTumorigenesis().toString());
                         setTumorigenesis.addAll(list);
                         lists.add(list);
                     }
 
                     // Other classification
-                    if (ListUtils.isNotEmpty(reportedEvent.getClassification().getOther())) {
+                    if (CollectionUtils.isNotEmpty(evidence.getClassification().getOther())) {
                         list = new ArrayList<>();
-                        for (String other: reportedEvent.getClassification().getOther()) {
+                        for (String other: evidence.getClassification().getOther()) {
                             list.add(other);
                         }
                         setOtherClass.addAll(list);
@@ -512,20 +512,20 @@ public class InterpretationConverter {
                 }
 
                 // Roles in cancer
-                if (reportedEvent.getRoleInCancer() != null) {
+                if (evidence.getRoleInCancer() != null) {
                     list = new ArrayList<>();
-                    list.add(reportedEvent.getRoleInCancer().toString());
+                    list.add(evidence.getRoleInCancer().toString());
                     setRolesInCancer.addAll(list);
                     lists.add(list);
                 }
 
                 // Tier
-                if (reportedEvent.getTier() != null) {
-                    list = new ArrayList<>();
-                    list.add(reportedEvent.getTier());
-                    setTier.addAll(list);
-                    lists.add(list);
-                }
+//                if (evidence.getTier() != null) {
+//                    list = new ArrayList<>();
+//                    list.add(evidence.getTier());
+//                    setTier.addAll(list);
+//                    lists.add(list);
+//                }
 
                 // Justification and auxiliar field
                 String key;
@@ -534,7 +534,7 @@ public class InterpretationConverter {
                         if (!justification.containsKey(key1)) {
                             justification.put(key1, new ArrayList<>());
                         }
-                        justification.get(key1).add(reportedEvent.getJustification());
+                        justification.get(key1).add(evidence.getJustification());
                     }
                 }
                 for (int i = 0; i < lists.size() - 1; i++) {
@@ -546,7 +546,7 @@ public class InterpretationConverter {
                                 if (!justification.containsKey(key)) {
                                     justification.put(key, new ArrayList<>());
                                 }
-                                justification.get(key).add(reportedEvent.getJustification());
+                                justification.get(key).add(evidence.getJustification());
                             }
                         }
                     }
@@ -554,7 +554,7 @@ public class InterpretationConverter {
             }
 
             // Update reported event fields
-            rvsm.getRePhenotypes().addAll(setPhenotypes);
+//            rvsm.getRePhenotypes().addAll(setPhenotypes);
             rvsm.getReConsequenceTypeIds().addAll(setConsequenceTypeIds);
             rvsm.getReXrefs().addAll(setXrefs);
             rvsm.getReAcmg().addAll(setAcmg);
@@ -571,13 +571,13 @@ public class InterpretationConverter {
         }
     }
 
-    private void setInterpretationJson(Interpretation interpretation, List<ReportedVariantSearchModel> reportedVariantSearchModels) {
+    private void setInterpretationJson(Interpretation interpretation, List<ClinicalVariantSearchModel> clinicalVariantSearchModels) {
         try {
             // Set to null the reported variants (primary and secondary findings) in order to avoid save them into the json
             interpretation.setPrimaryFindings(null);
             interpretation.setSecondaryFindings(null);
             String intJson = mapper.writeValueAsString(interpretation);
-            for (ReportedVariantSearchModel rvsm: reportedVariantSearchModels) {
+            for (ClinicalVariantSearchModel rvsm: clinicalVariantSearchModels) {
                 rvsm.setIntJson(intJson);
             }
         } catch (JsonProcessingException e) {
@@ -597,8 +597,8 @@ public class InterpretationConverter {
         }
 
         // Interpretation comments
-        if (ListUtils.isNotEmpty(ca.getComments())) {
-            for (Comment comment: ca.getComments()) {
+        if (CollectionUtils.isNotEmpty(ca.getComments())) {
+            for (ClinicalComment comment: ca.getComments()) {
                 info.add(encodeComment(comment, ClinicalVariantUtils.COMMENT_PREFIX));
             }
         }
@@ -618,35 +618,35 @@ public class InterpretationConverter {
             info.add(line.toString());
         }
 
-        // Interpretation analyst
-        if (interpretation.getAnalyst() != null) {
-            line = new StringBuilder(ClinicalVariantUtils.ANALYST_PREFIX).append(ClinicalVariantUtils.FIELD_SEPARATOR)
-                    .append(interpretation.getAnalyst().getName())
-                    .append(ClinicalVariantUtils.FIELD_SEPARATOR).append(interpretation.getAnalyst().getEmail())
-                    .append(ClinicalVariantUtils.FIELD_SEPARATOR)
-                    .append(interpretation.getAnalyst().getCompany());
-            info.add(line.toString());
-        }
+//        // Interpretation analyst
+//        if (interpretation.getAnalyst() != null) {
+//            line = new StringBuilder(ClinicalVariantUtils.ANALYST_PREFIX).append(ClinicalVariantUtils.FIELD_SEPARATOR)
+//                    .append(interpretation.getAnalyst().getName())
+//                    .append(ClinicalVariantUtils.FIELD_SEPARATOR).append(interpretation.getAnalyst().getEmail())
+//                    .append(ClinicalVariantUtils.FIELD_SEPARATOR)
+//                    .append(interpretation.getAnalyst().getCompany());
+//            info.add(line.toString());
+//        }
 
-        // Interpretation dependencies
-        if (ListUtils.isNotEmpty(interpretation.getDependencies())) {
-            for (Software dep: interpretation.getDependencies()) {
-                info.add(ClinicalVariantUtils.DEPENDENCY_PREFIX + ClinicalVariantUtils.FIELD_SEPARATOR + dep.getName()
-                        + ClinicalVariantUtils.FIELD_SEPARATOR + dep.getVersion());
-            }
-        }
+//        // Interpretation dependencies
+//        if (CollectionUtils.isNotEmpty(interpretation.getDependencies())) {
+//            for (Software dep: interpretation.getDependencies()) {
+//                info.add(ClinicalVariantUtils.DEPENDENCY_PREFIX + ClinicalVariantUtils.FIELD_SEPARATOR + dep.getName()
+//                        + ClinicalVariantUtils.FIELD_SEPARATOR + dep.getVersion());
+//            }
+//        }
 
-        // Interpretation filters
-        if (MapUtils.isNotEmpty(interpretation.getFilters())) {
-            for (String key: interpretation.getFilters().keySet()) {
-                info.add(ClinicalVariantUtils.FILTER_PREFIX + ClinicalVariantUtils.FIELD_SEPARATOR + key + KEY_VALUE_SEPARATOR
-                        + interpretation.getFilters().get(key));
-            }
-        }
+//        // Interpretation filters
+//        if (MapUtils.isNotEmpty(interpretation.getFilters())) {
+//            for (String key: interpretation.getFilters().keySet()) {
+//                info.add(ClinicalVariantUtils.FILTER_PREFIX + ClinicalVariantUtils.FIELD_SEPARATOR + key + KEY_VALUE_SEPARATOR
+//                        + interpretation.getFilters().get(key));
+//            }
+//        }
 
         // Interpretation comments
-        if (ListUtils.isNotEmpty(interpretation.getComments())) {
-            for (Comment comment: interpretation.getComments()) {
+        if (CollectionUtils.isNotEmpty(interpretation.getComments())) {
+            for (ClinicalComment comment: interpretation.getComments()) {
                 info.add(encodeComment(comment, ClinicalVariantUtils.COMMENT_PREFIX));
             }
         }
@@ -663,9 +663,9 @@ public class InterpretationConverter {
         return info;
     }
 
-    private List<String> getComments(List<Comment> comments) {
+    private List<String> getComments(List<ClinicalComment> comments) {
         List<String> res = new ArrayList<>(comments.size());
-        for (Comment comment: comments) {
+        for (ClinicalComment comment: comments) {
             res.add(encodeComent(comment));
         }
         return res;
@@ -673,40 +673,38 @@ public class InterpretationConverter {
 
     private List<String> getFiles(ClinicalAnalysis ca) {
         Set<String> files = new HashSet<>();
-        if (MapUtils.isNotEmpty(ca.getFiles())) {
-            for (List<File> caFiles: ca.getFiles().values()) {
-                for (File caFile: caFiles) {
-                    files.add(caFile.getName());
-                }
+        if (CollectionUtils.isNotEmpty(ca.getFiles())) {
+            for (File caFile : ca.getFiles()) {
+                files.add(caFile.getName());
             }
         }
         return new ArrayList<>(files);
     }
 
-    public static String encodeComent(Comment comment) {
+    public static String encodeComent(ClinicalComment comment) {
         return encodeComment(comment, null);
     }
 
-    public static String encodeComment(Comment comment, String prefix) {
+    public static String encodeComment(ClinicalComment comment, String prefix) {
         StringBuilder sb = new StringBuilder();
 
         if (StringUtils.isNotEmpty(prefix)) {
             sb.append(prefix).append(ClinicalVariantUtils.FIELD_SEPARATOR);
         }
         sb.append(comment.getAuthor() == null ? " " : comment.getAuthor()).append(ClinicalVariantUtils.FIELD_SEPARATOR);
-        sb.append(comment.getType() == null ? " " : comment.getType()).append(ClinicalVariantUtils.FIELD_SEPARATOR);
+//        sb.append(comment.getType() == null ? " " : comment.getType()).append(ClinicalVariantUtils.FIELD_SEPARATOR);
         sb.append(comment.getDate() == null ? " " : comment.getDate()).append(ClinicalVariantUtils.FIELD_SEPARATOR);
-        sb.append(comment.getText() == null ? " " : comment.getText());
+        sb.append(comment.getMessage() == null ? " " : comment.getMessage());
 
         return sb.toString();
     }
 
-    public static Comment decodeComment(String str) {
+    public static ClinicalComment decodeComment(String str) {
         return decodeComment(str, false);
     }
 
-    public static Comment decodeComment(String str, boolean prefix) {
-        Comment comment = new Comment();
+    public static ClinicalComment decodeComment(String str, boolean prefix) {
+        ClinicalComment comment = new ClinicalComment();
         String[] fields = str.split(ClinicalVariantUtils.FIELD_SEPARATOR);
         int start = 0;
         if (prefix) {
@@ -719,14 +717,14 @@ public class InterpretationConverter {
                     case 0:
                         comment.setAuthor(value);
                         break;
-                    case 1:
-                        comment.setType(value);
-                        break;
+//                    case 1:
+//                        comment.setType(value);
+//                    break;
                     case 2:
                         comment.setDate(value);
                         break;
                     case 3:
-                        comment.setText(value);
+                        comment.setMessage(value);
                         break;
                     default:
                         break;

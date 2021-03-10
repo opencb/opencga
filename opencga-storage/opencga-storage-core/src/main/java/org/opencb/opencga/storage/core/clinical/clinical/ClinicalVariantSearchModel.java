@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ReportedVariantSearchModel extends VariantSearchModel {
+public class ClinicalVariantSearchModel extends VariantSearchModel {
 
     // ---------- ClinicalAnalysis ----------
 
@@ -296,7 +296,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
     @Field("reAux")
     private List<String> reAux;
 
-    public ReportedVariantSearchModel() {
+    public ClinicalVariantSearchModel() {
         // ---------- ClinicalAnalysis ----------
         caFiles = new ArrayList<>();
         caProbandPhenotypes = new ArrayList<>();
@@ -307,11 +307,11 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         intPanels = new ArrayList<>();
         intInfo = new ArrayList<>();
 
-        // ---------- ReportedVariant ----------
-        rvComments = new ArrayList<>();
+        // ---------- ClinicalVariant ----------
+//        cvComments = new ArrayList<>();
 
-        // ---------- ReportedEvent----------
-        rePhenotypes = new ArrayList<>();
+        // ---------- ClinicalVariantEvidence----------
+//        cvePhenotypes = new ArrayList<>();
         reConsequenceTypeIds = new ArrayList<>();
         reGeneNames = new ArrayList<>();
         reXrefs = new ArrayList<>();
@@ -331,7 +331,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ReportedVariantSearchModel{");
+        final StringBuilder sb = new StringBuilder("ClinicalVariantSearchModel{");
         sb.append("caId='").append(caId).append('\'');
         sb.append(", caDisorderId='").append(caDisorderId).append('\'');
         sb.append(", caFiles=").append(caFiles);
@@ -344,9 +344,9 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         sb.append(", caJson='").append(caJson).append('\'');
         sb.append(", intId='").append(intId).append('\'');
         sb.append(", intStatus='").append(intStatus).append('\'');
-        sb.append(", intSoftwareName='").append(intSoftwareName).append('\'');
-        sb.append(", intSoftwareVersion='").append(intSoftwareVersion).append('\'');
-        sb.append(", intAnalystName='").append(intAnalystName).append('\'');
+//        sb.append(", intSoftwareName='").append(intSoftwareName).append('\'');
+//        sb.append(", intSoftwareVersion='").append(intSoftwareVersion).append('\'');
+//        sb.append(", intAnalystName='").append(intAnalystName).append('\'');
         sb.append(", intPanels=").append(intPanels);
         sb.append(", intInfo=").append(intInfo);
         sb.append(", intCreationDate=").append(intCreationDate);
@@ -359,13 +359,13 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         sb.append(", assembly='").append(assembly).append('\'');
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", studyJson='").append(studyJson).append('\'');
-        sb.append(", rvPrimaryFinding=").append(rvPrimaryFinding);
-        sb.append(", rvStatus='").append(rvStatus).append('\'');
-        sb.append(", rvDeNovoQualityScore=").append(rvDeNovoQualityScore);
-        sb.append(", rvComments=").append(rvComments);
-        sb.append(", rvReportedEventsJson='").append(rvReportedEventsJson).append('\'');
-        sb.append(", rvAttributesJson='").append(rvAttributesJson).append('\'');
-        sb.append(", rePhenotypes=").append(rePhenotypes);
+//        sb.append(", rvPrimaryFinding=").append(rvPrimaryFinding);
+//        sb.append(", rvStatus='").append(rvStatus).append('\'');
+//        sb.append(", rvDeNovoQualityScore=").append(rvDeNovoQualityScore);
+//        sb.append(", rvComments=").append(rvComments);
+//        sb.append(", rvReportedEventsJson='").append(rvReportedEventsJson).append('\'');
+//        sb.append(", rvAttributesJson='").append(rvAttributesJson).append('\'');
+//        sb.append(", rePhenotypes=").append(rePhenotypes);
         sb.append(", reConsequenceTypeIds=").append(reConsequenceTypeIds);
         sb.append(", reGeneNames=").append(reGeneNames);
         sb.append(", reXrefs=").append(reXrefs);
@@ -389,7 +389,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caId;
     }
 
-    public ReportedVariantSearchModel setCaId(String caId) {
+    public ClinicalVariantSearchModel setCaId(String caId) {
         this.caId = caId;
         return this;
     }
@@ -398,7 +398,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caDisorderId;
     }
 
-    public ReportedVariantSearchModel setCaDisorderId(String caDisorderId) {
+    public ClinicalVariantSearchModel setCaDisorderId(String caDisorderId) {
         this.caDisorderId = caDisorderId;
         return this;
     }
@@ -407,7 +407,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caFiles;
     }
 
-    public ReportedVariantSearchModel setCaFiles(List<String> caFiles) {
+    public ClinicalVariantSearchModel setCaFiles(List<String> caFiles) {
         this.caFiles = caFiles;
         return this;
     }
@@ -416,7 +416,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caProbandId;
     }
 
-    public ReportedVariantSearchModel setCaProbandId(String caProbandId) {
+    public ClinicalVariantSearchModel setCaProbandId(String caProbandId) {
         this.caProbandId = caProbandId;
         return this;
     }
@@ -425,7 +425,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caProbandPhenotypes;
     }
 
-    public ReportedVariantSearchModel setCaProbandPhenotypes(List<String> caProbandPhenotypes) {
+    public ClinicalVariantSearchModel setCaProbandPhenotypes(List<String> caProbandPhenotypes) {
         this.caProbandPhenotypes = caProbandPhenotypes;
         return this;
     }
@@ -434,7 +434,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caProbandDisorders;
     }
 
-    public ReportedVariantSearchModel setCaProbandDisorders(List<String> caProbandDisorders) {
+    public ClinicalVariantSearchModel setCaProbandDisorders(List<String> caProbandDisorders) {
         this.caProbandDisorders = caProbandDisorders;
         return this;
     }
@@ -443,7 +443,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caFamilyId;
     }
 
-    public ReportedVariantSearchModel setCaFamilyId(String caFamilyId) {
+    public ClinicalVariantSearchModel setCaFamilyId(String caFamilyId) {
         this.caFamilyId = caFamilyId;
         return this;
     }
@@ -452,7 +452,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caFamilyMemberIds;
     }
 
-    public ReportedVariantSearchModel setCaFamilyMemberIds(List<String> caFamilyMemberIds) {
+    public ClinicalVariantSearchModel setCaFamilyMemberIds(List<String> caFamilyMemberIds) {
         this.caFamilyMemberIds = caFamilyMemberIds;
         return this;
     }
@@ -461,7 +461,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caInfo;
     }
 
-    public ReportedVariantSearchModel setCaInfo(List<String> caInfo) {
+    public ClinicalVariantSearchModel setCaInfo(List<String> caInfo) {
         this.caInfo = caInfo;
         return this;
     }
@@ -470,7 +470,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return caJson;
     }
 
-    public ReportedVariantSearchModel setCaJson(String caJson) {
+    public ClinicalVariantSearchModel setCaJson(String caJson) {
         this.caJson = caJson;
         return this;
     }
@@ -479,7 +479,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intId;
     }
 
-    public ReportedVariantSearchModel setIntId(String intId) {
+    public ClinicalVariantSearchModel setIntId(String intId) {
         this.intId = intId;
         return this;
     }
@@ -488,43 +488,43 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intStatus;
     }
 
-    public ReportedVariantSearchModel setIntStatus(String intStatus) {
+    public ClinicalVariantSearchModel setIntStatus(String intStatus) {
         this.intStatus = intStatus;
         return this;
     }
 
-    public String getIntSoftwareName() {
-        return intSoftwareName;
-    }
-
-    public ReportedVariantSearchModel setIntSoftwareName(String intSoftwareName) {
-        this.intSoftwareName = intSoftwareName;
-        return this;
-    }
-
-    public String getIntSoftwareVersion() {
-        return intSoftwareVersion;
-    }
-
-    public ReportedVariantSearchModel setIntSoftwareVersion(String intSoftwareVersion) {
-        this.intSoftwareVersion = intSoftwareVersion;
-        return this;
-    }
-
-    public String getIntAnalystName() {
-        return intAnalystName;
-    }
-
-    public ReportedVariantSearchModel setIntAnalystName(String intAnalystName) {
-        this.intAnalystName = intAnalystName;
-        return this;
-    }
+//    public String getIntSoftwareName() {
+//        return intSoftwareName;
+//    }
+//
+//    public ClinicalVariantSearchModel setIntSoftwareName(String intSoftwareName) {
+//        this.intSoftwareName = intSoftwareName;
+//        return this;
+//    }
+//
+//    public String getIntSoftwareVersion() {
+//        return intSoftwareVersion;
+//    }
+//
+//    public ClinicalVariantSearchModel setIntSoftwareVersion(String intSoftwareVersion) {
+//        this.intSoftwareVersion = intSoftwareVersion;
+//        return this;
+//    }
+//
+//    public String getIntAnalystName() {
+//        return intAnalystName;
+//    }
+//
+//    public ClinicalVariantSearchModel setIntAnalystName(String intAnalystName) {
+//        this.intAnalystName = intAnalystName;
+//        return this;
+//    }
 
     public List<String> getIntPanels() {
         return intPanels;
     }
 
-    public ReportedVariantSearchModel setIntPanels(List<String> intPanels) {
+    public ClinicalVariantSearchModel setIntPanels(List<String> intPanels) {
         this.intPanels = intPanels;
         return this;
     }
@@ -533,7 +533,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intInfo;
     }
 
-    public ReportedVariantSearchModel setIntInfo(List<String> intInfo) {
+    public ClinicalVariantSearchModel setIntInfo(List<String> intInfo) {
         this.intInfo = intInfo;
         return this;
     }
@@ -542,7 +542,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intCreationDate;
     }
 
-    public ReportedVariantSearchModel setIntCreationDate(long intCreationDate) {
+    public ClinicalVariantSearchModel setIntCreationDate(long intCreationDate) {
         this.intCreationDate = intCreationDate;
         return this;
     }
@@ -551,7 +551,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intCreationYear;
     }
 
-    public ReportedVariantSearchModel setIntCreationYear(int intCreationYear) {
+    public ClinicalVariantSearchModel setIntCreationYear(int intCreationYear) {
         this.intCreationYear = intCreationYear;
         return this;
     }
@@ -560,7 +560,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intCreationMonth;
     }
 
-    public ReportedVariantSearchModel setIntCreationMonth(int intCreationMonth) {
+    public ClinicalVariantSearchModel setIntCreationMonth(int intCreationMonth) {
         this.intCreationMonth = intCreationMonth;
         return this;
     }
@@ -569,7 +569,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intCreationDay;
     }
 
-    public ReportedVariantSearchModel setIntCreationDay(int intCreationDay) {
+    public ClinicalVariantSearchModel setIntCreationDay(int intCreationDay) {
         this.intCreationDay = intCreationDay;
         return this;
     }
@@ -578,7 +578,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intCreationDayOfWeek;
     }
 
-    public ReportedVariantSearchModel setIntCreationDayOfWeek(String intCreationDayOfWeek) {
+    public ClinicalVariantSearchModel setIntCreationDayOfWeek(String intCreationDayOfWeek) {
         this.intCreationDayOfWeek = intCreationDayOfWeek;
         return this;
     }
@@ -587,7 +587,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return intJson;
     }
 
-    public ReportedVariantSearchModel setIntJson(String intJson) {
+    public ClinicalVariantSearchModel setIntJson(String intJson) {
         this.intJson = intJson;
         return this;
     }
@@ -596,7 +596,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return projectId;
     }
 
-    public ReportedVariantSearchModel setProjectId(String projectId) {
+    public ClinicalVariantSearchModel setProjectId(String projectId) {
         this.projectId = projectId;
         return this;
     }
@@ -605,7 +605,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return assembly;
     }
 
-    public ReportedVariantSearchModel setAssembly(String assembly) {
+    public ClinicalVariantSearchModel setAssembly(String assembly) {
         this.assembly = assembly;
         return this;
     }
@@ -614,7 +614,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return studyId;
     }
 
-    public ReportedVariantSearchModel setStudyId(String studyId) {
+    public ClinicalVariantSearchModel setStudyId(String studyId) {
         this.studyId = studyId;
         return this;
     }
@@ -623,79 +623,79 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return studyJson;
     }
 
-    public ReportedVariantSearchModel setStudyJson(String studyJson) {
+    public ClinicalVariantSearchModel setStudyJson(String studyJson) {
         this.studyJson = studyJson;
         return this;
     }
 
-    public boolean isRvPrimaryFinding() {
-        return rvPrimaryFinding;
-    }
-
-    public ReportedVariantSearchModel setRvPrimaryFinding(boolean rvPrimaryFinding) {
-        this.rvPrimaryFinding = rvPrimaryFinding;
-        return this;
-    }
-
-    public String getRvStatus() {
-        return rvStatus;
-    }
-
-    public ReportedVariantSearchModel setRvStatus(String rvStatus) {
-        this.rvStatus = rvStatus;
-        return this;
-    }
-
-    public Double getRvDeNovoQualityScore() {
-        return rvDeNovoQualityScore;
-    }
-
-    public ReportedVariantSearchModel setRvDeNovoQualityScore(Double rvDeNovoQualityScore) {
-        this.rvDeNovoQualityScore = rvDeNovoQualityScore;
-        return this;
-    }
-
-    public List<String> getRvComments() {
-        return rvComments;
-    }
-
-    public ReportedVariantSearchModel setRvComments(List<String> rvComments) {
-        this.rvComments = rvComments;
-        return this;
-    }
-
-    public String getRvReportedEventsJson() {
-        return rvReportedEventsJson;
-    }
-
-    public ReportedVariantSearchModel setRvReportedEventsJson(String rvReportedEventsJson) {
-        this.rvReportedEventsJson = rvReportedEventsJson;
-        return this;
-    }
-
-    public String getRvAttributesJson() {
-        return rvAttributesJson;
-    }
-
-    public ReportedVariantSearchModel setRvAttributesJson(String rvAttributesJson) {
-        this.rvAttributesJson = rvAttributesJson;
-        return this;
-    }
-
-    public List<String> getRePhenotypes() {
-        return rePhenotypes;
-    }
-
-    public ReportedVariantSearchModel setRePhenotypes(List<String> rePhenotypes) {
-        this.rePhenotypes = rePhenotypes;
-        return this;
-    }
+//    public boolean isRvPrimaryFinding() {
+//        return rvPrimaryFinding;
+//    }
+//
+//    public ClinicalVariantSearchModel setRvPrimaryFinding(boolean rvPrimaryFinding) {
+//        this.rvPrimaryFinding = rvPrimaryFinding;
+//        return this;
+//    }
+//
+//    public String getRvStatus() {
+//        return rvStatus;
+//    }
+//
+//    public ClinicalVariantSearchModel setRvStatus(String rvStatus) {
+//        this.rvStatus = rvStatus;
+//        return this;
+//    }
+//
+//    public Double getRvDeNovoQualityScore() {
+//        return rvDeNovoQualityScore;
+//    }
+//
+//    public ClinicalVariantSearchModel setRvDeNovoQualityScore(Double rvDeNovoQualityScore) {
+//        this.rvDeNovoQualityScore = rvDeNovoQualityScore;
+//        return this;
+//    }
+//
+//    public List<String> getRvComments() {
+//        return rvComments;
+//    }
+//
+//    public ClinicalVariantSearchModel setRvComments(List<String> rvComments) {
+//        this.rvComments = rvComments;
+//        return this;
+//    }
+//
+//    public String getRvReportedEventsJson() {
+//        return rvReportedEventsJson;
+//    }
+//
+//    public ClinicalVariantSearchModel setRvReportedEventsJson(String rvReportedEventsJson) {
+//        this.rvReportedEventsJson = rvReportedEventsJson;
+//        return this;
+//    }
+//
+//    public String getRvAttributesJson() {
+//        return rvAttributesJson;
+//    }
+//
+//    public ClinicalVariantSearchModel setRvAttributesJson(String rvAttributesJson) {
+//        this.rvAttributesJson = rvAttributesJson;
+//        return this;
+//    }
+//
+//    public List<String> getRePhenotypes() {
+//        return rePhenotypes;
+//    }
+//
+//    public ClinicalVariantSearchModel setRePhenotypes(List<String> rePhenotypes) {
+//        this.rePhenotypes = rePhenotypes;
+//        return this;
+//    }
 
     public List<String> getReConsequenceTypeIds() {
         return reConsequenceTypeIds;
     }
 
-    public ReportedVariantSearchModel setReConsequenceTypeIds(List<String> reConsequenceTypeIds) {
+    public ClinicalVariantSearchModel setReConsequenceTypeIds(List<String> reConsequenceTypeIds) {
         this.reConsequenceTypeIds = reConsequenceTypeIds;
         return this;
     }
@@ -704,7 +704,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reGeneNames;
     }
 
-    public ReportedVariantSearchModel setReGeneNames(List<String> reGeneNames) {
+    public ClinicalVariantSearchModel setReGeneNames(List<String> reGeneNames) {
         this.reGeneNames = reGeneNames;
         return this;
     }
@@ -713,7 +713,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reXrefs;
     }
 
-    public ReportedVariantSearchModel setReXrefs(List<String> reXrefs) {
+    public ClinicalVariantSearchModel setReXrefs(List<String> reXrefs) {
         this.reXrefs = reXrefs;
         return this;
     }
@@ -722,7 +722,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return rePanelIds;
     }
 
-    public ReportedVariantSearchModel setRePanelIds(List<String> rePanelIds) {
+    public ClinicalVariantSearchModel setRePanelIds(List<String> rePanelIds) {
         this.rePanelIds = rePanelIds;
         return this;
     }
@@ -731,7 +731,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reAcmg;
     }
 
-    public ReportedVariantSearchModel setReAcmg(List<String> reAcmg) {
+    public ClinicalVariantSearchModel setReAcmg(List<String> reAcmg) {
         this.reAcmg = reAcmg;
         return this;
     }
@@ -740,7 +740,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reClinicalSignificance;
     }
 
-    public ReportedVariantSearchModel setReClinicalSignificance(List<String> reClinicalSignificance) {
+    public ClinicalVariantSearchModel setReClinicalSignificance(List<String> reClinicalSignificance) {
         this.reClinicalSignificance = reClinicalSignificance;
         return this;
     }
@@ -749,7 +749,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reDrugResponse;
     }
 
-    public ReportedVariantSearchModel setReDrugResponse(List<String> reDrugResponse) {
+    public ClinicalVariantSearchModel setReDrugResponse(List<String> reDrugResponse) {
         this.reDrugResponse = reDrugResponse;
         return this;
     }
@@ -758,7 +758,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reTraitAssociation;
     }
 
-    public ReportedVariantSearchModel setReTraitAssociation(List<String> reTraitAssociation) {
+    public ClinicalVariantSearchModel setReTraitAssociation(List<String> reTraitAssociation) {
         this.reTraitAssociation = reTraitAssociation;
         return this;
     }
@@ -767,7 +767,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reFunctionalEffect;
     }
 
-    public ReportedVariantSearchModel setReFunctionalEffect(List<String> reFunctionalEffect) {
+    public ClinicalVariantSearchModel setReFunctionalEffect(List<String> reFunctionalEffect) {
         this.reFunctionalEffect = reFunctionalEffect;
         return this;
     }
@@ -776,7 +776,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reTumorigenesis;
     }
 
-    public ReportedVariantSearchModel setReTumorigenesis(List<String> reTumorigenesis) {
+    public ClinicalVariantSearchModel setReTumorigenesis(List<String> reTumorigenesis) {
         this.reTumorigenesis = reTumorigenesis;
         return this;
     }
@@ -785,7 +785,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reOtherClassification;
     }
 
-    public ReportedVariantSearchModel setReOtherClassification(List<String> reOtherClassification) {
+    public ClinicalVariantSearchModel setReOtherClassification(List<String> reOtherClassification) {
         this.reOtherClassification = reOtherClassification;
         return this;
     }
@@ -794,7 +794,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reRolesInCancer;
     }
 
-    public ReportedVariantSearchModel setReRolesInCancer(List<String> reRolesInCancer) {
+    public ClinicalVariantSearchModel setReRolesInCancer(List<String> reRolesInCancer) {
         this.reRolesInCancer = reRolesInCancer;
         return this;
     }
@@ -803,7 +803,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reJustification;
     }
 
-    public ReportedVariantSearchModel setReJustification(Map<String, List<String>> reJustification) {
+    public ClinicalVariantSearchModel setReJustification(Map<String, List<String>> reJustification) {
         this.reJustification = reJustification;
         return this;
     }
@@ -812,7 +812,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reTier;
     }
 
-    public ReportedVariantSearchModel setReTier(List<String> reTier) {
+    public ClinicalVariantSearchModel setReTier(List<String> reTier) {
         this.reTier = reTier;
         return this;
     }
@@ -821,7 +821,7 @@ public class ReportedVariantSearchModel extends VariantSearchModel {
         return reAux;
     }
 
-    public ReportedVariantSearchModel setReAux(List<String> reAux) {
+    public ClinicalVariantSearchModel setReAux(List<String> reAux) {
         this.reAux = reAux;
         return this;
     }

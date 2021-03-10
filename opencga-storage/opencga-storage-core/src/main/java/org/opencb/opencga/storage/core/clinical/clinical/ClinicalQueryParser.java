@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam;
+import org.opencb.opencga.storage.core.clinical.ClinicalVariantQueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser;
 
@@ -39,64 +39,64 @@ public class ClinicalQueryParser {
         // ID, description, disorder, files, proband ID, family ID, family phenotype name, family member ID
 
         // ClinicalAnalysis ID
-        key = ReportedVariantQueryParam.CA_ID.key();
+        key = ClinicalVariantQueryParam.CA_ID.key();
         if (StringUtils.isNotEmpty(key)) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // ClinicalAnalysis description
-        key = ReportedVariantQueryParam.CA_DESCRIPTION.key();
+        key = ClinicalVariantQueryParam.CA_DESCRIPTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.DESCRIPTION_PREFIX, query.getString(key),
-                    ReportedVariantQueryParam.CA_INFO.key()));
+                    ClinicalVariantQueryParam.CA_INFO.key()));
         }
 
         // ClinicalAnalysis disorder
-        key = ReportedVariantQueryParam.CA_DISORDER.key();
+        key = ClinicalVariantQueryParam.CA_DISORDER.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // ClinicalAnalysis files
-        key = ReportedVariantQueryParam.CA_FILE.key();
+        key = ClinicalVariantQueryParam.CA_FILE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // ClinicalAnalysis proband ID
-        key = ReportedVariantQueryParam.CA_PROBAND_ID.key();
+        key = ClinicalVariantQueryParam.CA_PROBAND_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // ClinicalAnalysis proband disorders
-        key = ReportedVariantQueryParam.CA_PROBAND_DISORDERS.key();
+        key = ClinicalVariantQueryParam.CA_PROBAND_DISORDERS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // ClinicalAnalysis proband phenotypes
-        key = ReportedVariantQueryParam.CA_PROBAND_PHENOTYPES.key();
+        key = ClinicalVariantQueryParam.CA_PROBAND_PHENOTYPES.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // ClinicalAnalysis family ID
-        key = ReportedVariantQueryParam.CA_FAMILY_ID.key();
+        key = ClinicalVariantQueryParam.CA_FAMILY_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // ClinicalAnalysis family member IDs
-        key = ReportedVariantQueryParam.CA_FAMILY_MEMBER_IDS.key();
+        key = ClinicalVariantQueryParam.CA_FAMILY_MEMBER_IDS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        key = ReportedVariantQueryParam.CA_COMMENTS.key();
+        key = ClinicalVariantQueryParam.CA_COMMENTS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.COMMENT_PREFIX, query.getString(key),
-                    ReportedVariantQueryParam.CA_INFO.key()));
+                    ClinicalVariantQueryParam.CA_INFO.key()));
         }
 
         // ---------- Interpretation ----------
@@ -104,62 +104,62 @@ public class ClinicalQueryParser {
         //    ID, software name, software version, analyst name, panel name, creation date, more info
 
         // Interpretation ID
-        key = ReportedVariantQueryParam.INT_ID.key();
+        key = ClinicalVariantQueryParam.INT_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // Interpretation software name
-        key = ReportedVariantQueryParam.INT_SOFTWARE_NAME.key();
+        key = ClinicalVariantQueryParam.INT_SOFTWARE_NAME.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // Interpretation software version
-        key = ReportedVariantQueryParam.INT_SOFTWARE_VERSION.key();
+        key = ClinicalVariantQueryParam.INT_SOFTWARE_VERSION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // Interpretation analysit name
-        key = ReportedVariantQueryParam.INT_ANALYST_NAME.key();
+        key = ClinicalVariantQueryParam.INT_ANALYST_NAME.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // Interpretation panel names
-        key = ReportedVariantQueryParam.INT_PANELS.key();
+        key = ClinicalVariantQueryParam.INT_PANELS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // Interpretation info: description, dependency, filters, comments
-        key = ReportedVariantQueryParam.INT_DESCRIPTION.key();
+        key = ClinicalVariantQueryParam.INT_DESCRIPTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.DESCRIPTION_PREFIX, query.getString(key),
-                    ReportedVariantQueryParam.INT_INFO.key()));
+                    ClinicalVariantQueryParam.INT_INFO.key()));
         }
 
-        key = ReportedVariantQueryParam.INT_DEPENDENCY.key();
+        key = ClinicalVariantQueryParam.INT_DEPENDENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.DEPENDENCY_PREFIX, query.getString(key),
-                    ReportedVariantQueryParam.INT_INFO.key()));
+                    ClinicalVariantQueryParam.INT_INFO.key()));
         }
 
-        key = ReportedVariantQueryParam.INT_FILTERS.key();
+        key = ClinicalVariantQueryParam.INT_FILTERS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.FILTER_PREFIX, query.getString(key),
-                    ReportedVariantQueryParam.INT_INFO.key()));
+                    ClinicalVariantQueryParam.INT_INFO.key()));
         }
 
-        key = ReportedVariantQueryParam.INT_COMMENTS.key();
+        key = ClinicalVariantQueryParam.INT_COMMENTS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.COMMENT_PREFIX, query.getString(key),
-                    ReportedVariantQueryParam.INT_INFO.key()));
+                    ClinicalVariantQueryParam.INT_INFO.key()));
         }
 
         // Interpretation creation date
-        key = ReportedVariantQueryParam.INT_CREATION_DATE.key();
+        key = ClinicalVariantQueryParam.INT_CREATION_DATE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInterpretationCreationDate(query.getString(key)));
         }
@@ -170,19 +170,19 @@ public class ClinicalQueryParser {
         //    project ID, assembly, study ID
 
         // Project
-        key = ReportedVariantQueryParam.PROJECT_ID.key();
+        key = ClinicalVariantQueryParam.PROJECT_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // Assembly
-        key = ReportedVariantQueryParam.ASSEMBLY.key();
+        key = ClinicalVariantQueryParam.ASSEMBLY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
         // Study
-        key = ReportedVariantQueryParam.STUDY_ID.key();
+        key = ClinicalVariantQueryParam.STUDY_ID.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
@@ -191,12 +191,12 @@ public class ClinicalQueryParser {
         //
         //   deNovo quality score, comments
 
-        key = ReportedVariantQueryParam.RV_DE_NOVO_QUALITY_SCORE.key();
+        key = ClinicalVariantQueryParam.RV_DE_NOVO_QUALITY_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseNumericValue(key, query.getString(key)));
         }
 
-        key = ReportedVariantQueryParam.RV_COMMENTS.key();
+        key = ClinicalVariantQueryParam.RV_COMMENTS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
@@ -244,23 +244,23 @@ public class ClinicalQueryParser {
                 case BETWEEN:
                     if (dateList.size() == 2) {
                         Date to = convertStringToDate(dateList.get(1));
-                        condition = ReportedVariantQueryParam.INT_CREATION_DATE.key() + ":{" + date.getTime() + " TO " + to.getTime() + "}";
+                        condition = ClinicalVariantQueryParam.INT_CREATION_DATE.key() + ":{" + date.getTime() + " TO " + to.getTime() + "}";
                     }
                     break;
                 case EQUALS:
-                    condition = ReportedVariantQueryParam.INT_CREATION_DATE.key() + ":" + date.getTime();
+                    condition = ClinicalVariantQueryParam.INT_CREATION_DATE.key() + ":" + date.getTime();
                     break;
                 case GREATER_THAN:
-                    condition = ReportedVariantQueryParam.INT_CREATION_DATE.key() + ":{" + date.getTime() + " TO *]";
+                    condition = ClinicalVariantQueryParam.INT_CREATION_DATE.key() + ":{" + date.getTime() + " TO *]";
                     break;
                 case GREATER_THAN_EQUAL:
-                    condition = ReportedVariantQueryParam.INT_CREATION_DATE.key() + ":[" + date.getTime() + " TO *]";
+                    condition = ClinicalVariantQueryParam.INT_CREATION_DATE.key() + ":[" + date.getTime() + " TO *]";
                     break;
                 case LESS_THAN:
-                    condition = ReportedVariantQueryParam.INT_CREATION_DATE.key() + ":[* TO " + date.getTime() + "}";
+                    condition = ClinicalVariantQueryParam.INT_CREATION_DATE.key() + ":[* TO " + date.getTime() + "}";
                     break;
                 case LESS_THAN_EQUAL:
-                    condition = ReportedVariantQueryParam.INT_CREATION_DATE.key() + ":[* TO " + date.getTime() + "]";
+                    condition = ClinicalVariantQueryParam.INT_CREATION_DATE.key() + ":[* TO " + date.getTime() + "]";
                     break;
                 default:
                     break;
@@ -322,10 +322,10 @@ public class ClinicalQueryParser {
                 filter.append(logicalComparator);
             }
             if (dependencySplit.length == 1) {
-                filter.append(ReportedVariantQueryParam.INT_INFO.key()).append(":\"").append(ClinicalVariantUtils.DEPENDENCY_PREFIX)
+                filter.append(ClinicalVariantQueryParam.INT_INFO.key()).append(":\"").append(ClinicalVariantUtils.DEPENDENCY_PREFIX)
                         .append(wildcard).append(dependencySplit[0]).append(wildcard).append("\"");
             } else if (dependencySplit.length == 2) {
-                filter.append(ReportedVariantQueryParam.INT_INFO.key()).append(":\"").append(ClinicalVariantUtils.DEPENDENCY_PREFIX)
+                filter.append(ClinicalVariantQueryParam.INT_INFO.key()).append(":\"").append(ClinicalVariantUtils.DEPENDENCY_PREFIX)
                         .append(wildcard).append(dependencySplit[0]).append(ClinicalVariantUtils.FIELD_SEPARATOR)
                         .append(dependencySplit[1]).append(wildcard).append("\"");
             }
@@ -336,22 +336,22 @@ public class ClinicalQueryParser {
     private void parseReportedEvent(Query query, SolrQuery solrQuery) {
         List<List<String>> combinations = new ArrayList<>();
 
-        String key = ReportedVariantQueryParam.RE_PHENOTYPE_NAMES.key();
+        String key = ClinicalVariantQueryParam.RE_PHENOTYPE_NAMES.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_CONSEQUENCE_TYPE_IDS.key();
+        key = ClinicalVariantQueryParam.RE_CONSEQUENCE_TYPE_IDS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
         Set<String> xrefs = new HashSet<>();
-        key = ReportedVariantQueryParam.RE_GENE_NAMES.key();
+        key = ClinicalVariantQueryParam.RE_GENE_NAMES.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             xrefs.addAll(query.getAsStringList(key));
         }
-        key = ReportedVariantQueryParam.RE_XREFS.key();
+        key = ClinicalVariantQueryParam.RE_XREFS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             xrefs.addAll(query.getAsStringList(key));
         }
@@ -359,52 +359,52 @@ public class ClinicalQueryParser {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_PANEL_IDS.key();
+        key = ClinicalVariantQueryParam.RE_PANEL_IDS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_ACMG.key();
+        key = ClinicalVariantQueryParam.RE_ACMG.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_CLINICAL_SIGNIFICANCE.key();
+        key = ClinicalVariantQueryParam.RE_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_DRUG_RESPONSE.key();
+        key = ClinicalVariantQueryParam.RE_DRUG_RESPONSE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_TRAIT_ASSOCIATION.key();
+        key = ClinicalVariantQueryParam.RE_TRAIT_ASSOCIATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_FUNCTIONAL_EFFECT.key();
+        key = ClinicalVariantQueryParam.RE_FUNCTIONAL_EFFECT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_TUMORIGENESIS.key();
+        key = ClinicalVariantQueryParam.RE_TUMORIGENESIS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_OTHER_CLASSIFICATION.key();
+        key = ClinicalVariantQueryParam.RE_OTHER_CLASSIFICATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_ROLES_IN_CANCER.key();
+        key = ClinicalVariantQueryParam.RE_ROLES_IN_CANCER.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ReportedVariantQueryParam.RE_TIER.key();
+        key = ClinicalVariantQueryParam.RE_TIER.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
@@ -412,7 +412,7 @@ public class ClinicalQueryParser {
         StringBuilder sb = new StringBuilder();
 
 
-        key = ReportedVariantQueryParam.RE_JUSTIFICATION.key();
+        key = ClinicalVariantQueryParam.RE_JUSTIFICATION.key();
         List<String> justifications = query.getAsStringList(key);
 
         boolean firstOR;
@@ -430,14 +430,14 @@ public class ClinicalQueryParser {
                         if (!firstOR) {
                             sb.append(" OR ");
                         }
-                        sb.append(ReportedVariantQueryParam.RE_AUX.key()).append(":\"").append(key).append("\"");
+                        sb.append(ClinicalVariantQueryParam.RE_AUX.key()).append(":\"").append(key).append("\"");
                         firstOR = false;
                     } else {
                         for (String justification: justifications) {
                             if (!firstOR) {
                                 sb.append(" OR ");
                             }
-                            sb.append(ReportedVariantQueryParam.RE_JUSTIFICATION.key()).append("_").append(key).append(":\"*")
+                            sb.append(ClinicalVariantQueryParam.RE_JUSTIFICATION.key()).append("_").append(key).append(":\"*")
                                     .append(justification).append("*\"");
                             firstOR = false;
                         }
