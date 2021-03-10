@@ -71,6 +71,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "'");
+        }
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
@@ -136,6 +139,10 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
 
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "'");
+        }
+
         QueryOptions queryOptions = setDefaultLimit(options);
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
 
@@ -171,6 +178,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
                 // 2. Check permissions
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
                         new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID).append(QueryOptions.LIMIT, -1));
+                if (result.getNumResults() == 0) {
+                    return OpenCGAResult.empty(RgaKnockoutByGene.class);
+                }
                 List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
                 // 3. Get list of individual ids for which the user has permissions
@@ -210,6 +220,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "'");
+        }
 
         QueryOptions queryOptions = setDefaultLimit(options);
 
@@ -244,6 +257,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
                 // 2. Check permissions
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
                         new QueryOptions(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_ID).append(QueryOptions.LIMIT, -1));
+                if (result.getNumResults() == 0) {
+                    return OpenCGAResult.empty(KnockoutByVariant.class);
+                }
                 List<String> individualIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue)
                         .collect(Collectors.toList());
 
