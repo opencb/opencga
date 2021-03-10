@@ -8,10 +8,12 @@ spec:
   replicas: {{ .Values.master.replicaCount }}
   selector:
     matchLabels:
+      app: {{ .Values.master.name }}
       {{- include "opencga.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
+        app: {{ .Values.master.name }}
         {{- include "opencga.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.master.imagePullSecrets }}
@@ -25,7 +27,7 @@ spec:
       - name: {{ .Values.init.name }}
         securityContext:
           {{- toYaml .Values.init.securityContext | nindent 12 }}
-        image: "{{ .Values.init.image.repository }}"
+        image: {{ tpl .Values.init.image.repository . | quote }}
         imagePullPolicy: {{ .Values.init.image.pullPolicy }}
         resources:
           {{- toYaml .Values.init.resources | nindent 12 }}
@@ -125,7 +127,7 @@ spec:
         - name: {{ .Values.master.name }}
           securityContext:
             {{- toYaml .Values.master.securityContext | nindent 12 }}
-          image: "{{ .Values.master.image.repository }}"
+          image: {{ tpl .Values.master.image.repository . | quote }}
           imagePullPolicy: {{ .Values.master.image.pullPolicy }}
           command: ["/bin/sh"]
           args: 

@@ -72,14 +72,20 @@ function isNotEmptyArray(arr) {
 var version = undefined;
 var updateCount = 1;
 
-function setOpenCGAVersion(version, versionInt, release) {
-    db.metadata.update({}, {"$set":
-            {
-                "version": version,
-                "_fullVersion.version": NumberInt(versionInt),
-                "_fullVersion.release": NumberInt(release)
-            }
-    });
+function setOpenCGAVersion(updateVersion, updateVersionInt, updateRelease) {
+    var toset = {
+        "version": updateVersion,
+        "_fullVersion.version": NumberInt(updateVersionInt),
+        "_fullVersion.release": NumberInt(updateRelease),
+        "_fullVersion.lastJsUpdate": NumberInt(updateCount)
+    }
+
+    if (version.version < updateVersionInt) {
+        // Also reset Java updates to 0 because we are doing a version upgrade
+        toset["_fullVersion.lastJavaUpdate"] = NumberInt(0);
+    }
+
+    db.metadata.update({}, {"$set": toset});
 }
 
 function setLatestUpdate(latestUpdate) {
@@ -105,22 +111,38 @@ function getOpenCGAVersion() {
     return version;
 }
 
-function versionNeedsUpdate(version, release) {
+function versionNeedsUpdate(updateVersion, updateRelease) {
     var dbVersion = getOpenCGAVersion();
-    return dbVersion.version < version || (dbVersion.version == version && dbVersion.release <= release);
+    var needsUpdate = dbVersion.version < updateVersion || (dbVersion.version == updateVersion && dbVersion.release <= updateRelease);
+    var needsJsReset = dbVersion.version < updateVersion || (dbVersion.version == updateVersion && dbVersion.release < updateRelease);
+    if (needsJsReset) {
+        // Reset JS counter
+        version.lastJsUpdate = 0;
+    }
+    if (needsUpdate) {
+        print("Migrating from " + dbVersion.version + " release " + dbVersion.release + " to " + updateVersion + " release " + updateRelease);
+    } else {
+        print("Nothing to migrate. Current db version is " + dbVersion.version + " with release " + dbVersion.release);
+    }
+    return needsUpdate;
 }
 
 function getLatestUpdate() {
     return version.lastJsUpdate;
 }
 
-function runUpdate(migrateFunction) {
+function runUpdate(migrateFunction, message) {
+    var text = updateCount;
+    if (isNotEmpty(message)) {
+        text = text + " (" + message + ")";
+    }
+
     if (getLatestUpdate() < updateCount) {
-        print("Starting migration " + updateCount + "...");
+        print("Starting migration " + text + "...");
         migrateFunction();
         setLatestUpdate(updateCount);
     } else {
-        print("Skipping migration " + updateCount + "...");
+        print("Skipping migration " + text + "...");
     }
     updateCount++;
 }

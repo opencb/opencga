@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -10,7 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Created on 31/01/18.
@@ -62,8 +64,10 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
                         for (M mutation : mutations) {
                             if (mutation instanceof Put) {
                                 try {
-//                                ((BufferedMutatorImpl) mutator).validatePut(((Put) mutation));
-                                    ((HTable) table).validatePut((Put) mutation);
+                                    int maxKeyValueSize = hBaseManager.getConf().getInt(
+                                            ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY,
+                                            ConnectionConfiguration.MAX_KEYVALUE_SIZE_DEFAULT);
+                                    validatePut((Put) mutation, maxKeyValueSize);
                                 } catch (RuntimeException e1) {
                                     // Don't print the whole stacktrace
                                     logger.error("Invalid put operation on RowKey '" + Bytes.toStringBinary(mutation.getRow()) + "', "
@@ -78,6 +82,27 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
                 }
             }
             throw e;
+        }
+    }
+
+    // validate for well-formedness
+    public static void validatePut(Put put, int maxKeyValueSize) throws IllegalArgumentException {
+        if (put.isEmpty()) {
+            throw new IllegalArgumentException("No columns to insert");
+        }
+        if (maxKeyValueSize > 0) {
+            for (List<Cell> list : put.getFamilyCellMap().values()) {
+                for (Cell cell : list) {
+                    long length = 8L + 12
+                            + cell.getRowLength()
+                            + cell.getFamilyLength()
+                            + cell.getQualifierLength()
+                            + cell.getValueLength();
+                    if (length > maxKeyValueSize) {
+                        throw new IllegalArgumentException("KeyValue size too large");
+                    }
+                }
+            }
         }
     }
 

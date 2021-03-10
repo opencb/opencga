@@ -77,7 +77,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public static final QueryOptions INCLUDE_JOB_IDS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
-                    JobDBAdaptor.QueryParams.STUDY_UID.key()));
+                    JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.INTERNAL.key()));
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -1094,7 +1094,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+        authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
 
 //        if (StringUtils.isNotEmpty(updateParams.getId())) {
 //            ParamUtils.checkAlias(updateParams.getId(), JobDBAdaptor.QueryParams.ID.key());
@@ -1194,7 +1194,7 @@ public class JobManager extends ResourceManager<Job> {
             try {
                 options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
 
                 OpenCGAResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
                 result.append(updateResult);
@@ -1245,7 +1245,7 @@ public class JobManager extends ResourceManager<Job> {
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
 
             OpenCGAResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
             result.append(updateResult);
@@ -1305,7 +1305,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
 
                 OpenCGAResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
                 result.append(updateResult);

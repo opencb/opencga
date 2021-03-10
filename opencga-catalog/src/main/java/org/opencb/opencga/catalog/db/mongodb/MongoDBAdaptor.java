@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
@@ -78,9 +79,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String SET = "SET";
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
+    protected Configuration configuration;
 
-    public MongoDBAdaptor(Logger logger) {
+    public MongoDBAdaptor(Configuration configuration, Logger logger) {
         super(logger);
+        this.configuration = configuration;
     }
 
     public interface TransactionBodyWithException<T> {
@@ -323,6 +326,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return new OpenCGAResult<>(aggregate);
     }
 
+    /**
+     * Filter QueryOptions object to ensure the keys provided are always included.
+     *
+     * @param options QueryOptions object.
+     * @param keys Keys that always need to be included in the response.
+     * @return A new QueryOptions object containing the mandatory fields.
+     */
     protected QueryOptions filterQueryOptions(QueryOptions options, List<String> keys) {
         if (options == null) {
             return null;

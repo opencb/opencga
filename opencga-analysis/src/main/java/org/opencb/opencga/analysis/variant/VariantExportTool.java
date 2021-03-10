@@ -68,6 +68,9 @@ public class VariantExportTool extends OpenCgaTool {
                 toolParams.setOutputFormat(toolParams.getOutputFormat() + ".GZ");
             }
         }
+        if (toolParams.getLimit() != null && toolParams.getLimit() == 0) {
+            toolParams.setLimit(null);
+        }
 
         outputFormat = VariantWriterFactory.toOutputFormat(toolParams.getOutputFormat(), toolParams.getOutputFileName());
     }

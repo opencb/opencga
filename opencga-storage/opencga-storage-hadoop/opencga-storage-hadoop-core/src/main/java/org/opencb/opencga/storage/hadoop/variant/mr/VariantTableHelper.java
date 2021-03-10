@@ -25,19 +25,15 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -77,18 +73,7 @@ public class VariantTableHelper extends GenomeHelper {
 
     public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
             throws IOException {
-        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
-
-        String namespace = SchemaUtil.getSchemaNameFromFullName(tableName);
-        if (StringUtils.isNotEmpty(namespace)) {
-//            HBaseManager.createNamespaceIfNeeded(con, namespace);
-            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
-                variantPhoenixHelper.createSchemaIfNeeded(jdbcConnection, namespace);
-                LoggerFactory.getLogger(AbstractVariantsTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
-            } catch (ClassNotFoundException | SQLException e) {
-                throw new IOException(e);
-            }
-        }
+//        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
 
         int nsplits = genomeHelper.getConf().getInt(
                 HadoopVariantStorageOptions.VARIANT_TABLE_PRESPLIT_SIZE.key(),
@@ -101,14 +86,14 @@ public class VariantTableHelper extends GenomeHelper {
                         genomeHelper.getConf().get(
                                 HadoopVariantStorageOptions.VARIANT_TABLE_COMPRESSION.key(),
                                 HadoopVariantStorageOptions.VARIANT_TABLE_COMPRESSION.defaultValue())));
-        if (newTable) {
-            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
-                variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
-                LoggerFactory.getLogger(AbstractVariantsTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
-            } catch (ClassNotFoundException | SQLException e) {
-                throw new IOException(e);
-            }
-        }
+//        if (newTable) {
+//            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
+//                variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
+//                LoggerFactory.getLogger(AbstractVariantsTableDriver.class).info("Phoenix connection is autoclosed ... " + jdbcConnection);
+//            } catch (ClassNotFoundException | SQLException e) {
+//                throw new IOException(e);
+//            }
+//        }
         return newTable;
     }
 

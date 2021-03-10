@@ -22,6 +22,8 @@ import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.util.PhoenixRuntime;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
@@ -44,7 +46,28 @@ public class CustomPhoenixInputFormat<T extends DBWritable> extends InputFormat<
         final Configuration configuration = context.getConfiguration();
         final QueryPlan queryPlan = getQueryPlan(context, configuration);
         @SuppressWarnings("unchecked") final Class<T> inputClass = (Class<T>) PhoenixConfigurationUtil.getInputClass(configuration);
-        return new PhoenixRecordReader<T>(inputClass, configuration, queryPlan);
+
+        try {
+            // hdp2.6
+            Constructor<PhoenixRecordReader> constructor = PhoenixRecordReader.class
+                    .getConstructor(Class.class, Configuration.class, QueryPlan.class, MapReduceParallelScanGrouper.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(inputClass, configuration, queryPlan, MapReduceParallelScanGrouper.getInstance());
+        } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new IOException(e);
+        } catch (NoSuchMethodException ignore) {
+            // Search other constructor
+        }
+
+        try {
+            // emg5.31
+            Constructor<PhoenixRecordReader> constructor = PhoenixRecordReader.class
+                    .getConstructor(Class.class, Configuration.class, QueryPlan.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(inputClass, configuration, queryPlan);
+        } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override

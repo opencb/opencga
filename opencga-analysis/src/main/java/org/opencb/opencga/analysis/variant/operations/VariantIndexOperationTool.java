@@ -152,6 +152,10 @@ public class VariantIndexOperationTool extends OperationTool {
 
         if (indexParams.isFamily()) {
             step("family-index", () -> {
+                if (inputFiles.isEmpty()) {
+                    // Nothing to do!
+                    return;
+                }
                 OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getCatalogManager().getFileManager()
                         .search(study,
                                 new Query(FileDBAdaptor.QueryParams.URI.key(), inputFiles),
@@ -161,8 +165,9 @@ public class VariantIndexOperationTool extends OperationTool {
                 for (org.opencb.opencga.core.models.file.File file : fileResult.getResults()) {
                     samples.addAll(file.getSampleIds());
                 }
-
-                variantStorageManager.familyIndexBySamples(study, samples, params, getToken());
+                if (!samples.isEmpty()) {
+                    variantStorageManager.familyIndexBySamples(study, samples, params, getToken());
+                }
             });
         }
     }

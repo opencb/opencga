@@ -25,7 +25,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper.Column;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,11 +67,11 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             if (cohortId == null) {
                 continue;
             }
-            Column mafColumn = VariantPhoenixHelper.getStatsMafColumn(studyId, cohortId);
-            Column mgfColumn = VariantPhoenixHelper.getStatsMgfColumn(studyId, cohortId);
-            Column passFreqColumn = VariantPhoenixHelper.getStatsPassFreqColumn(studyId, cohortId);
-            Column cohortColumn = VariantPhoenixHelper.getStatsFreqColumn(studyId, cohortId);
-            Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
+            Column mafColumn = VariantPhoenixSchema.getStatsMafColumn(studyId, cohortId);
+            Column mgfColumn = VariantPhoenixSchema.getStatsMgfColumn(studyId, cohortId);
+            Column passFreqColumn = VariantPhoenixSchema.getStatsPassFreqColumn(studyId, cohortId);
+            Column cohortColumn = VariantPhoenixSchema.getStatsFreqColumn(studyId, cohortId);
+            Column statsColumn = VariantPhoenixSchema.getStatsColumn(studyId, cohortId);
 
             add(put, mafColumn, stats.getMaf());
             add(put, mgfColumn, stats.getMgf());

@@ -39,7 +39,6 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -269,8 +268,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 new SampleVariantStatsAnalysisParams(
                         variantCommandOptions.sampleVariantStatsCommandOptions.sample,
                         variantCommandOptions.sampleVariantStatsCommandOptions.individual,
-                        variantQuery,
-                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir),
+                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.index,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.indexOverwrite,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.indexId,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.indexDescription,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.batchSize,
+                        variantQuery
+                ),
                 getParams(variantCommandOptions.sampleVariantStatsCommandOptions.study));
     }
 
@@ -309,6 +314,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.knockoutCommandOptions.consequenceType,
                         variantCommandOptions.knockoutCommandOptions.filter,
                         variantCommandOptions.knockoutCommandOptions.qual,
+                        variantCommandOptions.knockoutCommandOptions.skipGenesFile,
                         variantCommandOptions.knockoutCommandOptions.outdir),
                 getParams(variantCommandOptions.knockoutCommandOptions.study)
         );
@@ -772,26 +778,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private ObjectMap getParams(String project, String study) {
-        ObjectMap params = new ObjectMap(variantCommandOptions.commonCommandOptions.params);
-        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
-        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
-        params.putIfNotEmpty(ParamConstants.JOB_ID, variantCommandOptions.commonJobOptions.jobId);
-        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, variantCommandOptions.commonJobOptions.jobDescription);
-        if (variantCommandOptions.commonJobOptions.jobDependsOn != null) {
-            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", variantCommandOptions.commonJobOptions.jobDependsOn));
-        }
-        if (variantCommandOptions.commonJobOptions.jobTags != null) {
-            params.put(ParamConstants.JOB_TAGS, String.join(",", variantCommandOptions.commonJobOptions.jobTags));
-        }
-        if (variantCommandOptions.commonNumericOptions.limit > 0) {
-            params.put(QueryOptions.LIMIT, variantCommandOptions.commonNumericOptions.limit);
-        }
-        if (variantCommandOptions.commonNumericOptions.skip > 0) {
-            params.put(QueryOptions.SKIP, variantCommandOptions.commonNumericOptions.skip);
-        }
-        if (variantCommandOptions.commonNumericOptions.count) {
-            params.put(QueryOptions.COUNT, variantCommandOptions.commonNumericOptions.count);
-        }
+        ObjectMap params = getCommonParams(project, study, variantCommandOptions.commonCommandOptions.params);
+        addJobParams(variantCommandOptions.commonJobOptions, params);
+        addNumericParams(variantCommandOptions.commonNumericOptions, params);
         return params;
     }
 }

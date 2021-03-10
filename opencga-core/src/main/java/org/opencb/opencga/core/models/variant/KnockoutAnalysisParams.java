@@ -42,6 +42,8 @@ public class KnockoutAnalysisParams extends ToolParams {
     private String filter;
     private String qual;
 
+    // Do not generate genes file
+    private boolean skipGenesFile;
 
     private String outdir;
 
@@ -49,7 +51,7 @@ public class KnockoutAnalysisParams extends ToolParams {
     }
 
     public KnockoutAnalysisParams(List<String> sample, List<String> gene, List<String> panel, String biotype, String consequenceType,
-                                  String filter, String qual, String outdir) {
+                                  String filter, String qual, boolean skipGenesFile, String outdir) {
         this.sample = sample;
         this.gene = gene;
         this.panel = panel;
@@ -57,6 +59,7 @@ public class KnockoutAnalysisParams extends ToolParams {
         this.consequenceType = consequenceType;
         this.filter = filter;
         this.qual = qual;
+        this.skipGenesFile = skipGenesFile;
         this.outdir = outdir;
     }
 
@@ -120,6 +123,15 @@ public class KnockoutAnalysisParams extends ToolParams {
 
     public KnockoutAnalysisParams setQual(String qual) {
         this.qual = qual;
+        return this;
+    }
+
+    public boolean isSkipGenesFile() {
+        return skipGenesFile;
+    }
+
+    public KnockoutAnalysisParams setSkipGenesFile(boolean skipGenesFile) {
+        this.skipGenesFile = skipGenesFile;
         return this;
     }
 

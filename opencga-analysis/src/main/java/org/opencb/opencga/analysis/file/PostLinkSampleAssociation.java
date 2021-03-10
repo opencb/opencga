@@ -1,6 +1,6 @@
 package org.opencb.opencga.analysis.file;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -17,6 +17,7 @@ import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.util.*;
 
@@ -28,13 +29,8 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Associate samples to files that were linked and could not associate their samples because "
             + "the number of samples contained was too high.";
 
-    private final PostLinkToolParams postLinkParams = new PostLinkToolParams();
-
-    @Override
-    protected void check() throws Exception {
-        postLinkParams.updateParams(params);
-        super.check();
-    }
+    @ToolParams
+    protected final PostLinkToolParams postLinkParams = new PostLinkToolParams();
 
     @Override
     protected void run() throws Exception {
@@ -46,12 +42,17 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
         includeList.add(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key());
         options.put(QueryOptions.INCLUDE, includeList);
         options.put(QueryOptions.LIMIT, 20);
+        options.put(QueryOptions.COUNT, true);
 
         List<String> files = null;
         if (CollectionUtils.isNotEmpty(postLinkParams.getFiles())) {
             files = new LinkedList<>(postLinkParams.getFiles());
+        } else {
+            logger.info("Processing all files with internal status = '" + FileStatus.MISSING_SAMPLES + "'");
         }
 
+        int numPendingFiles = -1;
+        int numFiles = 0;
         while (true) {
             OpenCGAResult<File> fileResult;
             if (files == null) {
@@ -67,8 +68,13 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 }
                 fileResult = catalogManager.getFileManager().get(study, files.remove(0), options, token);
             }
+            if (numPendingFiles < 0) {
+                numPendingFiles = ((int) fileResult.getNumMatches());
+            }
 
             for (File file : fileResult.getResults()) {
+                numFiles++;
+                logger.info("Processing file {}/{} - {}", numFiles, numPendingFiles, file.getId());
                 // Validate status
                 if (!FileStatus.MISSING_SAMPLES.equals(file.getInternal().getStatus().getName())) {
                     // Skip current file. This file seems to be already properly associated
@@ -79,7 +85,8 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 if (file.getInternal() != null && file.getInternal().getMissingSamples() != null) {
                     List<String> sampleList = new LinkedList<>();
 
-                    if (file.getInternal().getMissingSamples().getNonExisting() != null) {
+                    if (CollectionUtils.isNotEmpty(file.getInternal().getMissingSamples().getNonExisting())) {
+                        logger.info("Create {} missing samples", file.getInternal().getMissingSamples().getNonExisting().size());
                         for (String sampleId : file.getInternal().getMissingSamples().getNonExisting()) {
                             Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
                             OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(study, sampleQuery,
@@ -116,13 +123,18 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
 
                         currentList.add(sampleList.get(i));
                     }
-
+                    if (!sampleList.isEmpty()) {
+                        logger.info("Update {} samples in {} batches", sampleList.size(), sampleListList.size());
+                    }
 
                     // Update file
                     ObjectMap actionMap = new ObjectMap()
                             .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);
 
+                    int sampleListCount = 0;
                     for (List<String> auxSampleList : sampleListList) {
+                        sampleListCount++;
+                        logger.info("Update batch {}/{} with {} samples", sampleListCount, sampleListList.size(), auxSampleList.size());
                         FileUpdateParams fileUpdateParams = new FileUpdateParams()
                                 .setSampleIds(auxSampleList);
 

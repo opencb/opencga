@@ -107,7 +107,7 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds)
                     .append(ParamConstants.ACL_PARAM, userId + ":" + StringUtils.join(Arrays.asList(SampleAclEntry.SamplePermissions.VIEW,
-                            SampleAclEntry.SamplePermissions.UPDATE, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS), ","));
+                            SampleAclEntry.SamplePermissions.WRITE, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS), ","));
             int numResults = count(query);
             if (numResults < sampleIds.size()) {
                 throw new ToolException("Cannot create annotations for all the entries. Missing permissions in "

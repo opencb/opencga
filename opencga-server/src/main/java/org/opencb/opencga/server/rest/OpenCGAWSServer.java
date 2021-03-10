@@ -49,10 +49,12 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.FederationNode;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
@@ -307,13 +309,8 @@ public class OpenCGAWSServer {
     }
 
     private static void initLogger(java.nio.file.Path configDirPath) {
-        String logDir = System.getProperty("opencga.log.dir");
+        String logDir = configuration.getLogDir();
         boolean logFileEnabled;
-        if (StringUtils.isBlank(logDir)) {
-            logDir = configuration.getLogDir();
-        } else {
-            configuration.setLogDir(logDir);
-        }
 
         if (StringUtils.isNotBlank(configuration.getLogLevel())) {
             Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
@@ -358,6 +355,14 @@ public class OpenCGAWSServer {
             }
         } catch (Exception e) {
             logger.error("Error closing CatalogManager", e);
+        }
+        try {
+            if (ClinicalWebService.rgaManagerAtomicRef.get() != null) {
+                logger.info("| * Closing RgaManager");
+                ClinicalWebService.rgaManagerAtomicRef.get().close();
+            }
+        } catch (Exception e) {
+            logger.error("Error closing RgaManager", e);
         }
         logger.info("| OpenCGA destroyed");
         logger.info("========================================================================\n");
@@ -505,10 +510,11 @@ public class OpenCGAWSServer {
     }
 
     protected Response createErrorResponse(Throwable e) {
-        return createErrorResponse(e, startTime, apiVersion, requestDescription, params);
+        return createErrorResponse(e, startTime, apiVersion, requestDescription, params, uriInfo);
     }
 
-    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription, ObjectMap params) {
+    public static Response createErrorResponse(Throwable e, long startTime, String apiVersion, String requestDescription, ObjectMap params,
+                                               UriInfo uriInfo) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
@@ -520,7 +526,8 @@ public class OpenCGAWSServer {
         addErrorEvent(queryResponse, e);
 
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
-        queryResponse.setResponses(Arrays.asList(result));
+        setFederationServer(result, uriInfo);
+        queryResponse.setResponses(Collections.singletonList(result));
 
         Response.StatusType errorStatus;
         if (e instanceof WebApplicationException
@@ -545,6 +552,7 @@ public class OpenCGAWSServer {
         dataResponse.setApiVersion(apiVersion);
         dataResponse.setParams(params);
         addErrorEvent(dataResponse, errorMessage);
+        setFederationServer(result, uriInfo);
         dataResponse.setResponses(Arrays.asList(result));
 
         Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
@@ -627,6 +635,9 @@ public class OpenCGAWSServer {
                 list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
             }
         }
+        for (OpenCGAResult<?> openCGAResult : list) {
+            setFederationServer(openCGAResult, uriInfo);
+        }
         queryResponse.setResponses(list);
 
         Response response = createJsonResponse(queryResponse);
@@ -648,13 +659,13 @@ public class OpenCGAWSServer {
         }
     }
 
-    //Response methods
-    protected Response createOkResponse(Object o1, MediaType o2) {
-        return buildResponse(Response.ok(o1, o2));
-    }
-
     protected Response createOkResponse(InputStream o1, MediaType o2, String fileName) {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
+    }
+
+    private static void setFederationServer(OpenCGAResult result, UriInfo uriInfo) {
+        result.setNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
+                GitRepositoryState.get().getBuildVersion()));
     }
 
     void logResponse(Response.StatusType statusInfo) {

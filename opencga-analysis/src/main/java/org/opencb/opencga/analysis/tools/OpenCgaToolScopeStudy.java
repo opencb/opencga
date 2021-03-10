@@ -30,11 +30,17 @@ public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
         study = getStudyFqn();
     }
 
-    public void setStudy(String study) {
+    public OpenCgaToolScopeStudy setStudy(String study) {
         this.study = study;
         getParams().put(ParamConstants.STUDY_PARAM, study);
+        return this;
     }
 
+    /**
+     * Get the study Fully Qualified Name.
+     * The study is validated during {@link #check()}
+     * @return study FQN
+     */
     public String getStudy() {
         return study;
     }

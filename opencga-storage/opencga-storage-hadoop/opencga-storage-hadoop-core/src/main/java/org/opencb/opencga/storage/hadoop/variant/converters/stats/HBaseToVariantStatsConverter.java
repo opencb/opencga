@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.slf4j.Logger;
@@ -67,10 +67,10 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
         if (result.rawCells() != null) {
             for (Cell cell : result.rawCells()) {
                 if (cell.getValueLength() != 0 && endsWith(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
-                        VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX_BYTES)) {
+                        VariantPhoenixSchema.COHORT_STATS_PROTOBUF_SUFFIX_BYTES)) {
                     byte[] value = CellUtil.cloneValue(cell);
                     String columnName = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
-                    String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
+                    String[] split = columnName.split(VariantPhoenixSchema.COLUMN_KEY_SEPARATOR_STR);
                     Integer studyId = getStudyId(split);
                     Integer cohortId = getCohortId(split);
 
@@ -97,7 +97,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String columnName = metaData.getColumnName(i);
                 byte[] value = resultSet.getBytes(i);
-                if (value != null && columnName.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
+                if (value != null && columnName.endsWith(VariantPhoenixSchema.COHORT_STATS_PROTOBUF_SUFFIX)) {
                     String[] split = columnName.split("_");
                     Integer studyId = getStudyId(split);
                     Integer cohortId = getCohortId(split);

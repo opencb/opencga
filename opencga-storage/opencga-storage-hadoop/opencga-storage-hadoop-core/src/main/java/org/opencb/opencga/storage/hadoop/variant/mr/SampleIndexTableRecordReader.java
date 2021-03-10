@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator.getDBNameFromVariantsTableName;
 
@@ -220,7 +221,8 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         if (regions.isEmpty()) {
             iterator = VariantDBIterator.emptyIterator();
         } else {
-            SampleIndexQuery query = new SampleIndexQuery(regions, sampleIndexQuery);
+            Collection<List<Region>> regionGroups = regions.stream().map(Collections::singletonList).collect(Collectors.toList());
+            SampleIndexQuery query = new SampleIndexQuery(regionGroups, sampleIndexQuery);
             iterator = sampleIndexDBAdaptor.iterator(query);
         }
         loadMoreResults();

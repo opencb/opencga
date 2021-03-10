@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,11 +78,7 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
             postCalculateStats(metadataManager, sm, cohorts, error);
         }
 
-        try {
-            dbAdaptor.updateStatsColumns(sm);
-        } catch (SQLException e) {
-            throw new IOException(e);
-        }
+        dbAdaptor.updateStatsColumns(sm);
 
     }
 }

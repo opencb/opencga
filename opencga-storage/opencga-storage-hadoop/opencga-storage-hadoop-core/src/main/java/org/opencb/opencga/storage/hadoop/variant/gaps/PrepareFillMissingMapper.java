@@ -12,7 +12,7 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
         rowKeyFactory = new ArchiveRowKeyFactory(context.getConfiguration());
         indexedFiles = getIndexedFiles(context.getConfiguration());
         allFileBatches = indexedFiles.stream().map(rowKeyFactory::getFileBatch).collect(Collectors.toSet());
-        fillMissingColumn = VariantPhoenixHelper.getFillMissingColumn(helper.getStudyId());
+        fillMissingColumn = VariantPhoenixSchema.getFillMissingColumn(helper.getStudyId());
         timestamp = context.getConfiguration().getLong(AbstractVariantsTableDriver.TIMESTAMP, 0);
         if (timestamp <= 0) {
             throw new IllegalArgumentException(AbstractVariantsTableDriver.TIMESTAMP + " not defined!");

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;

@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.metadata;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 /**
  * Created by jacobo on 27/02/19.
@@ -12,8 +13,29 @@ public class MetadataCache<ID, R> {
     private final BiFunction<Integer, ID, R> function;
 
     public MetadataCache(BiFunction<Integer, ID, R> function) {
-        this.function = function;
+        this(function, null);
+    }
+
+    public MetadataCache(BiFunction<Integer, ID, R> function, Predicate<R> reuseValue) {
         this.cache = new ConcurrentHashMap<>();
+        if (reuseValue != null) {
+            // Try to reuse the value from another already existing in the cache.
+            // Allows to avoid duplicated values and lets the GC to claim the unused values.
+            this.function = function.andThen(value -> {
+                // Once we have the value, try to find an equal value in the cache
+                if (value != null && reuseValue.test(value)) {
+                    for (R cachedValue : cache.values()) {
+                        if (cachedValue.equals(value)) {
+                            // Use the cached value. The GC will claim the 'value'. Multiple entries will point to the same value.
+                            return cachedValue;
+                        }
+                    }
+                }
+                return value;
+            });
+        } else {
+            this.function = function;
+        }
     }
 
     /**

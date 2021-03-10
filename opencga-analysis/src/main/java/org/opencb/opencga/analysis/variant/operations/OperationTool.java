@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -67,8 +67,18 @@ public abstract class OperationTool extends OpenCgaTool {
     }
 
     protected final String getProjectFqn() throws CatalogException {
-        return catalogManager.getProjectManager().get(params.getString(ParamConstants.PROJECT_PARAM),
-                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()), token).first().getFqn();
+        try {
+            return catalogManager.getProjectManager().get(params.getString(ParamConstants.PROJECT_PARAM),
+                    new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()), token).first().getFqn();
+        } catch (CatalogException e) {
+            try {
+                String studyFqn = getStudyFqn();
+                return studyFqn.split(ParamConstants.PROJECT_STUDY_SEPARATOR)[0];
+            } catch (Exception e2) {
+                e.addSuppressed(e2);
+                throw e;
+            }
+        }
     }
 
     protected final String getStudyFqn() throws CatalogException {

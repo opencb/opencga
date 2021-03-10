@@ -175,6 +175,11 @@ public class AuditManager {
     }
 
     public void audit(String operationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
+                      String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(operationId, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+    }
+
+    public void audit(String operationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
                       ObjectMap attributes) {
         String apiVersion = GitRepositoryState.get().getBuildVersion();

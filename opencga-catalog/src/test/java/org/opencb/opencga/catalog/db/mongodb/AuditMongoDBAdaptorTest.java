@@ -76,8 +76,7 @@ public class AuditMongoDBAdaptorTest {
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
 
-        auditDbAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database)
-                .getCatalogAuditDbAdaptor();
+        auditDbAdaptor = new MongoDBAdaptorFactory(configuration).getCatalogAuditDbAdaptor();
     }
 
     @Test

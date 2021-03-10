@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant.search.solr;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -496,7 +496,7 @@ public class SolrQueryParser {
 
         // Regions
         if (StringUtils.isNotEmpty(query.getString(REGION.key()))) {
-            regions = Region.parseRegions(query.getString(REGION.key()));
+            regions = Region.parseRegions(query.getString(REGION.key()), true);
         }
 
         // Biotypes
@@ -781,7 +781,7 @@ public class SolrQueryParser {
                         "Missing study parameter when filtering by 'format'");
             }
 
-            Pair<QueryOperation, Map<String, String>> parsedSampleFormats = parseSampleData(query);
+            Pair<QueryOperation, Map<String, String>> parsedSampleFormats = parseSampleDataOLD(query);
             String logicOpStr = parsedSampleFormats.getKey() == QueryOperation.AND ? " AND " : " OR ";
             StringBuilder sb = new StringBuilder();
             sb.append("(");

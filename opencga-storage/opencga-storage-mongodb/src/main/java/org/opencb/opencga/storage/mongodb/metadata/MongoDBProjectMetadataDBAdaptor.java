@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.mongodb.metadata;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -45,7 +46,10 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     }
 
     @Override
-    public Lock lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    public Lock lockProject(long lockDuration, long timeout, String lockName) throws InterruptedException, TimeoutException {
+        if (StringUtils.isNotEmpty(lockName)) {
+            throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
+        }
         return mongoLock.lock(ID, lockDuration, timeout);
     }
 

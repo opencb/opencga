@@ -29,6 +29,7 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -237,8 +238,8 @@ public class VariantStatsOperationManager extends OperationManager {
                 .collect(Collectors.toSet());
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
-                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Enums.CohortType.COLLECTION, "",
-                        Collections.emptyList(), null, null, sessionId);
+                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams(cohortName,
+                        Enums.CohortType.COLLECTION, "", Collections.emptyList(), null, null, null), null, null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
             } else {

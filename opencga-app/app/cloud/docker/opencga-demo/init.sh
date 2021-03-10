@@ -30,9 +30,41 @@ sleep 2
 chmod +x /opt/opencga/misc/solr/install.sh
 /opt/opencga/misc/solr/install.sh
 
+function requiredVariable() {
+  key=$1
+  value=$2
+  if [ -z "${value}" ]; then
+    echo "Missing env var $key"
+    exit 1
+  fi
+}
+
+if find /opt/opencga/libs/opencga-storage-hadoop-deps-* &> /dev/null ; then
+    requiredVariable "HADOOP_SSH_HOST" "${HADOOP_SSH_HOST}"
+    requiredVariable "HADOOP_SSH_USER" "${HADOOP_SSH_USER}"
+    if [ -z "${HADOOP_SSH_KEY}" ] && [ -z "${HADOOP_SSH_PASS}" ]; then
+      echo "Missing HADOOP_SSH_KEY or HADOOP_SSH_PASS var"
+      exit 1
+    fi
+    if [ ! -z "${HADOOP_SSH_KEY}" ] && [ ! -f "${HADOOP_SSH_KEY}" ]; then
+      echo "Cannot access '${HADOOP_SSH_KEY}': No such file or directory"
+      exit 1
+    fi
+
+    export INIT_HADOOP_SSH_DNS=${HADOOP_SSH_HOST}
+    export INIT_HADOOP_SSH_USER=${HADOOP_SSH_USER}
+    export INIT_HADOOP_SSH_PASS=${HADOOP_SSH_PASS:-}
+    export INIT_HADOOP_SSH_KEY=${HADOOP_SSH_KEY:-}
+    export INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME=${HADOOP_SSH_REMOTE_OPENCGA_HOME:-"opencga-demo"}
+
+    echo "-- Configure hadoop --"
+    /opt/opencga/init/setup-hadoop.sh
+fi
+
 CONTAINER_ALREADY_STARTED="CONTAINER_ALREADY_STARTED"
 if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
 
+    export INIT_DATABASE_PREFIX="opencga-demo"
     export INIT_SEARCH_HOSTS=http://localhost:8983/solr/
     export INIT_CLINICAL_HOSTS=http://localhost:8983/solr/
     export INIT_CATALOG_DATABASE_HOSTS=localhost:27017
@@ -40,12 +72,15 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
     export INIT_CATALOG_DATABASE_PASSWORD=""
     export INIT_CATALOG_DATABASE_SSL="false"
     export INIT_CATALOG_SEARCH_HOSTS=http://localhost:8983/solr/
-    export INIT_REST_HOST="http://localhost:9090/`ls ../opencga*.war | rev | cut -d "." -f 2- | rev | xargs basename`"
+    export INIT_REST_HOST="http://localhost:9090/$(ls ../opencga*.war | rev | cut -d "." -f 2- | rev | xargs basename)"
     export INIT_GRPC_HOST="localhost:9091"
-    export INIT_VARIANT_DEFAULT_ENGINE="mongodb"
-    export INIT_HADOOP_SSH_DNS=""
-    export INIT_HADOOP_SSH_USER=""
-    export INIT_HADOOP_SSH_PASS=""
+
+    if find /opt/opencga/libs/opencga-storage-hadoop-deps-* &> /dev/null ; then
+      export INIT_VARIANT_DEFAULT_ENGINE="hadoop"
+      export INIT_VARIANT_OPTIONS="[expected_files_number=1,storage.hadoop.variant.table.preSplit.numSplits=5,storage.hadoop.archive.table.preSplit.splitsPerBatch=5]"
+    else
+      export INIT_VARIANT_DEFAULT_ENGINE="mongodb"
+    fi
     export INIT_MAX_CONCURRENT_JOBS="1"
     python3 /opt/opencga/init/override_yaml.py --save
 

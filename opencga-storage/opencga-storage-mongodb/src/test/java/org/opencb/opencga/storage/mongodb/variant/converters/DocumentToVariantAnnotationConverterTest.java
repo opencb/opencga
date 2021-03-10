@@ -210,56 +210,56 @@ public class DocumentToVariantAnnotationConverterTest {
                 ))
                 .append(CONSERVED_REGION_PHASTCONS_FIELD, new Document(SCORE_SCORE_FIELD, 0.11100000143051147))
                 .append(CONSERVED_REGION_PHYLOP_FIELD, new Document(SCORE_SCORE_FIELD, 0.5609999895095825))
-                .append(CLINICAL_DATA_FIELD, new Document()
-                        .append(CLINICAL_COSMIC_FIELD, asList(
-                                new Document()
-                                        .append("mutationId", "3749517")
-                                        .append("primarySite", "large_intestine")
-                                        .append("siteSubtype", "rectum")
-                                        .append("primaryHistology", "carcinoma")
-                                        .append("histologySubtype", "adenocarcinoma")
-                                        .append("sampleSource", "NS")
-                                        .append("tumourOrigin", "primary")
-                                        .append("geneName", "APOE")
-                                        .append("mutationSomaticStatus", "Confirmed somatic variant")))
-                        .append(CLINICAL_GWAS_FIELD, asList(
-                                new Document()
-                                        .append("snpIdCurrent", "429358")
-                                        .append("traits", asList("Alzheimer's disease biomarkers"))
-                                        .append("riskAlleleFrequency", 0.28)
-                                        .append("reportedGenes", "APOE")))
-                        .append(CLINICAL_CLINVAR_FIELD, asList(
-                                new Document()
-                                        .append("accession", "RCV000019456")
-                                        .append("clinicalSignificance", "Pathogenic")
-                                        .append("traits", singletonList("APOE4(-)-FREIBURG"))
-                                        .append("geneNames", singletonList("APOE"))
-                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
-                                new Document()
-                                        .append("accession", "RCV000019455")
-                                        .append("clinicalSignificance", "Pathogenic")
-                                        .append("traits", singletonList("Familial type 3 hyperlipoproteinemia"))
-                                        .append("geneNames", singletonList("APOE"))
-                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
-                                new Document()
-                                        .append("accession", "RCV000019438")
-                                        .append("clinicalSignificance", "Pathogenic")
-                                        .append("traits", singletonList("Familial type 3 hyperlipoproteinemia"))
-                                        .append("geneNames", singletonList("APOE"))
-                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
-                                new Document()
-                                        .append("accession", "RCV000019448")
-                                        .append("clinicalSignificance", "Pathogenic")
-                                        .append("traits", singletonList("ALZHEIMER DISEASE 2, DUE TO APOE4 ISOFORM"))
-                                        .append("geneNames", singletonList("APOE"))
-                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
-                                new Document()
-                                        .append("accession", "RCV000019458")
-                                        .append("clinicalSignificance", "Pathogenic")
-                                        .append("traits", singletonList("APOE4 VARIANT"))
-                                        .append("geneNames", singletonList("APOE"))
-                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER")
-                        )))
+//                .append(CLINICAL_DATA_FIELD, new Document()
+//                        .append(CLINICAL_COSMIC_FIELD, asList(
+//                                new Document()
+//                                        .append("mutationId", "3749517")
+//                                        .append("primarySite", "large_intestine")
+//                                        .append("siteSubtype", "rectum")
+//                                        .append("primaryHistology", "carcinoma")
+//                                        .append("histologySubtype", "adenocarcinoma")
+//                                        .append("sampleSource", "NS")
+//                                        .append("tumourOrigin", "primary")
+//                                        .append("geneName", "APOE")
+//                                        .append("mutationSomaticStatus", "Confirmed somatic variant")))
+//                        .append(CLINICAL_GWAS_FIELD, asList(
+//                                new Document()
+//                                        .append("snpIdCurrent", "429358")
+//                                        .append("traits", asList("Alzheimer's disease biomarkers"))
+//                                        .append("riskAlleleFrequency", 0.28)
+//                                        .append("reportedGenes", "APOE")))
+//                        .append(CLINICAL_CLINVAR_FIELD, asList(
+//                                new Document()
+//                                        .append("accession", "RCV000019456")
+//                                        .append("clinicalSignificance", "Pathogenic")
+//                                        .append("traits", singletonList("APOE4(-)-FREIBURG"))
+//                                        .append("geneNames", singletonList("APOE"))
+//                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+//                                new Document()
+//                                        .append("accession", "RCV000019455")
+//                                        .append("clinicalSignificance", "Pathogenic")
+//                                        .append("traits", singletonList("Familial type 3 hyperlipoproteinemia"))
+//                                        .append("geneNames", singletonList("APOE"))
+//                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+//                                new Document()
+//                                        .append("accession", "RCV000019438")
+//                                        .append("clinicalSignificance", "Pathogenic")
+//                                        .append("traits", singletonList("Familial type 3 hyperlipoproteinemia"))
+//                                        .append("geneNames", singletonList("APOE"))
+//                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+//                                new Document()
+//                                        .append("accession", "RCV000019448")
+//                                        .append("clinicalSignificance", "Pathogenic")
+//                                        .append("traits", singletonList("ALZHEIMER DISEASE 2, DUE TO APOE4 ISOFORM"))
+//                                        .append("geneNames", singletonList("APOE"))
+//                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+//                                new Document()
+//                                        .append("accession", "RCV000019458")
+//                                        .append("clinicalSignificance", "Pathogenic")
+//                                        .append("traits", singletonList("APOE4 VARIANT"))
+//                                        .append("geneNames", singletonList("APOE"))
+//                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER")
+//                        )))
                 .append(XREFS_FIELD, ANY_LIST)
                 .append(POPULATION_FREQUENCIES_FIELD, ANY_LIST)
                 .append(GENE_SO_FIELD, ANY_LIST);
@@ -279,7 +279,7 @@ public class DocumentToVariantAnnotationConverterTest {
         DocumentToVariantAnnotationConverter documentToVariantAnnotationConverter = new DocumentToVariantAnnotationConverter();
         VariantAnnotation convertedVariantAnnotation = documentToVariantAnnotationConverter.convertToDataModelType(dbObject);
         assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(2).getProteinVariantAnnotation().getReference(), "CYS");
-        assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmic().get(0).getPrimarySite(), "large_intestine");
+//        assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmic().get(0).getPrimarySite(), "large_intestine");
 
     }
 
@@ -289,8 +289,8 @@ public class DocumentToVariantAnnotationConverterTest {
         Document convertedDBObject = documentToVariantAnnotationConverter.convertToStorageType(variantAnnotation);
         assertEquals(130, (int) ((Document) ((List) convertedDBObject.get(CONSEQUENCE_TYPE_FIELD)).get(2)).get(CT_AA_POSITION_FIELD));
         assertEquals(0.5609999895095825, ((Document) convertedDBObject.get(CONSERVED_REGION_PHYLOP_FIELD)).getDouble(SCORE_SCORE_FIELD), 0.0001);
-        assertEquals("RCV000019456", ((Document)  convertedDBObject.get(CLINICAL_DATA_FIELD, Document.class)
-                .get(CLINICAL_CLINVAR_FIELD, List.class).get(0)).get("accession", String.class));
+//        assertEquals("RCV000019456", ((Document)  convertedDBObject.get(CLINICAL_DATA_FIELD, Document.class)
+//                .get(CLINICAL_CLINVAR_FIELD, List.class).get(0)).get("accession", String.class));
 
 //        System.out.println("convertedDBObject = " + convertedDBObject.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         checkEqualDocuments(dbObject, convertedDBObject);

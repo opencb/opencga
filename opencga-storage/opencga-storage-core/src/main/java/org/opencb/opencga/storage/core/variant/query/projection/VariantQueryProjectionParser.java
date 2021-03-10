@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.variant.query.projection;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -522,11 +522,11 @@ public class VariantQueryProjectionParser {
                 map.keySet().stream().map(Object::toString).forEach(samples::add);
             }
             if (VariantQueryUtils.isValidParam(query, SAMPLE_DATA)) {
-                Map<String, String> formatMap = VariantQueryUtils.parseSampleData(query).getValue();
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataQuery = VariantQueryUtils.parseSampleData(query);
                 if (samples == null) {
-                    samples = new ArrayList<>(formatMap.size());
+                    samples = new ArrayList<>(sampleDataQuery.size());
                 }
-                samples.addAll(formatMap.keySet());
+                samples.addAll(sampleDataQuery.getValues(KeyValues::getKey));
             }
             if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)) {
                 String value = query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key());

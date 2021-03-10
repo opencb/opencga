@@ -2,7 +2,10 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Values<V> implements QueryElement, Iterable<V> {
 
@@ -26,8 +29,32 @@ public class Values<V> implements QueryElement, Iterable<V> {
         return this;
     }
 
+    public boolean isEmpty() {
+        return values.isEmpty();
+    }
+
+    public boolean isNotEmpty() {
+        return !isEmpty();
+    }
+
+    public int size() {
+        return values.size();
+    }
+
+    public V get(int idx) {
+        return values.get(idx);
+    }
+
+    public boolean contains(V v) {
+        return values.contains(v);
+    }
+
     public List<V> getValues() {
         return values;
+    }
+
+    public <R> List<R> getValues(Function<V, R> function) {
+        return values.stream().map(function).collect(Collectors.toList());
     }
 
     public V getValue(Predicate<V> selector) {
@@ -37,6 +64,10 @@ public class Values<V> implements QueryElement, Iterable<V> {
     public Values<V> setValues(List<V> values) {
         this.values = values;
         return this;
+    }
+
+    public Stream<V> stream() {
+        return values.stream();
     }
 
     @Override
@@ -64,7 +95,7 @@ public class Values<V> implements QueryElement, Iterable<V> {
             if (value instanceof QueryElement) {
                 ((QueryElement) value).toQuery(sb);
             } else {
-                sb.append(value);
+                sb.append(QueryElement.objectToString(value));
             }
         }
     }
@@ -84,7 +115,7 @@ public class Values<V> implements QueryElement, Iterable<V> {
             if (value instanceof QueryElement) {
                 ((QueryElement) value).describe(sb);
             } else {
-                sb.append("'").append(value).append("'");
+                sb.append("'").append(QueryElement.objectToString(value)).append("'");
             }
         }
         if (externalParentesis) {

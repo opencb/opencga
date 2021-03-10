@@ -89,6 +89,8 @@ public class ParamConstants {
     public static final String ADMIN_STUDY = "admin";
     public static final String ADMIN_STUDY_FQN = OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
     public static final String ANONYMOUS_USER_ID = "*";
+    public static final String MEMBERS_GROUP = "@members";
+    public static final String ADMINS_GROUP = "@admins";
 
     public static final String USER_DESCRIPTION = "User ID";
 
@@ -143,9 +145,9 @@ public class ParamConstants {
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
     public static final String SAMPLE_INDIVIDUAL_ID_PARAM = "individualId";
-    public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID";
+    public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID or UUID";
     public static final String SAMPLE_FILE_IDS_PARAM = "fileIds";
-    public static final String SAMPLE_FILE_IDS_DESCRIPTION = "Comma separated list of file IDs";
+    public static final String SAMPLE_FILE_IDS_DESCRIPTION = "Comma separated list of file IDs, paths or UUIDs";
 
     public static final String SAMPLE_ID_PARAM = "id";
     public static final String SAMPLE_PARAM = "sample";

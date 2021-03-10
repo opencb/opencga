@@ -54,9 +54,9 @@ import java.util.stream.Collectors;
  */
 public class CatalogAuthorizationManager implements AuthorizationManager {
 
-    public static final String MEMBERS_GROUP = "@members";
-    public static final String ADMINS_GROUP = "@admins";
-    private static final String OPENCGA = "opencga";
+    public static final String MEMBERS_GROUP = ParamConstants.MEMBERS_GROUP;
+    public static final String ADMINS_GROUP = ParamConstants.ADMINS_GROUP;
+    private static final String OPENCGA = ParamConstants.OPENCGA_USER_ID;
 
     private final Logger logger;
 
@@ -79,7 +79,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public CatalogAuthorizationManager(DBAdaptorFactory dbFactory, Configuration configuration)
             throws CatalogDBException {
         this.logger = LoggerFactory.getLogger(CatalogAuthorizationManager.class);
-        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory);
+        this.aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbFactory, configuration);
 
         this.openRegister = configuration.isOpenRegister();
 

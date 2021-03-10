@@ -33,6 +33,7 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.PicardCommandOptions.PICARD_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
@@ -104,7 +105,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
 
     public InternalCliOptionsParser() {
-        jCommander.setProgramName("opencga-analysis.sh");
+        jCommander.setProgramName("opencga-internal.sh");
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
@@ -208,6 +209,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         clinicalSubCommands.addCommand(TEAM_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
         clinicalSubCommands.addCommand(ZETTA_RUN_COMMAND, clinicalCommandOptions.zettaCommandOptions);
         clinicalSubCommands.addCommand(CANCER_TIERING_RUN_COMMAND, clinicalCommandOptions.cancerTieringCommandOptions);
+        clinicalSubCommands.addCommand(RGA_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaSecondaryIndexCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -215,6 +217,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
+        fileSubCommands.addCommand("postlink", fileCommandOptions.postlinkCommandOptions);
         fileSubCommands.addCommand("secondary-index", fileCommandOptions.secondaryIndex);
         fileSubCommands.addCommand("tsv-load", fileCommandOptions.tsvLoad);
 
@@ -449,7 +452,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
             System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
             System.err.println("");
-            System.err.println("Usage:       opencga-analysis.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("Usage:       opencga-internal.sh [-h|--help] [--version] <command> [options]");
             System.err.println("");
             System.err.println("Commands:");
             printMainUsage();
@@ -458,14 +461,14 @@ public class InternalCliOptionsParser extends CliOptionsParser {
             String parsedSubCommand = getSubCommand();
             if (parsedSubCommand.isEmpty()) {
                 System.err.println("");
-                System.err.println("Usage:   opencga-analysis.sh " + parsedCommand + " <subcommand> [options]");
+                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " <subcommand> [options]");
                 System.err.println("");
                 System.err.println("Subcommands:");
                 printCommands(jCommander.getCommands().get(parsedCommand));
                 System.err.println("");
             } else {
                 System.err.println("");
-                System.err.println("Usage:   opencga-analysis.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
+                System.err.println("Usage:   opencga-internal.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
                 System.err.println("");
                 System.err.println("Options:");
                 CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));

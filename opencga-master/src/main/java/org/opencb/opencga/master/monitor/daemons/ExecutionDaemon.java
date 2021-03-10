@@ -17,7 +17,7 @@
 package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.glassfish.jersey.client.ClientProperties;
@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
@@ -223,6 +224,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(ZettaInterpretationAnalysis.ID, "clinical " + ZettaInterpretationAnalysis.ID + "-run");
             put(CancerTieringInterpretationAnalysis.ID, "clinical " + CancerTieringInterpretationAnalysis.ID + "-run");
 
+            put(RgaAnalysis.ID, "clinical " + RgaAnalysis.ID + "-run");
+
             put(JulieTool.ID, "variant julie-run");
         }};
     }
@@ -312,10 +315,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int handledRunningJobs = 0;
         try (DBIterator<Job> iterator = jobManager.iterator(runningJobsQuery, queryOptions, token)) {
             while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                Job job = iterator.next();
-                handledRunningJobs += checkRunningJob(job);
+                try {
+                    Job job = iterator.next();
+                    handledRunningJobs += checkRunningJob(job);
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
             }
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
         }
     }
@@ -365,10 +372,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int handledQueuedJobs = 0;
         try (DBIterator<Job> iterator = jobManager.iterator(queuedJobsQuery, queryOptions, token)) {
             while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                Job job = iterator.next();
-                handledQueuedJobs += checkQueuedJob(job);
+                try {
+                    Job job = iterator.next();
+                    handledQueuedJobs += checkQueuedJob(job);
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
             }
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
         }
     }
@@ -416,10 +427,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int handledPendingJobs = 0;
         try (DBIterator<Job> iterator = jobManager.iterator(pendingJobsQuery, queryOptions, token)) {
             while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                Job job = iterator.next();
-                handledPendingJobs += checkPendingJob(job);
+                try {
+                    Job job = iterator.next();
+                    handledPendingJobs += checkPendingJob(job);
+                } catch (Exception e) {
+                    logger.error("{}", e.getMessage(), e);
+                }
             }
-        } catch (CatalogException e) {
+        } catch (Exception e) {
             logger.error("{}", e.getMessage(), e);
         }
     }

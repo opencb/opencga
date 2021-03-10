@@ -42,7 +42,6 @@ import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleInternal;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -89,9 +88,9 @@ public class SampleMongoDBAdaptorTest {
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
-                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()), Collections.emptyList(), null);
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
         catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, 1, 1, "", false,
-                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()), Collections.emptyList(), null);
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
     }
 
     DataResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -224,7 +223,7 @@ public class SampleMongoDBAdaptorTest {
                 new Phenotype("go:123", "My go term", "go", Phenotype.Status.UNKNOWN)
         );
         new Status();
-        Sample sample1 = new Sample().setId("sample1").setPhenotypes(ontologyList).setInternal(new SampleInternal(new Status()));
+        Sample sample1 = new Sample().setId("sample1").setPhenotypes(ontologyList).setInternal(SampleInternal.init());
 
         ontologyList = Arrays.asList(
                 new Phenotype("hpo:789", "One hpo term", "hpo", Phenotype.Status.UNKNOWN),
@@ -233,7 +232,7 @@ public class SampleMongoDBAdaptorTest {
                 new Phenotype("go:yyy", "My go term", "go", Phenotype.Status.UNKNOWN)
         );
         new Status();
-        Sample sample2 = new Sample().setId("sample2").setPhenotypes(ontologyList).setInternal(new SampleInternal(new Status()));
+        Sample sample2 = new Sample().setId("sample2").setPhenotypes(ontologyList).setInternal(SampleInternal.init());
 
         catalogSampleDBAdaptor.insert(studyId, sample1, Collections.emptyList(), new QueryOptions());
         catalogSampleDBAdaptor.insert(studyId, sample2, Collections.emptyList(), new QueryOptions());
@@ -342,7 +341,7 @@ public class SampleMongoDBAdaptorTest {
 
         // We create a new sample with the individual
         new Status();
-        Sample sample = new Sample().setId("sample1").setInternal(new SampleInternal(new Status()));
+        Sample sample = new Sample().setId("sample1").setInternal(SampleInternal.init());
         catalogSampleDBAdaptor.insert(studyId, sample, Collections.emptyList(), queryOptions);
         long sampleId = getSample(studyId, "sample1", queryOptions).first().getUid();
 
@@ -351,8 +350,8 @@ public class SampleMongoDBAdaptorTest {
         new Status();
         Individual individual = new Individual()
                 .setId(individualName)
-                .setInternal(new IndividualInternal(new Status()))
-                .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1).setInternal(new SampleInternal(new Status()))));
+                .setInternal(IndividualInternal.init())
+                .setSamples(Arrays.asList(new Sample().setUid(sampleId).setVersion(1).setInternal(SampleInternal.init())));
         dbAdaptorFactory.getCatalogIndividualDBAdaptor().insert(studyId, individual, null, queryOptions);
 
         // Get the sample

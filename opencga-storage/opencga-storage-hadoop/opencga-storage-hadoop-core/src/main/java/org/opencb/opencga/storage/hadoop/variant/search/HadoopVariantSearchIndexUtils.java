@@ -13,7 +13,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import java.util.List;
 import java.util.Set;
 
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 
 /**
  * Created on 23/04/18.

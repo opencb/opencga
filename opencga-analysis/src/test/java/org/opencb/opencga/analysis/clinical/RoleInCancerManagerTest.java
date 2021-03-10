@@ -12,7 +12,7 @@ public class RoleInCancerManagerTest {
 
     @Test
     public void load() throws IOException {
-        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = new RoleInCancerManager().getRoleInCancer();
+        Map<String, ClinicalProperty.RoleInCancer> roleInCancer = new RoleInCancerManager(null).getRoleInCancer();
         assertNotNull(roleInCancer);
     }
 }

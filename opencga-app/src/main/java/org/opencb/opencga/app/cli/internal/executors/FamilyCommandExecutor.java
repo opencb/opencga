@@ -40,14 +40,8 @@ public class FamilyCommandExecutor extends InternalCommandExecutor {
 
     private void secondaryIndex() throws ToolException {
         FamilyCommandOptions.SecondaryIndex options = familyCommandOptions.secondaryIndex;
-
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        // Prepare analysis parameters and config
-        FamilyIndexTask indexTask = new FamilyIndexTask();
-        indexTask.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
-        indexTask.start();
+        toolRunner.execute(FamilyIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
     private void tsvLoad() throws ToolException {

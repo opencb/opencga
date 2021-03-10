@@ -218,7 +218,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         int numThreads = params.getInt(
                 VariantStorageOptions.ANNOTATION_THREADS.key(),
                 VariantStorageOptions.ANNOTATION_THREADS.defaultValue());
-        int timeout = (int) TimeUnit.MILLISECONDS.toSeconds(params.getInt(
+        int timeoutSeconds = (int) TimeUnit.MILLISECONDS.toSeconds(params.getInt(
                 VariantStorageOptions.ANNOTATION_TIMEOUT.key(),
                 VariantStorageOptions.ANNOTATION_TIMEOUT.defaultValue()));
 
@@ -269,7 +269,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     .setNumTasks(numThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true)
-                    .setReadQueuePutTimeout(timeout)
+                    .setReadQueuePutTimeout(timeoutSeconds, TimeUnit.SECONDS)
                     .setSorted(false).build();
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
                     new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);

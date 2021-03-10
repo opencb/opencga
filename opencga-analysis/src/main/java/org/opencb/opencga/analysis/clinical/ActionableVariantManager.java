@@ -35,12 +35,16 @@ import java.util.stream.Collectors;
 public class ActionableVariantManager {
     // Folder where actionable variant files are located, multiple assemblies are supported, i.e.: one variant actionable file per assembly
     // File name format: actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
-    private final String ACTIONABLE_URL = "http://resources.opencb.org/opencb/opencga/analysis/resources/";
+    private final String ACTIONABLE_URL = "http://resources.opencb.org/opencb/opencga/analysis/commons/";
 
     // We keep a Map for each assembly with a Map of variant IDs with the phenotype list
     private static Map<String, Map<String, List<String>>> actionableVariants = null;
 
-    public ActionableVariantManager() {}
+    private Path openCgaHome;
+
+    public ActionableVariantManager(Path openCgaHome) {
+        this.openCgaHome = openCgaHome;
+    }
 
     public Map<String, List<String>> getActionableVariants(String assembly) throws IOException {
         // Lazy loading
@@ -64,10 +68,18 @@ public class ActionableVariantManager {
         for (String assembly : assemblies) {
             File actionableFile;
             try {
-                // Donwload 'actionable variant' file
-                actionableFile = URLUtils.download(new URL(ACTIONABLE_URL + "actionableVariants_" + assembly + ".txt.gz"),
-                        Paths.get("/tmp"));
+                String filename = "actionableVariants_" + assembly + ".txt.gz";
 
+                Path path = openCgaHome.resolve("analysis/commons/" + filename);
+                if (path.toFile().exists()) {
+                    System.out.println("loadActionableVariants from path: " + path);
+                    actionableFile = path.toFile();
+                } else {
+                    // Donwload 'actionable variant' file
+                    System.out.println("loadActionableVariants from URL: " + (ACTIONABLE_URL + filename) + ", (path does not exist: "
+                            + path + ")");
+                    actionableFile = URLUtils.download(new URL(ACTIONABLE_URL + filename), Paths.get("/tmp"));
+                }
             } catch (IOException e) {
                 continue;
             }

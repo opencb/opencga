@@ -2,7 +2,11 @@ package org.opencb.opencga.storage.hadoop.variant.search;
 
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -10,18 +14,17 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDescriptor;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.function.Function;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.STUDY_SUFIX_BYTES;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.STUDY_SUFIX_BYTES;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
 public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsDescriptor {
 
@@ -57,9 +60,9 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
         for (Integer studyId : metadataManager.getStudyIds()) {
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
             for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyId)) {
-                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.getStatsColumn(studyId, cohort.getId()).bytes());
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixSchema.getStatsColumn(studyId, cohort.getId()).bytes());
             }
         }
         return scan;
@@ -134,13 +137,12 @@ public class SecondaryIndexPendingVariantsDescriptor implements PendingVariantsD
     private Mutation getMutation(Result value, boolean pending) {
         if (pending) {
             Put put = new Put(value.getRow());
-            try {
-                for (Cell cell : value.rawCells()) {
-                    put.add(cell);
-                }
-            } catch (IOException e) {
-                // This should never happen
-                throw new UncheckedIOException(e);
+            for (Cell cell : value.rawCells()) {
+                put.addImmutable(GenomeHelper.COLUMN_FAMILY_BYTES,
+                        CellUtil.getQualifierBufferShallowCopy(cell),
+                        // Do not copy the timestamp!
+                        HConstants.LATEST_TIMESTAMP,
+                        CellUtil.getValueBufferShallowCopy(cell));
             }
             return put;
         } else {

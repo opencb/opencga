@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.variant.stats;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.StopWatch;
@@ -47,7 +47,7 @@ public class SampleVariantStatsAggregationQuery {
             throw new VariantQueryException("Missing sample");
         }
         int studyId = engine.getMetadataManager().getStudyId(studyStr);
-        int sampleId = engine.getMetadataManager().getSampleId(studyId, sample);
+        int sampleId = engine.getMetadataManager().getSampleIdOrFail(studyId, sample);
 
         Query query;
         if (inputQuery == null) {

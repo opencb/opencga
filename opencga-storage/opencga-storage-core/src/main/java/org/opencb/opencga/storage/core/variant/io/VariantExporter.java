@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,12 +87,11 @@ public class VariantExporter {
      * @param outputFormat  Variant Output format.
      * @param variantsFile  Optional variants file.
      * @param query         Query with the variants to export
-     * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
     public void export(@Nullable URI outputFile, VariantOutputFormat outputFormat, URI variantsFile,
-                       Query query, QueryOptions queryOptions)
+                       ParsedVariantQuery query)
             throws IOException, StorageEngineException {
 
         outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
@@ -101,10 +101,10 @@ public class VariantExporter {
 
         try (OutputStream os = VariantWriterFactory.getOutputStream(outputFile, outputFormat, ioConnectorProvider)) {
             boolean logProgress = !VariantWriterFactory.isStandardOutput(outputFile);
-            exportData(os, outputFormat, variantsFile, query, queryOptions, logProgress);
+            exportData(os, outputFormat, variantsFile, query.getInputQuery(), query.getInputOptions(), logProgress);
         }
         if (metadataFactory != null && !VariantWriterFactory.isStandardOutput(outputFile)) {
-            VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
+            VariantMetadata metadata = metadataFactory.makeVariantMetadata(query.getInputQuery(), query.getInputOptions());
             String metaFilename = outputFile.getPath() + METADATA_FILE_EXTENSION;
             if (outputFormat == VariantOutputFormat.TPED) {
                 metaFilename = outputFile.getPath().replace(TPED_FILE_EXTENSION, TFAM_FILE_EXTENSION);
@@ -189,19 +189,21 @@ public class VariantExporter {
         Writer writer = new OutputStreamWriter(new BufferedOutputStream(os));
         for (Individual individual : metadata.getStudies().get(0).getIndividuals()) {
             // Sex code: '1' = male, '2' = female, '0' = unknown
-            int sex;
-            switch (individual.getSex()) {
-                case "MALE": {
-                    sex = 1;
-                    break;
-                }
-                case "FEMALE": {
-                    sex = 2;
-                    break;
-                }
-                default: {
-                    sex = 0;
-                    break;
+            int sex = 0;
+            if (individual.getSex() != null) {
+                switch (individual.getSex()) {
+                    case "MALE": {
+                        sex = 1;
+                        break;
+                    }
+                    case "FEMALE": {
+                        sex = 2;
+                        break;
+                    }
+                    default: {
+                        sex = 0;
+                        break;
+                    }
                 }
             }
             // Phenotype value: '1' = control, '2' = case, '-9'/'0'/non-numeric = missing data if case/control

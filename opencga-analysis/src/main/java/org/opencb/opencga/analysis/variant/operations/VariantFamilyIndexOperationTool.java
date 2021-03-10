@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.tools.annotations.Tool;

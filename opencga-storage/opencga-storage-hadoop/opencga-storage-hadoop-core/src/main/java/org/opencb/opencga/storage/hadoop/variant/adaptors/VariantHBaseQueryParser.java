@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -31,16 +30,20 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
-import org.opencb.opencga.storage.core.variant.query.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTask;
@@ -51,13 +54,12 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildFileColumnKey;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.buildSampleColumnKey;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.ANNOTATION_ID;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.buildFileColumnKey;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.buildSampleColumnKey;
 
 /**
  * Created on 07/07/17.
@@ -151,7 +153,9 @@ public class VariantHBaseQueryParser {
         }
         if (otherParams.contains(GENE)) {
             if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-                otherParams.remove(GENE);
+                if (!query.getString(ANNOT_GENE_REGIONS.key()).equals(SKIP_GENE_REGIONS)) {
+                    otherParams.remove(GENE);
+                }
             }
         }
         if (otherParams.contains(ANNOT_EXPRESSION)) {
@@ -333,41 +337,39 @@ public class VariantHBaseQueryParser {
 
         Map<String, Integer> studies = metadataManager.getStudies(null);
         Set<String> studyNames = studies.keySet();
-        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
-
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
-            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
-
-            Filter f1 = existingColumnFilter(INDEX_NOT_SYNC.bytes());
-            Filter f2 = existingColumnFilter(INDEX_UNKNOWN.bytes());
-            filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
-
-
-            long ts = metadataManager.getProjectMetadata().getAttributes()
-                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
-            if (ts > 0 && scan.getStartRow() == HConstants.EMPTY_START_ROW) {
-                try {
-                    scan.setTimeRange(ts, Long.MAX_VALUE);
-                } catch (IOException e) {
-                    throw VariantQueryException.internalException(e);
-                }
-            } // Otherwise, get all variants
-
-        }
+//        if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
+//            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
+//            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
+//            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
+//
+//            Filter f1 = existingColumnFilter(INDEX_NOT_SYNC.bytes());
+//            Filter f2 = existingColumnFilter(INDEX_UNKNOWN.bytes());
+//            filters.addFilter(new FilterList(FilterList.Operator.MUST_PASS_ONE, f1, f2));
+//
+//
+//            long ts = metadataManager.getProjectMetadata().getAttributes()
+//                    .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
+//            if (ts > 0 && scan.getStartRow() == HConstants.EMPTY_START_ROW) {
+//                try {
+//                    scan.setTimeRange(ts, Long.MAX_VALUE);
+//                } catch (IOException e) {
+//                    throw VariantQueryException.internalException(e);
+//                }
+//            } // Otherwise, get all variants
+//        }
 
         if (selectElements.getFields().contains(VariantField.STUDIES)) {
             for (VariantQueryProjection.StudyVariantQueryProjection study : selectElements.getStudies().values()) {
                 int studyId = study.getId();
-                scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
-                scan.addColumn(family, VariantPhoenixHelper.getFillMissingColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixSchema.getFillMissingColumn(studyId).bytes());
 
                 for (Integer cohortId : study.getCohorts()) {
                     scan.addColumn(family,
-                            VariantPhoenixHelper.getStatsColumn(studyId, cohortId).bytes());
+                            VariantPhoenixSchema.getStatsColumn(studyId, cohortId).bytes());
                 }
 
-                scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
 
                 for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, study.getSamples())) {
                     scan.addColumn(family, buildFileColumnKey(studyId, fileId));
@@ -380,7 +382,7 @@ public class VariantHBaseQueryParser {
                         scan.addColumn(family, buildSampleColumnKey(studyId, sampleId));
                         requiredFilesFromSample = allFilesFromSample;
                     } else {
-                        for (PhoenixHelper.Column column : VariantPhoenixHelper
+                        for (PhoenixHelper.Column column : VariantPhoenixSchema
                                 .getSampleColumns(studyId, sampleId, allFilesFromSample, requiredFilesFromSample,
                                         VariantStorageEngine.SplitData.MULTI)) {
                             scan.addColumn(family, column.bytes());
@@ -391,16 +393,16 @@ public class VariantHBaseQueryParser {
                     }
                 }
 
-                scan.addColumn(family, VariantPhoenixHelper.getStudyColumn(studyId).bytes());
+                scan.addColumn(family, VariantPhoenixSchema.getStudyColumn(studyId).bytes());
                 for (Integer fileId : study.getFiles()) {
-                    scan.addColumn(family, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
+                    scan.addColumn(family, VariantPhoenixSchema.buildFileColumnKey(studyId, fileId));
                 }
             }
 
             if (selectElements.getFields().contains(VariantField.STUDIES_SCORES)) {
                 for (StudyMetadata studyMetadata : selectElements.getStudyMetadatas()) {
                     for (VariantScoreMetadata sore : studyMetadata.getVariantScores()) {
-                        PhoenixHelper.Column column = VariantPhoenixHelper.getVariantScoreColumn(sore.getStudyId(), sore.getId());
+                        PhoenixHelper.Column column = VariantPhoenixSchema.getVariantScoreColumn(sore.getStudyId(), sore.getId());
                         scan.addColumn(family, column.bytes());
                     }
                 }
@@ -519,7 +521,7 @@ public class VariantHBaseQueryParser {
             }
             for (String studyStr : values) {
                 int studyId = metadataManager.getStudyId(studyStr);
-                byte[] column = VariantPhoenixHelper.getStudyColumn(studyId).bytes();
+                byte[] column = VariantPhoenixSchema.getStudyColumn(studyId).bytes();
                 if (isNegated(studyStr)) {
                     subFilters.addFilter(missingColumnFilter(column));
                     scan.addColumn(family, column);
@@ -535,14 +537,14 @@ public class VariantHBaseQueryParser {
         if (selectElements.getFields().contains(VariantField.ANNOTATION)) {
             if (isValidParam(query, VariantHadoopDBAdaptor.ANNOT_NAME)) {
                 int id = query.getInt(VariantHadoopDBAdaptor.ANNOT_NAME.key());
-                scan.addColumn(family, Bytes.toBytes(VariantPhoenixHelper.getAnnotationSnapshotColumn(id)));
+                scan.addColumn(family, Bytes.toBytes(VariantPhoenixSchema.getAnnotationSnapshotColumn(id)));
             } else {
                 scan.addColumn(family, FULL_ANNOTATION.bytes());
                 scan.addColumn(family, ANNOTATION_ID.bytes());
                 // Only return RELEASE when reading current annotation
                 int release = metadataManager.getProjectMetadata().getRelease();
                 for (int i = 1; i <= release; i++) {
-                    scan.addColumn(family, VariantPhoenixHelper.buildReleaseColumnKey(i));
+                    scan.addColumn(family, VariantPhoenixSchema.buildReleaseColumnKey(i));
                 }
             }
         }
@@ -627,11 +629,11 @@ public class VariantHBaseQueryParser {
     private List<Region> getRegions(Query query) {
         List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
-            regions.addAll(Region.parseRegions(query.getString(REGION.key())));
+            regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
         }
 
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
-            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key())));
+            regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
         }
 
         regions = mergeRegions(regions);

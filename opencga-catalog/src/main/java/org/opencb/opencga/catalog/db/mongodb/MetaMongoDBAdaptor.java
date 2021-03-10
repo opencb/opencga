@@ -56,8 +56,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     private final MongoDBCollection metaCollection;
     private static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
-    public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
+    public MetaMongoDBAdaptor(MongoDBCollection metaMongoDBCollection, Configuration configuration,
+                              MongoDBAdaptorFactory dbAdaptorFactory) {
+        super(configuration, LoggerFactory.getLogger(ProjectMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaMongoDBCollection;
     }
@@ -172,10 +173,10 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Document adminDocument = getMongoDBDocument(configuration.getAdmin(), "Admin");
         metadataObject.put("admin", adminDocument);
         metadataObject.put("_fullVersion", new Document()
-                .append("version", 20000)
-                .append("release", 5)
-                .append("lastJsUpdate", 7)
-                .append("lastJavaUpdate", 2)
+                .append("version", 20001)
+                .append("release", 1)
+                .append("lastJsUpdate", 4)
+                .append("lastJavaUpdate", 0)
         );
 
         metaCollection.insert(metadataObject, null);

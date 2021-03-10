@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -24,9 +24,8 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.commons.utils.CompressionUtils;
-import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +36,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.parseConsequenceType;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
-import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.DEFAULT_HUMAN_POPULATION_FREQUENCIES_COLUMNS;
+import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.VariantColumn.*;
 
 /**
  * Created on 01/12/15.
@@ -62,8 +61,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         DEFAULT_POP_FREQ = Collections.unmodifiableMap(map);
     }
 
-    private VariantTraitAssociationToEvidenceEntryConverter evidenceEntryConverter;
-
     private int annotationId;
 
     @Deprecated
@@ -73,7 +70,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 
     public VariantAnnotationToPhoenixConverter(byte[] columnFamily, int annotationId) {
         super(columnFamily);
-        evidenceEntryConverter = new VariantTraitAssociationToEvidenceEntryConverter();
         this.annotationId = annotationId;
     }
 
@@ -83,12 +79,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
     public Map<PhoenixHelper.Column, ?> convert(VariantAnnotation variantAnnotation) {
 
         HashMap<PhoenixHelper.Column, Object> map = new HashMap<>();
-
-        // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
-        if (variantAnnotation.getVariantTraitAssociation() != null && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
-            List<EvidenceEntry> evidenceEntries = evidenceEntryConverter.convert(variantAnnotation.getVariantTraitAssociation());
-            variantAnnotation.setTraitAssociation(evidenceEntries);
-        }
 
         String json = variantAnnotation.toString();
         if (json.length() > COMPRESS_THRESHOLD) {
@@ -209,21 +199,9 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             }
         }
 
-        if (variantAnnotation.getVariantTraitAssociation() != null) {
-            if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
-                for (Cosmic cosmic : variantAnnotation.getVariantTraitAssociation().getCosmic()) {
-                    addNotNull(xrefs, cosmic.getMutationId());
-                }
-            }
-            if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
-                for (ClinVar clinVar : variantAnnotation.getVariantTraitAssociation().getClinvar()) {
-                    addNotNull(xrefs, clinVar.getAccession());
-                }
-            }
-        }
-
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
             for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+                addNotNull(xrefs, evidenceEntry.getId());
                 if (evidenceEntry.getVariantClassification() != null) {
                     ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
                     if (clinicalSignificance != null) {
@@ -292,7 +270,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
-                PhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
+                PhoenixHelper.Column column = VariantPhoenixSchema.getConservationScoreColumn(score.getSource());
                 map.put(column, score.getScore());
             }
         }
@@ -300,26 +278,26 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.putAll(DEFAULT_POP_FREQ);
         if (variantAnnotation.getPopulationFrequencies() != null) {
             for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
-                PhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
+                PhoenixHelper.Column column = VariantPhoenixSchema.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
                 map.put(column, Arrays.asList(pf.getRefAlleleFreq(), pf.getAltAlleleFreq()));
             }
         }
 
         if (variantAnnotation.getFunctionalScore() != null) {
             for (Score score : variantAnnotation.getFunctionalScore()) {
-                PhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
+                PhoenixHelper.Column column = VariantPhoenixSchema.getFunctionalScoreColumn(score.getSource());
                 map.put(column, score.getScore());
             }
         }
 
         VariantType variantType = VariantBuilder.inferType(variantAnnotation.getReference(), variantAnnotation.getAlternate());
-        if (StringUtils.isNotBlank(variantAnnotation.getId())) {
-            if (variantType.equals(VariantType.SNV)) {
-                variantType = VariantType.SNP;
-            } else if (variantType.equals(VariantType.MNV)) {
-                variantType = VariantType.MNP;
-            }
-        }
+//        if (StringUtils.isNotBlank(variantAnnotation.getId())) {
+//            if (variantType.equals(VariantType.SNV)) {
+//                variantType = VariantType.SNP;
+//            } else if (variantType.equals(VariantType.MNV)) {
+//                variantType = VariantType.MNP;
+//            }
+//        }
         map.put(TYPE, variantType.toString());
 
         return map;
@@ -352,7 +330,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         byte[] bytesRowKey = generateVariantRowKey(variantAnnotation);
         Put put = new Put(bytesRowKey);
 
-        for (PhoenixHelper.Column column : VariantPhoenixHelper.PRIMARY_KEY) {
+        for (PhoenixHelper.Column column : VariantPhoenixSchema.PRIMARY_KEY) {
             map.remove(column);
         }
         map.forEach((column, value) -> {

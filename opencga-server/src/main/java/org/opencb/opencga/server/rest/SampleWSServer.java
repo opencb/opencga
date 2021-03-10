@@ -168,8 +168,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
 
             @ApiParam(value = "Sample variant stats id. If filtering by other stats fields and not provided, it will be automatically set to ALL")
-                @QueryParam("stats.id") String statsId,
-            @ApiParam(value = "Sample variant stats variantCount.") @QueryParam("stats.variantCount") String variantCount,
+                @QueryParam(SampleDBAdaptor.STATS_ID) String statsId,
+            @ApiParam(value = "Sample variant stats variantCount.") @QueryParam(SampleDBAdaptor.STATS_VARIANT_COUNT) String variantCount,
             @ApiParam(value = "Sample variant stats chromosomeCount.") @QueryParam("stats.chromosomeCount") String chromosomeCount,
             @ApiParam(value = "Sample variant stats typeCount.") @QueryParam("stats.typeCount") String typeCount,
             @ApiParam(value = "Sample variant stats genotypeCount.") @QueryParam("stats.genotypeCount") String genotypeCount,
@@ -377,20 +377,18 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
-                    String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = ParamConstants.ACL_ACTION_DESCRIPTION, required = true, defaultValue = "ADD") @QueryParam(ParamConstants.ACL_ACTION_PARAM) ParamUtils.AclAction action,
-            @ApiParam(value = "Propagate sample permissions to related individuals", defaultValue = "false") @QueryParam("propagate") boolean propagate,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
                     SampleAclUpdateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleAclUpdateParams());
             SampleAclParams sampleAclParams = new SampleAclParams(
-                    params.getIndividual(), params.getFile(), params.getCohort(), params.getPermissions());
+                    params.getIndividual(), params.getFamily(), params.getFile(), params.getCohort(), params.getPermissions());
             List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
-            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, action, propagate, token));
+            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, action, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -18,7 +18,8 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -35,6 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
@@ -49,10 +51,9 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.THREE_PRIME_UTR_VARIANT;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.lte;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.numResults;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.THREE_PRIME_UTR_VARIANT;
 
 /**
  * Created on 12/04/19.
@@ -249,7 +250,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void testQueryFileIndex() throws Exception {
         testQueryFileIndex(new Query(TYPE.key(), "SNV"));
-        testQueryFileIndex(new Query(TYPE.key(), "SNP"));
+//        testQueryFileIndex(new Query(TYPE.key(), "SNP"));
         testQueryFileIndex(new Query(TYPE.key(), "INDEL"));
         testQueryFileIndex(new Query(TYPE.key(), "SNV,INDEL"));
         testQueryFileIndex(new Query(FILTER.key(), "PASS"));
@@ -278,9 +279,57 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     @Test
+    public void testMultiFileFilters() throws Exception {
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-1.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterA"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterB"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=FilterA,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterA"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS;chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600"));
+
+        // 22:20780030:-:C
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=PASS,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=PASS"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600")
+                        .append(SAMPLE_DATA.key(), "NA19600:DS=2.005"));
+
+        // 22:36591380::A:G
+        testQueryIndex(new Query(FILE_DATA.key(), "chr22_1-2.variant-test-file.vcf.gz:FILTER=FilterB,chr22_1-2-DUP.variant-test-file.vcf.gz:FILTER=FilterB"),
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME_2)
+                        .append(SAMPLE.key(), "NA19600")
+                        .append(SAMPLE_DATA.key(), "NA19600:DS=1.005"));
+    }
+
+    @Test
     public void testQueryAnnotationIndex() throws Exception {
         testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), "protein_coding"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained").append(GENE.key(), "HPS4"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost").append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost").append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
@@ -299,6 +348,16 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 //        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained,mature_miRNA_variant"));
+
+
+        //    11:62951221:C:G
+        // - SLC22A25 : [missense_variant, stop_lost, 3_prime_UTR_variant, NMD_transcript_variant]
+        // - SLC22A10 : [non_coding_transcript_variant, intron_variant]
+
+        // Should return the variant     // 11:62951221:C:G
+        testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A25").append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
+        // Should NOT return the variant // 11:62951221:C:G
+        testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A10").append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
@@ -337,7 +396,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         // Query SampleIndex
         System.out.println("#Query SampleIndex");
         SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
-        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query));
+        Query sampleIndexVariantQuery = variantStorageEngine.preProcessQuery(query, new QueryOptions());
+        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(sampleIndexVariantQuery);
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
         DataResult<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
@@ -355,8 +415,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("queryResult.source = " + queryResult.getSource());
 
         System.out.println("--- RESULTS -----");
-        System.out.println("testQuery  = " + testQuery.toJson());
-        System.out.println("query      = " + query.toJson());
+        System.out.println("testQuery          = " + testQuery.toJson());
+        System.out.println("query              = " + query.toJson());
+        System.out.println("dbAdaptorQuery     = " + sampleIndexVariantQuery.toJson());
+        System.out.println("Native dbAdaptor   = " + VariantHBaseQueryParser.isSupportedQuery(sampleIndexVariantQuery) + " -> " + VariantHBaseQueryParser.unsupportedParamsFromQuery(sampleIndexVariantQuery));
         System.out.println("annotationIndex    = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask(), indexQuery.getAnnotationIndex()));
         System.out.println("biotypeMask        = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getBiotypeMask()));
         System.out.println("ctMask             = " + IndexUtils.shortToString(indexQuery.getAnnotationIndexQuery().getConsequenceTypeMask()));
@@ -413,22 +475,42 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertEquals("sample_index_table", result.getSource());
 
         query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)))
-                .append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+                .append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.PROTEIN_CODING);
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
         query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)) + "," + THREE_PRIME_UTR_VARIANT)
-                .append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+                .append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.PROTEIN_CODING);
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertNotEquals("sample_index_table", result.getSource());
     }
 
     @Test
     public void testCount() throws StorageEngineException {
+        /*
+            6    31_000_000
+            6    32_000_000
+            8    144_000_000
+            9    139_000_000
+            19   14_000_000
+         */
         List<Query> queries = Arrays.asList(
                 new Query(),
-                new Query(REGION.key(), "1").append(ANNOT_BIOTYPE.key(), "protein_coding"),
-                new Query(REGION.key(), Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000)))
+                new Query(REGION.key(), "chr1").append(ANNOT_BIOTYPE.key(), "protein_coding"),
+                new Query(REGION.key(), Arrays.asList(new Region("22", 36591300, 46000000), new Region("1", 1000, 16400000))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000))),
+                new Query(REGION.key(), Arrays.asList(
+                        new Region("6", 31_200_000, 31_800_000),
+                        new Region("6", 33_200_000, 34_800_000),
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000)))
         );
 
         for (String study : studies) {
@@ -496,6 +578,35 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
 
         System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+    }
+
+    @Test
+    public void testSampleVariantStats() throws Exception {
+        for (String study : studies) {
+            for (String sample : sampleNames.get(study)) {
+                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null);
+                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+            }
+        }
+    }
+
+
+    @Test
+    public void testApproximateCount() {
+        VariantQueryResult<Variant> result = variantStorageEngine.get(
+                new Query()
+                        .append(STUDY.key(), STUDY_NAME)
+                        .append(SAMPLE.key(), sampleNames.get(STUDY_NAME).get(0))
+                        .append(INCLUDE_SAMPLE_ID.key(), "true")
+                        .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.9"),
+                new QueryOptions()
+                        .append(QueryOptions.LIMIT, 10)
+                        .append(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 200)
+                        .append(QueryOptions.COUNT, true));
+
+        assertTrue(result.getApproximateCount());
+        assertThat(result.getApproximateCountSamplingSize(), gte(200));
+        assertEquals("hadoop + sample_index_table", result.getSource());
     }
 
 }

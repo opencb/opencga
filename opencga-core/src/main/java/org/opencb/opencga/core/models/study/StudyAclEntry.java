@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.study;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
@@ -93,12 +93,12 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         // JOBS
         EXECUTE_JOBS(Collections.emptyList()),
         VIEW_JOBS(Collections.emptyList(), JobAclEntry.JobPermissions.VIEW.name(), JOB),
-        WRITE_JOBS(Collections.singletonList(VIEW_JOBS), JobAclEntry.JobPermissions.UPDATE.name(), JOB),
+        WRITE_JOBS(Collections.singletonList(VIEW_JOBS), JobAclEntry.JobPermissions.WRITE.name(), JOB),
         DELETE_JOBS(Arrays.asList(VIEW_JOBS, WRITE_JOBS), JobAclEntry.JobPermissions.DELETE.name(), JOB),
 
         // SAMPLES
         VIEW_SAMPLES(Collections.emptyList(), SampleAclEntry.SamplePermissions.VIEW.name(), SAMPLE),
-        WRITE_SAMPLES(Collections.singletonList(VIEW_SAMPLES), SampleAclEntry.SamplePermissions.UPDATE.name(), SAMPLE),
+        WRITE_SAMPLES(Collections.singletonList(VIEW_SAMPLES), SampleAclEntry.SamplePermissions.WRITE.name(), SAMPLE),
         DELETE_SAMPLES(Arrays.asList(VIEW_SAMPLES, WRITE_SAMPLES), SampleAclEntry.SamplePermissions.DELETE.name(), SAMPLE),
         VIEW_SAMPLE_ANNOTATIONS(Collections.singletonList(VIEW_SAMPLES), SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), SAMPLE),
         WRITE_SAMPLE_ANNOTATIONS(Arrays.asList(VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS),
@@ -111,7 +111,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
         // INDIVIDUALS
         VIEW_INDIVIDUALS(Collections.emptyList(), IndividualAclEntry.IndividualPermissions.VIEW.name(), INDIVIDUAL),
-        WRITE_INDIVIDUALS(Collections.singletonList(VIEW_INDIVIDUALS), IndividualAclEntry.IndividualPermissions.UPDATE.name(), INDIVIDUAL),
+        WRITE_INDIVIDUALS(Collections.singletonList(VIEW_INDIVIDUALS), IndividualAclEntry.IndividualPermissions.WRITE.name(), INDIVIDUAL),
         DELETE_INDIVIDUALS(Arrays.asList(VIEW_INDIVIDUALS, WRITE_INDIVIDUALS), IndividualAclEntry.IndividualPermissions.DELETE.name(),
                 INDIVIDUAL),
         VIEW_INDIVIDUAL_ANNOTATIONS(Collections.singletonList(VIEW_INDIVIDUALS),
@@ -123,7 +123,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
         // FAMILIES
         VIEW_FAMILIES(Collections.emptyList(), FamilyAclEntry.FamilyPermissions.VIEW.name(), FAMILY),
-        WRITE_FAMILIES(Collections.singletonList(VIEW_FAMILIES), FamilyAclEntry.FamilyPermissions.UPDATE.name(), FAMILY),
+        WRITE_FAMILIES(Collections.singletonList(VIEW_FAMILIES), FamilyAclEntry.FamilyPermissions.WRITE.name(), FAMILY),
         DELETE_FAMILIES(Arrays.asList(VIEW_FAMILIES, WRITE_FAMILIES), FamilyAclEntry.FamilyPermissions.DELETE.name(), FAMILY),
         VIEW_FAMILY_ANNOTATIONS(Collections.singletonList(VIEW_FAMILIES), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), FAMILY),
         WRITE_FAMILY_ANNOTATIONS(Arrays.asList(VIEW_FAMILIES, VIEW_FAMILY_ANNOTATIONS),
@@ -133,7 +133,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
         // COHORTS
         VIEW_COHORTS(Collections.emptyList(), CohortAclEntry.CohortPermissions.VIEW.name(), COHORT),
-        WRITE_COHORTS(Collections.singletonList(VIEW_COHORTS), CohortAclEntry.CohortPermissions.UPDATE.name(), COHORT),
+        WRITE_COHORTS(Collections.singletonList(VIEW_COHORTS), CohortAclEntry.CohortPermissions.WRITE.name(), COHORT),
         DELETE_COHORTS(Arrays.asList(VIEW_COHORTS, WRITE_COHORTS), CohortAclEntry.CohortPermissions.DELETE.name(), COHORT),
         VIEW_COHORT_ANNOTATIONS(Collections.singletonList(VIEW_COHORTS), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), COHORT),
         WRITE_COHORT_ANNOTATIONS(Arrays.asList(VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS),
@@ -143,14 +143,14 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
         // DISEASE PANELS
         VIEW_PANELS(Collections.emptyList(), PanelAclEntry.PanelPermissions.VIEW.name(), DISEASE_PANEL),
-        WRITE_PANELS(Collections.singletonList(VIEW_PANELS), PanelAclEntry.PanelPermissions.UPDATE.name(), DISEASE_PANEL),
+        WRITE_PANELS(Collections.singletonList(VIEW_PANELS), PanelAclEntry.PanelPermissions.WRITE.name(), DISEASE_PANEL),
         DELETE_PANELS(Arrays.asList(VIEW_PANELS, WRITE_PANELS), PanelAclEntry.PanelPermissions.DELETE.name(), DISEASE_PANEL),
 
         // CLINICAL ANALYSIS
         VIEW_CLINICAL_ANALYSIS(Collections.emptyList(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(),
                 CLINICAL_ANALYSIS),
         WRITE_CLINICAL_ANALYSIS(Collections.singletonList(VIEW_CLINICAL_ANALYSIS),
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE.name(), CLINICAL_ANALYSIS),
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE.name(), CLINICAL_ANALYSIS),
         DELETE_CLINICAL_ANALYSIS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, WRITE_CLINICAL_ANALYSIS),
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS);
 

@@ -593,10 +593,10 @@ genomePlot <- function(snvs.file, indels.file, cnvs.file, rearrs.file,
   link.colors <- vector()
   if (exists("rearrs")) {
     link.data <- rearrs
-    link.colors[link.data$type=='INV'] <- inv.col
-    link.colors[link.data$type=='DEL'] <- del.col
-    link.colors[link.data$type=='DUP'] <- dupl.col
-    link.colors[link.data$type=='BND'] <- transloc.colour
+    link.colors[link.data$type=='INVERSION'] <- inv.col
+    link.colors[link.data$type=='DELETION'] <- del.col
+    link.colors[link.data$type=='TANDEM_DUPLICATION' | link.data$type=='DUPLICATION'] <- dupl.col
+    link.colors[link.data$type=='TRANSLOCATION'] <- transloc.colour
     if (nrow( rearrs)>0) {
       RCircos.Link.Plot.my(link.data = rearrs, track.num=9, by.chromosome=TRUE, link.colors);
     }
@@ -634,11 +634,3 @@ args <- arguments$args
 genomePlot(args[1], args[2], args[3], args[4], args[5], genome.v=opt$genome_version, plot_title = opt$plot_title,
            no_copynumber = opt$no_copynumber, no_rearrangements = opt$no_rearrangements, no_indels = opt$no_indels,
            out_format = opt$out_format, out_path = opt$out_path)
-
-# start.time <- Sys.time()
-# genomePlot('/home/dapregi/tmp/snvs.chr.tsv', '/home/dapregi/tmp/indels.tsv', '/home/dapregi/tmp/cnvs.tsv', '/home/dapregi/tmp/rearrs.tsv',
-#            'sampleID', genome.v="hg19", plot_title = '',
-#            no_copynumber = FALSE, no_rearrangements = FALSE, no_indels = FALSE, out_format = "png", out_path = "/home/dapregi/tmp/")
-# end.time <- Sys.time()
-# time.taken <- end.time - start.time
-# print(time.taken)

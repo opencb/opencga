@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -165,6 +165,10 @@ class HBaseVariantMetadataUtils {
 
     static byte[] getLockColumn() {
         return LOCK_COLUMN;
+    }
+
+    static byte[] getLockColumn(String lockName) {
+        return StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
     }
 
     static byte[] getTypeColumn() {

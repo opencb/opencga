@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
@@ -213,7 +213,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
 
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                    userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+                    userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
             validateNewInterpretation(study, interpretation, clinicalAnalysis, userId);
 
@@ -819,7 +819,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
@@ -960,7 +960,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 throw new CatalogException("Could not find ClinicalAnalysis '" + clinicalAnalysisId + "'");
             }
             authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalResult.first().getUid(), userId,
-                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
             OpenCGAResult<Interpretation> result = internalGet(study.getUid(), interpretationId, INCLUDE_INTERPRETATION_IDS, userId);
             if (result.getNumResults() == 0) {
@@ -1142,7 +1142,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
             if (checkPermissions) {
                 authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
-                        userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
+                        userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
             }
         } catch (CatalogException e) {
             auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),

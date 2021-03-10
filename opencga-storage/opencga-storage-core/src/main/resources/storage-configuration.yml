@@ -3,7 +3,7 @@
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
-  ## URL host to annotate variants, for example: http://bioinfo.hpc.cam.ac.uk/cellbase/
+  ## URL host to annotate variants, for example: http://ws.opencb.org/cellbase/
   host: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
 
@@ -41,6 +41,18 @@ clinical:
   timeout: ${OPENCGA.STORAGE.CLINICAL.TIMEOUT}
   insertBatchSize: 1000
 
+## Recessive Gene Analysis database.
+rga:
+  # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
+  #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
+  #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
+  hosts:
+    - ${OPENCGA.STORAGE.RGA.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
+  configSet: "${OPENCGA.STORAGE.RGA.CONFIG_SET}"
+  mode: "cloud"
+  timeout: ${OPENCGA.STORAGE.RGA.TIMEOUT}
+  insertBatchSize: 1000
+
 benchmark:
   numRepetitions: 20           # Number of query repetitions
   concurrency: 5               # Number of concurrent threads
@@ -69,6 +81,11 @@ variant:
     transform.format: "avro"
     transform.compression: "gzip"
     transform.failOnMalformed: true
+
+    normalization.skip: false         # Skip normalization
+    normalization.referenceGenome: "" # Reference genome localization for improved normalization
+    normalization.extensions: []      # Enable VariantNormalizerExtensions
+    #  - "VAF" # Compute EXT_VAF for each sample. Variant Allele Fraction (VAF), several variant callers supported
 
     load.batchSize: 100
     load.numThreads: 6
@@ -180,6 +197,7 @@ variant:
           mapreduce.map.memory.mb: 2048
         SampleIndexDriver:
           mapreduce.map.memory.mb: 4096
+          max-columns-per-scan: 4000
         SampleIndexAnnotationLoaderDriver:
           mapreduce.map.memory.mb: 4096
         VariantMigration200Driver:

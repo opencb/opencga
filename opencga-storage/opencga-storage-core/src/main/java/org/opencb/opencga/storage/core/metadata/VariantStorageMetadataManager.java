@@ -122,7 +122,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
             }
             return fileMetadata.getSamples();
-        });
+        }, samples -> samples.size() > 100);
         splitDataCache = new MetadataCache<>((studyId, sampleId) -> {
             SampleMetadata sampleMetadata = sampleDBAdaptor.getSampleMetadata(studyId, sampleId, null);
             if (sampleMetadata == null) {
@@ -157,7 +157,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 throw VariantQueryException.sampleNotFound(sampleId, getStudyName(studyId));
             }
             return sampleMetadata.getFiles();
-        });
+        }, files -> files.size() > 20);
 
         cohortIdCache = new MetadataCache<>(cohortDBAdaptor::getCohortId);
         cohortNameCache = new MetadataCache<>((studyId, cohortId) -> {
@@ -167,6 +167,18 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
             return cohortMetadata.getName();
         });
+    }
+
+    public Lock lockGlobal(long lockDuration, long timeout, String lockName)
+            throws StorageEngineException {
+        try {
+            return projectDBAdaptor.lockProject(lockDuration, timeout, lockName);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock the Project", e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Unable to lock the Project", e);
+        }
     }
 
     public Lock lockStudy(int studyId) throws StorageEngineException {
@@ -790,6 +802,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         }
         return sampleIds;
+    }
+
+    public int getSampleIdOrFail(int studyId, Object sampleObj) {
+        Integer sampleId = getSampleId(studyId, sampleObj, false);
+        if (sampleId == null) {
+            throw VariantQueryException.sampleNotFound(sampleObj, getStudyName(studyId));
+        }
+        return sampleId;
     }
 
     public Integer getSampleId(int studyId, Object sampleObj) {

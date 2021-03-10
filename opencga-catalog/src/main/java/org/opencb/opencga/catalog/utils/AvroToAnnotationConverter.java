@@ -40,8 +40,12 @@ public class AvroToAnnotationConverter {
     }
 
     public static <T extends GenericRecord> AnnotationSet convertToAnnotationSet(T record, String id) {
+        return convertToAnnotationSet(record, id, id);
+    }
+
+    public static <T extends GenericRecord> AnnotationSet convertToAnnotationSet(T record, String annotationSetId, String variableSetId) {
         Map<String, Object> annotations = convert(record);
-        return new AnnotationSet(id, id, annotations);
+        return new AnnotationSet(annotationSetId, variableSetId, annotations);
     }
 
     public static <T extends GenericRecord> T convertAnnotationToAvro(AnnotationSet annotationSet, Class<T> clazz) throws IOException {

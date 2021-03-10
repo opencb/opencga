@@ -22,7 +22,12 @@ import java.util.List;
 public class KnockoutTranscript {
 
     private String id;
+    private String chromosome;
+    private int start;
+    private int end;
     private String biotype;
+    private String strand;
+
     private List<KnockoutVariant> variants = new LinkedList<>();
 
     public KnockoutTranscript() {
@@ -30,6 +35,31 @@ public class KnockoutTranscript {
 
     public KnockoutTranscript(String id) {
         this.id = id;
+    }
+
+    public KnockoutTranscript(String id, String chromosome, int start, int end, String biotype, String strand,
+                              List<KnockoutVariant> variants) {
+        this.id = id;
+        this.chromosome = chromosome;
+        this.start = start;
+        this.end = end;
+        this.biotype = biotype;
+        this.strand = strand;
+        this.variants = variants;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("KnockoutTranscript{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", chromosome='").append(chromosome).append('\'');
+        sb.append(", start=").append(start);
+        sb.append(", end=").append(end);
+        sb.append(", biotype='").append(biotype).append('\'');
+        sb.append(", strand='").append(strand).append('\'');
+        sb.append(", variants=").append(variants);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
@@ -47,6 +77,42 @@ public class KnockoutTranscript {
 
     public KnockoutTranscript setBiotype(String biotype) {
         this.biotype = biotype;
+        return this;
+    }
+
+    public String getChromosome() {
+        return chromosome;
+    }
+
+    public KnockoutTranscript setChromosome(String chromosome) {
+        this.chromosome = chromosome;
+        return this;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public KnockoutTranscript setStart(int start) {
+        this.start = start;
+        return this;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public KnockoutTranscript setEnd(int end) {
+        this.end = end;
+        return this;
+    }
+
+    public String getStrand() {
+        return strand;
+    }
+
+    public KnockoutTranscript setStrand(String strand) {
+        this.strand = strand;
         return this;
     }
 

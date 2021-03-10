@@ -12,7 +12,7 @@ catalog:
     password: "FILL_ME"
 
 cellbase:
-  host: "http://bioinfo.hpc.cam.ac.uk/cellbase"
+  host: "http://ws.opencb.org/cellbase/"
 
 analysis:
   index:
@@ -32,6 +32,7 @@ hadoop:
   sshDns: "FILL_ME"
   sshUsername: "FILL_ME"
   sshPassword: "FILL_ME"
+  flavour: "hdp3.1"
 
 opencga:
 #  secretName: {{ include "opencga.fullname" . }}-secret
@@ -65,9 +66,8 @@ rest:
   replicaCount: 3
 
   image:
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-base:2.0.0-SNAPSHOT-hdp3.1
-    pullPolicy: Always
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    pullPolicy: IfNotPresent
 
   imagePullSecrets: []
 
@@ -139,9 +139,8 @@ master:
   replicaCount: 1
 
   image:
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-base:2.0.0-SNAPSHOT-hdp3.1
-    pullPolicy: Always
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    pullPolicy: IfNotPresent
 
   imagePullSecrets: []
 
@@ -189,9 +188,8 @@ master:
 init:
   name: init
   image:
-    # TODO: Currently building from dev image. Update once release available.
-    repository: opencb/opencga-init:2.0.0-SNAPSHOT-hdp3.1
-    pullPolicy: Always
+    repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    pullPolicy: IfNotPresent
 
   podSecurityContext: {}
   # fsGroup: 2000

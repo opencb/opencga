@@ -10,8 +10,8 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsDBCleaner;
 
 import java.io.IOException;
@@ -46,6 +46,12 @@ public class HadoopVariantSearchLoadListener extends VariantSearchLoadListener {
 
     @Override
     protected void processAlreadySynchronizedVariants(List<Variant> alreadySynchronizedVariants) {
+        // Nothing to do
+    }
+
+    @Override
+    public void preLoad(List<Variant> variants) throws IOException {
+        // Nothing to do, load all variants
     }
 
     @Override
@@ -69,7 +75,7 @@ public class HadoopVariantSearchLoadListener extends VariantSearchLoadListener {
                     byte[] row = VariantPhoenixKeyFactory.generateVariantRowKey(variant);
                     variantRows.add(row);
                     Put put = new Put(row)
-                            .addColumn(family, VariantPhoenixHelper.VariantColumn.INDEX_STUDIES.bytes(), bytes);
+                            .addColumn(family, VariantPhoenixSchema.VariantColumn.INDEX_STUDIES.bytes(), bytes);
                     mutations.add(put);
                 }
             }

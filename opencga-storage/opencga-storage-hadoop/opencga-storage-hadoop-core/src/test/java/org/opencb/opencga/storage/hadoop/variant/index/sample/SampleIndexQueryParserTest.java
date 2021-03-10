@@ -1,17 +1,19 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -27,12 +29,13 @@ import java.util.*;
 import java.util.function.Function;
 
 import static org.junit.Assert.*;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.ANTISENSE;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.PROTEIN_CODING;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.ANTISENSE;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.PROTEIN_CODING;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.groupRegions;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.validSampleIndexQuery;
 
 /**
@@ -202,11 +205,11 @@ public class SampleIndexQueryParserTest {
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
-        q = new Query(TYPE.key(), "SNP").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = parse(q);
-        // Filter by SNV, as it can not filter by SNP
-        assertEquals(Collections.singleton(VariantType.SNV), sampleIndexQuery.getVariantTypes());
-        assertEquals(VariantType.SNP.name(), q.getString(TYPE.key()));
+//        q = new Query(TYPE.key(), "SNP").append(SAMPLE.key(), "S1");
+//        sampleIndexQuery = parse(q);
+//        // Filter by SNV, as it can not filter by SNP
+//        assertEquals(Collections.singleton(VariantType.SNV), sampleIndexQuery.getVariantTypes());
+//        assertEquals(VariantType.SNP.name(), q.getString(TYPE.key()));
 
 
         q = new Query(TYPE.key(), "MNV").append(SAMPLE.key(), "S1");
@@ -214,16 +217,16 @@ public class SampleIndexQueryParserTest {
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
-        q = new Query(TYPE.key(), "MNV,MNP").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = parse(q);
-        assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
-        assertNull(q.get(TYPE.key()));
-
-        q = new Query(TYPE.key(), "MNP").append(SAMPLE.key(), "S1");
-        sampleIndexQuery = parse(q);
-        // Filter by MNV, as it can not filter by MNP
-        assertEquals(Collections.singleton(VariantType.MNV), sampleIndexQuery.getVariantTypes());
-        assertEquals(VariantType.MNP.name(), q.getString(TYPE.key()));
+//        q = new Query(TYPE.key(), "MNV,MNP").append(SAMPLE.key(), "S1");
+//        sampleIndexQuery = parse(q);
+//        assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
+//        assertNull(q.get(TYPE.key()));
+//
+//        q = new Query(TYPE.key(), "MNP").append(SAMPLE.key(), "S1");
+//        sampleIndexQuery = parse(q);
+//        // Filter by MNV, as it can not filter by MNP
+//        assertEquals(Collections.singleton(VariantType.MNV), sampleIndexQuery.getVariantTypes());
+//        assertEquals(VariantType.MNP.name(), q.getString(TYPE.key()));
 
     }
 
@@ -351,14 +354,14 @@ public class SampleIndexQueryParserTest {
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP>=" + dp), "S1", n -> Collections.singletonList("F1"));
                 assertEquals(">=" + dp, new RangeQuery(dp, IndexUtils.MAX,
                                 IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS),
-                                (byte) 4),
+                                (byte) 8),
                         fileQuery.getDpQuery());
                 assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
 
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP>" + dp), "S1", n -> Collections.singletonList("F1"));
                 assertEquals(">" + dp, new RangeQuery(dp + DELTA, IndexUtils.MAX,
                                 IndexUtils.getRangeCode(dp + DELTA, SampleIndexConfiguration.DP_THRESHOLDS),
-                                (byte) 4),
+                                (byte) 8),
                         fileQuery.getDpQuery());
                 assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
             }
@@ -416,13 +419,39 @@ public class SampleIndexQueryParserTest {
         return n;
     }
 
+    @Test
+    public void parseFileDataTest() {
+        Query query;
+        Values<SampleFileIndexQuery> fileQuery;
+
+        query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        assertEquals(1, fileQuery.size());
+        assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
+
+        query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        assertEquals(1, fileQuery.size());
+        assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
+
+        query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F2:FILTER=PASS");
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        assertEquals(2, fileQuery.size());
+        assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
+
+        query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F3:FILTER=PASS");
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        assertEquals(1, fileQuery.size());
+        assertTrue(VariantQueryUtils.isValidParam(query, FILE_DATA));
+    }
+
     private void print(SampleFileIndexQuery fileQuery) {
         System.out.println("Mask: " + IndexUtils.shortToString(fileQuery.getFileIndexMask()));
         if (fileQuery.hasFileIndexMask1()) {
             boolean[] validFileIndex = fileQuery.getValidFileIndex1();
             for (int i = 0; i < validFileIndex.length; i++) {
                 if (validFileIndex[i]) {
-                    System.out.println("FileIndex1 = " + IndexUtils.maskToString((byte) (fileQuery.getFileIndexMask1()), (byte) i));
+                    System.out.println("FileIndex1 = " + IndexUtils.maskToString((fileQuery.getFileIndexMask1()), (byte) i));
                 }
             }
         }
@@ -430,7 +459,7 @@ public class SampleIndexQueryParserTest {
             boolean[] validFileIndex2 = fileQuery.getValidFileIndex2();
             for (int i = 0; i < validFileIndex2.length; i++) {
                 if (validFileIndex2[i]) {
-                    System.out.println("FileIndex2 = " + IndexUtils.maskToString((byte) (fileQuery.getFileIndexMask2()), (byte) i));
+                    System.out.println("FileIndex2 = " + IndexUtils.maskToString((fileQuery.getFileIndexMask2()), (byte) i));
                 }
             }
         }
@@ -498,7 +527,7 @@ public class SampleIndexQueryParserTest {
 
         assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").getDpQuery().isExactQuery());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getDpQuery().isExactQuery());
         assertEquals("fam1_father:DP>15;fam1_mother:DP>15", query.getString(SAMPLE_DATA.key()));
 
     }
@@ -876,7 +905,7 @@ public class SampleIndexQueryParserTest {
         assertFalse(query.isEmpty()); // Not all samples annotated
 
         // Use CT column
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.STOP_LOST));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.STOP_LOST));
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
@@ -884,13 +913,13 @@ public class SampleIndexQueryParserTest {
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.STOP_LOST));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.STOP_LOST));
         parseAnnotationIndexQuery(query, false);
         indexQuery = parseAnnotationIndexQuery(query, false);
         assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.MATURE_MIRNA_VARIANT));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
         assertFalse(query.isEmpty()); // Imprecise CT value
@@ -903,19 +932,19 @@ public class SampleIndexQueryParserTest {
         Query query;
         SampleAnnotationIndexQuery indexQuery;
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING);
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING + "," + VariantAnnotationUtils.MIRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING + "," + VariantAnnotationConstants.MIRNA);
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING + "," + VariantAnnotationUtils.MIRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING + "," + VariantAnnotationConstants.MIRNA);
         parseAnnotationIndexQuery(query, false);
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.LINCRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.LINCRNA);
         parseAnnotationIndexQuery(query, true);
         assertFalse(query.isEmpty()); // Imprecise BT value
     }
@@ -1083,7 +1112,7 @@ public class SampleIndexQueryParserTest {
         // The combination is covered
         // The params can not be removed from the query, as the CT is filter is only an approximation
         // BT has to remain to check the combination.
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationUtils.FIVE_PRIME_UTR_VARIANT)
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.FIVE_PRIME_UTR_VARIANT)
                 .append(ANNOT_BIOTYPE.key(), "protein_coding,miRNA");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
@@ -1106,5 +1135,35 @@ public class SampleIndexQueryParserTest {
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
+    }
+
+    @Test
+    public void testGroupRegions() {
+        List<List<Region>> groups = groupRegions(Arrays.asList(
+                new Region("8", 144_700_000, 144_995_738),
+                new Region("6", 33_200_000, 34_800_000),
+                new Region("8", 144_671_680, 144_690_000),
+                new Region("6", 31_200_000, 31_800_000),
+                new Region("8", 145_100_000, 146_100_000)));
+        assertEquals(Arrays.asList(
+                Arrays.asList(new Region("6", 31_200_000, 31_800_000)),
+                Arrays.asList(new Region("6", 33_200_000, 34_800_000)),
+                Arrays.asList(new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000))
+        ), groups);
+
+        groups = groupRegions(Arrays.asList(
+                new Region("6", 33_200_000, 34_800_000),
+                new Region("6", 31_200_000, 33_800_000),
+                new Region("8", 144_671_680, 144_690_000),
+                new Region("8", 144_700_000, 144_995_738),
+                new Region("8", 145_100_000, 146_100_000)));
+        assertEquals(Arrays.asList(
+                Arrays.asList(new Region("6", 31_200_000, 34_800_000)),
+                Arrays.asList(new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000))
+        ), groups);
     }
 }

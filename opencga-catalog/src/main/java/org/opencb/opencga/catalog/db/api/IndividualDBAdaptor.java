@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -61,6 +61,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        INTERNAL_RGA("internal.rga", OBJECT, ""),
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
@@ -74,6 +75,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
         DISORDERS("disorders", TEXT_ARRAY, ""),
         DISORDERS_ID("disorders.id", TEXT, ""),
+        DISORDERS_NAME("disorders.name", TEXT, ""),
 
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),

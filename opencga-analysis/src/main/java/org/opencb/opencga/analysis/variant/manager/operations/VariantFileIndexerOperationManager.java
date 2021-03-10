@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -538,8 +539,9 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
-        return catalogManager.getCohortManager().create(studyFqn, StudyEntry.DEFAULT_COHORT, Enums.CohortType.COLLECTION,
-                DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, sessionId).first();
+        return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
+                Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, null), null, null,
+                QueryOptions.empty(), sessionId).first();
     }
 
     private void updateDefaultCohortStatus(Study study, StorageEngineException exception, String sessionId) throws CatalogException {

@@ -86,7 +86,7 @@ public class JobsTopManager {
 
     private static List<TextOutputWriter.JobColumns> parseColumns(String columnsStr) {
         if (StringUtils.isBlank(columnsStr) || columnsStr.equalsIgnoreCase("default")) {
-            return Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, START, END);
+            return Arrays.asList(ID, TOOL_ID, STATUS, STUDY, SUBMISSION, PRIORITY, RUNNING_TIME, STEP, START, END);
         } else {
             List<TextOutputWriter.JobColumns> columns = new LinkedList<>();
             for (String c : columnsStr.split(",")) {

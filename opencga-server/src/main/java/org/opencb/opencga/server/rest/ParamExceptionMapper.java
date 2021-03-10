@@ -61,7 +61,7 @@ public class ParamExceptionMapper implements ExceptionMapper<Exception> {
             }
         }
 
-        return OpenCGAWSServer.createErrorResponse(exception, startTime, apiVersion, requestDescription, params);
+        return OpenCGAWSServer.createErrorResponse(exception, startTime, apiVersion, requestDescription, params, uriInfo);
     }
 
 }

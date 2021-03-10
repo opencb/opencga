@@ -1,16 +1,15 @@
 package org.opencb.opencga.storage.core.variant.query;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -108,13 +107,26 @@ public class VariantQueryParser {
 
             studyQuery.setGenotypes(new ParsedQuery<>(GENOTYPE, op, values));
         }
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataQuery = parseSampleData(query);
+        if (sampleDataQuery.isNotEmpty()) {
+            ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQueryWithMetadata
+                    = new ParsedQuery<>(sampleDataQuery.getKey(), sampleDataQuery.getOperation(), new ArrayList<>(sampleDataQuery.size()));
+            for (KeyValues<String, KeyOpValue<String, String>> keyValues : sampleDataQuery) {
+                sampleDataQueryWithMetadata.getValues().add(
+                        keyValues.mapKey(sample -> {
+                            int sampleId = metadataManager.getSampleIdOrFail(defaultStudy.getId(), sample);
+                            return metadataManager.getSampleMetadata(defaultStudy.getId(), sampleId);
+                        }));
+            }
+            studyQuery.setSampleDataQuery(sampleDataQueryWithMetadata);
+        }
 
         return variantQuery;
     }
 
     public Query preProcessQuery(Query originalQuery, QueryOptions options) {
         // Copy input query! Do not modify original query!
-        Query query = originalQuery == null ? new Query() : new Query(originalQuery);
+        Query query = VariantQueryUtils.copy(originalQuery);
 
         preProcessAnnotationParams(query);
 
@@ -198,9 +210,9 @@ public class VariantQueryParser {
                 }
                 if (enumValue == null) {
                     String key = clinicalSignificance.toLowerCase();
-                    if (VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.containsKey(key)) {
+                    if (VariantAnnotationConstants.CLINVAR_CLINSIG_TO_ACMG.containsKey(key)) {
                         // No value set
-                        enumValue = VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.get(key);
+                        enumValue = VariantAnnotationConstants.CLINVAR_CLINSIG_TO_ACMG.get(key);
                     }
                 }
                 if (enumValue != null) {
@@ -275,11 +287,11 @@ public class VariantQueryParser {
         if (isValidParam(query, SAMPLE_DATA)) {
             extractGenotypeFromFormatFilter(query);
 
-            Pair<QueryOperation, Map<String, String>> pair = parseSampleData(query);
-            formatOperator = pair.getKey();
+            ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleData = parseSampleData(query);
+            formatOperator = sampleData.getOperation();
 
-            for (Map.Entry<String, String> entry : pair.getValue().entrySet()) {
-                String sampleName = entry.getKey();
+            for (KeyValues<String, KeyOpValue<String, String>> sampleDataFilter : sampleData.getValues()) {
+                String sampleName = sampleDataFilter.getKey();
                 if (defaultStudy == null) {
                     throw VariantQueryException.missingStudyForSample(sampleName, metadataManager.getStudyNames());
                 }
@@ -287,13 +299,11 @@ public class VariantQueryParser {
                 if (sampleId == null) {
                     throw VariantQueryException.sampleNotFound(sampleName, defaultStudy.getName());
                 }
-                List<String> formats = splitValues(entry.getValue()).getValues();
-                for (String format : formats) {
-                    KeyOpValue<String, String> keyOpValue = parseKeyOpValue(format);
-                    VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("FORMAT", keyOpValue.getKey());
+                for (KeyOpValue<String, String> formatFilter : sampleDataFilter) {
+                    VariantFileHeaderComplexLine line = defaultStudy.getVariantHeaderLine("FORMAT", formatFilter.getKey());
                     if (line == null) {
                         throw VariantQueryException.malformedParam(SAMPLE_DATA, query.getString(SAMPLE_DATA.key()),
-                                "FORMAT field \"" + keyOpValue.getKey() + "\" not found. Available keys in study: "
+                                "FORMAT field \"" + formatFilter.getKey() + "\" not found. Available keys in study: "
                                         + defaultStudy.getVariantHeaderLines("FORMAT").keySet());
                     }
                 }
@@ -672,6 +682,7 @@ public class VariantQueryParser {
             if (multiallelic) {
                 String regex = genotype.toString()
                         .replace(".", "\\.")
+                        .replace("|", "\\|")
                         .replace("2", "([2-9]|[0-9][0-9])"); // Replace allele "2" with "any number >= 2")
                 Pattern pattern = Pattern.compile(regex);
                 for (String loadedGenotype : loadedGenotypes) {

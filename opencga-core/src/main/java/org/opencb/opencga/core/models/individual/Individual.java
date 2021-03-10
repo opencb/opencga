@@ -26,7 +26,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
@@ -73,7 +72,7 @@ public class Individual extends Annotable {
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, new Individual(), new Individual(), new Location(), sex, null, ethnicity, population, "", release,
                 1, TimeUtils.getTime(), LifeStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                false, annotationSets, new CustomStatus(), new IndividualInternal(new Status()), attributes);
+                false, annotationSets, new CustomStatus(), null, attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
@@ -82,7 +81,7 @@ public class Individual extends Annotable {
                       List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders) {
         this(id, name, father, mother, location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, 1,
                 TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples, parentalConsanguinity,
-                annotationSets, new CustomStatus(), new IndividualInternal(new Status()), Collections.emptyMap());
+                annotationSets, new CustomStatus(), null, Collections.emptyMap());
     }
 
     public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,

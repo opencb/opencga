@@ -35,14 +35,12 @@ import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -265,9 +263,6 @@ class MongoDBUtils {
                 }
                 if (listName.equals("include")) {
                     filteredList.add(PRIVATE_UID);
-                    if (options.getBoolean(DBAdaptor.INCLUDE_ACLS)) {
-                        filteredList.add(AuthorizationMongoDBAdaptor.QueryParams.ACL.key());
-                    }
                 } else if (listName.equals("exclude")) {
                     filteredList.remove(PRIVATE_UID);
                 }
@@ -275,6 +270,22 @@ class MongoDBUtils {
             }
         }
         return filteredOptions;
+    }
+
+    static void fixAclProjection(QueryOptions options) {
+        if (options == null) {
+            return;
+        }
+
+        if (options.getBoolean(DBAdaptor.INCLUDE_ACLS)) {
+            List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+
+            if (!includeList.isEmpty()) {
+                List<String> toInclude = new ArrayList<>(includeList);
+                toInclude.add(AuthorizationMongoDBAdaptor.QueryParams.ACL.key());
+                options.put(QueryOptions.INCLUDE, toInclude);
+            }
+        }
     }
 
     static void filterBooleanParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedParams) {
@@ -483,144 +494,6 @@ class MongoDBUtils {
         bsonList.add(Filters.or(ontologyId, ontologyName));
     }
 
-    public static void addAnnotationQueryFilter(String optionKey, Query query, Map<String, Variable> variableMap,
-                                                List<Bson> annotationSetFilter) throws CatalogDBException {
-        // Annotation Filter
-        final String sepOr = ",";
-
-        String annotationKey;
-        if (optionKey.startsWith("annotation.")) {
-            annotationKey = optionKey.substring("annotation.".length());
-        } else {
-            throw new CatalogDBException("Wrong annotation query. Expects: {\"annotation.<variable>\" , <operator><value> } ");
-        }
-        String annotationValue = query.getString(optionKey);
-
-        final String variableId;
-        final String route;
-        if (annotationKey.contains(".")) {
-            String[] variableIdRoute = annotationKey.split("\\.", 2);
-            variableId = variableIdRoute[0];
-            route = "." + variableIdRoute[1];
-        } else {
-            variableId = annotationKey;
-            route = "";
-        }
-        String[] values = annotationValue.split(sepOr);
-
-        QueryParam.Type type = QueryParam.Type.TEXT;
-
-        if (variableMap != null) {
-            Variable variable = variableMap.get(variableId);
-            if (variable == null) {
-                throw new CatalogDBException("Variable \"" + variableId + "\" not found in variableSet ");
-            }
-            Variable.VariableType variableType = variable.getType();
-            if (variable.getType() == Variable.VariableType.OBJECT) {
-                String[] routes = route.split("\\.");
-                for (String r : routes) {
-                    if (variable.getType() != Variable.VariableType.OBJECT) {
-                        throw new CatalogDBException("Unable to query variable " + annotationKey);
-                    }
-                    if (variable.getVariableSet() != null) {
-                        Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
-                        if (subVariableMap.containsKey(r)) {
-                            variable = subVariableMap.get(r);
-                            variableType = variable.getType();
-                        }
-                    } else {
-                        variableType = Variable.VariableType.STRING;
-                        break;
-                    }
-                }
-            }
-            if (variableType == Variable.VariableType.BOOLEAN) {
-                type = QueryParam.Type.BOOLEAN;
-
-            } else if (variableType == Variable.VariableType.DOUBLE) {
-                type = QueryParam.Type.DECIMAL;
-            } else if (variableType == Variable.VariableType.INTEGER) {
-                type = QueryParam.Type.INTEGER;
-            }
-        }
-
-        List<Document> valueList = addCompQueryFilter(type, "value" + route, Arrays.asList(values), new ArrayList<>());
-        annotationSetFilter.add(
-                Filters.elemMatch("annotations", Filters.and(
-                        Filters.eq("name", variableId),
-                        valueList.get(0)
-                ))
-        );
-    }
-
-    @Deprecated
-    public static void addAnnotationQueryFilter(String optionKey, QueryOptions options, List<DBObject> annotationSetFilter, Map<String,
-            Variable> variableMap) throws CatalogDBException {
-        // Annotation Filters
-        final String sepAnd = ";";
-        final String sepOr = ",";
-        final String sepIs = ":";
-
-        for (String annotation : options.getAsStringList(optionKey, sepAnd)) {
-            String[] split = annotation.split(sepIs, 2);
-            if (split.length != 2) {
-                throw new CatalogDBException("Malformed annotation query : " + annotation);
-            }
-            final String variableId;
-            final String route;
-            if (split[0].contains(".")) {
-                String[] variableIdRoute = split[0].split("\\.", 2);
-                variableId = variableIdRoute[0];
-                route = "." + variableIdRoute[1];
-            } else {
-                variableId = split[0];
-                route = "";
-            }
-            String[] values = split[1].split(sepOr);
-
-            AbstractDBAdaptor.FilterOption.Type type = AbstractDBAdaptor.FilterOption.Type.TEXT;
-
-            if (variableMap != null) {
-                Variable variable = variableMap.get(variableId);
-                Variable.VariableType variableType = variable.getType();
-                if (variable.getType() == Variable.VariableType.OBJECT) {
-                    String[] routes = route.split("\\.");
-                    for (String r : routes) {
-                        if (variable.getType() != Variable.VariableType.OBJECT) {
-                            throw new CatalogDBException("Unable to query variable " + split[0]);
-                        }
-                        if (variable.getVariableSet() != null) {
-                            Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                    .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
-                            if (subVariableMap.containsKey(r)) {
-                                variable = subVariableMap.get(r);
-                                variableType = variable.getType();
-                            }
-                        } else {
-                            variableType = Variable.VariableType.STRING;
-                            break;
-                        }
-                    }
-                }
-                if (variableType == Variable.VariableType.BOOLEAN) {
-                    type = AbstractDBAdaptor.FilterOption.Type.BOOLEAN;
-
-                } else if (variableType == Variable.VariableType.DOUBLE) {
-                    type = AbstractDBAdaptor.FilterOption.Type.NUMERICAL;
-                }
-            }
-            List<DBObject> queryValues = addCompQueryFilter(type, Arrays.asList(values), "value" + route, new LinkedList<DBObject>());
-            annotationSetFilter.add(
-                    new BasicDBObject("annotations",
-                            new BasicDBObject("$elemMatch",
-                                    new BasicDBObject(queryValues.get(0).toMap()).append("name", variableId)
-                            )
-                    )
-            );
-        }
-    }
-
     static List<Document> addCompQueryFilter(QueryParam option, String optionKey, String queryKey,
                                              ObjectMap options, List<Document> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
@@ -662,9 +535,11 @@ class MongoDBUtils {
             switch (type) {
                 case INTEGER:
                 case INTEGER_ARRAY:
+                case LONG:
+                case LONG_ARRAY:
                     try {
-                        int intValue = Integer.parseInt(filter);
-                        or.add(addNumberOperationQueryFilter(key, operator, intValue));
+                        long longValue = Long.parseLong(filter);
+                        or.add(addNumberOperationQueryFilter(key, operator, longValue));
                     } catch (NumberFormatException e) {
                         throw new CatalogDBException("Expected an integer value - " + e.getMessage(), e);
                     }

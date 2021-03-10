@@ -1,7 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormatBase;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -46,7 +48,23 @@ public class VariantAlignedInputFormat extends InputFormat {
     @Override
     public List<InputSplit> getSplits(JobContext context) throws IOException, InterruptedException {
         init(context.getConfiguration());
-        List<InputSplit> splits = delegatedInputFormat.getSplits(context);
+        List<InputSplit> splits;
+        if (delegatedInputFormat instanceof TableInputFormatBase) {
+            // If the table is a TableInputFormatBase, set a lighter version of the scan, as it does not need the whole object.
+            // Prevent a massive memory usage with large scans over huge tables.
+            // The current implementation (hdp 3.1, hbase 2.0.2) includes a serialized copy of the scan on each TableSplit.
+            // From this TableSplit.scan, only the startRow and the stopRow are read.
+            TableInputFormat tableInputFormat = (TableInputFormat) delegatedInputFormat;
+            Scan scan = tableInputFormat.getScan();
+            tableInputFormat.setScan(new Scan()
+                    .setStartRow(scan.getStartRow())
+                    .setStopRow(scan.getStopRow()));
+            splits = tableInputFormat.getSplits(context);
+            tableInputFormat.setScan(scan);
+        } else {
+            splits = delegatedInputFormat.getSplits(context);
+        }
+
         return VariantsTableInputSplitter.alignInputSplits(splits, getBatchSize());
     }
 

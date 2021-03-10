@@ -17,7 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -80,13 +80,15 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.rga.RgaQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -98,7 +100,9 @@ import java.util.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+import static org.opencb.opencga.storage.core.rga.RgaQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILTER_DESCR;
 
 /**
  * Created by imedina on 17/08/16.
@@ -167,6 +171,46 @@ public class VariantWebService extends AnalysisWebService {
     public VariantWebService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
+    }
+
+    @GET
+    @Path("/individualQuery")
+    @ApiOperation(value = "Individual RGA query", response = KnockoutByIndividual.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
+
+            // Rga params
+            @ApiImplicitParam(name = "sampleId", value = SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "individualId", value = INDIVIDUAL_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "sex", value = SEX_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "phenotypes", value = PHENOTYPES_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "disorders", value = DISORDERS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneId", value = GENE_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "geneName", value = GENE_NAME_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptId", value = TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "biotype", value = TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "variants", value = VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "knockout", value = KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "populatioFrequency", value = POPULATION_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "consequenceType", value = CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
+
+            // Study filters
+            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query")
+    })
+    public Response getIndividualRgaQuery() {
+        return run(() -> {
+            // Get all query options
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = getVariantQuery(queryOptions);
+
+            return variantManager.get(query, queryOptions, token);
+        });
     }
 
     @Deprecated
@@ -897,6 +941,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "fileData", value = FILE_DATA_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -911,6 +956,8 @@ public class VariantWebService extends AnalysisWebService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
+            logger.debug("Mutational Signature query = " + query);
+
             if (!query.containsKey(SAMPLE.key())) {
                 return createErrorResponse(new Exception("Missing sample name"));
             }
@@ -923,6 +970,8 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
+            executor.setOpenCgaHome(opencgaHome);
+
             ObjectMap executorParams = new ObjectMap();
             executorParams.put("opencgaHome", opencgaHome);
             executorParams.put("token", token);
@@ -1205,8 +1254,8 @@ public class VariantWebService extends AnalysisWebService {
                 SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
                         Collections.singletonList(params.getSample()),
                         null,
-                        params.getVariantStatsQuery(),
-                        params.getOutdir()
+                        params.getOutdir(), true, false, params.getVariantStatsId(), params.getVariantStatsDescription(), null,
+                        params.getVariantStatsQuery()
                 );
 
                 DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,

@@ -143,10 +143,15 @@ public class VariantPhoenixKeyFactory {
         return rk;
     }
 
+    public static String buildSymbolicAlternate(Variant v) {
+        return buildSymbolicAlternate(v.getReference(), v.getAlternate(), v.getEnd(), v.getSv());
+    }
+
     // visible for test
     public static String buildSymbolicAlternate(String reference, String alternate, Integer end, StructuralVariation sv) {
         if (sv != null) {
-            if (!Allele.wouldBeSymbolicAllele(alternate.getBytes()) && emptyCiStartEnd(sv)) {
+            byte[] alternateBytes = alternate.getBytes();
+            if (!Allele.wouldBeSymbolicAllele(alternateBytes) && emptyCiStartEnd(sv)) {
                 // Skip non symbolic variants
                 return alternate;
             }
@@ -154,13 +159,14 @@ public class VariantPhoenixKeyFactory {
             if (StructuralVariantType.TANDEM_DUPLICATION.equals(sv.getType())) {
                 alternate = VariantBuilder.DUP_TANDEM_ALT;
             }
+            boolean bnd = Allele.wouldBeBreakpoint(alternateBytes);
 
             alternate = alternate
                     + SV_ALTERNATE_SEPARATOR + end
                     + SV_ALTERNATE_SEPARATOR + (sv.getCiStartLeft() == null ? 0 : sv.getCiStartLeft())
                     + SV_ALTERNATE_SEPARATOR + (sv.getCiStartRight() == null ? 0 : sv.getCiStartRight())
-                    + SV_ALTERNATE_SEPARATOR + (sv.getCiEndLeft() == null ? 0 : sv.getCiEndLeft())
-                    + SV_ALTERNATE_SEPARATOR + (sv.getCiEndRight() == null ? 0 : sv.getCiEndRight());
+                    + SV_ALTERNATE_SEPARATOR + (bnd | sv.getCiEndLeft() == null ? 0 : sv.getCiEndLeft())
+                    + SV_ALTERNATE_SEPARATOR + (bnd | sv.getCiEndRight() == null ? 0 : sv.getCiEndRight());
 
             if (StringUtils.isNotEmpty(sv.getLeftSvInsSeq()) || StringUtils.isNotEmpty(sv.getRightSvInsSeq())) {
                 alternate = alternate
@@ -215,12 +221,12 @@ public class VariantPhoenixKeyFactory {
         String reference = null;
         String alternate = null;
         try {
-            chromosome = resultSet.getString(VariantPhoenixHelper.VariantColumn.CHROMOSOME.column());
-            start = resultSet.getInt(VariantPhoenixHelper.VariantColumn.POSITION.column());
-            reference = resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column());
-            alternate = resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column());
+            chromosome = resultSet.getString(VariantPhoenixSchema.VariantColumn.CHROMOSOME.column());
+            start = resultSet.getInt(VariantPhoenixSchema.VariantColumn.POSITION.column());
+            reference = resultSet.getString(VariantPhoenixSchema.VariantColumn.REFERENCE.column());
+            alternate = resultSet.getString(VariantPhoenixSchema.VariantColumn.ALTERNATE.column());
 
-            String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
+            String type = resultSet.getString(VariantPhoenixSchema.VariantColumn.TYPE.column());
 
             return buildVariant(chromosome, start, reference, alternate, type);
         } catch (RuntimeException | SQLException e) {

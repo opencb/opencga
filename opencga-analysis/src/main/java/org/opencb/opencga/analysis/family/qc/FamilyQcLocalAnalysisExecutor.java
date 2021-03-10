@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.family.qc;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;

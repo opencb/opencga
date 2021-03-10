@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import htsjdk.variant.variantcontext.VariantContext;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
@@ -571,10 +571,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
                         hasItem(with("EnsemblGene", ConsequenceType::getEnsemblGeneId, is("ENSG00000250026"))))),
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B"))))),
-                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
-                        with("Cosmic", VariantTraitAssociation::getCosmic,
-                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
+                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B")))))
+//                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
+//                        with("Cosmic", VariantTraitAssociation::getCosmic,
+//                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
         )));
 
     }

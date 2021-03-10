@@ -144,19 +144,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         this.database = getCatalogDatabase(catalogConfiguration.getDatabasePrefix());
 
         logger = LoggerFactory.getLogger(this.getClass());
-        connect();
-    }
-
-    @Deprecated
-    protected MongoDBAdaptorFactory(List<DataStoreServerAddress> dataStoreServerAddressList, MongoDBConfiguration configuration,
-                                    String database) throws CatalogDBException {
-//        super(LoggerFactory.getLogger(CatalogMongoDBAdaptor.class));
-        this.mongoManager = new MongoDataStoreManager(dataStoreServerAddressList);
-        this.configuration = configuration;
-        this.database = database;
-
-        logger = LoggerFactory.getLogger(this.getClass());
-        connect();
+        connect(catalogConfiguration);
     }
 
     @Override
@@ -300,7 +288,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         return mongoDataStore;
     }
 
-    private void connect() throws CatalogDBException {
+    private void connect(Configuration catalogConfiguration) throws CatalogDBException {
         mongoDataStore = mongoManager.get(database, configuration);
         if (mongoDataStore == null) {
             throw new CatalogDBException("Unable to connect to MongoDB");
@@ -363,20 +351,21 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         collections.put(AUDIT_COLLECTION, auditCollection);
 
-        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, this);
-        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, deletedIndividualCollection, this);
-        jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, this);
-        projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, this);
-        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, deletedSampleCollection, this);
-        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, this);
-        userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, this);
-        cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, this);
-        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, deletedPanelCollection, this);
-        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, deletedFamilyCollection, this);
-        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, this);
-        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection, this);
-        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);
-        auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection);
+        fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this);
+        individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, deletedIndividualCollection, catalogConfiguration, this);
+        jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
+        projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
+        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, deletedSampleCollection, catalogConfiguration, this);
+        studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogConfiguration, this);
+        userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
+        cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, catalogConfiguration, this);
+        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, deletedPanelCollection, catalogConfiguration, this);
+        familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, deletedFamilyCollection, catalogConfiguration, this);
+        clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
+        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection,
+                catalogConfiguration, this);
+        metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, catalogConfiguration, this);
+        auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, catalogConfiguration);
     }
 
 }

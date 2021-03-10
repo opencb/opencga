@@ -17,6 +17,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,14 +70,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     private void addJobConf(Job job, String key) {
-        String value = getConf().get(getClass().getName() + "." + key);
-        if (StringUtils.isEmpty(value)) {
-            value = getConf().get(getClass().getSimpleName() + "." + key);
-        }
-        if (StringUtils.isEmpty(value)) {
-            value = getConf().get(key);
-        }
-
+        String value = getParam(key);
         if (StringUtils.isNotEmpty(value)) {
             LOGGER.info("Configure MR job with {} = {}", key, value);
             job.getConfiguration().set(key, value);
@@ -102,14 +96,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected String getParam(String key, String defaultValue) {
-        String value = getConf().get(key);
-        if (StringUtils.isEmpty(value)) {
-            value = getConf().get("--" + key);
-        }
-        if (StringUtils.isEmpty(value)) {
-            value = defaultValue;
-        }
-        return value;
+        return VariantMapReduceUtil.getParam(getConf(), key, defaultValue, getClass());
     }
 
     protected int getFixedSizeArgs() {

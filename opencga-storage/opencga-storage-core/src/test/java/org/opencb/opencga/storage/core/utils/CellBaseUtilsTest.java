@@ -38,7 +38,7 @@ public class CellBaseUtilsTest {
     public void setUp() throws Exception {
         String assembly = "grch37";
         cellBaseClient = new CellBaseClient("hsapiens", assembly, new ClientConfiguration().setVersion("v4").setRest(
-                new RestConfig(Collections.singletonList("http://bioinfo.hpc.cam.ac.uk/cellbase"), 10)));
+                new RestConfig(Collections.singletonList("http://ws.opencb.org/cellbase/"), 10)));
         cellBaseUtils = new CellBaseUtils(cellBaseClient, assembly);
     }
 

@@ -5,11 +5,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 public class ParsedVariantQuery {
 
@@ -78,6 +81,10 @@ public class ParsedVariantQuery {
     public static class VariantStudyQuery {
         private ParsedQuery<String> studies;
         private ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes;
+//        // SAMPLE : [ KEY OP VALUE ] *
+        private ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery;
+//        // Merged genotype and sample_data filters
+//        private Values<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleFilters;
         private StudyMetadata defaultStudy;
 
         public VariantStudyQuery() {
@@ -99,6 +106,26 @@ public class ParsedVariantQuery {
         public VariantStudyQuery setGenotypes(ParsedQuery<KeyOpValue<SampleMetadata, List<String>>> genotypes) {
             this.genotypes = genotypes;
             return this;
+        }
+
+        public ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> getSampleDataQuery() {
+            return sampleDataQuery;
+        }
+
+        public VariantStudyQuery setSampleDataQuery(ParsedQuery<KeyValues<SampleMetadata, KeyOpValue<String, String>>> sampleDataQuery) {
+            this.sampleDataQuery = sampleDataQuery;
+            return this;
+        }
+
+        public int countSamplesInFilter() {
+            Set<String> samples = new HashSet<>();
+            if (sampleDataQuery != null) {
+                sampleDataQuery.stream().map(KeyValues::getKey).map(StudyResourceMetadata::getName).forEach(samples::add);
+            }
+            if (genotypes != null) {
+                genotypes.stream().map(KeyOpValue::getKey).map(StudyResourceMetadata::getName).forEach(samples::add);
+            }
+            return samples.size();
         }
 
         public void setDefaultStudy(StudyMetadata defaultStudy) {

@@ -2,15 +2,25 @@ package org.opencb.opencga.storage.core.variant.query;
 
 import org.opencb.commons.datastore.core.QueryParam;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public class ParsedQuery<T> extends Values<T> {
 
-    private QueryParam key;
+    private final QueryParam key;
+
+    public ParsedQuery(QueryParam key) {
+        super(null, new LinkedList<>());
+        this.key = key;
+    }
 
     public ParsedQuery(QueryParam key, VariantQueryUtils.QueryOperation operation, List<T> value) {
         super(operation, value);
         this.key = key;
+    }
+
+    public QueryParam getKey() {
+        return key;
     }
 
     @Override

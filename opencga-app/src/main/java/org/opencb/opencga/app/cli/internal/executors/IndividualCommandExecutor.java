@@ -40,14 +40,8 @@ public class IndividualCommandExecutor extends InternalCommandExecutor {
 
     private void secondaryIndex() throws ToolException {
         IndividualCommandOptions.SecondaryIndex options = individualCommandOptions.secondaryIndex;
-
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        // Prepare analysis parameters and config
-        IndividualIndexTask indexTask = new IndividualIndexTask();
-        indexTask.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
-        indexTask.start();
+        toolRunner.execute(IndividualIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
     private void tsvLoad() throws ToolException {

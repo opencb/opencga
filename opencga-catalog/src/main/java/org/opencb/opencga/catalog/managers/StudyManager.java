@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -1376,6 +1376,11 @@ public class StudyManager extends AbstractManager {
         return studyAclList;
     }
 
+    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, String memberIds, StudyAclParams aclParams,
+                                                              ParamUtils.AclAction action, String token) throws CatalogException {
+        return updateAcl(Collections.singletonList(studyId), memberIds, aclParams, action, token);
+    }
+
     public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, StudyAclParams aclParams,
                                                               ParamUtils.AclAction action, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
@@ -1473,11 +1478,11 @@ public class StudyManager extends AbstractManager {
                             members, permissions);
                     break;
                 case RESET:
-                    aclResult = OpenCGAResult.empty();
-                    for (Study study : studies) {
-                        authorizationManager.resetPermissionsFromAllEntities(study.getUid(), members);
-                        aclResult.append(authorizationManager.getAllStudyAcls(userId, study.getUid()));
-                    }
+                    aclResult = authorizationManager.removeStudyAcls(studies
+                                    .stream()
+                                    .map(Study::getUid)
+                                    .collect(Collectors.toList()),
+                            members, null);
                     break;
                 default:
                     throw new CatalogException("Unexpected error occurred. No valid action found.");

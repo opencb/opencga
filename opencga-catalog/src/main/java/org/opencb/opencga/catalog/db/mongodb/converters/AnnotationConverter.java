@@ -37,6 +37,7 @@ public class AnnotationConverter {
 
     static final String ID = AnnotationMongoDBAdaptor.AnnotationSetParams.ID.key();
     static final String VALUE = AnnotationMongoDBAdaptor.AnnotationSetParams.VALUE.key();
+    static final String VARIABLE_KEYS = AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_KEYS.key();
     static final String ARRAY_LEVEL = AnnotationMongoDBAdaptor.AnnotationSetParams.ARRAY_LEVEL.key();
     static final String COUNT_ELEMENTS = AnnotationMongoDBAdaptor.AnnotationSetParams.COUNT_ELEMENTS.key();
     static final String VARIABLE_SET = AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key();
@@ -185,7 +186,7 @@ public class AnnotationConverter {
                     // Not flattened
                     Queue<FromDBToMap> myQueue = new LinkedList<>();
 
-                    String[] split = StringUtils.split(annotationDocument.getString(ID), ".");
+                    List<String> keys = annotationDocument.getList(VARIABLE_KEYS, String.class);
                     List<Integer> arrayLevel = annotationDocument.get(ARRAY_LEVEL) != null
                             ? (List<Integer>) annotationDocument.get(ARRAY_LEVEL)
                             : Collections.emptyList();
@@ -207,7 +208,7 @@ public class AnnotationConverter {
                     }
 
                     // We provide the map from the annotation set in order to be automatically filled in
-                    myQueue.add(new FromDBToMap(Arrays.asList(split), arrayLevel, countElems, annotationDocument.get(VALUE), 0,
+                    myQueue.add(new FromDBToMap(keys, arrayLevel, countElems, annotationDocument.get(VALUE), 0,
                             annotationSetMap.get(compoundKey).getAnnotations()));
 
 
@@ -252,11 +253,11 @@ public class AnnotationConverter {
                                         // that goes to every different element of the array
                                         int total = 0;
                                         for (Object o : ((List) count)) {
-                                            total += (int) o;
+                                            total += ((Number) o).intValue();
                                         }
                                         count = total;
                                     }
-                                    int numberOfElements = (Integer) count;
+                                    int numberOfElements = ((Number) count).intValue();
 
                                     if (numberOfElements > 0) {
                                         if (fromDBToMap.getArrayLevel().size() > 1) {
@@ -685,11 +686,11 @@ public class AnnotationConverter {
      *
      * @param variableSet Variable set id.
      * @param annotationSet Annotation set name.
-     * @param variable Variable id. (a.b.c for instance)
+     * @param variableKeys Variable keys. ([a, b, c] for instance)
      * @return A unique id for the annotation.
      */
-    public String getAnnotationPrivateId(String variableSet, String annotationSet, String variable) {
-        return variableSet + INTERNAL_DELIMITER + annotationSet + INTERNAL_DELIMITER + variable.replaceAll("\\.", INTERNAL_DELIMITER);
+    public String getAnnotationPrivateId(String variableSet, String annotationSet, List<String> variableKeys) {
+        return variableSet + INTERNAL_DELIMITER + annotationSet + INTERNAL_DELIMITER + StringUtils.join(variableKeys, INTERNAL_DELIMITER);
     }
 
     private Object getAnnotationValue(FromDBToMap fromDBToMap) {
@@ -712,13 +713,14 @@ public class AnnotationConverter {
     private void addDocumentIfNotEmpty(VariableSet variableSet, String annotationSetName, VariableLevel variableLevel, Document document,
                                        List<Document> documentList) {
         if (document != null && !document.isEmpty()) {
+            document.put(VARIABLE_KEYS, variableLevel.getKeys());
             if (variableLevel.getArrayLevel().size() > 0) {
                 document.put(ARRAY_LEVEL, variableLevel.getArrayLevel());
             }
             document.put(ID, StringUtils.join(variableLevel.getKeys(), "."));
             document.put(VARIABLE_SET, variableSet.getUid());
             document.put(ANNOTATION_SET_NAME, annotationSetName);
-            document.put(getAnnotationPrivateId(String.valueOf(variableSet.getUid()), annotationSetName, document.getString(ID)),
+            document.put(getAnnotationPrivateId(String.valueOf(variableSet.getUid()), annotationSetName, variableLevel.getKeys()),
                     document.get(VALUE));
             documentList.add(document);
         }

@@ -148,7 +148,6 @@ public class MetaWSServer extends OpenCGAWSServer {
             // Skip update!
             return;
         }
-        String storageEngineId;
         StringBuilder errorMsg = new StringBuilder();
 
         Map<String, String> newHealthCheckResults = new HashMap<>();
@@ -156,8 +155,10 @@ public class MetaWSServer extends OpenCGAWSServer {
         newHealthCheckResults.put(VARIANT_STORAGE, "");
         newHealthCheckResults.put(SOLR, "");
 
+        StopWatch totalTime = StopWatch.createStarted();
+        StopWatch catalogMongoDBTime = StopWatch.createStarted();
         try {
-            if (catalogManager.getDatabaseStatus()) {
+            if (catalogManager.getCatalogDatabaseStatus()) {
                 newHealthCheckResults.put(CATALOG_MONGO_DB, OKAY);
             } else {
                 newHealthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
@@ -166,23 +167,21 @@ public class MetaWSServer extends OpenCGAWSServer {
             newHealthCheckResults.put(CATALOG_MONGO_DB, NOT_OKAY);
             errorMsg.append(e.getMessage());
         }
+        catalogMongoDBTime.stop();
 
-        try {
-            storageEngineId = storageEngineFactory.getVariantStorageEngine().getStorageEngineId();
-            newHealthCheckResults.put("VariantStorageId", storageEngineId);
-        } catch (Exception e) {
-            errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()).append(", ");
-            newHealthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
-        }
-
+        StopWatch storageTime = StopWatch.createStarted();
         try {
             storageEngineFactory.getVariantStorageEngine().testConnection();
+            newHealthCheckResults.put("VariantStorageId", storageEngineFactory.getVariantStorageEngine().getStorageEngineId());
             newHealthCheckResults.put(VARIANT_STORAGE, OKAY);
         } catch (Exception e) {
             newHealthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
             errorMsg.append(e.getMessage());
+//            errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()).append(", ");
         }
+        storageTime.stop();
 
+        StopWatch solrEngineTime = StopWatch.createStarted();
         if (storageEngineFactory.getStorageConfiguration().getSearch().isActive()) {
             try {
                 if (variantManager.isSolrAvailable()) {
@@ -197,6 +196,16 @@ public class MetaWSServer extends OpenCGAWSServer {
             }
         } else {
             newHealthCheckResults.put(SOLR, "solr not active in storage-configuration!");
+        }
+        solrEngineTime.stop();
+
+        if (totalTime.getTime(TimeUnit.SECONDS) > 5) {
+            logger.warn("Slow OpenCGA status: Updated time: {}. Catalog: {} , Storage: {} , Solr: {}",
+                    totalTime.getTime(TimeUnit.MILLISECONDS) / 1000.0,
+                    catalogMongoDBTime.getTime(TimeUnit.MILLISECONDS) / 1000.0,
+                    storageTime.getTime(TimeUnit.MILLISECONDS) / 1000.0,
+                    solrEngineTime.getTime(TimeUnit.MILLISECONDS) / 1000.0
+            );
         }
 
         if (errorMsg.length() == 0) {

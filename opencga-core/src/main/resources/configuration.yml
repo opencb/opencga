@@ -52,6 +52,7 @@ authentication:
 #      fullNameKey: displayname                             # Key to get the user's full name when importing users. By default, 'displayname'.
 #      memberKey: member                                    # Key within groups to extract the user id. By default, 'member'.
 #      dnKey: dn                                            # Key to get the user's DN or RDN unique identifier. By default, 'dn'.
+#      dnFormat: "%s"                                       # Formatter to extract the user's DN if it is contained within a larger string. By default, '%s' to take the whole string.
 #      uidKey: uid                                          # Key to get the user id to be used in OpenCGA. By default, 'uid'.
 #      uidFormat: "%s"                                      # Formatter to extract the user id if the uid is contained within a larger string. By default, '%s' to take the whole string.
 #      sslInvalidCertificatesAllowed: false                 # If using LDAPs with a custom certificate, set to true to accept any certificate. By default, false.
@@ -78,6 +79,9 @@ server:
   grpc:
     port: ${OPENCGA.SERVER.GRPC.PORT}
     logFile: null
+
+optimizations:
+  simplifyPermissions: ${OPENCGA_OPTIMIZATIONS_SIMPLIFY_PERMISSIONS}
 
 audit:
   manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
@@ -148,9 +152,13 @@ analysis:
 
      ## Kubernetes executor configuration example
      # k8s.masterUrl: "https://192.168.99.100:8443/"
-     # FOR Cluster Autoscaler and dedicated jobs agent pool:
-      k8s.imageName: "opencb/opencga-base:2.0.0-rc4-hdp3.1"
+      k8s.clientTimeout: 30000 # ms
+      k8s.imageName: "opencb/opencga-base:${opencga.version}-hdp3.1"
+      k8s.imagePullPolicy: "IfNotPresent"
+#      k8s.imagePullSecrets:
+#        name : "dockerhub-secrets-name"
       k8s.namespace: "default"
+      # FOR Cluster Autoscaler and dedicated jobs agent pool:
       k8s.requests:
         cpu: 3
         memory: "12G"

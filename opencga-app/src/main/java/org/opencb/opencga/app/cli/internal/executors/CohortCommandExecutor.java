@@ -56,14 +56,8 @@ public class CohortCommandExecutor extends InternalCommandExecutor {
 
     private void secondaryIndex() throws ToolException {
         CohortCommandOptions.SecondaryIndex options = cohortCommandOptions.secondaryIndex;
-
         Path outDir = Paths.get(options.outDir);
-        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        // Prepare analysis parameters and config
-        CohortIndexTask indexTask = new CohortIndexTask();
-        indexTask.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
-        indexTask.start();
+        toolRunner.execute(CohortIndexTask.class, new ObjectMap(), outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
 }

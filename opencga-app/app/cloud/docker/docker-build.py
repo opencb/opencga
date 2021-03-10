@@ -144,7 +144,7 @@ if args.tag is None:
     version = stream.read()
     version = version.rstrip()
 
-    if version is None:
+    if not version:
         error("Missing --tag")
 
     ## Find hadoop_flavour
@@ -157,7 +157,7 @@ if args.tag is None:
 
     ## Mount tag
     tag = version
-    if hadoop_flavour is not None:
+    if hadoop_flavour:
         tag = tag + "-" + hadoop_flavour
 
 else:
@@ -166,11 +166,8 @@ else:
 org = args.org
 
 # get a list with all images
-if args.images is None:
-    if hadoop_flavour is None:
-        images = ["base", "init", "demo", "r"]
-    else:
-        images = ["base", "init", "r"]
+if not args.images:
+    images = ["base", "init", "demo", "r"]
 else:
     imagesUnsorted = args.images.split(",")
     images = []
@@ -181,11 +178,6 @@ else:
         imagesUnsorted.remove("init")
         images += ["init"]
     images += imagesUnsorted
-
-if "demo" in images and hadoop_flavour is not None:
-    error(("opencga-demo image requires storage-mongodb."
-        + " Rebuild again opencga with -Pstorage-mongodb or do not include demo image in --images"))
-
 
 if args.action == "build":
     login(loginRequired=False)
