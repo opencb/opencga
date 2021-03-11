@@ -58,6 +58,8 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.filter", Arrays.asList(RgaDataModel.VARIANT_JSON,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.type", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES));
         CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.knockoutType", Arrays.asList(RgaDataModel.VARIANT_JSON,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
                 RgaDataModel.KNOCKOUT_TYPES));
@@ -67,6 +69,9 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
         CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.VARIANT_JSON,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
                 RgaDataModel.CONSEQUENCE_TYPES));
+        CONVERTER_MAP.put("individuals.genesMap.transcriptsMap.variants.clinicalSignificance", Arrays.asList(RgaDataModel.VARIANT_JSON,
+                RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
+                RgaDataModel.CLINICAL_SIGNIFICANCES));
     }
 
     public VariantRgaConverter() {

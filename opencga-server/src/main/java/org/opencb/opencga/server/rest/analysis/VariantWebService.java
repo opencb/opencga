@@ -82,7 +82,6 @@ import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.rga.RgaQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
@@ -101,8 +100,9 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.rga.RgaQueryParams.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.FILTER_DESCR;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.TYPE_DESCR;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by imedina on 17/08/16.
