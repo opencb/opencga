@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.rga;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
@@ -122,7 +123,9 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
             for (String individualId : result.get(variantId)) {
                 individualList.add(individualMap.get(individualId));
             }
-            knockoutVariantList.add(new KnockoutByVariant(variantId, individualList));
+            Variant variant = new Variant(variantId);
+            knockoutVariantList.add(new KnockoutByVariant(variantId, variant.getChromosome(), variant.getStart(), variant.getEnd(),
+                    variant.getLength(), variant.getReference(), variant.getAlternate(), individualList));
         }
         return knockoutVariantList;
     }
@@ -194,7 +197,9 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
 
         List<KnockoutByVariant> result = new ArrayList<>(variantMap.size());
         for (String variantId : variantMap.keySet()) {
-            result.add(new KnockoutByVariant(variantId, variantMap.get(variantId)));
+            Variant variant = new Variant(variantId);
+            result.add(new KnockoutByVariant(variantId, variant.getChromosome(), variant.getStart(), variant.getEnd(),
+                    variant.getLength(), variant.getReference(), variant.getAlternate(), variantMap.get(variantId)));
         }
 
         return result;
