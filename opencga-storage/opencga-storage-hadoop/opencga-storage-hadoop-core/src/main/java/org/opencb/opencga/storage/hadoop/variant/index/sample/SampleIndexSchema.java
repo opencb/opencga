@@ -94,11 +94,6 @@ public final class SampleIndexSchema {
     static final String ANNOTATION_CLINICAL_PREFIX = META_PREFIX + "CL_";
     static final byte[] ANNOTATION_CLINICAL_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CLINICAL_PREFIX);
 
-    @Deprecated
-    static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
-    @Deprecated
-    static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);
-
     private final SampleIndexConfiguration configuration;
     private final FileIndexSchema fileIndex;
     private final PopulationFrequencyIndexSchema popFreqIndex;
@@ -217,10 +212,6 @@ public final class SampleIndexSchema {
 
     public static byte[] toGenotypeCountColumn(String genotype) {
         return Bytes.toBytes(GENOTYPE_COUNT_PREFIX + genotype);
-    }
-
-    public static byte[] toPendingColumn(Variant variant, String gt) {
-        return Bytes.toBytes(PENDING_VARIANT_PREFIX + variant.toString() + '_' + gt);
     }
 
     public static byte[] toAnnotationIndexColumn(String genotype) {

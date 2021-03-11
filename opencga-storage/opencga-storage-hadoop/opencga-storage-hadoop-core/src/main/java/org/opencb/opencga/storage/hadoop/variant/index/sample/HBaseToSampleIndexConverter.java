@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -33,22 +32,6 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         this.schema = schema;
         converter = new SampleIndexVariantBiConverter(schema);
         fileIndex = schema.getFileIndex();
-    }
-
-    public static Pair<String, String> parsePendingColumn(byte[] column) {
-        if (Bytes.startsWith(column, PENDING_VARIANT_PREFIX_BYTES)) {
-            int lastIndexOf = 0;
-            for (int i = column.length - 1; i >= 0; i--) {
-                if (column[i] == '_') {
-                    lastIndexOf = i;
-                    break;
-                }
-            }
-            return Pair.of(Bytes.toString(column, PENDING_VARIANT_PREFIX.length(), lastIndexOf - PENDING_VARIANT_PREFIX.length()),
-                    Bytes.toString(column, lastIndexOf + 1));
-        } else {
-            return null;
-        }
     }
 
     @Override

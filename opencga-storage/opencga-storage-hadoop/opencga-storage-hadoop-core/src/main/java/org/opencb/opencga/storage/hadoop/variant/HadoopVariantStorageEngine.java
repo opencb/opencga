@@ -565,10 +565,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 getMRExecutor().run(FillMissingHBaseWriterDriver.class, args, taskDescription);
             }
 
-//            // Consolidate sample index table
-//            taskDescription = "Consolidate sample index table";
-//            getMRExecutor().run(SampleIndexConsolidationDrive.class, args, options, taskDescription);
-
         } catch (RuntimeException e) {
             exception = e;
             throw new StorageEngineException("Error " + jobOperationName + " for samples " + sampleIds, e);
