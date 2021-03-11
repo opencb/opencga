@@ -72,7 +72,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
-            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "'");
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
@@ -140,7 +140,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String collection = getCollectionName(study.getFqn());
 
         if (!rgaEngine.isAlive(collection)) {
-            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "'");
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
         QueryOptions queryOptions = setDefaultLimit(options);
@@ -221,7 +221,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
-            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "'");
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
         QueryOptions queryOptions = setDefaultLimit(options);
@@ -293,6 +293,23 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
             return knockoutResult;
         }
+    }
+
+    public OpenCGAResult<FacetField> aggregationStats(String studyStr, Query query, QueryOptions options, String fields, String token)
+            throws CatalogException, IOException, RgaException {
+        Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+        String userId = catalogManager.getUserManager().getUserId(token);
+
+        catalogManager.getAuthorizationManager().checkCanViewStudy(study.getUid(), userId);
+
+        String collection = getCollectionName(study.getFqn());
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
+        }
+
+        QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, fields);
+        return new OpenCGAResult<>(rgaEngine.facetedQuery(collection, query, queryOptions));
     }
 
     private QueryOptions setDefaultLimit(QueryOptions options) {
