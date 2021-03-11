@@ -808,7 +808,7 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response rgaAggregationStats(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: clinicalSignificances;type. For nested fields use >>, e.g.: type>>clinicalSignificances;knockoutType") @QueryParam("field") String facet
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: clinicalSignificances;type. For nested fields use >>, e.g.: type>>clinicalSignificances;knockoutType", required = true) @QueryParam("field") String facet
     ) {
         // Get all query options
         return run(() -> {
