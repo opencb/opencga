@@ -56,7 +56,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter;
@@ -395,23 +394,9 @@ public class VariantHbaseTestUtils {
         }
         printMetaTable(dbAdaptor, outDir);
         printSampleIndexTable(dbAdaptor, outDir);
-        printAnnotationIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
         HBaseToVariantConverter.setFailOnWrongVariants(old);
-    }
-
-    private static void printAnnotationIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
-        String tableName = dbAdaptor.getTableNameGenerator().getAnnotationIndexTableName();
-        if (dbAdaptor.getHBaseManager().tableExists(tableName)) {
-            AnnotationIndexDBAdaptor annotationIndexDBAdaptor = new AnnotationIndexDBAdaptor(dbAdaptor.getHBaseManager(), tableName);
-
-            try (PrintStream out = new PrintStream(new FileOutputStream(outDir.resolve("annotation_index.txt").toFile()))) {
-                annotationIndexDBAdaptor.iterator().forEachRemaining(pair -> {
-                    out.println(pair.getKey() + " -> " + pair.getValue());
-                });
-            }
-        }
     }
 
     private static void printVcf(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {

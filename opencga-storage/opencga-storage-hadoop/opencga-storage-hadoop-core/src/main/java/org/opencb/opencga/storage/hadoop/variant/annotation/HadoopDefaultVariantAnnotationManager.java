@@ -190,11 +190,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter hBaseConverter =
                     new VariantAnnotationToHBaseConverter(currentAnnotationId, progressLogger);
-//            AnnotationIndexDBLoader annotationIndexDBLoader = new AnnotationIndexDBLoader(
-//                    dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator().getAnnotationIndexTableName(),
-//                    SampleIndexSchema.defaultSampleIndexSchema());
-
-//            Task<VariantAnnotation, Put> task = Task.join(hBaseConverter, annotationIndexDBLoader.asTask(true));
 
             VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(dbAdaptor);
             return new ParallelTaskRunner<>(reader, hBaseConverter, writer, config);

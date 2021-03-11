@@ -17,7 +17,6 @@ public class HBaseVariantTableNameGenerator {
     private static final String META_SUFIX = "_meta";
     private static final String ARCHIVE_SUFIX = "_archive_";
     private static final String SAMPLE_SUFIX = "_variant_sample_index_";
-    private static final String ANNOTATION_SUFIX = "_annotation";
     private static final String PENDING_ANNOTATION_SUFIX = "_pending_annotation";
     private static final String PENDING_SECONDARY_INDEX_SUFIX = "_pending_secondary_index";
     private static final int MINIMUM_DB_NAME_SIZE = 1;
@@ -26,7 +25,6 @@ public class HBaseVariantTableNameGenerator {
     private final String dbName;
     private final String variantTableName;
     private final String metaTableName;
-    private final String annotationIndexTableName;
     private final String pendingAnnotationTableName;
     private final String pendingSecondaryIndexTableName;
 
@@ -47,7 +45,6 @@ public class HBaseVariantTableNameGenerator {
         this.dbName = dbName;
         variantTableName = getVariantTableName(namespace, this.dbName);
         metaTableName = getMetaTableName(namespace, this.dbName);
-        annotationIndexTableName = getAnnotationIndexTableName(namespace, this.dbName);
         pendingAnnotationTableName = getPendingAnnotationTableName(namespace, this.dbName);
         pendingSecondaryIndexTableName = getPendingSecondaryIndexTableName(namespace, this.dbName);
     }
@@ -62,10 +59,6 @@ public class HBaseVariantTableNameGenerator {
 
     public String getSampleIndexTableName(int studyId) {
         return getSampleIndexTableName(namespace, dbName, studyId);
-    }
-
-    public String getAnnotationIndexTableName() {
-        return annotationIndexTableName;
     }
 
     public String getPendingAnnotationTableName() {
@@ -206,10 +199,6 @@ public class HBaseVariantTableNameGenerator {
 
     public static String getVariantTableName(String namespace, String dbName) {
         return buildTableName(namespace, dbName, VARIANTS_SUFIX);
-    }
-
-    public static String getAnnotationIndexTableName(String namespace, String dbName) {
-        return buildTableName(namespace, dbName, ANNOTATION_SUFIX);
     }
 
     public static String getPendingAnnotationTableName(String namespace, String dbName) {
