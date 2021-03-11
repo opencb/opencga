@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.clinical.StorageManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
@@ -306,6 +307,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
+        ParamUtils.checkObj(fields, "Missing mandatory field 'field");
 
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(QueryOptions.FACET, fields);
