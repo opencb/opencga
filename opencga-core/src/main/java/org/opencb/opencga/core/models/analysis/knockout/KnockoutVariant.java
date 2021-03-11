@@ -27,6 +27,12 @@ import java.util.*;
 public class KnockoutVariant {
 
     private String id;
+    private String chromosome;
+    private int start;
+    private int end;
+    private int length;
+    private String reference;
+    private String alternate;
     private VariantType type;
     private String genotype;
     private Integer depth;
@@ -50,6 +56,12 @@ public class KnockoutVariant {
     public KnockoutVariant(Variant variant, StudyEntry study, FileEntry file, SampleEntry sample, VariantAnnotation annotation,
                            ConsequenceType ct, KnockoutType knockoutType) {
         this.id = variant.toString();
+        this.chromosome = variant.getChromosome();
+        this.start = variant.getStart();
+        this.end = variant.getEnd();
+        this.length = variant.getLength();
+        this.reference = variant.getReference();
+        this.alternate = variant.getAlternate();
         this.type = variant.getType();
         this.genotype = sample.getData().get(0);
         this.depth = getDepth(study, file, sample);
@@ -80,12 +92,21 @@ public class KnockoutVariant {
     public String toString() {
         final StringBuilder sb = new StringBuilder("KnockoutVariant{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", chromosome='").append(chromosome).append('\'');
+        sb.append(", start=").append(start);
+        sb.append(", end=").append(end);
+        sb.append(", length=").append(length);
+        sb.append(", reference='").append(reference).append('\'');
+        sb.append(", alternate='").append(alternate).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", genotype='").append(genotype).append('\'');
+        sb.append(", depth=").append(depth);
         sb.append(", filter='").append(filter).append('\'');
         sb.append(", qual='").append(qual).append('\'');
         sb.append(", knockoutType=").append(knockoutType);
         sb.append(", populationFrequencies=").append(populationFrequencies);
         sb.append(", sequenceOntologyTerms=").append(sequenceOntologyTerms);
+        sb.append(", clinicalSignificance=").append(clinicalSignificance);
         sb.append('}');
         return sb.toString();
     }
@@ -96,6 +117,60 @@ public class KnockoutVariant {
 
     public KnockoutVariant setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getChromosome() {
+        return chromosome;
+    }
+
+    public KnockoutVariant setChromosome(String chromosome) {
+        this.chromosome = chromosome;
+        return this;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public KnockoutVariant setStart(int start) {
+        this.start = start;
+        return this;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public KnockoutVariant setEnd(int end) {
+        this.end = end;
+        return this;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public KnockoutVariant setLength(int length) {
+        this.length = length;
+        return this;
+    }
+
+    public String getReference() {
+        return reference;
+    }
+
+    public KnockoutVariant setReference(String reference) {
+        this.reference = reference;
+        return this;
+    }
+
+    public String getAlternate() {
+        return alternate;
+    }
+
+    public KnockoutVariant setAlternate(String alternate) {
+        this.alternate = alternate;
         return this;
     }
 
