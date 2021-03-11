@@ -7,7 +7,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.hadoop.variant.index.core.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
 
 import java.util.Arrays;
 
@@ -16,12 +16,12 @@ import static org.junit.Assert.assertEquals;
 public class VariantFileIndexEntryConverterTest {
 
     private VariantFileIndexConverter fileIndexConverter;
-    private FileIndex fileIndex;
+    private FileIndexSchema fileIndex;
 
     @Before
     public void setUp() throws Exception {
-        fileIndexConverter = new VariantFileIndexConverter(SampleIndexConfiguration.defaultConfiguration());
-        fileIndex = SampleIndexConfiguration.defaultConfiguration().getFileIndex();
+        fileIndexConverter = new VariantFileIndexConverter(SampleIndexSchema.defaultSampleIndexSchema());
+        fileIndex = (SampleIndexSchema.defaultSampleIndexSchema()).getFileIndex();
     }
 
     @Test

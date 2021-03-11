@@ -7,10 +7,12 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +30,7 @@ public class StudyMetadata {
     private Long timeStamp;
     private VariantFileHeader variantHeader;
     private List<VariantScoreMetadata> variantScores;
+    private List<SampleIndexConfigurationVersioned> sampleIndexConfigurations;
 
     private ObjectMap attributes;
 
@@ -131,6 +134,29 @@ public class StudyMetadata {
         return this;
     }
 
+    public SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest() {
+        if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
+            return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(), 1, Date.from(Instant.now()));
+        } else {
+            SampleIndexConfigurationVersioned conf = sampleIndexConfigurations.get(0);
+            for (SampleIndexConfigurationVersioned thisConf : sampleIndexConfigurations) {
+                if (thisConf.getVersion() > conf.getVersion()) {
+                    conf = thisConf;
+                }
+            }
+            return conf;
+        }
+    }
+
+    public List<SampleIndexConfigurationVersioned> getSampleIndexConfigurations() {
+        return sampleIndexConfigurations;
+    }
+
+    public StudyMetadata setSampleIndexConfigurations(List<SampleIndexConfigurationVersioned> sampleIndexConfigurations) {
+        this.sampleIndexConfigurations = sampleIndexConfigurations;
+        return this;
+    }
+
     public ObjectMap getAttributes() {
         return attributes;
     }
@@ -192,5 +218,58 @@ public class StudyMetadata {
                 .collect(Collectors.toList()));
 
         return this;
+    }
+
+    public static class SampleIndexConfigurationVersioned {
+        private SampleIndexConfiguration configuration;
+        private int version;
+        private Date date;
+//        private int numSamples;
+
+
+        public SampleIndexConfigurationVersioned() {
+        }
+
+        public SampleIndexConfigurationVersioned(SampleIndexConfiguration configuration, int version, Date date) {
+            this.configuration = configuration;
+            this.version = version;
+            this.date = date;
+        }
+
+        public SampleIndexConfiguration getConfiguration() {
+            return configuration;
+        }
+
+        public SampleIndexConfigurationVersioned setConfiguration(SampleIndexConfiguration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
+        public int getVersion() {
+            return version;
+        }
+
+        public SampleIndexConfigurationVersioned setVersion(int version) {
+            this.version = version;
+            return this;
+        }
+
+        public Date getDate() {
+            return date;
+        }
+
+        public SampleIndexConfigurationVersioned setDate(Date date) {
+            this.date = date;
+            return this;
+        }
+
+//        public int getNumSamples() {
+//            return numSamples;
+//        }
+//
+//        public SampleIndexConfigurationVersioned setNumSamples(int numSamples) {
+//            this.numSamples = numSamples;
+//            return this;
+//        }
     }
 }

@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,14 +26,12 @@ public class SampleIndexEntry {
     private int mendelianVariantsLength;
     private int mendelianVariantsOffset;
     private int discrepancies;
-    private SampleIndexConfiguration configuration;
 
-    public SampleIndexEntry(int sampleId, String chromosome, int batchStart, SampleIndexConfiguration configuration) {
+    public SampleIndexEntry(int sampleId, String chromosome, int batchStart) {
         this.sampleId = sampleId;
         this.chromosome = chromosome;
         this.batchStart = batchStart;
         this.gts = new HashMap<>(4);
-        this.configuration = configuration;
     }
 
     public String getChromosome() {
@@ -110,18 +107,6 @@ public class SampleIndexEntry {
         return this;
     }
 
-    public SampleIndexConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    public SampleIndexEntryIterator iterator(String gt) {
-        return new SampleIndexVariantBiConverter().toVariantsIterator(this, gt);
-    }
-
-    public MendelianErrorSampleIndexEntryIterator mendelianIterator() {
-        return new MendelianErrorSampleIndexEntryIterator(this);
-    }
-
     public int getSampleId() {
         return sampleId;
     }
@@ -156,13 +141,12 @@ public class SampleIndexEntry {
                 && Objects.equals(chromosome, that.chromosome)
                 && Objects.equals(gts, that.gts)
                 && Bytes.equals(mendelianVariantsValue, mendelianVariantsOffset, mendelianVariantsLength,
-                that.mendelianVariantsValue, that.mendelianVariantsOffset, that.mendelianVariantsLength)
-                && Objects.equals(configuration, that.configuration);
+                that.mendelianVariantsValue, that.mendelianVariantsOffset, that.mendelianVariantsLength);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(sampleId, chromosome, batchStart, gts, mendelianVariantsLength, mendelianVariantsOffset, configuration);
+        int result = Objects.hash(sampleId, chromosome, batchStart, gts, mendelianVariantsLength, mendelianVariantsOffset);
         result = 31 * result + Arrays.hashCode(mendelianVariantsValue);
         return result;
     }
@@ -214,16 +198,8 @@ public class SampleIndexEntry {
             this.gt = gt;
         }
 
-        public SampleIndexEntryIterator iterator() {
-            return iterator(false);
-        }
-
-        public SampleIndexEntryIterator iterator(boolean onlyCount) {
-            if (onlyCount) {
-                return new SampleIndexVariantBiConverter().toVariantsCountIterator(SampleIndexEntry.this, gt);
-            } else {
-                return new SampleIndexVariantBiConverter().toVariantsIterator(SampleIndexEntry.this, gt);
-            }
+        public SampleIndexEntry getEntry() {
+            return SampleIndexEntry.this;
         }
 
         public String getGt() {

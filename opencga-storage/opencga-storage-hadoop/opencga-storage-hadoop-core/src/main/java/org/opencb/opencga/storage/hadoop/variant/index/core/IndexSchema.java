@@ -1,17 +1,19 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
+
 import java.util.List;
 
-public abstract class Index {
+public abstract class IndexSchema {
 
     protected List<IndexField<?>> fields;
     private int indexSizeBits;
 
-    protected Index() {
+    protected IndexSchema() {
 
     }
 
-    public Index(List<IndexField<?>> fields) {
+    public IndexSchema(List<IndexField<?>> fields) {
         this.fields = fields;
         updateIndexSizeBits();
     }

@@ -36,6 +36,7 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
     public static final String GENOTYPES_COUNTER_GROUP_NAME = "genotypes";
     private static final Logger LOG = LoggerFactory.getLogger(SampleIndexConsolidationDrive.class);
@@ -129,12 +130,14 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
 
         private byte[] family;
         private SampleIndexVariantBiConverter converter;
+        private SampleIndexSchema schema;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             new GenomeHelper(context.getConfiguration());
             family = GenomeHelper.COLUMN_FAMILY_BYTES;
-            converter = new SampleIndexVariantBiConverter();
+            schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+            converter = new SampleIndexVariantBiConverter(schema);
         }
 
         @Override

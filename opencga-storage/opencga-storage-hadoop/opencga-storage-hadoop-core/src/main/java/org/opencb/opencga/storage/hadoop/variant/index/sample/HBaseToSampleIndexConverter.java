@@ -26,13 +26,13 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
 public class HBaseToSampleIndexConverter implements Converter<Result, SampleIndexEntry> {
 
     private final SampleIndexVariantBiConverter converter;
-    private final SampleIndexConfiguration configuration;
-    private final FileIndex fileIndex;
+    private final SampleIndexSchema schema;
+    private final FileIndexSchema fileIndex;
 
-    public HBaseToSampleIndexConverter(SampleIndexConfiguration configuration) {
-        this.configuration = configuration;
-        converter = new SampleIndexVariantBiConverter();
-        fileIndex = configuration.getFileIndex();
+    public HBaseToSampleIndexConverter(SampleIndexSchema schema) {
+        this.schema = schema;
+        converter = new SampleIndexVariantBiConverter(schema);
+        fileIndex = schema.getFileIndex();
     }
 
     public static Pair<String, String> parsePendingColumn(byte[] column) {
@@ -58,7 +58,7 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         String chromosome = SampleIndexSchema.chromosomeFromRowKey(row);
         int batchStart = SampleIndexSchema.batchStartFromRowKey(row);
 
-        SampleIndexEntry entry = new SampleIndexEntry(sampleId, chromosome, batchStart, configuration);
+        SampleIndexEntry entry = new SampleIndexEntry(sampleId, chromosome, batchStart);
 
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, META_PREFIX_BYTES)) {
@@ -137,10 +137,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
         Map<String, List<Variant>> map = convertToMap(result);
 
         Map<String, TreeSet<SampleVariantIndexEntry>> mapVariantFileIndex = new HashMap<>();
+        SampleVariantIndexEntry.SampleVariantIndexEntryComparator comparator
+                = new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(schema);
         for (Cell cell : result.rawCells()) {
             if (columnStartsWith(cell, FILE_PREFIX_BYTES)) {
                 String gt = SampleIndexSchema.getGt(cell, FILE_PREFIX_BYTES);
-                TreeSet<SampleVariantIndexEntry> values = new TreeSet<>();
+                TreeSet<SampleVariantIndexEntry> values = new TreeSet<>(comparator);
                 mapVariantFileIndex.put(gt, values);
                 BitInputStream bis = new BitInputStream(
                         cell.getValueArray(),

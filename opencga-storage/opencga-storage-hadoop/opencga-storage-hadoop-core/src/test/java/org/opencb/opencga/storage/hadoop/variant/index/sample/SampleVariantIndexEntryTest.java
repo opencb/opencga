@@ -14,11 +14,11 @@ import java.util.List;
 
 public class SampleVariantIndexEntryTest {
 
-    private FileIndex fileIndex;
+    private FileIndexSchema fileIndex;
 
     @Before
     public void setUp() throws Exception {
-        fileIndex = SampleIndexConfiguration.defaultConfiguration().getFileIndex();
+        fileIndex = SampleIndexSchema.defaultSampleIndexSchema().getFileIndex();
     }
 
     @Test
@@ -36,7 +36,7 @@ public class SampleVariantIndexEntryTest {
             ArrayList<SampleVariantIndexEntry> actual = new ArrayList<>(expected);
             Collections.shuffle(actual);
 
-            actual.sort(SampleVariantIndexEntry::compareTo);
+            actual.sort(new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(SampleIndexSchema.defaultSampleIndexSchema()));
 
             Assert.assertEquals(expected, actual);
         }

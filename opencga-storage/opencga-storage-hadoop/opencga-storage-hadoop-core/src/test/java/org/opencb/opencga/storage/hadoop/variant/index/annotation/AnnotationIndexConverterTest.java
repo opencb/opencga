@@ -6,7 +6,8 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,7 +40,7 @@ public class AnnotationIndexConverterTest {
         SampleIndexConfiguration configuration = new SampleIndexConfiguration();
         populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
 
-        converter = new AnnotationIndexConverter(configuration);
+        converter = new AnnotationIndexConverter(new SampleIndexSchema(configuration));
     }
 
 //    @After
@@ -167,7 +168,7 @@ public class AnnotationIndexConverterTest {
         List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
         SampleIndexConfiguration configuration = new SampleIndexConfiguration();
         populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
-        new AnnotationIndexConverter(configuration);
+        new AnnotationIndexConverter(new SampleIndexSchema(configuration));
     }
 
     @Test

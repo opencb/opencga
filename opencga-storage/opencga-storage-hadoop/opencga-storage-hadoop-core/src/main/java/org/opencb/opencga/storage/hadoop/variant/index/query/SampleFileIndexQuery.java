@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
-import org.opencb.opencga.storage.hadoop.variant.index.core.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 
 import java.util.Collections;

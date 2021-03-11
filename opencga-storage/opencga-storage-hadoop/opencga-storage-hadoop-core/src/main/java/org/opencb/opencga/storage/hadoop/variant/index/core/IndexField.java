@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.core.variant.query.Values;

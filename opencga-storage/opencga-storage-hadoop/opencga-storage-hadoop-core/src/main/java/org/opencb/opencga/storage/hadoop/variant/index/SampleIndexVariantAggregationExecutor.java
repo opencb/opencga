@@ -13,15 +13,18 @@ import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndexEntry;
 
 import java.util.*;
@@ -125,6 +128,9 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     private FacetFieldAccumulator<SampleVariantIndexEntry> createAccumulator(Query query, String facet) {
         String[] split = facet.split(NESTED_FACET_SEPARATOR);
         FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = null;
+        StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
+        SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(defaultStudy.getId());
+
         // Reverse traverse
         for (int i = split.length - 1; i >= 0; i--) {
             String facetField = split[i];
@@ -247,7 +253,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                             fieldKey);
                     break;
                 default:
-                    for (IndexField<String> fileDataIndexField : sampleIndexDBAdaptor.getConfiguration().getFileIndex().getCustomFields()) {
+                    for (IndexField<String> fileDataIndexField : schema.getFileIndex().getCustomFields()) {
                         if (fileDataIndexField.getKey().equalsIgnoreCase(fieldKey)) {
                             switch (fileDataIndexField.getType()) {
                                 case RANGE:

@@ -10,6 +10,7 @@ import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,6 +30,12 @@ public class SampleIndexVariantBiConverter {
     public static final int SEPARATOR_LENGTH = 1;
     public static final int INT24_LENGTH = 3;
     public static final byte BYTE_SEPARATOR = 0;
+
+    private final SampleIndexSchema schema;
+
+    public SampleIndexVariantBiConverter(SampleIndexSchema schema) {
+        this.schema = schema;
+    }
 
     public int expectedSize(Variant variant, boolean interVariantSeparator) {
         return expectedSize(variant.getReference(), getAlternate(variant), interVariantSeparator);
@@ -139,32 +146,60 @@ public class SampleIndexVariantBiConverter {
 
     public List<Variant> toVariants(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
         // Create dummy entry
-        SampleIndexEntry entry = new SampleIndexEntry(0, chromosome, batchStart, SampleIndexConfiguration.defaultConfiguration());
+        SampleIndexEntry entry = new SampleIndexEntry(0, chromosome, batchStart);
         SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGtEntry("0/1");
         gtEntry.setVariants(bytes, offset, length);
-        SampleIndexEntryIterator it = gtEntry.iterator();
+        SampleIndexEntryIterator it = toVariantsIterator(gtEntry);
         List<Variant> variants = new ArrayList<>(it.getApproxSize());
         it.forEachRemaining(variants::add);
         return variants;
     }
 
+    public SampleIndexEntryIterator toVariantsIterator(SampleIndexEntry entry, String gt, boolean onlyCount) {
+        if (onlyCount) {
+            return toVariantsCountIterator(entry, gt);
+        } else {
+            return toVariantsIterator(entry, gt);
+        }
+    }
+
+    public SampleIndexEntryIterator toVariantsIterator(SampleIndexEntry.SampleIndexGtEntry entry, boolean onlyCount) {
+        if (onlyCount) {
+            return toVariantsCountIterator(entry);
+        } else {
+            return toVariantsIterator(entry);
+        }
+    }
+
     public SampleIndexEntryIterator toVariantsIterator(SampleIndexEntry entry, String gt) {
-        SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGts().get(gt);
-        SampleIndexConfiguration configuration = entry.getConfiguration();
+        return toVariantsIterator(entry.getGts().get(gt));
+    }
+
+    public SampleIndexEntryIterator toVariantsIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry) {
         if (gtEntry == null || gtEntry.getVariantsLength() <= 0) {
             return EmptySampleIndexEntryIterator.emptyIterator();
         } else {
-            return new ByteSampleIndexGtEntryIterator(entry.getChromosome(), entry.getBatchStart(), gtEntry, configuration);
+            return new ByteSampleIndexGtEntryIterator(
+                    gtEntry.getEntry().getChromosome(),
+                    gtEntry.getEntry().getBatchStart(), gtEntry, schema);
         }
     }
 
     public SampleIndexEntryIterator toVariantsCountIterator(SampleIndexEntry entry, String gt) {
-        return new CountSampleIndexGtEntryIterator(entry.getGtEntry(gt), entry.getConfiguration());
+        return toVariantsCountIterator(entry.getGtEntry(gt));
+    }
+
+    public SampleIndexEntryIterator toVariantsCountIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry) {
+        return new CountSampleIndexGtEntryIterator(gtEntry, schema);
+    }
+
+    public MendelianErrorSampleIndexEntryIterator toMendelianIterator(SampleIndexEntry sampleIndexEntry) {
+        return new MendelianErrorSampleIndexEntryIterator(sampleIndexEntry, schema);
     }
 
     private abstract static class SampleIndexGtEntryIterator implements SampleIndexEntryIterator {
         protected SampleIndexEntry.SampleIndexGtEntry gtEntry;
-        private final SampleIndexConfiguration configuration;
+        private final SampleIndexSchema schema;
         private BitInputStream popFreq;
         private BitInputStream ctBtIndex;
         private int nonIntergenicCount;
@@ -178,7 +213,7 @@ public class SampleIndexVariantBiConverter {
         private int annotationIndexEntryIdx;
         private int fileDataIndexesBitsLength;
 
-        SampleIndexGtEntryIterator(SampleIndexConfiguration configuration) {
+        SampleIndexGtEntryIterator(SampleIndexSchema schema) {
             nonIntergenicCount = 0;
             clinicalCount = 0;
             annotationIndexEntry = new AnnotationIndexEntry();
@@ -186,12 +221,12 @@ public class SampleIndexVariantBiConverter {
             annotationIndexEntryIdx = -1;
             fileIndexIdx = 0;
             fileIndexCount = 0;
-            this.configuration = configuration;
-            fileDataIndexesBitsLength = configuration.getFileIndex().getBitsLength();
+            this.schema = schema;
+            fileDataIndexesBitsLength = schema.getFileIndex().getBitsLength();
         }
 
-        SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
-            this(configuration);
+        SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexSchema schema) {
+            this(schema);
             this.gtEntry = gtEntry;
             this.ctBtIndex = gtEntry.getCtBtIndex() == null
                     ? null
@@ -225,7 +260,7 @@ public class SampleIndexVariantBiConverter {
 
         public boolean isMultiFileIndex(int i) {
 //            configuration.getFileIndex().getMultiFileIndex().readAndDecode()
-            return configuration.getFileIndex().isMultiFile(fileIndex, i * fileDataIndexesBitsLength);
+            return schema.getFileIndex().isMultiFile(fileIndex, i * fileDataIndexesBitsLength);
         }
 
         private int nextFileIndex() {
@@ -312,7 +347,8 @@ public class SampleIndexVariantBiConverter {
 
             byte[] popFreqIndex;
             if (popFreq != null) {
-                popFreqIndex = popFreq.readBytes(configuration.getPopulationRanges().size(), AnnotationIndexConverter.POP_FREQ_SIZE);
+                popFreqIndex = popFreq.readBytes(schema.getConfiguration().getPopulationRanges().size(),
+                        AnnotationIndexConverter.POP_FREQ_SIZE);
             } else {
                 popFreqIndex = null;
             }
@@ -462,7 +498,7 @@ public class SampleIndexVariantBiConverter {
         private int i;
         private static final Variant DUMMY_VARIANT = new Variant("1:10:A:T");
 
-        CountSampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
+        CountSampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexSchema configuration) {
             super(gtEntry, configuration);
             count = gtEntry.getCount();
             i = 0;
@@ -514,8 +550,8 @@ public class SampleIndexVariantBiConverter {
         private int alternateLength;
 
         ByteSampleIndexGtEntryIterator(String chromosome, int batchStart, SampleIndexEntry.SampleIndexGtEntry gtEntry,
-                                       SampleIndexConfiguration configuration) {
-            super(gtEntry, configuration);
+                                       SampleIndexSchema schema) {
+            super(gtEntry, schema);
             this.chromosome = chromosome;
             this.batchStart = batchStart;
             this.bytes = gtEntry.getVariants();

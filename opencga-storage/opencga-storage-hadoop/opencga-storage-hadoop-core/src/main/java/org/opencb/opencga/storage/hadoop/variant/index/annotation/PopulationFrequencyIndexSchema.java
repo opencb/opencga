@@ -1,20 +1,20 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
-import org.opencb.opencga.storage.hadoop.variant.index.core.Index;
+import org.opencb.opencga.storage.hadoop.variant.index.core.IndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration.PopulationFrequencyRange;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PopulationFrequencyIndex extends Index {
+public class PopulationFrequencyIndexSchema extends IndexSchema {
 
     private final Map<String, IndexField<Double>> populations;
 
-    public PopulationFrequencyIndex(List<PopulationFrequencyRange> populationRanges) {
+    public PopulationFrequencyIndexSchema(List<PopulationFrequencyRange> populationRanges) {
         fields = new ArrayList<>(populationRanges.size());
         populations = new HashMap<>();
         int bitOffset = 0;

@@ -20,14 +20,14 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConst
 import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.storage.hadoop.variant.index.core.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.NoOpIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.*;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,15 +45,11 @@ import static org.opencb.opencga.storage.hadoop.variant.index.annotation.Annotat
  */
 public class SampleIndexQueryParser {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexQueryParser.class);
-    private final SampleIndexConfiguration configuration;
+    private final SampleIndexSchema schema;
     private final VariantStorageMetadataManager metadataManager;
 
-    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager) {
-        this(metadataManager, SampleIndexConfiguration.defaultConfiguration());
-    }
-
-    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexConfiguration configuration) {
-        this.configuration = configuration;
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexSchema schema) {
+        this.schema = schema;
         this.metadataManager = metadataManager;
     }
 
@@ -426,7 +422,7 @@ public class SampleIndexQueryParser {
         }
         List<List<Region>> regionGroups = groupRegions(regions);
 
-        return new SampleIndexQuery(regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
+        return new SampleIndexQuery(schema, regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
@@ -606,7 +602,7 @@ public class SampleIndexQueryParser {
                                                   Function<String, List<String>> filesFromSample) {
 
         List<String> files = null;
-        List<IndexFieldFilter> filtersList = new ArrayList<>(configuration.getFileIndex().getFields().size());
+        List<IndexFieldFilter> filtersList = new ArrayList<>(schema.getFileIndex().getFields().size());
 
         if (isValidParam(query, TYPE)) {
             List<VariantType> types = query.getAsStringList(VariantQueryParam.TYPE.key())
@@ -614,7 +610,7 @@ public class SampleIndexQueryParser {
                     .map(t -> VariantType.valueOf(t.toUpperCase()))
                     .collect(Collectors.toList());
             if (!types.isEmpty()) {
-                IndexFieldFilter typeFilter = configuration.getFileIndex().getTypeIndex().buildFilter(QueryOperation.OR, types);
+                IndexFieldFilter typeFilter = schema.getFileIndex().getTypeIndex().buildFilter(QueryOperation.OR, types);
                 filtersList.add(typeFilter);
                 if (typeFilter.isExactFilter()) {
                     query.remove(TYPE.key());
@@ -647,13 +643,13 @@ public class SampleIndexQueryParser {
                     }
                 }
                 IndexFieldFilter filePositionFilter =
-                        configuration.getFileIndex().getFilePositionIndex().buildFilter(QueryOperation.OR, sampleFilesFilter);
+                        schema.getFileIndex().getFilePositionIndex().buildFilter(QueryOperation.OR, sampleFilesFilter);
                 filtersList.add(filePositionFilter);
             }
         }
 
         if (isValidParam(query, FILTER)) {
-            IndexField<String> filterIndexField = configuration.getFileIndex()
+            IndexField<String> filterIndexField = schema.getFileIndex()
                     .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER);
             if (filterIndexField != null) {
                 Values<String> filterValues = splitValue(query, FILTER);
@@ -666,7 +662,7 @@ public class SampleIndexQueryParser {
         }
 
         if (isValidParam(query, QUAL)) {
-            IndexField<String> qualIndexField = configuration.getFileIndex()
+            IndexField<String> qualIndexField = schema.getFileIndex()
                     .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
             if (qualIndexField != null) {
                 OpValue<String> opValue = parseOpValue(query.getString(QUAL.key()));
@@ -699,7 +695,7 @@ public class SampleIndexQueryParser {
                         continue;
                     }
                     for (KeyOpValue<String, String> keyOpValue : keyValues.getValues()) {
-                        IndexField<String> fileDataIndexField = configuration.getFileIndex()
+                        IndexField<String> fileDataIndexField = schema.getFileIndex()
                                 .getCustomField(IndexFieldConfiguration.Source.FILE, keyOpValue.getKey());
                         if (fileDataIndexField == null) {
                             // Unknown key
@@ -728,7 +724,7 @@ public class SampleIndexQueryParser {
 
             if (!sampleDataFilter.isEmpty() && sampleDataOp != QueryOperation.OR) {
                 for (KeyOpValue<String, String> keyOpValue : sampleDataFilter) {
-                    IndexField<String> sampleDataIndexField = configuration.getFileIndex()
+                    IndexField<String> sampleDataIndexField = schema.getFileIndex()
                             .getCustomField(IndexFieldConfiguration.Source.SAMPLE, keyOpValue.getKey());
                     if (sampleDataIndexField != null) {
                         IndexFieldFilter indexFieldFilter = sampleDataIndexField.buildFilter(keyOpValue);
@@ -999,7 +995,7 @@ public class SampleIndexQueryParser {
                 boolean populationInSampleIndex = false;
                 boolean populationFilterFullyCovered = false;
                 int popFreqIdx = 0;
-                for (PopulationFrequencyRange populationRange : configuration.getPopulationRanges()) {
+                for (PopulationFrequencyRange populationRange : schema.getConfiguration().getPopulationRanges()) {
                     if (populationRange.getStudyAndPopulation().equals(studyPop)) {
                         populationInSampleIndex = true;
                         RangeQuery rangeQuery = getRangeQuery(keyOpValue.getOp(), freqFilter, populationRange.getThresholds(),

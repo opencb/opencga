@@ -9,12 +9,13 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.*;
 
@@ -115,21 +116,16 @@ public class AnnotationIndexConverter {
         }
     }
 
-    private PopulationFrequencyIndex popFreqIndex;
+    private PopulationFrequencyIndexSchema popFreqIndex;
 
     @Deprecated
     private final Map<String, Integer> populations;
 
-    @Deprecated
-    public AnnotationIndexConverter() {
-        this(SampleIndexConfiguration.defaultConfiguration());
-    }
-
-    public AnnotationIndexConverter(SampleIndexConfiguration configuration) {
-        popFreqIndex = configuration.getPopFreqIndex();
-        this.populations = new HashMap<>(configuration.getPopulationRanges().size());
+    public AnnotationIndexConverter(SampleIndexSchema schema) {
+        popFreqIndex = schema.getPopFreqIndex();
+        this.populations = new HashMap<>(schema.getConfiguration().getPopulationRanges().size());
         int i = 0;
-        for (SampleIndexConfiguration.PopulationFrequencyRange population : configuration.getPopulationRanges()) {
+        for (SampleIndexConfiguration.PopulationFrequencyRange population : schema.getConfiguration().getPopulationRanges()) {
             if (this.populations.put(population.getStudyAndPopulation(), i++) != null) {
                 throw new IllegalArgumentException("Duplicated population '" + population.getStudyAndPopulation() + "' in " + populations);
             }

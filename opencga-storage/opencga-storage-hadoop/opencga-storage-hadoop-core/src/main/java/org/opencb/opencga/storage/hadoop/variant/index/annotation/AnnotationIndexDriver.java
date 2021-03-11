@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +99,8 @@ public class AnnotationIndexDriver extends AbstractVariantsTableDriver {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             annotationConverter = new HBaseToVariantAnnotationConverter();
-            annotationIndexConverter = new AnnotationIndexConverter();
+            annotationIndexConverter = new AnnotationIndexConverter(
+                    new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration())));
         }
 
         @Override

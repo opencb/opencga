@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -21,7 +22,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.storage.hadoop.variant.index.core.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
@@ -55,17 +56,17 @@ public class SampleIndexQueryParserTest {
     private SampleIndexQueryParser sampleIndexQueryParser;
     private VariantStorageMetadataManager mm;
     private int studyId;
-    private FileIndex fileIndex;
+    private FileIndexSchema fileIndex;
     private double[] qualThresholds;
     private double[] dpThresholds;
 
     @Before
     public void setUp() throws Exception {
-        SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration()
+        SampleIndexSchema configuration = new SampleIndexSchema(SampleIndexConfiguration.defaultConfiguration()
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s1", "ALL"))
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s2", "ALL"))
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s3", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s4", "ALL"));
+                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s4", "ALL")));
         fileIndex = configuration.getFileIndex();
         qualThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).getConfiguration().getThresholds();
         dpThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY).getConfiguration().getThresholds();

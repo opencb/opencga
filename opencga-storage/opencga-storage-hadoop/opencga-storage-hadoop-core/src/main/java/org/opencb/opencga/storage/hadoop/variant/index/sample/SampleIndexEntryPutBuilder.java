@@ -19,26 +19,28 @@ public class SampleIndexEntryPutBuilder {
     private final Map<String, SampleIndexGtEntryBuilder> gts;
     private final SampleIndexVariantBiConverter variantConverter;
     private final byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
-    private SampleIndexConfiguration configuration;
-    private FileIndex fileIndex;
+    private SampleIndexSchema schema;
+    private FileIndexSchema fileIndex;
+    private SampleVariantIndexEntry.SampleVariantIndexEntryComparator comparator;
 
-    public SampleIndexEntryPutBuilder(int sampleId, Variant variant, SampleIndexConfiguration configuration) {
-        this(sampleId, variant.getChromosome(), SampleIndexSchema.getChunkStart(variant.getStart()), configuration);
+    public SampleIndexEntryPutBuilder(int sampleId, Variant variant, SampleIndexSchema schema) {
+        this(sampleId, variant.getChromosome(), SampleIndexSchema.getChunkStart(variant.getStart()), schema);
     }
 
-    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, SampleIndexConfiguration configuration) {
+    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, SampleIndexSchema schema) {
         this.sampleId = sampleId;
         this.chromosome = chromosome;
         this.position = position;
         gts = new HashMap<>();
-        variantConverter = new SampleIndexVariantBiConverter();
-        this.configuration = configuration;
-        fileIndex = this.configuration.getFileIndex();
+        variantConverter = new SampleIndexVariantBiConverter(schema);
+        this.schema = schema;
+        fileIndex = this.schema.getFileIndex();
+        comparator = new SampleVariantIndexEntry.SampleVariantIndexEntryComparator(schema);
     }
 
-    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, SampleIndexConfiguration configuration,
+    public SampleIndexEntryPutBuilder(int sampleId, String chromosome, int position, SampleIndexSchema schema,
                                       Map<String, TreeSet<SampleVariantIndexEntry>> map) {
-        this(sampleId, chromosome, position, configuration);
+        this(sampleId, chromosome, position, schema);
         for (Map.Entry<String, TreeSet<SampleVariantIndexEntry>> entry : map.entrySet()) {
             gts.put(entry.getKey(), new SampleIndexGtEntryBuilder(entry.getKey(), entry.getValue()));
         }
@@ -50,7 +52,7 @@ public class SampleIndexEntryPutBuilder {
     }
 
     private SampleIndexGtEntryBuilder get(String gt) {
-        return gts.computeIfAbsent(gt, SampleIndexGtEntryBuilder::new);
+        return gts.computeIfAbsent(gt, gt1 -> new SampleIndexGtEntryBuilder(gt1, comparator));
     }
 
     public boolean containsVariant(SampleVariantIndexEntry variantIndexEntry) {
@@ -129,9 +131,9 @@ public class SampleIndexEntryPutBuilder {
         private final String gt;
         private final TreeSet<SampleVariantIndexEntry> entries;
 
-        SampleIndexGtEntryBuilder(String gt) {
+        SampleIndexGtEntryBuilder(String gt, Comparator<? super SampleVariantIndexEntry> comparator) {
             this.gt = gt;
-            entries = new TreeSet<>();
+            entries = new TreeSet<>(comparator);
         }
 
         SampleIndexGtEntryBuilder(String gt, TreeSet<SampleVariantIndexEntry> entries) {

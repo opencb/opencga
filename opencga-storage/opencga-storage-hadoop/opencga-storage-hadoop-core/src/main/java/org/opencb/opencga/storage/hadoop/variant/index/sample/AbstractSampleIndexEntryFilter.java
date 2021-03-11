@@ -37,8 +37,8 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     private final SingleSampleIndexQuery query;
     private final List<Region> regionsFilter;
     private final Logger logger = LoggerFactory.getLogger(AbstractSampleIndexEntryFilter.class);
-
     private final List<Integer> annotationIndexPositions;
+    private final SampleIndexVariantBiConverter converter;
 
     private static final boolean[] DE_NOVO_MENDELIAN_ERROR_CODES = new boolean[]{
                    /* | Code  |   Dad  | Mother | Kid  |  deNovo | */
@@ -64,6 +64,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
 
     public AbstractSampleIndexEntryFilter(SingleSampleIndexQuery query, List<Region> regionsFilter) {
         this.query = query;
+        converter = new SampleIndexVariantBiConverter(query.getSchema());
         this.regionsFilter = regionsFilter == null || regionsFilter.isEmpty() ? null : regionsFilter;
 
         int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndex()});
@@ -86,7 +87,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
 
     public Collection<T> filter(SampleIndexEntry sampleIndexEntry) {
         if (query.getMendelianError()) {
-            return filterMendelian(sampleIndexEntry.mendelianIterator());
+            return filterMendelian(converter.toMendelianIterator(sampleIndexEntry));
         } else {
             return filter(sampleIndexEntry, false);
         }
@@ -94,7 +95,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
 
     public int filterAndCount(SampleIndexEntry sampleIndexEntry) {
         if (query.getMendelianError()) {
-            return filterMendelian(sampleIndexEntry.mendelianIterator()).size();
+            return filterMendelian(converter.toMendelianIterator(sampleIndexEntry)).size();
         } else {
             return filter(sampleIndexEntry, true).size();
         }
@@ -136,7 +137,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         for (SampleIndexGtEntry gtEntry : gts.values()) {
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
 
-            SampleIndexEntryIterator variantIterator = gtEntry.iterator(countIterator);
+            SampleIndexEntryIterator variantIterator = converter.toVariantsIterator(gtEntry, countIterator);
             ArrayList<T> variants = new ArrayList<>(variantIterator.getApproxSize());
             while (expectedResultsFromAnnotation.intValue() > 0 && variantIterator.hasNext()) {
                 T variant = filter(variantIterator, expectedResultsFromAnnotation);

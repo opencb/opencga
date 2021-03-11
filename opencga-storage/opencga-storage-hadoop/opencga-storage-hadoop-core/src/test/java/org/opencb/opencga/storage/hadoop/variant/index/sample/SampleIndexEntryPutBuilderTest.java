@@ -16,7 +16,7 @@ public class SampleIndexEntryPutBuilderTest {
 
     @Test
     public void testContains() {
-        SampleIndexEntryPutBuilder builder = new SampleIndexEntryPutBuilder(1, "1", 10, SampleIndexConfiguration.defaultConfiguration());
+        SampleIndexEntryPutBuilder builder = new SampleIndexEntryPutBuilder(1, "1", 10, SampleIndexSchema.defaultSampleIndexSchema());
 
         builder.add("0/1", newVariantIndexEntry("1:100:A:C", (short) 20));
         builder.add("0/1", newVariantIndexEntry("1:200:A:C", (short) 20));
@@ -41,10 +41,10 @@ public class SampleIndexEntryPutBuilderTest {
 
     @Test
     public void testBuild() {
-        SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
-        VariantFileIndexConverter c = new VariantFileIndexConverter(configuration);
+        SampleIndexSchema schema = SampleIndexSchema.defaultSampleIndexSchema();
+        VariantFileIndexConverter c = new VariantFileIndexConverter(schema);
 
-        Put build = new SampleIndexEntryPutBuilder(1, "1", 10, configuration)
+        Put build = new SampleIndexEntryPutBuilder(1, "1", 10, schema)
                 .add("0/1", new SampleVariantIndexEntry(new Variant("1:100:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList())))
                 .add("0/1", new SampleVariantIndexEntry(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 1, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList())))
                 .add("0/1", new SampleVariantIndexEntry(new Variant("1:200:A:C"), c.createFileIndexValue(SNV, 0, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList())))

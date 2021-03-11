@@ -86,7 +86,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianError
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -320,7 +323,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexLoader(getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+        new SampleIndexLoader(getTableNameGenerator(), getMetadataManager(), getMRExecutor(), getSampleIndexDBAdaptor().getSchema(study))
                 .buildSampleIndex(study, samples, options);
     }
 
@@ -559,12 +562,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             // Write results
             if (!fillGaps) {
                 taskDescription = "Write results in variants table for " + FILL_MISSING_OPERATION_NAME;
-                getMRExecutor().run(FillMissingHBaseWriterDriver.class, args, options, taskDescription);
+                getMRExecutor().run(FillMissingHBaseWriterDriver.class, args, taskDescription);
             }
 
-            // Consolidate sample index table
-            taskDescription = "Consolidate sample index table";
-            getMRExecutor().run(SampleIndexConsolidationDrive.class, args, options, taskDescription);
+//            // Consolidate sample index table
+//            taskDescription = "Consolidate sample index table";
+//            getMRExecutor().run(SampleIndexConsolidationDrive.class, args, options, taskDescription);
 
         } catch (RuntimeException e) {
             exception = e;

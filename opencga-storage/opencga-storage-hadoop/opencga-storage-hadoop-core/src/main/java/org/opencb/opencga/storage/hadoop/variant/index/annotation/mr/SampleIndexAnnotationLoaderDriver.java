@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -147,6 +148,11 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         VariantMapReduceUtil.setOutputHBaseTable(job, outputTable);
 
         VariantMapReduceUtil.setNoneReduce(job);
+
+        SampleIndexConfiguration configuration = getMetadataManager()
+                .getStudyMetadata(getStudyId())
+                .getSampleIndexConfigurationLatest().getConfiguration();
+        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration);
 
         return job;
     }

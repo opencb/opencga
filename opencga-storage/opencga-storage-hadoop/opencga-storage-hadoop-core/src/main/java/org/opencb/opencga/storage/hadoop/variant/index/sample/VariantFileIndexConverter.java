@@ -8,16 +8,16 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.storage.hadoop.variant.index.core.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
 
 import java.util.List;
 import java.util.Map;
 
 public class VariantFileIndexConverter {
 
-    private final FileIndex fileIndex;
+    private final FileIndexSchema fileIndex;
 
-    public VariantFileIndexConverter(SampleIndexConfiguration configuration) {
+    public VariantFileIndexConverter(SampleIndexSchema configuration) {
         fileIndex = configuration.getFileIndex();
     }
 

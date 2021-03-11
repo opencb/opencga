@@ -136,6 +136,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void checkLoadedData() throws Exception {
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         int studyId = variantStorageEngine.getMetadataManager().getStudyId(STUDY_NAME);
+        SampleIndexVariantBiConverter converter = new SampleIndexVariantBiConverter(SampleIndexSchema.defaultSampleIndexSchema());
         Iterator<SampleMetadata> it = variantStorageEngine.getMetadataManager().sampleMetadataIterator(studyId);
         while (it.hasNext()) {
             SampleMetadata sample = it.next();
@@ -162,7 +163,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     if (entry.getValue().getVariants() == null) {
                         actualVariants = Collections.emptyList();
                     } else {
-                        actualVariants = Lists.newArrayList(entry.getValue().iterator())
+                        actualVariants = Lists.newArrayList(converter.toVariantsIterator(entry.getValue()))
                                 .stream()
                                 .map(Variant::toString)
                                 .collect(toList());
@@ -212,7 +213,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             Connection c = dbAdaptor.getHBaseManager().getConnection();
 
-            VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), copy);
+            VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
 
             ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
             ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
@@ -396,7 +397,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("#Query SampleIndex");
         SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         Query sampleIndexVariantQuery = variantStorageEngine.preProcessQuery(query, new QueryOptions());
-        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(sampleIndexVariantQuery);
+        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(sampleIndexVariantQuery);
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
         DataResult<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
@@ -524,14 +525,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                             .append(VariantQueryParam.STUDY.key(), study)
                             .append(GENOTYPE.key(), sampleName + ":1|0,0|1,1|1");
                     SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
-                    long actualCount = sampleIndexDBAdaptor.count(sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query)));
+                    long actualCount = sampleIndexDBAdaptor.count(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query)));
 
                     System.out.println("---");
                     System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + actualCount);
 
                     stopWatch = StopWatch.createStarted();
-                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query))).toDataResult().getNumResults();
+                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query))).toDataResult().getNumResults();
                     System.out.println("---");
                     System.out.println("Count indexTable iterator " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + actualCountIterator);

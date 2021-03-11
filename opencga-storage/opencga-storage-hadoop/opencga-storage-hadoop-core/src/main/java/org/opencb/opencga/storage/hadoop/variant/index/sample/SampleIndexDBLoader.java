@@ -43,7 +43,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final SampleIndexDBAdaptor dbAdaptor;
     private final VariantFileIndexConverter variantFileIndexConverter;;
     private final boolean excludeGenotypes;
-    private final SampleIndexConfiguration configuration;
+    private final SampleIndexSchema schema;
 
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
                                String tableName, VariantStorageMetadataManager metadataManager,
@@ -87,8 +87,8 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 EXCLUDE_GENOTYPES.key(),
                 EXCLUDE_GENOTYPES.defaultValue());
         this.dbAdaptor = dbAdaptor;
-        configuration = dbAdaptor.getConfiguration();
-        variantFileIndexConverter = new VariantFileIndexConverter(configuration);
+        schema = dbAdaptor.getSchema(studyId);
+        variantFileIndexConverter = new VariantFileIndexConverter(schema);
     }
 
     private class Chunk implements Iterable<SampleIndexEntryPutBuilder> {
@@ -111,7 +111,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                         merging = true;
                     }
                 } else {
-                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, configuration);
+                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, schema);
                 }
                 samples.add(builder);
             }
@@ -141,7 +141,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                     throw new IllegalArgumentException("Already loaded variant " + variantIndexEntry.getVariant());
                 }
             }
-            if (configuration.getFileIndex().isMultiFile(variantIndexEntry.getFileIndex())) {
+            if (schema.getFileIndex().isMultiFile(variantIndexEntry.getFileIndex())) {
                 throw new IllegalArgumentException("Unexpected multi-file at variant " + variantIndexEntry.getVariant());
             }
             sampleEntry.add(gt, variantIndexEntry);

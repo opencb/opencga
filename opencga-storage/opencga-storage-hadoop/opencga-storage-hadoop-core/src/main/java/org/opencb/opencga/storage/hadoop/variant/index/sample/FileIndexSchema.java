@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import htsjdk.variant.vcf.VCFConstants;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.index.core.*;
@@ -13,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 
 
-public class FileIndex extends Index {
+public class FileIndexSchema extends IndexSchema {
 
     private final List<IndexField<?>> fixedFields;
     private final List<IndexField<String>> customFields;
@@ -21,13 +23,13 @@ public class FileIndex extends Index {
     private final IndexField<VariantType> typeIndex;
     private final IndexField<Integer> filePositionIndex;
 
-    public FileIndex(SampleIndexConfiguration.FileIndexConfiguration fileIndexConfiguration) {
+    public FileIndexSchema(SampleIndexConfiguration.FileIndexConfiguration fileIndexConfiguration) {
         this(fileIndexConfiguration.getCustomFields(),
                 fileIndexConfiguration.getFilePositionBits(),
                 fileIndexConfiguration.isFixedFieldsFirst());
     }
 
-    public FileIndex(List<IndexFieldConfiguration> customFieldConfigurations, int filePositionSizeBits, boolean fixedFieldsFirst) {
+    public FileIndexSchema(List<IndexFieldConfiguration> customFieldConfigurations, int filePositionSizeBits, boolean fixedFieldsFirst) {
         if (fixedFieldsFirst) {
             multiFileIndex = buildMultiFile(null);
             filePositionIndex = buildFilePositionIndexField(multiFileIndex, filePositionSizeBits);

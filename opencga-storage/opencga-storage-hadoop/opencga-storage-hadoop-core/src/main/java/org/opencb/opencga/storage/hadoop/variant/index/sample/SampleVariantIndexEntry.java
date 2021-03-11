@@ -6,19 +6,18 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
-public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEntry> {
+public class SampleVariantIndexEntry {
 
     private final Variant variant;
     private final String genotype;
     private final BitBuffer fileIndex;
     private final AnnotationIndexEntry annotationIndexEntry;
     private final Integer meCode;
-    private final SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
-
 
     public SampleVariantIndexEntry(Variant variant, BitBuffer fileIndex) {
         this(variant, fileIndex, null, null);
@@ -74,21 +73,6 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
     }
 
     @Override
-    public int compareTo(SampleVariantIndexEntry o) {
-        int compare = INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(variant, o.variant);
-        if (compare == 0) {
-            if (configuration.getFileIndex().isMultiFile(fileIndex)) {
-                return -1;
-            } else if (configuration.getFileIndex().isMultiFile(o.fileIndex)) {
-                return 1;
-            } else {
-                return fileIndex.compareTo(o.fileIndex);
-            }
-        }
-        return compare;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -103,5 +87,29 @@ public class SampleVariantIndexEntry implements Comparable<SampleVariantIndexEnt
     @Override
     public int hashCode() {
         return Objects.hash(variant, fileIndex);
+    }
+
+    public static class SampleVariantIndexEntryComparator implements Comparator<SampleVariantIndexEntry> {
+
+        private final SampleIndexSchema schema;
+
+        public SampleVariantIndexEntryComparator(SampleIndexSchema schema) {
+            this.schema = schema;
+        }
+
+        @Override
+        public int compare(SampleVariantIndexEntry o1, SampleVariantIndexEntry o2) {
+            int compare = INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(o1.variant, o2.variant);
+            if (compare == 0) {
+                if (schema.getFileIndex().isMultiFile(o1.fileIndex)) {
+                    return -1;
+                } else if (schema.getFileIndex().isMultiFile(o2.fileIndex)) {
+                    return 1;
+                } else {
+                    return o1.fileIndex.compareTo(o2.fileIndex);
+                }
+            }
+            return compare;
+        }
     }
 }

@@ -326,6 +326,9 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
         }
 
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
+        VariantMapReduceUtil.setSampleIndexConfiguration(job, studyMetadata.getSampleIndexConfigurationLatest().getConfiguration());
+
         return job;
     }
 
@@ -357,7 +360,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private final Map<Integer, SampleMetadata> samples = new HashMap<>();
         private final Set<Integer> files = new HashSet<>();
         private boolean hasGenotype;
-        private final SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
+        private SampleIndexSchema schema;
 
         private final Map<Integer, SampleIndexEntryPutBuilder> samplesMap = new HashMap<>();
         private boolean partialScan;
@@ -366,7 +369,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         protected void setup(Context context) throws IOException, InterruptedException {
             new GenomeHelper(context.getConfiguration());
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
-            fileIndexConverter = new VariantFileIndexConverter(sampleIndexConfiguration);
+            schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+            fileIndexConverter = new VariantFileIndexConverter(schema);
 
             int[] sampleIds = context.getConfiguration().getInts(SAMPLES);
             if (sampleIds == null || sampleIds.length == 0) {
@@ -391,7 +395,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             for (String sampleFiles : s.split(",")) {
                 if (!sampleFiles.isEmpty()) {
                     String[] sampleFilesSplit = sampleFiles.split(":");
-                    Integer sampleId = Integer.valueOf(sampleFilesSplit[0]);
+                    int sampleId = Integer.parseInt(sampleFilesSplit[0]);
                     String[] files = sampleFilesSplit[1].split("_");
                     List<Integer> fileIds = new ArrayList<>(files.length);
                     for (String file : files) {
@@ -451,7 +455,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 }
                 if (validGt) {
                     SampleIndexEntryPutBuilder builder = samplesMap.computeIfAbsent(sampleId,
-                            s -> new SampleIndexEntryPutBuilder(s, variant, sampleIndexConfiguration));
+                            s -> new SampleIndexEntryPutBuilder(s, variant, schema));
                     List<Integer> files;
                     int filePosition;
                     if (sampleMetadata.isMultiFileSample()) {
@@ -475,7 +479,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                         if (fileIndex != null) {
                             fileFound = true;
                             if (filePosition > 0) {
-                                FileIndex.setFilePosition(fileIndex, filePosition);
+                                FileIndexSchema.setFilePosition(fileIndex, filePosition);
                             }
                             builder.add(gt, new SampleVariantIndexEntry(variant, fileIndex));
                             if (samplesToCount.contains(sampleId)) {
