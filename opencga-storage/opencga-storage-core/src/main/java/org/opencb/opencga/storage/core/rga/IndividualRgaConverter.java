@@ -55,10 +55,14 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_JSON));
         CONVERTER_MAP.put("genesMap.transcriptsMap.variants.filter", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS, RgaDataModel.VARIANT_JSON));
+        CONVERTER_MAP.put("genesMap.transcriptsMap.variants.type", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES, RgaDataModel.VARIANT_JSON));
         CONVERTER_MAP.put("genesMap.transcriptsMap.variants.knockoutType", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.KNOCKOUT_TYPES, RgaDataModel.VARIANT_JSON));
         CONVERTER_MAP.put("genesMap.transcriptsMap.variants.populationFrequencies", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES, RgaDataModel.VARIANT_JSON));
+        CONVERTER_MAP.put("genesMap.transcriptsMap.variants.clinicalSignificance", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CLINICAL_SIGNIFICANCES, RgaDataModel.VARIANT_JSON));
         CONVERTER_MAP.put("genesMap.transcriptsMap.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES, RgaDataModel.VARIANT_JSON));
 
@@ -244,9 +248,19 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                             .map(Enum::name)
                             .distinct()
                             .collect(Collectors.toList());
+                    List<String> types = transcript.getVariants().stream()
+                            .map(KnockoutVariant::getType)
+                            .map(String::valueOf)
+                            .distinct()
+                            .collect(Collectors.toList());
                     List<String> consequenceTypes = transcript.getVariants().stream()
                             .flatMap(kv -> kv.getSequenceOntologyTerms().stream())
                             .map(SequenceOntologyTerm::getAccession)
+                            .distinct()
+                            .collect(Collectors.toList());
+                    List<String> clinicalSignificances = transcript.getVariants().stream()
+                            .flatMap(kv -> kv.getClinicalSignificance().stream())
+                            .map(String::valueOf)
                             .distinct()
                             .collect(Collectors.toList());
                     List<String> filters = transcript.getVariants().stream()
@@ -272,8 +286,9 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
 
                     RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(), sex, phenotypes, disorders,
                             knockoutByIndividual.getFatherId(), knockoutByIndividual.getMotherId(), numParents, gene.getId(),
-                            gene.getName(), "", "", "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes,
-                            filters, consequenceTypes, popFreqs, compoundFilters, phenotypeJson, disorderJson, variantJson);
+                            gene.getName(), "", "", "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds, types,
+                            knockoutTypes, filters, consequenceTypes, clinicalSignificances, popFreqs, compoundFilters, phenotypeJson,
+                            disorderJson, variantJson);
                     result.add(model);
                 }
             }

@@ -51,6 +51,8 @@ public class RgaQueryParser {
         parseStringValue(finalQuery, GENE_ID, RgaDataModel.GENE_ID, filterList);
         parseStringValue(finalQuery, GENE_NAME, RgaDataModel.GENE_NAME, filterList);
         parseStringValue(finalQuery, TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_ID, filterList);
+        parseStringValue(finalQuery, TYPE, RgaDataModel.TYPES, filterList);
+        parseStringValue(finalQuery, CLINICAL_SIGNIFICANCE, RgaDataModel.CLINICAL_SIGNIFICANCES, filterList);
 //        parseStringValue(finalQuery, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
         parseStringValue(finalQuery, VARIANTS, RgaDataModel.VARIANTS, filterList);
         parseFilterValue(finalQuery, filterList);

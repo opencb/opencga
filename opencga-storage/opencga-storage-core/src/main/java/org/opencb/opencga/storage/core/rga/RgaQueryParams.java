@@ -65,6 +65,13 @@ public class RgaQueryParams implements QueryParam {
     public static final String FILTER_DESCR = "Filter by filter (PASS, NOT_PASS).";
     public static final RgaQueryParams FILTER = new RgaQueryParams("filter", Type.TEXT, FILTER_DESCR);
 
+    public static final String TYPE_DESCR = "Filter by variant type.";
+    public static final RgaQueryParams TYPE = new RgaQueryParams("type", Type.TEXT, TYPE_DESCR);
+
+    public static final String CLINICAL_SIGNIFICANCE_DESCR = "Filter by clinical significance.";
+    public static final RgaQueryParams CLINICAL_SIGNIFICANCE = new RgaQueryParams("clinicalSignificance", Type.TEXT,
+            CLINICAL_SIGNIFICANCE_DESCR);
+
     public static final String POPULATION_FREQUENCY_DESCR = "Filter by population frequency.";
     public static final RgaQueryParams POPULATION_FREQUENCY = new RgaQueryParams("populationFrequency", Type.TEXT,
             POPULATION_FREQUENCY_DESCR);
