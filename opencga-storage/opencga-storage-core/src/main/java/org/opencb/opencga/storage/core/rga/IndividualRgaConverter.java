@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
@@ -17,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class IndividualRgaConverter implements ComplexTypeConverter<List<KnockoutByIndividual>, List<RgaDataModel>> {
 
@@ -240,32 +240,39 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                         disorderJson = Collections.emptyList();
                     }
 
-                    List<String> variantIds = transcript.getVariants().stream().map(KnockoutVariant::getId)
-                            .collect(Collectors.toList());
+                    List<String> variantIds = new LinkedList<>();
+                    Set<String> knockoutTypes = new HashSet<>();
+                    Set<String> types = new HashSet<>();
+                    Set<String> consequenceTypes = new HashSet<>();
+                    Set<String> clinicalSignificances = new HashSet<>();
+                    Set<String> filters = new HashSet<>();
 
-                    List<String> knockoutTypes = transcript.getVariants().stream()
-                            .map(KnockoutVariant::getKnockoutType)
-                            .map(Enum::name)
-                            .distinct()
-                            .collect(Collectors.toList());
-                    List<String> types = transcript.getVariants().stream()
-                            .map(KnockoutVariant::getType)
-                            .map(String::valueOf)
-                            .distinct()
-                            .collect(Collectors.toList());
-                    List<String> consequenceTypes = transcript.getVariants().stream()
-                            .flatMap(kv -> kv.getSequenceOntologyTerms().stream())
-                            .map(SequenceOntologyTerm::getAccession)
-                            .distinct()
-                            .collect(Collectors.toList());
-                    List<String> clinicalSignificances = transcript.getVariants().stream()
-                            .flatMap(kv -> kv.getClinicalSignificance().stream())
-                            .map(String::valueOf)
-                            .distinct()
-                            .collect(Collectors.toList());
-                    List<String> filters = transcript.getVariants().stream()
-                            .map(KnockoutVariant::getFilter)
-                            .distinct().collect(Collectors.toList());
+                    for (KnockoutVariant variant : transcript.getVariants()) {
+                        variantIds.add(variant.getId());
+                        if (variant.getKnockoutType() != null) {
+                            knockoutTypes.add(variant.getKnockoutType().name());
+                        }
+                        if (variant.getType() != null) {
+                            types.add(variant.getType().name());
+                        }
+                        if (variant.getSequenceOntologyTerms() != null) {
+                            for (SequenceOntologyTerm sequenceOntologyTerm : variant.getSequenceOntologyTerms()) {
+                                if (sequenceOntologyTerm.getAccession() != null) {
+                                    consequenceTypes.add(sequenceOntologyTerm.getAccession());
+                                }
+                            }
+                        }
+                        if (variant.getClinicalSignificance() != null) {
+                            for (ClinicalSignificance clinicalSignificance : variant.getClinicalSignificance()) {
+                                if (clinicalSignificance != null) {
+                                    clinicalSignificances.add(clinicalSignificance.name());
+                                }
+                            }
+                        }
+                        if (StringUtils.isNotEmpty(variant.getFilter())) {
+                            filters.add(variant.getFilter());
+                        }
+                    }
                     Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
                     String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
@@ -286,9 +293,10 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
 
                     RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(), sex, phenotypes, disorders,
                             knockoutByIndividual.getFatherId(), knockoutByIndividual.getMotherId(), numParents, gene.getId(),
-                            gene.getName(), "", "", "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds, types,
-                            knockoutTypes, filters, consequenceTypes, clinicalSignificances, popFreqs, compoundFilters, phenotypeJson,
-                            disorderJson, variantJson);
+                            gene.getName(), "", "", "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds,
+                            new ArrayList<>(types), new ArrayList<>(knockoutTypes), new ArrayList<>(filters),
+                            new ArrayList<>(consequenceTypes), new ArrayList<>(clinicalSignificances), popFreqs, compoundFilters,
+                            phenotypeJson, disorderJson, variantJson);
                     result.add(model);
                 }
             }
