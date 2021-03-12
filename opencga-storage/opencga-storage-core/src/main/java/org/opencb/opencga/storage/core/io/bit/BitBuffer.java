@@ -8,6 +8,23 @@ public class BitBuffer {
     private final int bitOffset;
     private final int bitLength;
 
+    public BitBuffer(BitBuffer copy) {
+        if (copy.getBitOffset() == 0) {
+            bitOffset = copy.bitOffset;
+            bitLength = copy.bitLength;
+            int bytes = bitsToBytes(copy.bitLength);
+            buffer = new byte[bytes];
+            System.arraycopy(copy.buffer, 0, buffer, 0, bytes);
+        } else {
+            bitOffset = copy.bitOffset % Byte.SIZE;
+            bitLength = copy.bitLength;
+            int extraBytesOffset = (copy.bitOffset - bitOffset) / Byte.SIZE;
+            int bytesLength = bitsToBytes(copy.bitLength + bitOffset);
+            buffer = new byte[bytesLength];
+            System.arraycopy(copy.buffer, extraBytesOffset, buffer, 0, buffer.length);
+        }
+    }
+
     public BitBuffer(int bitLength) {
         this(new byte[bitsToBytes(bitLength)], 0, bitLength);
     }

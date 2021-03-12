@@ -100,16 +100,22 @@ public class SampleVariantIndexEntry {
         @Override
         public int compare(SampleVariantIndexEntry o1, SampleVariantIndexEntry o2) {
             int compare = INTRA_CHROMOSOME_VARIANT_COMPARATOR.compare(o1.variant, o2.variant);
-            if (compare == 0) {
-                if (schema.getFileIndex().isMultiFile(o1.fileIndex)) {
-                    return -1;
-                } else if (schema.getFileIndex().isMultiFile(o2.fileIndex)) {
-                    return 1;
-                } else {
-                    return o1.fileIndex.compareTo(o2.fileIndex);
-                }
+            if (compare != 0) {
+                return compare;
             }
-            return compare;
+            if (schema.getFileIndex().isMultiFile(o1.fileIndex)) {
+                return -1;
+            } else if (schema.getFileIndex().isMultiFile(o2.fileIndex)) {
+                return 1;
+            } else {
+                int filePosition1 = schema.getFileIndex().getFilePositionIndex().read(o1.fileIndex);
+                int filePosition2 = schema.getFileIndex().getFilePositionIndex().read(o2.fileIndex);
+                compare = Integer.compare(filePosition1, filePosition2);
+                if (compare != 0) {
+                    return compare;
+                }
+                return o1.fileIndex.compareTo(o2.fileIndex);
+            }
         }
     }
 }

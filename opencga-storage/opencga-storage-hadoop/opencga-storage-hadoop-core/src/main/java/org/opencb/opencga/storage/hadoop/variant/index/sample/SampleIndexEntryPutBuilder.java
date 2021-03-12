@@ -46,9 +46,8 @@ public class SampleIndexEntryPutBuilder {
         }
     }
 
-    public SampleIndexEntryPutBuilder add(String gt, SampleVariantIndexEntry variantIndexEntry) {
-        get(gt).add(variantIndexEntry);
-        return this;
+    public boolean add(String gt, SampleVariantIndexEntry variantIndexEntry) {
+        return get(gt).add(variantIndexEntry);
     }
 
     private SampleIndexGtEntryBuilder get(String gt) {

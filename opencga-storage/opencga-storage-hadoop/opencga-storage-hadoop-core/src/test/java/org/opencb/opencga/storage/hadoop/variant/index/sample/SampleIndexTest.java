@@ -48,6 +48,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
@@ -232,7 +233,15 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 assertEquals(row, origFamily.size(), copyFamily.size());
 
                 for (byte[] key : origFamily.keySet()) {
-                    assertArrayEquals(row + " " + Bytes.toString(key), origFamily.get(key), copyFamily.get(key));
+                    byte[] expecteds = origFamily.get(key);
+                    byte[] actuals = copyFamily.get(key);
+                    try {
+                        assertArrayEquals(row + " " + Bytes.toString(key), expecteds, actuals);
+                    } catch (AssertionError error) {
+                        System.out.println("Expected " + IndexUtils.bytesToString(expecteds));
+                        System.out.println("actuals " + IndexUtils.bytesToString(actuals));
+                        throw error;
+                    }
                 }
             }
         }

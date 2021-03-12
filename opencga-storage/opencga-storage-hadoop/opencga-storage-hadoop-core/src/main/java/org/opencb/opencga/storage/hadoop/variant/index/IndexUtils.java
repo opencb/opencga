@@ -23,6 +23,16 @@ public final class IndexUtils {
         return binaryToString(b, Byte.SIZE);
     }
 
+    public static String bytesToString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder("[ ");
+        for (int i = 0; i < bytes.length; i++) {
+            byte b = bytes[i];
+            sb.append(byteToString(b));
+            sb.append(" , ");
+        }
+        return sb.append(" ]").toString();
+    }
+
     public static String shortToString(short s) {
         return binaryToString(s, Short.SIZE);
     }

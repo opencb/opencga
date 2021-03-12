@@ -13,12 +13,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class FileIndexSchema extends IndexSchema {
 
     private final List<IndexField<?>> fixedFields;
     private final List<IndexField<String>> customFields;
+    private final List<IndexField<String>> customFieldsSourceSample;
     private final IndexField<Boolean> multiFileIndex;
     private final IndexField<VariantType> typeIndex;
     private final IndexField<Integer> filePositionIndex;
@@ -52,10 +54,12 @@ public class FileIndexSchema extends IndexSchema {
                     typeIndex);
 
         }
-
         this.fields = new ArrayList<>(fixedFields.size() + customFields.size());
         this.fields.addAll(fixedFields);
         this.fields.addAll(customFields);
+        customFieldsSourceSample = customFields.stream()
+                .filter(c -> c.getSource().equals(IndexFieldConfiguration.Source.SAMPLE))
+                .collect(Collectors.toList());
 
         updateIndexSizeBits();
     }
@@ -70,6 +74,10 @@ public class FileIndexSchema extends IndexSchema {
 
     public List<IndexField<String>> getCustomFields() {
         return customFields;
+    }
+
+    public List<IndexField<String>> getCustomFieldsSourceSample() {
+        return customFieldsSourceSample;
     }
 
     public IndexField<Boolean> getMultiFileIndex() {

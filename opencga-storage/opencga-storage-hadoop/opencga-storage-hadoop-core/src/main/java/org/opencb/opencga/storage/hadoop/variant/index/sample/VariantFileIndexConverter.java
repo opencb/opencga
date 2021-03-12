@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 public class VariantFileIndexConverter {
 
@@ -36,11 +37,6 @@ public class VariantFileIndexConverter {
 
         return createFileIndexValue(variant.getType(), filePosition, file.getData(),
                 study.getSampleDataKeyPositions(), study.getSampleData(sampleIdx));
-    }
-
-    @Deprecated
-    public BitBuffer createFileIndexValue(VariantType type, int filePosition, Map<String, String> fileAttributes, String dpStr) {
-        throw new UnsupportedOperationException("Deprecated method");
     }
 
     /**
@@ -80,6 +76,19 @@ public class VariantFileIndexConverter {
                         + fileDataIndexField.getId());
             }
             fileDataIndexField.write(value, bitBuffer);
+        }
+        return bitBuffer;
+    }
+
+    public BitBuffer addSampleDataIndexValues(BitBuffer bitBuffer, Map<String, Integer> sampleDataKeyPositions,
+                                              IntFunction<String> sampleData) {
+        for (IndexField<String> fileDataIndexField : fileIndex.getCustomFieldsSourceSample()) {
+            String key = fileDataIndexField.getKey();
+            Integer position = sampleDataKeyPositions.get(key);
+            if (position != null) {
+                String value = sampleData.apply(position);
+                fileDataIndexField.write(value, bitBuffer);
+            }
         }
         return bitBuffer;
     }
