@@ -24,7 +24,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -34,6 +33,7 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -940,8 +940,16 @@ public final class VariantQueryUtils {
         return values.getOperation();
     }
 
+    public static List<String> parseConsequenceTypes(String cts) {
+        if (StringUtils.isEmpty(cts)) {
+            return new ArrayList<>();
+        } else {
+            return parseConsequenceTypes(Arrays.asList(cts.split(",")));
+        }
+    }
+
     public static List<String> parseConsequenceTypes(List<String> cts) {
-        List<String> parsedCts = new ArrayList<>(cts.size());
+        Set<String> parsedCts = new LinkedHashSet<>(cts.size());
         for (String ct : cts) {
             if (ct.equalsIgnoreCase(LOF)) {
                 parsedCts.addAll(VariantQueryUtils.LOF_SET);
@@ -949,7 +957,7 @@ public final class VariantQueryUtils {
                 parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
             }
         }
-        return parsedCts;
+        return new ArrayList<>(parsedCts);
     }
 
     public static int parseConsequenceType(String so) {
