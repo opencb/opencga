@@ -88,9 +88,11 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             }
         }
 
-        if (StringUtils.isEmpty(analysisParams.getConsequenceType())) {
-            analysisParams.setConsequenceType(VariantQueryUtils.LOF);
+        String ct = analysisParams.getConsequenceType();
+        if (StringUtils.isEmpty(ct)) {
+            ct = VariantQueryUtils.LOF;
         }
+        analysisParams.setConsequenceType(String.join(",", VariantQueryUtils.parseConsequenceTypes(ct)));
 
         super.check();
     }

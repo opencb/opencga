@@ -25,10 +25,6 @@ public class VariantSourceToVariantFileMetadataConverter implements Converter<Va
     public VariantSourceToVariantFileMetadataConverter() {
     }
 
-    public VariantFileMetadata convert(org.opencb.biodata.models.variant.VariantSource legacy) {
-        return convert(legacy.getImpl());
-    }
-
     @Override
     public VariantFileMetadata convert(VariantSource legacy) {
         VariantFileMetadata fileMetadata = new VariantFileMetadata(legacy.getFileId(), legacy.getFileName());
