@@ -31,6 +31,8 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
         CONVERTER_MAP.put("id", Collections.singletonList(RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("sampleId", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SAMPLE_ID));
         CONVERTER_MAP.put("sex", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SEX));
+        CONVERTER_MAP.put("motherId", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_ID));
+        CONVERTER_MAP.put("fatherId", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_ID));
         CONVERTER_MAP.put("phenotypes", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
         CONVERTER_MAP.put("disorders", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
         CONVERTER_MAP.put("numParents", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.NUM_PARENTS));

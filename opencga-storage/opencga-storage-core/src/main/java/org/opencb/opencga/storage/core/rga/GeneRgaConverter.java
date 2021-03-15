@@ -34,6 +34,8 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<RgaKnockoutBy
         CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SAMPLE_ID));
         CONVERTER_MAP.put("individuals.numParents", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.NUM_PARENTS));
+        CONVERTER_MAP.put("individuals.motherId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_ID));
+        CONVERTER_MAP.put("individuals.fatherId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_ID));
         CONVERTER_MAP.put("individuals.transcriptsMap.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.TRANSCRIPT_ID));
         CONVERTER_MAP.put("individuals.transcriptsMap.chromosome", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
