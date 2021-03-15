@@ -1,9 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
 import org.junit.Test;
-import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 
 import java.io.IOException;
 

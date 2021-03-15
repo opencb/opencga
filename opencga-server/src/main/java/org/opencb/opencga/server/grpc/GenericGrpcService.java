@@ -23,7 +23,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.Values;
@@ -22,7 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationInd
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
-import org.opencb.opencga.storage.core.config.SampleIndexConfiguration.PopulationFrequencyRange;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
 
 import java.util.Arrays;
 import java.util.Collections;

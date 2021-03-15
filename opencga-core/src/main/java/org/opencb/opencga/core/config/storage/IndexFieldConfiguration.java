@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.config;
+package org.opencb.opencga.core.config.storage;
 
 import java.beans.ConstructorProperties;
 import java.util.Arrays;

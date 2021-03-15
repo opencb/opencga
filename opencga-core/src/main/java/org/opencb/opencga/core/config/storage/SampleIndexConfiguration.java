@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.config;
+package org.opencb.opencga.core.config.storage;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.opencb.biodata.models.variant.StudyEntry;

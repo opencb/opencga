@@ -20,14 +20,14 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConst
 import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.NoOpIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.*;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
-import org.opencb.opencga.storage.core.config.SampleIndexConfiguration.PopulationFrequencyRange;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
-import org.opencb.opencga.storage.core.config.SampleIndexConfiguration.PopulationFrequencyRange;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
 
 import java.util.ArrayList;
 import java.util.HashMap;

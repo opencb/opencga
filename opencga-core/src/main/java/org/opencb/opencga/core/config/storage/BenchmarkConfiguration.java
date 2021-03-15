@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.config;
+package org.opencb.opencga.core.config.storage;
 
 import java.net.URI;
 import java.util.List;

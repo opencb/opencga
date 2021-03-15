@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.MaskIndexFieldFilter;

@@ -7,7 +7,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.config.SampleIndexConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

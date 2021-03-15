@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 
 import java.util.List;
 

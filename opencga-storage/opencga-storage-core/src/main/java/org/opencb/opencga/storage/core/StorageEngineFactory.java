@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;

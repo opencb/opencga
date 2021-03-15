@@ -22,6 +22,7 @@ public class StudyInternal {
 
     private Status status;
 
+
     public StudyInternal() {
     }
 

@@ -7,7 +7,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.core.config.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 
 import java.util.Arrays;
 
