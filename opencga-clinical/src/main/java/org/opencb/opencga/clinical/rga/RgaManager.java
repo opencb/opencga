@@ -2,6 +2,7 @@ package org.opencb.opencga.clinical.rga;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.DataResult;
@@ -17,9 +18,9 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.clinical.StorageManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
@@ -38,10 +39,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
@@ -76,6 +75,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
@@ -99,39 +101,67 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             sampleQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
                     + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
         }
-        List<String> samples;
-        if (!isOwnerOrAdmin || !auxQuery.containsKey("sampleId")) {
-            if (auxQuery.containsKey("individualId")) {
-                sampleQuery.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), auxQuery.get("individualId"));
-            } else {
-                sampleQuery.put(SampleDBAdaptor.QueryParams.ID.key(), auxQuery.get("sampleId"));
-            }
 
-            OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                    SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
-            if (authorisedSampleIdResult.getNumResults() == 0) {
-                return OpenCGAResult.empty(KnockoutByIndividual.class);
-            }
-            samples = (List<String>) authorisedSampleIdResult.getResults();
-        } else {
-            samples = auxQuery.getAsStringList("sampleId");
-        }
-
+        int numTotalResults = 0;
         int limit = queryOptions.getInt(QueryOptions.LIMIT, AbstractManager.DEFAULT_LIMIT);
         int skip = queryOptions.getInt(QueryOptions.SKIP);
-
         List<String> sampleIds;
-        if (skip == 0 && limit > samples.size()) {
-            sampleIds = samples;
-        } else if (skip > samples.size()) {
+
+        List<String> authorisedSamples = new LinkedList<>();
+        if (!isOwnerOrAdmin || !auxQuery.containsKey("sampleId")) {
+            int batchSize = 1000;
+            int currentBatch = 0;
+            boolean queryNextBatch = true;
+
+            String sampleQueryField;
+            List<String> values;
+            if (auxQuery.containsKey("individualId")) {
+                sampleQueryField = SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key();
+                values = auxQuery.getAsStringList("individualId");
+            } else {
+                sampleQueryField = SampleDBAdaptor.QueryParams.ID.key();
+                values = auxQuery.getAsStringList("sampleId");
+            }
+
+            while (queryNextBatch) {
+                List<String> tmpValues = values.subList(currentBatch, Math.min(values.size(), batchSize + currentBatch));
+
+                sampleQuery.put(sampleQueryField, tmpValues);
+                OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                        SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+                authorisedSamples.addAll((Collection<? extends String>) authorisedSampleIdResult.getResults());
+
+                if (values.size() < batchSize + currentBatch) {
+                    queryNextBatch = false;
+                    numTotalResults = authorisedSamples.size();
+                } else if (authorisedSamples.size() > skip + limit) {
+                    queryNextBatch = false;
+                    // We will get an approximate number of total results
+                    numTotalResults = Math.round(((float) authorisedSamples.size() * values.size()) / (currentBatch + batchSize));
+                } else {
+                    currentBatch += batchSize;
+                }
+            }
+        } else {
+            authorisedSamples = auxQuery.getAsStringList("sampleId");
+            numTotalResults = authorisedSamples.size();
+        }
+
+        if (skip == 0 && limit > authorisedSamples.size()) {
+            sampleIds = authorisedSamples;
+        } else if (skip > authorisedSamples.size()) {
             return OpenCGAResult.empty(KnockoutByIndividual.class);
         } else {
-            int to = Math.min(samples.size(), skip + limit);
-            sampleIds = samples.subList(skip, to);
+            int to = Math.min(authorisedSamples.size(), skip + limit);
+            sampleIds = authorisedSamples.subList(skip, to);
         }
         auxQuery.put("sampleId", sampleIds);
 
-        return rgaEngine.individualQuery(collection, auxQuery, queryOptions);
+        OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, auxQuery, queryOptions);
+        result.setNumMatches(numTotalResults);
+        result.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+
+        return result;
     }
 
     public OpenCGAResult<RgaKnockoutByGene> geneQuery(String studyStr, Query query, QueryOptions options, String token)
@@ -143,6 +173,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
 
         QueryOptions queryOptions = setDefaultLimit(options);
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
@@ -164,6 +197,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             List<String> geneIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.GENE_ID, geneIds);
         }
+        int numTotalResults = auxQuery.getAsStringList(RgaDataModel.GENE_ID).size();
 
         Set<String> includeIndividualIds;
         if (!isOwnerOrAdmin) {
@@ -198,6 +232,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
         // 4. Solr gene query
         OpenCGAResult<RgaKnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, queryOptions);
+        knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+        knockoutResult.setNumMatches(numTotalResults);
         if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
             return knockoutResult;
         } else {
@@ -225,6 +261,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
         QueryOptions queryOptions = setDefaultLimit(options);
 
         List<String> includeIndividuals = queryOptions.getAsStringList(RgaQueryParams.INCLUDE_INDIVIDUAL);
@@ -243,6 +282,7 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.VARIANTS, variantIds);
         }
+        int numTotalResults = auxQuery.getAsStringList(RgaDataModel.VARIANTS).size();
 
         Set<String> includeIndividualIds;
         if (!isOwnerOrAdmin) {
@@ -278,6 +318,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
         // 4. Solr gene query
         OpenCGAResult<KnockoutByVariant> knockoutResult = rgaEngine.variantQuery(collection, auxQuery, queryOptions);
+        knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+        knockoutResult.setNumMatches(numTotalResults);
         if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
             return knockoutResult;
         } else {

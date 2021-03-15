@@ -21,13 +21,14 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<RgaKnockoutBy
 
     static {
         CONVERTER_MAP = new HashMap<>();
-        CONVERTER_MAP.put("id", Collections.singletonList(RgaDataModel.GENE_ID));
-        CONVERTER_MAP.put("name", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
-        CONVERTER_MAP.put("chromosome", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME));
-        CONVERTER_MAP.put("start", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.START));
-        CONVERTER_MAP.put("end", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.END));
-        CONVERTER_MAP.put("strand", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.STRAND));
-        CONVERTER_MAP.put("biotype", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.GENE_BIOTYPE));
+        // We always include individual id in the response because we always want to return the numIndividuals populated
+        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("name", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("chromosome", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("start", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.START, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("end", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.END, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("strand", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.STRAND, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("biotype", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.GENE_BIOTYPE, RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("annotation", Collections.emptyList());
         CONVERTER_MAP.put("individuals.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SAMPLE_ID));

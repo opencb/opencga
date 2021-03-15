@@ -21,8 +21,9 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
     private static final Map<String, List<String>> CONVERTER_MAP;
 
     static {
+        // We always include individual id in the response because we always want to return the numIndividuals populated
         CONVERTER_MAP = new HashMap<>();
-        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS));
+        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("individuals.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SAMPLE_ID));
