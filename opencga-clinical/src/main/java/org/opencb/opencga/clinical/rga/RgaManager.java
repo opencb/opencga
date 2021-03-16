@@ -40,7 +40,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
@@ -183,6 +183,21 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
+        Future<Integer> numTotalResults = null;
+        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            numTotalResults = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.GENE_ID + ")");
+                try {
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return -1;
+            });
+        }
+
         // If the user is querying by gene id, we don't need to do a facet first
         if (!auxQuery.containsKey(RgaDataModel.GENE_ID)) {
             // 1st. we perform a facet to get the different gene ids matching the user query and using the skip and limit values
@@ -197,7 +212,6 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             List<String> geneIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.GENE_ID, geneIds);
         }
-        int numTotalResults = auxQuery.getAsStringList(RgaDataModel.GENE_ID).size();
 
         Set<String> includeIndividualIds;
         if (!isOwnerOrAdmin) {
@@ -233,7 +247,11 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         // 4. Solr gene query
         OpenCGAResult<RgaKnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, queryOptions);
         knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
-        knockoutResult.setNumMatches(numTotalResults);
+        try {
+            knockoutResult.setNumMatches(numTotalResults != null ? numTotalResults.get() : -1);
+        } catch (InterruptedException | ExecutionException e) {
+            knockoutResult.setNumMatches(-1);
+        }
         if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
             return knockoutResult;
         } else {
@@ -271,6 +289,21 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
+        Future<Integer> numTotalResults = null;
+        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            numTotalResults = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.VARIANTS + ")");
+                try {
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return -1;
+            });
+        }
+
         // If the user is querying by gene id, we don't need to do a facet first
         if (!auxQuery.containsKey(RgaDataModel.VARIANTS)) {
             // 1st. we perform a facet to get the different variant ids matching the user query and using the skip and limit values
@@ -282,7 +315,6 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.VARIANTS, variantIds);
         }
-        int numTotalResults = auxQuery.getAsStringList(RgaDataModel.VARIANTS).size();
 
         Set<String> includeIndividualIds;
         if (!isOwnerOrAdmin) {
@@ -319,7 +351,11 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         // 4. Solr gene query
         OpenCGAResult<KnockoutByVariant> knockoutResult = rgaEngine.variantQuery(collection, auxQuery, queryOptions);
         knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
-        knockoutResult.setNumMatches(numTotalResults);
+        try {
+            knockoutResult.setNumMatches(numTotalResults != null ? numTotalResults.get() : -1);
+        } catch (InterruptedException | ExecutionException e) {
+            knockoutResult.setNumMatches(-1);
+        }
         if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
             return knockoutResult;
         } else {
