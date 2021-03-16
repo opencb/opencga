@@ -57,8 +57,8 @@ public class HBaseVariantTableNameGenerator {
         return getArchiveTableName(namespace, dbName, studyId);
     }
 
-    public String getSampleIndexTableName(int studyId) {
-        return getSampleIndexTableName(namespace, dbName, studyId);
+    public String getSampleIndexTableName(int studyId, int version) {
+        return getSampleIndexTableName(namespace, dbName, studyId, version);
     }
 
     public String getPendingAnnotationTableName() {
@@ -185,8 +185,8 @@ public class HBaseVariantTableNameGenerator {
         return Integer.valueOf(archiveTable.substring(idx + 1));
     }
 
-    public static String getSampleIndexTableName(String namespace, String dbName, int studyId) {
-        return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId);
+    public static String getSampleIndexTableName(String namespace, String dbName, int studyId, int version) {
+        return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId + (version > 1 ? ("_v" + version) : ""));
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {

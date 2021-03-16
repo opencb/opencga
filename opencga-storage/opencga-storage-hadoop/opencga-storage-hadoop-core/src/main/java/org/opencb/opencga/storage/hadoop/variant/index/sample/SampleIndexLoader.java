@@ -24,18 +24,17 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class SampleIndexLoader {
 
+    private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final MRExecutor mrExecutor;
     private final VariantStorageMetadataManager metadataManager;
-    private final SampleIndexSchema schema;
     private Logger logger = LoggerFactory.getLogger(SampleIndexLoader.class);
 
-    public SampleIndexLoader(HBaseVariantTableNameGenerator tableNameGenerator,
-                             VariantStorageMetadataManager metadataManager, MRExecutor mrExecutor, SampleIndexSchema schema) {
-        this.tableNameGenerator = tableNameGenerator;
+    public SampleIndexLoader(SampleIndexDBAdaptor sampleIndexDBAdaptor, MRExecutor mrExecutor) {
+        this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.mrExecutor = mrExecutor;
-        this.metadataManager = metadataManager;
-        this.schema = schema;
+        this.metadataManager = sampleIndexDBAdaptor.getMetadataManager();
+        this.tableNameGenerator = sampleIndexDBAdaptor.getTableNameGenerator();
     }
 
     public void buildSampleIndex(String study, List<String> samples, ObjectMap options)
@@ -59,12 +58,12 @@ public class SampleIndexLoader {
                 sampleIds.add(sampleId);
             }
         }
-
+        int version = metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
         List<String> alreadyIndexed = new LinkedList<>();
         for (Integer sampleId : sampleIds) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-            if (overwrite || SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata) != TaskMetadata.Status.READY) {
+            if (overwrite || SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata, version) != TaskMetadata.Status.READY) {
                 finalSamplesList.add(sampleId);
             } else {
                 // SamplesIndex already annotated
@@ -100,17 +99,19 @@ public class SampleIndexLoader {
             for (int i = 0; i < batches; i++) {
                 List<Integer> subSet = finalSamplesList.subList(i * batchSize, Math.min((i + 1) * batchSize, finalSamplesList.size()));
                 logger.info("Running MapReduce {}/{} over {} samples", i + 1, batches, subSet.size());
-                buildSampleIndexBatchMapreduce(studyId, subSet, options);
+                buildSampleIndexBatchMapreduce(studyId, subSet, options, version);
             }
         } else {
-            buildSampleIndexBatchMapreduce(studyId, finalSamplesList, options);
+            buildSampleIndexBatchMapreduce(studyId, finalSamplesList, options, version);
         }
     }
 
-    private void buildSampleIndexBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
+    private void buildSampleIndexBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options, int version)
             throws StorageEngineException {
         options = new ObjectMap(options);
         options.put(SampleIndexDriver.SAMPLE_IDS, samples);
+        options.put(SampleIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableName(studyId));
+
         mrExecutor.run(SampleIndexDriver.class,
                 SampleIndexDriver.buildArgs(
                         tableNameGenerator.getArchiveTableName(studyId),
@@ -119,19 +120,15 @@ public class SampleIndexLoader {
                         null,
                         options),
                 "Build sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
-        postSampleIndexBuild(studyId, samples);
+        postSampleIndexBuild(studyId, samples, version);
     }
 
-    private void postSampleIndexBuild(int studyId, List<Integer> samples) throws StorageEngineException {
-        postSampleIndexBuild(studyId, samples, metadataManager);
-    }
-
-    public static void postSampleIndexBuild(int studyId, List<Integer> samples, VariantStorageMetadataManager metadataManager)
-            throws StorageEngineException {
+    private void postSampleIndexBuild(int studyId, List<Integer> samples, int version) throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                return SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.READY);
+                return SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.READY, version);
             });
         }
     }
+
 }

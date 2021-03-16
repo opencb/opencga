@@ -414,7 +414,8 @@ public class VariantHbaseTestUtils {
 
     public static void printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
         for (Integer studyId : dbAdaptor.getMetadataManager().getStudies(null).values()) {
-            String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
+            int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
+            String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
             if (printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName)) return;
         }
     }

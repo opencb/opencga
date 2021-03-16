@@ -48,6 +48,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -468,17 +469,17 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-//    public void configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
-//            throws CatalogException, StorageEngineException {
-//        secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
-//            String studyFqn = getStudyFqn(studyStr, token);
-//            StudyMetadata studyMetadata = engine.getMetadataManager().getStudyMetadata(studyFqn);
-//
-//            catalogManager.getStudyManager()
-//                    .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
-//            return null;
-//        });
-//    }
+    public void configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+            throws CatalogException, StorageEngineException {
+        secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
+            String studyFqn = getStudyFqn(studyStr, token);
+            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration);
+
+            catalogManager.getStudyManager()
+                    .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
+            return null;
+        });
+    }
 
     // ---------------------//
     //   Query methods      //

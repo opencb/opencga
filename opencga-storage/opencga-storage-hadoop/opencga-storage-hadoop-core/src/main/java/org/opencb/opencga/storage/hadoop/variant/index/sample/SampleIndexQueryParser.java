@@ -364,12 +364,14 @@ public class SampleIndexQueryParser {
             fileIndexMap.put(sample, fileIndexQuery);
         }
 
+        int sampleIndexVersion = defaultStudy.getSampleIndexConfigurationLatest().getVersion();
         boolean allSamplesAnnotated = true;
         if (negatedGenotypesSamples.isEmpty()) {
             for (String sample : samplesMap.keySet()) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                if (!SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata).equals(TaskMetadata.Status.READY)) {
+                if (!SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, sampleIndexVersion)
+                        .equals(TaskMetadata.Status.READY)) {
                     allSamplesAnnotated = false;
                     break;
                 }

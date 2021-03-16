@@ -11,7 +11,6 @@ import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -29,6 +28,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
+import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Status;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.SAMPLE_INDEX_ANNOTATION_MAX_SAMPLES_PER_MR;
 
 /**
@@ -81,13 +81,15 @@ public class SampleIndexAnnotationLoader {
 
     public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options, boolean overwrite)
             throws StorageEngineException {
+        int sampleIndexVersion = metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
         List<String> nonAnnotated = new LinkedList<>();
         List<String> alreadyAnnotated = new LinkedList<>();
         for (Integer sampleId : samples) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.isAnnotated()) {
-                if (SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata).equals(TaskMetadata.Status.READY) && !overwrite) {
+                if (SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, sampleIndexVersion).equals(Status.READY)
+                        && !overwrite) {
                     // SamplesIndex already annotated
                     alreadyAnnotated.add(sampleMetadata.getName());
                 } else {
@@ -143,6 +145,7 @@ public class SampleIndexAnnotationLoader {
 
     private void updateSampleAnnotationBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
             throws StorageEngineException {
+        options.put(SampleIndexAnnotationLoaderDriver.OUTPUT, sampleDBAdaptor.getSampleIndexTableName(studyId));
         mrExecutor.run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),
                 tableNameGenerator.getVariantTableName(), studyId, samples, options),
@@ -241,7 +244,8 @@ public class SampleIndexAnnotationLoader {
     public void updateSampleAnnotationMultiSampleIterator(int studyId, List<Integer> samples,
                                                           Function<Region, List<Pair<Variant, AnnotationIndexEntry>>> annotationIndexReader)
             throws IOException, StorageEngineException {
-        String sampleIndexTableName = tableNameGenerator.getSampleIndexTableName(studyId);
+        int version = sampleDBAdaptor.getSampleIndexConfiguration(studyId).getVersion();
+        String sampleIndexTableName = sampleDBAdaptor.getSampleIndexTableName(studyId);
         Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
 
         for (Integer sample : samples) {
@@ -285,7 +289,7 @@ public class SampleIndexAnnotationLoader {
 
         mutator.close();
 
-        postAnnotationLoad(studyId, samples);
+        postAnnotationLoad(studyId, samples, version);
     }
 
     private Put annotate(String chromosome, int start, Integer sampleId,
@@ -340,15 +344,15 @@ public class SampleIndexAnnotationLoader {
         return put;
     }
 
-    private void postAnnotationLoad(int studyId, List<Integer> samples) throws StorageEngineException {
-        postAnnotationLoad(studyId, samples, metadataManager);
+    private void postAnnotationLoad(int studyId, List<Integer> samples, int version) throws StorageEngineException {
+        postAnnotationLoad(studyId, samples, metadataManager, version);
     }
 
-    public static void postAnnotationLoad(int studyId, List<Integer> samples, VariantStorageMetadataManager metadataManager)
+    public static void postAnnotationLoad(int studyId, List<Integer> samples, VariantStorageMetadataManager metadataManager, int version)
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                return SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.READY);
+                return SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, Status.READY, version);
             });
         }
     }

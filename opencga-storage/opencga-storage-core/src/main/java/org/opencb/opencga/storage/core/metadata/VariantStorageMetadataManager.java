@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -202,6 +204,24 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             return projectMetadata;
         });
         return getStudyMetadata(studyName);
+    }
+
+    public StudyMetadata.SampleIndexConfigurationVersioned addSampleIndexConfiguration(
+            String study, SampleIndexConfiguration configuration) throws StorageEngineException {
+        Integer idOrNull = getStudyIdOrNull(study);
+        if (idOrNull == null) {
+            createStudy(study);
+        }
+        return updateStudyMetadata(study, studyMetadata -> {
+            List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = studyMetadata.getSampleIndexConfigurations();
+            if (configurations == null || configurations.isEmpty()) {
+                configurations = new ArrayList<>(1);
+                studyMetadata.setSampleIndexConfigurations(configurations);
+            }
+            int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion() + 1;
+            configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(configuration, version, Date.from(Instant.now())));
+            return studyMetadata;
+        }).getSampleIndexConfigurationLatest();
     }
 
     public interface UpdateFunction<T, E extends Exception> {

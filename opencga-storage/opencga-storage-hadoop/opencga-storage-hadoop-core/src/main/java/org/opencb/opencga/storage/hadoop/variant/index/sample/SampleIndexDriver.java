@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.exceptions.IllegalArgumentIOException;
 import org.apache.hadoop.hbase.filter.BinaryPrefixComparator;
 import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.QualifierFilter;
@@ -138,7 +139,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         }
         outputTable = getParam(OUTPUT);
         if (outputTable == null || outputTable.isEmpty()) {
-            outputTable = getTableNameGenerator().getSampleIndexTableName(study);
+            throw new IllegalArgumentIOException("Missing output table");
         }
 
         secondaryOnly = Boolean.valueOf(getParam(SECONDARY_ONLY, "false"));

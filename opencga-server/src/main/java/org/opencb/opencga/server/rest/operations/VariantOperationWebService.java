@@ -27,6 +27,7 @@ import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -232,22 +233,22 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         return submitOperation(VariantScoreDeleteParams.ID, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
-//    @POST
-//    @Path("/variant/sample/genotype/index/configure")
-//    @ApiOperation(value = "Update SampleIndex configuration", response = ObjectMap.class)
-//    public Response sampleIndexConfigure(
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-//            @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
-//        return run(() -> {
-//            StopWatch stopWatch = StopWatch.createStarted();
-//            variantManager.configureSampleIndex(study, sampleIndexConfiguration, token);
-//
-//            return new DataResult<>()
-//                    .setResults(Collections.singletonList(sampleIndexConfiguration))
-//                    .setNumResults(1)
-//                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
-//        });
-//    }
+    @POST
+    @Path("/variant/sample/genotype/index/configure")
+    @ApiOperation(value = "Update SampleIndex configuration", response = ObjectMap.class)
+    public Response sampleIndexConfigure(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
+        return run(() -> {
+            StopWatch stopWatch = StopWatch.createStarted();
+            variantManager.configureSampleIndex(study, sampleIndexConfiguration, token);
+
+            return new DataResult<>()
+                    .setResults(Collections.singletonList(sampleIndexConfiguration))
+                    .setNumResults(1)
+                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
+        });
+    }
 
     @POST
     @Path("/variant/sample/genotype/index")

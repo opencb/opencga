@@ -61,15 +61,6 @@ public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<Byt
         updateStats(context);
     }
 
-    public static void setSampleIndexTablePut(Put put) {
-        put.setAttribute("s", new byte[]{1});
-    }
-
-    public static boolean isSampleIndexTablePut(Put put) {
-        byte[] s = put.getAttribute("s");
-        return s != null && s[0] == 1;
-    }
-
     private void updateStats(Context context) {
         for (Map.Entry<String, Long> entry : task.takeStats().entrySet()) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, entry.getKey()).increment(entry.getValue());

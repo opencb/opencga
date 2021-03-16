@@ -55,7 +55,9 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_M
 public class SampleIndexDBAdaptor implements VariantIterable {
 
     private static final String SAMPLE_INDEX_STATUS = "sampleIndexGenotypes";
+    private static final String SAMPLE_INDEX_VERSION = "sampleIndexGenotypesVersion";
     private static final String SAMPLE_INDEX_ANNOTATION_STATUS = "sampleIndexAnnotation";
+    private static final String SAMPLE_INDEX_ANNOTATION_VERSION = "sampleIndexAnnotationVersion";
 
     @Deprecated // Deprecated to avoid confusion with actual "SAMPLE_INDEX_STATUS"
     private static final String SAMPLE_INDEX_ANNOTATION_STATUS_OLD = "sampleIndex";
@@ -79,32 +81,50 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         schemas = new HashMap<>();
     }
 
-    public static TaskMetadata.Status getSampleIndexAnnotationStatus(SampleMetadata sampleMetadata) {
+    public static TaskMetadata.Status getSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, int latestSampleIndexVersion) {
         TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS, null);
         if (status == null) {
             // The status name was renamed. In case of missing value (null), check for the deprecated value.
             status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
         }
+        if (status == TaskMetadata.Status.READY) {
+            int actualSampleIndexVersion = sampleMetadata.getAttributes().getInt(SAMPLE_INDEX_ANNOTATION_VERSION, 1);
+            if (actualSampleIndexVersion != latestSampleIndexVersion) {
+                logger.debug("Sample index annotation version outdated. Actual : " + actualSampleIndexVersion
+                        + " , expected : " + latestSampleIndexVersion);
+                status = TaskMetadata.Status.NONE;
+            }
+        }
         return status;
     }
 
-    public static SampleMetadata setSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status) {
+    public static SampleMetadata setSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status, int version) {
         // Remove deprecated value.
         sampleMetadata.getStatus().remove(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
         sampleMetadata.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS, status);
+        sampleMetadata.getAttributes().put(SAMPLE_INDEX_ANNOTATION_VERSION, version);
         return sampleMetadata;
     }
 
-    public static TaskMetadata.Status getSampleIndexStatus(SampleMetadata sampleMetadata) {
+    public static TaskMetadata.Status getSampleIndexStatus(SampleMetadata sampleMetadata, int latestSampleIndexVersion) {
         TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_STATUS, null);
         if (status == null) {
             // This is a new status. In case of missing value (null), assume it's READY
             status = TaskMetadata.Status.READY;
         }
+        if (status == TaskMetadata.Status.READY) {
+            int actualSampleIndexVersion = sampleMetadata.getAttributes().getInt(SAMPLE_INDEX_VERSION, 1);
+            if (actualSampleIndexVersion != latestSampleIndexVersion) {
+                logger.debug("Sample index version outdated. Actual : " + actualSampleIndexVersion
+                        + " , expected : " + latestSampleIndexVersion);
+                status = TaskMetadata.Status.NONE;
+            }
+        }
         return status;
     }
 
-    public static SampleMetadata setSampleIndexStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status) {
+    public static SampleMetadata setSampleIndexStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status, int version) {
+        sampleMetadata.getAttributes().put(SAMPLE_INDEX_VERSION, version);
         return sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, status);
     }
 
@@ -195,7 +215,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
      * @return SingleSampleIndexVariantDBIterator
      */
     private SingleSampleIndexVariantDBIterator internalIterator(SingleSampleIndexQuery query) {
-        String tableName = tableNameGenerator.getSampleIndexTableName(toStudyId(query.getStudy()));
+        String tableName = getSampleIndexTableName(toStudyId(query.getStudy()));
 
         try {
             return hBaseManager.act(tableName, table -> {
@@ -207,7 +227,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     private RawSingleSampleIndexVariantDBIterator rawInternalIterator(SingleSampleIndexQuery query) {
-        String tableName = tableNameGenerator.getSampleIndexTableName(toStudyId(query.getStudy()));
+        String tableName = getSampleIndexTableName(toStudyId(query.getStudy()));
 
         try {
             return hBaseManager.act(tableName, table -> {
@@ -216,6 +236,19 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
+    }
+
+    public String getSampleIndexTableName(int studyId) {
+        int version = getSampleIndexConfiguration(studyId).getVersion();
+        return tableNameGenerator.getSampleIndexTableName(studyId, version);
+    }
+
+    public HBaseVariantTableNameGenerator getTableNameGenerator() {
+        return tableNameGenerator;
+    }
+
+    public VariantStorageMetadataManager getMetadataManager() {
+        return metadataManager;
     }
 
     protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position)
@@ -232,7 +265,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     private Result queryByGtInternal(int study, int sample, String chromosome, int position) throws IOException {
-        String tableName = tableNameGenerator.getSampleIndexTableName(study);
+        String tableName = getSampleIndexTableName(study);
         return hBaseManager.act(tableName, table -> {
             Get get = new Get(SampleIndexSchema.toRowKey(sample, chromosome, position));
             get.addFamily(family);
@@ -241,7 +274,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample) throws IOException {
-        String tableName = tableNameGenerator.getSampleIndexTableName(study);
+        String tableName = getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
 
@@ -259,7 +292,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public Iterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
-        String tableName = tableNameGenerator.getSampleIndexTableName(study);
+        String tableName = getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();
@@ -360,7 +393,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             regionGroups = query.getRegionGroups();
         }
 
-        String tableName = tableNameGenerator.getSampleIndexTableName(toStudyId(query.getStudy()));
+        String tableName = getSampleIndexTableName(toStudyId(query.getStudy()));
 
         HBaseToSampleIndexConverter converter = newConverter(toStudyId(query.getStudy()));
         try {
@@ -433,12 +466,16 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     public SampleIndexSchema getSchema(int studyId) {
         SampleIndexSchema sampleIndexSchema = schemas.get(studyId);
         if (sampleIndexSchema == null) {
-            SampleIndexConfiguration configuration = metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest()
+            SampleIndexConfiguration configuration = getSampleIndexConfiguration(studyId)
                     .getConfiguration();
             sampleIndexSchema = new SampleIndexSchema(configuration);
             schemas.put(studyId, sampleIndexSchema);
         }
         return sampleIndexSchema;
+    }
+
+    public StudyMetadata.SampleIndexConfigurationVersioned getSampleIndexConfiguration(int studyId) {
+        return metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest();
     }
 
     protected int toStudyId(String study) {
@@ -671,6 +708,5 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     private int toSampleId(int studyId, String sample) {
         return metadataManager.getSampleId(studyId, sample);
     }
-
 
 }

@@ -323,7 +323,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexLoader(getTableNameGenerator(), getMetadataManager(), getMRExecutor(), getSampleIndexDBAdaptor().getSchema(study))
+        new SampleIndexLoader(getSampleIndexDBAdaptor(), getMRExecutor())
                 .buildSampleIndex(study, samples, options);
     }
 
@@ -406,9 +406,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
             options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
         }
+        options.put(FamilyIndexDriver.OUTPUT, getSampleIndexDBAdaptor().getSampleIndexTableName(studyId));
 
         getMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
-                studyId, null, options), options,
+                studyId, null, options),
                 "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
         return dr;
     }
@@ -668,7 +669,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
             String archiveTable = getArchiveTableName(studyId);
             String variantsTable = getVariantTableName();
-            String sampleIndexTable = getTableNameGenerator().getSampleIndexTableName(studyId);
+            String sampleIndexTable = getSampleIndexDBAdaptor().getSampleIndexTableName(studyId);
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");

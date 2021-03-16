@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine.SplitData;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
@@ -44,12 +45,13 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final VariantFileIndexConverter variantFileIndexConverter;;
     private final boolean excludeGenotypes;
     private final SampleIndexSchema schema;
+    private final StudyMetadata.SampleIndexConfigurationVersioned sampleIndexConfiguration;
 
     public SampleIndexDBLoader(SampleIndexDBAdaptor dbAdaptor, HBaseManager hBaseManager,
-                               String tableName, VariantStorageMetadataManager metadataManager,
+                               VariantStorageMetadataManager metadataManager,
                                int studyId, int fileId, List<Integer> sampleIds,
                                SplitData splitData, ObjectMap options) {
-        super(hBaseManager, tableName);
+        super(hBaseManager, dbAdaptor.getSampleIndexTableName(studyId));
         this.studyId = studyId;
         this.sampleIds = sampleIds;
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
@@ -87,6 +89,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 EXCLUDE_GENOTYPES.key(),
                 EXCLUDE_GENOTYPES.defaultValue());
         this.dbAdaptor = dbAdaptor;
+        sampleIndexConfiguration = dbAdaptor.getSampleIndexConfiguration(studyId);
         schema = dbAdaptor.getSchema(studyId);
         variantFileIndexConverter = new VariantFileIndexConverter(schema);
     }
@@ -268,5 +271,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
 
     public HashSet<String> getLoadedGenotypes() {
         return genotypes;
+    }
+
+    public int getSampleIndexVersion() {
+        return sampleIndexConfiguration.getVersion();
     }
 }

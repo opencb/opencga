@@ -19,9 +19,10 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -31,6 +32,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -48,7 +50,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
@@ -114,6 +115,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
+
+        int version = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, SampleIndexConfiguration.defaultConfiguration()
+                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2}))).getVersion();
+        System.out.println("version = " + version);
 
         runETL(engine, getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(engine, getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
@@ -181,7 +186,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void regenerateSampleIndex() throws Exception {
         for (String study : studies) {
             int studyId = dbAdaptor.getMetadataManager().getStudyId(study);
-            String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
+            int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
+            String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
             String copy = orig + "_copy";
 
             dbAdaptor.getHBaseManager().createTableIfNeeded(copy, Bytes.toBytes(GenomeHelper.COLUMN_FAMILY),
