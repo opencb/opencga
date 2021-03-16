@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -1529,6 +1530,43 @@ public class StudyManager extends AbstractManager {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.FACET, fields);
         return queryOptions;
+    }
+
+    // **************************   Protected internal methods  ******************************** //
+
+    public void setVariantEngineConfigurationOptions(String studyStr, ObjectMap options, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = get(studyStr, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                StudyDBAdaptor.QueryParams.UID.key(),
+                StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
+
+        authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        StudyVariantEngineConfiguration configuration = study.getInternal().getVariantEngineConfiguration();
+        if (configuration == null) {
+            configuration = new StudyVariantEngineConfiguration();
+        }
+        configuration.setOptions(options);
+
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key(), configuration);
+        studyDBAdaptor.update(study.getUid(), parameters, QueryOptions.empty());
+    }
+
+    public void setVariantEngineConfigurationSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = get(studyStr, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                StudyDBAdaptor.QueryParams.UID.key(),
+                StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
+
+        authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        StudyVariantEngineConfiguration configuration = study.getInternal().getVariantEngineConfiguration();
+        if (configuration == null) {
+            configuration = new StudyVariantEngineConfiguration();
+        }
+        configuration.setSampleIndex(sampleIndexConfiguration);
+
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key(), configuration);
+        studyDBAdaptor.update(study.getUid(), parameters, QueryOptions.empty());
     }
 
     // **************************   Private methods  ******************************** //

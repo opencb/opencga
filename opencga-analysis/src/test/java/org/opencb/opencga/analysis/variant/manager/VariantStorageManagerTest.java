@@ -25,11 +25,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.Collections;
 import java.util.HashSet;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class VariantStorageManagerTest extends AbstractVariantOperationManagerTest {
 
@@ -41,16 +42,41 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
 
     @Test
     public void testConfigure() throws CatalogException, StorageEngineException {
-        ObjectMap expectedConfiguration = new ObjectMap("Key", "value");
+        ObjectMap expectedConfiguration = new ObjectMap("Key", "value").append("otherKey", "generalValue");
         String existingKey = variantManager.getVariantStorageEngine(studyId, sessionId).getOptions().keySet().iterator().next();
         expectedConfiguration.put(existingKey, "NEW_VALUE");
 
+        ObjectMap expectedStudyConfiguration1 = new ObjectMap(expectedConfiguration)
+                .append("KeyFromThisStudy", "12342134")
+                .append(existingKey, "NEW_VALUE_STUDY_1");
+        ObjectMap expectedStudyConfiguration2 = new ObjectMap(expectedConfiguration)
+                .append("KeyFromTheSecondStudy", "afdfwef")
+                .append(existingKey, "NEW_VALUE_STUDY_2");
+
         variantManager.configureProject(projectId, expectedConfiguration, sessionId);
+        variantManager.configureStudy(studyFqn, expectedStudyConfiguration1, sessionId);
+        variantManager.configureStudy(studyId2, expectedStudyConfiguration2, sessionId);
 
         ObjectMap configuration = variantManager.getDataStoreByProjectId(projectId, sessionId).getConfiguration();
         assertEquals(expectedConfiguration, configuration);
 
-        assertEquals("NEW_VALUE", variantManager.getVariantStorageEngine(studyId, sessionId).getOptions().get(existingKey));
+        VariantStorageEngine vse = variantManager.getVariantStorageEngine(studyId, sessionId);
+        VariantStorageEngine vse1 = variantManager.getVariantStorageEngineForStudyOperation(studyFqn, null, sessionId);
+        VariantStorageEngine vse2 = variantManager.getVariantStorageEngineForStudyOperation(studyId2, null, sessionId);
+
+        expectedConfiguration.forEach((k, v) -> assertEquals(v, vse.getOptions().get(k)));
+        expectedStudyConfiguration1.forEach((k, v) -> assertEquals(v, vse1.getOptions().get(k)));
+        expectedStudyConfiguration2.forEach((k, v) -> assertEquals(v, vse2.getOptions().get(k)));
+        assertEquals("NEW_VALUE", vse.getOptions().get(existingKey));
+        assertEquals("NEW_VALUE_STUDY_1", vse1.getOptions().get(existingKey));
+
+        assertNull(vse.getOptions().get("KeyFromThisStudy"));
+        assertNotNull(vse1.getOptions().get("KeyFromThisStudy"));
+        assertNull(vse2.getOptions().get("KeyFromThisStudy"));
+
+        assertNull(vse.getOptions().get("KeyFromTheSecondStudy"));
+        assertNull(vse1.getOptions().get("KeyFromTheSecondStudy"));
+        assertNotNull(vse2.getOptions().get("KeyFromTheSecondStudy"));
     }
 
     @Test
