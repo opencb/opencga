@@ -338,13 +338,13 @@ public class RgaManager extends StorageManager implements AutoCloseable {
                     DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
                     return ((Number) result.first().getAggregationValues().get(0)).intValue();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Could not obtain the count: {}", e.getMessage(), e);
                 }
                 return -1;
             });
         }
 
-        // If the user is querying by gene id, we don't need to do a facet first
+        // If the user is querying by variant id, we don't need to do a facet first
         if (!auxQuery.containsKey(RgaDataModel.VARIANTS)) {
             // 1st. we perform a facet to get the different variant ids matching the user query and using the skip and limit values
             QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS);
@@ -352,6 +352,9 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             facetOptions.putIfNotNull(QueryOptions.SKIP, queryOptions.get(QueryOptions.SKIP));
 
             DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+            if (result.getNumResults() == 0) {
+                return OpenCGAResult.empty(KnockoutByVariant.class);
+            }
             List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.VARIANTS, variantIds);
         }
