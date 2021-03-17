@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
@@ -179,6 +180,16 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                     try {
                         KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
                                 KnockoutVariant.class);
+                        if (StringUtils.isEmpty(knockoutVariant.getChromosome())) {
+                            // Fill typical variant fields
+                            Variant variant = new Variant(knockoutVariant.getId());
+                            knockoutVariant.setChromosome(variant.getChromosome());
+                            knockoutVariant.setStart(variant.getStart());
+                            knockoutVariant.setEnd(variant.getEnd());
+                            knockoutVariant.setLength(variant.getLength());
+                            knockoutVariant.setReference(variant.getReference());
+                            knockoutVariant.setAlternate(variant.getAlternate());
+                        }
                         if (variantIds.isEmpty() || variantIds.contains(knockoutVariant.getId())) {
                             knockoutVariantList.add(knockoutVariant);
                         }
