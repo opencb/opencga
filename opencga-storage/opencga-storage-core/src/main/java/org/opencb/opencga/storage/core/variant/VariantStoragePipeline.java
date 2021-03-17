@@ -377,8 +377,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected Task<Variant, Variant> initNormalizer(VariantFileMetadata metadata) throws StorageEngineException {
         boolean generateReferenceBlocks = options.getBoolean(GVCF.key(), false);
         Collection<String> enabledExtensions = getOptions()
-                .getAsStringList(NORMALIZATION_EXTENSIONS.key(),
-                        NORMALIZATION_EXTENSIONS.defaultValue());
+                .getAsStringList(NORMALIZATION_EXTENSIONS.key());
         VariantNormalizer.VariantNormalizerConfig normalizerConfig = new VariantNormalizer.VariantNormalizerConfig()
                 .setReuseVariants(true)
                 .setNormalizeAlleles(true)
