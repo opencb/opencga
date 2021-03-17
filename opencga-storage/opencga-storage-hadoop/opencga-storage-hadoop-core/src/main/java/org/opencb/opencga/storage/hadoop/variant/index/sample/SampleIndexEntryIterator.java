@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
 import java.util.Iterator;
@@ -30,7 +31,7 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
 
     default SampleVariantIndexEntry nextSampleVariantIndexEntry() {
         AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
-        short fileIndex = 0;
+        BitBuffer fileIndex = null;
         if (hasFileIndex()) {
             fileIndex = nextFileIndexEntry();
         }
@@ -65,9 +66,9 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
     /**
      * @return the file index value of the next element.
      */
-    short nextFileIndexEntry();
+    BitBuffer nextFileIndexEntry();
 
-    short nextMultiFileIndexEntry();
+    BitBuffer nextMultiFileIndexEntry();
 
     boolean hasParentsIndex();
 

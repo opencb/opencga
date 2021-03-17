@@ -69,7 +69,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         sampleIndexDBAdaptor = new SampleIndexDBAdaptor(hBaseManager, tableNameGenerator, metadataManager);
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
-        sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
+        sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(sampleIndexQuery.getStudy());
 
         allChromosomes = new TreeSet<>(VariantPhoenixKeyFactory.HBASE_KEY_CHROMOSOME_COMPARATOR);

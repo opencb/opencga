@@ -20,7 +20,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.app.cli.server.options.ServerCommandOptions;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
 import org.opencb.opencga.storage.server.grpc.GrpcStorageServer;

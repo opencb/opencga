@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.storage.core.config.ConfigurationOption;
+import org.opencb.opencga.core.config.ConfigurationOption;
 
 public enum VariantStorageOptions implements ConfigurationOption {
 

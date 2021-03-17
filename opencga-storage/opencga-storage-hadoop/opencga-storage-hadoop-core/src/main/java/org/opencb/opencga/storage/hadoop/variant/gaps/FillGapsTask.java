@@ -21,7 +21,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryMultiFileToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,15 +71,15 @@ public class FillGapsTask {
         return this;
     }
 
-    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, List<Put> sampleIndexPuts,
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put,
                                              Integer fileId,
                                              VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
-        return fillGaps(variant, missingSamples, put, sampleIndexPuts, fileId,
+        return fillGaps(variant, missingSamples, put, fileId,
                 nonRefVcfSlice, nonRefVcfSlice.getRecordsList().listIterator(),
                 refVcfSlice, refVcfSlice.getRecordsList().listIterator());
     }
 
-    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put, List<Put> sampleIndexPuts,
+    public VariantOverlappingStatus fillGaps(Variant variant, Set<Integer> missingSamples, Put put,
                                              Integer fileId,
                                              VcfSliceProtos.VcfSlice nonRefVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> nonRefIterator,
                                              VcfSliceProtos.VcfSlice refVcfSlice, ListIterator<VcfSliceProtos.VcfRecord> refIterator) {
@@ -159,7 +158,7 @@ public class FillGapsTask {
 ////                    throw new IllegalStateException(msg);
 //                    logger.warn(msg);
 //                }
-                return processMultipleOverlappings(variant, missingSamples, put, sampleIndexPuts, fileId);
+                return processMultipleOverlappings(variant, missingSamples, put, fileId);
             }
         } else {
             vcfRecord = overlappingRecords.get(0).getRight();
@@ -170,7 +169,7 @@ public class FillGapsTask {
         if (archiveVariant.getType().equals(VariantType.NO_VARIATION)) {
             overlappingStatus = processReferenceOverlap(missingSamples, put, variant, archiveVariant);
         } else {
-            overlappingStatus = processVariantOverlap(variant, missingSamples, put, sampleIndexPuts, archiveVariant);
+            overlappingStatus = processVariantOverlap(variant, missingSamples, put, archiveVariant);
         }
         return overlappingStatus;
     }
@@ -217,7 +216,7 @@ public class FillGapsTask {
     }
 
     protected VariantOverlappingStatus processVariantOverlap(Variant variant, Set<Integer> missingSamples, Put put,
-                                                             List<Put> sampleIndexPuts, Variant archiveVariant) {
+                                                             Variant archiveVariant) {
         VariantOverlappingStatus overlappingStatus = VARIANT;
 
         Variant mergedVariant = new Variant(
@@ -298,23 +297,6 @@ public class FillGapsTask {
             mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
         }
 
-        if (studyEntry.getSampleDataKeySet().contains("GT")) {
-            int samplePosition = 0;
-            Integer gtIdx = studyEntry.getSampleDataKeyPosition("GT");
-            for (String sampleName : studyEntry.getOrderedSamplesName()) {
-                Integer sampleId = getSampleId(sampleName);
-                if (missingSamples.contains(sampleId)) {
-                    String gt = studyEntry.getSamples().get(samplePosition).getData().get(gtIdx);
-                    // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
-                    if (SampleIndexSchema.validGenotype(gt) && !hasMainAlternate(gt)) {
-                        Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
-                        sampleIndexPuts.add(sampleIndexPut);
-                    }
-                }
-                samplePosition++;
-            }
-        }
-
         studyConverter.convert(mergedVariant, put, missingSamples, overlappingStatus);
         return overlappingStatus;
     }
@@ -350,7 +332,7 @@ public class FillGapsTask {
     }
 
     protected VariantOverlappingStatus processMultipleOverlappings(Variant variant, Set<Integer> missingSamples, Put put,
-                                                                   List<Put> sampleIndexPuts, Integer fileId) {
+                                                                   Integer fileId) {
         VariantOverlappingStatus overlappingStatus = MULTI;
 
         String gt = "2/2";
@@ -358,11 +340,6 @@ public class FillGapsTask {
         List<SampleEntry> samplesData = new ArrayList<>(samplePosition.size());
         for (int i = 0; i < samplePosition.size(); i++) {
             samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
-        }
-
-        for (Integer sampleId : missingSamples) {
-            Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
-            sampleIndexPuts.add(sampleIndexPut);
         }
 
         VariantBuilder builder = Variant.newBuilder(
@@ -384,14 +361,6 @@ public class FillGapsTask {
         studyConverter.convert(builder.build(), put, missingSamples, overlappingStatus);
 
         return overlappingStatus;
-    }
-
-    private Put buildSampleIndexPut(Variant variant, Put put, Integer sampleId, String gt) {
-        Put sampleIndexPut = new Put(
-                SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
-                put.getTimeStamp());
-        sampleIndexPut.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, SampleIndexSchema.toPendingColumn(variant, gt), null);
-        return sampleIndexPut;
     }
 
     protected boolean hasMainAlternate(String gt) {

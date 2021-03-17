@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.mr;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -21,7 +23,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.storage.core.config.ConfigurationOption;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.ConfigurationOption;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -34,11 +38,14 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverterConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -157,7 +164,8 @@ public class VariantMapReduceUtil {
                 Object regions = query.get(VariantQueryParam.REGION.key());
                 Object geneRegions = query.get(VariantQueryUtils.ANNOT_GENE_REGIONS.key());
                 // Remove extra fields from the query
-                new SampleIndexQueryParser(metadataManager).parse(query);
+                SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
+                setSampleIndexConfiguration(job, sampleIndexQuery.getSchema().getConfiguration());
 
                 // Preserve regions and gene_regions
                 query.put(VariantQueryParam.REGION.key(), regions);
@@ -267,7 +275,8 @@ public class VariantMapReduceUtil {
                     && SampleIndexQueryParser.validSampleIndexQuery(query);
             if (useSampleIndex) {
                 // Remove extra fields from the query
-                new SampleIndexQueryParser(metadataManager).parse(query);
+                SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
+                setSampleIndexConfiguration(job, sampleIndexQuery.getSchema().getConfiguration());
 
                 LOGGER.info("Use sample index to read from HBase");
             }
@@ -472,6 +481,29 @@ public class VariantMapReduceUtil {
         }
         for (QueryParam param : VariantQueryUtils.INTERNAL_VARIANT_QUERY_PARAMS) {
             addParam(query, conf, param);
+        }
+    }
+
+    public static void setSampleIndexConfiguration(Job job, SampleIndexConfiguration configuration) {
+        try {
+            String str = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(configuration);
+            job.getConfiguration().set(SampleIndexConfiguration.class.getName(), str);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public static SampleIndexConfiguration getSampleIndexConfiguration(Configuration conf) {
+        String value = conf.get(SampleIndexConfiguration.class.getName());
+        if (value == null || value.isEmpty()) {
+            throw new IllegalStateException("Missing " + SampleIndexConfiguration.class.getName());
+        } else {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                return objectMapper.readValue(value, SampleIndexConfiguration.class);
+            } catch (JsonProcessingException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 

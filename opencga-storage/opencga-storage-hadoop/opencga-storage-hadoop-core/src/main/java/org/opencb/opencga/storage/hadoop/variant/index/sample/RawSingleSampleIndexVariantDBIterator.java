@@ -31,11 +31,12 @@ public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<Sam
             regionGroups = query.getRegionGroups();
         }
 
+        SampleIndexSchema schema = dbAdaptor.getSchema(query.getStudy());
         Iterator<Iterator<SampleVariantIndexEntry>> iterators = regionGroups.stream()
                 .map(regions -> {
                     // One scan per region group
                     Scan scan = dbAdaptor.parseIncludeAll(query, regions);
-                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(dbAdaptor.getConfiguration());
+                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(schema);
                     RawSampleIndexEntryFilter filter = new RawSampleIndexEntryFilter(query, regions);
                     try {
                         ResultScanner scanner = table.getScanner(scan);

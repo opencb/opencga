@@ -74,7 +74,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
 
     @Override
     protected long primaryCount(Query query, QueryOptions options) {
-        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
         return sampleIndexDBAdaptor.count(sampleIndexQuery);
     }
 
@@ -90,7 +90,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     @Override
     protected Object getOrIterator(Query inputQuery, QueryOptions options, boolean iterator) {
         Query query = new Query(inputQuery);
-        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(query);
 
         return getOrIterator(query, options, iterator, sampleIndexQuery);
     }

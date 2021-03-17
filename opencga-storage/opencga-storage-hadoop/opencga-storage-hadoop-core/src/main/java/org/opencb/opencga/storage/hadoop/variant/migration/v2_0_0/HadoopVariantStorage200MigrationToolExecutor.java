@@ -76,15 +76,15 @@ public class HadoopVariantStorage200MigrationToolExecutor extends VariantStorage
                         Integer studyId = entry.getValue();
                         metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
                             if (sampleMetadata.isIndexed()
-                                    && (SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata).equals(Status.READY)
-                                    || SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata).equals(Status.READY))) {
+                                    && (SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata, 1).equals(Status.READY)
+                                    || SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1).equals(Status.READY))) {
                                 samplesToModify.add(sampleMetadata.getId());
                             }
                         });
                         for (Integer sampleId : samplesToModify) {
                             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                                SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, Status.NONE);
-                                SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, Status.NONE);
+                                SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, Status.NONE, 0);
+                                SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, Status.NONE, 0);
                                 return sampleMetadata;
                             });
                         }

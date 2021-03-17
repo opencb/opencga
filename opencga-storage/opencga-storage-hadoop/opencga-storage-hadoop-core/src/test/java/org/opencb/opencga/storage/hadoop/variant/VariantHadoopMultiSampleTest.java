@@ -649,16 +649,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        List<Integer> sampleIds = new ArrayList<>();
-        metadataManager.sampleMetadataIterator(studyMetadata.getId()).forEachRemaining(s -> sampleIds.add(s.getId()));
+        List<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet());
 
-        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds.subList(0, sampleIds.size()/2));
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples.subList(0, samples.size()/2));
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
-        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds.subList(sampleIds.size()/2, sampleIds.size()));
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples.subList(samples.size()/2, samples.size()));
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
-        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds);
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, samples);
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
 
