@@ -216,6 +216,13 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
 
     private List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual)
             throws RgaException, JsonProcessingException {
+        if (StringUtils.isEmpty(knockoutByIndividual.getId())) {
+            throw new RgaException("Missing mandatory field 'id'");
+        }
+        if (StringUtils.isEmpty(knockoutByIndividual.getSampleId())) {
+            throw new RgaException("Missing mandatory field 'sampleId'");
+        }
+
         List<RgaDataModel> result = new LinkedList<>();
 
         if (knockoutByIndividual.getGenes() != null) {
@@ -289,8 +296,7 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                     Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
                     String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
-                    String individualId = StringUtils.isNotEmpty(knockoutByIndividual.getId()) ? knockoutByIndividual.getId()
-                            : knockoutByIndividual.getSampleId();
+                    String individualId = knockoutByIndividual.getId();
 
                     int numParents = 0;
                     if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherId())) {
