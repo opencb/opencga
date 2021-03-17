@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.alignment;
 
 import org.opencb.opencga.storage.core.StorageEngine;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

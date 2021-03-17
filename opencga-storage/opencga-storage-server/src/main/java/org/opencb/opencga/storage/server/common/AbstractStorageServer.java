@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.server.common;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

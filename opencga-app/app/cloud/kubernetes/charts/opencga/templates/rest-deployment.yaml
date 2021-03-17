@@ -72,15 +72,16 @@ spec:
           - name: opencgascratch
             mountPath: /tmp/opencga_scratch
         - name: dind-daemon
-          image: docker:dind
+          image: docker:dind-rootless
           securityContext:
             privileged: true
+            runAsUser: 1000
           command: ["/bin/sh", "-c"]
           args:
           - |
             dockerd-entrypoint.sh &
             sleep 5
-            umount /tmp
+            export DOCKER_HOST=unix:///run/user/1000/docker.sock
             docker pull opencb/opencga-r:{{- .Chart.AppVersion }}
             sleep infinity
           env:

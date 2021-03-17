@@ -19,9 +19,10 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -31,6 +32,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -114,6 +116,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
+        int version = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, SampleIndexConfiguration.defaultConfiguration()
+                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2}))).getVersion();
+        System.out.println("version = " + version);
+
         runETL(engine, getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(engine, getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(engine, getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
@@ -136,6 +142,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void checkLoadedData() throws Exception {
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         int studyId = variantStorageEngine.getMetadataManager().getStudyId(STUDY_NAME);
+        SampleIndexVariantBiConverter converter = new SampleIndexVariantBiConverter(SampleIndexSchema.defaultSampleIndexSchema());
         Iterator<SampleMetadata> it = variantStorageEngine.getMetadataManager().sampleMetadataIterator(studyId);
         while (it.hasNext()) {
             SampleMetadata sample = it.next();
@@ -162,7 +169,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     if (entry.getValue().getVariants() == null) {
                         actualVariants = Collections.emptyList();
                     } else {
-                        actualVariants = Lists.newArrayList(entry.getValue().iterator())
+                        actualVariants = Lists.newArrayList(converter.toVariantsIterator(entry.getValue()))
                                 .stream()
                                 .map(Variant::toString)
                                 .collect(toList());
@@ -179,7 +186,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void regenerateSampleIndex() throws Exception {
         for (String study : studies) {
             int studyId = dbAdaptor.getMetadataManager().getStudyId(study);
-            String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
+            int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
+            String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
             String copy = orig + "_copy";
 
             dbAdaptor.getHBaseManager().createTableIfNeeded(copy, Bytes.toBytes(GenomeHelper.COLUMN_FAMILY),
@@ -212,7 +220,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             Connection c = dbAdaptor.getHBaseManager().getConnection();
 
-            VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), copy);
+            VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
 
             ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
             ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
@@ -231,7 +239,15 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 assertEquals(row, origFamily.size(), copyFamily.size());
 
                 for (byte[] key : origFamily.keySet()) {
-                    assertArrayEquals(row + " " + Bytes.toString(key), origFamily.get(key), copyFamily.get(key));
+                    byte[] expecteds = origFamily.get(key);
+                    byte[] actuals = copyFamily.get(key);
+                    try {
+                        assertArrayEquals(row + " " + Bytes.toString(key), expecteds, actuals);
+                    } catch (AssertionError error) {
+                        System.out.println("Expected " + IndexUtils.bytesToString(expecteds));
+                        System.out.println("actuals " + IndexUtils.bytesToString(actuals));
+                        throw error;
+                    }
                 }
             }
         }
@@ -397,7 +413,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("#Query SampleIndex");
         SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         Query sampleIndexVariantQuery = variantStorageEngine.preProcessQuery(query, new QueryOptions());
-        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(sampleIndexVariantQuery);
+        SampleIndexQuery indexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(sampleIndexVariantQuery);
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
 //                .count(indexQuery, "NA19600");
         DataResult<Variant> result = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
@@ -525,14 +541,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                             .append(VariantQueryParam.STUDY.key(), study)
                             .append(GENOTYPE.key(), sampleName + ":1|0,0|1,1|1");
                     SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
-                    long actualCount = sampleIndexDBAdaptor.count(sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query)));
+                    long actualCount = sampleIndexDBAdaptor.count(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query)));
 
                     System.out.println("---");
                     System.out.println("Count indexTable " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + actualCount);
 
                     stopWatch = StopWatch.createStarted();
-                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(new Query(query))).toDataResult().getNumResults();
+                    long actualCountIterator = sampleIndexDBAdaptor.iterator(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query))).toDataResult().getNumResults();
                     System.out.println("---");
                     System.out.println("Count indexTable iterator " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
                     System.out.println("Count = " + actualCountIterator);

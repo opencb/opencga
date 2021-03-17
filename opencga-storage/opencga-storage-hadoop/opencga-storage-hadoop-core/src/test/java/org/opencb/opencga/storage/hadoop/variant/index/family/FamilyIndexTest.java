@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.AbstractSampleIndexEntryFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.net.URI;
 import java.util.*;
@@ -75,7 +76,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
             loaded = true;
         }
-        sampleIndexQueryParser = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().getSampleIndexQueryParser();
+        sampleIndexQueryParser = new SampleIndexQueryParser(metadataManager, SampleIndexSchema.defaultSampleIndexSchema());
     }
 
     @Test

@@ -6,12 +6,12 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -37,10 +37,10 @@ public class AnnotationIndexConverterTest {
                 "STUDY:POP_5",
                 "STUDY:POP_6"
         );
-        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
-                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration();
+        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
 
-        converter = new AnnotationIndexConverter(configuration);
+        converter = new AnnotationIndexConverter(new SampleIndexSchema(configuration));
     }
 
 //    @After
@@ -166,9 +166,9 @@ public class AnnotationIndexConverterTest {
     @Test(expected = IllegalArgumentException.class)
     public void testDuplicatedPopulations() {
         List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
-        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
-                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
-        new AnnotationIndexConverter(configuration);
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration();
+        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
+        new AnnotationIndexConverter(new SampleIndexSchema(configuration));
     }
 
     @Test

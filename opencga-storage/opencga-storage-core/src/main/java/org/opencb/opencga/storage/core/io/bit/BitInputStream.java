@@ -15,32 +15,53 @@ package org.opencb.opencga.storage.core.io.bit;
  *
  * @see BitOutputStream
  */
-public class BitInputStream {
+public class BitInputStream extends BitBuffer {
 
-    private final byte[] value;
-    private final int numBits;
-    private int remainingBits;
-    private int idx;
-    private int bitIdx;
+    private int bitsAvailable;
+    private int bitsRead;
 
     public BitInputStream(byte[] value) {
         this(value, 0, value.length);
     }
 
     public BitInputStream(byte[] value, int offset, int length) {
-        this.value = value;
-        numBits = length * Byte.SIZE;
-        remainingBits = numBits;
-        idx = offset;
-        bitIdx = 0;
+        super(value, offset * Byte.SIZE, length * Byte.SIZE);
+        bitsAvailable = length * Byte.SIZE;
+        bitsRead = 0;
+    }
+
+    public BitInputStream(BitBuffer bitBuffer) {
+        super(bitBuffer.getBuffer(), bitBuffer.getBitOffset(), bitBuffer.getBitLength());
+        bitsAvailable = bitBuffer.getBitLength();
+        bitsRead = 0;
     }
 
     public int remainingBits() {
-        return remainingBits;
+        return bitsAvailable;
     }
 
     public byte readByte() {
-        return readByte(Byte.SIZE);
+        return readBytePartial(Byte.SIZE);
+    }
+
+    public BitBuffer readBitBuffer(int bitLength) {
+        BitBuffer bitBuffer = getBitBuffer(bitsRead, bitLength);
+        bitsRead += bitLength;
+        bitsAvailable -= bitLength;
+        return bitBuffer;
+    }
+
+    /**
+     * Read up to 32 bits (one int).
+     *
+     * @param length Number of bits to read.
+     * @return read value
+     */
+    public int readIntPartial(int length) {
+        int r = getIntPartial(bitsRead, length);
+        bitsRead += length;
+        bitsAvailable -= length;
+        return r;
     }
 
     /**
@@ -49,55 +70,50 @@ public class BitInputStream {
      * @param length Number of bits to read.
      * @return read value
      */
-    public byte readByte(int length) {
-        if (length > Byte.SIZE) {
-            throw new IllegalArgumentException();
-        }
-        remainingBits -= length;
-        if (remainingBits < 0) {
-            throw new IllegalArgumentException();
-        }
-        int r; // Use int to avoid intermediate castings
-        if (length > (Byte.SIZE - bitIdx)) {
-            r = ((value[idx] >>> bitIdx) & mask(Byte.SIZE - bitIdx));
-            idx++;
-            length -= Byte.SIZE - bitIdx;
-            r |= (value[idx] & mask(length)) << (Byte.SIZE - bitIdx);
-            bitIdx = length;
-        } else {
-            r = ((value[idx] >>> bitIdx) & mask(length));
-            bitIdx += length;
-            if (bitIdx == Byte.SIZE) {
-                bitIdx = 0;
-                idx++;
-            }
-        }
-        return (byte) r;
+    public byte readBytePartial(int length) {
+        byte b = super.getBytePartial(bitsRead, length);
+        bitsRead += length;
+        bitsAvailable -= length;
+        return b;
     }
 
     public byte[] readBytes(int numValues, int valueBitLength) {
         byte[] bytes = new byte[numValues];
         for (int i = 0; i < numValues; i++) {
-            bytes[i] = readByte(valueBitLength);
+            bytes[i] = readBytePartial(valueBitLength);
         }
         return bytes;
     }
 
-    public byte[] read(int length) {
-        int bytes = length / Byte.SIZE;
-        int bits = length % Byte.SIZE;
+    public byte[] read(int lengthBits) {
+        int bytes = lengthBits / Byte.SIZE;
+        int bits = lengthBits % Byte.SIZE;
         byte[] result = new byte[bytes + (bits > 0 ? 1 : 0)];
         for (int i = 0; i < bytes; i++) {
             result[i] = readByte();
         }
         if (bits > 0) {
-            result[bytes] = readByte(bits);
+            result[bytes] = readBytePartial(bits);
         }
         return result;
     }
 
-    private static int mask(int i) {
-        return (1 << i) - 1;
+    /**
+     * Skips over and discards n bits of data from this input stream.
+     *
+     * @param numBits n – the number of bits to be skipped.
+     * @return the actual number of bytes skipped.
+     */
+    public long skip(int numBits) {
+        int skipped;
+        if (bitsAvailable < numBits) {
+            skipped = this.bitsAvailable;
+        } else {
+            skipped = numBits;
+        }
+        bitsRead += skipped;
+        bitsAvailable -= skipped;
+        return skipped;
     }
 
 }

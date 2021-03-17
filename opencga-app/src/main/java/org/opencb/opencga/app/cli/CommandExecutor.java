@@ -27,7 +27,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

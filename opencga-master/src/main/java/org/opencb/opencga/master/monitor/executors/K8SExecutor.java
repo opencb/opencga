@@ -55,6 +55,8 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_VOLUMES = "k8s.volumes";
     public static final String K8S_NODE_SELECTOR = "k8s.nodeSelector";
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
+    public static final String K8S_SECURITY_CONTEXT = "k8s.securityContext";
+    public static final String K8S_POD_SECURITY_CONTEXT = "k8s.podSecurityContext";
     public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
     public static final int DEFAULT_TIMEOUT = 30000; // in ms
 
@@ -85,6 +87,8 @@ public class K8SExecutor implements BatchExecutor {
     private final List<Volume> volumes;
     private final Map<String, String> nodeSelector;
     private final List<Toleration> tolerations;
+    private final SecurityContext securityContext;
+    private final PodSecurityContext podSecurityContext;
     private final ResourceRequirements resources;
     private final Config k8sConfig;
     private final Container dockerDaemonSidecar;
@@ -115,6 +119,22 @@ public class K8SExecutor implements BatchExecutor {
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         nodeSelector = getMap(execution, K8S_NODE_SELECTOR);
+        if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
+            securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
+        } else {
+            securityContext = new SecurityContextBuilder()
+                    .withRunAsUser(1001L)
+                    .withRunAsNonRoot(true)
+                    .withReadOnlyRootFilesystem(true)
+                    .build();
+        }
+        if (execution.getOptions().containsKey(K8S_POD_SECURITY_CONTEXT)) {
+            podSecurityContext = buildObject(execution.getOptions().get(K8S_POD_SECURITY_CONTEXT), PodSecurityContext.class);
+        } else {
+            podSecurityContext = new PodSecurityContextBuilder()
+                    .withRunAsNonRoot(true)
+                    .build();
+        }
 
         HashMap<String, Quantity> requests = new HashMap<>();
         for (Map.Entry<String, String> entry : getMap(execution, K8S_REQUESTS).entrySet()) {
@@ -129,11 +149,14 @@ public class K8SExecutor implements BatchExecutor {
                 .withRequests(requests)
                 .build();
 
-        String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind");
+        String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind-rootless");
         dockerDaemonSidecar = new ContainerBuilder()
                 .withName("dind-daemon")
                 .withImage(dindImageName)
-                .withSecurityContext(new SecurityContextBuilder().withPrivileged(true).build())
+                .withSecurityContext(new SecurityContextBuilder()
+                        .withRunAsNonRoot(true)
+                        .withRunAsUser(1000L)
+                        .withPrivileged(true).build())
                 .withEnv(new EnvVar("DOCKER_TLS_CERTDIR", "", null))
 //                .withResources(resources) // TODO: Should we add resources here?
                 .withCommand("/bin/sh", "-c")
@@ -223,6 +246,7 @@ public class K8SExecutor implements BatchExecutor {
                                                         + getCommandLine(commandLine, stdout, stderr))
                                                 .withVolumeMounts(volumeMounts)
                                                 .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
+                                                .withSecurityContext(securityContext)
                                                 .build())
                                         .withNodeSelector(nodeSelector)
                                         .withTolerations(tolerations)
@@ -230,6 +254,7 @@ public class K8SExecutor implements BatchExecutor {
                                         .addAllToVolumes(volumes)
                                         .addToVolumes(DOCKER_GRAPH_STORAGE_VOLUME)
                                         .addToVolumes(TMP_POD_VOLUME)
+                                        .withSecurityContext(podSecurityContext)
                                         .build())
                                 .build())
                         .build()

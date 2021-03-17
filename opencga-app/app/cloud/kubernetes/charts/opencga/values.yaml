@@ -78,16 +78,16 @@ rest:
     # If not set and create is true, a name is generated using the fullname template
     name:
 
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
     # fsGroup: 2000
 
-  securityContext: {}
+  securityContext:
+    readOnlyRootFilesystem: true
+    runAsUser: 1001
     # capabilities:
     #   drop:
     #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
 
   service:
     type: ClusterIP
@@ -152,16 +152,16 @@ master:
     # If not set and create is true, a name is generated using the fullname template
     name:
 
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
     # fsGroup: 2000
 
-  securityContext: {}
+  securityContext:
+    readOnlyRootFilesystem: true
+    runAsUser: 1001
     # capabilities:
     #   drop:
     #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
 
   resources: 
     # We usually recommend not to specify default resources and to leave this as a conscious
@@ -191,16 +191,12 @@ init:
     repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
     pullPolicy: IfNotPresent
 
-  podSecurityContext: {}
-  # fsGroup: 2000
-
-  securityContext: {}
+  securityContext:
+    readOnlyRootFilesystem: true
+    runAsUser: 1001
     # capabilities:
     #   drop:
     #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-  # runAsUser: 1000
 
   resources:
     # We usually recommend not to specify default resources and to leave this as a conscious

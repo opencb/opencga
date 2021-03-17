@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.Values;
@@ -21,7 +22,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationInd
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,16 +35,16 @@ import static org.opencb.opencga.storage.hadoop.variant.index.annotation.Annotat
 
 public class SampleIndexEntryFilterTest {
 
-    private SampleIndexConfiguration configuration;
+    private SampleIndexSchema schema;
 
     @Before
     public void setUp() throws Exception {
-        configuration = new SampleIndexConfiguration()
+        schema = new SampleIndexSchema(new SampleIndexConfiguration()
                 .addPopulationRange(new PopulationFrequencyRange("s1", "ALL"))
                 .addPopulationRange(new PopulationFrequencyRange("s2", "ALL"))
                 .addPopulationRange(new PopulationFrequencyRange("s3", "ALL"))
                 .addPopulationRange(new PopulationFrequencyRange("s4", "ALL"))
-                .addPopulationRange(new PopulationFrequencyRange("s5", "ALL"));
+                .addPopulationRange(new PopulationFrequencyRange("s5", "ALL")));
     }
 
     @Test
@@ -147,7 +148,7 @@ public class SampleIndexEntryFilterTest {
                 .stream()
                 .collect(Collectors.toMap(cell -> Bytes.toString(CellUtil.cloneQualifier(cell)), CellUtil::cloneValue)).get("_PF_0/1");
 
-        SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0, configuration);
+        SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0);
         entry.getGtEntry("0/1")
                 .setPopulationFrequencyIndex(pf)
                 .setCount(5)
@@ -162,7 +163,7 @@ public class SampleIndexEntryFilterTest {
     }
 
     private SampleIndexEntry getSampleIndexEntry2() {
-        AnnotationIndexConverter converter = new AnnotationIndexConverter(SampleIndexConfiguration.defaultConfiguration());
+        AnnotationIndexConverter converter = new AnnotationIndexConverter(SampleIndexSchema.defaultSampleIndexSchema());
 
         Map<String, byte[]> map = new AnnotationIndexPutBuilder()
                 .add(converter.convert(annot(
@@ -184,7 +185,7 @@ public class SampleIndexEntryFilterTest {
                 .collect(Collectors.toMap(cell -> Bytes.toString(CellUtil.cloneQualifier(cell)), CellUtil::cloneValue));
 
 
-        SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0, configuration);
+        SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0);
         entry.getGtEntry("0/1")
                 .setAnnotationIndex(map.get("_A_0/1"))
                 .setCtBtIndex(map.get("_CB_0/1"))
@@ -202,7 +203,7 @@ public class SampleIndexEntryFilterTest {
     }
 
     private byte[] toBytes(String... variants) {
-        return new SampleIndexVariantBiConverter().toBytes(Arrays.stream(variants).map(Variant::new).collect(Collectors.toList()));
+        return new SampleIndexVariantBiConverter(schema).toBytes(Arrays.stream(variants).map(Variant::new).collect(Collectors.toList()));
     }
 
     private PopulationFrequencyQuery buildPopulationFrequencyQuery(String study, int minFreqInclusive, int maxFreqExclusive) {
@@ -213,7 +214,8 @@ public class SampleIndexEntryFilterTest {
     }
 
     private SingleSampleIndexQuery getSingleSampleIndexQuery(Query query) {
-        SampleIndexQueryParser parser = new SampleIndexQueryParser(new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory()));
+        VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        SampleIndexQueryParser parser = new SampleIndexQueryParser(metadataManager, SampleIndexSchema.defaultSampleIndexSchema());
         SampleAnnotationIndexQuery annotQuery = parser.parseAnnotationIndexQuery(query);
 
         return getSingleSampleIndexQuery(annotQuery);
@@ -239,7 +241,7 @@ public class SampleIndexEntryFilterTest {
 
     private SingleSampleIndexQuery getSingleSampleIndexQuery(SampleAnnotationIndexQuery annotationIndexQuery, Map<String, Values<SampleFileIndexQuery>> fileFilterMap) {
         return new SampleIndexQuery(
-                Collections.emptyList(), null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), false, VariantQueryUtils.QueryOperation.AND)
+                schema, Collections.emptyList(), null, "study", Collections.singletonMap("S1", Arrays.asList("0/1", "1/1")), Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(), fileFilterMap, annotationIndexQuery, Collections.emptySet(), false, VariantQueryUtils.QueryOperation.AND)
                 .forSample("S1");
     }
 }

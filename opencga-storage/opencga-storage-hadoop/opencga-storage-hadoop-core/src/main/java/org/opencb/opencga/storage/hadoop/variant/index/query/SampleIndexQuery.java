@@ -5,6 +5,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ public class SampleIndexQuery {
         }
     }
 
+    private final SampleIndexSchema schema;
     private final Collection<List<Region>> regionGroups;
     private final Set<VariantType> variantTypes;
     private final String study;
@@ -47,6 +49,7 @@ public class SampleIndexQuery {
     private final QueryOperation queryOperation;
 
     public SampleIndexQuery(Collection<List<Region>> regionGroups, SampleIndexQuery query) {
+        this.schema = query.schema;
         this.regionGroups = regionGroups;
         this.variantTypes = query.variantTypes;
         this.study = query.study;
@@ -62,19 +65,20 @@ public class SampleIndexQuery {
         this.queryOperation = query.queryOperation;
     }
 
-    public SampleIndexQuery(Collection<List<Region>> regionGroups, String study, Map<String, List<String>> samplesMap,
-                            QueryOperation queryOperation) {
-        this(regionGroups, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
+    public SampleIndexQuery(SampleIndexSchema schema, Collection<List<Region>> regionGroups, String study, Map<String,
+            List<String>> samplesMap, QueryOperation queryOperation) {
+        this(schema, regionGroups, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(),
                 new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
     }
 
-    public SampleIndexQuery(Collection<List<Region>> regionGroups, Set<VariantType> variantTypes, String study,
+    public SampleIndexQuery(SampleIndexSchema schema, Collection<List<Region>> regionGroups, Set<VariantType> variantTypes, String study,
                             Map<String, List<String>> samplesMap, Set<String> multiFileSamplesSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
+        this.schema = schema;
         this.regionGroups = regionGroups;
         this.variantTypes = variantTypes;
         this.study = study;
@@ -88,6 +92,10 @@ public class SampleIndexQuery {
         this.mendelianErrorSet = mendelianErrorSet;
         this.onlyDeNovo = onlyDeNovo;
         this.queryOperation = queryOperation;
+    }
+
+    public SampleIndexSchema getSchema() {
+        return schema;
     }
 
     public Collection<List<Region>> getRegionGroups() {
@@ -175,7 +183,7 @@ public class SampleIndexQuery {
         return fileFilterMap.isEmpty() || fileFilterMap.values()
                 .stream()
                 .flatMap(Values::stream)
-                .allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
+                .allMatch(SampleFileIndexQuery::isEmpty);
     }
 
     public byte getAnnotationIndexMask() {

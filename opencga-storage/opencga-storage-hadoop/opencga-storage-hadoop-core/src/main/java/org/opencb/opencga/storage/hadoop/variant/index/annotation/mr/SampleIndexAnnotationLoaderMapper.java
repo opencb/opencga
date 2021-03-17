@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
@@ -61,7 +62,8 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         for (int i = 0; i < annotationIndices.length; i++) {
             annotationIndices[i] = new HashMap<>();
         }
-        converter = new AnnotationIndexConverter();
+        converter = new AnnotationIndexConverter(
+                new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration())));
     }
 
     @Override

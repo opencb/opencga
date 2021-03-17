@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.junit.Test;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 
 import static org.junit.Assert.*;
 
@@ -35,12 +36,4 @@ public class IndexUtilsTest {
         assertArrayEquals(expectedCounts, IndexUtils.countPerBitToObject(bytes));
     }
 
-    @Test
-    public void testNumericMethods() {
-        assertTrue(IndexUtils.lessThan(1.0, 3.0));
-        assertFalse(IndexUtils.lessThan(2, 2 + IndexUtils.DELTA - IndexUtils.DELTA));
-        assertTrue(IndexUtils.equalsTo(2, 2 + IndexUtils.DELTA - IndexUtils.DELTA));
-        assertNotEquals(2.0, 2 + IndexUtils.DELTA - IndexUtils.DELTA, 0);
-        assertEquals(2.0, 2 + IndexUtils.DELTA - IndexUtils.DELTA, IndexUtils.DELTA);
-    }
 }

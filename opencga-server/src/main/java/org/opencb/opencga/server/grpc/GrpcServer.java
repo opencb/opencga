@@ -19,7 +19,7 @@ package org.opencb.opencga.server.grpc;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.opencb.opencga.server.AbstractStorageServer;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;

@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core;
 
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
