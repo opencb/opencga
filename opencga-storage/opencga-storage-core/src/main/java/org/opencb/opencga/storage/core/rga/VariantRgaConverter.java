@@ -1,10 +1,12 @@
 package org.opencb.opencga.storage.core.rga;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,9 +128,27 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
             for (String individualId : result.get(variantId)) {
                 individualList.add(individualMap.get(individualId));
             }
-            Variant variant = new Variant(variantId);
-            knockoutVariantList.add(new KnockoutByVariant(variantId, variant.getChromosome(), variant.getStart(), variant.getEnd(),
-                    variant.getLength(), variant.getReference(), variant.getAlternate(), individualList));
+
+            KnockoutByVariant knockoutByVariant = new KnockoutByVariant(variantId, individualList);
+
+            // Look for nested variant info
+            KnockoutByIndividual knockoutByIndividual = individualList.get(0);
+            if (CollectionUtils.isNotEmpty(knockoutByIndividual.getGenes())) {
+                KnockoutByIndividual.KnockoutGene gene = knockoutByIndividual.getGenes().stream().findFirst().get();
+                if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
+                    KnockoutTranscript transcript = gene.getTranscripts().stream().findFirst().get();
+                    if (CollectionUtils.isNotEmpty(transcript.getVariants())) {
+                        for (KnockoutVariant transcriptVariant : transcript.getVariants()) {
+                            if (variantId.equals(transcriptVariant.getId())) {
+                                knockoutByVariant.setVariantFields(transcriptVariant);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            knockoutVariantList.add(knockoutByVariant);
         }
         return knockoutVariantList;
     }
