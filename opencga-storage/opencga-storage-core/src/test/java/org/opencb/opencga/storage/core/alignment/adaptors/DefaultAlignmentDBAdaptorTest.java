@@ -22,7 +22,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageOptions;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.File;
 import java.io.FileOutputStream;

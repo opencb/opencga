@@ -9,10 +9,12 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.PopulationFrequencyIndexSchema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -22,7 +24,7 @@ import java.util.Comparator;
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 
 /**
- * Define RowKey and column names.
+ * Define RowKey, column names, and fields. Used to build the sample index.
  *
  * Created on 11/04/19.
  *
@@ -92,10 +94,36 @@ public final class SampleIndexSchema {
     static final String ANNOTATION_CLINICAL_PREFIX = META_PREFIX + "CL_";
     static final byte[] ANNOTATION_CLINICAL_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CLINICAL_PREFIX);
 
-    static final String PENDING_VARIANT_PREFIX = META_PREFIX + "V_";
-    static final byte[] PENDING_VARIANT_PREFIX_BYTES = Bytes.toBytes(PENDING_VARIANT_PREFIX);
+    private final SampleIndexConfiguration configuration;
+    private final FileIndexSchema fileIndex;
+    private final PopulationFrequencyIndexSchema popFreqIndex;
 
-    private SampleIndexSchema() {
+    public SampleIndexSchema(SampleIndexConfiguration configuration) {
+        this.configuration = configuration;
+        fileIndex = new FileIndexSchema(configuration.getFileIndexConfiguration());
+        popFreqIndex = new PopulationFrequencyIndexSchema(configuration.getPopulationRanges());
+    }
+
+    /**
+     * Creates a default SampleIndexSchema.
+     * Test purposes only!
+     * @return Default schema
+     */
+    public static SampleIndexSchema defaultSampleIndexSchema() {
+        SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
+        return new SampleIndexSchema(sampleIndexConfiguration);
+    }
+
+    public SampleIndexConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public PopulationFrequencyIndexSchema getPopFreqIndex() {
+        return popFreqIndex;
+    }
+
+    public FileIndexSchema getFileIndex() {
+        return fileIndex;
     }
 
     public static int getChunkStart(Integer start) {
@@ -184,10 +212,6 @@ public final class SampleIndexSchema {
 
     public static byte[] toGenotypeCountColumn(String genotype) {
         return Bytes.toBytes(GENOTYPE_COUNT_PREFIX + genotype);
-    }
-
-    public static byte[] toPendingColumn(Variant variant, String gt) {
-        return Bytes.toBytes(PENDING_VARIANT_PREFIX + variant.toString() + '_' + gt);
     }
 
     public static byte[] toAnnotationIndexColumn(String genotype) {

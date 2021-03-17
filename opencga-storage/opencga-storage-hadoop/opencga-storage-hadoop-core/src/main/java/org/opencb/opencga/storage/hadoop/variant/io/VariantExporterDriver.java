@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOu
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantFileOutputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -183,7 +184,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQueryParser.validSampleIndexQuery(query);
             if (useSampleIndex) {
                 // Remove extra fields from the query
-                new SampleIndexQueryParser(getMetadataManager()).parse(query);
+                new SampleIndexDBAdaptor(getHBaseManager(), getTableNameGenerator(), getMetadataManager()).parseSampleIndexQuery(query);
 
                 logger.info("Use sample index to read from HBase");
             }

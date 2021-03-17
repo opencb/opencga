@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractArchiveTableMapper;
@@ -29,7 +28,6 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
     private AbstractFillFromArchiveTask task;
 
     private ImmutableBytesWritable variantsTable;
-    private ImmutableBytesWritable sampleIndexTable;
 
     public static void setSamples(Job job, Collection<Integer> sampleIds) {
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Object::toString).collect(Collectors.joining(",")));
@@ -77,8 +75,6 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         task.pre();
 
         variantsTable = new ImmutableBytesWritable(getHelper().getVariantsTable());
-        sampleIndexTable = new ImmutableBytesWritable(Bytes.toBytes(getHelper().getHBaseVariantTableNameGenerator()
-                .getSampleIndexTableName(getHelper().getStudyId())));
     }
 
     @Override
@@ -98,9 +94,6 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
 
         for (Put put : fillResult.getVariantPuts()) {
             ctx.getContext().write(variantsTable, put);
-        }
-        for (Put put : fillResult.getSamplesIndexPuts()) {
-            ctx.getContext().write(sampleIndexTable, put);
         }
         updateStats(ctx.getContext());
     }

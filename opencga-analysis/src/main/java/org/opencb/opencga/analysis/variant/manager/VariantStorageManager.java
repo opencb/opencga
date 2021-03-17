@@ -48,6 +48,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
@@ -245,7 +246,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void annotationLoad(String projectStr, List<String> studies, String loadFile, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         String projectId = getProjectId(projectStr, studies, token);
-        secureOperation(VariantAnnotationIndexOperationTool.ID, projectId, studies, params, token, engine -> {
+        secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, studies, params, token, engine -> {
             new VariantAnnotationOperationManager(this, engine)
                     .annotationLoad(projectStr, getStudiesFqn(studies, token), params, loadFile, token);
             return null;
@@ -310,9 +311,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     public List<VariantScoreMetadata> listVariantScores(String study, String token) throws CatalogException, StorageEngineException {
+        VariantStorageEngine engine = getVariantStorageEngine(study, token);
         String studyFqn = getStudyFqn(study, token);
-        DataStore dataStore = getDataStore(studyFqn, token);
-        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
 
         return engine.getMetadataManager().getStudyMetadata(studyFqn).getVariantScores();
     }
@@ -445,14 +445,41 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-//    public void configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
-//        secureOperation("configure", studyStr, params, token, engine -> {
+    public ObjectMap configureStudy(String studyStr, ObjectMap params, String token) throws CatalogException, StorageEngineException {
+        return secureOperation("configure", studyStr, params, token, engine -> {
+            Study study = catalogManager.getStudyManager()
+                    .get(studyStr,
+                            new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION_OPTIONS.key()),
+                            token)
+                    .first();
+            ObjectMap options;
+            if (study.getInternal() != null
+                    && study.getInternal().getVariantEngineConfiguration() != null
+                    && study.getInternal().getVariantEngineConfiguration().getOptions() != null) {
+                options = study.getInternal().getVariantEngineConfiguration().getOptions();
+            } else {
+                options = new ObjectMap();
+            }
+            options.putAll(params);
+            catalogManager.getStudyManager()
+                    .setVariantEngineConfigurationOptions(studyStr, options, token);
 //            String studyFqn = getStudyFqn(studyStr, token);
 //            engine.getConfigurationManager().configureStudy(studyFqn, params);
-//            return null;
-//        });
-//    }
+            return options;
+        });
+    }
 
+    public void configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+            throws CatalogException, StorageEngineException {
+        secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
+            String studyFqn = getStudyFqn(studyStr, token);
+            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration);
+
+            catalogManager.getStudyManager()
+                    .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
+            return null;
+        });
+    }
 
     // ---------------------//
     //   Query methods      //
@@ -567,10 +594,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException {
-        String study = catalogUtils.getAnyStudy(query, token);
-
-        DataStore dataStore = getDataStore(study, token);
-        VariantStorageEngine storageEngine = getVariantStorageEngine(dataStore);
+        VariantStorageEngine storageEngine = getVariantStorageEngine(query, token);
         catalogUtils.parseQuery(query, token);
         checkSamplesPermissions(query, queryOptions, storageEngine.getMetadataManager(), token);
         return storageEngine.iterator(query, queryOptions);
@@ -773,21 +797,46 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
+    protected VariantStorageEngine getVariantStorageEngineForStudyOperation(String studyStr, ObjectMap params, String token)
+            throws StorageEngineException, CatalogException {
+//        String projectFqn = catalogManager.getStudyManager().getProjectFqn(getStudyFqn(study, token));
+        Study study = catalogManager.getStudyManager()
+                .get(studyStr, new QueryOptions(INCLUDE, Arrays.asList(
+                        StudyDBAdaptor.QueryParams.FQN.key(),
+                        StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token)
+                .first();
+
+        DataStore dataStore = getDataStore(study.getFqn(), token);
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), study.getFqn());
+        if (dataStore.getConfiguration() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        }
+        if (study.getInternal() != null
+                && study.getInternal().getVariantEngineConfiguration() != null
+                && study.getInternal().getVariantEngineConfiguration().getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(study.getInternal().getVariantEngineConfiguration().getOptions());
+        }
+        if (params != null) {
+            variantStorageEngine.getOptions().putAll(params);
+        }
+        return variantStorageEngine;
+    }
+
     protected VariantStorageEngine getVariantStorageEngine(Query query, String token) throws CatalogException, StorageEngineException {
         String study = catalogUtils.getAnyStudy(query, token);
+        return getVariantStorageEngine(study, token);
+    }
 
-        catalogUtils.parseQuery(query, token);
+    protected VariantStorageEngine getVariantStorageEngine(String study, String token)
+            throws StorageEngineException, CatalogException {
         DataStore dataStore = getDataStore(study, token);
         return getVariantStorageEngine(dataStore);
     }
 
-    protected VariantStorageEngine getVariantStorageEngine(String study, String token) throws StorageEngineException, CatalogException {
-        DataStore dataStore = getDataStore(study, token);
-        return getVariantStorageEngine(dataStore);
-    }
-
-    protected VariantStorageEngine getVariantStorageEngine(String study, ObjectMap params, String token) throws StorageEngineException, CatalogException {
-        DataStore dataStore = getDataStore(study, token);
+    protected VariantStorageEngine getVariantStorageEngineByProject(String project, ObjectMap params, String token)
+            throws StorageEngineException, CatalogException {
+        DataStore dataStore = getDataStoreByProjectId(project, token);
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
@@ -795,7 +844,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return variantStorageEngine;
     }
 
-    protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
+    private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
         VariantStorageEngine variantStorageEngine = storageEngineFactory
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         if (dataStore.getConfiguration() != null) {
@@ -906,10 +955,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     private <R> R secureOperationByProject(String operationName, String project, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
-        try (VariantStorageEngine variantStorageEngine = getVariantStorageEngine(getDataStoreByProjectId(project, token))) {
-            if (params != null) {
-                variantStorageEngine.getOptions().putAll(params);
-            }
+        try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineByProject(project, params, token)) {
             return secureOperation(operationName, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
@@ -918,24 +964,24 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     private <R> R secureOperation(String operationName, String study, ObjectMap params, String token, VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
-        try (VariantStorageEngine variantStorageEngine = getVariantStorageEngine(study, params, token)) {
+        try (VariantStorageEngine variantStorageEngine = getVariantStorageEngineForStudyOperation(study, params, token)) {
             return secureOperation(operationName, params, token, variantStorageEngine, operation);
         } catch (IOException e) {
             throw new StorageEngineException("Error closing the VariantStorageEngine", e);
         }
     }
 
-    private <R> R secureOperation(String operationName, String projectStr, String study, ObjectMap params, String token, VariantOperationFunction<R> operation)
-            throws CatalogException, StorageEngineException {
-        List<String> studies = Collections.emptyList();
-        if (StringUtils.isNotEmpty(study)) {
-            studies = Arrays.asList(study.split(","));
-        }
-        return secureOperation(operationName, projectStr, studies, params, token, operation);
-    }
+//    private <R> R secureOperation(String operationName, String projectStr, String study, ObjectMap params, String token, VariantOperationFunction<R> operation)
+//            throws CatalogException, StorageEngineException {
+//        List<String> studies = Collections.emptyList();
+//        if (StringUtils.isNotEmpty(study)) {
+//            studies = Arrays.asList(study.split(","));
+//        }
+//        return secureOperation(operationName, projectStr, studies, params, token, operation);
+//    }
 
-    private <R> R secureOperation(String operationName, String projectStr, List<String> studies, ObjectMap params, String token,
-                                  VariantOperationFunction<R> operation)
+    private <R> R secureOperationByProject(String operationName, String projectStr, List<String> studies, ObjectMap params, String token,
+                                           VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
         projectStr = getProjectId(projectStr, studies, token);
         return secureOperationByProject(operationName, projectStr, params, token, operation);
@@ -992,6 +1038,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secure(Query query, QueryOptions queryOptions, String token, VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
+        catalogUtils.parseQuery(query, token);
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), token);
         return supplier.apply(variantStorageEngine);
     }
@@ -1004,18 +1051,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 .append("queryOptions", new QueryOptions(queryOptions));
         R result = null;
         String userId = catalogManager.getUserManager().getUserId(token);
-        String dbName = null;
         Exception exception = null;
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;
         try {
-            String study = catalogUtils.getAnyStudy(query, token);
-
             StopWatch stopWatch = StopWatch.createStarted();
             catalogUtils.parseQuery(query, token);
             auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
-            DataStore dataStore = getDataStore(study, token);
-            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
 
             stopWatch = StopWatch.createStarted();
             checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), auditAction, token);
@@ -1062,9 +1105,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     private Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException, IOException {
-        String study = catalogUtils.getAnyStudy(query, token);
-        DataStore dataStore = getDataStore(study, token);
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
         return checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), token);
     }
 

@@ -22,6 +22,8 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.GrpcServerConfiguration;
 import org.opencb.opencga.core.config.RestServerConfiguration;
 import org.opencb.opencga.core.config.ServerConfiguration;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.File;
 import java.io.FileInputStream;

@@ -19,7 +19,7 @@ package org.opencb.opencga.server.grpc;
 import io.grpc.stub.StreamObserver;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 /**
  * Created by imedina on 02/01/16.
