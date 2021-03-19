@@ -234,7 +234,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/variant/sample/genotype/index/configure")
+    @Path("/variant/sample/index/configure")
     @ApiOperation(value = "Update SampleIndex configuration", response = ObjectMap.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -252,6 +252,20 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/sample/genotype/index")
+    @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION, hidden = true, response = Job.class)
+    @Deprecated
+    public Response sampleGenotypeIndex(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantSampleIndexParams.DESCRIPTION) VariantSampleIndexParams params) {
+        return sampleIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
+    }
+
+    @POST
+    @Path("/variant/sample/index")
     @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response sampleIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -265,6 +279,20 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/family/genotype/index")
+    @ApiOperation(value = VariantFamilyIndexOperationTool.DESCRIPTION, response = Job.class, hidden = true)
+    @Deprecated
+    public Response familyGenotypeIndex(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantFamilyIndexParams.DESCRIPTION) VariantFamilyIndexParams params) {
+        return familyIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
+    }
+
+    @POST
+    @Path("/variant/family/index")
     @ApiOperation(value = VariantFamilyIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response familyIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
