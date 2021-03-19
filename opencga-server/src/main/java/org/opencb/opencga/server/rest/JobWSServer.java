@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
@@ -37,8 +38,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 @Path("/{apiVersion}/jobs")
 @Produces(MediaType.APPLICATION_JSON)
@@ -64,6 +69,41 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "job", required = true) JobCreateParams inputJob) {
         try {
             OpenCGAResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/retry")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Relaunch a failed job", response = Job.class)
+    public Response retryJob(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTagsStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "job", required = true) JobRetryParams params
+
+            ) {
+        try {
+            List<String> jobDependsOn;
+            if (StringUtils.isNotEmpty(dependsOn)) {
+                jobDependsOn = Arrays.asList(dependsOn.split(","));
+            } else {
+                jobDependsOn = Collections.emptyList();
+            }
+
+            List<String> jobTags;
+            if (StringUtils.isNotEmpty(jobTagsStr)) {
+                jobTags = Arrays.asList(jobTagsStr.split(","));
+            } else {
+                jobTags = Collections.emptyList();
+            }
+            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params,
+                    null, jobId, jobDescription, jobDependsOn, jobTags, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

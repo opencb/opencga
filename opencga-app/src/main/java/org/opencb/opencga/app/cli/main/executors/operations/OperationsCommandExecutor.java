@@ -2,14 +2,13 @@ package org.opencb.opencga.app.cli.main.executors.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
@@ -207,7 +206,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = getParams(cliOptions);
 
-        return openCGAClient.getVariantOperationClient().indexFamilyGenotype(
+        return openCGAClient.getVariantOperationClient().indexVariantFamily(
                 new VariantFamilyIndexParams(
                         cliOptions.family,
                         cliOptions.overwrite,
@@ -220,7 +219,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = getParams(cliOptions);
 
-        return openCGAClient.getVariantOperationClient().indexSampleGenotype(
+        return openCGAClient.getVariantOperationClient().indexVariantSample(
                 new VariantSampleIndexParams(
                         cliOptions.sample,
                         cliOptions.buildIndex,
