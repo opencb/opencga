@@ -6,7 +6,6 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
@@ -67,14 +66,14 @@ public class RgaUtilsTest {
         sequenceOntologyTermList.add(new SequenceOntologyTerm("SO:0001891", "regulatory_region_amplification"));
         sequenceOntologyTermList.add(new SequenceOntologyTerm("SO:0000685", "DNAseI_hypersensitive_site"));
 
-        knockoutVariantList.add(new KnockoutVariant("variant" + count, VariantType.SNV, "Genotype", 10, "PASS", "10", KnockoutVariant.KnockoutType.COMP_HET,
+        knockoutVariantList.add(new KnockoutVariant("chr1:" + count + ":A:C", "rs1234", "Genotype", 10, "PASS", "10", null, KnockoutVariant.KnockoutType.COMP_HET,
                 sequenceOntologyTermList, populationFrequencyList, clinicalSignificance));
 
         populationFrequencyList = new ArrayList<>(3);
         populationFrequencyList.add(new PopulationFrequency(RgaUtils.GNOMAD_GENOMES_STUDY, "ALL", "", "", 1f, 0.2f, 1f, 0.04f, 0.02f));
         populationFrequencyList.add(new PopulationFrequency(RgaUtils.THOUSAND_GENOMES_STUDY, "ALL", "", "", 1f, 0.01f, 1f, 0.01f, 0.01f));
         populationFrequencyList.add(new PopulationFrequency("otherStudy", "ALL", "", "", 1f, 0.04f, 1f, 0.004f, 0.2f));
-        knockoutVariantList.add(new KnockoutVariant("variant" + (count + 1), VariantType.SNV, "Genotype", 2, "NOT_PASS", "1",
+        knockoutVariantList.add(new KnockoutVariant("chr1:" + (count + 1) + ":A:C", "rs4321", "Genotype", 2, "NOT_PASS", "1", null,
                 KnockoutVariant.KnockoutType.COMP_HET, sequenceOntologyTermList, populationFrequencyList, clinicalSignificance));
         knockoutTranscript.setVariants(knockoutVariantList);
         return knockoutTranscript;
