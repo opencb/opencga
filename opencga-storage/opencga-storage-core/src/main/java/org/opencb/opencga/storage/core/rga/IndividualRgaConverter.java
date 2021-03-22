@@ -111,6 +111,8 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
             KnockoutByIndividual knockoutByIndividual = new KnockoutByIndividual();
             knockoutByIndividual.setId(rgaDataModel.getIndividualId());
             knockoutByIndividual.setSampleId(rgaDataModel.getSampleId());
+            knockoutByIndividual.setFatherId(rgaDataModel.getFatherId());
+            knockoutByIndividual.setMotherId(rgaDataModel.getMotherId());
             knockoutByIndividual.setSex(rgaDataModel.getSex() != null ? IndividualProperty.Sex.valueOf(rgaDataModel.getSex()) : null);
             if (rgaDataModel.getPhenotypeJson() != null) {
                 List<Phenotype> phenotypes = new ArrayList<>(rgaDataModel.getPhenotypeJson().size());
