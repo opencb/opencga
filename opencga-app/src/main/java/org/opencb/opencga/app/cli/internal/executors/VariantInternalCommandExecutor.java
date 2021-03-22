@@ -680,7 +680,10 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.filter,
                 cliOptions.qual,
                 cliOptions.skipGenesFile,
-                cliOptions.outdir)
+                cliOptions.outdir,
+                cliOptions.index,
+                cliOptions.indexJobTags
+                )
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 

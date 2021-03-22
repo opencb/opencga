@@ -28,10 +28,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobAclUpdateParams;
-import org.opencb.opencga.core.models.job.JobCreateParams;
-import org.opencb.opencga.core.models.job.ToolInfo;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.stream.Collectors;
@@ -58,6 +55,9 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
+                break;
+            case "retry":
+                queryResponse = retry();
                 break;
             case "info":
                 queryResponse = info();
@@ -114,6 +114,19 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getJobClient().create(createParams, params);
+    }
+
+    private RestResponse<Job> retry() throws ClientException {
+        JobCommandOptions.RetryCommandOptions commandOptions = jobsCommandOptions.retryCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, commandOptions.study);
+        params.putIfNotEmpty(ParamConstants.JOB_ID, commandOptions.id);
+        params.putIfNotNull(ParamConstants.JOB_DEPENDS_ON, commandOptions.jobDependsOn);
+        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, commandOptions.description);
+        params.putIfNotNull(ParamConstants.JOB_TAGS, commandOptions.jobTags);
+
+        return openCGAClient.getJobClient().retry(new JobRetryParams(commandOptions.jobToRetry), params);
     }
 
     private RestResponse<Job> info() throws ClientException {

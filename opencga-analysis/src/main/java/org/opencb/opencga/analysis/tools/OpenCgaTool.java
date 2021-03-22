@@ -328,6 +328,9 @@ public abstract class OpenCgaTool {
     }
 
     /**
+     * Method called internally to obtain the list of steps.
+     *
+     * Will be executed after calling to the {@link #check()} method.
      * @return the tool steps
      */
     protected List<String> getSteps() {

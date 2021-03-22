@@ -21,12 +21,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 
 import java.util.*;
 
 public class KnockoutVariant {
 
     private String id;
+    private String dbSnp;
     private String chromosome;
     private int start;
     private int end;
@@ -38,6 +40,7 @@ public class KnockoutVariant {
     private Integer depth;
     private String filter;
     private String qual;
+    private VariantStats stats;
     private KnockoutType knockoutType;
     private List<PopulationFrequency> populationFrequencies;
     private List<SequenceOntologyTerm> sequenceOntologyTerms;
@@ -56,6 +59,7 @@ public class KnockoutVariant {
     public KnockoutVariant(Variant variant, StudyEntry study, FileEntry file, SampleEntry sample, VariantAnnotation annotation,
                            ConsequenceType ct, KnockoutType knockoutType) {
         this.id = variant.toString();
+        this.dbSnp = annotation.getId();
         this.chromosome = variant.getChromosome();
         this.start = variant.getStart();
         this.end = variant.getEnd();
@@ -67,21 +71,36 @@ public class KnockoutVariant {
         this.depth = getDepth(study, file, sample);
         this.filter = file.getData().get(StudyEntry.FILTER);
         this.qual = file.getData().get(StudyEntry.QUAL);
+        this.stats = study.getStats(StudyEntry.DEFAULT_COHORT);
         this.knockoutType = knockoutType;
         this.sequenceOntologyTerms = ct == null ? null : ct.getSequenceOntologyTerms();
         this.populationFrequencies = annotation.getPopulationFrequencies();
         this.clinicalSignificance = getClinicalSignificance(annotation);
     }
 
-    public KnockoutVariant(String id, VariantType type, String genotype, Integer depth, String filter, String qual,
+    public KnockoutVariant(String id, String dbSnp, String genotype, Integer depth, String filter, String qual, VariantStats stats,
                            KnockoutType knockoutType, List<SequenceOntologyTerm> sequenceOntologyTerms,
                            List<PopulationFrequency> populationFrequencies, List<ClinicalSignificance> clinicalSignificance) {
-        this.id = id;
-        this.type = type;
+        this(new Variant(id), dbSnp, genotype, depth, filter, qual, stats, knockoutType, sequenceOntologyTerms, populationFrequencies, clinicalSignificance);
+    }
+
+    public KnockoutVariant(Variant variant, String dbSnp, String genotype, Integer depth, String filter, String qual, VariantStats stats,
+                           KnockoutType knockoutType, List<SequenceOntologyTerm> sequenceOntologyTerms,
+                           List<PopulationFrequency> populationFrequencies, List<ClinicalSignificance> clinicalSignificance) {
+        this.id = variant.toString();
+        this.dbSnp = dbSnp;
+        this.chromosome = variant.getChromosome();
+        this.start = variant.getStart();
+        this.end = variant.getEnd();
+        this.length = variant.getLength();
+        this.reference = variant.getReference();
+        this.alternate = variant.getAlternate();
+        this.type = variant.getType();
         this.genotype = genotype;
         this.depth = depth;
         this.filter = filter;
         this.qual = qual;
+        this.stats = stats;
         this.knockoutType = knockoutType;
         this.sequenceOntologyTerms = sequenceOntologyTerms;
         this.populationFrequencies = populationFrequencies;
@@ -117,6 +136,15 @@ public class KnockoutVariant {
 
     public KnockoutVariant setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getDbSnp() {
+        return dbSnp;
+    }
+
+    public KnockoutVariant setDbSnp(String dbSnp) {
+        this.dbSnp = dbSnp;
         return this;
     }
 
@@ -216,6 +244,15 @@ public class KnockoutVariant {
 
     public KnockoutVariant setQual(String qual) {
         this.qual = qual;
+        return this;
+    }
+
+    public VariantStats getStats() {
+        return stats;
+    }
+
+    public KnockoutVariant setStats(VariantStats stats) {
+        this.stats = stats;
         return this;
     }
 
