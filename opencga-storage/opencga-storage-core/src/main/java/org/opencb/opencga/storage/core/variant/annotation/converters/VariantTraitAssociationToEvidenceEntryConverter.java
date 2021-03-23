@@ -167,7 +167,7 @@ public abstract class VariantTraitAssociationToEvidenceEntryConverter implements
                     // Seen cases like Benign;Pathogenic;association;not provided;risk factor for the same record
                 } else if (isBenign(CLINVAR_CLINSIG_TO_ACMG_WITH_ENUM.get(value))
                         && isPathogenic(variantClassification.getClinicalSignificance())) {
-                    logger.warn("Benign and Pathogenic clinical significances found for the same record");
+                    logger.warn("Benign and Pathogenic search significances found for the same record");
                     logger.warn("Will set uncertain_significance instead");
                     variantClassification.setClinicalSignificance(ClinicalSignificance.uncertain_significance);
                 }

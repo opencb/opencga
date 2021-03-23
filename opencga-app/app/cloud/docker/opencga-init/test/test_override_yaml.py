@@ -55,7 +55,7 @@ class Test_init_script(unittest.TestCase):
             stderr=subprocess.STDOUT,
             check=False,
             env={**os.environ,
-                 "INIT_CLINICAL_HOSTS": "test-clinical-host",
+                 "INIT_CLINICAL_HOSTS": "test-search-host",
                  "INIT_VARIANT_OPTIONS": "[ my_var_key_1=my_value_1, my.var.key_2=my.value.2,]"
                  }, #Test that the auto import of environment vars is working
         )
@@ -77,7 +77,7 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(storage_config["search"]["hosts"][0], "test-search-host1")
         self.assertEqual(storage_config["search"]["hosts"][1], "test-search-host2")
-        self.assertEqual(storage_config["clinical"]["hosts"][0], "test-clinical-host")
+        self.assertEqual(storage_config["search"]["hosts"][0], "test-search-host")
 
         self.assertEqual(
             storage_config["variant"]["defaultEngine"],
@@ -193,7 +193,7 @@ class Test_init_script(unittest.TestCase):
                     "--client-config-path", "./client-configuration.yml",
                     "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
-                    "--clinical-hosts", "test-clinical-host",
+                    "--search-hosts", "test-search-host",
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
@@ -265,8 +265,8 @@ class Test_init_script(unittest.TestCase):
                     "--client-config-path", "./client-configuration.yml",
                     "--storage-config-path", "./storage-configuration.yml",
                     "--search-hosts", "test-search-host1,test-search-host2",
-                    "--clinical-hosts",
-                    "test-clinical-host",
+                    "--search-hosts",
+                    "test-search-host",
                     "--catalog-database-hosts", "test-catalog-database-host1,test-catalog-database-host2,test-catalog-database-host3",
                     "--catalog-database-user", "test-catalog-database-user",
                     "--catalog-database-password", "test-catalog-database-password",
@@ -346,8 +346,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -426,8 +426,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -508,8 +508,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -593,8 +593,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -677,8 +677,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",

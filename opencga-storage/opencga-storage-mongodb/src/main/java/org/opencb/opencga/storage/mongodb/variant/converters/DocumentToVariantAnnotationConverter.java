@@ -132,7 +132,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String SCORE_SOURCE_FIELD = "src";
     public static final String SCORE_DESCRIPTION_FIELD = "desc";
 
-    public static final String CLINICAL_DATA_FIELD = "clinical";
+    public static final String CLINICAL_DATA_FIELD = "search";
 //    public static final String CLINICAL_COSMIC_FIELD = "cosmic";
 //    public static final String CLINICAL_GWAS_FIELD = "gwas";
 //    public static final String CLINICAL_CLINVAR_FIELD = "clinvar";

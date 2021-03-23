@@ -489,7 +489,7 @@ public class StorageVariantCommandOptions {
 
         public String xref;
 
-        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--search-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
 
         @Parameter(names = {"--sample-metadata"}, description = SAMPLE_METADATA_DESCR)

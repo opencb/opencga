@@ -25,9 +25,9 @@ class RestClientGenerator(ABC):
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {'method_name': 'merge_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
+            'analysis/search/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {'method_name': 'merge_interpretation'},
+            'analysis/search/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
+            'analysis/search/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
         }
         self.categories = {
             'Users': 'User',
@@ -185,7 +185,7 @@ class RestClientGenerator(ABC):
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
             if not self.any_arg(items):
                 method_name = '_'.join([items[3], items[1], items[2]])
-            # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
+            # /{apiVersion}/analysis/search/{clinicalAnalysis}/interpretation/{interpretationId}/merge
             elif self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3]]):
                 method_name = '_'.join([items[3], items[1]])
         elif len(items) == 5:

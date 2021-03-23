@@ -85,12 +85,12 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
             throw new ToolException("Missing study ID");
         }
 
-        // Check clinical analysis
+        // Check search analysis
         if (StringUtils.isEmpty(clinicalAnalysisId)) {
-            throw new ToolException("Missing clinical analysis ID");
+            throw new ToolException("Missing search analysis ID");
         }
 
-        // Get clinical analysis to ckeck proband sample ID, family ID
+        // Get search analysis to ckeck proband sample ID, family ID
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
@@ -108,9 +108,9 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         if (clinicalAnalysis.getProband() != null && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getId())) {
             String probandSampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
             if (query.containsKey(VariantQueryParam.SAMPLE.key()) && !probandSampleId.equals(query.get(VariantQueryParam.SAMPLE.key()))) {
-                // Query contains a different sample than clinical analysis
+                // Query contains a different sample than search analysis
                 throw new ToolException("Mismatch sample: query (" + query.getString(VariantQueryParam.SAMPLE.key())
-                        + ") and clinical analysis (" + probandSampleId + ")");
+                        + ") and search analysis (" + probandSampleId + ")");
 //            } else {
 //                query.put(VariantQueryParam.SAMPLE.key(), probandSampleId);
             }
@@ -120,8 +120,8 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
         if (clinicalAnalysis.getFamily() != null && StringUtils.isNotEmpty(clinicalAnalysis.getFamily().getId())) {
             String familyId = clinicalAnalysis.getFamily().getId();
             if (query.containsKey(FAMILY.key()) && !familyId.equals(query.get(FAMILY.key()))) {
-                // Query contains a different family than clinical analysis
-                throw new ToolException("Mismatch family: query (" + query.getString(FAMILY.key()) + ") and clinical analysis ("
+                // Query contains a different family than search analysis
+                throw new ToolException("Mismatch family: query (" + query.getString(FAMILY.key()) + ") and search analysis ("
                         + familyId + ")");
 //            } else {
 //                query.put(FAMILY.key(), familyId);
@@ -133,9 +133,9 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
             String disorderId = clinicalAnalysis.getDisorder().getId();
             if (query.containsKey(FAMILY_DISORDER.key())
                     && !disorderId.equals(query.get(FAMILY_DISORDER.key()))) {
-                // Query contains a different disorder than clinical analysis
+                // Query contains a different disorder than search analysis
                 throw new ToolException("Mismatch disorder: query (" + query.getString(FAMILY_DISORDER.key())
-                        + ") and clinical analysis (" + disorderId + ")");
+                        + ") and search analysis (" + disorderId + ")");
 //            } else {
 //                query.put(FAMILY_DISORDER.key(), disorderId);
             }

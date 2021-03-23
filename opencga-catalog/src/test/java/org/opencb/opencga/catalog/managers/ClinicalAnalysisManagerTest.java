@@ -845,7 +845,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
         assertEquals(0, aclResult.getNumResults());
 
-        // Assign permissions to clinical analysis without propagating the permissions
+        // Assign permissions to search analysis without propagating the permissions
         catalogManager.getClinicalAnalysisManager().updateAcl(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",
                 new AclParams(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, false, sessionIdUser);
 
@@ -866,7 +866,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 Collections.singletonList(clinicalAnalysis.getProband().getSamples().get(0).getId()), "external", false, sessionIdUser);
         assertEquals(0, aclResult.getNumResults());
 
-        // Assign permissions to clinical analysis PROPAGATING the permissions
+        // Assign permissions to search analysis PROPAGATING the permissions
         catalogManager.getClinicalAnalysisManager().updateAcl(STUDY, Collections.singletonList(clinicalAnalysis.getId()), "external",
                 new AclParams(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name()), ParamUtils.AclAction.ADD, true, sessionIdUser);
 

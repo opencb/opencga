@@ -155,7 +155,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         Map<String, Document> individualMap = fetchIndividuals(individualSet);
 
         if (!interpretationMap.isEmpty() || !familyMap.isEmpty() || !individualMap.isEmpty()) {
-            // Fill data in clinical analyses
+            // Fill data in search analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
                 fillInterpretationData(clinicalAnalysis, interpretationMap);
                 clinicalAnalysis.put(FAMILY.key(), fillFamilyData((Document) clinicalAnalysis.get(FAMILY.key()), familyMap));
@@ -289,7 +289,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 familyList = familyDBAdaptor.nativeGet(query, familyQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
-            logger.warn("Could not obtain the families associated to the clinical analyses: {}", e.getMessage(), e);
+            logger.warn("Could not obtain the families associated to the search analyses: {}", e.getMessage(), e);
             return familyMap;
         }
 
@@ -346,7 +346,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 individualList = individualDBAdaptor.nativeGet(query, individualQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
-            logger.warn("Could not obtain the individuals associated to the clinical analyses: {}", e.getMessage(), e);
+            logger.warn("Could not obtain the individuals associated to the search analyses: {}", e.getMessage(), e);
         }
         return individualList;
     }
@@ -380,7 +380,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
-            logger.warn("Could not obtain the interpretations associated to the clinical analyses: {}", e.getMessage(), e);
+            logger.warn("Could not obtain the interpretations associated to the search analyses: {}", e.getMessage(), e);
             return interpretationMap;
         }
 

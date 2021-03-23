@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.clinical.clinical;
+package org.opencb.opencga.storage.core.clinical.search;
 
 public class ClinicalVariantUtils {
 

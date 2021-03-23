@@ -293,8 +293,8 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
 
         clinicalCommandOptions = new ClinicalCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
-        jCommander.addCommand("clinical", clinicalCommandOptions);
-        JCommander clinicalSubcommands = jCommander.getCommands().get("clinical");
+        jCommander.addCommand("search", clinicalCommandOptions);
+        JCommander clinicalSubcommands = jCommander.getCommands().get("search");
         clinicalSubcommands.addCommand("info", clinicalCommandOptions.infoCommandOptions);
         clinicalSubcommands.addCommand("search", clinicalCommandOptions.searchCommandOptions);
         clinicalSubcommands.addCommand("acl", clinicalCommandOptions.aclsCommandOptions);
@@ -374,7 +374,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
     @Override
     protected void printMainUsage() {
-        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant", "clinical"));
+        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant", "search"));
         Set<String> operationsCommands = new HashSet<>(Collections.singletonList(OPERATIONS_COMMAND));
 
         System.err.println("Catalog commands:");

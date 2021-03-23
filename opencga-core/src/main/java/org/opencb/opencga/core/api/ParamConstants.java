@@ -202,7 +202,7 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
+    public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of search analysis IDs or names" + UP_TO_100;
     public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
     public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM = "createDefaultInterpretation";
     public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_DESCRIPTION = "Flag to create and initialise a default primary "
@@ -210,7 +210,7 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
+    public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of search interpretation IDs " + UP_TO_100;
 
     // ---------------------------------------------
 

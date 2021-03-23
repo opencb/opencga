@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.clinical.clinical;
+package org.opencb.opencga.storage.core.clinical.search;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,7 +111,7 @@ public class InterpretationConverter {
 
         List<ClinicalVariantSearchModel> output = new ArrayList<>();
 
-        // ------ Init clinical analysis field variables -------
+        // ------ Init search analysis field variables -------
 
         if (MapUtils.isNotEmpty(interpretation.getAttributes())
                 && interpretation.getAttributes().containsKey("OPENCGA_CLINICAL_ANALYSIS")) {
@@ -393,6 +393,7 @@ public class InterpretationConverter {
             Set<String> setOtherClass = new HashSet<>();
             Set<String> setRolesInCancer = new HashSet<>();
             Set<String> setTier = new HashSet<>();
+
             for (ClinicalVariantEvidence evidence: evidences) {
                 // These structures will help us to manage the reported event justification
                 List<String> list;
@@ -537,6 +538,7 @@ public class InterpretationConverter {
                         justification.get(key1).add(evidence.getJustification());
                     }
                 }
+
                 for (int i = 0; i < lists.size() - 1; i++) {
                     for (int j = i + 1; j < lists.size(); j++) {
                         for (String key1: lists.get(i)) {

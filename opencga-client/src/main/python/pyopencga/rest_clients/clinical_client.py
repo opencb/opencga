@@ -15,7 +15,7 @@ class Clinical(_ParentRestClient):
     """
     This class contains methods for the 'Analysis - Clinical' webservices
     Client version: 2.0.0
-    PATH: /{apiVersion}/analysis/clinical
+    PATH: /{apiVersion}/analysis/search
     """
 
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
@@ -24,7 +24,7 @@ class Clinical(_ParentRestClient):
     def update_acl(self, members, action, data=None, **options):
         """
         Update the set of permissions granted for the member.
-        PATH: /{apiVersion}/analysis/clinical/acl/{members}/update
+        PATH: /{apiVersion}/analysis/search/acl/{members}/update
 
         :param dict data: JSON containing the parameters to add ACLs.
             (REQUIRED)
@@ -39,14 +39,14 @@ class Clinical(_ParentRestClient):
         """
 
         options['action'] = action
-        return self._post(category='analysis', resource='update', subcategory='clinical/acl', second_query_id=members, data=data, **options)
+        return self._post(category='analysis', resource='update', subcategory='search/acl', second_query_id=members, data=data, **options)
 
     def create(self, data=None, **options):
         """
-        Create a new clinical analysis.
-        PATH: /{apiVersion}/analysis/clinical/create
+        Create a new search analysis.
+        PATH: /{apiVersion}/analysis/search/create
 
-        :param dict data: JSON containing clinical analysis information.
+        :param dict data: JSON containing search analysis information.
             (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
@@ -55,12 +55,12 @@ class Clinical(_ParentRestClient):
             '{clinicalAnalysisId}.1').
         """
 
-        return self._post(category='analysis', resource='create', subcategory='clinical', data=data, **options)
+        return self._post(category='analysis', resource='create', subcategory='search', data=data, **options)
 
     def distinct(self, field, **options):
         """
         Clinical Analysis distinct method.
-        PATH: /{apiVersion}/analysis/clinical/distinct
+        PATH: /{apiVersion}/analysis/search/distinct
 
         :param str field: Field for which to obtain the distinct values.
             (REQUIRED)
@@ -91,12 +91,12 @@ class Clinical(_ParentRestClient):
         """
 
         options['field'] = field
-        return self._get(category='analysis', resource='distinct', subcategory='clinical', **options)
+        return self._get(category='analysis', resource='distinct', subcategory='search', **options)
 
     def distinct_interpretation(self, field, **options):
         """
         Interpretation distinct method.
-        PATH: /{apiVersion}/analysis/clinical/interpretation/distinct
+        PATH: /{apiVersion}/analysis/search/interpretation/distinct
 
         :param str field: Field for which to obtain the distinct values.
             (REQUIRED)
@@ -114,12 +114,12 @@ class Clinical(_ParentRestClient):
         """
 
         options['field'] = field
-        return self._get(category='analysis', resource='distinct', subcategory='clinical/interpretation', **options)
+        return self._get(category='analysis', resource='distinct', subcategory='search/interpretation', **options)
 
     def search_interpretation(self, **options):
         """
-        Search clinical interpretations.
-        PATH: /{apiVersion}/analysis/clinical/interpretation/search
+        Search search interpretations.
+        PATH: /{apiVersion}/analysis/search/interpretation/search
 
         :param str include: Fields included in the response, whole JSON path
             must be provided.
@@ -141,18 +141,18 @@ class Clinical(_ParentRestClient):
         :param str modification_date: Modification date.
         """
 
-        return self._get(category='analysis', resource='search', subcategory='clinical/interpretation', **options)
+        return self._get(category='analysis', resource='search', subcategory='search/interpretation', **options)
 
     def info_interpretation(self, interpretations, **options):
         """
         Clinical interpretation information.
-        PATH: /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info
+        PATH: /{apiVersion}/analysis/search/interpretation/{interpretations}/info
 
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
             must be provided.
-        :param str interpretations: Comma separated list of clinical
+        :param str interpretations: Comma separated list of search
             interpretation IDs  up to a maximum of 100.
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
@@ -162,12 +162,12 @@ class Clinical(_ParentRestClient):
         :param bool deleted: Boolean to retrieve deleted entries.
         """
 
-        return self._get(category='analysis', resource='info', subcategory='clinical/interpretation', second_query_id=interpretations, **options)
+        return self._get(category='analysis', resource='info', subcategory='search/interpretation', second_query_id=interpretations, **options)
 
     def run_interpreter_cancer_tiering(self, data=None, **options):
         """
         Run cancer tiering interpretation analysis.
-        PATH: /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run
+        PATH: /{apiVersion}/analysis/search/interpreter/cancerTiering/run
 
         :param dict data: Cancer tiering interpretation analysis params.
             (REQUIRED)
@@ -181,12 +181,12 @@ class Clinical(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/cancerTiering', data=data, **options)
+        return self._post(category='analysis', resource='run', subcategory='search/interpreter/cancerTiering', data=data, **options)
 
     def run_interpreter_team(self, data=None, **options):
         """
         Run TEAM interpretation analysis.
-        PATH: /{apiVersion}/analysis/clinical/interpreter/team/run
+        PATH: /{apiVersion}/analysis/search/interpreter/team/run
 
         :param dict data: TEAM interpretation analysis params. (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
@@ -199,12 +199,12 @@ class Clinical(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/team', data=data, **options)
+        return self._post(category='analysis', resource='run', subcategory='search/interpreter/team', data=data, **options)
 
     def run_interpreter_tiering(self, data=None, **options):
         """
         Run tiering interpretation analysis.
-        PATH: /{apiVersion}/analysis/clinical/interpreter/tiering/run
+        PATH: /{apiVersion}/analysis/search/interpreter/tiering/run
 
         :param dict data: Tiering interpretation analysis params. (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
@@ -217,12 +217,12 @@ class Clinical(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/tiering', data=data, **options)
+        return self._post(category='analysis', resource='run', subcategory='search/interpreter/tiering', data=data, **options)
 
     def run_interpreter_zetta(self, data=None, **options):
         """
         Run Zetta interpretation analysis.
-        PATH: /{apiVersion}/analysis/clinical/interpreter/zetta/run
+        PATH: /{apiVersion}/analysis/search/interpreter/zetta/run
 
         :param dict data: Zetta interpretation analysis params. (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
@@ -235,12 +235,12 @@ class Clinical(_ParentRestClient):
         :param str job_tags: Job tags.
         """
 
-        return self._post(category='analysis', resource='run', subcategory='clinical/interpreter/zetta', data=data, **options)
+        return self._post(category='analysis', resource='run', subcategory='search/interpreter/zetta', data=data, **options)
 
     def search(self, **options):
         """
         Clinical analysis search.
-        PATH: /{apiVersion}/analysis/clinical/search
+        PATH: /{apiVersion}/analysis/search/search
 
         :param str include: Fields included in the response, whole JSON path
             must be provided.
@@ -277,24 +277,24 @@ class Clinical(_ParentRestClient):
         :param str attributes: Text attributes (Format: sex=male,age>20 ...).
         """
 
-        return self._get(category='analysis', resource='search', subcategory='clinical', **options)
+        return self._get(category='analysis', resource='search', subcategory='search', **options)
 
     def actionable_variant(self, **options):
         """
-        Fetch actionable clinical variants.
-        PATH: /{apiVersion}/analysis/clinical/variant/actionable
+        Fetch actionable search variants.
+        PATH: /{apiVersion}/analysis/search/variant/actionable
 
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param str sample: Sample ID.
         """
 
-        return self._get(category='analysis', resource='actionable', subcategory='clinical/variant', **options)
+        return self._get(category='analysis', resource='actionable', subcategory='search/variant', **options)
 
     def query_variant(self, **options):
         """
-        Fetch clinical variants.
-        PATH: /{apiVersion}/analysis/clinical/variant/query
+        Fetch search variants.
+        PATH: /{apiVersion}/analysis/search/variant/query
 
         :param str include: Fields included in the response, whole JSON path
             must be provided.
@@ -431,15 +431,15 @@ class Clinical(_ParentRestClient):
             IDs, histologies, descriptions,...
         """
 
-        return self._get(category='analysis', resource='query', subcategory='clinical/variant', **options)
+        return self._get(category='analysis', resource='query', subcategory='search/variant', **options)
 
     def acl(self, clinical_analyses, **options):
         """
-        Returns the acl of the clinical analyses. If member is provided, it
+        Returns the acl of the search analyses. If member is provided, it
             will only return the acl for the member.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalyses}/acl
 
-        :param str clinical_analyses: Comma separated list of clinical
+        :param str clinical_analyses: Comma separated list of search
             analysis IDs or names up to a maximum of 100. (REQUIRED)
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
@@ -449,31 +449,31 @@ class Clinical(_ParentRestClient):
             entries looked for cannot be shown for whichever reason.
         """
 
-        return self._get(category='analysis', resource='acl', subcategory='clinical', second_query_id=clinical_analyses, **options)
+        return self._get(category='analysis', resource='acl', subcategory='search', second_query_id=clinical_analyses, **options)
 
     def delete(self, clinical_analyses, **options):
         """
-        Delete clinical analyses.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete
+        Delete search analyses.
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalyses}/delete
 
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param bool force: Force deletion if the ClinicalAnalysis contains
             interpretations or is locked.
-        :param str clinical_analyses: Comma separated list of clinical
+        :param str clinical_analyses: Comma separated list of search
             analysis IDs or names up to a maximum of 100.
         """
 
-        return self._delete(category='analysis', resource='delete', subcategory='clinical', second_query_id=clinical_analyses, **options)
+        return self._delete(category='analysis', resource='delete', subcategory='search', second_query_id=clinical_analyses, **options)
 
     def update(self, clinical_analyses, data=None, **options):
         """
-        Update clinical analysis attributes.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update
+        Update search analysis attributes.
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalyses}/update
 
-        :param dict data: JSON containing clinical analysis information.
+        :param dict data: JSON containing search analysis information.
             (REQUIRED)
-        :param str clinical_analyses: Comma separated list of clinical
+        :param str clinical_analyses: Comma separated list of search
             analysis IDs.
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
@@ -486,32 +486,32 @@ class Clinical(_ParentRestClient):
             is being updated. Allowed values: ['ADD', 'SET', 'REMOVE']
         """
 
-        return self._post(category='analysis', resource='update', subcategory='clinical', second_query_id=clinical_analyses, data=data, **options)
+        return self._post(category='analysis', resource='update', subcategory='search', second_query_id=clinical_analyses, data=data, **options)
 
     def info(self, clinical_analysis, **options):
         """
         Clinical analysis info.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalysis}/info
 
         :param str include: Fields included in the response, whole JSON path
             must be provided.
         :param str exclude: Fields excluded in the response, whole JSON path
             must be provided.
-        :param str clinical_analysis: Comma separated list of clinical
+        :param str clinical_analysis: Comma separated list of search
             analysis IDs or names up to a maximum of 100.
         :param str study: Study [[user@]project:]study where study and project
             can be either the ID or UUID.
         :param bool deleted: Boolean to retrieve deleted entries.
         """
 
-        return self._get(category='analysis', resource='info', subcategory='clinical', second_query_id=clinical_analysis, **options)
+        return self._get(category='analysis', resource='info', subcategory='search', second_query_id=clinical_analysis, **options)
 
     def create_interpretation(self, clinical_analysis, data=None, **options):
         """
         Create a new Interpretation.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalysis}/interpretation/create
 
-        :param dict data: JSON containing clinical interpretation information.
+        :param dict data: JSON containing search interpretation information.
             (REQUIRED)
         :param str clinical_analysis: Clinical analysis ID.
         :param str study: [[user@]project:]study id.
@@ -519,12 +519,12 @@ class Clinical(_ParentRestClient):
             'SECONDARY']
         """
 
-        return self._post(category='analysis/clinical', resource='create', query_id=clinical_analysis, subcategory='interpretation', data=data, **options)
+        return self._post(category='analysis/search', resource='create', query_id=clinical_analysis, subcategory='interpretation', data=data, **options)
 
     def clear_interpretation(self, clinical_analysis, interpretations, **options):
         """
         Clear the fields of the main interpretation of the Clinical Analysis.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/clear
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalysis}/interpretation/{interpretations}/clear
 
         :param str study: [[user@]project:]study ID.
         :param str interpretations: Interpretation IDs of the Clinical
@@ -532,12 +532,12 @@ class Clinical(_ParentRestClient):
         :param str clinical_analysis: Clinical analysis ID.
         """
 
-        return self._post(category='analysis/clinical', resource='clear', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretations, **options)
+        return self._post(category='analysis/search', resource='clear', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretations, **options)
 
     def delete_interpretation(self, clinical_analysis, interpretations, **options):
         """
         Delete interpretation.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalysis}/interpretation/{interpretations}/delete
 
         :param str study: [[user@]project:]study ID.
         :param str clinical_analysis: Clinical analysis ID.
@@ -547,12 +547,12 @@ class Clinical(_ParentRestClient):
             the list of secondaries in case of deleting the actual primary one.
         """
 
-        return self._delete(category='analysis/clinical', resource='delete', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretations, **options)
+        return self._delete(category='analysis/search', resource='delete', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretations, **options)
 
     def merge_interpretation(self, clinical_analysis, interpretation, data=None, **options):
         """
         Merge interpretation.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/merge
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalysis}/interpretation/{interpretation}/merge
 
         :param str study: [[user@]project:]study ID.
         :param str clinical_analysis: Clinical analysis ID.
@@ -561,16 +561,16 @@ class Clinical(_ParentRestClient):
             merge from.
         :param str findings: Comma separated list of findings to merge. If not
             provided, all findings will be merged.
-        :param dict data: JSON containing clinical interpretation to merge
+        :param dict data: JSON containing search interpretation to merge
             from.
         """
 
-        return self._post(category='analysis/clinical', resource='merge', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretation, data=data, **options)
+        return self._post(category='analysis/search', resource='merge', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretation, data=data, **options)
 
     def revert_interpretation(self, clinical_analysis, interpretation, version, **options):
         """
         Revert to a previous interpretation version.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/revert
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalysis}/interpretation/{interpretation}/revert
 
         :param int version: Version to revert to. (REQUIRED)
         :param str study: [[user@]project:]study ID.
@@ -579,14 +579,14 @@ class Clinical(_ParentRestClient):
         """
 
         options['version'] = version
-        return self._post(category='analysis/clinical', resource='revert', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretation, **options)
+        return self._post(category='analysis/search', resource='revert', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretation, **options)
 
     def update_interpretation(self, clinical_analysis, interpretation, data=None, **options):
         """
         Update interpretation fields.
-        PATH: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update
+        PATH: /{apiVersion}/analysis/search/{clinicalAnalysis}/interpretation/{interpretation}/update
 
-        :param dict data: JSON containing clinical interpretation information.
+        :param dict data: JSON containing search interpretation information.
             (REQUIRED)
         :param str study: [[user@]project:]study ID.
         :param str primary_findings_action: Action to be performed if the
@@ -607,5 +607,5 @@ class Clinical(_ParentRestClient):
         :param str interpretation: Interpretation ID.
         """
 
-        return self._post(category='analysis/clinical', resource='update', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretation, data=data, **options)
+        return self._post(category='analysis/search', resource='update', query_id=clinical_analysis, subcategory='interpretation', second_query_id=interpretation, data=data, **options)
 

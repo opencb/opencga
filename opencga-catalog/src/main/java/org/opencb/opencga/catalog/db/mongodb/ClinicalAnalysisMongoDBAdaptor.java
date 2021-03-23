@@ -132,15 +132,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 .append(NATIVE_QUERY, true);
         OpenCGAResult<ClinicalAnalysis> result = get(query, options);
         if (result.getNumResults() == 0) {
-            throw new CatalogDBException("Could not update clinical analysis. Clinical Analysis uid '" + uid + "' not found.");
+            throw new CatalogDBException("Could not update search analysis. Clinical Analysis uid '" + uid + "' not found.");
         }
         String clinicalAnalysisId = result.first().getId();
 
         try {
             return runTransaction(clientSession -> update(clientSession, result.first(), parameters, clinicalAuditList, queryOptions));
         } catch (CatalogDBException e) {
-            logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
-            throw new CatalogDBException("Could not update clinical analysis " + clinicalAnalysisId + ": " + e.getMessage(), e.getCause());
+            logger.error("Could not update search analysis {}: {}", clinicalAnalysisId, e.getMessage(), e);
+            throw new CatalogDBException("Could not update search analysis " + clinicalAnalysisId + ": " + e.getMessage(), e.getCause());
         }
     }
 
@@ -169,7 +169,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             if (!updateOperation.isEmpty()) {
                 Bson bsonQuery = Filters.eq(PRIVATE_UID, clinicalAnalysisUid);
 
-                logger.debug("Update clinical analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
+                logger.debug("Update search analysis. Query: {}, Update: {}", bsonQuery.toBsonDocument(Document.class,
                         MongoClient.getDefaultCodecRegistry()), updateDocument);
                 update = clinicalCollection.update(clientSession, bsonQuery, updateOperation, null);
 
@@ -211,18 +211,18 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         UpdateDocument document = new UpdateDocument();
 
         if (parameters.containsKey(QueryParams.ID.key())) {
-            // That can only be done to one clinical analysis...
+            // That can only be done to one search analysis...
             Query tmpQuery = new Query(query);
 
             OpenCGAResult<ClinicalAnalysis> clinicalAnalysisDataResult = get(tmpQuery, new QueryOptions());
             if (clinicalAnalysisDataResult.getNumResults() == 0) {
-                throw new CatalogDBException("Update clinical analysis: No clinical analysis found to be updated");
+                throw new CatalogDBException("Update search analysis: No search analysis found to be updated");
             }
             if (clinicalAnalysisDataResult.getNumResults() > 1) {
-                throw new CatalogDBException("Update clinical analysis: Cannot set the same id parameter for different clinical analyses");
+                throw new CatalogDBException("Update search analysis: Cannot set the same id parameter for different search analyses");
             }
 
-            // Check that the new clinical analysis id will be unique
+            // Check that the new search analysis id will be unique
             long studyId = getStudyId(clinicalAnalysisDataResult.first().getUid());
 
             tmpQuery = new Query()
@@ -230,7 +230,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     .append(QueryParams.STUDY_UID.key(), studyId);
             OpenCGAResult<Long> count = count(tmpQuery);
             if (count.getNumMatches() > 0) {
-                throw new CatalogDBException("Cannot set id for clinical analysis. A clinical analysis with { id: '"
+                throw new CatalogDBException("Cannot set id for search analysis. A search analysis with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
 

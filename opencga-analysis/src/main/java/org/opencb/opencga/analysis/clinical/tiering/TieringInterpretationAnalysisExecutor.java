@@ -137,12 +137,12 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
             throw new ToolException("Error retrieving assembly", e);
         }
 
-        // Get and check clinical analysis and proband
+        // Get and check search analysis and proband
         ClinicalAnalysis clinicalAnalysis;
         try {
             clinicalAnalysis = clinicalInterpretationManager.getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         } catch (CatalogException e) {
-            throw new ToolException("Error getting clinical analysis", e);
+            throw new ToolException("Error getting search analysis", e);
         }
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
@@ -241,7 +241,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor i
         // Write primary findings
         ClinicalUtils.writeClinicalVariants(primaryFindings, Paths.get(getOutDir() + "/primary-findings.json"));
 
-        // Secondary findings, if clinical consent is TRUE
+        // Secondary findings, if search consent is TRUE
         List<ClinicalVariant> secondaryFindings = null;
         try {
             secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis,

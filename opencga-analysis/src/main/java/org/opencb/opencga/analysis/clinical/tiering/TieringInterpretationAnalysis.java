@@ -64,12 +64,12 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
             throw new ToolException("Missing study ID");
         }
 
-        // Check clinical analysis
+        // Check search analysis
         if (StringUtils.isEmpty(clinicalAnalysisId)) {
-            throw new ToolException("Missing clinical analysis ID");
+            throw new ToolException("Missing search analysis ID");
         }
 
-        // Get clinical analysis to ckeck proband sample ID, family ID
+        // Get search analysis to ckeck proband sample ID, family ID
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),

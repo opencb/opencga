@@ -8,7 +8,7 @@ parser.add_argument("--client-config-path", help="path to the client-configurati
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
 parser.add_argument("--database-prefix", required=False)
 parser.add_argument("--search-hosts", required=True)
-parser.add_argument("--clinical-hosts", required=True)
+parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--cellbase-rest-url", required=False, help="Cellbase rest server hosting the cellbase service")
 parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
@@ -60,14 +60,14 @@ for i, search_host in enumerate(search_hosts):
         storage_config["search"]["hosts"].clear()
     storage_config["search"]["hosts"].insert(i, search_host.strip())
 
-# Inject clinical hosts
+# Inject search hosts
 clinical_hosts = args.clinical_hosts.replace('\"','').replace('[','').replace(']','').split(",")
 for i, clinical_host in enumerate(clinical_hosts):
     if i == 0:
         # If we are overriding the default hosts,
         # clear them only on the first iteration
-        storage_config["clinical"]["hosts"].clear()
-    storage_config["clinical"]["hosts"].insert(i, clinical_host.strip())
+        storage_config["search"]["hosts"].clear()
+    storage_config["search"]["hosts"].insert(i, clinical_host.strip())
 
 # Inject cellbase rest host, if set
 if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":

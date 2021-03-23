@@ -57,20 +57,20 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
         ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
         if (clinicalAnalysis.getFamily() == null || StringUtils.isEmpty(clinicalAnalysis.getFamily().getId())) {
-            throw new AnalysisException("Missing family in clinical analysis " + clinicalAnalysisId);
+            throw new AnalysisException("Missing family in search analysis " + clinicalAnalysisId);
         }
 
         if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
-            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
+            throw new AnalysisException("Missing proband in search analysis " + clinicalAnalysisId);
         }
 
         org.opencb.opencga.core.models.individual.Individual proband = clinicalAnalysis.getProband();
         if (ListUtils.isEmpty(proband.getSamples())) {
-            throw new AnalysisException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
+            throw new AnalysisException("Missing samples in proband " + proband.getId() + " in search analysis " + clinicalAnalysisId);
         }
 
         if (proband.getSamples().size() > 1) {
-            throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
+            throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in search analysis "
                     + clinicalAnalysisId);
         }
 

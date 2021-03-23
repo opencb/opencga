@@ -93,23 +93,23 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         sessionId = getToken();
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
-        // Get clinical analysis
+        // Get search analysis
         ClinicalAnalysis clinicalAnalysis;
         try {
             clinicalAnalysis = clinicalInterpretationManager.getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         } catch (CatalogException e) {
-            throw new ToolException("Error accessing to the clinical analysis ID: " + clinicalAnalysisId, e);
+            throw new ToolException("Error accessing to the search analysis ID: " + clinicalAnalysisId, e);
         }
 
         Disorder disorder = clinicalAnalysis.getDisorder();
         if (disorder == null || StringUtils.isEmpty(disorder.getId())) {
-            throw new ToolException("Missing disorder for clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing disorder for search analysis " + clinicalAnalysisId);
         }
 
         // Primary findings consist of somatic and germline variants
         List<ClinicalVariant> primaryFindings = new ArrayList<>();
 
-        // Get somatic sample and then its clinical variant
+        // Get somatic sample and then its search variant
         List<Sample> somaticSamples = getSomaticSamples(clinicalAnalysis.getProband());
         if (CollectionUtils.isNotEmpty(somaticSamples)) {
             if (somaticSamples.size() != 1) {
@@ -124,13 +124,13 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
             primaryFindings.addAll(somaticVariants);
         }
 
-        // Get germline sample and then its clinical variant
+        // Get germline sample and then its search variant
         List<Sample> germlineSamples = getGermlineSamples(clinicalAnalysis.getProband());
         if (CollectionUtils.isNotEmpty(somaticSamples)) {
             if (somaticSamples.size() != 1) {
                 throw new ToolException("Found multiple germline samples(" + germlineSamples.size() + "), only one is permitted.");
             }
-            // Get panels from that clinical analysis disorder
+            // Get panels from that search analysis disorder
             List<String> phenotypes = new ArrayList<>();
             for (Phenotype evidence : disorder.getEvidences()) {
                 if (StringUtils.isNotEmpty(evidence.getId())) {
@@ -220,7 +220,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         List<SequenceOntologyTerm> somaticSOTerms = getSomaticSequenceOntologyTerms(ct);
                         if (roleInCancer.containsKey(ct.getEnsemblGeneId()) || roleInCancer.containsKey(ct.getGeneName())) {
-                            // Create clinical variant evidence with TIER 2
+                            // Create search variant evidence with TIER 2
                             ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
                             clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), "GENE",
@@ -243,7 +243,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
             }
         }
 
-        // TODO: Mark clinical variant as somatic
+        // TODO: Mark search variant as somatic
         return clinicalVariants;
     }
 
@@ -287,7 +287,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         //    2) or its allelic depth (AD) is 1,0
         List<Variant> variants = filterVariants(variantVariantQueryResult.getResults(), germlineSamples);
 
-        // Create clinical variants if necessary
+        // Create search variants if necessary
         Set<String> clinicalVariantIdSet = new HashSet<>();
         for (Variant variant : variants) {
             List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();

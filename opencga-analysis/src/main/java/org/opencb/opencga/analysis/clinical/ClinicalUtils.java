@@ -61,15 +61,15 @@ public class ClinicalUtils {
         String clinicalAnalysisId = clinicalAnalysis.getId();
         // Sanity checks
         if (proband == null) {
-            throw new ToolException("Missing proband in clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing proband in search analysis " + clinicalAnalysisId);
         }
 
         if (ListUtils.isEmpty(proband.getSamples())) {
-            throw new ToolException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing samples in proband " + proband.getId() + " in search analysis " + clinicalAnalysisId);
         }
 
         if (proband.getSamples().size() > 1) {
-            throw new ToolException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
+            throw new ToolException("Found more than one sample for proband " + proband.getId() + " in search analysis "
                     + clinicalAnalysisId);
         }
 
@@ -259,7 +259,7 @@ public class ClinicalUtils {
                                                                                 ClinicalVariantCreator creator)
             throws InterpretationAnalysisException {
         // Compound heterozygous management
-        // Create transcript - clinical variant map from transcript - variant
+        // Create transcript - search variant map from transcript - variant
         Map<String, List<ClinicalVariant>> clinicalVariantMap = new HashMap<>();
         for (Map.Entry<String, List<Variant>> entry : chVariantMap.entrySet()) {
             clinicalVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
@@ -277,7 +277,7 @@ public class ClinicalUtils {
                     clinicalVariants.add(objReader.readValue(lineIterator.next()));
                 }
             } catch (IOException e) {
-                throw new ToolException("Error reading clinical variants from file: " + path, e);
+                throw new ToolException("Error reading search variants from file: " + path, e);
             }
         }
         return clinicalVariants;
@@ -295,7 +295,7 @@ public class ClinicalUtils {
             }
             pw.close();
         } catch (FileNotFoundException | JsonProcessingException e) {
-            throw new ToolException("Error writing clinical variants to file: " + path, e);
+            throw new ToolException("Error writing search variants to file: " + path, e);
         }
     }
 

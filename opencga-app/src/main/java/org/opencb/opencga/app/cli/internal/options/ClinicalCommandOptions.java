@@ -25,7 +25,7 @@ import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.Int
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
-@Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
+@Parameters(commandNames = {"search"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {
 
     public TieringCommandOptions tieringCommandOptions;
@@ -198,7 +198,7 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         public String xref;
 
-        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--search-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
 
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)

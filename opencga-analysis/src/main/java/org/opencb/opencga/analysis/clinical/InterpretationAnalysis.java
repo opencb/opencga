@@ -55,7 +55,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
     public static String INTERPRETATION_FILENAME = "interpretation.json";
 
     public final static String STUDY_PARAM_NAME = "study";
-    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinical-analysis";
+    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "search-analysis";
     public static final String PANELS_PARAM_NAME = "panels";
     public static final String FAMILY_SEGREGATION_PARAM_NAME = "family-segregation";
     public static final String PENETRANCE_PARAM_NAME = "penetrance";

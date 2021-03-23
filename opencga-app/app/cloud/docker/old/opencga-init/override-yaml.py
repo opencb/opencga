@@ -7,7 +7,7 @@ parser.add_argument("--config-path", help="path to the configuration.yml file", 
 parser.add_argument("--client-config-path", help="path to the client-configuration.yml file", default="/opt/opencga/conf/client-configuration.yml")
 parser.add_argument("--storage-config-path", help="path to the storage-configuration.yml file", default="/opt/opencga/conf/storage-configuration.yml")
 parser.add_argument("--search-hosts", required=True)
-parser.add_argument("--clinical-hosts", required=True)
+parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--cellbase-mongo-hosts", required=False, help="A CSV list of mongodb hosts which are running the cellbase database")
 parser.add_argument("--cellbase-mongo-hosts-password", required=False, help="The password for the cellbase mongo server provided in '--cellbase-mongo-hosts'")
 parser.add_argument("--cellbase-mongo-hosts-user", required=False, help="The username for the cellbase mongo server provided in '--cellbase-mongo-hosts'")
@@ -52,14 +52,14 @@ for i, search_host in enumerate(search_hosts):
         storage_config["search"]["hosts"].clear()
     storage_config["search"]["hosts"].insert(i, search_host.strip())
 
-# Inject clinical hosts
+# Inject search hosts
 clinical_hosts = args.clinical_hosts.replace('\"','').split(",")
 for i, clinical_host in enumerate(clinical_hosts):
     if i == 0:
         # If we are overriding the default hosts,
         # clear them only on the first iteration
-        storage_config["clinical"]["hosts"].clear()
-    storage_config["clinical"]["hosts"].insert(i, clinical_host.strip())
+        storage_config["search"]["hosts"].clear()
+    storage_config["search"]["hosts"].insert(i, clinical_host.strip())
 
 # Inject cellbase database
 has_cellbase_mongo_hosts = args.cellbase_mongo_hosts is not None and args.cellbase_mongo_hosts != ""

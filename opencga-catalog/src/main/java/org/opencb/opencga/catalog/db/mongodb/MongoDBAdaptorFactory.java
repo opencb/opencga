@@ -79,7 +79,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String COHORT_COLLECTION = "cohort";
     public static final String FAMILY_COLLECTION = "family";
     public static final String PANEL_COLLECTION = "panel";
-    public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
+    public static final String CLINICAL_ANALYSIS_COLLECTION = "search";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
 
     public static final String DELETED_USER_COLLECTION = "deleted_user";

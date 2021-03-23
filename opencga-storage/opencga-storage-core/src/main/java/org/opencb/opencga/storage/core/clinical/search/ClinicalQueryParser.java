@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.clinical.clinical;
+package org.opencb.opencga.storage.core.clinical.search;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;

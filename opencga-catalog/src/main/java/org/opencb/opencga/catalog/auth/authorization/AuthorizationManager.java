@@ -391,14 +391,14 @@ public interface AuthorizationManager {
             throws CatalogException;
 
     /**
-     * Return all the ACLs defined for the clinical analysis.
+     * Return all the ACLs defined for the search analysis.
      *
      *
      * @param studyId study id.
      * @param clinicalAnalysisId Clinical analysis id.
      * @param userId user id asking for the ACLs.
      * @return a list of ClinicalAnalysisAcls.
-     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the clinical analysis does not have proper
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the search analysis does not have proper
      * permissions.
      */
     OpenCGAResult<Map<String, List<String>>> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)

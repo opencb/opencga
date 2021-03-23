@@ -646,13 +646,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         ));
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
-                .setId("clinical")
+                .setId("search")
                 .setProband(new Individual().setId("proband"))
                 .setFamily(family)
                 .setType(ClinicalAnalysis.Type.FAMILY);
         catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
 
-        // We will create another clinical analysis with the same information. In this test, we will not lock clinical2
+        // We will create another search analysis with the same information. In this test, we will not lock clinical2
         clinicalAnalysis = new ClinicalAnalysis()
                 .setId("clinical2")
                 .setProband(new Individual().setId("proband"))
@@ -679,7 +679,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(2, familyResult.getMembers().get(0).getVersion());
         assertEquals(1, familyResult.getMembers().get(1).getVersion());
 
-        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "search", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
@@ -712,7 +712,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(2, familyResult.getMembers().get(0).getVersion());
         assertEquals(2, familyResult.getMembers().get(1).getVersion());
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "search", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
@@ -729,9 +729,9 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().get(1).getSamples().get(0).getVersion());   // father sample3 version
 
         // LOCK CLINICAL ANALYSIS
-        catalogManager.getClinicalAnalysisManager().update(studyFqn, "clinical", new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, "search", new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), token);
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "search", QueryOptions.empty(), token).first();
         assertTrue(clinicalResult.isLocked());
 
         SampleUpdateParams updateParams = new SampleUpdateParams().setDescription("something so it doesn't complain because there "
@@ -739,7 +739,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 //        try {
 //            catalogManager.getSampleManager().update(studyFqn, "sample1", updateParams, QueryOptions.empty(), token);
 //            fail("Although sample1 is not directly in use in ClinicalAnalysis, we should not be able to update information that would "
-//                    + "affect an individual or family from a locked clinical analysis unless the version is incremented");
+//                    + "affect an individual or family from a locked search analysis unless the version is incremented");
 //        } catch (CatalogException e) {
 //            // Check nothing changed
 //            checkNothingChanged("sample1");
@@ -747,7 +747,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         try {
             catalogManager.getSampleManager().update(studyFqn, "sample2", updateParams, QueryOptions.empty(), token);
-            fail("We should not be able to update information that is in use in a locked clinical analysis unless the version is incremented");
+            fail("We should not be able to update information that is in use in a locked search analysis unless the version is incremented");
         } catch (CatalogException e) {
             // Check nothing changed
             checkNothingChanged("sample2", 1);
@@ -755,7 +755,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         try {
             catalogManager.getSampleManager().update(studyFqn, "sample3", updateParams, QueryOptions.empty(), token);
-            fail("We should not be able to update information that is in use in a locked clinical analysis unless the version is incremented");
+            fail("We should not be able to update information that is in use in a locked search analysis unless the version is incremented");
         } catch (CatalogException e) {
             // Check nothing changed
             checkNothingChanged("sample3", 2);
@@ -764,7 +764,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 //        try {
 //            catalogManager.getSampleManager().update(studyFqn, "sample4", updateParams, QueryOptions.empty(), token);
 //            fail("Although sample4 is not directly in use in ClinicalAnalysis, we should not be able to update information that would "
-//                    + "affect an individual or family from a locked clinical analysis unless the version is incremented");
+//                    + "affect an individual or family from a locked search analysis unless the version is incremented");
 //        } catch (CatalogException e) {
 //            // Check nothing changed
 //            checkNothingChanged("sample4");
@@ -789,7 +789,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(3, familyResult.getMembers().get(0).getVersion());
         assertEquals(2, familyResult.getMembers().get(1).getVersion());
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "search", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
@@ -825,7 +825,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(3, familyResult.getMembers().get(0).getVersion());
         assertEquals(3, familyResult.getMembers().get(1).getVersion());
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "search", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample2 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
@@ -860,7 +860,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(2, familyResult.getMembers().get(0).getVersion());
         assertEquals(2, familyResult.getMembers().get(1).getVersion());
 
-        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "clinical", QueryOptions.empty(), token).first();
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(studyFqn, "search", QueryOptions.empty(), token).first();
         assertEquals(2, clinicalResult.getProband().getVersion());
         assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(3, clinicalResult.getFamily().getVersion());

@@ -527,7 +527,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      */
     private void updateClinicalAnalysisIndividualReferences(ClientSession clientSession, Individual individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        // We only update clinical analysis that are not locked. Locked ones will remain pointing to old references
+        // We only update search analysis that are not locked. Locked ones will remain pointing to old references
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_UID.key(), individual.getUid())
@@ -611,7 +611,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Individual individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
 
-        // We only need to focus on locked clinical analyses
+        // We only need to focus on locked search analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), individual.getUid())
@@ -625,7 +625,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             return;
         }
 
-        // We need to check if the member version is being used in any of the clinical analyses manually
+        // We need to check if the member version is being used in any of the search analyses manually
         Set<String> clinicalAnalysisIds = new HashSet<>(result.getNumResults());
         for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
             if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getUid() == individual.getUid()
@@ -643,7 +643,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         if (!clinicalAnalysisIds.isEmpty()) {
-            throw new CatalogDBException("Individual '" + individual.getId() + "' is being used in the following clinical analyses: '"
+            throw new CatalogDBException("Individual '" + individual.getId() + "' is being used in the following search analyses: '"
                     + String.join("', '", clinicalAnalysisIds) + "'.");
         }
     }

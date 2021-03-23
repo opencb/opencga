@@ -83,7 +83,7 @@ public class InternalMain {
                         case "tools":
                             commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getToolsCommandOptions());
                             break;
-                        case "clinical":
+                        case "search":
                             commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
                             break;
                         case "files":

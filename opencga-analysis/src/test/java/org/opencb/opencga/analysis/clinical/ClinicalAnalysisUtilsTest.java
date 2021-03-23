@@ -87,10 +87,10 @@ public class ClinicalAnalysisUtilsTest {
     public static void displayClinicalVariants(List<ClinicalVariant> clinicalVariants, String msg) {
         System.out.println(msg);
         if (CollectionUtils.isNotEmpty(clinicalVariants)) {
-            System.out.println("\tNum. clinical variants = " + clinicalVariants.size());
+            System.out.println("\tNum. search variants = " + clinicalVariants.size());
             for (ClinicalVariant variant : clinicalVariants) {
-                System.out.println("\t\tclinical variant = " + variant.toStringSimple());
-                System.out.println("\t\t\t\tNum. clinical variant evidences = " + variant.getEvidences().size());
+                System.out.println("\t\tsearch variant = " + variant.toStringSimple());
+                System.out.println("\t\t\t\tNum. search variant evidences = " + variant.getEvidences().size());
                 for (ClinicalVariantEvidence clinicalVariantEvidence : variant.getEvidences()) {
                     System.out.print("\t\t\t\t\t(Tier, CT) = (" + clinicalVariantEvidence.getClassification().getTier() + ", ");
                     if (CollectionUtils.isEmpty(clinicalVariantEvidence.getGenomicFeature().getConsequenceTypes())) {

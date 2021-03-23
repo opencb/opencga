@@ -151,7 +151,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         // Load interpretation analysis configuration
         if (opencgaHome != null) {
             ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-            Path configPath = opencgaHome.resolve("analysis/clinical-variant-query.yml");
+            Path configPath = opencgaHome.resolve("analysis/search-variant-query.yml");
             if (configPath.toFile().exists()) {
                 FileInputStream fis = new FileInputStream(configPath.toFile());
                 config = objectMapper.readValue(fis, InterpretationAnalysisConfiguration.class);
@@ -235,7 +235,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     /*--------------------------------------------------------------------------*/
-    /*  Get clinical variants                                                   */
+    /*  Get search variants                                                   */
     /*--------------------------------------------------------------------------*/
 
     public OpenCGAResult<ClinicalVariant> get(Query query, QueryOptions queryOptions, String token)
@@ -341,7 +341,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
         }
 
-        // Convert variant into clinical variant
+        // Convert variant into search variant
         List<ClinicalVariant> clinicalVariants = new ArrayList<>();
         for (Variant variant : variants) {
             ClinicalVariant clinicalVariant = createClinicalVariant(variant, null, roleInCancerManager.getRoleInCancer(),
@@ -455,7 +455,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         List<String> acmgs = calculateAcmgClassification(consequenceType, annotation, moi);
         clinicalVariantEvidence.getClassification().setAcmg(acmgs);
 
-        // Variant classification: clinical significance
+        // Variant classification: search significance
         clinicalVariantEvidence.getClassification().setClinicalSignificance(computeClinicalSignificance(acmgs));
 
         // Role in cancer
@@ -544,7 +544,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             currentQuery.putAll(query);
         }
 
-        // Get and check clinical analysis and proband
+        // Get and check search analysis and proband
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
@@ -633,7 +633,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             currentQuery.putAll(query);
         }
 
-        // Get and check clinical analysis and proband
+        // Get and check search analysis and proband
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
@@ -714,7 +714,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                     getActionableVariantManager().getActionableVariants(assembly), disorder, moi, ClinicalProperty.Penetrance.COMPLETE,
                     diseasePanels, biotypes, soNames, !skipUntieredVariants);
         } catch (IOException e) {
-            throw new ToolException("Error creating clinical variant creator", e);
+            throw new ToolException("Error creating search variant creator", e);
         }
     }
 
@@ -730,7 +730,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
         if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
-            throw new ToolException("Missing proband in clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing proband in search analysis " + clinicalAnalysisId);
         }
 
         return clinicalAnalysis;
@@ -966,7 +966,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 //            throw new ToolException(e.getMessage(), e);
 //        }
 //        if (fileQueryResult.getNumResults() > 1) {
-//            throw new ToolException("More than one BAM file found for proband " + probandId + " in clinical analysis "
+//            throw new ToolException("More than one BAM file found for proband " + probandId + " in search analysis "
 //                    + clinicalAnalysisId);
 //        }
 //
@@ -1042,7 +1042,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return assembly;
     }
 
-//    public org.opencb.biodata.models.clinical.interpretation.Interpretation generateInterpretation(
+//    public org.opencb.biodata.models.search.interpretation.Interpretation generateInterpretation(
 //            String analysisName, String clinicalAnalysisId, Query query, List<ClinicalVariant> primaryFindings,
 //            List<ClinicalVariant> secondaryFindings, List<DiseasePanel> diseasePanels, List<ReportedLowCoverage> reportedLowCoverages,
 //            String sessionId) throws CatalogException {
@@ -1147,10 +1147,10 @@ public class ClinicalInterpretationManager extends StorageManager {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<String> studyIds = getStudyIds(userId, query);
 
-        // If one specific clinical analysis, sample or individual is provided we expect a single valid study as well
+        // If one specific search analysis, sample or individual is provided we expect a single valid study as well
         if (isCaseProvided(query)) {
             if (studyIds.size() == 1) {
-                // This checks that the user has permission to the clinical analysis, family, sample or individual
+                // This checks that the user has permission to the search analysis, family, sample or individual
                 DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
                         .search(studyIds.get(0), query, QueryOptions.empty(), token);
 

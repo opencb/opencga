@@ -370,7 +370,7 @@ public class SolrQueryParser {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
-        // clinical significance
+        // search significance
         key = ANNOT_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             Values<String> values = splitValues(query.getString(key));

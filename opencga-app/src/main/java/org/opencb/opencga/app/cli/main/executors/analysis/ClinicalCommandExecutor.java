@@ -32,7 +32,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing clinical analysis command line");
+        logger.debug("Executing search analysis command line");
 
         String subCommandString = getParsedSubCommand(clinicalCommandOptions.jCommander);
         RestResponse queryResponse = null;
@@ -126,7 +126,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<ClinicalAnalysis> info() throws ClientException {
-        logger.debug("Getting clinical analysis information");
+        logger.debug("Getting search analysis information");
 
         ClinicalCommandOptions.InfoCommandOptions commandOptions = clinicalCommandOptions.infoCommandOptions;
 

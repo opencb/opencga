@@ -140,7 +140,7 @@ public class StorageConfiguration {
         sb.append(", server=").append(server);
         sb.append(", cache=").append(cache);
         sb.append(", search=").append(search);
-        sb.append(", clinical=").append(clinical);
+        sb.append(", search=").append(clinical);
         sb.append(", rga=").append(rga);
         sb.append(", benchmark=").append(benchmark);
         sb.append('}');

@@ -14,7 +14,7 @@ public class StudyConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyConfiguration{");
-        sb.append("clinical=").append(clinical);
+        sb.append("search=").append(clinical);
         sb.append('}');
         return sb.toString();
     }

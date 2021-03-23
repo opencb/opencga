@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.clinical.clinical;
+package org.opencb.opencga.storage.core.clinical.search;
 
 import org.apache.solr.client.solrj.beans.Field;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
@@ -73,7 +73,7 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
     @Field("caInfo")
     private List<String> caInfo;
 
-    // caJson a JSON string containing all clinical analysis but the interpretation list
+    // caJson a JSON string containing all search analysis but the interpretation list
     @Field("caJson")
     private String caJson;
 
@@ -826,5 +826,6 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         return this;
     }
 }
+
 
 

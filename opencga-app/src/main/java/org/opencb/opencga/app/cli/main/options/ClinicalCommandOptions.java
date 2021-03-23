@@ -21,7 +21,7 @@ import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
-@Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
+@Parameters(commandNames = {"search"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {
 
     public SearchCommandOptions searchCommandOptions;
@@ -72,7 +72,7 @@ public class ClinicalCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"search"}, commandDescription = "Search clinical analysis")
+    @Parameters(commandNames = {"search"}, commandDescription = "Search search analysis")
     public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -108,7 +108,7 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--family"}, description = "Family id", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--proband"}, description = "Proband id of the clinical analysis", required = false, arity = 1)
+        @Parameter(names = {"--proband"}, description = "Proband id of the search analysis", required = false, arity = 1)
         public String proband;
 
         @Parameter(names = {"--sample"}, description = "Proband sample id", arity = 1)
@@ -125,7 +125,7 @@ public class ClinicalCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"info"}, commandDescription = "Get clinical analysis information")
+    @Parameters(commandNames = {"info"}, commandDescription = "Get search analysis information")
     public class InfoCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -134,7 +134,7 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis", required = true, arity = 1)
+        @Parameter(names = {"--search-analysis"}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
     }
@@ -156,7 +156,7 @@ public class ClinicalCommandOptions {
 
     }
 
-    @Parameters(commandNames = {VariantQueryCommandOptions.VARIANT_QUERY_COMMAND}, commandDescription = "Fetch clinical variants")
+    @Parameters(commandNames = {VariantQueryCommandOptions.VARIANT_QUERY_COMMAND}, commandDescription = "Fetch search variants")
     public class VariantQueryCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String VARIANT_QUERY_COMMAND = "variant-query";
@@ -249,7 +249,7 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         public String xref;
 
-        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--search-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
 
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
@@ -271,7 +271,7 @@ public class ClinicalCommandOptions {
         public String panel;
     }
 
-    @Parameters(commandNames = {VariantActionableCommandOptions.VARIANT_ACTIONABLE_COMMAND}, commandDescription = "Fetch actionable clinical variants")
+    @Parameters(commandNames = {VariantActionableCommandOptions.VARIANT_ACTIONABLE_COMMAND}, commandDescription = "Fetch actionable search variants")
     public class VariantActionableCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String VARIANT_ACTIONABLE_COMMAND = "variant-actionable";
@@ -415,7 +415,7 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         public String xref;
 
-        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--search-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)

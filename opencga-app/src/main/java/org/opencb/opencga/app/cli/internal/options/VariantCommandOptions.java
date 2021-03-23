@@ -912,7 +912,7 @@ public class VariantCommandOptions {
             return super.setFunctionalScore(functionalScore);
         }
 
-        @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--search-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         @Override
         public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
             return super.setClinicalSignificance(clinicalSignificance);

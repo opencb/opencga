@@ -148,7 +148,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             Iterator<Interpretation> iterator = interpretationList.iterator();
             while (iterator.hasNext()) {
                 Interpretation interpretation = iterator.next();
-                // Check if the user has access to the corresponding clinical analysis
+                // Check if the user has access to the corresponding search analysis
                 try {
                     catalogManager.getClinicalAnalysisManager().internalGet(studyUid,
                             interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, user);
@@ -196,7 +196,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public OpenCGAResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
                                                 ParamUtils.SaveInterpretationAs saveInterpretationAs, QueryOptions options, String token)
             throws CatalogException {
-        // We check if the user can create interpretations in the clinical analysis
+        // We check if the user can create interpretations in the search analysis
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
@@ -693,7 +693,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     interpretation.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
-            CatalogException e1 = new CatalogException("Cannot update interpretation '" + interpretationId + "' of clinical analysis '"
+            CatalogException e1 = new CatalogException("Cannot update interpretation '" + interpretationId + "' of search analysis '"
                     + clinicalAnalysisId + "': " + e.getMessage(), e);
             Event event = new Event(Event.Type.ERROR, interpretationId, e1.getMessage());
             result.getEvents().add(event);
@@ -714,7 +714,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
      * @param clinicalAnalysisId ClinicalAnalysis id.
      * @param interpretationIds List of interpretation ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
-     * @param as Enum to move the importance of the interpretation within the clinical analysis context.
+     * @param as Enum to move the importance of the interpretation within the search analysis context.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
      * @return A OpenCGAResult.
@@ -815,7 +815,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
-        // Check if user has permissions to write clinical analysis
+        // Check if user has permissions to write search analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
@@ -1037,7 +1037,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                             ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId);
                     results.add(interpretation);
                 } catch (CatalogException e) {
-                    // Maybe the clinical analysis was deleted
+                    // Maybe the search analysis was deleted
                     Query clinicalQuery = new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true);
 
                     try {

@@ -639,9 +639,9 @@ public class ProjectManager extends AbstractManager {
             }
         }
 
-        // Reading clinical analysis
+        // Reading search analysis
         try (BufferedReader br = new BufferedReader(new FileReader(inputDir.resolve("clinical_analysis.json").toFile()))) {
-            logger.info("Importing clinical analysis...");
+            logger.info("Importing search analysis...");
             for (String line = br.readLine(); line != null; line = br.readLine()) {
                 Map<String, Object> file = objectMapper.readValue(line, Map.class);
                 clinicalDBAdaptor.nativeInsert(file, owner);
@@ -939,7 +939,7 @@ public class ProjectManager extends AbstractManager {
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
         dbIterator = clinicalDBAdaptor.nativeIterator(query, QueryOptions.empty());
-        exportToFile(dbIterator, outputDir.resolve("clinical_analysis.json").toFile(), objectMapper, "clinical analysis");
+        exportToFile(dbIterator, outputDir.resolve("clinical_analysis.json").toFile(), objectMapper, "search analysis");
 
         query = new Query()
                 .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)

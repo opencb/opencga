@@ -130,7 +130,7 @@ public class OpencgaMain {
                         case "variant":
                             commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommands());
                             break;
-                        case "clinical":
+                        case "search":
                             commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
                             break;
                         case OperationsCommandOptions.OPERATIONS_COMMAND:

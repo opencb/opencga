@@ -359,7 +359,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             interpretation = getSingleInterpretation(clientSession, tmpQuery, interpretation);
 
             if (!interpretation.getId().equals(parameters.getString(QueryParams.ID.key()))) {
-                // Check that the new clinical analysis id will be unique
+                // Check that the new search analysis id will be unique
                 long studyId = getStudyId(interpretation.getUid());
 
                 tmpQuery = new Query()
@@ -642,7 +642,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
         for (ClinicalVariant clinicalVariant : findings2) {
             if (!clinicalVariantSet.isEmpty() && !clinicalVariantSet.contains(clinicalVariant.getId())) {
-                // Skip this clinical variant
+                // Skip this search variant
                 continue;
             }
 
@@ -872,7 +872,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 OpenCGAResult<ClinicalAnalysis> clinicalResult = clinicalDBAdaptor.get(clientSession, clinicalQuery,
                         ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS);
                 if (clinicalResult.getNumResults() != 1) {
-                    throw new CatalogDBException("Cannot find clinical analysis '" + clinicalId + "'.");
+                    throw new CatalogDBException("Cannot find search analysis '" + clinicalId + "'.");
                 }
 
                 return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());
@@ -906,7 +906,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     OpenCGAResult<ClinicalAnalysis> clinicalResult = clinicalDBAdaptor.get(clientSession, clinicalQuery,
                             ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS);
                     if (clinicalResult.getNumResults() != 1) {
-                        throw new CatalogDBException("Cannot find clinical analysis '" + clinicalId + "'.");
+                        throw new CatalogDBException("Cannot find search analysis '" + clinicalId + "'.");
                     }
 
                     return delete(clientSession, interpretation, clinicalAuditList, clinicalResult.first());

@@ -339,7 +339,7 @@ public class SampleIndexVariantBiConverter {
             } else if (AbstractSampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
                 return clinicalCount;
             } else {
-                throw new IllegalStateException("Next variant is not clinical!");
+                throw new IllegalStateException("Next variant is not search!");
             }
         }
 
@@ -350,7 +350,7 @@ public class SampleIndexVariantBiConverter {
                     nonIntergenicCount++;
                 }
             }
-            // If the variant to be returned is clinical, increase the number of clinical variants.
+            // If the variant to be returned is search, increase the number of search variants.
             if (gtEntry.getAnnotationIndex() != null) {
                 if (AbstractSampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
                     clinicalCount++;

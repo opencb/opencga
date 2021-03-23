@@ -140,7 +140,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 //                        + entry + "'.");
 //            }
 //        } else if (analysisDataResult.getNumResults() > 1) {
-//            throw new CatalogException("More than one clinical analysis found based on '" + entry + "'.");
+//            throw new CatalogException("More than one search analysis found based on '" + entry + "'.");
 //        } else {
 //            return analysisDataResult;
 //        }
@@ -151,7 +151,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                                         QueryOptions options, String user, boolean ignoreException)
             throws CatalogException {
         if (ListUtils.isEmpty(entryList)) {
-            throw new CatalogException("Missing clinical analysis entries.");
+            throw new CatalogException("Missing search analysis entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
 
@@ -189,10 +189,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         OpenCGAResult<ClinicalAnalysis> resultsNoCheck = clinicalDBAdaptor.get(queryCopy, queryOptions);
 
         if (resultsNoCheck.getNumResults() == analysisDataResult.getNumResults()) {
-            throw CatalogException.notFound("clinical analyses",
+            throw CatalogException.notFound("search analyses",
                     getMissingFields(uniqueList, analysisDataResult.getResults(), clinicalStringFunction));
         } else {
-            throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the clinical "
+            throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the search "
                     + "analyses.");
         }
     }
@@ -830,7 +830,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw new CatalogException("Missing family id");
         }
 
-        // List of members relevant for the clinical analysis
+        // List of members relevant for the search analysis
         List<Individual> selectedMembers = family.getMembers();
 
         OpenCGAResult<Family> familyDataResult = catalogManager.getFamilyManager().get(study.getFqn(), family.getId(), new QueryOptions(),
@@ -887,7 +887,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         Individual finalMember;
 
-        // List of samples relevant for the clinical analysis
+        // List of samples relevant for the search analysis
         List<Sample> samples = member.getSamples();
 
         if (member.getUid() <= 0) {
@@ -988,7 +988,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 Event event = new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage());
                 result.getEvents().add(event);
 
-                logger.error("Could not update clinical analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
+                logger.error("Could not update search analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
                         clinicalAnalysis.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1043,7 +1043,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             Event event = new Event(Event.Type.ERROR, clinicalId, e.getMessage());
             result.getEvents().add(event);
 
-            logger.error("Could not update clinical analysis {}: {}", clinicalId, e.getMessage());
+            logger.error("Could not update search analysis {}: {}", clinicalId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, clinicalUuid,
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
@@ -1056,7 +1056,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
      * Update a Clinical Analysis from catalog.
      *
      * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param clinicalIds  List of clinical analysis ids. Could be either the id or uuid.
+     * @param clinicalIds  List of search analysis ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
      * @param token  Session id of the user logged in.
@@ -1118,7 +1118,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
 
-                logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage());
+                logger.error("Could not update search analysis {}: {}", clinicalAnalysisId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysisId, clinicalAnalysisUuid,
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }

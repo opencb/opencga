@@ -327,13 +327,13 @@ public class FamilyManagerTest extends GenericTest {
         ));
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
-                .setId("clinical")
+                .setId("search")
                 .setProband(new Individual().setId("proband"))
                 .setFamily(family)
                 .setType(ClinicalAnalysis.Type.FAMILY);
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
-        // We will create another clinical analysis with the same information. In this test, we will not lock clinical2
+        // We will create another search analysis with the same information. In this test, we will not lock clinical2
         clinicalAnalysis = new ClinicalAnalysis()
                 .setId("clinical2")
                 .setProband(new Individual().setId("proband"))
@@ -351,7 +351,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(1, familyResult.getMembers().get(0).getVersion());
         assertEquals(1, familyResult.getMembers().get(1).getVersion());
 
-        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+        ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "search", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, clinicalResult.getProband().getVersion());
         assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
@@ -364,15 +364,15 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(2, clinicalResult.getFamily().getMembers().size());   // proband version
 
         // LOCK CLINICAL ANALYSIS
-        catalogManager.getClinicalAnalysisManager().update(STUDY, "clinical", new ClinicalAnalysisUpdateParams().setLocked(true),
+        catalogManager.getClinicalAnalysisManager().update(STUDY, "search", new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "search", QueryOptions.empty(), sessionIdUser).first();
         assertTrue(clinicalResult.isLocked());
 
         try {
             catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams().setDescription("My dummy description"),
                     QueryOptions.empty(), sessionIdUser);
-            fail("We should not be able to update information that is in use in a locked clinical analysis unless the version is incremented");
+            fail("We should not be able to update information that is in use in a locked search analysis unless the version is incremented");
         } catch (CatalogException e) {
             // Check nothing changed
 
@@ -382,7 +382,7 @@ public class FamilyManagerTest extends GenericTest {
             assertEquals(1, familyResult.getMembers().get(0).getVersion());
             assertEquals(1, familyResult.getMembers().get(1).getVersion());
 
-            clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+            clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "search", QueryOptions.empty(), sessionIdUser).first();
             assertEquals(1, clinicalResult.getProband().getVersion());
             assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
             assertEquals(2, clinicalResult.getFamily().getVersion());
@@ -406,7 +406,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(1, familyResult.getMembers().get(0).getVersion());
         assertEquals(1, familyResult.getMembers().get(1).getVersion());
 
-        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
+        clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "search", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, clinicalResult.getProband().getVersion());
         assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());

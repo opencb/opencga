@@ -50,11 +50,11 @@ public final class ClinicalVariantQueryParam implements QueryParam {
 
     // ---------- Clinical Analysis (aka CA)
 
-    public static final String CA_ID_DESCR = "List of clinical analysis IDs";
+    public static final String CA_ID_DESCR = "List of search analysis IDs";
     public static final ClinicalVariantQueryParam CA_ID = new ClinicalVariantQueryParam("caId", TEXT_ARRAY,
             CA_ID_DESCR);
 
-    public static final String CA_NAME_DESCR = "List of clinical analysis names";
+    public static final String CA_NAME_DESCR = "List of search analysis names";
     public static final ClinicalVariantQueryParam CA_NAME = new ClinicalVariantQueryParam("caName", TEXT_ARRAY,
             CA_NAME_DESCR);
 
@@ -62,11 +62,11 @@ public final class ClinicalVariantQueryParam implements QueryParam {
     public static final ClinicalVariantQueryParam CA_DESCRIPTION = new ClinicalVariantQueryParam("caDescription",
             TEXT_ARRAY, CA_DESCRIPTION_DESCR);
 
-    public static final String CA_DISORDER_DESCR = "List of clinical analysis disorders";
+    public static final String CA_DISORDER_DESCR = "List of search analysis disorders";
     public static final ClinicalVariantQueryParam CA_DISORDER = new ClinicalVariantQueryParam("caDisorderId",
             TEXT_ARRAY, CA_DISORDER_DESCR);
 
-    public static final String CA_FILE_DESCR = "List of clinical analysis files";
+    public static final String CA_FILE_DESCR = "List of search analysis files";
     public static final ClinicalVariantQueryParam CA_FILE = new ClinicalVariantQueryParam("caFiles", TEXT_ARRAY,
             CA_FILE_DESCR);
 
@@ -86,11 +86,11 @@ public final class ClinicalVariantQueryParam implements QueryParam {
     public static final ClinicalVariantQueryParam CA_FAMILY_ID = new ClinicalVariantQueryParam("caFamilyId", TEXT_ARRAY,
             CA_FAMILY_ID_DESCR);
 
-    public static final String CA_FAMILY_MEMBER_IDS_DESCR = "List of clinical analysis family member IDs";
+    public static final String CA_FAMILY_MEMBER_IDS_DESCR = "List of search analysis family member IDs";
     public static final ClinicalVariantQueryParam CA_FAMILY_MEMBER_IDS = new ClinicalVariantQueryParam("caFamilyMemberIds", TEXT_ARRAY,
             CA_FAMILY_MEMBER_IDS_DESCR);
 
-    public static final String CA_COMMENTS_DESCR = "List of clinical analysis comments";
+    public static final String CA_COMMENTS_DESCR = "List of search analysis comments";
     public static final ClinicalVariantQueryParam CA_COMMENTS = new ClinicalVariantQueryParam("caComments", TEXT_ARRAY,
             CA_COMMENTS_DESCR);
 
@@ -175,7 +175,7 @@ public final class ClinicalVariantQueryParam implements QueryParam {
     public static final String RE_ACMG_DESCR = "List of reported event ACMG";
     public static final ClinicalVariantQueryParam RE_ACMG = new ClinicalVariantQueryParam("reAcmg", TEXT_ARRAY, RE_ACMG_DESCR);
 
-    public static final String RE_CLINICAL_SIGNIFICANCE_DESCR = "List of reported event clinical significance";
+    public static final String RE_CLINICAL_SIGNIFICANCE_DESCR = "List of reported event search significance";
     public static final ClinicalVariantQueryParam RE_CLINICAL_SIGNIFICANCE = new ClinicalVariantQueryParam("reClinicalSignificance",
             TEXT_ARRAY, RE_CLINICAL_SIGNIFICANCE_DESCR);
 

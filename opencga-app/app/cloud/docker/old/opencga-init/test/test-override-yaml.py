@@ -59,7 +59,7 @@ class Test_init_script(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
-            env={**os.environ, "INIT_CLINICAL_HOSTS": "test-clinical-host"}, #Test that the auto import of environment vars is working
+            env={**os.environ, "INIT_CLINICAL_HOSTS": "test-search-host"}, #Test that the auto import of environment vars is working
         )
         if res.returncode != 0:
             print("Error calling override-yaml.py:")
@@ -79,7 +79,7 @@ class Test_init_script(unittest.TestCase):
 
         self.assertEqual(storage_config["search"]["hosts"][0], "test-search-host1")
         self.assertEqual(storage_config["search"]["hosts"][1], "test-search-host2")
-        self.assertEqual(storage_config["clinical"]["hosts"][0], "test-clinical-host")
+        self.assertEqual(storage_config["search"]["hosts"][0], "test-search-host")
         self.assertEqual(
             storage_config["cellbase"]["database"]["hosts"][0], "test-cellbase-host"
         )
@@ -192,8 +192,8 @@ class Test_init_script(unittest.TestCase):
                 "",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -274,8 +274,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -360,8 +360,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -450,8 +450,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",
@@ -536,8 +536,8 @@ class Test_init_script(unittest.TestCase):
                 "./storage-configuration.yml",
                 "--search-hosts",
                 "test-search-host1,test-search-host2",
-                "--clinical-hosts",
-                "test-clinical-host",
+                "--search-hosts",
+                "test-search-host",
                 "--catalog-database-hosts",
                 "test-catalog-host",
                 "--catalog-database-user",

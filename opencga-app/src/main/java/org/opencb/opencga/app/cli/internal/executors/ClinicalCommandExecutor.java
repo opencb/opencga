@@ -65,7 +65,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing clinical command line");
+        logger.debug("Executing search command line");
 
         String subCommandString = getParsedSubCommand(clinicalCommandOptions.jCommander);
         configure();

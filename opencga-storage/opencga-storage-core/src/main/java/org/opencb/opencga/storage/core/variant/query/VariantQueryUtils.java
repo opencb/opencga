@@ -393,7 +393,7 @@ public final class VariantQueryUtils {
     }
 
     /**
-     * Determines if the given value is a known clinical accession or not.
+     * Determines if the given value is a known search accession or not.
      * <p>
      * ClinVar accession starts with 'RCV' or 'SCV'
      * COSMIC mutationId starts with 'COSM'

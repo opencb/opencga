@@ -436,7 +436,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         int version = sample.getInteger(QueryParams.VERSION.key());
         long studyUid = sample.getLong(QueryParams.STUDY_UID.key());
 
-        // We only need to focus on locked clinical analyses
+        // We only need to focus on locked search analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid)
@@ -450,7 +450,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             return;
         }
 
-        // We need to check if the sample version is being used in any of the clinical analyses manually
+        // We need to check if the sample version is being used in any of the search analyses manually
         Set<String> clinicalAnalysisIds = new HashSet<>(result.getNumResults());
         for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
             if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
@@ -478,7 +478,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         if (!clinicalAnalysisIds.isEmpty()) {
-            throw new CatalogDBException("Sample '" + sampleId + "' is being used in the following clinical analyses: '"
+            throw new CatalogDBException("Sample '" + sampleId + "' is being used in the following search analyses: '"
                     + String.join("', '", clinicalAnalysisIds) + "'.");
         }
 

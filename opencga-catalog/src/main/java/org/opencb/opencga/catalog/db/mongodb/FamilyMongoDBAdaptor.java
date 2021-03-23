@@ -387,7 +387,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
      */
     private void updateClinicalAnalysisFamilyReferences(ClientSession clientSession, Family family)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        // We only update clinical analysis that are not locked. Locked ones will remain pointing to old references
+        // We only update search analysis that are not locked. Locked ones will remain pointing to old references
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid())
@@ -427,7 +427,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Family family)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
 
-        // We only need to focus on locked clinical analyses
+        // We only need to focus on locked search analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid())
@@ -441,7 +441,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             return;
         }
 
-        // We need to check if the family version is being used in any of the clinical analyses manually
+        // We need to check if the family version is being used in any of the search analyses manually
         List<String> clinicalAnalysisIds = new ArrayList<>(result.getNumResults());
         for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
             if (clinicalAnalysis.getFamily().getVersion() == family.getVersion()) {
@@ -450,7 +450,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         if (!clinicalAnalysisIds.isEmpty()) {
-            throw new CatalogDBException("Family '" + family.getId() + "' is being used in the following clinical analyses: '"
+            throw new CatalogDBException("Family '" + family.getId() + "' is being used in the following search analyses: '"
                     + String.join("', '", clinicalAnalysisIds) + "'.");
         }
 

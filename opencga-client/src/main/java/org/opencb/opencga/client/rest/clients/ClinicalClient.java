@@ -51,7 +51,7 @@ import org.opencb.opencga.core.response.RestResponse;
 /**
  * This class contains methods for the Clinical webservices.
  *    Client version: 2.0.0
- *    PATH: analysis/clinical
+ *    PATH: analysis/search
  */
 public class ClinicalClient extends AbstractParentClient {
 
@@ -75,12 +75,12 @@ public class ClinicalClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("action", action);
         params.put("body", data);
-        return execute("analysis", null, "clinical/acl", members, "update", params, POST, ObjectMap.class);
+        return execute("analysis", null, "search/acl", members, "update", params, POST, ObjectMap.class);
     }
 
     /**
-     * Create a new clinical analysis.
-     * @param data JSON containing clinical analysis information.
+     * Create a new search analysis.
+     * @param data JSON containing search analysis information.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *       createDefaultInterpretation: Flag to create and initialise a default primary interpretation (Id will be
@@ -91,7 +91,7 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<ClinicalAnalysis> create(ClinicalAnalysisCreateParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "clinical", null, "create", params, POST, ClinicalAnalysis.class);
+        return execute("analysis", null, "search", null, "create", params, POST, ClinicalAnalysis.class);
     }
 
     /**
@@ -123,7 +123,7 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<ObjectMap> distinct(String field, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("field", field);
-        return execute("analysis", null, "clinical", null, "distinct", params, GET, ObjectMap.class);
+        return execute("analysis", null, "search", null, "distinct", params, GET, ObjectMap.class);
     }
 
     /**
@@ -146,11 +146,11 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<ObjectMap> distinctInterpretation(String field, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("field", field);
-        return execute("analysis", null, "clinical/interpretation", null, "distinct", params, GET, ObjectMap.class);
+        return execute("analysis", null, "search/interpretation", null, "distinct", params, GET, ObjectMap.class);
     }
 
     /**
-     * Search clinical interpretations.
+     * Search search interpretations.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
@@ -172,16 +172,16 @@ public class ClinicalClient extends AbstractParentClient {
      */
     public RestResponse<Interpretation> searchInterpretation(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/interpretation", null, "search", params, GET, Interpretation.class);
+        return execute("analysis", null, "search/interpretation", null, "search", params, GET, Interpretation.class);
     }
 
     /**
      * Clinical interpretation information.
-     * @param interpretations Comma separated list of clinical interpretation IDs  up to a maximum of 100.
+     * @param interpretations Comma separated list of search interpretation IDs  up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       interpretations: Comma separated list of clinical interpretation IDs  up to a maximum of 100.
+     *       interpretations: Comma separated list of search interpretation IDs  up to a maximum of 100.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *       version: Comma separated list of interpretation versions. 'all' to get all the interpretation versions. Not supported if
      *            multiple interpretation ids are provided.
@@ -191,7 +191,7 @@ public class ClinicalClient extends AbstractParentClient {
      */
     public RestResponse<Interpretation> infoInterpretation(String interpretations, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/interpretation", interpretations, "info", params, GET, Interpretation.class);
+        return execute("analysis", null, "search/interpretation", interpretations, "info", params, GET, Interpretation.class);
     }
 
     /**
@@ -210,7 +210,7 @@ public class ClinicalClient extends AbstractParentClient {
             throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "clinical/interpreter/cancerTiering", null, "run", params, POST, Job.class);
+        return execute("analysis", null, "search/interpreter/cancerTiering", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -228,7 +228,7 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<Job> runInterpreterTeam(TeamInterpretationAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "clinical/interpreter/team", null, "run", params, POST, Job.class);
+        return execute("analysis", null, "search/interpreter/team", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -246,7 +246,7 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<Job> runInterpreterTiering(TieringInterpretationAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "clinical/interpreter/tiering", null, "run", params, POST, Job.class);
+        return execute("analysis", null, "search/interpreter/tiering", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -264,7 +264,7 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<Job> runInterpreterZetta(ZettaInterpretationAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "clinical/interpreter/zetta", null, "run", params, POST, Job.class);
+        return execute("analysis", null, "search/interpreter/zetta", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -300,11 +300,11 @@ public class ClinicalClient extends AbstractParentClient {
      */
     public RestResponse<ClinicalAnalysis> search(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical", null, "search", params, GET, ClinicalAnalysis.class);
+        return execute("analysis", null, "search", null, "search", params, GET, ClinicalAnalysis.class);
     }
 
     /**
-     * Fetch actionable clinical variants.
+     * Fetch actionable search variants.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *       sample: Sample ID.
@@ -313,11 +313,11 @@ public class ClinicalClient extends AbstractParentClient {
      */
     public RestResponse<ClinicalVariant> actionableVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/variant", null, "actionable", params, GET, ClinicalVariant.class);
+        return execute("analysis", null, "search/variant", null, "actionable", params, GET, ClinicalVariant.class);
     }
 
     /**
-     * Fetch clinical variants.
+     * Fetch search variants.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
@@ -399,12 +399,12 @@ public class ClinicalClient extends AbstractParentClient {
      */
     public RestResponse<ClinicalVariant> queryVariant(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical/variant", null, "query", params, GET, ClinicalVariant.class);
+        return execute("analysis", null, "search/variant", null, "query", params, GET, ClinicalVariant.class);
     }
 
     /**
-     * Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.
-     * @param clinicalAnalyses Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+     * Returns the acl of the search analyses. If member is provided, it will only return the acl for the member.
+     * @param clinicalAnalyses Comma separated list of search analysis IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *       member: User or group ID.
@@ -415,30 +415,30 @@ public class ClinicalClient extends AbstractParentClient {
      */
     public RestResponse<ObjectMap> acl(String clinicalAnalyses, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical", clinicalAnalyses, "acl", params, GET, ObjectMap.class);
+        return execute("analysis", null, "search", clinicalAnalyses, "acl", params, GET, ObjectMap.class);
     }
 
     /**
-     * Delete clinical analyses.
-     * @param clinicalAnalyses Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+     * Delete search analyses.
+     * @param clinicalAnalyses Comma separated list of search analysis IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *       force: Force deletion if the ClinicalAnalysis contains interpretations or is locked.
-     *       clinicalAnalyses: Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+     *       clinicalAnalyses: Comma separated list of search analysis IDs or names up to a maximum of 100.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
     public RestResponse<ClinicalAnalysis> delete(String clinicalAnalyses, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical", clinicalAnalyses, "delete", params, DELETE, ClinicalAnalysis.class);
+        return execute("analysis", null, "search", clinicalAnalyses, "delete", params, DELETE, ClinicalAnalysis.class);
     }
 
     /**
-     * Update clinical analysis attributes.
-     * @param clinicalAnalyses Comma separated list of clinical analysis IDs.
-     * @param data JSON containing clinical analysis information.
+     * Update search analysis attributes.
+     * @param clinicalAnalyses Comma separated list of search analysis IDs.
+     * @param data JSON containing search analysis information.
      * @param params Map containing any of the following optional parameters.
-     *       clinicalAnalyses: Comma separated list of clinical analysis IDs.
+     *       clinicalAnalyses: Comma separated list of search analysis IDs.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *       commentsAction: Action to be performed if the array of comments is being updated.
      *       flagsAction: Action to be performed if the array of flags is being updated.
@@ -450,16 +450,16 @@ public class ClinicalClient extends AbstractParentClient {
             throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "clinical", clinicalAnalyses, "update", params, POST, ClinicalAnalysis.class);
+        return execute("analysis", null, "search", clinicalAnalyses, "update", params, POST, ClinicalAnalysis.class);
     }
 
     /**
      * Clinical analysis info.
-     * @param clinicalAnalysis Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+     * @param clinicalAnalysis Comma separated list of search analysis IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
      *       include: Fields included in the response, whole JSON path must be provided.
      *       exclude: Fields excluded in the response, whole JSON path must be provided.
-     *       clinicalAnalysis: Comma separated list of clinical analysis IDs or names up to a maximum of 100.
+     *       clinicalAnalysis: Comma separated list of search analysis IDs or names up to a maximum of 100.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *       deleted: Boolean to retrieve deleted entries.
      * @return a RestResponse object.
@@ -467,13 +467,13 @@ public class ClinicalClient extends AbstractParentClient {
      */
     public RestResponse<ClinicalAnalysis> info(String clinicalAnalysis, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "clinical", clinicalAnalysis, "info", params, GET, ClinicalAnalysis.class);
+        return execute("analysis", null, "search", clinicalAnalysis, "info", params, GET, ClinicalAnalysis.class);
     }
 
     /**
      * Create a new Interpretation.
      * @param clinicalAnalysis Clinical analysis ID.
-     * @param data JSON containing clinical interpretation information.
+     * @param data JSON containing search interpretation information.
      * @param params Map containing any of the following optional parameters.
      *       clinicalAnalysis: Clinical analysis ID.
      *       study: [[user@]project:]study id.
@@ -485,7 +485,7 @@ public class ClinicalClient extends AbstractParentClient {
             throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis/clinical", clinicalAnalysis, "interpretation", null, "create", params, POST, Interpretation.class);
+        return execute("analysis/search", clinicalAnalysis, "interpretation", null, "create", params, POST, Interpretation.class);
     }
 
     /**
@@ -502,7 +502,7 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<Interpretation> clearInterpretation(String clinicalAnalysis, String interpretations, ObjectMap params)
             throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", clinicalAnalysis, "interpretation", interpretations, "clear", params, POST,
+        return execute("analysis/search", clinicalAnalysis, "interpretation", interpretations, "clear", params, POST,
                 Interpretation.class);
     }
 
@@ -521,7 +521,7 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<Interpretation> deleteInterpretation(String clinicalAnalysis, String interpretations, ObjectMap params)
             throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", clinicalAnalysis, "interpretation", interpretations, "delete", params, DELETE,
+        return execute("analysis/search", clinicalAnalysis, "interpretation", interpretations, "delete", params, DELETE,
                 Interpretation.class);
     }
 
@@ -529,7 +529,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Merge interpretation.
      * @param clinicalAnalysis Clinical analysis ID.
      * @param interpretation Interpretation ID where it will be merged.
-     * @param data JSON containing clinical interpretation to merge from.
+     * @param data JSON containing search interpretation to merge from.
      * @param params Map containing any of the following optional parameters.
      *       study: [[user@]project:]study ID.
      *       clinicalAnalysis: Clinical analysis ID.
@@ -543,7 +543,7 @@ public class ClinicalClient extends AbstractParentClient {
         ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis/clinical", clinicalAnalysis, "interpretation", interpretation, "merge", params, POST,
+        return execute("analysis/search", clinicalAnalysis, "interpretation", interpretation, "merge", params, POST,
                 Interpretation.class);
     }
 
@@ -563,7 +563,7 @@ public class ClinicalClient extends AbstractParentClient {
             throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("version", version);
-        return execute("analysis/clinical", clinicalAnalysis, "interpretation", interpretation, "revert", params, POST,
+        return execute("analysis/search", clinicalAnalysis, "interpretation", interpretation, "revert", params, POST,
                 Interpretation.class);
     }
 
@@ -571,7 +571,7 @@ public class ClinicalClient extends AbstractParentClient {
      * Update interpretation fields.
      * @param clinicalAnalysis Clinical analysis ID.
      * @param interpretation Interpretation ID.
-     * @param data JSON containing clinical interpretation information.
+     * @param data JSON containing search interpretation information.
      * @param params Map containing any of the following optional parameters.
      *       study: [[user@]project:]study ID.
      *       primaryFindingsAction: Action to be performed if the array of primary findings is being updated.
@@ -589,7 +589,7 @@ public class ClinicalClient extends AbstractParentClient {
         data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis/clinical", clinicalAnalysis, "interpretation", interpretation, "update", params, POST,
+        return execute("analysis/search", clinicalAnalysis, "interpretation", interpretation, "update", params, POST,
                 Interpretation.class);
     }
 }

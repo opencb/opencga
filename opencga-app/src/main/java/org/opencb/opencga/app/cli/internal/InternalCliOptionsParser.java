@@ -203,8 +203,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 ////        interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
 
         clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("clinical", clinicalCommandOptions);
-        JCommander clinicalSubCommands = jCommander.getCommands().get("clinical");
+        jCommander.addCommand("search", clinicalCommandOptions);
+        JCommander clinicalSubCommands = jCommander.getCommands().get("search");
         clinicalSubCommands.addCommand(TIERING_RUN_COMMAND, clinicalCommandOptions.tieringCommandOptions);
         clinicalSubCommands.addCommand(TEAM_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
         clinicalSubCommands.addCommand(ZETTA_RUN_COMMAND, clinicalCommandOptions.zettaCommandOptions);

@@ -471,7 +471,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                             FamilyAclEntry.FamilyPermissions.DELETE);
                 }
 
-                // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
+                // TODO: Check if the family is used in a search analysis. At this point, it can be deleted no matter what.
 
                 // Delete the family
                 result.append(familyDBAdaptor.delete(family));
@@ -546,7 +546,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                             FamilyAclEntry.FamilyPermissions.DELETE);
                 }
 
-                // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
+                // TODO: Check if the family is used in a search analysis. At this point, it can be deleted no matter what.
 
                 // Delete the family
                 result.append(familyDBAdaptor.delete(family));
