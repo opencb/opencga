@@ -17,7 +17,6 @@
 package org.opencb.opencga.master.monitor.executors;
 
 import org.junit.Test;
-import org.opencb.opencga.core.common.TimeUtils;
 
 import static org.junit.Assert.assertEquals;
 
@@ -25,14 +24,25 @@ public class K8SExecutorTest {
 
     @Test
     public void testBuildJobName() {
-        assertEquals("opencga-job-really-complicated-j-b-2---id",
+        assertEquals("opencga-job-really-complicated-j-b-2---id-e8b6f0",
                 K8SExecutor.buildJobName("really_Complicated J@b 2£$ ID"));
-        String time = TimeUtils.getTime();
 
-        String jobName = K8SExecutor.buildJobName("really_Complicated and extra super duper large job name for a simple task " + time);
-        String expected = "opencga-job-really-complicated--r-a-simple-task-" + time;
+        String jobName = K8SExecutor.buildJobName("really_Complicated and extra super duper large job name for a simple task 20210323122209");
+        String expected = "opencga-job-really-complica-1d9128--simple-task-20210323122209";
         assertEquals(expected, jobName);
-        assertEquals(expected.length(), jobName.length());
+
+        assertEquals("opencga-job-my-job-1-92b223", K8SExecutor.buildJobName("my job 1"));
+        assertEquals("opencga-job-my-job-1-f3eb13", K8SExecutor.buildJobName("my_job_1"));
+        assertEquals("opencga-job-my-job-1-672a51", K8SExecutor.buildJobName("my:job:1"));
+        assertEquals("opencga-job-my-job-1-94caca", K8SExecutor.buildJobName("My-job-1"));
+        assertEquals("opencga-job-my-job-1", K8SExecutor.buildJobName("my-job-1"));
+
+        assertEquals("opencga-job-abcdefghijklmnopqrstuvwxyz12345678900987654321", K8SExecutor.buildJobName("abcdefghijklmnopqrstuvwxyz12345678900987654321"));
+        assertEquals("opencga-job-abcdefghijklmno-cb3af7-tuvwxyz12345678900987654321", K8SExecutor.buildJobName("ABCDEFGHIJKLMNOPQRSTUVWXYZ12345678900987654321"));
+        assertEquals("opencga-job-abcdefghijklmno-47a86e-stuvwxyz1234567890098765432", K8SExecutor.buildJobName("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890098765432"));
+        assertEquals("opencga-job-abcdefghijklmno-9c2366-rstuvwxyz123456789009876543", K8SExecutor.buildJobName("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789009876543"));
+        assertEquals("opencga-job-abcdefghijklmnopqrstuvwxyz12345678900987654-890ca6", K8SExecutor.buildJobName("ABCDEFGHIJKLMNOPQRSTUVWXYZ12345678900987654"));
+        assertEquals("opencga-job-abcdefghijklmnopqrstuvwxyz1234567890-016fd6", K8SExecutor.buildJobName("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"));
     }
 
 }
