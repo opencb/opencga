@@ -64,6 +64,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -78,7 +79,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
@@ -461,55 +461,44 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Tool tool;
         try {
             tool = new ToolFactory().getTool(job.getTool().getId());
-        } catch (ToolException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return abortJob(job, "Tool " + job.getTool().getId() + " not found");
+        }
+
+        try {
+            checkToolExecutionPermission(job);
+        } catch (Exception e) {
+            return abortJob(job, e);
         }
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
         updateParams.setTool(new ToolInfo(tool.id(), tool.description(), tool.scope(), tool.type(), tool.resource()));
 
         if (tool.scope() == Tool.Scope.PROJECT) {
-            String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(":"));
-            OpenCGAResult<Study> studyResult;
+            String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
             try {
-                studyResult = catalogManager.getStudyManager().search(projectFqn, new Query(),
+                List<String> studyFqnSet = catalogManager.getStudyManager().search(projectFqn, new Query(),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
-                                StudyDBAdaptor.QueryParams.FQN.key())), token);
-            } catch (CatalogException e) {
-                logger.error(e.getMessage(), e);
-                return abortJob(job, e.getMessage());
-            }
-            // Validate user is owner or admin
-            if (!job.getStudy().getId().startsWith(job.getUserId() + "@")) {
-                // It is not the owner, so we check if it is the admin
-                for (Study study : studyResult.getResults()) {
-                    for (Group group : study.getGroups()) {
-                        if (group.getId().equals("@admins")) {
-                            // If the user does not belong to the admins group
-                            if (!group.getUserIds().contains(job.getUserId())) {
-                                return abortJob(job, "User '" + job.getUserId() + "' is not owner or admin of study '" + study.getFqn()
-                                        + "'. The tool '" + job.getTool().getId()
-                                        + "' can only be executed by the project owners or admins");
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
+                                StudyDBAdaptor.QueryParams.FQN.key())), token)
+                        .getResults()
+                        .stream()
+                        .map(Study::getFqn)
+                        .filter(fqn -> !fqn.equals(job.getStudy().getId()))
+                        .distinct()
+                        .collect(Collectors.toList());
 
-            // Obtain other study fqns
-            Set<String> studyFqnSet = studyResult.getResults().stream()
-                    .map(Study::getFqn)
-                    .filter(fqn -> !fqn.equals(job.getStudy().getId()))
-                    .collect(Collectors.toSet());
-            updateParams.setStudy(new JobStudyParam(job.getStudy().getId(), new ArrayList<>(studyFqnSet)));
+                updateParams.setStudy(new JobStudyParam(job.getStudy().getId(), studyFqnSet));
+            } catch (CatalogException e) {
+                return abortJob(job, e);
+            }
         }
 
         String userToken;
         try {
             userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
         } catch (CatalogException e) {
+            logger.error(e.getMessage(), e);
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'");
         }
 
@@ -519,8 +508,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 List<File> inputFiles = catalogManager.getJobManager().getJobInputFilesFromParams(job.getStudy().getId(), job, token);
                 updateParams.setInput(inputFiles);
             } catch (CatalogException e) {
-                logger.error(e.getMessage(), e);
-                return abortJob(job, e.getMessage());
+                return abortJob(job, e);
             }
         }
 
@@ -582,6 +570,66 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         notifyStatusChange(job);
 
         return 1;
+    }
+
+    protected void checkToolExecutionPermission(Job job) throws Exception {
+        Tool tool = new ToolFactory().getTool(job.getTool().getId());
+
+        if (tool.scope().equals(Tool.Scope.GLOBAL)) {
+            if (!job.getUserId().equals(ParamConstants.OPENCGA_USER_ID)) {
+                throw new CatalogAuthorizationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' "
+                        + "can run tools with scope '" + Tool.Scope.GLOBAL + "'");
+            }
+        } else {
+            if (job.getStudy().getId().startsWith(job.getUserId() + ParamConstants.USER_PROJECT_SEPARATOR)) {
+                // If the user is the owner of the project, accept all.
+                return;
+            }
+
+            // Validate user is owner or belongs to the right group
+            String requiredGroup;
+            if (tool.type().equals(Tool.Type.OPERATION)) {
+                requiredGroup = ParamConstants.ADMINS_GROUP;
+            } else {
+                requiredGroup = ParamConstants.MEMBERS_GROUP;
+            }
+
+            List<Study> studiesToValidate;
+            if (tool.scope() == Tool.Scope.PROJECT) {
+                String projectFqn = job.getStudy().getId()
+                        .substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
+                studiesToValidate = catalogManager.getStudyManager().search(projectFqn, new Query(),
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
+                                StudyDBAdaptor.QueryParams.FQN.key())), token).getResults();
+            } else {
+                studiesToValidate = catalogManager.getStudyManager().get(job.getStudy().getId(),
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
+                                StudyDBAdaptor.QueryParams.FQN.key())), token).getResults();
+            }
+
+            List<String> missingStudies = new LinkedList<>();
+            // It is not the owner, so we check if it is the right group
+            for (Study study : studiesToValidate) {
+                for (Group group : study.getGroups()) {
+                    if (group.getId().equals(requiredGroup)) {
+                        // If the user does not belong to the admins group
+                        if (!group.getUserIds().contains(job.getUserId())) {
+                            missingStudies.add(study.getFqn());
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (!missingStudies.isEmpty()) {
+                throw new CatalogAuthorizationException("User '" + job.getUserId() + "' is not member of "
+                        + requiredGroup + " of studies '" + missingStudies
+                        + "'. The tool '" + job.getTool().getId()
+                        + "' can only be executed by the project owners or members of " + requiredGroup);
+            }
+
+        }
+
     }
 
     private String getQueue(Tool tool) {
@@ -798,6 +846,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             retainedLogsTime.put(toolId, 0L);
             return true;
         }
+    }
+
+    private int abortJob(Job job, Exception e) {
+        logger.error(e.getMessage(), e);
+        return abortJob(job, e.getMessage());
     }
 
     private int abortJob(Job job, String description) {

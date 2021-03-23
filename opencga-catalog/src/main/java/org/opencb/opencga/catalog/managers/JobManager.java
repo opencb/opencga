@@ -382,8 +382,7 @@ public class JobManager extends ResourceManager<Job> {
                             inputFiles.add(file);
                         } catch (CatalogException e) {
                             throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
-                                    + "from job param '" + entry.getKey() + "'; (study = " + study + ", token = " + token
-                                    + ") :" + e.getMessage(), e);
+                                    + "from job param '" + entry.getKey() + "'; (study = " + study + ") :" + e.getMessage(), e);
                         }
                     }
                 } else if (entry.getValue() instanceof Map) {
@@ -408,6 +407,18 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
         return inputFiles;
+    }
+
+    public OpenCGAResult<Job> retry(String studyStr, JobRetryParams jobRetry, Enums.Priority priority,
+                                    String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
+            throws CatalogException {
+        Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
+        if (job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)
+                || job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ABORTED)) {
+            return submit(studyStr, job.getTool().getId(), priority, job.getParams(), jobId, jobDescription, jobDependsOn, jobTags, token);
+        } else {
+            throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getName());
+        }
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)

@@ -186,6 +186,7 @@ public class SampleVariantStatsAggregationQuery {
                     }
                     break;
                 case "depth":
+                case "dp":
                     for (FacetField.Bucket bucket : facetField.getBuckets()) {
                         String[] split = StringUtils.replaceChars(bucket.getValue(), "[]() ", "").split(",");
                         String start = split[0];
@@ -196,7 +197,7 @@ public class SampleVariantStatsAggregationQuery {
                         if (endStr.equals("inf")) {
                             depthCount.setGte20(depthCount.getGte20() + count);
                         } else {
-                            int end = Integer.parseInt(endStr);
+                            double end = Double.parseDouble(endStr);
                             if (end <= 5) {
                                 depthCount.setLt5(depthCount.getLt5() + count);
                             } else if (end <= 10) {

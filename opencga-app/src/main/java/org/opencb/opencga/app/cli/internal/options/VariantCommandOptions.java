@@ -1158,7 +1158,8 @@ public class VariantCommandOptions {
         public String biotype;
 
         @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type as a list of SequenceOntology terms. "
-                + "This filter is only applied on protein_coding genes. By default filters by loss of function consequence types.")
+                + "This filter is only applied on protein_coding genes. "
+                + "By default filters by loss of function + missense_variant consequence types.")
         public String consequenceType;
 
         @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR)
@@ -1169,6 +1170,12 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--skip-genes-file"}, description = "Do not generate the results file by gene")
         public boolean skipGenesFile;
+
+        @Parameter(names = {"--index"}, description = "Index result for Recessive Gene Analysis")
+        public boolean index;
+
+        @Parameter(names = {"--index-job-tags"}, description = "Job tags for the RGA index job generated.")
+        public List<String> indexJobTags;
     }
 
     @Parameters(commandNames = SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND, commandDescription = SampleEligibilityAnalysis.DESCRIPTION)

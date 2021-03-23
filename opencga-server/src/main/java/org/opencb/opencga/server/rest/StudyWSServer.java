@@ -180,8 +180,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
             @ApiParam(value = "[DEPRECATED] Replaced by id.") @QueryParam("name") String groupName,
-            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION,
-                    defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
+            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             if (StringUtils.isNotEmpty(groupName)) {
                 groupId = groupName;

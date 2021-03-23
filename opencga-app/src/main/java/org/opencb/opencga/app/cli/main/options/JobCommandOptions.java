@@ -36,6 +36,7 @@ import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNIN
 public class JobCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
+    public RetryCommandOptions retryCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public TopCommandOptions topCommandOptions;
@@ -59,6 +60,7 @@ public class JobCommandOptions {
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
+        this.retryCommandOptions = new RetryCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.topCommandOptions = new TopCommandOptions();
@@ -119,6 +121,28 @@ public class JobCommandOptions {
 
         @Parameter(names = {"--tags"}, description = "Comma separated list of tags", arity = 1)
         public List<String> tags;
+    }
+
+    @Parameters(commandNames = {"retry"}, commandDescription = "Relaunch a failed job")
+    public class RetryCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--job", "--job-to-retry"}, description = ParamConstants.JOB_ID_DESCRIPTION + " of the job to retry", required = true, arity = 1)
+        public String jobToRetry;
+
+        @Parameter(names = {"--id"}, description = ParamConstants.JOB_ID_CREATION_DESCRIPTION, required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"-d", "--description"}, description = ParamConstants.JOB_DESCRIPTION_DESCRIPTION, arity = 1)
+        public String description;
+
+        @Parameter(names = {"--depends-on"}, description = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION, arity = 1)
+        public List<String> jobDependsOn;
+
+        @Parameter(names = {"--tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
+        public List<String> jobTags;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")

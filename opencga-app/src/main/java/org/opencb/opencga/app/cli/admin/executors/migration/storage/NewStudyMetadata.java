@@ -3,7 +3,7 @@ package org.opencb.opencga.app.cli.admin.executors.migration.storage;
 import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;

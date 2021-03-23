@@ -16,7 +16,7 @@ import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;

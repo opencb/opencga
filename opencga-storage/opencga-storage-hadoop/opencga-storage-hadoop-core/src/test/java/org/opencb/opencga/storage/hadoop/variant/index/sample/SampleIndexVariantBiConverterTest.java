@@ -28,7 +28,7 @@ public class SampleIndexVariantBiConverterTest {
 
     @Before
     public void setUp() throws Exception {
-        converter = new SampleIndexVariantBiConverter();
+        converter = new SampleIndexVariantBiConverter(SampleIndexSchema.defaultSampleIndexSchema());
     }
 
     @Test
@@ -151,7 +151,7 @@ public class SampleIndexVariantBiConverterTest {
             dummyVariants.add(new Variant("1:10:A:T"));
         }
         checkIterator(numVariants, dummyVariants, () -> {
-            SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart, SampleIndexConfiguration.defaultConfiguration());
+            SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart);
             SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGtEntry("0/1");
             return gtEntry.setCount(variants.size());
         }, true);
@@ -159,7 +159,7 @@ public class SampleIndexVariantBiConverterTest {
     }
 
     private SampleIndexEntry.SampleIndexGtEntry toSampleIndexEntry(int batchStart, byte[] bytes, int offset, int length) {
-        SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart, SampleIndexConfiguration.defaultConfiguration());
+        SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart);
         SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGtEntry("0/1");
         gtEntry.setVariants(bytes, offset, length);
         return gtEntry;
@@ -184,7 +184,7 @@ public class SampleIndexVariantBiConverterTest {
             }
             entry.setAnnotationIndex(annot);
         }
-        SampleIndexEntryIterator iterator = entry.iterator(onlyCount);
+        SampleIndexEntryIterator iterator = converter.toVariantsIterator(entry, onlyCount);
         int i = 0;
         int nonIntergenicIndex = 0;
         while (iterator.hasNext()) {

@@ -27,6 +27,7 @@ import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -66,19 +67,19 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/configure")
-    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION, response = ObjectMap.class)
-    public Response secondaryIndex(
+    @ApiOperation(value = "Update Variant Storage Engine configuration. Can be updated at Project or Study level", response = ObjectMap.class)
+    public Response variantConfigure(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
-//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Configuration params to update") ObjectMap params) {
         return run(() -> {
             ObjectMap newConfiguration;
             StopWatch stopWatch = StopWatch.createStarted();
-//            if (StringUtils.isNotEmpty(study)) {
-//                variantManager.configureStudy(study, params, token);
-//            } else {
-            newConfiguration = variantManager.configureProject(project, params, token);
-//            }
+            if (StringUtils.isNotEmpty(study)) {
+                newConfiguration = variantManager.configureStudy(study, params, token);
+            } else {
+                newConfiguration = variantManager.configureProject(project, params, token);
+            }
             return new DataResult<>()
                     .setResults(Collections.singletonList(newConfiguration))
                     .setNumResults(1)
@@ -233,7 +234,38 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/variant/sample/index/configure")
+    @ApiOperation(value = "Update SampleIndex configuration", response = ObjectMap.class)
+    public Response sampleIndexConfigure(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
+        return run(() -> {
+            StopWatch stopWatch = StopWatch.createStarted();
+            variantManager.configureSampleIndex(study, sampleIndexConfiguration, token);
+
+            return new DataResult<>()
+                    .setResults(Collections.singletonList(sampleIndexConfiguration))
+                    .setNumResults(1)
+                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
+        });
+    }
+
+    @POST
     @Path("/variant/sample/genotype/index")
+    @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION, hidden = true, response = Job.class)
+    @Deprecated
+    public Response sampleGenotypeIndex(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantSampleIndexParams.DESCRIPTION) VariantSampleIndexParams params) {
+        return sampleIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
+    }
+
+    @POST
+    @Path("/variant/sample/index")
     @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response sampleIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -247,6 +279,20 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/family/genotype/index")
+    @ApiOperation(value = VariantFamilyIndexOperationTool.DESCRIPTION, response = Job.class, hidden = true)
+    @Deprecated
+    public Response familyGenotypeIndex(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantFamilyIndexParams.DESCRIPTION) VariantFamilyIndexParams params) {
+        return familyIndex(jobName, jobDescription, dependsOn, jobTags, study, params);
+    }
+
+    @POST
+    @Path("/variant/family/index")
     @ApiOperation(value = VariantFamilyIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response familyIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,

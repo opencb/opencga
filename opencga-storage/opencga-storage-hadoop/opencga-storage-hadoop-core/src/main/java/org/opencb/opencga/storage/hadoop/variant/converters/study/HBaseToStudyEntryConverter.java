@@ -315,6 +315,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
         String sampleName = getSampleName(studyMetadata.getId(), sampleId);
         Integer samplePosition = studyEntry.getSamplesPosition().get(sampleName);
+        if (samplePosition == null) {
+            logger.warn("Sample {} ({}) not found in sample positions map : {}", sampleName, sampleId, studyEntry.getSamplesPosition());
+            return;
+        }
         SampleEntry sampleEntry = new SampleEntry(null, sampleColumn.getFileId(), sampleData);
         SampleEntry oldSampleEntry = studyEntry.getSamples().set(samplePosition, sampleEntry);
         if (oldSampleEntry != null) {
@@ -962,10 +966,10 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         }
         return returnedSamplesPositionMap.computeIfAbsent(studyMetadata.getId(), studyId -> {
             if (configuration.getProjection() == null) {
-                return metadataManager.getSamplesPosition(studyMetadata, null);
+                return metadataManager.getSamplesPosition(studyMetadata);
             } else {
                 List<Integer> sampleIds = configuration.getProjection().getStudy(studyMetadata.getId()).getSamples();
-                return metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleIds));
+                return metadataManager.getSamplesPosition(studyMetadata, new LinkedHashSet<>(sampleIds), false);
             }
         });
     }

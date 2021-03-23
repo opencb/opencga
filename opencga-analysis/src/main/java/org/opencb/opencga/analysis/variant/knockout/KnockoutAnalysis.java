@@ -26,6 +26,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
@@ -65,11 +69,15 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(
-                "list-genes",
-                "list-families",
-                getId(),
-                "add-metadata-to-output-files");
+        List<String> steps = new LinkedList<>();
+        steps.add("list-genes");
+        steps.add("list-families");
+        steps.add(getId());
+        steps.add("add-metadata-to-output-files");
+        if (analysisParams.isIndex()) {
+            steps.add("launch-index");
+        }
+        return steps;
     }
 
     @Override
@@ -88,8 +96,29 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             }
         }
 
-        if (StringUtils.isEmpty(analysisParams.getConsequenceType())) {
-            analysisParams.setConsequenceType(VariantQueryUtils.LOF);
+        String ct = analysisParams.getConsequenceType();
+        if (StringUtils.isEmpty(ct)) {
+            ct = VariantQueryUtils.LOF + "," + VariantAnnotationConstants.MISSENSE_VARIANT;
+        }
+        analysisParams.setConsequenceType(String.join(",", VariantQueryUtils.parseConsequenceTypes(ct)));
+
+        if (analysisParams.isIndex()) {
+            if (!VariantAnnotationConstants.PROTEIN_CODING.equals(analysisParams.getBiotype())) {
+                throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by biotype " + analysisParams.getBiotype());
+            }
+            if (CollectionUtils.isNotEmpty(analysisParams.getGene())) {
+                throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by any gene");
+            }
+            if (CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
+                throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by any panel");
+            }
+            if (StringUtils.isNotEmpty(analysisParams.getConsequenceType())) {
+                Set<String> cts = new HashSet<>(Arrays.asList(analysisParams.getConsequenceType().split(",")));
+                if (!cts.equals(VariantQueryUtils.LOF_EXTENDED_SET)) {
+                    throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by consequence type : " + cts);
+                }
+            }
+            analysisParams.setSkipGenesFile(true);
         }
 
         super.check();
@@ -335,6 +364,27 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                 }
             }
         });
+
+        if (analysisParams.isIndex()) {
+            step("launch-index", () -> {
+                String thisJobOutdir = getCatalogManager()
+                        .getJobManager()
+                        .get(getStudyFqn(), getJobId(), new QueryOptions(), getToken()).first().getOutDir()
+                        .getPath();
+                if (!thisJobOutdir.endsWith("/")) {
+                    thisJobOutdir += "/";
+                }
+                String individualsOutputFileName = getIndividualsOutputFile().getFileName().toString();
+                RgaAnalysisParams rgaAnalysisParams = new RgaAnalysisParams(thisJobOutdir + individualsOutputFileName);
+
+                Job rgaJob = getCatalogManager().getJobManager().submit(getStudyFqn(), RgaAnalysis.ID, Enums.Priority.MEDIUM,
+                        rgaAnalysisParams.toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudyFqn())), null, null,
+                        Collections.singletonList(getJobId()), analysisParams.getIndexJobTags(), getToken()).first();
+                addAttribute("rga-index-job", rgaJob.getId());
+                addAttribute("rga-index-job-uuid", rgaJob.getUuid());
+                logger.info("Run index job : " + rgaJob.getId());
+            });
+        }
     }
 
     private Path getIndividualsOutputFile() {

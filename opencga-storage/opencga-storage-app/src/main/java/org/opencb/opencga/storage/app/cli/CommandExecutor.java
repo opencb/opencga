@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

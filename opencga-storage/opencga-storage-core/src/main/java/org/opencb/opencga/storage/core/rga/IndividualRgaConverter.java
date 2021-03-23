@@ -5,6 +5,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
@@ -17,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class IndividualRgaConverter implements ComplexTypeConverter<List<KnockoutByIndividual>, List<RgaDataModel>> {
 
@@ -31,35 +32,41 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
         CONVERTER_MAP.put("id", Collections.singletonList(RgaDataModel.INDIVIDUAL_ID));
         CONVERTER_MAP.put("sampleId", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SAMPLE_ID));
         CONVERTER_MAP.put("sex", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SEX));
+        CONVERTER_MAP.put("motherId", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_ID));
+        CONVERTER_MAP.put("fatherId", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_ID));
         CONVERTER_MAP.put("phenotypes", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
         CONVERTER_MAP.put("disorders", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
         CONVERTER_MAP.put("numParents", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.NUM_PARENTS));
         CONVERTER_MAP.put("stats", Collections.emptyList());
-        CONVERTER_MAP.put("genesMap.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID));
-        CONVERTER_MAP.put("genesMap.name", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
-        CONVERTER_MAP.put("genesMap.chromosome", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME));
-        CONVERTER_MAP.put("genesMap.biotype", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_BIOTYPE));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+        CONVERTER_MAP.put("genes.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID));
+        CONVERTER_MAP.put("genes.name", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
+        CONVERTER_MAP.put("genes.chromosome", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME));
+        CONVERTER_MAP.put("genes.biotype", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_BIOTYPE));
+        CONVERTER_MAP.put("genes.transcripts.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.chromosome",
+        CONVERTER_MAP.put("genes.transcripts.chromosome",
                 Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CHROMOSOME));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.start",
+        CONVERTER_MAP.put("genes.transcripts.start",
                 Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.START));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.end", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+        CONVERTER_MAP.put("genes.transcripts.end", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.END));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.biotype", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+        CONVERTER_MAP.put("genes.transcripts.biotype", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_BIOTYPE));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.strand",
+        CONVERTER_MAP.put("genes.transcripts.strand",
                 Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.variants.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+        CONVERTER_MAP.put("genes.transcripts.variants.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_JSON));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.variants.filter", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+        CONVERTER_MAP.put("genes.transcripts.variants.filter", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS, RgaDataModel.VARIANT_JSON));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.variants.knockoutType", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+        CONVERTER_MAP.put("genes.transcripts.variants.type", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES, RgaDataModel.VARIANT_JSON));
+        CONVERTER_MAP.put("genes.transcripts.variants.knockoutType", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.KNOCKOUT_TYPES, RgaDataModel.VARIANT_JSON));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.variants.populationFrequencies", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
+        CONVERTER_MAP.put("genes.transcripts.variants.populationFrequencies", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES, RgaDataModel.VARIANT_JSON));
-        CONVERTER_MAP.put("genesMap.transcriptsMap.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
+        CONVERTER_MAP.put("genes.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CLINICAL_SIGNIFICANCES, RgaDataModel.VARIANT_JSON));
+        CONVERTER_MAP.put("genes.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES, RgaDataModel.VARIANT_JSON));
 
         logger = LoggerFactory.getLogger(IndividualRgaConverter.class);
@@ -104,6 +111,8 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
             KnockoutByIndividual knockoutByIndividual = new KnockoutByIndividual();
             knockoutByIndividual.setId(rgaDataModel.getIndividualId());
             knockoutByIndividual.setSampleId(rgaDataModel.getSampleId());
+            knockoutByIndividual.setFatherId(rgaDataModel.getFatherId());
+            knockoutByIndividual.setMotherId(rgaDataModel.getMotherId());
             knockoutByIndividual.setSex(rgaDataModel.getSex() != null ? IndividualProperty.Sex.valueOf(rgaDataModel.getSex()) : null);
             if (rgaDataModel.getPhenotypeJson() != null) {
                 List<Phenotype> phenotypes = new ArrayList<>(rgaDataModel.getPhenotypeJson().size());
@@ -173,6 +182,16 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                     try {
                         KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
                                 KnockoutVariant.class);
+                        if (StringUtils.isEmpty(knockoutVariant.getChromosome())) {
+                            // Fill typical variant fields
+                            Variant variant = new Variant(knockoutVariant.getId());
+                            knockoutVariant.setChromosome(variant.getChromosome());
+                            knockoutVariant.setStart(variant.getStart());
+                            knockoutVariant.setEnd(variant.getEnd());
+                            knockoutVariant.setLength(variant.getLength());
+                            knockoutVariant.setReference(variant.getReference());
+                            knockoutVariant.setAlternate(variant.getAlternate());
+                        }
                         if (variantIds.isEmpty() || variantIds.contains(knockoutVariant.getId())) {
                             knockoutVariantList.add(knockoutVariant);
                         }
@@ -199,6 +218,13 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
 
     private List<RgaDataModel> convertToStorageType(KnockoutByIndividual knockoutByIndividual)
             throws RgaException, JsonProcessingException {
+        if (StringUtils.isEmpty(knockoutByIndividual.getId())) {
+            throw new RgaException("Missing mandatory field 'id'");
+        }
+        if (StringUtils.isEmpty(knockoutByIndividual.getSampleId())) {
+            throw new RgaException("Missing mandatory field 'sampleId'");
+        }
+
         List<RgaDataModel> result = new LinkedList<>();
 
         if (knockoutByIndividual.getGenes() != null) {
@@ -236,27 +262,43 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
                         disorderJson = Collections.emptyList();
                     }
 
-                    List<String> variantIds = transcript.getVariants().stream().map(KnockoutVariant::getId)
-                            .collect(Collectors.toList());
+                    List<String> variantIds = new LinkedList<>();
+                    Set<String> knockoutTypes = new HashSet<>();
+                    Set<String> types = new HashSet<>();
+                    Set<String> consequenceTypes = new HashSet<>();
+                    Set<String> clinicalSignificances = new HashSet<>();
+                    Set<String> filters = new HashSet<>();
 
-                    List<String> knockoutTypes = transcript.getVariants().stream()
-                            .map(KnockoutVariant::getKnockoutType)
-                            .map(Enum::name)
-                            .distinct()
-                            .collect(Collectors.toList());
-                    List<String> consequenceTypes = transcript.getVariants().stream()
-                            .flatMap(kv -> kv.getSequenceOntologyTerms().stream())
-                            .map(SequenceOntologyTerm::getAccession)
-                            .distinct()
-                            .collect(Collectors.toList());
-                    List<String> filters = transcript.getVariants().stream()
-                            .map(KnockoutVariant::getFilter)
-                            .distinct().collect(Collectors.toList());
+                    for (KnockoutVariant variant : transcript.getVariants()) {
+                        variantIds.add(variant.getId());
+                        if (variant.getKnockoutType() != null) {
+                            knockoutTypes.add(variant.getKnockoutType().name());
+                        }
+                        if (variant.getType() != null) {
+                            types.add(variant.getType().name());
+                        }
+                        if (variant.getSequenceOntologyTerms() != null) {
+                            for (SequenceOntologyTerm sequenceOntologyTerm : variant.getSequenceOntologyTerms()) {
+                                if (sequenceOntologyTerm.getAccession() != null) {
+                                    consequenceTypes.add(sequenceOntologyTerm.getAccession());
+                                }
+                            }
+                        }
+                        if (variant.getClinicalSignificance() != null) {
+                            for (ClinicalSignificance clinicalSignificance : variant.getClinicalSignificance()) {
+                                if (clinicalSignificance != null) {
+                                    clinicalSignificances.add(clinicalSignificance.name());
+                                }
+                            }
+                        }
+                        if (StringUtils.isNotEmpty(variant.getFilter())) {
+                            filters.add(variant.getFilter());
+                        }
+                    }
                     Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
                     String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
-                    String individualId = StringUtils.isNotEmpty(knockoutByIndividual.getId()) ? knockoutByIndividual.getId()
-                            : knockoutByIndividual.getSampleId();
+                    String individualId = knockoutByIndividual.getId();
 
                     int numParents = 0;
                     if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherId())) {
@@ -272,8 +314,10 @@ public class IndividualRgaConverter implements ComplexTypeConverter<List<Knockou
 
                     RgaDataModel model = new RgaDataModel(id, individualId,  knockoutByIndividual.getSampleId(), sex, phenotypes, disorders,
                             knockoutByIndividual.getFatherId(), knockoutByIndividual.getMotherId(), numParents, gene.getId(),
-                            gene.getName(), "", "", "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds, knockoutTypes,
-                            filters, consequenceTypes, popFreqs, compoundFilters, phenotypeJson, disorderJson, variantJson);
+                            gene.getName(), "", "", "", 0, 0, transcript.getId(), transcript.getBiotype(), variantIds,
+                            new ArrayList<>(types), new ArrayList<>(knockoutTypes), new ArrayList<>(filters),
+                            new ArrayList<>(consequenceTypes), new ArrayList<>(clinicalSignificances), popFreqs, compoundFilters,
+                            phenotypeJson, disorderJson, variantJson);
                     result.add(model);
                 }
             }

@@ -100,7 +100,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
                                  boolean iterator) {
         // Prepare query and options
         int skip = getSkip(inputOptions);
-        int limit = getLimit(inputOptions);
+        int limit = inputOptions.containsKey(QueryOptions.LIMIT) ? getLimit(inputOptions) : (Integer.MAX_VALUE - skip);
         int samplingSize = getSamplingSize(inputOptions, DEFAULT_SAMPLING_SIZE, iterator);
         QueryOptions options = buildQueryOptions(inputOptions);
         // Always sort results for compound heterozygous

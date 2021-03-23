@@ -65,6 +65,9 @@ public class RgaDataModel {
     private List<String> variants;
 
     @Field
+    private List<String> types;
+
+    @Field
     private List<String>  knockoutTypes;
 
     @Field
@@ -72,6 +75,9 @@ public class RgaDataModel {
 
     @Field
     private List<String> consequenceTypes;
+
+    @Field
+    private List<String> clinicalSignificances;
 
     @Field(POPULATION_FREQUENCIES)
     private Map<String, List<Float>> populationFrequencies;
@@ -107,9 +113,11 @@ public class RgaDataModel {
     public static final String TRANSCRIPT_ID = "transcriptId";
     public static final String TRANSCRIPT_BIOTYPE = "transcriptBiotype";
     public static final String VARIANTS = "variants";
+    public static final String TYPES = "types";
     public static final String KNOCKOUT_TYPES = "knockoutTypes";
     public static final String FILTERS = "filters";
     public static final String CONSEQUENCE_TYPES = "consequenceTypes";
+    public static final String CLINICAL_SIGNIFICANCES = "clinicalSignificances";
     public static final String POPULATION_FREQUENCIES = "populationFrequencies_*";
     public static final String COMPOUND_FILTERS = "compoundFilters";
     public static final String PHENOTYPE_JSON = "phenotypeJson";
@@ -124,9 +132,9 @@ public class RgaDataModel {
     public RgaDataModel(String id, String individualId, String sampleId, String sex, List<String> phenotypes, List<String> disorders,
                         String fatherId, String motherId, int numParents, String geneId, String geneName, String geneBiotype,
                         String chromosome, String strand, int start, int end, String transcriptId, String transcriptBiotype,
-                        List<String> variants, List<String> knockoutTypes, List<String> filters, List<String> consequenceTypes,
-                        Map<String, List<Float>> populationFrequencies, List<String> compoundFilters, List<String> phenotypeJson,
-                        List<String> disorderJson, List<String> variantJson) {
+                        List<String> variants, List<String> types, List<String> knockoutTypes, List<String> filters,
+                        List<String> consequenceTypes, List<String> clinicalSignificances, Map<String, List<Float>> populationFrequencies,
+                        List<String> compoundFilters, List<String> phenotypeJson, List<String> disorderJson, List<String> variantJson) {
         this.id = id;
         this.individualId = individualId;
         this.sampleId = sampleId;
@@ -146,9 +154,11 @@ public class RgaDataModel {
         this.transcriptId = transcriptId;
         this.transcriptBiotype = transcriptBiotype;
         this.variants = variants;
+        this.types = types;
         this.knockoutTypes = knockoutTypes;
         this.filters = filters;
         this.consequenceTypes = consequenceTypes;
+        this.clinicalSignificances = clinicalSignificances;
         this.populationFrequencies = populationFrequencies;
         this.compoundFilters = compoundFilters;
         this.phenotypeJson = phenotypeJson;
@@ -178,9 +188,11 @@ public class RgaDataModel {
         sb.append(", transcriptId='").append(transcriptId).append('\'');
         sb.append(", transcriptBiotype='").append(transcriptBiotype).append('\'');
         sb.append(", variants=").append(variants);
+        sb.append(", types=").append(types);
         sb.append(", knockoutTypes=").append(knockoutTypes);
         sb.append(", filters=").append(filters);
         sb.append(", consequenceTypes=").append(consequenceTypes);
+        sb.append(", clinicalSignificances=").append(clinicalSignificances);
         sb.append(", populationFrequencies=").append(populationFrequencies);
         sb.append(", compoundFilters=").append(compoundFilters);
         sb.append(", phenotypeJson=").append(phenotypeJson);
@@ -361,6 +373,15 @@ public class RgaDataModel {
         return this;
     }
 
+    public List<String> getTypes() {
+        return types;
+    }
+
+    public RgaDataModel setTypes(List<String> types) {
+        this.types = types;
+        return this;
+    }
+
     public List<String> getKnockoutTypes() {
         return knockoutTypes;
     }
@@ -385,6 +406,15 @@ public class RgaDataModel {
 
     public RgaDataModel setConsequenceTypes(List<String> consequenceTypes) {
         this.consequenceTypes = consequenceTypes;
+        return this;
+    }
+
+    public List<String> getClinicalSignificances() {
+        return clinicalSignificances;
+    }
+
+    public RgaDataModel setClinicalSignificances(List<String> clinicalSignificances) {
+        this.clinicalSignificances = clinicalSignificances;
         return this;
     }
 

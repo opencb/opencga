@@ -51,7 +51,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.*;
+import static org.opencb.biodata.formats.variant.clinvar.rcv.v64jaxb.ReviewStatusType.*;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
 

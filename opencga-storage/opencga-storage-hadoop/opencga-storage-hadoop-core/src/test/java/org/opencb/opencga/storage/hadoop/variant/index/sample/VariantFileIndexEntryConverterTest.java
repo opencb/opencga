@@ -2,58 +2,82 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.*;
+import static org.junit.Assert.assertEquals;
 
 public class VariantFileIndexEntryConverterTest {
 
     private VariantFileIndexConverter fileIndexConverter;
+    private FileIndexSchema fileIndex;
 
     @Before
     public void setUp() throws Exception {
-        fileIndexConverter = new VariantFileIndexConverter();
+        fileIndexConverter = new VariantFileIndexConverter(SampleIndexSchema.defaultSampleIndexSchema());
+        fileIndex = (SampleIndexSchema.defaultSampleIndexSchema()).getFileIndex();
     }
 
     @Test
     public void testConvert() {
+        BitBuffer bitBuffer = new BitBuffer(fileIndex.getBitsLength());
 
-        int snv = VariantFileIndexConverter.getTypeCode(VariantType.SNV) << TYPE_SHIFT;
-        assertEquals(snv,
+        fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
+        assertEquals(bitBuffer,
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").build()));
-        assertEquals(VariantFileIndexConverter.getTypeCode(VariantType.INDEL) << TYPE_SHIFT,
+
+        fileIndex.getTypeIndex().write(VariantType.INDEL, bitBuffer);
+        assertEquals(bitBuffer,
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:-").addSample("s1", "0/1", "0").build()));
-        assertEquals(VariantFileIndexConverter.getTypeCode(VariantType.DELETION) << TYPE_SHIFT,
+
+        fileIndex.getTypeIndex().write(VariantType.DELETION, bitBuffer);
+        assertEquals(bitBuffer,
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100-200:A:<DEL>").addSample("s1", "0/1", "0").build()));
-        assertEquals(VariantFileIndexConverter.getTypeCode(VariantType.INSERTION) << TYPE_SHIFT,
+
+        fileIndex.getTypeIndex().write(VariantType.INSERTION, bitBuffer);
+        assertEquals(bitBuffer,
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100-200:A:<INS>").addSample("s1", "0/1", "0").build()));
 
-        assertEquals(snv | FILTER_PASS_MASK,
+        fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
+        fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER).write("PASS", bitBuffer);
+        assertEquals(bitBuffer,
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").setFilter("PASS").build()));
 
-        assertEquals(snv | IndexUtils.getRangeCode(2000, SampleIndexConfiguration.QUAL_THRESHOLDS) << QUAL_SHIFT,
+        fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER).write(null, bitBuffer);
+        fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).write("2000.0", bitBuffer);
+        assertEquals(bitBuffer,
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").setQuality(2000.0).build()));
-        assertEquals(snv | IndexUtils.getRangeCode(10, SampleIndexConfiguration.QUAL_THRESHOLDS) << QUAL_SHIFT,
+
+        fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).write("10.0", bitBuffer);
+        assertEquals(bitBuffer,
                 fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").setQuality(10.0).build()));
 
+        bitBuffer.clear();
+        fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
+        fileIndex.getFilePositionIndex().write(3, bitBuffer);
+        fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).write("10.0", bitBuffer);
+        assertEquals(bitBuffer,
+                fileIndexConverter.createFileIndexValue(0, 3, v("1:100:A:C").addSample("s1", "0/1", "0").setQuality(10.0).build()));
+
+        bitBuffer.clear();
+        fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
         for (Integer dp : Arrays.asList(1, 5, 10, 20, 50)) {
-            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
+            fileIndex.getCustomField(IndexFieldConfiguration.Source.SAMPLE, "DP").write(String.valueOf(dp), bitBuffer);
+            assertEquals(bitBuffer,
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).build()));
-            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
+            assertEquals(bitBuffer,
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addFileData("DP", 10000).build()));
-            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
+            assertEquals(bitBuffer,
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).addFileData("DP", 0).build()));
-            assertEquals((short) (snv | (IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS) << DP_SHIFT)),
-                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").setSampleDataKeys("GT").addSample("s1", "0/1").addFileData("DP", dp).build()));
+//            assertEquals(bitBuffer,
+//                    fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").setSampleDataKeys("GT").addSample("s1", "0/1").addFileData("DP", dp).build()));
         }
-
-
     }
 
     private VariantBuilder v(String s) {

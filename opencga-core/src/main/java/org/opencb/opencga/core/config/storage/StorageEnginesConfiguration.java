@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.config;
+package org.opencb.opencga.core.config.storage;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 

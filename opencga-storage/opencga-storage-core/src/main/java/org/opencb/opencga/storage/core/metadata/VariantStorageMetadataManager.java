@@ -23,6 +23,7 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
@@ -44,6 +46,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -202,6 +205,24 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             return projectMetadata;
         });
         return getStudyMetadata(studyName);
+    }
+
+    public StudyMetadata.SampleIndexConfigurationVersioned addSampleIndexConfiguration(
+            String study, SampleIndexConfiguration configuration) throws StorageEngineException {
+        Integer idOrNull = getStudyIdOrNull(study);
+        if (idOrNull == null) {
+            createStudy(study);
+        }
+        return updateStudyMetadata(study, studyMetadata -> {
+            List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = studyMetadata.getSampleIndexConfigurations();
+            if (configurations == null || configurations.isEmpty()) {
+                configurations = new ArrayList<>(1);
+                studyMetadata.setSampleIndexConfigurations(configurations);
+            }
+            int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion() + 1;
+            configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(configuration, version, Date.from(Instant.now())));
+            return studyMetadata;
+        }).getSampleIndexConfigurationLatest();
     }
 
     public interface UpdateFunction<T, E extends Exception> {
@@ -863,13 +884,37 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     /**
      * Get a list of the samples to be returned, given a study and a list of samples to be returned.
-     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition(Map)}
+     * The result can be used as SamplesPosition in {@link StudyEntry#setSamplesPosition(Map)}
+     *
+     * @param sm                    Study metadata
+     * @return The samples IDs
+     */
+    public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm) {
+        return getSamplesPosition(sm, null);
+    }
+
+    /**
+     * Get a list of the samples to be returned, given a study and a list of samples to be returned.
+     * The result can be used as SamplesPosition in {@link StudyEntry#setSamplesPosition(Map)}
      *
      * @param sm                    Study metadata
      * @param includeSamples        List of samples to be included in the result
      * @return The samples IDs
      */
     public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples) {
+        return getSamplesPosition(sm, includeSamples, true);
+    }
+
+    /**
+     * Get a list of the samples to be returned, given a study and a list of samples to be returned.
+     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition(Map)}
+     *
+     * @param sm                    Study metadata
+     * @param includeSamples        List of samples to be included in the result
+     * @param indexedOnly           Include indexed samples only
+     * @return The samples IDs
+     */
+    public LinkedHashMap<String, Integer> getSamplesPosition(StudyMetadata sm, LinkedHashSet<?> includeSamples, boolean indexedOnly) {
         LinkedHashMap<String, Integer> samplesPosition;
         // If null, return ALL samples
         if (includeSamples == null) {
@@ -882,7 +927,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             samplesPosition = new LinkedHashMap<>(includeSamples.size());
             int index = 0;
             for (Object includeSampleObj : includeSamples) {
-                Integer sampleId = getSampleId(sm.getId(), includeSampleObj, true);
+                Integer sampleId = getSampleId(sm.getId(), includeSampleObj, indexedOnly);
                 if (sampleId == null) {
                     continue;
 //                    throw VariantQueryException.sampleNotFound(includeSampleObj, sm.getName());

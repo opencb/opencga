@@ -177,6 +177,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("jobs", jobCommandOptions);
         JCommander jobSubCommands = jCommander.getCommands().get("jobs");
         jobSubCommands.addCommand("create", jobCommandOptions.createCommandOptions);
+        jobSubCommands.addCommand("retry", jobCommandOptions.retryCommandOptions);
         jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
         jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
         jobSubCommands.addCommand("top", jobCommandOptions.topCommandOptions);

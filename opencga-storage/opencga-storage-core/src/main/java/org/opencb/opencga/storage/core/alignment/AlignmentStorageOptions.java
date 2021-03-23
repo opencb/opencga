@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.core.alignment;
 
 import org.opencb.biodata.tools.alignment.BamManager;
-import org.opencb.opencga.storage.core.config.ConfigurationOption;
+import org.opencb.opencga.core.config.ConfigurationOption;
 
 public enum AlignmentStorageOptions implements ConfigurationOption {
 

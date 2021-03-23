@@ -37,7 +37,7 @@ public class SampleIndexDBAdaptorTest {
         String sampleName = "FF";
         metadataManager.unsecureUpdateSampleMetadata(studyId, new SampleMetadata(studyId, sampleId, sampleName));
 
-        SampleIndexQuery query = new SampleIndexQuery(Collections.emptyList(), "ST",
+        SampleIndexQuery query = new SampleIndexQuery(SampleIndexSchema.defaultSampleIndexSchema(), Collections.emptyList(), "ST",
                 Collections.singletonMap(sampleName, Collections.singletonList("0/1")), VariantQueryUtils.QueryOperation.AND);
         new SampleIndexDBAdaptor(new HBaseManager(new Configuration()), null, metadataManager).parse(query.forSample(sampleName), null);
     }

@@ -24,6 +24,8 @@ import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -38,7 +40,6 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual.Kno
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
-import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -48,7 +49,6 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,6 +66,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.IS
         framework = ToolExecutor.Framework.LOCAL)
 public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor implements VariantStorageToolExecutor {
 
+    private String includeSampleData;
     private Logger logger = LoggerFactory.getLogger(this.getClass());
     private VariantStorageManager variantStorageManager;
     private boolean allProteinCoding;
@@ -80,6 +81,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             biotype.remove(PROTEIN_CODING);
         }
         allProteinCoding = getProteinCodingGenes().size() == 1 && getProteinCodingGenes().iterator().next().equals(ALL);
+        includeSampleData = "GT,DP";
 
         String executionMethod = getExecutorParams().getString("executionMethod", "auto");
         boolean bySample;
@@ -168,6 +170,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             // Protein coding genes (if any)
             if (allProteinCoding) {
                 // All protein coding genes
+                logger.info("Get knockout from ALL protein coding genes");
                 Query query = new Query(baseQuery)
                         .append(VariantQueryParam.ANNOT_BIOTYPE.key(), PROTEIN_CODING)
                         .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sample)
@@ -264,6 +267,8 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
 
             if (trio != null) {
                 compHetKnockouts(sample, trio, knockoutGenes, query, ctFilter, biotypeFilter, geneFilter);
+            } else {
+                logger.info("Skip COMP_HET for sample " + sample);
             }
 
             structuralKnockouts(sample, knockoutGenes, query, ctFilter, biotypeFilter, geneFilter);
@@ -277,10 +282,10 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                        Predicate<String> geneFilter)
                 throws Exception {
             query = new Query(query)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData)
                     .append(VariantQueryParam.GENOTYPE.key(), sample + IS + "1/1");
 
-            int numVariants = iterate(query, v -> {
+            int numVariants = iterate(query, "Read " + KnockoutVariant.KnockoutType.HOM_ALT + " variants: ", v -> {
                 StudyEntry studyEntry = v.getStudies().get(0);
                 SampleEntry sampleEntry = studyEntry.getSample(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(sampleEntry.getFileIndex());
@@ -288,11 +293,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                         addGene(v, sampleEntry.getData().get(0), KnockoutVariant.getDepth(studyEntry, fileEntry, sampleEntry),
                                 fileEntry, consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.HOM_ALT,
-                                v.getAnnotation());
+                                v.getAnnotation(), studyEntry.getStats(StudyEntry.DEFAULT_COHORT));
                     }
                 }
             });
-            logger.debug("Read {} HOM_ALT variants from sample {}", numVariants, sample);
+            logger.info("Read {} HOM_ALT variants from sample {}", numVariants, sample);
         }
 
         protected void multiAllelicKnockouts(String sample,
@@ -304,22 +309,23 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 throws Exception {
 
             query = new Query(query)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData)
                     .append(VariantQueryParam.GENOTYPE.key(), sample + IS + "1/2");
 
             Map<String, KnockoutVariant> variants = new HashMap<>();
-            iterate(query, variant -> {
+            int numVariants = iterate(query, "Read " + KnockoutVariant.KnockoutType.HET_ALT + " variants: ", variant -> {
                 Variant secVar = getSecondaryVariant(variant);
                 StudyEntry studyEntry = variant.getStudies().get(0);
                 SampleEntry sampleEntry = studyEntry.getSample(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(sampleEntry.getFileIndex());
                 KnockoutVariant knockoutVariant = new KnockoutVariant(
-                        variant.toString(),
-                        variant.getType(),
+                        variant,
+                        variant.getAnnotation().getId(),
                         sampleEntry.getData().get(0),
                         KnockoutVariant.getDepth(studyEntry, fileEntry, sampleEntry),
                         fileEntry.getData().get(StudyEntry.FILTER),
                         fileEntry.getData().get(StudyEntry.QUAL),
+                        studyEntry.getStats(StudyEntry.DEFAULT_COHORT),
                         KnockoutVariant.KnockoutType.HET_ALT,
                         null,
                         variant.getAnnotation().getPopulationFrequencies(),
@@ -341,20 +347,21 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                             addGene(variant, knockoutVariant.getGenotype(), knockoutVariant.getDepth(),
                                     knockoutVariant.getFilter(), knockoutVariant.getQual(),
                                     consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.HET_ALT,
-                                    knockoutVariant.getPopulationFrequencies(),
-                                    knockoutVariant.getClinicalSignificance()
+                                    knockoutVariant.getDbSnp(), knockoutVariant.getPopulationFrequencies(),
+                                    knockoutVariant.getClinicalSignificance(), knockoutVariant.getStats()
                             );
                             addGene(secVar,
                                     secKnockoutVar.getGenotype(), secKnockoutVar.getDepth(),
                                     secKnockoutVar.getFilter(), secKnockoutVar.getQual(),
                                     consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.HET_ALT,
-                                    secKnockoutVar.getPopulationFrequencies(),
-                                    secKnockoutVar.getClinicalSignificance()
+                                    secKnockoutVar.getDbSnp(), secKnockoutVar.getPopulationFrequencies(),
+                                    secKnockoutVar.getClinicalSignificance(), secKnockoutVar.getStats()
                             );
                         }
                     }
                 }
             });
+            logger.info("Read {} HET_ALT variants from sample {}", numVariants, sample);
         }
 
         protected void compHetKnockouts(String sample, Trio family,
@@ -370,9 +377,9 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     .append(VariantCatalogQueryUtils.FAMILY_PROBAND.key(), sample)
                     .append(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(), COMPOUND_HETEROZYGOUS)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), family.toList())
-                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData);
 
-            int numVariants = iterate(query, v -> {
+            int numVariants = iterate(query, "Read " + KnockoutVariant.KnockoutType.COMP_HET + " variants: ",  v -> {
                 StudyEntry studyEntry = v.getStudies().get(0);
                 SampleEntry sampleEntry = studyEntry.getSample(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(sampleEntry.getFileIndex());
@@ -380,11 +387,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                         addGene(v, sampleEntry.getData().get(0), KnockoutVariant.getDepth(studyEntry, fileEntry, sampleEntry),
                                 fileEntry, consequenceType, knockoutGenes, KnockoutVariant.KnockoutType.COMP_HET,
-                                v.getAnnotation());
+                                v.getAnnotation(), studyEntry.getStats(StudyEntry.DEFAULT_COHORT));
                     }
                 }
             });
-            logger.debug("Read " + numVariants + " COMP_HET variants from sample " + sample);
+            logger.info("Read " + numVariants + " COMP_HET variants from sample " + sample);
         }
 
         protected void structuralKnockouts(String sample,
@@ -396,12 +403,12 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Query query = new Query(baseQuery)
                     .append(VariantQueryParam.SAMPLE.key(), sample)
                     .append(VariantQueryParam.TYPE.key(), VariantType.DELETION)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT");
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData);
 //                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), LOF + "," + VariantAnnotationUtils.FEATURE_TRUNCATION);
 //        Set<String> cts = new HashSet<>(LOF_SET);
 //        cts.add(VariantAnnotationUtils.FEATURE_TRUNCATION);
 
-            iterate(query, svVariant -> {
+            int numVariants = iterate(query, "Read " + KnockoutVariant.KnockoutType.DELETION_OVERLAP + " variants: ", svVariant -> {
                 VariantAnnotation svAnnotation = svVariant.getAnnotation();
                 Set<String> transcripts = new HashSet<>(svAnnotation.getConsequenceTypes().size());
                 for (ConsequenceType consequenceType : svAnnotation.getConsequenceTypes()) {
@@ -431,17 +438,18 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                         sampleEntry.getData().get(0), KnockoutVariant.getDepth(studyEntry, fileEntry, sampleEntry),
                                         fileEntry, consequenceType, knockoutGenes,
                                         KnockoutVariant.KnockoutType.DELETION_OVERLAP,
-                                        variant.getAnnotation());
+                                        variant.getAnnotation(), studyEntry.getStats(StudyEntry.DEFAULT_COHORT));
                                 addGene(svVariant,
                                         svSample.getData().get(0), KnockoutVariant.getDepth(svStudy, svFileEntry, svSample),
                                         svFileEntry, consequenceType, knockoutGenes,
                                         KnockoutVariant.KnockoutType.DELETION_OVERLAP,
-                                        svAnnotation);
+                                        svAnnotation, studyEntry.getStats(StudyEntry.DEFAULT_COHORT));
                             }
                         }
                     }
                 });
             });
+            logger.info("Read {} DELETION_OVERLAP variants from sample {}", numVariants, sample);
         }
     }
 
@@ -451,7 +459,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Query baseQuery = new Query()
                     .append(VariantQueryParam.STUDY.key(), getStudy())
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), getSamples())
-                    .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true);
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData);
 
             for (String gene : getProteinCodingGenes()) {
                 knockoutGene(new Query(baseQuery)
@@ -490,7 +498,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Query query = new Query(baseQuery)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.NONE)
                     .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.NONE);
-            int numVariants = iterate(query, new QueryOptions(VariantField.SUMMARY, true), v -> {
+            int numVariants = iterate(query, new QueryOptions(VariantField.SUMMARY, true), "Read variants", v -> {
                 int limit = 1000;
                 int skip = 0;
                 int numSamples;
@@ -585,7 +593,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     .append(VariantQueryParam.GENE.key(), knockoutByGene.getName())
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), trio.toList())
                     .append(VariantCatalogQueryUtils.FAMILY.key(), trio.getId())
-                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData)
                     .append(VariantQueryParam.INCLUDE_FILE.key(), null)
 //                            .append(VariantCatalogQueryUtils.FAMILY_DISORDER.key(), getDisorder())
                     .append(VariantCatalogQueryUtils.FAMILY_PROBAND.key(), sampleId)
@@ -615,14 +623,13 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         private void multiAllelicKnockout(Query baseQuery, KnockoutByGene knockout, String sampleId,
                                           Predicate<String> ctFilter, Predicate<String> biotypeFilter) throws Exception {
             Query query = new Query(baseQuery)
-                    .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData)
                     .append(VariantQueryParam.INCLUDE_FILE.key(), null)
                     .append(VariantQueryParam.GENOTYPE.key(), sampleId + IS + "1/2");
 
             Map<String, KnockoutVariant> variants = new HashMap<>();
-            iterate(query, variant -> {
+            iterate(query,  "Read " + KnockoutVariant.KnockoutType.HET_ALT + " variants: ", variant -> {
                 StudyEntry studyEntry = variant.getStudies().get(0);
                 SampleEntry sampleEntry = studyEntry.getSample(0);
                 FileEntry fileEntry = studyEntry.getFiles().get(sampleEntry.getFileIndex());
@@ -656,11 +663,12 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                             KnockoutVariant secKnockoutVar = variants.get(secVar.toString());
                             knockoutTranscript.addVariant(new KnockoutVariant(
                                     secKnockoutVar.getId(),
-                                    secKnockoutVar.getType(),
+                                    secKnockoutVar.getDbSnp(),
                                     secKnockoutVar.getGenotype(),
                                     secKnockoutVar.getDepth(),
                                     secKnockoutVar.getFilter(),
                                     secKnockoutVar.getQual(),
+                                    secKnockoutVar.getStats(),
                                     KnockoutVariant.KnockoutType.HET_ALT,
                                     ct.getSequenceOntologyTerms(),
                                     variant.getAnnotation().getPopulationFrequencies(),
@@ -677,12 +685,12 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             Query query = new Query(baseQuery)
                     .append(VariantQueryParam.SAMPLE.key(), sampleId)
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData)
                     .append(VariantQueryParam.TYPE.key(), VariantType.DELETION);
 
             KnockoutByGene.KnockoutIndividual knockoutIndividual = knockout.getIndividualBySampleId(sampleId);
 
-            iterate(query, svVariant -> {
+            iterate(query, "Read " + KnockoutVariant.KnockoutType.DELETION_OVERLAP + " variants: ", svVariant -> {
                 Set<String> transcripts = new HashSet<>(svVariant.getAnnotation().getConsequenceTypes().size());
                 for (ConsequenceType consequenceType : svVariant.getAnnotation().getConsequenceTypes()) {
                     if (validCt(consequenceType, ctFilter, biotypeFilter, knockout.getName()::equals)) {
@@ -697,7 +705,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 Query thisSvQuery = new Query(baseQuery)
                         .append(VariantQueryParam.SAMPLE.key(), sampleId)
                         .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId)
-                        .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT")
+                        .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), includeSampleData)
                         .append(VariantQueryParam.REGION.key(), new Region(svVariant.getChromosome(), svVariant.getStart(), svVariant.getEnd()));
 
                 iterate(thisSvQuery, variant -> {
@@ -767,31 +775,49 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
 
     private int iterate(Query query, VariantConsumer c)
             throws Exception {
-        return iterate(query, new QueryOptions(), c);
+        return iterate(query, new QueryOptions(), null, c);
     }
 
-    private int iterate(Query query, QueryOptions queryOptions, VariantConsumer c)
+    private int iterate(Query query, String description, VariantConsumer c)
             throws Exception {
-        int numVariants;
-        try (VariantDBIterator iterator = variantStorageManager.iterator(query, queryOptions, getToken())) {
+        return iterate(query, new QueryOptions(), description, c);
+    }
+
+    private int iterate(Query query, QueryOptions queryOptions, String description, VariantConsumer c)
+            throws Exception {
+        int numVariants = 0;
+        ProgressLogger progressLogger;
+        if (description != null) {
+            progressLogger = new ProgressLogger(description).setBatchSize(500);
+        } else {
+            progressLogger = null;
+        }
+        logger.info("Iterate with query : " + VariantQueryUtils.printQuery(query));
+        try (VariantDBIterator iterator = variantStorageManager.iterator(new Query(query), queryOptions, getToken())) {
             while (iterator.hasNext()) {
-                c.accept(iterator.next());
+                Variant variant = iterator.next();
+                c.accept(variant);
+                numVariants++;
+                if (progressLogger != null) {
+                    progressLogger.increment(1, () -> "up to variant " + variant);
+                }
             }
-            numVariants = iterator.getCount();
         }
         return numVariants;
     }
 
     private void addGene(Variant variant, String gt, Integer depth, FileEntry fileEntry, ConsequenceType consequenceType,
                          Map<String, KnockoutGene> knockoutGenes,
-                         KnockoutVariant.KnockoutType knockoutType, VariantAnnotation variantAnnotation) {
+                         KnockoutVariant.KnockoutType knockoutType, VariantAnnotation variantAnnotation, VariantStats stats) {
         addGene(variant, gt, depth, fileEntry.getData().get(StudyEntry.FILTER), fileEntry.getData().get(StudyEntry.QUAL),
-                consequenceType, knockoutGenes, knockoutType, variantAnnotation.getPopulationFrequencies(), KnockoutVariant.getClinicalSignificance(variantAnnotation));
+                consequenceType, knockoutGenes, knockoutType, variantAnnotation.getId(), variantAnnotation.getPopulationFrequencies(), KnockoutVariant.getClinicalSignificance(variantAnnotation), stats);
     }
 
     private void addGene(Variant variant, String gt, Integer depth, String filter, String qual, ConsequenceType consequenceType,
                          Map<String, KnockoutGene> knockoutGenes,
-                         KnockoutVariant.KnockoutType knockoutType, List<PopulationFrequency> populationFrequencies, List<ClinicalSignificance> clinicalSignificance) {
+                         KnockoutVariant.KnockoutType knockoutType,
+                         String dbSnp, List<PopulationFrequency> populationFrequencies,
+                         List<ClinicalSignificance> clinicalSignificance, VariantStats stats) {
         KnockoutGene gene = knockoutGenes.computeIfAbsent(consequenceType.getGeneName(), KnockoutGene::new);
         gene.setId(consequenceType.getEnsemblGeneId());
         gene.setBiotype(consequenceType.getBiotype());
@@ -800,7 +826,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
             KnockoutTranscript t = gene.getTranscript(consequenceType.getEnsemblTranscriptId());
             t.setBiotype(consequenceType.getBiotype());
             t.setStrand(consequenceType.getStrand());
-            t.addVariant(new KnockoutVariant(variant.toString(), variant.getType(), gt, depth, filter, qual, knockoutType,
+            t.addVariant(new KnockoutVariant(variant, dbSnp, gt, depth, filter, qual, stats, knockoutType,
                     consequenceType.getSequenceOntologyTerms(), populationFrequencies, clinicalSignificance));
         }
     }

@@ -3,8 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,6 +16,7 @@ import static org.junit.Assert.*;
 public class MendelianErrorSampleIndexConverterTest {
 
     final int numVariants = 500;
+    private final SampleIndexSchema schema = SampleIndexSchema.defaultSampleIndexSchema();
 
     @Test
     public void testIterator() throws IOException {
@@ -39,7 +40,7 @@ public class MendelianErrorSampleIndexConverterTest {
         }
 
         checkIterator(variants01, variants11, () -> {
-            SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart, SampleIndexConfiguration.defaultConfiguration());
+            SampleIndexEntry entry = new SampleIndexEntry(0, "1", batchStart);
             entry.setMendelianVariants(builder.getMendelianErrors());
             return entry;
         });
@@ -62,7 +63,8 @@ public class MendelianErrorSampleIndexConverterTest {
             entry.getGtEntry("1/1").setAnnotationIndex(annot);
         }
 
-        MendelianErrorSampleIndexEntryIterator iterator = entry.mendelianIterator();
+        MendelianErrorSampleIndexEntryIterator iterator =
+                new MendelianErrorSampleIndexEntryIterator(entry, schema);
 
         int c = 0;
         while (iterator.hasNext()) {

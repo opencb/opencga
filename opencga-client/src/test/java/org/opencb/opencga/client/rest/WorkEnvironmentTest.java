@@ -23,7 +23,7 @@ import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.RestServer;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

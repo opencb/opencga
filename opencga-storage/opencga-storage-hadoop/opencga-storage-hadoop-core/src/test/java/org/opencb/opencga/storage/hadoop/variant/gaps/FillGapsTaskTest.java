@@ -177,7 +177,7 @@ public class FillGapsTaskTest {
 
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(new Variant("1:100:A:T")));
         VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant("1:100:A:T"),
-                new HashSet<>(Arrays.asList(1, 2)), put, new ArrayList<>(), 1,
+                new HashSet<>(Arrays.asList(1, 2)), put, 1,
                 toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"), variantFile1("1:100:A:T"))),
                 toSliceConverter.convert(Collections.emptyList()));
         assertEquals(VariantOverlappingStatus.NONE, overlappingStatus);
@@ -306,7 +306,7 @@ public class FillGapsTaskTest {
     protected Variant fillGaps(FillGapsTask task,
                                VariantOverlappingStatus expected, String variant, VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(new Variant(variant)));
-        VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant(variant), new HashSet<>(Arrays.asList(1, 2)), put, new ArrayList<>(), 1, nonRefVcfSlice, refVcfSlice);
+        VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant(variant), new HashSet<>(Arrays.asList(1, 2)), put, 1, nonRefVcfSlice, refVcfSlice);
         assertEquals(expected, overlappingStatus);
 
         return putToVariant(put);

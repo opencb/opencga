@@ -30,8 +30,8 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -86,7 +86,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianError
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -320,7 +323,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexLoader(getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+        new SampleIndexLoader(getSampleIndexDBAdaptor(), getMRExecutor())
                 .buildSampleIndex(study, samples, options);
     }
 
@@ -403,9 +406,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
             options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
         }
+        options.put(FamilyIndexDriver.OUTPUT, getSampleIndexDBAdaptor().getSampleIndexTableName(studyId));
 
         getMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
-                studyId, null, options), options,
+                studyId, null, options),
                 "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
         return dr;
     }
@@ -559,12 +563,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             // Write results
             if (!fillGaps) {
                 taskDescription = "Write results in variants table for " + FILL_MISSING_OPERATION_NAME;
-                getMRExecutor().run(FillMissingHBaseWriterDriver.class, args, options, taskDescription);
+                getMRExecutor().run(FillMissingHBaseWriterDriver.class, args, taskDescription);
             }
-
-            // Consolidate sample index table
-            taskDescription = "Consolidate sample index table";
-            getMRExecutor().run(SampleIndexConsolidationDrive.class, args, options, taskDescription);
 
         } catch (RuntimeException e) {
             exception = e;
@@ -669,7 +669,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
             String archiveTable = getArchiveTableName(studyId);
             String variantsTable = getVariantTableName();
-            String sampleIndexTable = getTableNameGenerator().getSampleIndexTableName(studyId);
+            String sampleIndexTable = getSampleIndexDBAdaptor().getSampleIndexTableName(studyId);
 
             long startTime = System.currentTimeMillis();
             logger.info("------------------------------------------------------");

@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.exceptions.IllegalArgumentIOException;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.Job;
@@ -76,11 +77,10 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
 
-        if (getParam(OUTPUT) == null) {
-            sampleIndexTableName = getTableNameGenerator().getSampleIndexTableName(getStudyId());
-        } else {
-            sampleIndexTableName = getParam(OUTPUT);
+        if (getParam(OUTPUT) == null || getParam(OUTPUT).isEmpty()) {
+            throw new IllegalArgumentIOException("Missing output table");
         }
+        sampleIndexTableName = getParam(OUTPUT);
 
         boolean overwrite = Boolean.parseBoolean(getParam(OVERWRITE));
         String triosCohort = getParam(TRIOS_COHORT);

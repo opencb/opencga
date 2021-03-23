@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
-import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTableType;
 import org.opencb.biodata.models.variant.Variant;
@@ -27,7 +26,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -50,7 +48,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenix
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.pending.PendingVariantsReader;
 
@@ -193,13 +190,9 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                     .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter hBaseConverter =
                     new VariantAnnotationToHBaseConverter(currentAnnotationId, progressLogger);
-            AnnotationIndexDBLoader annotationIndexDBLoader = new AnnotationIndexDBLoader(
-                    dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator().getAnnotationIndexTableName());
-
-            Task<VariantAnnotation, Put> task = Task.join(hBaseConverter, annotationIndexDBLoader.asTask(true));
 
             VariantAnnotationHadoopDBWriter writer = new VariantAnnotationHadoopDBWriter(dbAdaptor);
-            return new ParallelTaskRunner<>(reader, task, writer, config);
+            return new ParallelTaskRunner<>(reader, hBaseConverter, writer, config);
         } else {
             return new ParallelTaskRunner<>(reader,
                     () -> dbAdaptor.newAnnotationLoader(new QueryOptions(params))

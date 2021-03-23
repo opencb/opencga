@@ -9,7 +9,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.File;
 import java.io.IOException;

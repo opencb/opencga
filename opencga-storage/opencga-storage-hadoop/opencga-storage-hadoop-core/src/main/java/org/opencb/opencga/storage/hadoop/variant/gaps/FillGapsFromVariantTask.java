@@ -155,8 +155,7 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
             if (bytes != null) {
                 VcfSliceProtos.VcfSlice refVcfSlice = null; // FIXME !!
                 VcfSliceProtos.VcfSlice nonRefVcfSlice = VcfSliceProtos.VcfSlice.parseFrom(bytes);
-                ArrayList<Put> sampleIndexPuts = null; // FIXME !!
-                fillGapsTask.fillGaps(variant, missingSamples, put, sampleIndexPuts, fileId, nonRefVcfSlice, refVcfSlice);
+                fillGapsTask.fillGaps(variant, missingSamples, put, fileId, nonRefVcfSlice, refVcfSlice);
             } else {
                 logger.debug("Missing fileId " + fileId + " in variant " + variant);
             }
