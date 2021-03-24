@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
@@ -188,6 +189,7 @@ public class UserManager extends AbstractManager {
         if (user.getAccount().getType() == null) {
             user.getAccount().setType(Account.AccountType.GUEST);
         }
+        user.getAccount().setCreationDate(TimeUtils.getTime());
 
         try {
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
