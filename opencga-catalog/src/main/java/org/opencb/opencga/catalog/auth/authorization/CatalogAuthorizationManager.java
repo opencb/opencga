@@ -258,8 +258,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public Boolean checkIsAdmin(String user) {
+    public Boolean isAdmin(String user) {
         return user.equals(OPENCGA);
+    }
+
+    @Override
+    public void checkIsAdmin(String user) throws CatalogException {
+        if (!isAdmin(user)) {
+            throw new CatalogAuthorizationException("Only ADMINISTRATOR users are allowed to perform this action");
+        }
     }
 
     @Override

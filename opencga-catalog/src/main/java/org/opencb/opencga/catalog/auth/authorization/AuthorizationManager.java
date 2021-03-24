@@ -118,7 +118,9 @@ public interface AuthorizationManager {
 
     void checkCanCreateUpdateDeleteVariableSets(long studyId, String userId) throws CatalogException;
 
-    Boolean checkIsAdmin(String user);
+    Boolean isAdmin(String user);
+
+    void checkIsAdmin(String user) throws CatalogException;
 
     void checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException;
 

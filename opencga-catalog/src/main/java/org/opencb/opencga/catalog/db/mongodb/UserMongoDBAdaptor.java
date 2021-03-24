@@ -768,6 +768,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case INTERNAL_STATUS_DATE:
                     case SIZE:
                     case QUOTA:
+                    case ACCOUNT_TYPE:
+                    case ACCOUNT_AUTHENTICATION_ID:
+                    case ACCOUNT_CREATION_DATE:
                     case PROJECTS:
                     case PROJECTS_UID:
                     case PROJECT_NAME:
