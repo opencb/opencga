@@ -288,8 +288,8 @@ public class K8SExecutor implements BatchExecutor {
      * @link https://github.com/kubernetes/kubernetes/blob/c560907/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go#L135
      * @return valid name
      */
-    protected static String buildJobName(String jobId) {
-        jobId = jobId.replace("_", "-");
+    protected static String buildJobName(String jobIdInput) {
+        String jobId = jobIdInput.replace("_", "-");
         int[] invalidChars = jobId
                 .chars()
                 .filter(c -> c != '-' && !StringUtils.isAlphanumeric(String.valueOf((char) c)))
@@ -297,13 +297,18 @@ public class K8SExecutor implements BatchExecutor {
         for (int invalidChar : invalidChars) {
             jobId = jobId.replace(((char) invalidChar), '-');
         }
-        String jobName = ("opencga-job-" + jobId).toLowerCase();
-        if (jobName.length() > 63) {
+        jobId = jobId.toLowerCase();
+        boolean jobIdWithInvalidChars = !jobIdInput.equals(jobId);
+
+        String jobName = ("opencga-job-" + jobId);
+        if (jobName.length() > 63 || jobIdWithInvalidChars && jobName.length() > (63 - 8)) {
             // Job Id too large. Shrink it!
             // NOTE: This shrinking MUST be predictable!
             jobName = jobName.substring(0, 27)
-                    + "-" + DigestUtils.md5Hex(jobName).substring(0, 6).toLowerCase() + "-"
+                    + "-" + DigestUtils.md5Hex(jobIdInput).substring(0, 6).toLowerCase() + "-"
                     + jobName.substring(jobName.length() - 27);
+        } else if (jobIdWithInvalidChars) {
+            jobName += "-" + DigestUtils.md5Hex(jobIdInput).substring(0, 6).toLowerCase();
         }
         return jobName;
     }

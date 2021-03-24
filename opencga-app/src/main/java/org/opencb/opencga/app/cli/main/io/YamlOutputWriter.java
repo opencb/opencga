@@ -59,7 +59,11 @@ public class YamlOutputWriter extends AbstractOutputWriter {
 
     @Override
     public void print(RestResponse queryResponse) {
-        if (checkErrors(queryResponse)) {
+        print(queryResponse, true);
+    }
+
+    public void print(RestResponse queryResponse, boolean checkErrors) {
+        if (checkErrors && checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
 
