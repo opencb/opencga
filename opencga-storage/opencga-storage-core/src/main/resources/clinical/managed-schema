@@ -578,6 +578,7 @@
     <field name="caProbandPhenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <!-- caProbandDisorders contains both disorder ID and name -->
     <field name="caProbandDisorders" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="caProbandSampleIds" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="caFamilyId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="caFamilyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="caConsent" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -603,12 +604,13 @@
             attributes      : AT - key=value
             -->
     <field name="caInfo" type="text_en" indexed="true" stored="true" multiValued="true"/>
-    <!-- caJson contain all info about clinical analysis but the interpretations -->
+    <!-- caJson contain all info about clinical analysis except the interpretations -->
     <field name="caJson" type="string" indexed="false" stored="true" multiValued="false"/>
 
     <!-- Interpretation -->
 
     <field name="intId" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="intMethodNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="intCreationDate" type="long" indexed="true" stored="true" multiValued="false"/>
     <!-- Creation year, month and day will be used for facets -->
     <field name="intCreationYear" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -629,6 +631,8 @@
             attributes      : AT - key=value
             -->
     <field name="intInfo" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <!-- intJson contain all info about interpretation except clinical variants and evidences  -->
+    <field name="intJson" type="string" indexed="false" stored="true" multiValued="false"/>
 
 
     <!-- Catalog attributes -->
@@ -642,7 +646,7 @@
     <!-- ClinicalVariant -->
 
     <field name="cvSecondaryInterpretation" type="boolean" indexed="true" stored="true" multiValued="false"/>
-    <field name="cvInterpretationMethodName" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cvInterpretationMethodNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="cvStatus" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="cvComments" type="text_en" indexed="true" stored="true" multiValued="true"/>
     <field name="cvDiscussion" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -653,6 +657,8 @@
 
     <field name="cvePhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
 
+    // <!-- cveConsequenceTypes contains consequence types from the genomic features -->
+    <field name="cveConsequenceTypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <!-- cveXrefs contains IDs from the genomic features -->
     <field name="cveXrefs" type="string" indexed="true" stored="true" multiValued="true"/>
 
@@ -660,14 +666,14 @@
     <field name="cvePanelIds" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="cvePenetrances" type="string" indexed="true" stored="true" multiValued="true"/>
 
-    <field name="cveTier" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cveAcmg" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cveClinicalSignificance" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cveDrugResponse" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cveTraitAssociation" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cveFunctionalEffect" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveTiers" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveAcmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveClinicalSignificances" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveDrugResponses" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveTraitAssociations" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveFunctionalEffects" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="cveTumorigenesis" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="cveOtherClassification" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="cveOtherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="cveRolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
 
     <!-- The field cveAux will help us to query by combining multiple clinical variant evidences fields: panels, xrefs, acgm,... -->

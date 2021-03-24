@@ -10,323 +10,343 @@ import java.util.Map;
 
 public class ClinicalVariantSearchModel extends VariantSearchModel {
 
-    // ---------- ClinicalAnalysis ----------
+    // <!-- Clinical analysis -->
 
+    // <field name="caId" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("caId")
     private String caId;
 
-    @Field("caType")
-    private String caType;
-
+    // <field name="caDisorderId" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("caDisorderId")
     private String caDisorderId;
 
+    // <field name="caType" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("caType")
+    private String caType;
+
+    // <field name="caFiles" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("caFiles")
     private List<String> caFiles;
 
+    // <field name="caProbandId" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("caProbandId")
     private String caProbandId;
 
-    // caProbandPhenotypes contains both phenotype ID and name
+    // <!-- caProbandPhenotypes contains both phenotype ID and name -->
+    // <field name="caProbandPhenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("caProbandPhenotypes")
     private List<String> caProbandPhenotypes;
 
-    // caProbandDisorders contains both phenotype ID and name
+    // <!-- caProbandDisorders contains both disorder ID and name -->
+    // <field name="caProbandDisorders" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("caProbandDisorders")
     private List<String> caProbandDisorders;
 
+    // <field name="caProbandSampleIds" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("caProbandSampleIds")
     private List<String> caProbandSampleIds;
 
+    // <field name="caFamilyId" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("caFamilyId")
     private String caFamilyId;
 
+    // <field name="caFamilyMemberIds" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("caFamilyMemberIds")
     private List<String> caFamilyMemberIds;
 
-    @Field("caAnalystId")
-    private String caAnalystId;
+    // <field name="caConsent" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("caConsent")
+    private List<String> caConsent;
 
+    // <field name="caPriority" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("caPriority")
     private String caPriority;
 
+    // <field name="caFlags" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("caFlags")
-    private String caFlags;
+    private List<String> caFlags;
 
+    // <!-- Creation year, month and day will be used for facets -->
+    // <field name="caCreationDate" type="long" indexed="true" stored="true" multiValued="false"/>
+    @Field("caCreationDate")
+    private long caCreationDate;
+
+    // <field name="caCreationYear" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("caCreationYear")
+    private int caCreationYear;
+
+    // <field name="caCreationMonth" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("caCreationMonth")
+    private int caCreationMonth;
+
+    // <field name="caCreationDay" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("caCreationDay")
+    private int caCreationDay;
+
+    // <field name="caCreationDayOfWeek" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("caCreationDayOfWeek")
+    private String caCreationDayOfWeek;
+
+    // <field name="caRelease" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("caRelease")
+    private int caRelease;
+
+    // <field name="caQualityControl" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("caQualityControl")
     private String caQualityControl;
 
+    // <field name="caAudit" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("caAudit")
+    private List<String> caAudit;
+
+    // <field name="caInternalStatus" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("caInternalStatus")
+    private String caInternalStatus;
+
+    // <field name="caStatus" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("caStatus")
     private String caStatus;
 
-    // TODO: Check if we need to also add the following fields
-    /*
-    private String creationDate;
-    private String modificationDate;
-    private String dueDate;
-    private int release;
-    *
-    * */
+    // <field name="caAnalystName" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("caAnalystName")
+    private String caAnalystName;
 
-    // caInfo contains the following interpretation info (by lines):
-    // descriptions (DS) and comments (CM)
+    // <!-- caInfo contains:
+    // description     : DS - description text
+    // comments        : CM - type - author - text
+    // analyst         : AN - author - email - company
+    // attributes      : AT - key=value
+    // -->
+    // <field name="caInfo" type="text_en" indexed="true" stored="true" multiValued="true"/>
     @Field("caInfo")
     private List<String> caInfo;
 
-    // caJson a JSON string containing all search analysis but the interpretation list
+    // <!-- caJson contain all info about clinical analysis except the interpretations -->
+    // <field name="caJson" type="string" indexed="false" stored="true" multiValued="false"/>
     @Field("caJson")
     private String caJson;
 
+    // <!-- Interpretation -->
 
-    // ---------- Interpretation----------
-
+    // <field name="intId" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("intId")
     private String intId;
 
-    @Field("intStatus")
-    private String intStatus;
-
-//    @Field("intSofwareName")
-//    private String intSoftwareName;
-//
-//    @Field("intSofwareVersion")
-//    private String intSoftwareVersion;
-
-//    @Field("intAnalystName")
-//    private String intAnalystName;
-    @Field("intAnalystId")
-    private String intAnalystId;
-
+    // <field name="intMethodNames" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("intMethodNames")
     private String intMethodNames;
 
+    // <!-- Creation year, month and day will be used for facets -->
+    // <field name="intCreationDate" type="long" indexed="true" stored="true" multiValued="false"/>
+    @Field("intCreationDate")
+    private long intCreationDate;
+
+    // <field name="intCreationYear" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("intCreationYear")
+    private int intCreationYear;
+
+    // <field name="intCreationMonth" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("intCreationMonth")
+    private int intCreationMonth;
+
+    // <field name="intCreationDay" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("intCreationDay")
+    private int intCreationDay;
+
+    // <field name="intCreationDayOfWeek" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("intCreationDayOfWeek")
+    private String intCreationDayOfWeek;
+
+    // <field name="intVersion" type="int" indexed="true" stored="true" multiValued="false"/>
+    @Field("intVersion")
+    private String intVersion;
+
+    // <field name="intStatus" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("intStatus")
+    private String intStatus;
+
+    // <field name="intAnalystName" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("intAnalystName")
+    private String intAnalystName;
+
+    // <!-- intPanels contains both panel ID and name -->
+    // <field name="intPanels" type="string" indexed="true" stored="true" multiValued="true"/>
     // intPanels contains both panel ID and name
     @Field("intPanels")
     private List<String> intPanels;
 
-    @Field("intCreationDate")
-    private long intCreationDate;
-
-    @Field("intCreationYear")
-    private int intCreationYear;
-
-    @Field("intCreationMonth")
-    private int intCreationMonth;
-
-    @Field("intCreationDay")
-    private int intCreationDay;
-
-    @Field("intCreationDayOfWeek")
-    private String intCreationDayOfWeek;
-
-    // intInfo contains the following interpretation info (by lines):
-    // descriptions (DS), analyst (AN), dependencies (DP), filters (FT), comments (CM) and attributes (AT)
+    // <!-- Interpretation intInfo contains:
+    // description     : DS - description text
+    // analyst         : AN - author - email - company
+    // dependencies    : DP - name - version
+    // filters         : FT - conservation=gerp<0.2
+    // comments        : CM - type - author - text
+    // attributes      : AT - key=value
+    // -->
+    // <field name="intInfo" type="text_en" indexed="true" stored="true" multiValued="true"/>
     @Field("intInfo")
     private List<String> intInfo;
 
-    // intJson a JSON string containing all interpretation but the reported variant list
+    // <!-- intJson contain all info about interpretation except clinical variants and evidences  -->
     @Field("intJson")
     private String intJson;
 
-    // ---------- Catalog attributes ----------
+    // <!-- Catalog attributes -->
 
+    // <field name="projectId" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("projectId")
     private String projectId;
 
+    // <field name="assembly" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("assembly")
     private String assembly;
 
+    // <field name="studyId" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("studyId")
     private String studyId;
 
-    @Field("studyFqn")
-    private String studyFqn;
-
-    // JSON containing the array of Study and all their fields
+    // <field name="studyJson" type="string" indexed="false" stored="true" multiValued="false"/>
     @Field("studyJson")
     private String studyJson;
 
-    // ---------- Findings ----------
 
-    @Field("fPrimary")
-    private boolean fPrimary;
+    // <!-- ClinicalVariant -->
 
-    @Field("fStatus")
-    private String fStatus;
+    // <field name="cvSecondaryInterpretation" type="boolean" indexed="true" stored="true" multiValued="false"/>
+    @Field("cvSecondaryInterpretation")
+    private boolean cvSecondaryInterpretation;
 
-//    @Field("rvDeNovoQualityScore")
-//    private Double rvDeNovoQualityScore;
+    // <field name="cvInterpretationMethodNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cvInterpretationMethodNames")
+    private List<String> cvInterpretationMethodNames;
 
-    @Field("fInterpretationMethodNames")
-    private List<String> fInterpretationMethodNames;
+    // <field name="cvStatus" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("cvStatus")
+    private String cvStatus;
 
-    @Field("fComments")
-    private List<String> fComments;
+    // <field name="cvComments" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    @Field("cvComments")
+    private List<String> cvComments;
+
+    // <field name="cvDiscussion" type="string" indexed="true" stored="true" multiValued="false"/>
+    @Field("cvDiscussion")
+    private String cvDiscussion;
 
     // A JSON string containing all evidences
-    @Field("fEvidencesJson")
-    private String fEvidencesJson;
+    // <field name="cvClinicalVariantEvidencesJson" type="string" indexed="false" stored="true" multiValued="false"/>
+    @Field("cvClinicalVariantEvidencesJson")
+    private String cvClinicalVariantEvidencesJson;
 
     // A JSON string containing all attributes
-    @Field("fAttributesJson")
-    private String fAttributesJson;
-
-    // ---------- Evidences----------
-
-    @Field("eInterpretationMethodName")
-    private String eInterpretationMethodName;
-
-    @Field("ePhenotypes")
-    private List<String> ePhenotypes;
-
-    @Field("eGenomicFeatureId")
-    private String eGenomicFeatureId;
-
-    @Field("eGenomicFeatureType")
-    private String eGenomicFeatureType;
-
-    @Field("eGenomicFeatureTranscriptId")
-    private String eGenomicFeatureTranscriptId;
-
-    @Field("eGenomicFeatureGeneName")
-    private String eGenomicFeatureGeneName;
-
-    @Field("eGenomicFeatureConsequenceTypes")
-    private List<String> eGenomicFeatureConsequenceTypes;
-
-    @Field("eGenomicFeatureXrefs")
-    private List<String> eGenomicFeatureXrefs;
-
-    @Field("eModeOfInheritance")
-    private String eModeOfInheritance;
-
-    @Field("ePanelId")
-    private String ePanelId;
-
-    @Field("eClassificationTier")
-    private String eClassificationTier;
-
-    @Field("eClassificationAcmg")
-    private List<String> eClassificationAcmg;
-
-    @Field("eClassificationClinicalSignificance")
-    private String eClassificationClinicalSignificance;
-
-    @Field("eClassificationDrugResponse")
-    private String eClassificationDrugResponse;
-
-    @Field("eClassificationTraitAssociation")
-    private String eClassificationTraitAssociation;
-
-    @Field("eClassificationFunctionalEffect")
-    private String eClassificationFunctionalEffect;
-
-    @Field("eClassificationTumorigenesis")
-    private String eClassificationTumoriGenesis;
-
-    @Field("eClassificationOther")
-    private List<String> eClassificationOther;
-
-    @Field("ePenetrance")
-    private String ePenetrance;
-
-    @Field("eScore")
-    private Double eScore;
-
-    @Field("eFullyExplainPhenotypes")
-    private boolean eFullyExplainPhenotypes;
-
-    @Field("eCompoundHeterozygousVariantIds")
-    private List<String> eCompoundHeterozygousVariantIds;
-
-    @Field("eRoleInCancer")
-    private String eRoleInCancer;
-
-    @Field("eActionable")
-    private boolean eActionable;
-
-    @Field("eJustification")
-    private String eJustification;
+    // <field name="cvAttributesJson" type="string" indexed="false" stored="true" multiValued="false"/>
+    @Field("cvAttributesJson")
+    private String cvAttributesJson;
 
 
+    // <!-- ClinicalVariantEvidence -->
 
+    // <field name="cvePhenotypeNames" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cvePhenotypeNames")
+    private List<String> cvePhenotypeNames;
 
-    @Field("reConsequenceTypeIds")
-    private List<String> reConsequenceTypeIds;
+    // <!-- cveConsequenceTypes contains consequence types from the genomic features -->
+    // <field name="cveConsequenceTypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveConsequenceTypes")
+    private List<String> cveConsequenceTypes;
 
-    @Field("reGeneNames")
-    private List<String> reGeneNames;
+    // <!-- cveXrefs contains IDs from the genomic features -->
+    // <field name="cveXrefs" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveXrefs")
+    private List<String> cveXrefs;
 
-    @Field("reXrefs")
-    private List<String> reXrefs;
+    // <field name="cveModeOfInheritances" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveModeOfInheritances")
+    private List<String> cveModeOfInheritances;
 
-    @Field("rePanelIds")
-    private List<String> rePanelIds;
+    // <field name="cvePanelIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cvePanelIds")
+    private List<String> cvePanelIds;
 
-    @Field("reAcmg")
-    private List<String> reAcmg;
+    // <field name="cvePenetrances" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cvePenetrances")
+    private List<String> cvePenetrances;
 
-    @Field("reClinicalSignificance")
-    private List<String> reClinicalSignificance;
+    // <field name="cveTiers" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveTiers")
+    private List<String> cveTiers;
 
-    @Field("reDrugResponse")
-    private List<String> reDrugResponse;
+    // <field name="cveAcmgs" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveAcmgs")
+    private List<String> cveAcmgs;
 
-    @Field("reTraitAssociation")
-    private List<String> reTraitAssociation;
+    // <field name="cveClinicalSignificances" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveClinicalSignificances")
+    private List<String> cveClinicalSignificances;
 
-    @Field("reFunctionalEffect")
-    private List<String> reFunctionalEffect;
+    // <field name="cveDrugResponses" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveDrugResponses")
+    private List<String> cveDrugResponses;
 
-    @Field("reTumorigenesis")
-    private List<String> reTumorigenesis;
+    // <field name="cveTraitAssociations" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveTraitAssociations")
+    private List<String> cveTraitAssociations;
 
-    @Field("reOtherClassification")
-    private List<String> reOtherClassification;
+    // <field name="cveFunctionalEffects" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveFunctionalEffects")
+    private List<String> cveFunctionalEffects;
 
-    @Field("reRolesInCancer")
-    private List<String> reRolesInCancer;
+    // <field name="cveTumorigenesis" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveTumorigenesis")
+    private List<String> cveTumorigenesis;
 
-    @Field("reJustification_*")
-    private Map<String, List<String>> reJustification;
+    // <field name="cveOtherClassifications" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveOtherClassifications")
+    private List<String> cveOtherClassifications;
 
-    @Field("reTier")
-    private List<String> reTier;
+    // <field name="cveRolesInCancer" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveRolesInCancer")
+    private List<String> cveRolesInCancer;
 
-    @Field("reAux")
-    private List<String> reAux;
+    // <!-- The field cveAux will help us to query by combining multiple clinical variant evidences fields: panels, xrefs, acgm,... -->
+    // <field name="cveAux" type="string" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveAux")
+    private List<String> cveAux;
+
+   // <dynamicFiled name="cveJustification_*" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    @Field("cveJustification_*")
+    private Map<String, List<String>> cveJustification;
 
     public ClinicalVariantSearchModel() {
-        // ---------- ClinicalAnalysis ----------
-        caFiles = new ArrayList<>();
-        caProbandPhenotypes = new ArrayList<>();
-        caProbandDisorders = new ArrayList<>();
-        caFamilyMemberIds = new ArrayList<>();
-
-        // ---------- Interpretation----------
-        intPanels = new ArrayList<>();
-        intInfo = new ArrayList<>();
-
-        // ---------- ClinicalVariant ----------
-//        cvComments = new ArrayList<>();
-
-        // ---------- ClinicalVariantEvidence----------
-//        cvePhenotypes = new ArrayList<>();
-        reConsequenceTypeIds = new ArrayList<>();
-        reGeneNames = new ArrayList<>();
-        reXrefs = new ArrayList<>();
-        rePanelIds = new ArrayList<>();
-        reAcmg = new ArrayList<>();
-        reClinicalSignificance = new ArrayList<>();
-        reDrugResponse = new ArrayList<>();
-        reTraitAssociation = new ArrayList<>();
-        reFunctionalEffect = new ArrayList<>();
-        reTumorigenesis = new ArrayList<>();
-        reOtherClassification = new ArrayList<>();
-        reRolesInCancer = new ArrayList<>();
-        reJustification = new HashMap<>();
-        reTier = new ArrayList<>();
-        reAux = new ArrayList<>();
+        this.caFiles = new ArrayList<>();
+        this.caProbandPhenotypes = new ArrayList<>();
+        this.caProbandDisorders = new ArrayList<>();
+        this.caProbandSampleIds = new ArrayList<>();
+        this.caFamilyMemberIds = new ArrayList<>();
+        this.caConsent = new ArrayList<>();
+        this.caFlags = new ArrayList<>();
+        this.caAudit = new ArrayList<>();
+        this.caInfo = new ArrayList<>();
+        this.intPanels = new ArrayList<>();
+        this.intInfo = new ArrayList<>();
+        this.cvInterpretationMethodNames = new ArrayList<>();
+        this.cvComments = new ArrayList<>();
+        this.cvePhenotypeNames = new ArrayList<>();
+        this.cveConsequenceTypes = new ArrayList<>();
+        this.cveXrefs = new ArrayList<>();
+        this.cveModeOfInheritances = new ArrayList<>();
+        this.cvePanelIds = new ArrayList<>();
+        this.cvePenetrances = new ArrayList<>();
+        this.cveTiers = new ArrayList<>();
+        this.cveAcmgs = new ArrayList<>();
+        this.cveClinicalSignificances = new ArrayList<>();
+        this.cveDrugResponses = new ArrayList<>();
+        this.cveTraitAssociations = new ArrayList<>();
+        this.cveFunctionalEffects = new ArrayList<>();
+        this.cveTumorigenesis = new ArrayList<>();
+        this.cveOtherClassifications = new ArrayList<>();
+        this.cveRolesInCancer = new ArrayList<>();
+        this.cveAux = new ArrayList<>();
+        this.cveJustification = new HashMap<>();
     }
 
     @Override
@@ -334,53 +354,71 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         final StringBuilder sb = new StringBuilder("ClinicalVariantSearchModel{");
         sb.append("caId='").append(caId).append('\'');
         sb.append(", caDisorderId='").append(caDisorderId).append('\'');
+        sb.append(", caType='").append(caType).append('\'');
         sb.append(", caFiles=").append(caFiles);
         sb.append(", caProbandId='").append(caProbandId).append('\'');
         sb.append(", caProbandPhenotypes=").append(caProbandPhenotypes);
         sb.append(", caProbandDisorders=").append(caProbandDisorders);
+        sb.append(", caProbandSampleIds=").append(caProbandSampleIds);
         sb.append(", caFamilyId='").append(caFamilyId).append('\'');
         sb.append(", caFamilyMemberIds=").append(caFamilyMemberIds);
+        sb.append(", caConsent=").append(caConsent);
+        sb.append(", caPriority='").append(caPriority).append('\'');
+        sb.append(", caFlags=").append(caFlags);
+        sb.append(", caCreationDate=").append(caCreationDate);
+        sb.append(", caCreationYear=").append(caCreationYear);
+        sb.append(", caCreationMonth=").append(caCreationMonth);
+        sb.append(", caCreationDay=").append(caCreationDay);
+        sb.append(", caCreationDayOfWeek='").append(caCreationDayOfWeek).append('\'');
+        sb.append(", caRelease=").append(caRelease);
+        sb.append(", caQualityControl='").append(caQualityControl).append('\'');
+        sb.append(", caAudit=").append(caAudit);
+        sb.append(", caInternalStatus='").append(caInternalStatus).append('\'');
+        sb.append(", caStatus='").append(caStatus).append('\'');
+        sb.append(", caAnalystName='").append(caAnalystName).append('\'');
         sb.append(", caInfo=").append(caInfo);
         sb.append(", caJson='").append(caJson).append('\'');
         sb.append(", intId='").append(intId).append('\'');
-        sb.append(", intStatus='").append(intStatus).append('\'');
-//        sb.append(", intSoftwareName='").append(intSoftwareName).append('\'');
-//        sb.append(", intSoftwareVersion='").append(intSoftwareVersion).append('\'');
-//        sb.append(", intAnalystName='").append(intAnalystName).append('\'');
-        sb.append(", intPanels=").append(intPanels);
-        sb.append(", intInfo=").append(intInfo);
+        sb.append(", intMethodNames='").append(intMethodNames).append('\'');
         sb.append(", intCreationDate=").append(intCreationDate);
         sb.append(", intCreationYear=").append(intCreationYear);
         sb.append(", intCreationMonth=").append(intCreationMonth);
         sb.append(", intCreationDay=").append(intCreationDay);
         sb.append(", intCreationDayOfWeek='").append(intCreationDayOfWeek).append('\'');
+        sb.append(", intVersion='").append(intVersion).append('\'');
+        sb.append(", intStatus='").append(intStatus).append('\'');
+        sb.append(", intAnalystName='").append(intAnalystName).append('\'');
+        sb.append(", intPanels=").append(intPanels);
+        sb.append(", intInfo=").append(intInfo);
         sb.append(", intJson='").append(intJson).append('\'');
         sb.append(", projectId='").append(projectId).append('\'');
         sb.append(", assembly='").append(assembly).append('\'');
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", studyJson='").append(studyJson).append('\'');
-//        sb.append(", rvPrimaryFinding=").append(rvPrimaryFinding);
-//        sb.append(", rvStatus='").append(rvStatus).append('\'');
-//        sb.append(", rvDeNovoQualityScore=").append(rvDeNovoQualityScore);
-//        sb.append(", rvComments=").append(rvComments);
-//        sb.append(", rvReportedEventsJson='").append(rvReportedEventsJson).append('\'');
-//        sb.append(", rvAttributesJson='").append(rvAttributesJson).append('\'');
-//        sb.append(", rePhenotypes=").append(rePhenotypes);
-        sb.append(", reConsequenceTypeIds=").append(reConsequenceTypeIds);
-        sb.append(", reGeneNames=").append(reGeneNames);
-        sb.append(", reXrefs=").append(reXrefs);
-        sb.append(", rePanelIds=").append(rePanelIds);
-        sb.append(", reAcmg=").append(reAcmg);
-        sb.append(", reClinicalSignificance=").append(reClinicalSignificance);
-        sb.append(", reDrugResponse=").append(reDrugResponse);
-        sb.append(", reTraitAssociation=").append(reTraitAssociation);
-        sb.append(", reFunctionalEffect=").append(reFunctionalEffect);
-        sb.append(", reTumorigenesis=").append(reTumorigenesis);
-        sb.append(", reOtherClassification=").append(reOtherClassification);
-        sb.append(", reRolesInCancer=").append(reRolesInCancer);
-        sb.append(", reJustification=").append(reJustification);
-        sb.append(", reTier=").append(reTier);
-        sb.append(", reAux=").append(reAux);
+        sb.append(", cvSecondaryInterpretation=").append(cvSecondaryInterpretation);
+        sb.append(", cvInterpretationMethodNames=").append(cvInterpretationMethodNames);
+        sb.append(", cvStatus='").append(cvStatus).append('\'');
+        sb.append(", cvComments=").append(cvComments);
+        sb.append(", cvDiscussion='").append(cvDiscussion).append('\'');
+        sb.append(", cvClinicalVariantEvidencesJson='").append(cvClinicalVariantEvidencesJson).append('\'');
+        sb.append(", cvAttributesJson='").append(cvAttributesJson).append('\'');
+        sb.append(", cvePhenotypeNames=").append(cvePhenotypeNames);
+        sb.append(", cveConsequenceTypes=").append(cveConsequenceTypes);
+        sb.append(", cveXrefs=").append(cveXrefs);
+        sb.append(", cveModeOfInheritances=").append(cveModeOfInheritances);
+        sb.append(", cvePanelIds=").append(cvePanelIds);
+        sb.append(", cvePenetrances=").append(cvePenetrances);
+        sb.append(", cveTiers=").append(cveTiers);
+        sb.append(", cveAcmgs=").append(cveAcmgs);
+        sb.append(", cveClinicalSignificances=").append(cveClinicalSignificances);
+        sb.append(", cveDrugResponses=").append(cveDrugResponses);
+        sb.append(", cveTraitAssociations=").append(cveTraitAssociations);
+        sb.append(", cveFunctionalEffects=").append(cveFunctionalEffects);
+        sb.append(", cveTumorigenesis=").append(cveTumorigenesis);
+        sb.append(", cveOtherClassifications=").append(cveOtherClassifications);
+        sb.append(", cveRolesInCancer=").append(cveRolesInCancer);
+        sb.append(", cveAux=").append(cveAux);
+        sb.append(", cveJustification=").append(cveJustification);
         sb.append('}');
         return sb.toString();
     }
@@ -400,6 +438,15 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
 
     public ClinicalVariantSearchModel setCaDisorderId(String caDisorderId) {
         this.caDisorderId = caDisorderId;
+        return this;
+    }
+
+    public String getCaType() {
+        return caType;
+    }
+
+    public ClinicalVariantSearchModel setCaType(String caType) {
+        this.caType = caType;
         return this;
     }
 
@@ -439,6 +486,15 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         return this;
     }
 
+    public List<String> getCaProbandSampleIds() {
+        return caProbandSampleIds;
+    }
+
+    public ClinicalVariantSearchModel setCaProbandSampleIds(List<String> caProbandSampleIds) {
+        this.caProbandSampleIds = caProbandSampleIds;
+        return this;
+    }
+
     public String getCaFamilyId() {
         return caFamilyId;
     }
@@ -454,6 +510,132 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
 
     public ClinicalVariantSearchModel setCaFamilyMemberIds(List<String> caFamilyMemberIds) {
         this.caFamilyMemberIds = caFamilyMemberIds;
+        return this;
+    }
+
+    public List<String> getCaConsent() {
+        return caConsent;
+    }
+
+    public ClinicalVariantSearchModel setCaConsent(List<String> caConsent) {
+        this.caConsent = caConsent;
+        return this;
+    }
+
+    public String getCaPriority() {
+        return caPriority;
+    }
+
+    public ClinicalVariantSearchModel setCaPriority(String caPriority) {
+        this.caPriority = caPriority;
+        return this;
+    }
+
+    public List<String> getCaFlags() {
+        return caFlags;
+    }
+
+    public ClinicalVariantSearchModel setCaFlags(List<String> caFlags) {
+        this.caFlags = caFlags;
+        return this;
+    }
+
+    public long getCaCreationDate() {
+        return caCreationDate;
+    }
+
+    public ClinicalVariantSearchModel setCaCreationDate(long caCreationDate) {
+        this.caCreationDate = caCreationDate;
+        return this;
+    }
+
+    public int getCaCreationYear() {
+        return caCreationYear;
+    }
+
+    public ClinicalVariantSearchModel setCaCreationYear(int caCreationYear) {
+        this.caCreationYear = caCreationYear;
+        return this;
+    }
+
+    public int getCaCreationMonth() {
+        return caCreationMonth;
+    }
+
+    public ClinicalVariantSearchModel setCaCreationMonth(int caCreationMonth) {
+        this.caCreationMonth = caCreationMonth;
+        return this;
+    }
+
+    public int getCaCreationDay() {
+        return caCreationDay;
+    }
+
+    public ClinicalVariantSearchModel setCaCreationDay(int caCreationDay) {
+        this.caCreationDay = caCreationDay;
+        return this;
+    }
+
+    public String getCaCreationDayOfWeek() {
+        return caCreationDayOfWeek;
+    }
+
+    public ClinicalVariantSearchModel setCaCreationDayOfWeek(String caCreationDayOfWeek) {
+        this.caCreationDayOfWeek = caCreationDayOfWeek;
+        return this;
+    }
+
+    public int getCaRelease() {
+        return caRelease;
+    }
+
+    public ClinicalVariantSearchModel setCaRelease(int caRelease) {
+        this.caRelease = caRelease;
+        return this;
+    }
+
+    public String getCaQualityControl() {
+        return caQualityControl;
+    }
+
+    public ClinicalVariantSearchModel setCaQualityControl(String caQualityControl) {
+        this.caQualityControl = caQualityControl;
+        return this;
+    }
+
+    public List<String> getCaAudit() {
+        return caAudit;
+    }
+
+    public ClinicalVariantSearchModel setCaAudit(List<String> caAudit) {
+        this.caAudit = caAudit;
+        return this;
+    }
+
+    public String getCaInternalStatus() {
+        return caInternalStatus;
+    }
+
+    public ClinicalVariantSearchModel setCaInternalStatus(String caInternalStatus) {
+        this.caInternalStatus = caInternalStatus;
+        return this;
+    }
+
+    public String getCaStatus() {
+        return caStatus;
+    }
+
+    public ClinicalVariantSearchModel setCaStatus(String caStatus) {
+        this.caStatus = caStatus;
+        return this;
+    }
+
+    public String getCaAnalystName() {
+        return caAnalystName;
+    }
+
+    public ClinicalVariantSearchModel setCaAnalystName(String caAnalystName) {
+        this.caAnalystName = caAnalystName;
         return this;
     }
 
@@ -484,57 +666,12 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         return this;
     }
 
-    public String getIntStatus() {
-        return intStatus;
+    public String getIntMethodNames() {
+        return intMethodNames;
     }
 
-    public ClinicalVariantSearchModel setIntStatus(String intStatus) {
-        this.intStatus = intStatus;
-        return this;
-    }
-
-//    public String getIntSoftwareName() {
-//        return intSoftwareName;
-//    }
-//
-//    public ClinicalVariantSearchModel setIntSoftwareName(String intSoftwareName) {
-//        this.intSoftwareName = intSoftwareName;
-//        return this;
-//    }
-//
-//    public String getIntSoftwareVersion() {
-//        return intSoftwareVersion;
-//    }
-//
-//    public ClinicalVariantSearchModel setIntSoftwareVersion(String intSoftwareVersion) {
-//        this.intSoftwareVersion = intSoftwareVersion;
-//        return this;
-//    }
-//
-//    public String getIntAnalystName() {
-//        return intAnalystName;
-//    }
-//
-//    public ClinicalVariantSearchModel setIntAnalystName(String intAnalystName) {
-//        this.intAnalystName = intAnalystName;
-//        return this;
-//    }
-
-    public List<String> getIntPanels() {
-        return intPanels;
-    }
-
-    public ClinicalVariantSearchModel setIntPanels(List<String> intPanels) {
-        this.intPanels = intPanels;
-        return this;
-    }
-
-    public List<String> getIntInfo() {
-        return intInfo;
-    }
-
-    public ClinicalVariantSearchModel setIntInfo(List<String> intInfo) {
-        this.intInfo = intInfo;
+    public ClinicalVariantSearchModel setIntMethodNames(String intMethodNames) {
+        this.intMethodNames = intMethodNames;
         return this;
     }
 
@@ -583,6 +720,51 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         return this;
     }
 
+    public String getIntVersion() {
+        return intVersion;
+    }
+
+    public ClinicalVariantSearchModel setIntVersion(String intVersion) {
+        this.intVersion = intVersion;
+        return this;
+    }
+
+    public String getIntStatus() {
+        return intStatus;
+    }
+
+    public ClinicalVariantSearchModel setIntStatus(String intStatus) {
+        this.intStatus = intStatus;
+        return this;
+    }
+
+    public String getIntAnalystName() {
+        return intAnalystName;
+    }
+
+    public ClinicalVariantSearchModel setIntAnalystName(String intAnalystName) {
+        this.intAnalystName = intAnalystName;
+        return this;
+    }
+
+    public List<String> getIntPanels() {
+        return intPanels;
+    }
+
+    public ClinicalVariantSearchModel setIntPanels(List<String> intPanels) {
+        this.intPanels = intPanels;
+        return this;
+    }
+
+    public List<String> getIntInfo() {
+        return intInfo;
+    }
+
+    public ClinicalVariantSearchModel setIntInfo(List<String> intInfo) {
+        this.intInfo = intInfo;
+        return this;
+    }
+
     public String getIntJson() {
         return intJson;
     }
@@ -628,201 +810,219 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         return this;
     }
 
-//    public boolean isRvPrimaryFinding() {
-//        return rvPrimaryFinding;
-//    }
-//
-//    public ClinicalVariantSearchModel setRvPrimaryFinding(boolean rvPrimaryFinding) {
-//        this.rvPrimaryFinding = rvPrimaryFinding;
-//        return this;
-//    }
-//
-//    public String getRvStatus() {
-//        return rvStatus;
-//    }
-//
-//    public ClinicalVariantSearchModel setRvStatus(String rvStatus) {
-//        this.rvStatus = rvStatus;
-//        return this;
-//    }
-//
-//    public Double getRvDeNovoQualityScore() {
-//        return rvDeNovoQualityScore;
-//    }
-//
-//    public ClinicalVariantSearchModel setRvDeNovoQualityScore(Double rvDeNovoQualityScore) {
-//        this.rvDeNovoQualityScore = rvDeNovoQualityScore;
-//        return this;
-//    }
-//
-//    public List<String> getRvComments() {
-//        return rvComments;
-//    }
-//
-//    public ClinicalVariantSearchModel setRvComments(List<String> rvComments) {
-//        this.rvComments = rvComments;
-//        return this;
-//    }
-//
-//    public String getRvReportedEventsJson() {
-//        return rvReportedEventsJson;
-//    }
-//
-//    public ClinicalVariantSearchModel setRvReportedEventsJson(String rvReportedEventsJson) {
-//        this.rvReportedEventsJson = rvReportedEventsJson;
-//        return this;
-//    }
-//
-//    public String getRvAttributesJson() {
-//        return rvAttributesJson;
-//    }
-//
-//    public ClinicalVariantSearchModel setRvAttributesJson(String rvAttributesJson) {
-//        this.rvAttributesJson = rvAttributesJson;
-//        return this;
-//    }
-//
-//    public List<String> getRePhenotypes() {
-//        return rePhenotypes;
-//    }
-//
-//    public ClinicalVariantSearchModel setRePhenotypes(List<String> rePhenotypes) {
-//        this.rePhenotypes = rePhenotypes;
-//        return this;
-//    }
-
-    public List<String> getReConsequenceTypeIds() {
-        return reConsequenceTypeIds;
+    public boolean isCvSecondaryInterpretation() {
+        return cvSecondaryInterpretation;
     }
 
-    public ClinicalVariantSearchModel setReConsequenceTypeIds(List<String> reConsequenceTypeIds) {
-        this.reConsequenceTypeIds = reConsequenceTypeIds;
+    public ClinicalVariantSearchModel setCvSecondaryInterpretation(boolean cvSecondaryInterpretation) {
+        this.cvSecondaryInterpretation = cvSecondaryInterpretation;
         return this;
     }
 
-    public List<String> getReGeneNames() {
-        return reGeneNames;
+    public List<String> getCvInterpretationMethodNames() {
+        return cvInterpretationMethodNames;
     }
 
-    public ClinicalVariantSearchModel setReGeneNames(List<String> reGeneNames) {
-        this.reGeneNames = reGeneNames;
+    public ClinicalVariantSearchModel setCvInterpretationMethodNames(List<String> cvInterpretationMethodNames) {
+        this.cvInterpretationMethodNames = cvInterpretationMethodNames;
         return this;
     }
 
-    public List<String> getReXrefs() {
-        return reXrefs;
+    public String getCvStatus() {
+        return cvStatus;
     }
 
-    public ClinicalVariantSearchModel setReXrefs(List<String> reXrefs) {
-        this.reXrefs = reXrefs;
+    public ClinicalVariantSearchModel setCvStatus(String cvStatus) {
+        this.cvStatus = cvStatus;
         return this;
     }
 
-    public List<String> getRePanelIds() {
-        return rePanelIds;
+    public List<String> getCvComments() {
+        return cvComments;
     }
 
-    public ClinicalVariantSearchModel setRePanelIds(List<String> rePanelIds) {
-        this.rePanelIds = rePanelIds;
+    public ClinicalVariantSearchModel setCvComments(List<String> cvComments) {
+        this.cvComments = cvComments;
         return this;
     }
 
-    public List<String> getReAcmg() {
-        return reAcmg;
+    public String getCvDiscussion() {
+        return cvDiscussion;
     }
 
-    public ClinicalVariantSearchModel setReAcmg(List<String> reAcmg) {
-        this.reAcmg = reAcmg;
+    public ClinicalVariantSearchModel setCvDiscussion(String cvDiscussion) {
+        this.cvDiscussion = cvDiscussion;
         return this;
     }
 
-    public List<String> getReClinicalSignificance() {
-        return reClinicalSignificance;
+    public String getCvClinicalVariantEvidencesJson() {
+        return cvClinicalVariantEvidencesJson;
     }
 
-    public ClinicalVariantSearchModel setReClinicalSignificance(List<String> reClinicalSignificance) {
-        this.reClinicalSignificance = reClinicalSignificance;
+    public ClinicalVariantSearchModel setCvClinicalVariantEvidencesJson(String cvClinicalVariantEvidencesJson) {
+        this.cvClinicalVariantEvidencesJson = cvClinicalVariantEvidencesJson;
         return this;
     }
 
-    public List<String> getReDrugResponse() {
-        return reDrugResponse;
+    public String getCvAttributesJson() {
+        return cvAttributesJson;
     }
 
-    public ClinicalVariantSearchModel setReDrugResponse(List<String> reDrugResponse) {
-        this.reDrugResponse = reDrugResponse;
+    public ClinicalVariantSearchModel setCvAttributesJson(String cvAttributesJson) {
+        this.cvAttributesJson = cvAttributesJson;
         return this;
     }
 
-    public List<String> getReTraitAssociation() {
-        return reTraitAssociation;
+    public List<String> getCvePhenotypeNames() {
+        return cvePhenotypeNames;
     }
 
-    public ClinicalVariantSearchModel setReTraitAssociation(List<String> reTraitAssociation) {
-        this.reTraitAssociation = reTraitAssociation;
+    public ClinicalVariantSearchModel setCvePhenotypeNames(List<String> cvePhenotypeNames) {
+        this.cvePhenotypeNames = cvePhenotypeNames;
         return this;
     }
 
-    public List<String> getReFunctionalEffect() {
-        return reFunctionalEffect;
+    public List<String> getCveConsequenceTypes() {
+        return cveConsequenceTypes;
     }
 
-    public ClinicalVariantSearchModel setReFunctionalEffect(List<String> reFunctionalEffect) {
-        this.reFunctionalEffect = reFunctionalEffect;
+    public ClinicalVariantSearchModel setCveConsequenceTypes(List<String> cveConsequenceTypes) {
+        this.cveConsequenceTypes = cveConsequenceTypes;
         return this;
     }
 
-    public List<String> getReTumorigenesis() {
-        return reTumorigenesis;
+    public List<String> getCveXrefs() {
+        return cveXrefs;
     }
 
-    public ClinicalVariantSearchModel setReTumorigenesis(List<String> reTumorigenesis) {
-        this.reTumorigenesis = reTumorigenesis;
+    public ClinicalVariantSearchModel setCveXrefs(List<String> cveXrefs) {
+        this.cveXrefs = cveXrefs;
         return this;
     }
 
-    public List<String> getReOtherClassification() {
-        return reOtherClassification;
+    public List<String> getCveModeOfInheritances() {
+        return cveModeOfInheritances;
     }
 
-    public ClinicalVariantSearchModel setReOtherClassification(List<String> reOtherClassification) {
-        this.reOtherClassification = reOtherClassification;
+    public ClinicalVariantSearchModel setCveModeOfInheritances(List<String> cveModeOfInheritances) {
+        this.cveModeOfInheritances = cveModeOfInheritances;
         return this;
     }
 
-    public List<String> getReRolesInCancer() {
-        return reRolesInCancer;
+    public List<String> getCvePanelIds() {
+        return cvePanelIds;
     }
 
-    public ClinicalVariantSearchModel setReRolesInCancer(List<String> reRolesInCancer) {
-        this.reRolesInCancer = reRolesInCancer;
+    public ClinicalVariantSearchModel setCvePanelIds(List<String> cvePanelIds) {
+        this.cvePanelIds = cvePanelIds;
         return this;
     }
 
-    public Map<String, List<String>> getReJustification() {
-        return reJustification;
+    public List<String> getCvePenetrances() {
+        return cvePenetrances;
     }
 
-    public ClinicalVariantSearchModel setReJustification(Map<String, List<String>> reJustification) {
-        this.reJustification = reJustification;
+    public ClinicalVariantSearchModel setCvePenetrances(List<String> cvePenetrances) {
+        this.cvePenetrances = cvePenetrances;
         return this;
     }
 
-    public List<String> getReTier() {
-        return reTier;
+    public List<String> getCveTiers() {
+        return cveTiers;
     }
 
-    public ClinicalVariantSearchModel setReTier(List<String> reTier) {
-        this.reTier = reTier;
+    public ClinicalVariantSearchModel setCveTiers(List<String> cveTiers) {
+        this.cveTiers = cveTiers;
         return this;
     }
 
-    public List<String> getReAux() {
-        return reAux;
+    public List<String> getCveAcmgs() {
+        return cveAcmgs;
     }
 
-    public ClinicalVariantSearchModel setReAux(List<String> reAux) {
-        this.reAux = reAux;
+    public ClinicalVariantSearchModel setCveAcmgs(List<String> cveAcmgs) {
+        this.cveAcmgs = cveAcmgs;
+        return this;
+    }
+
+    public List<String> getCveClinicalSignificances() {
+        return cveClinicalSignificances;
+    }
+
+    public ClinicalVariantSearchModel setCveClinicalSignificances(List<String> cveClinicalSignificances) {
+        this.cveClinicalSignificances = cveClinicalSignificances;
+        return this;
+    }
+
+    public List<String> getCveDrugResponses() {
+        return cveDrugResponses;
+    }
+
+    public ClinicalVariantSearchModel setCveDrugResponses(List<String> cveDrugResponses) {
+        this.cveDrugResponses = cveDrugResponses;
+        return this;
+    }
+
+    public List<String> getCveTraitAssociations() {
+        return cveTraitAssociations;
+    }
+
+    public ClinicalVariantSearchModel setCveTraitAssociations(List<String> cveTraitAssociations) {
+        this.cveTraitAssociations = cveTraitAssociations;
+        return this;
+    }
+
+    public List<String> getCveFunctionalEffects() {
+        return cveFunctionalEffects;
+    }
+
+    public ClinicalVariantSearchModel setCveFunctionalEffects(List<String> cveFunctionalEffects) {
+        this.cveFunctionalEffects = cveFunctionalEffects;
+        return this;
+    }
+
+    public List<String> getCveTumorigenesis() {
+        return cveTumorigenesis;
+    }
+
+    public ClinicalVariantSearchModel setCveTumorigenesis(List<String> cveTumorigenesis) {
+        this.cveTumorigenesis = cveTumorigenesis;
+        return this;
+    }
+
+    public List<String> getCveOtherClassifications() {
+        return cveOtherClassifications;
+    }
+
+    public ClinicalVariantSearchModel setCveOtherClassifications(List<String> cveOtherClassifications) {
+        this.cveOtherClassifications = cveOtherClassifications;
+        return this;
+    }
+
+    public List<String> getCveRolesInCancer() {
+        return cveRolesInCancer;
+    }
+
+    public ClinicalVariantSearchModel setCveRolesInCancer(List<String> cveRolesInCancer) {
+        this.cveRolesInCancer = cveRolesInCancer;
+        return this;
+    }
+
+    public List<String> getCveAux() {
+        return cveAux;
+    }
+
+    public ClinicalVariantSearchModel setCveAux(List<String> cveAux) {
+        this.cveAux = cveAux;
+        return this;
+    }
+
+    public Map<String, List<String>> getCveJustification() {
+        return cveJustification;
+    }
+
+    public ClinicalVariantSearchModel setCveJustification(Map<String, List<String>> cveJustification) {
+        this.cveJustification = cveJustification;
         return this;
     }
 }

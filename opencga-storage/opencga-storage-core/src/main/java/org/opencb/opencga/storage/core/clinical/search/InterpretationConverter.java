@@ -557,19 +557,19 @@ public class InterpretationConverter {
 
             // Update reported event fields
 //            rvsm.getRePhenotypes().addAll(setPhenotypes);
-            rvsm.getReConsequenceTypeIds().addAll(setConsequenceTypeIds);
-            rvsm.getReXrefs().addAll(setXrefs);
-            rvsm.getReAcmg().addAll(setAcmg);
-            rvsm.getReClinicalSignificance().addAll(setClinicalSig);
-            rvsm.getReDrugResponse().addAll(setDrugResponse);
-            rvsm.getReTraitAssociation().addAll(setTraitAssoc);
-            rvsm.getReFunctionalEffect().addAll(setFunctEffect);
-            rvsm.getReTumorigenesis().addAll(setTumorigenesis);
-            rvsm.getOther().addAll(setOtherClass);
-            rvsm.getReRolesInCancer().addAll(setRolesInCancer);
-            rvsm.setReJustification(justification);
-            rvsm.getReTier().addAll(setTier);
-            rvsm.getReAux().addAll(aux);
+//            rvsm.getReConsequenceTypeIds().addAll(setConsequenceTypeIds);
+//            rvsm.getReXrefs().addAll(setXrefs);
+//            rvsm.getReAcmg().addAll(setAcmg);
+//            rvsm.getReClinicalSignificance().addAll(setClinicalSig);
+//            rvsm.getReDrugResponse().addAll(setDrugResponse);
+//            rvsm.getReTraitAssociation().addAll(setTraitAssoc);
+//            rvsm.getReFunctionalEffect().addAll(setFunctEffect);
+//            rvsm.getReTumorigenesis().addAll(setTumorigenesis);
+//            rvsm.getOther().addAll(setOtherClass);
+//            rvsm.getReRolesInCancer().addAll(setRolesInCancer);
+//            rvsm.setReJustification(justification);
+//            rvsm.getReTier().addAll(setTier);
+//            rvsm.getReAux().addAll(aux);
         }
     }
 
