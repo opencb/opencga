@@ -38,6 +38,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.*;
+
 /**
  * Created by pfurio on 12/05/16.
  */
@@ -53,35 +55,22 @@ public interface AuthorizationManager {
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getAnalystAcls() {
-        return EnumSet.of(
-                StudyAclEntry.StudyPermissions.WRITE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADER,
-                StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENT, StudyAclEntry.StudyPermissions.VIEW_FILES,
-                StudyAclEntry.StudyPermissions.DOWNLOAD_FILES, StudyAclEntry.StudyPermissions.UPLOAD_FILES,
-                StudyAclEntry.StudyPermissions.WRITE_JOBS, StudyAclEntry.StudyPermissions.VIEW_JOBS,
-                StudyAclEntry.StudyPermissions.WRITE_SAMPLES, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
-                StudyAclEntry.StudyPermissions.WRITE_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS,
-                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_VARIANTS,
-                StudyAclEntry.StudyPermissions.WRITE_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.WRITE_COHORTS, StudyAclEntry.StudyPermissions.VIEW_COHORTS,
-                StudyAclEntry.StudyPermissions.WRITE_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.WRITE_PANELS, StudyAclEntry.StudyPermissions.VIEW_PANELS,
-                StudyAclEntry.StudyPermissions.WRITE_FAMILIES, StudyAclEntry.StudyPermissions.VIEW_FAMILIES,
-                StudyAclEntry.StudyPermissions.WRITE_FAMILY_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
+        return EnumSet.of(WRITE_FILES, VIEW_FILE_HEADER, VIEW_FILE_CONTENT, VIEW_FILES, DOWNLOAD_FILES, UPLOAD_FILES,
+                EXECUTE_JOBS, WRITE_JOBS, VIEW_JOBS,
+                WRITE_SAMPLES, VIEW_SAMPLES, WRITE_SAMPLE_ANNOTATIONS, VIEW_SAMPLE_ANNOTATIONS, VIEW_AGGREGATED_VARIANTS,
+                VIEW_SAMPLE_VARIANTS,
+                WRITE_INDIVIDUALS, VIEW_INDIVIDUALS, WRITE_INDIVIDUAL_ANNOTATIONS, VIEW_INDIVIDUAL_ANNOTATIONS,
+                WRITE_COHORTS, VIEW_COHORTS, WRITE_COHORT_ANNOTATIONS, VIEW_COHORT_ANNOTATIONS,
+                WRITE_PANELS, VIEW_PANELS,
+                WRITE_FAMILIES, VIEW_FAMILIES, WRITE_FAMILY_ANNOTATIONS, VIEW_FAMILY_ANNOTATIONS,
+                WRITE_CLINICAL_ANALYSIS, VIEW_CLINICAL_ANALYSIS);
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getViewOnlyAcls() {
         return EnumSet.of(
-                StudyAclEntry.StudyPermissions.VIEW_FILE_HEADER, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENT,
-                StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
-                StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS,
-                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_VARIANTS,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORTS,
-                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_PANELS,
-                StudyAclEntry.StudyPermissions.VIEW_FAMILIES, StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
+                VIEW_FILE_HEADER, VIEW_FILE_CONTENT, VIEW_FILES, DOWNLOAD_FILES, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS,
+                VIEW_INDIVIDUALS, VIEW_AGGREGATED_VARIANTS, VIEW_SAMPLE_VARIANTS, VIEW_INDIVIDUAL_ANNOTATIONS, VIEW_COHORTS,
+                VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_FAMILIES, VIEW_FAMILY_ANNOTATIONS, VIEW_CLINICAL_ANALYSIS, EXECUTE_JOBS);
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getLockedAcls() {
