@@ -175,6 +175,7 @@ public class ProjectManager extends AbstractManager {
         Query query = new Query()
                 .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.UUID.key(), projectUuid);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         return projectDBAdaptor.get(query, options);
     }
 

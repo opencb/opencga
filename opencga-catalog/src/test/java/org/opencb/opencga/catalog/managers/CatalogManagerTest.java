@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.ClinicalComment;
@@ -114,6 +115,52 @@ public class CatalogManagerTest extends AbstractManagerTest {
         } catch (CatalogException e) {
             System.out.println(e);
         }
+    }
+
+    @Test
+    public void testUserInfoProjections() throws CatalogException {
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.PROJECTS_ID.key());
+        DataResult<User> user = catalogManager.getUserManager().get("user", options, token);
+        assertNotNull(user.first().getProjects());
+        assertTrue(StringUtils.isNotEmpty(user.first().getProjects().get(0).getId()));
+        assertTrue(StringUtils.isEmpty(user.first().getProjects().get(0).getName()));
+        assertNull(user.first().getProjects().get(0).getStudies());
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.FQN.key());
+        user = catalogManager.getUserManager().get("user", options, token);
+        assertNotNull(user.first().getProjects());
+        assertEquals(2, user.first().getProjects().get(0).getStudies().size());
+        assertTrue(StringUtils.isNotEmpty(user.first().getProjects().get(0).getStudies().get(0).getFqn()));
+        assertTrue(StringUtils.isEmpty(user.first().getProjects().get(0).getStudies().get(0).getName()));
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.FQN.key());
+        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        assertEquals(0, user.first().getSharedProjects().size());
+
+        // Grant permissions to user2 to access study of user1
+        catalogManager.getStudyManager().updateGroup(studyFqn, StudyManager.MEMBERS, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user2")), token);
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.FQN.key());
+        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        assertEquals(1, user.first().getSharedProjects().size());
+        assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
+        assertNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.ID.key());
+        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        assertEquals(1, user.first().getSharedProjects().size());
+        assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
+        assertNotNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
     }
 
     @Test
