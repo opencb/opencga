@@ -42,6 +42,15 @@ public class SampleIndexConfiguration {
         return sampleIndexConfiguration;
     }
 
+    public void validate() {
+        for (IndexFieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
+            customField.validate();
+        }
+        for (PopulationFrequencyRange populationRange : populationRanges) {
+            populationRange.validate();
+        }
+    }
+
     public static class FileIndexConfiguration {
 
         private final List<IndexFieldConfiguration> customFields = new ArrayList<>();

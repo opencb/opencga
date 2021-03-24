@@ -47,6 +47,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -54,6 +55,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -96,6 +99,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.FILE_GET_QUERY_OPTIONS;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE;
 import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE_DEFAULT;
@@ -469,15 +473,29 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public void configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+    /**
+     * Modify SampleIndex configuration. Automatically submit a job to rebuild the sample index.
+     * @param studyStr  Study identifier
+     * @param sampleIndexConfiguration New sample index configuration
+     * @param token User's token
+     * @return Result with VariantSampleIndexOperationTool job
+     * @throws CatalogException on catalog errors
+     * @throws StorageEngineException on storage engine errors
+     */
+    public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
+        return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
+            sampleIndexConfiguration.validate();
             String studyFqn = getStudyFqn(studyStr, token);
             engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration);
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
-            return null;
+            // If changes, launch sample-index-run
+            VariantSampleIndexParams params =
+                    new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
+            return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                    params.toParams(STUDY_PARAM, studyFqn), token);
         });
     }
 

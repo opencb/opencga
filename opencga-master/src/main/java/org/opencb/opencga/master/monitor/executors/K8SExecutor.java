@@ -284,7 +284,7 @@ public class K8SExecutor implements BatchExecutor {
      * DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must
      * start and end with an alphanumeric character (e.g. 'example.com', regex used for validation
      * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
-     * @param jobId job Is
+     * @param jobIdInput job Is
      * @link https://github.com/kubernetes/kubernetes/blob/c560907/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go#L135
      * @return valid name
      */

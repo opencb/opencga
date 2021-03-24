@@ -73,6 +73,33 @@ public class IndexFieldConfiguration {
         return this;
     }
 
+    public void validate() {
+        if (key == null) {
+            throw new IllegalArgumentException("Missing field KEY in index custom field");
+        }
+        if (source == null) {
+            throw new IllegalArgumentException("Missing field SOURCE in index custom field " + key);
+        }
+        if (type == null) {
+            throw new IllegalArgumentException("Missing field TYPE in index custom field " + source + ":" + key);
+        }
+        switch (type) {
+            case RANGE:
+                if (thresholds == null || thresholds.length == 0) {
+                    throw new IllegalArgumentException("Missing 'thresholds' for index custom field " + getId());
+                }
+                break;
+            case CATEGORICAL:
+            case CATEGORICAL_MULTI_VALUE:
+                if (values == null || values.length == 0) {
+                    throw new IllegalArgumentException("Missing 'values' for index custom field " + getId());
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown type " + type + " for index custom field " + getId());
+        }
+    }
+
     public enum Source {
         VARIANT,
         META,
