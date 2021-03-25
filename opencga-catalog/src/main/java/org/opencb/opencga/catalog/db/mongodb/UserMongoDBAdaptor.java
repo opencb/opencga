@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
@@ -301,6 +302,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     @Override
     public OpenCGAResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         Bson bson = parseQuery(query);
         QueryOptions userOptions;
         if (includeProjects(options)) {

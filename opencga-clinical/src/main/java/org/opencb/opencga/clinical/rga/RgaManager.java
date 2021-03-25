@@ -15,11 +15,13 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.clinical.StorageManager;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -91,12 +93,11 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         boolean count = queryOptions.getBoolean(QueryOptions.COUNT);
 
         if (auxQuery.isEmpty()) {
-            // TODO: We need to query only for the samples indexed in Solr
             QueryOptions catalogOptions = new QueryOptions(SampleManager.INCLUDE_SAMPLE_IDS)
                     .append(QueryOptions.LIMIT, limit)
                     .append(QueryOptions.SKIP, skip)
                     .append(QueryOptions.COUNT, queryOptions.getBoolean(QueryOptions.COUNT));
-            Query catalogQuery = new Query();
+            Query catalogQuery = new Query(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED);
             if (!isOwnerOrAdmin) {
                 catalogQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
                         + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
@@ -421,6 +422,58 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
             return knockoutResult;
         }
+    }
+
+    public OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, String token)
+            throws CatalogException, IOException, RgaException {
+        Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+        String userId = catalogManager.getUserManager().getUserId(token);
+        String collection = getCollectionName(study.getFqn());
+
+        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId);
+
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
+        }
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
+        QueryOptions facetOptions = new QueryOptions()
+                .append(QueryOptions.FACET, RgaDataModel.SAMPLE_ID)
+                .append(QueryOptions.LIMIT, -1);
+        DataResult<FacetField> result = rgaEngine.facetedQuery(collection, new Query(), facetOptions);
+
+        int totalSamples = result.first().getBuckets().size();
+        int updatedSamples = 0;
+
+        // Before doing anything, we first reset all the sample rga indexes
+        OpenCGAResult<Sample> resetResult = catalogManager.getSampleManager().resetRgaIndexes(studyStr, token);
+        logger.debug("Resetting RGA indexes for " + resetResult.getNumMatches() + " samples took " + resetResult.getTime() + " ms.");
+
+        // Update samples in batches of 100
+        List<String> sampleIds = new ArrayList<>(100);
+
+        RgaIndex rgaIndex = new RgaIndex(RgaIndex.Status.INDEXED, TimeUtils.getTime());
+        for (FacetField.Bucket bucket : result.first().getBuckets()) {
+            sampleIds.add(bucket.getValue());
+            if (sampleIds.size() == 100) {
+                OpenCGAResult<Sample> update = catalogManager.getSampleManager().updateRgaIndexes(study.getFqn(), sampleIds, rgaIndex,
+                        token);
+                updatedSamples += update.getNumUpdated();
+
+                sampleIds = new ArrayList<>(100);
+            }
+        }
+
+        if (!sampleIds.isEmpty()) {
+            // Update last batch
+            OpenCGAResult<Sample> update = catalogManager.getSampleManager().updateRgaIndexes(study.getFqn(), sampleIds, rgaIndex, token);
+            updatedSamples += update.getNumUpdated();
+        }
+
+        stopWatch.stop();
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, totalSamples, 0, updatedSamples, 0);
     }
 
     public OpenCGAResult<FacetField> aggregationStats(String studyStr, Query query, QueryOptions options, String fields, String token)

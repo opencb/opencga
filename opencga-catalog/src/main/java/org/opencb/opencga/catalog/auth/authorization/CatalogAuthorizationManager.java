@@ -287,6 +287,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException {
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
+
         if (!isOwnerOrAdmin(studyId, userId)) {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to perform this action");
         }
