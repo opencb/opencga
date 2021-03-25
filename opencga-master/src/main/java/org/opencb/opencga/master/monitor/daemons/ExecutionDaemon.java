@@ -593,7 +593,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             List<Study> studiesToValidate;
             if (tool.scope() == Tool.Scope.PROJECT) {
-                String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
+                String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId()
+                        .indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
                 studiesToValidate = catalogManager.getStudyManager().search(projectFqn, new Query(),
                         new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
                                 StudyDBAdaptor.QueryParams.FQN.key())), token).getResults();
