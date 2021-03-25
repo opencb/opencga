@@ -16,11 +16,13 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -67,6 +69,7 @@ import java.util.function.Function;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -679,6 +682,30 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
+    public OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException {
+        ObjectMap params;
+        try {
+            params = new ObjectMap(getDefaultObjectMapper().writeValueAsString(rgaIndex));
+        } catch (JsonProcessingException e) {
+            throw new CatalogDBException("Could not parse RgaIndex object", e);
+        }
+
+        Document rootDocument = new Document(QueryParams.INTERNAL_RGA.key(), params);
+
+        List<Bson> filters = new ArrayList<>();
+        filters.add(Filters.eq(QueryParams.STUDY_UID.key(), studyUid));
+        if (CollectionUtils.isNotEmpty(sampleUids)) {
+            filters.add(Filters.in(QueryParams.UID.key(), sampleUids));
+        }
+        Bson query = Filters.and(filters);
+
+        UpdateDocument updateDocument = new UpdateDocument().setSet(rootDocument);
+
+        DataResult<Sample> multi = sampleCollection.update(query, updateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
+        return new OpenCGAResult<>(multi);
+    }
+
+    @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
@@ -1225,6 +1252,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case DESCRIPTION:
                     case INDIVIDUAL_ID:
                     case INTERNAL_STATUS_DATE:
+                    case INTERNAL_RGA_STATUS:
                     case SOMATIC:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
