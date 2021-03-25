@@ -487,6 +487,51 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     /**
+     * Extract a new QueryOptions object containing only the include/exclude of another nested object.
+     * Example: Let's say a user is querying the user collection adding include: projects.studies.fqn
+     * If we need to perform a different query in the study collection, we will want to obtain a new QueryOptions object containing:
+     * include: fqn
+     *
+     * For that scenario, the `key` value would be "projects.studies"
+     *
+     * @param options Original QueryOptions object.
+     * @param key Nested key by which to extract the new options.
+     * @return new QueryOptions object.
+     */
+    protected QueryOptions extractNestedOptions(QueryOptions options, String key) {
+        QueryOptions studyOptions = new QueryOptions();
+
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+
+        String projectionKey = key.endsWith(".") ? key : key + ".";
+
+        if (!includeList.isEmpty()) {
+            List<String> studyIncludeList = new ArrayList<>();
+            for (String includeKey : includeList) {
+                if (includeKey.startsWith(projectionKey)) {
+                    studyIncludeList.add(includeKey.replace(projectionKey, ""));
+                }
+            }
+            if (!studyIncludeList.isEmpty()) {
+                studyOptions.put(QueryOptions.INCLUDE, studyIncludeList);
+            }
+        } else if (!excludeList.isEmpty()) {
+            List<String> studyExcludeList = new ArrayList<>();
+            for (String excludeKey : excludeList) {
+                if (excludeKey.startsWith(projectionKey)) {
+                    studyExcludeList.add(excludeKey.replace(projectionKey, ""));
+                }
+            }
+            if (!studyExcludeList.isEmpty()) {
+                studyOptions.put(QueryOptions.EXCLUDE, studyExcludeList);
+            }
+        }
+
+        return studyOptions;
+    }
+
+    /**
      * Removes any other entity projections made. This method should be called by any entity containing inner entities:
      * Family -> Individual; Individual -> Sample; File -> Sample; Cohort -> Sample
      *

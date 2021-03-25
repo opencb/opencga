@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.clinical.StorageManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
@@ -25,7 +26,6 @@ import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.RgaException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -104,7 +104,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
             OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(study.getFqn(), catalogQuery, catalogOptions, token);
             if (search.getNumResults() == 0) {
-                return OpenCGAResult.empty(KnockoutByIndividual.class);
+                stopWatch.stop();
+                return OpenCGAResult.empty(KnockoutByIndividual.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
             }
 
             sampleIds = search.getResults().stream().map(Sample::getId).collect(Collectors.toList());
@@ -114,11 +115,11 @@ public class RgaManager extends StorageManager implements AutoCloseable {
                 // 1st. we perform a facet to get the different sample ids matching the user query
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
                         new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID).append(QueryOptions.LIMIT, -1));
-                List<String> samples = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
-
-                if (samples.isEmpty()) {
-                    return OpenCGAResult.empty(KnockoutByIndividual.class);
+                if (result.getNumResults() == 0) {
+                    stopWatch.stop();
+                    return OpenCGAResult.empty(KnockoutByIndividual.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
                 }
+                List<String> samples = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
                 auxQuery.put("sampleId", samples);
             }
 
@@ -184,7 +185,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
             if (skip == 0 && limit > authorisedSamples.size()) {
                 sampleIds = authorisedSamples;
             } else if (skip > authorisedSamples.size()) {
-                return OpenCGAResult.empty(KnockoutByIndividual.class);
+                stopWatch.stop();
+                return OpenCGAResult.empty(KnockoutByIndividual.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
             } else {
                 int to = Math.min(authorisedSamples.size(), skip + limit);
                 sampleIds = authorisedSamples.subList(skip, to);
@@ -247,7 +249,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
             DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
             if (result.getNumResults() == 0) {
-                return OpenCGAResult.empty(RgaKnockoutByGene.class);
+                stopWatch.stop();
+                return OpenCGAResult.empty(RgaKnockoutByGene.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
             }
             List<String> geneIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.GENE_ID, geneIds);
@@ -268,7 +271,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
                         new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID).append(QueryOptions.LIMIT, -1));
                 if (result.getNumResults() == 0) {
-                    return OpenCGAResult.empty(RgaKnockoutByGene.class);
+                    stopWatch.stop();
+                    return OpenCGAResult.empty(RgaKnockoutByGene.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
                 }
                 List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
@@ -353,7 +357,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
 
             DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
             if (result.getNumResults() == 0) {
-                return OpenCGAResult.empty(KnockoutByVariant.class);
+                stopWatch.stop();
+                return OpenCGAResult.empty(KnockoutByVariant.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
             }
             List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
             auxQuery.put(RgaDataModel.VARIANTS, variantIds);
@@ -374,7 +379,8 @@ public class RgaManager extends StorageManager implements AutoCloseable {
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
                         new QueryOptions(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_ID).append(QueryOptions.LIMIT, -1));
                 if (result.getNumResults() == 0) {
-                    return OpenCGAResult.empty(KnockoutByVariant.class);
+                    stopWatch.stop();
+                    return OpenCGAResult.empty(KnockoutByVariant.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
                 }
                 List<String> individualIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue)
                         .collect(Collectors.toList());

@@ -496,14 +496,14 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult count(Query query, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        authorizationManager.checkIsAdmin(userId);
+        authorizationManager.isInstallationAdministrator(userId);
 
         return jobDBAdaptor.count(query);
     }
 
     public DBIterator<Job> iterator(Query query, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        authorizationManager.checkIsAdmin(userId);
+        authorizationManager.isInstallationAdministrator(userId);
 
         return jobDBAdaptor.iterator(query, options);
     }

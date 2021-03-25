@@ -35,6 +35,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -63,6 +64,28 @@ public class AdminWSServer extends OpenCGAWSServer {
     }
 
     //******************************** USERS **********************************//
+
+    @GET
+    @Path("/users/search")
+    @ApiOperation(value = "User search method", response = Sample.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query")
+    })
+    public Response userSearch(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION) @QueryParam(ParamConstants.USER) String user,
+            @ApiParam(value = ParamConstants.USER_ACCOUNT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.USER_ACCOUNT_TYPE) String account,
+            @ApiParam(value = ParamConstants.USER_AUTHENTICATION_ORIGIN_DESCRIPTION) @QueryParam(ParamConstants.USER_AUTHENTICATION_ORIGIN) String authentication) {
+        try {
+            return createOkResponse(catalogManager.getAdminManager().userSearch(query, queryOptions, token));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+
+    }
 
     @POST
     @Path("/users/create")

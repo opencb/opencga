@@ -72,6 +72,31 @@ public class Project extends PrivateFields {
         this.attributes = attributes;
     }
 
+    // Clone a project
+    public Project(Project project) {
+        this(project.getUid(), project.getId(), project.getName(), project.getUuid(), project.getFqn(), project.getCreationDate(),
+                project.getModificationDate(), project.getDescription(), project.getOrganism(), project.getCurrentRelease(),
+                project.getStudies(), project.getInternal(), project.getAttributes());
+    }
+
+    public Project(long uid, String id, String name, String uuid, String fqn, String creationDate, String modificationDate,
+                   String description, ProjectOrganism organism, int currentRelease, List<Study> studies, ProjectInternal internal,
+                   Map<String, Object> attributes) {
+        super(uid);
+        this.id = id;
+        this.name = name;
+        this.uuid = uuid;
+        this.fqn = fqn;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.description = description;
+        this.organism = organism;
+        this.currentRelease = currentRelease;
+        this.studies = studies;
+        this.internal = internal;
+        this.attributes = attributes;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Project{");

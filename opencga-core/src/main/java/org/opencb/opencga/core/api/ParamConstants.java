@@ -92,7 +92,16 @@ public class ParamConstants {
     public static final String MEMBERS_GROUP = "@members";
     public static final String ADMINS_GROUP = "@admins";
 
+    // ---------------------------------------------
+
+    public static final String USER = "user";
     public static final String USER_DESCRIPTION = "User ID";
+    public static final String USER_ACCOUNT_TYPE = "account";
+    public static final String USER_ACCOUNT_TYPE_DESCRIPTION = "Account type [GUEST, FULL, ADMINISTRATOR]";
+    public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
+    public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
+    public static final String USER_CREATION_DATE = "creationDate";
+    public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
 
     // ---------------------------------------------
 
@@ -216,7 +225,7 @@ public class ParamConstants {
 
     public static final String PANEL_SOURCE = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
-            + "sources are 'panelapp' and 'genecensus'";
+            + "sources are 'panelapp' and 'cancer-gene-census'";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "

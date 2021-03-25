@@ -111,7 +111,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanViewProject(long projectId, String userId) throws CatalogException {
-        if (userId.equals(OPENCGA)) {
+        if (isInstallationAdministrator(userId)) {
             return;
         }
         if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
@@ -138,7 +138,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
             throws CatalogException {
-        if (OPENCGA.equals(userId)) {
+        if (isInstallationAdministrator(userId)) {
             return;
         } else {
             if (studyDBAdaptor.hasStudyPermission(studyId, userId, permission)) {
@@ -150,8 +150,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanEditStudy(long studyId, String userId) throws CatalogException {
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
 
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
         if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to modify a study");
         }
@@ -159,12 +162,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanViewStudy(long studyId, String userId) throws CatalogException {
-        if (OPENCGA.equals(userId)) {
+        if (isInstallationAdministrator(userId)) {
             return;
         }
 
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
-
         if (ownerId.equals(userId)) {
             return;
         }
@@ -177,8 +179,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException {
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
 
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
         if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to modify a update permission rules");
         }
@@ -190,8 +195,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException(group + " is a protected group that cannot be created or deleted.");
         }
 
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
+
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (!userId.equals(OPENCGA) && !userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
+        if (!userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only administrative users are allowed to create/remove groups.");
         }
     }
@@ -219,7 +228,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException("Only the owner of the study can assign/remove users to the administrative group.");
         }
 
-        if (!userId.equals(OPENCGA) && !isAdministrativeUser(studyId, userId)) {
+        if (!isInstallationAdministrator(userId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only administrative users are allowed to assign/remove users to groups.");
         }
 
@@ -240,15 +249,22 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanAssignOrSeePermissions(long studyId, String userId) throws CatalogException {
-        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
 
-        if (!OPENCGA.equals(userId) && !ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+        String ownerId = studyDBAdaptor.getOwnerId(studyId);
+        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to assign or see all permissions");
         }
     }
 
     @Override
     public void checkCanCreateUpdateDeleteVariableSets(long studyId, String userId) throws CatalogException {
+        if (isInstallationAdministrator(userId)) {
+            return;
+        }
+
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
         if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
@@ -258,8 +274,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public Boolean checkIsAdmin(String user) {
-        return user.equals(OPENCGA);
+    public Boolean isInstallationAdministrator(String user) {
+        return OPENCGA.equals(user);
+    }
+
+    @Override
+    public void checkIsInstallationAdministrator(String user) throws CatalogException {
+        if (!isInstallationAdministrator(user)) {
+            throw new CatalogAuthorizationException("Only ADMINISTRATOR users are allowed to perform this action");
+        }
     }
 
     @Override
@@ -276,7 +299,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
             return false;
         }
-
         return true;
     }
 
@@ -306,7 +328,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private boolean checkUserPermission(String userId, Query query, CoreDBAdaptor dbAdaptor) throws CatalogException {
-        if (OPENCGA.equals(userId)) {
+        if (isInstallationAdministrator(userId)) {
             return true;
         } else {
             if (dbAdaptor.count(query, userId).getNumMatches() == 1) {
