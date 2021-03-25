@@ -214,7 +214,7 @@ public class CatalogManager implements AutoCloseable {
 
     public void deleteCatalogDB(String token) throws CatalogException, URISyntaxException {
         String userId = userManager.getUserId(token);
-        if (!authorizationManager.isAdmin(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogException("Only the admin can delete the database");
         }
 

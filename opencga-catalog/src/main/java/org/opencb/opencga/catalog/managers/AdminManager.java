@@ -42,7 +42,7 @@ public class AdminManager extends AbstractManager {
                 .append("token", token);
         String userId = catalogManager.getUserManager().getUserId(token);
         try {
-            authorizationManager.checkIsAdmin(userId);
+            authorizationManager.checkIsInstallationAdministrator(userId);
 
             // Fix query object
             if (query.containsKey(ParamConstants.USER)) {
