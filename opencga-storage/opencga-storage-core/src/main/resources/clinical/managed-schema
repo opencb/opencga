@@ -620,8 +620,6 @@
     <field name="intVersion" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="intStatus" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="intAnalystName" type="string" indexed="true" stored="true" multiValued="false"/>
-    <!-- intPanels contains both panel ID and name -->
-    <field name="intPanels" type="string" indexed="true" stored="true" multiValued="true"/>
     <!-- Interpretation intInfo contains:
             description     : DS - description text
             analyst         : AN - author - email - company

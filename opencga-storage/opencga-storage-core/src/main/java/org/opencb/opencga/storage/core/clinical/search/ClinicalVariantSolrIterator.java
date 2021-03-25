@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantIterator;
 
 import java.io.IOException;
@@ -45,7 +46,12 @@ public class ClinicalVariantSolrIterator implements ClinicalVariantIterator {
 
     @Override
     public ClinicalVariant next() {
-        return reportedVariantSearchToReportedVariantConverter.toClinicalVariant(clinicalVariantNativeSolrIterator.next());
+        try {
+            return reportedVariantSearchToReportedVariantConverter.toClinicalVariant(clinicalVariantNativeSolrIterator.next());
+        } catch (ClinicalVariantException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override

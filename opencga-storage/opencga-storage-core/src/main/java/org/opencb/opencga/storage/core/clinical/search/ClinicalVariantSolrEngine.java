@@ -112,7 +112,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     @Override
     public void insert(Interpretation interpretation, String collection) throws IOException, ClinicalVariantException {
         List<ClinicalVariantSearchModel> clinicalVariantSearchModels;
-        clinicalVariantSearchModels = interpretaionConverter.toReportedVariantSearchList(interpretation);
+        clinicalVariantSearchModels = interpretaionConverter.toClinicalVariantSearchList(interpretation);
 
         if (ListUtils.isNotEmpty(clinicalVariantSearchModels)) {
             UpdateResponse updateResponse;

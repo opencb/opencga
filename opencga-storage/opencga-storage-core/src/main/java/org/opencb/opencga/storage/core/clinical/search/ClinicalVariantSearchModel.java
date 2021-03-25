@@ -134,7 +134,7 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
 
     // <field name="intMethodNames" type="string" indexed="true" stored="true" multiValued="true"/>
     @Field("intMethodNames")
-    private String intMethodNames;
+    private List<String> intMethodNames;
 
     // <!-- Creation year, month and day will be used for facets -->
     // <field name="intCreationDate" type="long" indexed="true" stored="true" multiValued="false"/>
@@ -159,7 +159,7 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
 
     // <field name="intVersion" type="int" indexed="true" stored="true" multiValued="false"/>
     @Field("intVersion")
-    private String intVersion;
+    private int intVersion;
 
     // <field name="intStatus" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("intStatus")
@@ -168,12 +168,6 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
     // <field name="intAnalystName" type="string" indexed="true" stored="true" multiValued="false"/>
     @Field("intAnalystName")
     private String intAnalystName;
-
-    // <!-- intPanels contains both panel ID and name -->
-    // <field name="intPanels" type="string" indexed="true" stored="true" multiValued="true"/>
-    // intPanels contains both panel ID and name
-    @Field("intPanels")
-    private List<String> intPanels;
 
     // <!-- Interpretation intInfo contains:
     // description     : DS - description text
@@ -326,7 +320,6 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         this.caFlags = new ArrayList<>();
         this.caAudit = new ArrayList<>();
         this.caInfo = new ArrayList<>();
-        this.intPanels = new ArrayList<>();
         this.intInfo = new ArrayList<>();
         this.cvInterpretationMethodNames = new ArrayList<>();
         this.cvComments = new ArrayList<>();
@@ -388,7 +381,6 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         sb.append(", intVersion='").append(intVersion).append('\'');
         sb.append(", intStatus='").append(intStatus).append('\'');
         sb.append(", intAnalystName='").append(intAnalystName).append('\'');
-        sb.append(", intPanels=").append(intPanels);
         sb.append(", intInfo=").append(intInfo);
         sb.append(", intJson='").append(intJson).append('\'');
         sb.append(", projectId='").append(projectId).append('\'');
@@ -666,11 +658,11 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         return this;
     }
 
-    public String getIntMethodNames() {
+    public List<String> getIntMethodNames() {
         return intMethodNames;
     }
 
-    public ClinicalVariantSearchModel setIntMethodNames(String intMethodNames) {
+    public ClinicalVariantSearchModel setIntMethodNames(List<String> intMethodNames) {
         this.intMethodNames = intMethodNames;
         return this;
     }
@@ -720,11 +712,11 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
         return this;
     }
 
-    public String getIntVersion() {
+    public int getIntVersion() {
         return intVersion;
     }
 
-    public ClinicalVariantSearchModel setIntVersion(String intVersion) {
+    public ClinicalVariantSearchModel setIntVersion(int intVersion) {
         this.intVersion = intVersion;
         return this;
     }
@@ -744,15 +736,6 @@ public class ClinicalVariantSearchModel extends VariantSearchModel {
 
     public ClinicalVariantSearchModel setIntAnalystName(String intAnalystName) {
         this.intAnalystName = intAnalystName;
-        return this;
-    }
-
-    public List<String> getIntPanels() {
-        return intPanels;
-    }
-
-    public ClinicalVariantSearchModel setIntPanels(List<String> intPanels) {
-        this.intPanels = intPanels;
         return this;
     }
 
