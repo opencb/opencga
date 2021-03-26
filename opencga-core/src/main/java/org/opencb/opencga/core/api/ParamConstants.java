@@ -41,6 +41,8 @@ public class ParamConstants {
 
     public static final String INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+    public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
+    public static final String INTERNAL_INDEX_STATUS_DESCRIPTION = "Filter by internal index status";
 
     public static final String STATUS_PARAM = "status";
     public static final String STATUS_DESCRIPTION = "Filter by status";

@@ -324,6 +324,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("format") String formats,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_INDEX_STATUS_PARAM) String internalIndexStatus,
             @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @DefaultValue("") @QueryParam("directory") String directory,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,

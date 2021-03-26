@@ -227,6 +227,9 @@ public class FileCommandOptions {
         @Parameter(names = {"--size"}, description = ParamConstants.FILE_SIZE_DESCRIPTION, arity = 1)
         public String size;
 
+        @Parameter(names = {"--index-status", "--internal-index-status"}, description = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION, arity = 1)
+        public String internalIndexStatus;
+
         @Parameter(names = {"--samples"}, description = ParamConstants.SAMPLES_DESCRIPTION, arity = 1)
         public String samples;
 
