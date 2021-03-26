@@ -126,8 +126,8 @@ public class AnnotationIndexConverter {
         this.populations = new HashMap<>(schema.getConfiguration().getPopulationRanges().size());
         int i = 0;
         for (SampleIndexConfiguration.PopulationFrequencyRange population : schema.getConfiguration().getPopulationRanges()) {
-            if (this.populations.put(population.getStudyAndPopulation(), i++) != null) {
-                throw new IllegalArgumentException("Duplicated population '" + population.getStudyAndPopulation() + "' in " + populations);
+            if (this.populations.put(population.getKey(), i++) != null) {
+                throw new IllegalArgumentException("Duplicated population '" + population.getKey() + "' in " + populations);
             }
         }
     }

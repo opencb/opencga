@@ -999,7 +999,7 @@ public class SampleIndexQueryParser {
                 boolean populationFilterFullyCovered = false;
                 int popFreqIdx = 0;
                 for (PopulationFrequencyRange populationRange : schema.getConfiguration().getPopulationRanges()) {
-                    if (populationRange.getStudyAndPopulation().equals(studyPop)) {
+                    if (populationRange.getKey().equals(studyPop)) {
                         populationInSampleIndex = true;
                         RangeQuery rangeQuery = getRangeQuery(keyOpValue.getOp(), freqFilter, populationRange.getThresholds(),
                                 0, 1 + RangeIndexField.DELTA);

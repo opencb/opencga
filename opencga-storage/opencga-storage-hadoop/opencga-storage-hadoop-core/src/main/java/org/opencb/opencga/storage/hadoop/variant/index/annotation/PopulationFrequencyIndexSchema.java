@@ -30,7 +30,7 @@ public class PopulationFrequencyIndexSchema extends IndexSchema {
             }
             bitOffset += field.getBitLength();
             fields.add(field);
-            populations.put(configuration.getStudyAndPopulation(), field);
+            populations.put(configuration.getKey(), field);
         }
         updateIndexSizeBits();
     }

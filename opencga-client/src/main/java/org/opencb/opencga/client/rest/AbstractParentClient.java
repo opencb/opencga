@@ -104,6 +104,7 @@ public abstract class AbstractParentClient {
     }
 
     private Client newClient(ClientConfiguration configuration) {
+        ClientBuilder clientBuilder = ClientBuilder.newBuilder();
         if (configuration.getRest().isTlsAllowInvalidCertificates()) {
             logger.debug("Using custom SSLContext to allow invalid certificates");
             try {
@@ -136,16 +137,14 @@ public abstract class AbstractParentClient {
                         return this.hostname.equals(hostname);
                     }
                 };
-                return ClientBuilder.newBuilder()
+                clientBuilder
                         .sslContext(sc)
-                        .hostnameVerifier(verifier)
-                        .build();
+                        .hostnameVerifier(verifier);
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 throw new RuntimeException(e);
             }
-        } else {
-            return ClientBuilder.newClient();
         }
+        return clientBuilder.build();
     }
 
     protected AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {

@@ -147,10 +147,6 @@ public class SampleIndexConfiguration {
             return study;
         }
 
-        public String getStudyAndPopulation() {
-            return study + ":" + population;
-        }
-
         public PopulationFrequencyRange setStudy(String study) {
             this.study = study;
             return this;
@@ -205,7 +201,7 @@ public class SampleIndexConfiguration {
     public SampleIndexConfiguration addPopulationRange(SampleIndexConfiguration.PopulationFrequencyRange populationRange) {
         if (populationRanges.contains(populationRange)) {
             throw new IllegalArgumentException("Duplicated population '"
-                    + populationRange.getStudyAndPopulation() + "' in SampleIndexConfiguration");
+                    + populationRange.getKey() + "' in SampleIndexConfiguration");
         }
         this.populationRanges.add(populationRange);
         return this;
