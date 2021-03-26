@@ -23,6 +23,10 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
     private final int numBits;
     private final IndexCodec<T> codec;
 
+    public static CategoricalIndexField<String> create(IndexFieldConfiguration configuration, int bitOffset) {
+        return new CategoricalIndexField<>(configuration, bitOffset, configuration.getValues());
+    }
+
     public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values) {
         super(configuration, bitOffset);
         int numValues;
@@ -33,7 +37,7 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
             numValues = values.length;
             codec = new BasicCodec<>(values);
         }
-        this.numBits = IndexUtils.log2(numValues - 1) + 1;
+        this.numBits = Math.max(1, IndexUtils.log2(numValues - 1) + 1);
     }
 
     public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, int numValues, IndexCodec<T> codec) {

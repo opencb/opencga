@@ -23,16 +23,16 @@ public class RangeIndexField extends IndexField<Double> {
         this.thresholds = getConfiguration().getThresholds().clone();
         min = Double.MIN_VALUE;
         max = MAX;
-        int numValues;
+        // There is one range more than thresholds.
+        int numRanges = thresholds.length + 1;
         if (configuration.getNullable()) {
-            // Add one value for the NA
-            numValues = thresholds.length + 1;
+            // Add one range for the NA
+            numRanges++;
             codec = new NullableRangeCodec();
         } else {
-            numValues = thresholds.length;
             codec = new NonNullableRangeCodec();
         }
-        numBits = IndexUtils.log2(numValues) + 1;
+        numBits = Math.max(1, IndexUtils.log2(numRanges - 1) + 1);
         if (configuration.getType().equals(IndexFieldConfiguration.Type.RANGE_GT)) {
             // Add one DELTA to each value to invert ranges from [s, e) to (s, e], therefore the operation ">" is exact
             for (int i = 0; i < thresholds.length; i++) {
