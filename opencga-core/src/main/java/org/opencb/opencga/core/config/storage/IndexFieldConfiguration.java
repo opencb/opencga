@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.config.storage;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.beans.ConstructorProperties;
@@ -51,6 +52,7 @@ public class IndexFieldConfiguration {
         this.values = values;
     }
 
+    @JsonIgnore
     public String getId() {
         return getSource() + ":" + getKey();
     }
