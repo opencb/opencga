@@ -2,9 +2,12 @@ package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
+import org.opencb.opencga.storage.core.variant.query.executors.accumulators.Range;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
+
+import java.util.List;
 
 /**
  * Single value range index.
@@ -17,6 +20,7 @@ public class RangeIndexField extends IndexField<Double> {
     private final double max;
     private final int numBits;
     private final IndexCodec<Double> codec;
+    private int numRanges;
 
     public RangeIndexField(IndexFieldConfiguration configuration, int bitOffset) {
         super(configuration, bitOffset);
@@ -24,7 +28,7 @@ public class RangeIndexField extends IndexField<Double> {
         min = Double.MIN_VALUE;
         max = MAX;
         // There is one range more than thresholds.
-        int numRanges = thresholds.length + 1;
+        numRanges = thresholds.length + 1;
         if (configuration.getNullable()) {
             // Add one range for the NA
             numRanges++;
@@ -84,6 +88,10 @@ public class RangeIndexField extends IndexField<Double> {
     @Override
     public Double decode(int code) {
         return codec.decode(code);
+    }
+
+    public List<Range<Double>> getRanges() {
+        return Range.buildRanges(getConfiguration());
     }
 
     @Override

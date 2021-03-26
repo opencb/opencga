@@ -36,4 +36,12 @@ public class RangeIndexFieldTest {
         assertNotEquals(2.0, 2 + RangeIndexField.DELTA - RangeIndexField.DELTA, 0);
         assertEquals(2.0, 2 + RangeIndexField.DELTA - RangeIndexField.DELTA, RangeIndexField.DELTA);
     }
+
+    @Test
+    public void testGetRanges() {
+        System.out.println(new RangeIndexField(new IndexFieldConfiguration(SAMPLE, "K", new double[]{1, 2, 2, 3, 4}, IndexFieldConfiguration.Type.RANGE_GT).setNullable(false), 0).getRanges());
+        System.out.println(new RangeIndexField(new IndexFieldConfiguration(SAMPLE, "K", new double[]{1, 2, 2, 3, 4}, IndexFieldConfiguration.Type.RANGE_GT).setNullable(true), 0).getRanges());
+        System.out.println(new RangeIndexField(new IndexFieldConfiguration(SAMPLE, "K", new double[]{1, 2, 2, 3, 4}, IndexFieldConfiguration.Type.RANGE_LT).setNullable(false), 0).getRanges());
+        System.out.println(new RangeIndexField(new IndexFieldConfiguration(SAMPLE, "K", new double[]{1, 2, 2, 3, 4}, IndexFieldConfiguration.Type.RANGE_LT).setNullable(true), 0).getRanges());
+    }
 }

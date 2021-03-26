@@ -570,6 +570,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         testAggregation(executor, "qual", STUDY_NAME_3, "NA12877");
         testAggregation(executor, "dp", STUDY_NAME_3, "NA12877");
+        testAggregation(executor, "sample:DP", STUDY_NAME_3, "NA12877");
         testAggregation(executor, "qual>>type", STUDY_NAME_3, "NA12877");
         testAggregation(executor, "type>>qual", STUDY_NAME_3, "NA12877");
 

@@ -1,7 +1,11 @@
 package org.opencb.opencga.storage.core.variant.query.executors.accumulators;
 
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 public class Range<N extends Number & Comparable<N>> implements Comparable<Range<N>> {
     private final N start;
@@ -30,11 +34,13 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
         } else {
             sb.append(start);
         }
-        sb.append(", ");
-        if (end == null) {
-            sb.append("inf");
-        } else {
-            sb.append(end);
+        if (!Objects.equals(start, end)) {
+            sb.append(", ");
+            if (end == null) {
+                sb.append("inf");
+            } else {
+                sb.append(end);
+            }
         }
         if (endInclusive) {
             sb.append("]");
@@ -42,6 +48,40 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
             sb.append(")");
         }
         s = sb.toString();
+    }
+
+    public static List<Range<Double>> buildRanges(IndexFieldConfiguration index) {
+        return buildRanges(index, null, null);
+    }
+
+    public static List<Range<Double>> buildRanges(IndexFieldConfiguration index, Double min, Double max) {
+        List<Range<Double>> ranges = new LinkedList<>();
+        if (index.getNullable()) {
+            ranges.add(new Range.NA<>());
+        }
+        double[] thresholds = index.getThresholds();
+        boolean startInclusive = index.getType() == IndexFieldConfiguration.Type.RANGE_LT;
+        boolean endInclusive = index.getType() == IndexFieldConfiguration.Type.RANGE_GT;
+        ranges.add(new Range<>(min, false, thresholds[0], endInclusive));
+        for (int i = 1; i < thresholds.length; i++) {
+            ranges.add(new Range<>(thresholds[i - 1], startInclusive, thresholds[i], endInclusive));
+        }
+        ranges.add(new Range<>(thresholds[thresholds.length - 1], false, max, false));
+
+        // Check duplicated values
+        for (int i = index.getNullable() ? 2 : 1; i < ranges.size() - 1; i++) {
+            Range<Double> range = ranges.get(i);
+            if (range.start.equals(range.end)) {
+                Range<Double> pre = ranges.get(i - 1);
+                ranges.set(i - 1, new Range<>(pre.start, pre.startInclusive, pre.end, false));
+
+                ranges.set(i, new Range<>(range.start, true, range.end, true));
+
+                Range<Double> post = ranges.get(i + 1);
+                ranges.set(i + 1, new Range<>(post.start, false, post.end, post.endInclusive));
+            }
+        }
+        return ranges;
     }
 
     public static <N extends Number & Comparable<N>> List<Range<N>> buildRanges(List<N> thresholds, N start, N end) {
@@ -89,5 +129,31 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
     @Override
     public int compareTo(Range<N> o) {
         return start.compareTo(o.start);
+    }
+
+    public static class NA<N extends Number & Comparable<N>> extends Range<N> {
+
+        public NA() {
+            super(null, null);
+        }
+
+        @Override
+        public String toString() {
+            return "NA";
+        }
+
+        @Override
+        public boolean isBeforeEnd(N number) {
+            return number != null;
+        }
+
+        @Override
+        public int compareTo(Range<N> o) {
+            if (o instanceof Range.NA) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }
     }
 }

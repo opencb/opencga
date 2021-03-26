@@ -9,7 +9,6 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -30,7 +29,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndex
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser.CHROM_DENSITY;
@@ -39,6 +38,8 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
 
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private VariantStorageMetadataManager metadataManager;
+    private static final Pattern CATEGORICAL_PATTERN = Pattern.compile("^([a-zA-Z][a-zA-Z0-9_.:]+)(\\[[a-zA-Z0-9,*]+])?(:\\*|:\\d+)?$");
+
     public static final Set<String> VALID_FACETS = new HashSet<>(Arrays.asList(
             CHROM_DENSITY,
             "chromosome",
@@ -47,10 +48,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             "consequenceType", "ct",
             "biotype", "bt",
             "clinicalSignificance",
-            "depth", "dp", "coverage",
-            "qual",
             "mendelianError", "me",
-            "filter",
             "length",
             "titv"
     ));
@@ -64,12 +62,22 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     @Override
     protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet) throws Exception {
         if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
+            SampleIndexSchema schema = null;
             for (String fieldFacedMulti : facet.split(FACET_SEPARATOR)) {
                 for (String fieldFaced : fieldFacedMulti.split(NESTED_FACET_SEPARATOR)) {
                     String key = fieldFaced.split("\\[")[0];
                     // Must contain all keys
                     if (!VALID_FACETS.contains(key)) {
-                        return false;
+                        if (schema == null) {
+                            StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
+                            schema = sampleIndexDBAdaptor.getSchema(defaultStudy.getId());
+                        }
+                        if (key.equalsIgnoreCase("depth") || key.equalsIgnoreCase("coverage")) {
+                            key = "dp";
+                        }
+                        if (getIndexField(schema, key) == null) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -134,7 +142,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         // Reverse traverse
         for (int i = split.length - 1; i >= 0; i--) {
             String facetField = split[i];
-            Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facetField);
+            Matcher matcher = CATEGORICAL_PATTERN.matcher(facetField);
             if (!matcher.find()) {
                 throw new VariantQueryException("Malformed aggregation stats query: " + facetField);
             }
@@ -253,55 +261,47 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                             fieldKey);
                     break;
                 default:
-                    for (IndexField<String> fileDataIndexField : schema.getFileIndex().getCustomFields()) {
-                        if (fileDataIndexField.getKey().equalsIgnoreCase(fieldKey)) {
-                            switch (fileDataIndexField.getType()) {
-                                case RANGE_LT:
-                                case RANGE_GT:
-                                    double[] thresholds = fileDataIndexField.getConfiguration().getThresholds();
-                                    List<Range<Double>> ranges = Range.buildRanges(
-                                            Arrays.stream(thresholds)
-                                                    .boxed()
-                                                    .collect(Collectors.toList()), 0.0, null);
-                                    thisAccumulator = RangeAccumulator.fromIndex(t -> {
-                                        BitBuffer fileIndex = t.getFileIndex();
-                                        return fileDataIndexField.read(fileIndex);
-                                    }, fieldKey, ranges, null);
-                                    break;
-                                case CATEGORICAL:
-                                    thisAccumulator = new CategoricalAccumulator<>(
-                                            s -> {
-                                                BitBuffer fileIndex = s.getFileIndex();
-                                                String value = fileDataIndexField.readAndDecode(fileIndex);
-                                                if (value == null) {
-                                                    return Collections.singletonList("other");
-                                                } else {
-                                                    return Collections.singletonList(value);
-                                                }
-                                            },
-                                            fieldKey);
-                                    break;
-                                case CATEGORICAL_MULTI_VALUE:
-                                    thisAccumulator = new CategoricalAccumulator<>(
-                                            s -> {
-                                                BitBuffer fileIndex = s.getFileIndex();
-                                                String value = fileDataIndexField.readAndDecode(fileIndex);
-                                                if (value == null) {
-                                                    return Collections.singletonList("other");
-                                                } else {
-                                                    return Arrays.asList(value.split(","));
-                                                }
-                                            },
-                                            fieldKey);
-                                    break;
-                                default:
-                                    throw new IllegalStateException("Unknown index type " + fileDataIndexField.getType());
-                            }
-                            break;
-                        }
-                    }
-                    if (thisAccumulator == null) {
+                    IndexField<String> fileDataIndexField = getIndexField(schema, fieldKey);
+                    if (fileDataIndexField == null) {
                         throw new IllegalArgumentException("Unknown faced field '" + facetField + "'");
+                    }
+                    switch (fileDataIndexField.getType()) {
+                        case RANGE_LT:
+                        case RANGE_GT:
+                            List<Range<Double>> ranges = Range.buildRanges(fileDataIndexField.getConfiguration());
+                            thisAccumulator = RangeAccumulator.fromIndex(t -> {
+                                BitBuffer fileIndex = t.getFileIndex();
+                                return fileDataIndexField.read(fileIndex);
+                            }, fieldKey, ranges, null);
+                            break;
+                        case CATEGORICAL:
+                            thisAccumulator = new CategoricalAccumulator<>(
+                                    s -> {
+                                        BitBuffer fileIndex = s.getFileIndex();
+                                        String value = fileDataIndexField.readAndDecode(fileIndex);
+                                        if (value == null) {
+                                            return Collections.singletonList("other");
+                                        } else {
+                                            return Collections.singletonList(value);
+                                        }
+                                    },
+                                    fieldKey);
+                            break;
+                        case CATEGORICAL_MULTI_VALUE:
+                            thisAccumulator = new CategoricalAccumulator<>(
+                                    s -> {
+                                        BitBuffer fileIndex = s.getFileIndex();
+                                        String value = fileDataIndexField.readAndDecode(fileIndex);
+                                        if (value == null) {
+                                            return Collections.singletonList("other");
+                                        } else {
+                                            return Arrays.asList(value.split(","));
+                                        }
+                                    },
+                                    fieldKey);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unknown index type " + fileDataIndexField.getType());
                     }
             }
 
@@ -311,5 +311,19 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             accumulator = thisAccumulator;
         }
         return accumulator;
+    }
+
+    private IndexField<String> getIndexField(SampleIndexSchema schema, String fieldKey) {
+        for (IndexField<String> customField : schema.getFileIndex().getCustomFields()) {
+            if (customField.getId().equalsIgnoreCase(fieldKey)) {
+                return customField;
+            }
+        }
+        for (IndexField<String> customField : schema.getFileIndex().getCustomFields()) {
+            if (customField.getKey().equalsIgnoreCase(fieldKey)) {
+                return customField;
+            }
+        }
+        return null;
     }
 }
