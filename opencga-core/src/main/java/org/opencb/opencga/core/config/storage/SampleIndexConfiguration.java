@@ -27,9 +27,9 @@ public class SampleIndexConfiguration {
                         IndexFieldConfiguration.Type.CATEGORICAL,
                         VCFConstants.PASSES_FILTERS_v4))
                 .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS))
+                        IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
                 .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS));
+                        IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS).setNullable(false));
 
         sampleIndexConfiguration.getFileIndexConfiguration()
                 .setFilePositionBits(DEFAULT_FILE_POSITION_SIZE_BITS);
@@ -128,12 +128,14 @@ public class SampleIndexConfiguration {
             super(Source.ANNOTATION, studyPopulation, DEFAULT_THRESHOLDS);
             this.study = studyPopulation.split(":")[0];
             this.population = studyPopulation.split(":")[1];
+            setNullable(false);
         }
 
         public PopulationFrequencyRange(String study, String population) {
             super(Source.ANNOTATION, study + ":" + population, DEFAULT_THRESHOLDS);
             this.study = study;
             this.population = population;
+            setNullable(false);
         }
 
         @ConstructorProperties({"source", "key", "type"})

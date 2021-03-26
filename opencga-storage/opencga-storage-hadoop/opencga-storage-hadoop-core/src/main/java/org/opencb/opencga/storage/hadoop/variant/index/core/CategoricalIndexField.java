@@ -24,11 +24,16 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
     private final IndexCodec<T> codec;
 
     public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values) {
-        this(configuration, bitOffset, values, true);
-    }
-
-    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values, boolean useNa) {
-        this(configuration, bitOffset, values.length + (useNa ? 1 : 0), useNa ? new BasicCodecWithNa<>(values) : new BasicCodec<>(values));
+        super(configuration, bitOffset);
+        int numValues;
+        if (configuration.getNullable()) {
+            numValues = values.length + 1;
+            codec = new BasicCodecWithNa<>(values);
+        } else {
+            numValues = values.length;
+            codec = new BasicCodec<>(values);
+        }
+        this.numBits = IndexUtils.log2(numValues - 1) + 1;
     }
 
     public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, int numValues, IndexCodec<T> codec) {

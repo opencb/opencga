@@ -22,7 +22,9 @@ public class PopulationFrequencyIndexSchema extends IndexSchema {
             IndexField<Double> field;
             switch (configuration.getType()) {
                 case RANGE:
-                    field = new RangeIndexField(configuration, bitOffset, configuration.getThresholds());
+                case RANGE_LT:
+                case RANGE_GT:
+                    field = new RangeIndexField(configuration, bitOffset);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown index type '" + configuration.getType() + "'");

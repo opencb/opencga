@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.*;
@@ -323,7 +323,7 @@ public class AnnotationIndexConverter {
         IndexField<Double> field = this.popFreqIndex.getField(populationFrequency.getStudy(), populationFrequency.getPopulation());
         Integer idx = populations.get(populationFrequency.getStudy() + ":" + populationFrequency.getPopulation());
         if (idx != null) {
-            byte popFreqInterval = RangeIndexFieldFilter.getRangeCode(populationFrequency.getAltAlleleFreq(),
+            byte popFreqInterval = RangeIndexField.getRangeCode(populationFrequency.getAltAlleleFreq(),
                     field.getConfiguration().getThresholds());
 //            int byteIdx = (idx * POP_FREQ_SIZE) / Byte.SIZE;
 //            int bitIdx = (idx * POP_FREQ_SIZE) % Byte.SIZE;
