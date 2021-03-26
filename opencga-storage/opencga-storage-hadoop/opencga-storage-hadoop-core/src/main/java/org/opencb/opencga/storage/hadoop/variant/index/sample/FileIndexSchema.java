@@ -186,7 +186,6 @@ public class FileIndexSchema extends IndexSchema {
 
     private static IndexField<String> buildCustomIndexField(IndexFieldConfiguration conf, int bitOffset) {
         switch (conf.getType()) {
-            case RANGE:
             case RANGE_LT:
             case RANGE_GT:
                 return new RangeIndexField(conf, bitOffset).from(s -> {

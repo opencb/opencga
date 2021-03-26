@@ -256,7 +256,6 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     for (IndexField<String> fileDataIndexField : schema.getFileIndex().getCustomFields()) {
                         if (fileDataIndexField.getKey().equalsIgnoreCase(fieldKey)) {
                             switch (fileDataIndexField.getType()) {
-                                case RANGE:
                                 case RANGE_LT:
                                 case RANGE_GT:
                                     double[] thresholds = fileDataIndexField.getConfiguration().getThresholds();

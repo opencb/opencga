@@ -21,7 +21,6 @@ public class PopulationFrequencyIndexSchema extends IndexSchema {
         for (PopulationFrequencyRange configuration : populationRanges) {
             IndexField<Double> field;
             switch (configuration.getType()) {
-                case RANGE:
                 case RANGE_LT:
                 case RANGE_GT:
                     field = new RangeIndexField(configuration, bitOffset);

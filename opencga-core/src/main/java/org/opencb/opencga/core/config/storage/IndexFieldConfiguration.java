@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.config.storage;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.beans.ConstructorProperties;
@@ -109,7 +110,6 @@ public class IndexFieldConfiguration {
             throw new IllegalArgumentException("Missing field TYPE in index custom field " + source + ":" + key);
         }
         switch (type) {
-            case RANGE:
             case RANGE_LT:
             case RANGE_GT:
                 if (thresholds == null || thresholds.length == 0) {
@@ -144,12 +144,37 @@ public class IndexFieldConfiguration {
     }
 
     public enum Type {
-        @Deprecated
-        RANGE,
         RANGE_LT,
         RANGE_GT,
         CATEGORICAL,
         CATEGORICAL_MULTI_VALUE;
+
+        @JsonCreator
+        public static Type forValues(String value) {
+            if (value == null) {
+                return null;
+            }
+            switch (value.toUpperCase()) {
+                case "RANGE":
+                case "RANGE_LT":
+                case "RANGELT":
+                case "RANGE_GE":
+                case "RANGEGE":
+                    return RANGE_LT;
+                case "RANGE_GT":
+                case "RANGEGT":
+                case "RANGE_LE":
+                case "RANGELE":
+                    return RANGE_GT;
+                case "CATEGORICAL":
+                    return CATEGORICAL;
+                case "CATEGORICAL_MULTI_VALUE":
+                case "CATEGORICALMULTIVALUE":
+                    return CATEGORICAL_MULTI_VALUE;
+                default:
+                    throw new IllegalArgumentException("Unknown index field type " + value);
+            }
+        }
     }
 
     @Override
