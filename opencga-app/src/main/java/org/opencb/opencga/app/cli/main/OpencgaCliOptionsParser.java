@@ -320,8 +320,9 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsSubCommands.addCommand(VARIANT_ANNOTATION_DELETE, operationsCommandOptions.variantAnnotationDelete);
         operationsSubCommands.addCommand(VARIANT_SCORE_INDEX, operationsCommandOptions.variantScoreIndex);
         operationsSubCommands.addCommand(VARIANT_SCORE_DELETE, operationsCommandOptions.variantScoreDelete);
-        operationsSubCommands.addCommand(VARIANT_FAMILY_GENOTYPE_INDEX, operationsCommandOptions.variantFamilyIndex);
-        operationsSubCommands.addCommand(VARIANT_SAMPLE_GENOTYPE_INDEX, operationsCommandOptions.variantSampleIndex);
+        operationsSubCommands.addCommand(VARIANT_FAMILY_INDEX, operationsCommandOptions.variantFamilyIndex);
+        operationsSubCommands.addCommand(VARIANT_SAMPLE_INDEX, operationsCommandOptions.variantSampleIndex);
+        operationsSubCommands.addCommand(VARIANT_SAMPLE_INDEX_CONFIGURE, operationsCommandOptions.variantSampleIndexConfigure);
         operationsSubCommands.addCommand(VARIANT_AGGREGATE, operationsCommandOptions.variantAggregate);
         operationsSubCommands.addCommand(VARIANT_FAMILY_AGGREGATE, operationsCommandOptions.variantAggregateFamily);
         operationsSubCommands.addCommand(JULIE_RUN_COMMAND, operationsCommandOptions.julieRun);
