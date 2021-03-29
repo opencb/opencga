@@ -3,4 +3,5 @@ kind: ConfigMap
 metadata:
   name: {{ include "opencga.defaultConf.name" . }}
 data:
-  {{- (.Files.Glob "../../../../conf/**.yml").AsConfig | nindent 2 }}
+  {{- (.Files.Glob "conf/**.yml").AsConfig | nindent 2 }}
+  {{- (.Files.Glob "conf/**.xml").AsConfig | nindent 2 }}

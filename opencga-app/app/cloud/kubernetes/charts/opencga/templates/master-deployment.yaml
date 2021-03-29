@@ -32,6 +32,8 @@ spec:
         resources:
           {{- toYaml .Values.init.resources | nindent 12 }}
         env:
+        - name: "OVERWRITE_CONFIGURATION"
+          value: "{{ .Values.init.configuration.overwrite }}"
         - name:  "INIT_OPENCGA_PASS"
           valueFrom:
             secretKeyRef:
@@ -109,7 +111,7 @@ spec:
           - name : analysisconf
             mountPath: /opt/volume/analysis
           - name : sessions
-            mountPath: /opt/volume/sessions
+            mountPath: /opt/opencga/sessions
     {{- with .Values.init.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

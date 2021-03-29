@@ -191,6 +191,10 @@ init:
     repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
     pullPolicy: IfNotPresent
 
+  configuration:
+    # Overwrite configuration from image.
+    overwrite: false
+
   securityContext:
     readOnlyRootFilesystem: false
     runAsUser: 1001
