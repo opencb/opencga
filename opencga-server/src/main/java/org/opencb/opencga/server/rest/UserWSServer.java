@@ -36,6 +36,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
@@ -73,7 +74,7 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{user}/info")
+    @Path("/{users}/info")
     @ApiOperation(value = "Return the user information including its projects and studies", response = User.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
@@ -81,14 +82,10 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
     })
-    public Response getInfo(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-                            @ApiParam(value = "This parameter shows the last time the user information was modified. When "
-                                    + "the value passed corresponds with the user's last activity registered, an empty result will be "
-                                    + "returned meaning that the client already has the most up to date user information.", hidden = true)
-                            @QueryParam("lastModified") String lastModified) {
+    public Response getInfo(@ApiParam(value = ParamConstants.USERS_DESCRIPTION, required = true) @PathParam("users") String userIds) {
         try {
-            ParamUtils.checkIsSingleID(userId);
-            DataResult result = catalogManager.getUserManager().get(userId, queryOptions, token);
+            List<String> userList = getIdList(userIds);
+            OpenCGAResult<User> result = catalogManager.getUserManager().get(userList, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

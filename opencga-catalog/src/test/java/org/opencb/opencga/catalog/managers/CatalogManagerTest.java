@@ -25,10 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -109,12 +106,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testGetUserInfo() throws CatalogException {
         DataResult<User> user = catalogManager.getUserManager().get("user", new QueryOptions(), token);
         System.out.println("user = " + user);
-        try {
-            catalogManager.getUserManager().get("user", new QueryOptions(), sessionIdUser2);
-            fail();
-        } catch (CatalogException e) {
-            System.out.println(e);
-        }
+        OpenCGAResult<User> result = catalogManager.getUserManager().get("user2", new QueryOptions(), token);
+        assertEquals(Event.Type.ERROR, result.getEvents().get(0).getType());
+
+        catalogManager.getStudyManager().updateGroup(studyFqn, StudyManager.MEMBERS, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user2")), token);
+        result = catalogManager.getUserManager().get("user2", new QueryOptions(), token);
+        assertTrue(result.getEvents().isEmpty());
+        assertTrue(StringUtils.isNotEmpty(result.first().getEmail()));
     }
 
     @Test
