@@ -654,7 +654,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         other = new ArrayList<>();
 
         // Set general Variant attributes: id, dbSNP, chromosome, start, end, type
-        variantSearchModel.setId(variant.toString());       // Internal unique ID e.g.  3:1000:AT:-
+        variantSearchModel.setId(variant.toStringSimple());       // Internal unique ID e.g.  3:1000:AT:-
         variantSearchModel.setVariantId(variant.getId());
         variantSearchModel.setChromosome(variant.getChromosome());
         variantSearchModel.setStart(variant.getStart());

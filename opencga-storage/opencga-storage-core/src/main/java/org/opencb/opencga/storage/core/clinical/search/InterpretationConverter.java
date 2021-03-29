@@ -1,8 +1,11 @@
 package org.opencb.opencga.storage.core.clinical.search;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -10,12 +13,11 @@ import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
-import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.core.Xref;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
@@ -24,6 +26,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentParam;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
+import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +39,6 @@ import java.util.*;
 public class InterpretationConverter {
 
     private ObjectMapper mapper;
-    private ObjectReader mapReader;
-    private ObjectReader interpretationReader;
-    private ObjectReader clinicalAnalysisReader;
 
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
 
@@ -48,16 +48,15 @@ public class InterpretationConverter {
 
     public InterpretationConverter() {
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        this.mapper = new ObjectMapper();
-        this.mapReader = mapper.readerFor(HashMap.class);
-        this.interpretationReader = mapper.readerFor(Interpretation.class);
-        this.clinicalAnalysisReader = mapper.readerFor(ClinicalAnalysis.class);
+
+        this.mapper = JacksonUtils.getDefaultObjectMapper();
 
         this.logger = LoggerFactory.getLogger(InterpretationConverter.class);
     }
 
     public Interpretation toInterpretation(List<ClinicalVariantSearchModel> clinicalVariantSearchModels) throws ClinicalVariantException {
         Interpretation interpretation = null;
+        ObjectReader iReader = mapper.readerFor(Interpretation.class);
 
         if (CollectionUtils.isEmpty(clinicalVariantSearchModels)) {
             logger.warn("List of clinical variant search models is empty");
@@ -66,7 +65,7 @@ public class InterpretationConverter {
 
         try {
             // We take the first reportedVariantSearchModel to initialize Interpretation
-            interpretation = interpretationReader.readValue(clinicalVariantSearchModels.get(0).getIntJson());
+            interpretation = iReader.readValue(clinicalVariantSearchModels.get(0).getIntJson());
         } catch (IOException e) {
             throw new ClinicalVariantException("Unable to convert JSON string to Interpretation object.", e);
         }
@@ -105,8 +104,10 @@ public class InterpretationConverter {
         if (MapUtils.isNotEmpty(interpretation.getAttributes())
                 && interpretation.getAttributes().containsKey("OPENCGA_CLINICAL_ANALYSIS")) {
 
+            ObjectReader caReader = mapper.readerFor(ClinicalAnalysis.class);
+
             String caJson = (String) interpretation.getAttributes().get("OPENCGA_CLINICAL_ANALYSIS");
-            ClinicalAnalysis clinicalAnalysis = clinicalAnalysisReader.readValue(caJson);
+            ClinicalAnalysis clinicalAnalysis = caReader.readValue(caJson);
 
             base.setCaId(clinicalAnalysis.getId());
 
@@ -294,7 +295,13 @@ public class InterpretationConverter {
     }
 
     public ClinicalVariant toClinicalVariant(ClinicalVariantSearchModel cvsm) throws ClinicalVariantException {
-        ClinicalVariant clinicalVariant = (ClinicalVariant) variantSearchToVariantConverter.convertToDataModelType(cvsm);
+        Variant variant = variantSearchToVariantConverter.convertToDataModelType(cvsm);
+        ClinicalVariant clinicalVariant = null;
+        try {
+            clinicalVariant = mapper.readerFor(ClinicalVariant.class).readValue(variant.toJson());
+        } catch (JsonProcessingException e) {
+            throw new ClinicalVariantException("Error creating clinical variant from variant", e);
+        }
 
         //
         // Clinical variant fields
@@ -320,8 +327,7 @@ public class InterpretationConverter {
         if (StringUtils.isNotEmpty(cvsm.getCvClinicalVariantEvidencesJson())) {
             try {
                 // Just, convert the JSON into the clinical variant evidences
-                clinicalVariant.setEvidences(mapper.readValue(cvsm.getCvClinicalVariantEvidencesJson(),
-                        mapper.getTypeFactory().constructCollectionType(List.class, ClinicalVariantEvidence.class)));
+                clinicalVariant.setEvidences(mapper.readerFor(List.class).readValue(cvsm.getCvClinicalVariantEvidencesJson()));
             } catch (IOException e) {
                 throw new ClinicalVariantException("Error converting from JSON string to clinical variant evidences.", e);
             }
@@ -329,7 +335,7 @@ public class InterpretationConverter {
 
         if (StringUtils.isNotEmpty(cvsm.getCvAttributesJson())) {
             try {
-                clinicalVariant.setAttributes(mapReader.readValue(cvsm.getCvAttributesJson()));
+                clinicalVariant.setAttributes(mapper.readerFor(Map.class).readValue(cvsm.getCvAttributesJson()));
             } catch (IOException e) {
                 throw new ClinicalVariantException("Error converting from JSON string to clinical variant attributes.", e);
             }
@@ -348,11 +354,17 @@ public class InterpretationConverter {
         List<ClinicalVariantSearchModel> clinicalVariantSearchList = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(clinicalVariants)) {
+            ObjectWriter vsmWriter = mapper.writerFor(VariantSearchModel.class);
+            ObjectReader cvsmReader = mapper.readerFor(ClinicalVariantSearchModel.class);
+            ObjectWriter listWriter = mapper.writerFor(List.class);
+            ObjectWriter mapWriter = mapper.writerFor(Map.class);
+
             for (ClinicalVariant clinicalVariant : clinicalVariants) {
 
-                // Set variant fields
-                ClinicalVariantSearchModel cvsm = (ClinicalVariantSearchModel) variantSearchToVariantConverter
-                        .convertToStorageType(clinicalVariant);
+                // Set variant search fields
+                VariantSearchModel vsm = variantSearchToVariantConverter.convertToStorageType(clinicalVariant);
+                String vsmJson = vsmWriter.writeValueAsString(vsm);
+                ClinicalVariantSearchModel cvsm = cvsmReader.readValue(vsmJson);
 
                 // Set base fields: clinical analysis, interpretation and catalog fields
                 updateClinicalVariantSearch(cvsm, base);
@@ -372,11 +384,11 @@ public class InterpretationConverter {
                 }
                 cvsm.setCvDiscussion(clinicalVariant.getDiscussion());
                 if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
-                    // Reported event list as a JSON string
-                    cvsm.setCvClinicalVariantEvidencesJson(mapper.writeValueAsString(clinicalVariant.getEvidences()));
+                    // Clinical variant evidences list as a JSON string
+                    cvsm.setCvClinicalVariantEvidencesJson(listWriter.writeValueAsString(clinicalVariant.getEvidences()));
                 }
                 if (MapUtils.isNotEmpty(clinicalVariant.getAttributes())) {
-                    cvsm.setCvAttributesJson(mapper.writeValueAsString(clinicalVariant.getAttributes()));
+                    cvsm.setCvAttributesJson(mapWriter.writeValueAsString(clinicalVariant.getAttributes()));
                 }
 
                 // Set clinical variant evidence fields
@@ -658,20 +670,6 @@ public class InterpretationConverter {
             cvsm.getCveJustification().putAll(justification);
         }
     }
-
-//    private void setInterpretationJson(Interpretation interpretation, List<ClinicalVariantSearchModel> clinicalVariantSearchModels) {
-//        try {
-//            // Set to null the reported variants (primary and secondary findings) in order to avoid save them into the json
-//            interpretation.setPrimaryFindings(null);
-//            interpretation.setSecondaryFindings(null);
-//            String intJson = mapper.writeValueAsString(interpretation);
-//            for (ClinicalVariantSearchModel rvsm: clinicalVariantSearchModels) {
-//                rvsm.setIntJson(intJson);
-//            }
-//        } catch (JsonProcessingException e) {
-//            logger.error("Error converting from intrepretation to JSON string", e.getMessage());
-//        }
-//    }
 
     private List<String> getClinicalAnalysisInfo(ClinicalAnalysis ca) {
         StringBuilder line;
