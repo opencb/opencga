@@ -83,7 +83,7 @@ rest:
     # fsGroup: 2000
 
   securityContext:
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     runAsUser: 1001
     # capabilities:
     #   drop:
@@ -157,7 +157,7 @@ master:
     # fsGroup: 2000
 
   securityContext:
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     runAsUser: 1001
     # capabilities:
     #   drop:
@@ -192,7 +192,7 @@ init:
     pullPolicy: IfNotPresent
 
   securityContext:
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     runAsUser: 1001
     # capabilities:
     #   drop:
