@@ -94,6 +94,22 @@ public class ParamConstants {
     public static final String MEMBERS_GROUP = "@members";
     public static final String ADMINS_GROUP = "@admins";
 
+    // -------------------- AUDIT -------------------------
+    public static final String OPERATION_ID = "operationId";
+    public static final String OPERATION_ID_DESCRIPTION = "Audit operation UUID";
+    public static final String USER_ID = "userId";
+    public static final String ACTION = "action";
+    public static final String ACTION_DESCRIPTION = "Action performed by the user";
+    public static final String RESOURCE = "resource";
+    public static final String RESOURCE_DESCRIPTION = "Resource involved";
+    public static final String RESOURCE_ID = "resourceId";
+    public static final String RESOURCE_ID_DESCRIPTION = "Resource ID";
+    public static final String RESOURCE_UUID = "resourceUuid";
+    public static final String RESOURCE_UUID_DESCRIPTION = "resource UUID";
+    public static final String STATUS = "status";
+    public static final String DATE = "date";
+    public static final String DATE_DESCRIPTION = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+
     // ---------------------------------------------
 
     public static final String USER = "user";
