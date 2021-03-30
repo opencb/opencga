@@ -279,7 +279,7 @@ public class InterpretationConverter {
 
         // Save primary and secondary findings
         List<ClinicalVariant> primaryFindings = new ArrayList<>(interpretation.getPrimaryFindings());
-        List<ClinicalVariant> secondaryFindings = new ArrayList<>(interpretation.getPrimaryFindings());
+        List<ClinicalVariant> secondaryFindings = new ArrayList<>(interpretation.getSecondaryFindings());
 
         // and now overwrite findings to save interpretation JSON without them
         interpretation.setPrimaryFindings(new ArrayList<>());
@@ -676,14 +676,14 @@ public class InterpretationConverter {
         StringBuilder line;
         List<String> info = new ArrayList<>();
 
-        // Interpretation description
+        // Clinical analysis description
         if (StringUtils.isNotEmpty(ca.getDescription())) {
             line = new StringBuilder(ClinicalVariantUtils.DESCRIPTION_PREFIX).append(ClinicalVariantUtils.FIELD_SEPARATOR)
                     .append(ca.getDescription());
             info.add(line.toString());
         }
 
-        // Interpretation comments
+        // Clinical analysis comments
         if (CollectionUtils.isNotEmpty(ca.getComments())) {
             for (ClinicalComment comment: ca.getComments()) {
                 info.add(encodeComment(comment, ClinicalVariantUtils.COMMENT_PREFIX));
@@ -741,8 +741,10 @@ public class InterpretationConverter {
         // Interpretation attributes
         if (MapUtils.isNotEmpty(interpretation.getAttributes())) {
             for (String key: interpretation.getAttributes().keySet()) {
-                info.add(ClinicalVariantUtils.ATTRIBUTE_PREFIX + ClinicalVariantUtils.FIELD_SEPARATOR + key + KEY_VALUE_SEPARATOR
-                        + interpretation.getAttributes().get(key));
+                if (!key.equals("OPENCGA_CLINICAL_ANALYSIS")) {
+                    info.add(ClinicalVariantUtils.ATTRIBUTE_PREFIX + ClinicalVariantUtils.FIELD_SEPARATOR + key + KEY_VALUE_SEPARATOR
+                            + interpretation.getAttributes().get(key));
+                }
             }
         }
 

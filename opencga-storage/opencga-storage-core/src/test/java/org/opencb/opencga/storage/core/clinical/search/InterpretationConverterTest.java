@@ -4,67 +4,48 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 public class InterpretationConverterTest {
 
-    ObjectMapper mapper = new ObjectMapper();
-
     @Test
-    public void convert() throws IOException, ClinicalVariantException {
+    public void convert() throws IOException, ClinicalVariantException, URISyntaxException {
         ClinicalAnalysis ca = readClinicalAnalysys();
 
         Interpretation interpretation = ca.getInterpretation();
-
+        ca.setInterpretation(null);
+        String caJson = JacksonUtils.getDefaultObjectMapper().writerFor(ClinicalAnalysis.class).writeValueAsString(ca);
+        interpretation.getAttributes().put("OPENCGA_CLINICAL_ANALYSIS", caJson);
 
         InterpretationConverter converter = new InterpretationConverter();
         List<ClinicalVariantSearchModel> clinicalVariantSearchList = converter.toClinicalVariantSearchList(interpretation);
 
-//        int i = 0;
-//        for (ClinicalVariantSearchModel cvsm : clinicalVariantSearchList) {
-//            System.out.println(">>>>>>>>>>>>>>>>>>>>> " + (i++));
-//            System.out.println(">>>>>>>>>>>>>>>>>>>>> JUSTIFICATION");
-//            for (Map.Entry<String, List<String>> entry : cvsm.getCveJustification().entrySet()) {
-//                System.out.println("key = " + entry.getKey());
-//                if (CollectionUtils.isNotEmpty(entry.getValue())) {
-//                    for (String value : entry.getValue()) {
-//                        if (StringUtils.isNotEmpty(value)) {
-//                            System.out.println("\t" + value);
-//                        }
-//                    }
-//                }
-//            }
-//            System.out.println(">>>>>>>>>>>>>>>>>>>>> AUX");
-//            if (CollectionUtils.isNotEmpty(cvsm.getCveAux())) {
-//                for (String aux : cvsm.getCveAux()) {
-//                    System.out.println(aux);
-//                }
-//            }
-//        }
-
-
         Interpretation interpretation1 = converter.toInterpretation(clinicalVariantSearchList);
 
-        System.out.println(interpretation);
-        System.out.println("=====================================================");
-        System.out.println(interpretation1);
+        // Check
+        interpretation = readClinicalAnalysys().getInterpretation();
+        assert(interpretation.getPrimaryFindings().size() == interpretation1.getPrimaryFindings().size());
+        assert(interpretation.getSecondaryFindings().size() == interpretation1.getSecondaryFindings().size());
+        assert(interpretation.getPrimaryFindings().size() + interpretation.getSecondaryFindings().size() == clinicalVariantSearchList.size());
+
     }
 
-    private ClinicalAnalysis readClinicalAnalysys() throws IOException {
-        String inputPath = getClass().getResource("/clinical.analysis.json").toString();
+    private ClinicalAnalysis readClinicalAnalysys() throws IOException, URISyntaxException {
+        String inputPath = getClass().getResource("/clinical.analysis.json").toURI().getPath();
+
         File file = new File(inputPath);
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         ClinicalAnalysis ca = mapper.readerFor(ClinicalAnalysis.class).readValue(file);
-
-        System.out.println(ca.getId());
 
         return ca;
     }
