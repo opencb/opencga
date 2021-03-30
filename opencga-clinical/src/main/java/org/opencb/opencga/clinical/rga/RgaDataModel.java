@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import org.apache.solr.client.solrj.beans.Field;
 

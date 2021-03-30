@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
@@ -14,7 +14,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
-import org.opencb.opencga.storage.core.exceptions.RgaException;
+import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

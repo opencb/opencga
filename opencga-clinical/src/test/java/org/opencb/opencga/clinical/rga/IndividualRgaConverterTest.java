@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Before;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.storage.core.rga.RgaUtilsTest.createKnockoutByIndividual;
+import static org.opencb.opencga.clinical.rga.RgaUtilsTest.createKnockoutByIndividual;
 
 public class IndividualRgaConverterTest {
 

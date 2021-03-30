@@ -27,12 +27,9 @@ import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.exceptions.RgaException;
+import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
-import org.opencb.opencga.storage.core.rga.RgaDataModel;
-import org.opencb.opencga.storage.core.rga.RgaEngine;
-import org.opencb.opencga.storage.core.rga.RgaQueryParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

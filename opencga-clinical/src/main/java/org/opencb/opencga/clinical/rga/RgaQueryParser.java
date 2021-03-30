@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -6,7 +6,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
-import org.opencb.opencga.storage.core.exceptions.RgaException;
+import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant.KnockoutType.*;
-import static org.opencb.opencga.storage.core.rga.RgaQueryParams.*;
+import static org.opencb.opencga.clinical.rga.RgaQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.printQuery;
 
 public class RgaQueryParser {
