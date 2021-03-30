@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -27,7 +28,6 @@ import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.slf4j.Logger;
@@ -484,6 +484,50 @@ public class RgaManager implements AutoCloseable {
         return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, totalSamples, 0, updatedSamples, 0);
     }
 
+
+    public OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, List<String> sampleIds, RgaIndex.Status status,
+                                                                 String token) throws CatalogException, RgaException {
+        Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+        String userId = catalogManager.getUserManager().getUserId(token);
+        String collection = getCollectionName(study.getFqn());
+
+        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId);
+
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
+        }
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
+        int updatedSamples = 0;
+
+        // Update samples in batches of 100
+        List<String> tmpSampleIds = new ArrayList<>(100);
+
+        RgaIndex rgaIndex = new RgaIndex(status, TimeUtils.getTime());
+        for (String sampleId : sampleIds) {
+            tmpSampleIds.add(sampleId);
+            if (tmpSampleIds.size() == 100) {
+                OpenCGAResult<Sample> update = catalogManager.getSampleManager().updateRgaIndexes(study.getFqn(), tmpSampleIds, rgaIndex,
+                        token);
+                updatedSamples += update.getNumUpdated();
+
+                tmpSampleIds = new ArrayList<>(100);
+            }
+        }
+
+        if (!tmpSampleIds.isEmpty()) {
+            // Update last batch
+            OpenCGAResult<Sample> update = catalogManager.getSampleManager().updateRgaIndexes(study.getFqn(), tmpSampleIds, rgaIndex,
+                    token);
+            updatedSamples += update.getNumUpdated();
+        }
+
+        stopWatch.stop();
+        return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, sampleIds.size(), 0, updatedSamples, 0);
+    }
+
     public OpenCGAResult<FacetField> aggregationStats(String studyStr, Query query, QueryOptions options, String fields, String token)
             throws CatalogException, IOException, RgaException {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
@@ -567,6 +611,17 @@ public class RgaManager implements AutoCloseable {
                         if (count % KNOCKOUT_INSERT_BATCH_SIZE == 0) {
                             rgaEngine.insert(collection, knockoutByIndividualList);
                             logger.debug("Loaded {} knockoutByIndividual entries from '{}'", count, path);
+
+                            // Update RGA Index status
+                            try {
+                                updateRgaInternalIndexStatus(study, knockoutByIndividualList.stream()
+                                                .map(KnockoutByIndividual::getSampleId).collect(Collectors.toList()),
+                                        RgaIndex.Status.INDEXED, token);
+                                logger.debug("Updated sample RGA index statuses");
+                            } catch (CatalogException e) {
+                                logger.warn("Sample RGA index status could not be updated: {}", e.getMessage(), e);
+                            }
+
                             knockoutByIndividualList.clear();
                         }
                     }
@@ -575,6 +630,17 @@ public class RgaManager implements AutoCloseable {
                     if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
                         rgaEngine.insert(collection, knockoutByIndividualList);
                         logger.debug("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
+
+                        // Update RGA Index status
+                        try {
+                            updateRgaInternalIndexStatus(study, knockoutByIndividualList.stream()
+                                            .map(KnockoutByIndividual::getSampleId).collect(Collectors.toList()),
+                                    RgaIndex.Status.INDEXED, token);
+                            logger.debug("Updated sample RGA index statuses");
+                        } catch (CatalogException e) {
+                            logger.warn("Sample RGA index status could not be updated: {}", e.getMessage(), e);
+                        }
+
                     }
                 }
             } catch (SolrServerException e) {
