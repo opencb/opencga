@@ -14,7 +14,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.clinical.StorageManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -34,6 +33,8 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.rga.RgaDataModel;
 import org.opencb.opencga.storage.core.rga.RgaEngine;
 import org.opencb.opencga.storage.core.rga.RgaQueryParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,25 +47,35 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 
-public class RgaManager extends StorageManager implements AutoCloseable {
+public class RgaManager implements AutoCloseable {
 
+    private CatalogManager catalogManager;
+    private StorageConfiguration storageConfiguration;
     private final RgaEngine rgaEngine;
+
+    private final Logger logger;
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
 
     public RgaManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
-        super(catalogManager, storageEngineFactory);
-        this.rgaEngine = new RgaEngine(getStorageConfiguration());
+        this.catalogManager = catalogManager;
+        this.storageConfiguration = storageEngineFactory.getStorageConfiguration();
+        this.rgaEngine = new RgaEngine(storageConfiguration);
+        this.logger = LoggerFactory.getLogger(getClass());
     }
 
     public RgaManager(Configuration configuration, StorageConfiguration storageConfiguration) throws CatalogException {
-        super(configuration, storageConfiguration);
+        this.catalogManager = new CatalogManager(configuration);
+        this.storageConfiguration = storageConfiguration;
         this.rgaEngine = new RgaEngine(storageConfiguration);
+        this.logger = LoggerFactory.getLogger(getClass());
     }
 
     public RgaManager(Configuration configuration, StorageConfiguration storageConfiguration, RgaEngine rgaEngine) throws CatalogException {
-        super(configuration, storageConfiguration);
+        this.catalogManager = new CatalogManager(configuration);
+        this.storageConfiguration = storageConfiguration;
         this.rgaEngine = rgaEngine;
+        this.logger = LoggerFactory.getLogger(getClass());
     }
 
     public OpenCGAResult<KnockoutByIndividual> individualQuery(String studyStr, Query query, QueryOptions options, String token)
@@ -577,7 +588,6 @@ public class RgaManager extends StorageManager implements AutoCloseable {
         }
     }
 
-    @Override
     public void testConnection() throws StorageEngineException {
         rgaEngine.isAlive("test");
     }
