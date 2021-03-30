@@ -27,10 +27,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -219,6 +216,33 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     private String getAdminToken() throws CatalogException, IOException {
         return catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+    }
+
+    @Test
+    public void getGroupsTest() throws CatalogException {
+        Group group = new Group("groupId", Arrays.asList("user2", "user3")).setSyncedFrom(new Group.Sync("ldap", "bio"));
+        catalogManager.getStudyManager().createGroup(studyFqn, group, token);
+
+        OpenCGAResult<CustomGroup> customGroups = catalogManager.getStudyManager().getCustomGroups(studyFqn, null, token);
+        assertEquals(3, customGroups.getNumResults());
+
+        for (CustomGroup customGroup : customGroups.getResults()) {
+            if (!customGroup.getUsers().isEmpty()) {
+                assertTrue(StringUtils.isNotEmpty(customGroup.getUsers().get(0).getName()));
+            }
+        }
+
+        customGroups = catalogManager.getStudyManager().getCustomGroups(studyFqn, group.getId(), token);
+        assertEquals(1, customGroups.getNumResults());
+        assertEquals(group.getId(), customGroups.first().getId());
+        assertEquals(2, customGroups.first().getUsers().size());
+        assertTrue(StringUtils.isNotEmpty(customGroups.first().getUsers().get(0).getName()));
+        assertNull(customGroups.first().getUsers().get(0).getProjects());
+        assertNull(customGroups.first().getUsers().get(0).getSharedProjects());
+
+        thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("Only owners");
+        catalogManager.getStudyManager().getCustomGroups(studyFqn, group.getId(), sessionIdUser2);
     }
 
     @Ignore

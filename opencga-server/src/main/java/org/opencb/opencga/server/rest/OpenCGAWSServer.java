@@ -664,7 +664,7 @@ public class OpenCGAWSServer {
     }
 
     private static void setFederationServer(OpenCGAResult result, UriInfo uriInfo) {
-        result.setNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
+        result.setFederationNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
                 GitRepositoryState.get().getBuildVersion()));
     }
 

@@ -229,11 +229,11 @@ public class OpenCGAResult<T> extends DataResult<T> {
         return this;
     }
     
-    public FederationNode getNode() {
+    public FederationNode getFederationNode() {
         return node;
     }
 
-    public OpenCGAResult<T> setNode(FederationNode node) {
+    public OpenCGAResult<T> setFederationNode(FederationNode node) {
         this.node = node;
         return this;
     }

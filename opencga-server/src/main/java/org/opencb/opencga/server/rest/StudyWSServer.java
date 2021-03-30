@@ -175,18 +175,13 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups")
-    @ApiOperation(value = "Return the groups present in the study", response = Group.class)
+    @ApiOperation(value = "Return the groups present in the study. For owners and administrators only.", response = CustomGroup.class)
     public Response getGroups(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true)
-                @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
-            @ApiParam(value = "[DEPRECATED] Replaced by id.") @QueryParam("name") String groupName,
             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
-            if (StringUtils.isNotEmpty(groupName)) {
-                groupId = groupName;
-            }
-            return createOkResponse(catalogManager.getStudyManager().getGroup(studyStr, groupId, token));
+            return createOkResponse(catalogManager.getStudyManager().getCustomGroups(studyStr, groupId, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
