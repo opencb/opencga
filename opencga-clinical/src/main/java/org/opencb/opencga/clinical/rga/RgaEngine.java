@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -17,7 +17,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.RgaException;
+import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

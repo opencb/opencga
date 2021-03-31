@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;

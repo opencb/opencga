@@ -68,6 +68,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
         OWNER("owner", TEXT, ""),
 
+        STUDIES("studies", TEXT_ARRAY, ""),
         STUDY("study", TEXT, ""), // For the project/search ws
         STUDY_UID("study.uid", INTEGER_ARRAY, ""),
         STUDY_ID("study.alias", TEXT_ARRAY, ""),

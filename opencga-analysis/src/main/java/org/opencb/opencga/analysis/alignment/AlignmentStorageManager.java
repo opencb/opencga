@@ -156,6 +156,12 @@ public class AlignmentStorageManager extends StorageManager {
         ObjectMap params = new ObjectMap();
         params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
 
+        // Filter flag:
+        //   - not primary alignment (0x100)
+        //   - read fails platform/vendor quality checks (0x200)
+        //   - supplementary alignment (0x800)
+        params.put("F", "0xB00");
+
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 

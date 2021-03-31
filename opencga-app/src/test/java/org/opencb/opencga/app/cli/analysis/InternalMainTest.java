@@ -393,9 +393,9 @@ public class InternalMainTest {
 
         // stats run
         execute("alignment", "stats-run",
-                "--session-id", sessionId,
+                "--token", sessionId,
                 "--study", studyId,
-                "--input-file", bamFile.getName(),
+                "--file", bamFile.getName(),
                 "-o", temporalDir);
 
         assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));

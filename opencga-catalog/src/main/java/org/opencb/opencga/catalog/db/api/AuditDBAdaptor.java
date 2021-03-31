@@ -37,12 +37,17 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface AuditDBAdaptor {
 
     enum QueryParams implements QueryParam {
-        RESOURCE("resource", TEXT, ""),
-        ACTION("action", TEXT, ""),
-        BEFORE("before", TEXT_ARRAY, ""),
-        AFTER("after", TEXT_ARRAY, ""),
+        OPERATION_ID("operationId", TEXT, ""),
         USER_ID("userId", TEXT, ""),
-        DATE("date", TIMESTAMP, "");
+        ACTION("action", TEXT, ""),
+        RESOURCE("resource", TEXT, ""),
+        RESOURCE_ID("resourceId", TEXT, ""),
+        RESOURCE_UUID("resourceUuid", TEXT, ""),
+        STUDY_ID("studyId", TEXT, ""),
+        STUDY_UUID("studyUuid", TEXT, ""),
+        STATUS("status", OBJECT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
+        DATE("date", Type.DATE, "");
 
         private static Map<String, QueryParams> map;
         static {

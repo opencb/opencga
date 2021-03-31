@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.rga.RgaUtilsTest.createKnockoutByIndividual;
+import static org.opencb.opencga.clinical.rga.RgaUtilsTest.createKnockoutByIndividual;
 
 public class RgaEngineTest {
 

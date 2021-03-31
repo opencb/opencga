@@ -1,7 +1,7 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
-import org.opencb.opencga.storage.core.exceptions.RgaException;
+import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.storage.core.rga.RgaDataModel.*;
+import static org.opencb.opencga.clinical.rga.RgaDataModel.*;
 
 class RgaUtils {
 
