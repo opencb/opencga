@@ -141,77 +141,77 @@ public final class ClinicalVariantQueryParam implements QueryParam {
     public static final ClinicalVariantQueryParam INT_CREATION_DATE = new ClinicalVariantQueryParam("intCreationDate", STRING,
             INT_CREATION_DATE_DESCR);
 
-    // ---------- Reported variant (aka RV)
+    // ---------- Clinical variant (aka CV)
 
-    public static final String RV_DE_NOVO_QUALITY_SCORE_DESCR = "List of reported variant de novo quality scores";
-    public static final ClinicalVariantQueryParam RV_DE_NOVO_QUALITY_SCORE = new ClinicalVariantQueryParam("rvDeNovoQualityScore",
-            TEXT_ARRAY, RV_DE_NOVO_QUALITY_SCORE_DESCR);
+    public static final String CV_DE_NOVO_QUALITY_SCORE_DESCR = "List of clinical variant de novo quality scores";
+    public static final ClinicalVariantQueryParam CV_DE_NOVO_QUALITY_SCORE = new ClinicalVariantQueryParam("cvDeNovoQualityScore",
+            TEXT_ARRAY, CV_DE_NOVO_QUALITY_SCORE_DESCR);
 
-    public static final String RV_COMMENTS_DESCR = "List of reported variant comments";
-    public static final ClinicalVariantQueryParam RV_COMMENTS = new ClinicalVariantQueryParam("rvComments", TEXT_ARRAY,
-            RV_COMMENTS_DESCR);
+    public static final String CV_COMMENTS_DESCR = "List of clinical variant comments";
+    public static final ClinicalVariantQueryParam CV_COMMENTS = new ClinicalVariantQueryParam("cvComments", TEXT_ARRAY,
+            CV_COMMENTS_DESCR);
 
-    // ---------- Reported event (aka RE)
+    // ---------- Clinical variant evidence (aka CVE)
 
-    public static final String RE_PHENOTYPE_NAMES_DESCR = "List of reported event phenotype names";
-    public static final ClinicalVariantQueryParam RE_PHENOTYPE_NAMES = new ClinicalVariantQueryParam("rePhenotypeNames", TEXT_ARRAY,
-            RE_PHENOTYPE_NAMES_DESCR);
+    public static final String CVE_PHENOTYPE_NAMES_DESCR = "List of clinical variant evidence phenotype names";
+    public static final ClinicalVariantQueryParam CVE_PHENOTYPE_NAMES = new ClinicalVariantQueryParam("cvePhenotypeNames", TEXT_ARRAY,
+            CVE_PHENOTYPE_NAMES_DESCR);
 
-    public static final String RE_CONSEQUENCE_TYPE_IDS_DESCR = "List of reported event consequence type IDs";
-    public static final ClinicalVariantQueryParam RE_CONSEQUENCE_TYPE_IDS = new ClinicalVariantQueryParam("reConsequenceTypeIds",
-            TEXT_ARRAY, RE_CONSEQUENCE_TYPE_IDS_DESCR);
+    public static final String CVE_CONSEQUENCE_TYPE_IDS_DESCR = "List of clinical variant evidence consequence type IDs";
+    public static final ClinicalVariantQueryParam CVE_CONSEQUENCE_TYPE_IDS = new ClinicalVariantQueryParam("cveConsequenceTypeIds",
+            TEXT_ARRAY, CVE_CONSEQUENCE_TYPE_IDS_DESCR);
 
-    public static final String RE_GENE_NAMES_DESCR = "List of reported event gene names";
-    public static final ClinicalVariantQueryParam RE_GENE_NAMES = new ClinicalVariantQueryParam("reGeneNames", TEXT_ARRAY,
-            RE_GENE_NAMES_DESCR);
+    public static final String CVE_GENE_NAMES_DESCR = "List of clinical variant evidence gene names";
+    public static final ClinicalVariantQueryParam CVE_GENE_NAMES = new ClinicalVariantQueryParam("cveGeneNames", TEXT_ARRAY,
+            CVE_GENE_NAMES_DESCR);
 
-    public static final String RE_XREFS_DESCR = "List of reported event phenotype xRefs";
-    public static final ClinicalVariantQueryParam RE_XREFS = new ClinicalVariantQueryParam("reXrefs", TEXT_ARRAY, RE_XREFS_DESCR);
+    public static final String CVE_XREFS_DESCR = "List of clinical variant evidence phenotype xRefs";
+    public static final ClinicalVariantQueryParam CVE_XREFS = new ClinicalVariantQueryParam("cveXrefs", TEXT_ARRAY, CVE_XREFS_DESCR);
 
-    public static final String RE_PANEL_IDS_DESCR = "List of reported event panel IDs";
-    public static final ClinicalVariantQueryParam RE_PANEL_IDS = new ClinicalVariantQueryParam("rePanelNames", TEXT_ARRAY,
-            RE_PANEL_IDS_DESCR);
+    public static final String CVE_PANEL_IDS_DESCR = "List of clinical variant evidence panel IDs";
+    public static final ClinicalVariantQueryParam CVE_PANEL_IDS = new ClinicalVariantQueryParam("cvePanelNames", TEXT_ARRAY,
+            CVE_PANEL_IDS_DESCR);
 
-    public static final String RE_ACMG_DESCR = "List of reported event ACMG";
-    public static final ClinicalVariantQueryParam RE_ACMG = new ClinicalVariantQueryParam("reAcmg", TEXT_ARRAY, RE_ACMG_DESCR);
+    public static final String CVE_ACMG_DESCR = "List of clinical variant evidence ACMG";
+    public static final ClinicalVariantQueryParam CVE_ACMG = new ClinicalVariantQueryParam("cveAcmg", TEXT_ARRAY, CVE_ACMG_DESCR);
 
-    public static final String RE_CLINICAL_SIGNIFICANCE_DESCR = "List of reported event search significance";
-    public static final ClinicalVariantQueryParam RE_CLINICAL_SIGNIFICANCE = new ClinicalVariantQueryParam("reClinicalSignificance",
-            TEXT_ARRAY, RE_CLINICAL_SIGNIFICANCE_DESCR);
+    public static final String CVE_CLINICAL_SIGNIFICANCE_DESCR = "List of clinical variant evidence clinical significance";
+    public static final ClinicalVariantQueryParam CVE_CLINICAL_SIGNIFICANCE = new ClinicalVariantQueryParam("cveClinicalSignificance",
+            TEXT_ARRAY, CVE_CLINICAL_SIGNIFICANCE_DESCR);
 
-    public static final String RE_DRUG_RESPONSE_DESCR = "List of reported event drug response";
-    public static final ClinicalVariantQueryParam RE_DRUG_RESPONSE = new ClinicalVariantQueryParam("reDrugResponse", TEXT_ARRAY,
-            RE_DRUG_RESPONSE_DESCR);
+    public static final String CVE_DRUG_RESPONSE_DESCR = "List of clinical variant evidence drug response";
+    public static final ClinicalVariantQueryParam CVE_DRUG_RESPONSE = new ClinicalVariantQueryParam("cveDrugResponse", TEXT_ARRAY,
+            CVE_DRUG_RESPONSE_DESCR);
 
-    public static final String RE_TRAIT_ASSOCIATION_DESCR = "List of reported event trait association";
-    public static final ClinicalVariantQueryParam RE_TRAIT_ASSOCIATION = new ClinicalVariantQueryParam("reTraitAssociation", TEXT_ARRAY,
-            RE_TRAIT_ASSOCIATION_DESCR);
+    public static final String CVE_TRAIT_ASSOCIATION_DESCR = "List of clinical variant evidence trait association";
+    public static final ClinicalVariantQueryParam CVE_TRAIT_ASSOCIATION = new ClinicalVariantQueryParam("reTraitAssociation", TEXT_ARRAY,
+            CVE_TRAIT_ASSOCIATION_DESCR);
 
-    public static final String RE_FUNCTIONAL_EFFECT_DESCR = "List of reported event functional effect";
-    public static final ClinicalVariantQueryParam RE_FUNCTIONAL_EFFECT = new ClinicalVariantQueryParam("reFunctionalEffect", TEXT_ARRAY,
-            RE_FUNCTIONAL_EFFECT_DESCR);
+    public static final String CVE_FUNCTIONAL_EFFECT_DESCR = "List of clinical variant evidence functional effect";
+    public static final ClinicalVariantQueryParam CVE_FUNCTIONAL_EFFECT = new ClinicalVariantQueryParam("reFunctionalEffect", TEXT_ARRAY,
+            CVE_FUNCTIONAL_EFFECT_DESCR);
 
-    public static final String RE_TUMORIGENESIS_DESCR = "List of reported event tumorigenesis";
-    public static final ClinicalVariantQueryParam RE_TUMORIGENESIS = new ClinicalVariantQueryParam("reTumorigenesis", TEXT_ARRAY,
-            RE_TUMORIGENESIS_DESCR);
+    public static final String CVE_TUMORIGENESIS_DESCR = "List of clinical variant evidence tumorigenesis";
+    public static final ClinicalVariantQueryParam CVE_TUMORIGENESIS = new ClinicalVariantQueryParam("reTumorigenesis", TEXT_ARRAY,
+            CVE_TUMORIGENESIS_DESCR);
 
-    public static final String RE_OTHER_CLASSIFICATION_DESCR = "List of reported event other classification";
-    public static final ClinicalVariantQueryParam RE_OTHER_CLASSIFICATION = new ClinicalVariantQueryParam("reOtherClassification",
-            TEXT_ARRAY, RE_OTHER_CLASSIFICATION_DESCR);
+    public static final String CVE_OTHER_CLASSIFICATION_DESCR = "List of clinical variant evidence other classification";
+    public static final ClinicalVariantQueryParam CVE_OTHER_CLASSIFICATION = new ClinicalVariantQueryParam("reOtherClassification",
+            TEXT_ARRAY, CVE_OTHER_CLASSIFICATION_DESCR);
 
-    public static final String RE_ROLES_IN_CANCER_DESCR = "List of reported event roles in cancer";
-    public static final ClinicalVariantQueryParam RE_ROLES_IN_CANCER = new ClinicalVariantQueryParam("reRolesInCancer", TEXT_ARRAY,
-            RE_ROLES_IN_CANCER_DESCR);
+    public static final String CVE_ROLES_IN_CANCER_DESCR = "List of clinical variant evidence roles in cancer";
+    public static final ClinicalVariantQueryParam CVE_ROLES_IN_CANCER = new ClinicalVariantQueryParam("reRolesInCancer", TEXT_ARRAY,
+            CVE_ROLES_IN_CANCER_DESCR);
 
-    public static final String RE_TIER_DESCR = "List of reported event tier";
-    public static final ClinicalVariantQueryParam RE_TIER = new ClinicalVariantQueryParam("reTier", TEXT_ARRAY, RE_TIER_DESCR);
+    public static final String CVE_TIER_DESCR = "List of clinical variant evidence tier";
+    public static final ClinicalVariantQueryParam CVE_TIER = new ClinicalVariantQueryParam("reTier", TEXT_ARRAY, CVE_TIER_DESCR);
 
-    public static final String RE_JUSTIFICATION_DESCR = "List of reported event justification";
-    public static final ClinicalVariantQueryParam RE_JUSTIFICATION = new ClinicalVariantQueryParam("reJustification", TEXT_ARRAY,
-            RE_JUSTIFICATION_DESCR);
+    public static final String CVE_JUSTIFICATION_DESCR = "List of clinical variant evidence justification";
+    public static final ClinicalVariantQueryParam CVE_JUSTIFICATION = new ClinicalVariantQueryParam("reJustification", TEXT_ARRAY,
+            CVE_JUSTIFICATION_DESCR);
 
-    public static final String RE_AUX_DESCR = "";
-    public static final ClinicalVariantQueryParam RE_AUX = new ClinicalVariantQueryParam("reAux", TEXT_ARRAY, RE_AUX_DESCR);
+    public static final String CVE_AUX_DESCR = "";
+    public static final ClinicalVariantQueryParam CVE_AUX = new ClinicalVariantQueryParam("reAux", TEXT_ARRAY, CVE_AUX_DESCR);
 
     // Constructor
     private ClinicalVariantQueryParam(String key, Type type, String description) {

@@ -31,12 +31,12 @@ import java.io.IOException;
 public class ClinicalVariantSolrIterator implements ClinicalVariantIterator {
 
     private ClinicalVariantNativeSolrIterator clinicalVariantNativeSolrIterator;
-    private InterpretationConverter reportedVariantSearchToReportedVariantConverter;
+    private InterpretationConverter interpretationConverter;
 
     public ClinicalVariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery)
             throws IOException, SolrServerException {
         clinicalVariantNativeSolrIterator = new ClinicalVariantNativeSolrIterator(solrClient, collection, solrQuery);
-        reportedVariantSearchToReportedVariantConverter = new InterpretationConverter();
+        interpretationConverter = new InterpretationConverter();
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ClinicalVariantSolrIterator implements ClinicalVariantIterator {
     @Override
     public ClinicalVariant next() {
         try {
-            return reportedVariantSearchToReportedVariantConverter.toClinicalVariant(clinicalVariantNativeSolrIterator.next());
+            return interpretationConverter.toClinicalVariant(clinicalVariantNativeSolrIterator.next());
         } catch (ClinicalVariantException e) {
             e.printStackTrace();
             return null;

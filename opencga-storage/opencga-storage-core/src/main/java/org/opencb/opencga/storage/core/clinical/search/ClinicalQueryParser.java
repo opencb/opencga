@@ -109,12 +109,14 @@ public class ClinicalQueryParser {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
+        // TODO: remove
         // Interpretation software name
         key = ClinicalVariantQueryParam.INT_SOFTWARE_NAME.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
+        // TODO: remove
         // Interpretation software version
         key = ClinicalVariantQueryParam.INT_SOFTWARE_VERSION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
@@ -127,6 +129,7 @@ public class ClinicalQueryParser {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
+        // TODO: inside InterpretationMethod (disease panels)
         // Interpretation panel names
         key = ClinicalVariantQueryParam.INT_PANELS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
@@ -140,12 +143,14 @@ public class ClinicalQueryParser {
                     ClinicalVariantQueryParam.INT_INFO.key()));
         }
 
+        // TODO: inside InterpretationMethod (software)
         key = ClinicalVariantQueryParam.INT_DEPENDENCY.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.DEPENDENCY_PREFIX, query.getString(key),
                     ClinicalVariantQueryParam.INT_INFO.key()));
         }
 
+        // TODO: inside InterpretationMethod (filters)
         key = ClinicalVariantQueryParam.INT_FILTERS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(parseInfo(ClinicalVariantUtils.FILTER_PREFIX, query.getString(key),
@@ -187,24 +192,25 @@ public class ClinicalQueryParser {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
-        // ---------- ReportedVariant ----------
+        // ---------- ClinicalVariant ----------
         //
-        //   deNovo quality score, comments
 
-        key = ClinicalVariantQueryParam.RV_DE_NOVO_QUALITY_SCORE.key();
+        // TODO: remove
+        //   deNovo quality score, comments
+        key = ClinicalVariantQueryParam.CV_DE_NOVO_QUALITY_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseNumericValue(key, query.getString(key)));
         }
 
-        key = ClinicalVariantQueryParam.RV_COMMENTS.key();
+        key = ClinicalVariantQueryParam.CV_COMMENTS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             solrQuery.addField(solrQueryParser.parseCategoryTermValue(key, query.getString(key)));
         }
 
 
-        // ---------- ReportedEvent ----------
+        // ---------- ClinicalVariantEvidence ----------
         //
-        parseReportedEvent(query, solrQuery);
+        parseClinicalVariantEvidence(query, solrQuery);
 
         return solrQuery;
     }
@@ -333,25 +339,26 @@ public class ClinicalQueryParser {
         return filter.toString();
     }
 
-    private void parseReportedEvent(Query query, SolrQuery solrQuery) {
+    private void parseClinicalVariantEvidence(Query query, SolrQuery solrQuery) {
         List<List<String>> combinations = new ArrayList<>();
 
-        String key = ClinicalVariantQueryParam.RE_PHENOTYPE_NAMES.key();
+        String key = ClinicalVariantQueryParam.CVE_PHENOTYPE_NAMES.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_CONSEQUENCE_TYPE_IDS.key();
+        key = ClinicalVariantQueryParam.CVE_CONSEQUENCE_TYPE_IDS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
+        // TODO: check
         Set<String> xrefs = new HashSet<>();
-        key = ClinicalVariantQueryParam.RE_GENE_NAMES.key();
+        key = ClinicalVariantQueryParam.CVE_GENE_NAMES.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             xrefs.addAll(query.getAsStringList(key));
         }
-        key = ClinicalVariantQueryParam.RE_XREFS.key();
+        key = ClinicalVariantQueryParam.CVE_XREFS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             xrefs.addAll(query.getAsStringList(key));
         }
@@ -359,52 +366,52 @@ public class ClinicalQueryParser {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_PANEL_IDS.key();
+        key = ClinicalVariantQueryParam.CVE_PANEL_IDS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_ACMG.key();
+        key = ClinicalVariantQueryParam.CVE_TIER.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_CLINICAL_SIGNIFICANCE.key();
+        key = ClinicalVariantQueryParam.CVE_ACMG.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_DRUG_RESPONSE.key();
+        key = ClinicalVariantQueryParam.CVE_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_TRAIT_ASSOCIATION.key();
+        key = ClinicalVariantQueryParam.CVE_DRUG_RESPONSE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_FUNCTIONAL_EFFECT.key();
+        key = ClinicalVariantQueryParam.CVE_TRAIT_ASSOCIATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_TUMORIGENESIS.key();
+        key = ClinicalVariantQueryParam.CVE_FUNCTIONAL_EFFECT.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_OTHER_CLASSIFICATION.key();
+        key = ClinicalVariantQueryParam.CVE_TUMORIGENESIS.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_ROLES_IN_CANCER.key();
+        key = ClinicalVariantQueryParam.CVE_OTHER_CLASSIFICATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
 
-        key = ClinicalVariantQueryParam.RE_TIER.key();
+        key = ClinicalVariantQueryParam.CVE_ROLES_IN_CANCER.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
             updateCombinations(query.getAsStringList(key), combinations);
         }
@@ -412,7 +419,7 @@ public class ClinicalQueryParser {
         StringBuilder sb = new StringBuilder();
 
 
-        key = ClinicalVariantQueryParam.RE_JUSTIFICATION.key();
+        key = ClinicalVariantQueryParam.CVE_JUSTIFICATION.key();
         List<String> justifications = query.getAsStringList(key);
 
         boolean firstOR;
@@ -430,14 +437,14 @@ public class ClinicalQueryParser {
                         if (!firstOR) {
                             sb.append(" OR ");
                         }
-                        sb.append(ClinicalVariantQueryParam.RE_AUX.key()).append(":\"").append(key).append("\"");
+                        sb.append(ClinicalVariantQueryParam.CVE_AUX.key()).append(":\"").append(key).append("\"");
                         firstOR = false;
                     } else {
                         for (String justification: justifications) {
                             if (!firstOR) {
                                 sb.append(" OR ");
                             }
-                            sb.append(ClinicalVariantQueryParam.RE_JUSTIFICATION.key()).append("_").append(key).append(":\"*")
+                            sb.append(ClinicalVariantQueryParam.CVE_JUSTIFICATION.key()).append("_").append(key).append(":\"*")
                                     .append(justification).append("*\"");
                             firstOR = false;
                         }

@@ -188,7 +188,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
         }
         options.put(QueryOptions.LIMIT, limit);
 
-        // Make sure that query is sorted by Interpretation ID in order to group ReportedVariant objects
+        // Make sure that query is sorted by Interpretation ID in order to group ClinicalVariant objects
         // belonging to the same Interpretation
         options.put(QueryOptions.SORT, "intId");
         options.put(QueryOptions.ORDER, QueryOptions.ASCENDING);
@@ -250,7 +250,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     }
 
     /**
-     * Return a Solr ClinicalVariant iterator to retrieve ReportedVariant objects from a Solr
+     * Return a Solr ClinicalVariant iterator to retrieve ClinicalVariant objects from a Solr
      * core/collection according a given query.
      *
      * @param query        Query
@@ -272,13 +272,13 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
     }
 
     /**
-     * Return a Solr ReportedVariantSearch iterator to retrieve ClinicalVariantSearchModel objects from a Solr
+     * Return a Solr ClinicalVariantNativeSolrIterator iterator to retrieve ClinicalVariantSearchModel objects from a Solr
      * core/collection according a given query.
      *
      * @param query        Query
      * @param queryOptions Query options
      * @param collection   Collection name
-     * @return Solr ReportedVariantSearch iterator
+     * @return Solr ClinicalVariantNativeSolrIterator
      * @throws IOException                      IOException
      * @throws ClinicalVariantException   ClinicalVariantException
      */
@@ -341,7 +341,7 @@ public class ClinicalVariantSolrEngine implements ClinicalVariantEngine {
                     solrManager.getSolrClient().commit(collection);
                 }
             } else {
-                throw new ClinicalVariantException("Error adding ReportedVariant comment: reported variant for "
+                throw new ClinicalVariantException("Error adding ClinicalVariant comment: clinical variant for "
                         + " variant ID = " + variantId + " and interpretation ID = " + interpretationId
                         + " does not exit");
             }
