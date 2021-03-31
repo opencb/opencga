@@ -26,7 +26,7 @@ fi
 HADOOP_USER_HOST="$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS"
 
 FILE=/opt/volume/conf/hadoop
-if [ -d "$FILE" ]; then
+if [ -d "$FILE" ] && [ "${OVERWRITE_CONFIGURATION:-false}" == "false" ]; then
     echo "$FILE already exists"
     echo "Copy jar-with-dependencies to hadoop"
     $SSHPASS_CMD scp ${SSH_OPTS} -r /opt/opencga/*.jar "$HADOOP_USER_HOST":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"

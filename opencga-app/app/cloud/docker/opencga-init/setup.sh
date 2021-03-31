@@ -12,7 +12,7 @@ fi
 FILE=/opt/volume/conf/configuration.yml
 if [ -f "$FILE" ] && [ "${OVERWRITE_CONFIGURATION:-false}" == "false" ]; then
     echo "$FILE already exists"
-    cp -r /opt/volume/conf/* /opt/opencga/conf/*
+    cp -r /opt/volume/conf/* /opt/opencga/conf/
 else
     echo "Copying default configs"
     cp -r -L -v /opt/opencga/default-conf/*  /opt/opencga/conf/
