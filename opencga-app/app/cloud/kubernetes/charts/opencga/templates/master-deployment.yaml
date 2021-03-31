@@ -53,34 +53,42 @@ spec:
               name: {{ include "opencga.secretName" . }}
               key: hdInsightSshPassword
         - name: "INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
-          value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/" 
+          value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/"
+
         - name: "INIT_SEARCH_HOSTS"
         {{- if .Values.deploySolr }}
           value: http://opencga-solr-svc:8983
         {{- else }}
           value:  {{ .Values.solr.hosts | toString | quote }}
-        {{- end }} 
+        {{- end }}
+        - name: "INIT_CATALOG_SEARCH_HOSTS"
+        {{- if .Values.deploySolr }}
+        value: http://opencga-solr-svc:8983
+        {{- else }}
+        value:  {{ .Values.solr.hosts | toString | quote }}
+        {{- end }}
         - name: "INIT_CLINICAL_HOSTS"
           value:  {{ .Values.solr.hosts | toString | quote}}
+
         - name: "INIT_CATALOG_DATABASE_HOSTS"
         {{- if .Values.deployMongo }}
           value:  opencga-mongodb-replicaset
         {{- else }}
-          value:  {{ .Values.catalog.database.hosts | toString | quote}}
+          value:  {{ .Values.mongodb.hosts | toString | quote}}
         {{- end }} 
         - name: "INIT_CATALOG_DATABASE_USER"
-          value:  {{ .Values.catalog.database.user  }} 
+          value:  {{ .Values.mongodb.user  }}
         - name: "INIT_CATALOG_DATABASE_PASSWORD"
           valueFrom:
             secretKeyRef:
               name: {{ include "opencga.secretName" . }}
               key: mongoDbPassword
-        - name: "INIT_CATALOG_SEARCH_HOSTS"
-        {{- if .Values.deploySolr }}
-          value: http://opencga-solr-svc:8983
-        {{- else }}
-          value:  {{ .Values.solr.hosts | toString | quote }}
-        {{- end }}
+        - name: "INIT_CATALOG_DATABASE_SSL"
+          value: {{ .Values.mongodb.ssl  }}
+        - name: "INIT_CATALOG_DATABASE_AUTHENTICATION_MECHANISM"
+          value: {{ .Values.mongodb.authenticationMechanism  }}
+        - name: "INIT_CATALOG_DATABASE_AUTHENTICATION_DATABASE"
+          value: {{ .Values.mongodb.authenticationDatabase  }}
         - name: "INIT_REST_HOST"
           value:   "http://{{ .Values.rest.name }}/opencga"
         - name: "INIT_GRPC_HOST"
@@ -90,7 +98,7 @@ spec:
         - name: "INIT_K8S_MASTER_NODE"
           value: {{ .Values.analysis.execution.options.k8s.masterNode }}
         - name: "INIT_K8S_NAMESPACE"
-          value: {{ .Values.analysis.execution.options.k8s.namespace }}
+          value: {{ .Release.Namespace }}
         - name: "INIT_K8S_VOLUMES_PVC_CONF"
           value: {{ include "pvcConf" . | quote }}
         - name: "INIT_K8S_VOLUMES_PVC_SESSIONS"

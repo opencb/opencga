@@ -5,11 +5,13 @@
 deploySolr: false
 deployMongo: false
 
-catalog:
-  database:
-    hosts: "FILL_ME"
-    user: "FILL_ME"
-    password: "FILL_ME"
+mongodb:
+  hosts: "FILL_ME"
+  user: "FILL_ME"
+  password: "FILL_ME"
+  ssl: true
+  authenticationDatabase : "admin"
+  authenticationMechanism : "SCRAM-SHA-1"
 
 cellbase:
   host: "http://ws.opencb.org/cellbase/"
@@ -23,7 +25,6 @@ analysis:
     options:
       k8s:
         masterNode: "FILL_ME"
-        namespace: "FILL_ME"
 
 solr:
   hosts: "FILL_ME"

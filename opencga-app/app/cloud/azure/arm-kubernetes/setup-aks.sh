@@ -137,7 +137,6 @@ analysis:
     options:
       k8s:
         masterNode: "https://$(getOutput "aksApiServerAddress"):443"
-        namespace:  "$K8S_NAMESPACE"
   index:
     variant:
       maxConcurrentJobs: "100"
