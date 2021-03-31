@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "pvcIvaconf" . | quote }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeName: {{ include "pvIvaconf" . | quote }}
+  storageClassName: {{ include "pvcStorageClassName" . }}
+  resources:
+    requests:
+      storage: 1Gi

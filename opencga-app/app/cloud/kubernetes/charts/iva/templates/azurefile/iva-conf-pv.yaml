@@ -1,0 +1,18 @@
+{{- if .Values.azureStorageAccount.enabled -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "pvIvaconf" . | quote }}
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: "azurefile"
+  azureFile:
+    secretName: {{ .Values.azureStorageAccount.secretName }}
+    secretNamespace: {{ .Release.Namespace }}
+    shareName: {{ .Values.azureStorageAccount.volumes.ivaconf.shareName }}
+    readOnly: false
+{{- end }}

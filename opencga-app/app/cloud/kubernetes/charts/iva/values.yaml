@@ -9,7 +9,12 @@ cellbase:
   host: "http://ws.opencb.org/cellbase/"
 
 azureStorageAccount:
-  secretName: # FILL_ME
+  enabled: true
+  createSecret: false
+  secretName: azure-files-secret
+  volumes:
+    ivaconf:
+      shareName: ivaconf
 
 iva:
   name: iva
@@ -26,10 +31,6 @@ iva:
     pullPolicy: Always
 
   imagePullSecrets: []
-
-  volumes:
-    ivaconf:
-      shareName: ivaconf
 
   serviceAccount:
     # Specifies whether a service account should be created
