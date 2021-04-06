@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.executors.accumulators.Range;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -188,16 +189,14 @@ public class SampleVariantStatsAggregationQuery {
                 case "depth":
                 case "dp":
                     for (FacetField.Bucket bucket : facetField.getBuckets()) {
-                        String[] split = StringUtils.replaceChars(bucket.getValue(), "[]() ", "").split(",");
-                        String start = split[0];
-                        String endStr = split[1];
+                        Range<Double> range = Range.parse(bucket.getValue());
                         int count = (int) bucket.getCount();
                         //[start, end)
                         DepthCount depthCount = stats.getDepthCount();
-                        if (endStr.equals("inf")) {
+                        if (range.isEndInfinity()) {
                             depthCount.setGte20(depthCount.getGte20() + count);
                         } else {
-                            double end = Double.parseDouble(endStr);
+                            double end = range.getEnd();
                             if (end <= 5) {
                                 depthCount.setLt5(depthCount.getLt5() + count);
                             } else if (end <= 10) {
