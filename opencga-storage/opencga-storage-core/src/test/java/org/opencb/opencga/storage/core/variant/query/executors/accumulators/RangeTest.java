@@ -14,6 +14,7 @@ public class RangeTest {
         checkParse("(10.0]");
         checkParse("(10.0, inf]");
         checkParse("(-inf, inf]");
+        checkParse("NA");
     }
 
     protected void checkParse(String s) {

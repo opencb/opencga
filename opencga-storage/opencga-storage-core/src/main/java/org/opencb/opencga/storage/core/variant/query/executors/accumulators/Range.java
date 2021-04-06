@@ -16,6 +16,9 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
     private final String s;
 
     public static Range<Double> parse(String string) {
+        if (string.equals("NA")) {
+            return new NA<>();
+        }
         final boolean startInclusive = string.startsWith("[");
         final boolean endInclusive = string.endsWith("]");
         final Double start;
