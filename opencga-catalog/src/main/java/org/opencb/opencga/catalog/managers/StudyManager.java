@@ -855,10 +855,10 @@ public class StudyManager extends AbstractManager {
                 // We remove possible duplicates
                 users = users.stream().collect(Collectors.toSet()).stream().collect(Collectors.toList());
                 userDBAdaptor.checkIds(users);
-                group.setUserIds(users);
             } else {
                 users = Collections.emptyList();
             }
+            group.setUserIds(users);
 
             // Add those users to the members group
             if (ListUtils.isNotEmpty(users)) {
