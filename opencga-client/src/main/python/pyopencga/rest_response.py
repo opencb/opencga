@@ -1,7 +1,7 @@
 import sys
+import pandas as pd
 
 from pyopencga.commons import deprecated
-import pandas as pd
 
 
 class RestResponse:
@@ -120,13 +120,9 @@ class RestResponse:
                 outfhand.write(separator.join(map(str, values)) + '\n')
 
     def to_data_frame(self, response_pos=None):
-        result_df_list = []
         responses = [self.get_response(response_pos)] if response_pos is not None else self.get_responses()
-        for response in responses:
-            for result in response['results']:
-                result_df_list.append(pd.json_normalize(result))
-        data = pd.concat(result_df_list)
-        return data.reset_index(drop=True)
+        return pd.concat([pd.json_normalize(result) for response in responses
+                          for result in response['results']]).reset_index(drop=True)
 
     def get_response_events(self, event_type=None):
         """
