@@ -175,11 +175,15 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
     }
 
     public boolean isEndInfinity() {
-        return end == null;
+        return getEnd() == null;
     }
 
     public boolean isEndInclusive() {
         return endInclusive;
+    }
+
+    public boolean isNA() {
+        return false;
     }
 
     public static class NA<N extends Number & Comparable<N>> extends Range<N> {
@@ -196,6 +200,11 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
         @Override
         public boolean isBeforeEnd(N number) {
             return number != null;
+        }
+
+        @Override
+        public boolean isNA() {
+            return true;
         }
 
         @Override
