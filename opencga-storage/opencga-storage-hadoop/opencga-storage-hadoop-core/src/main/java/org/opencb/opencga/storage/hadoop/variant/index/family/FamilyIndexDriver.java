@@ -281,22 +281,22 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 Set<String> childDiscrepancies = discrepanciesGtMap.get(child);
 
                 if (fatherDiscrepancies == null && motherDiscrepancies == null && childDiscrepancies == null) {
-                    String fatherGtStr = gtMap.get(father);
-                    String motherGtStr = gtMap.get(mother);
-                    String childGtStr = gtMap.get(child);
+                    String fatherGtStr = father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, "0/0");
+                    String motherGtStr = mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, "0/0");
+                    String childGtStr = gtMap.getOrDefault(child, "0/0");
                     builder.addParents(childGtStr, fatherGtStr, motherGtStr);
                     int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
 
                     computeMendelianError(variant, father, mother, fatherGtStr, motherGtStr, childGtStr, context, builder, idx);
                 } else {
                     if (fatherDiscrepancies == null) {
-                        fatherDiscrepancies = Collections.singleton(gtMap.get(father));
+                        fatherDiscrepancies = Collections.singleton(father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, "0/0"));
                     }
                     if (motherDiscrepancies == null) {
-                        motherDiscrepancies = Collections.singleton(gtMap.get(mother));
+                        motherDiscrepancies = Collections.singleton(mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, "0/0"));
                     }
                     if (childDiscrepancies == null) {
-                        childDiscrepancies = Collections.singleton(gtMap.get(child));
+                        childDiscrepancies = Collections.singleton(gtMap.getOrDefault(child, "0/0"));
                     }
 
 //                    System.out.println("variant = " + variant);

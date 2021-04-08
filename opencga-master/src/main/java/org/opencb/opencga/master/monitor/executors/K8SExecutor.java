@@ -125,7 +125,7 @@ public class K8SExecutor implements BatchExecutor {
             securityContext = new SecurityContextBuilder()
                     .withRunAsUser(1001L)
                     .withRunAsNonRoot(true)
-                    .withReadOnlyRootFilesystem(true)
+                    .withReadOnlyRootFilesystem(false)
                     .build();
         }
         if (execution.getOptions().containsKey(K8S_POD_SECURITY_CONTEXT)) {

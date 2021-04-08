@@ -322,6 +322,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void createEmptyGroup() throws CatalogException {
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", null, token);
+        catalogManager.getStudyManager().updateGroup("user@1000G:phase1", "group_cancer_some_thing_else", ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("test")), token);
+    }
+
+    @Test
     public void testAssignPermissions() throws CatalogException {
         catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, Account.AccountType.GUEST, null);
 

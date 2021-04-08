@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.query.executors.accumulators;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 
 import java.util.ArrayList;
@@ -13,6 +14,32 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
     private final N end;
     private final boolean endInclusive;
     private final String s;
+
+    public static Range<Double> parse(String string) {
+        if (string.equals("NA")) {
+            return new NA<>();
+        }
+        final boolean startInclusive = string.startsWith("[");
+        final boolean endInclusive = string.endsWith("]");
+        final Double start;
+        final Double end;
+        String[] split = StringUtils.replaceChars(string, "[]() ", "").split(",");
+        if (split[0].equals("-inf")) {
+            start = null;
+        } else {
+            start = Double.valueOf(split[0]);
+        }
+        if (split.length == 1) {
+            end = start;
+        } else {
+            if (split[1].equals("inf")) {
+                end = null;
+            } else {
+                end = Double.valueOf(split[1]);
+            }
+        }
+        return new Range<>(start, startInclusive, end, endInclusive);
+    }
 
     public Range(N start, N end) {
         this(start, true, end, false);
@@ -34,7 +61,7 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
         } else {
             sb.append(start);
         }
-        if (!Objects.equals(start, end)) {
+        if (!Objects.equals(start, end) || start == null) {
             sb.append(", ");
             if (end == null) {
                 sb.append("inf");
@@ -129,6 +156,30 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
     @Override
     public int compareTo(Range<N> o) {
         return start.compareTo(o.start);
+    }
+
+    public N getStart() {
+        return start;
+    }
+
+    public boolean isStartInfinity() {
+        return start == null;
+    }
+
+    public boolean isStartInclusive() {
+        return startInclusive;
+    }
+
+    public N getEnd() {
+        return end;
+    }
+
+    public boolean isEndInfinity() {
+        return end == null;
+    }
+
+    public boolean isEndInclusive() {
+        return endInclusive;
     }
 
     public static class NA<N extends Number & Comparable<N>> extends Range<N> {

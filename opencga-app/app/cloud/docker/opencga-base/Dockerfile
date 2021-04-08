@@ -11,5 +11,6 @@ RUN apk --no-cache --update add openssh-client sshpass ca-certificates curl dock
     adduser -D -u 1001 opencga -h /home/opencga
 
 COPY ${BUILD_PATH} /opt/opencga
+RUN chown -R 1001 /opt/opencga/
 
 WORKDIR /opt/opencga/bin
