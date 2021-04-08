@@ -743,6 +743,12 @@
                                         <include>com/google/common/base/Preconditions*</include>
                                     </includes>
                                 </filter>
+                                <filter>
+                                    <artifact>org.apache.phoenix:phoenix-core</artifact>
+                                    <excludes>
+                                        <exclude>com/codahale/metrics/*</exclude>
+                                    </excludes>
+                                </filter>
                             </filters>
 
                             <!-- This relocation section MUST be exactly the same as the test-->
