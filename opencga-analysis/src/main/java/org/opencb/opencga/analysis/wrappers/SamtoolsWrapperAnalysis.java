@@ -266,10 +266,25 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         // Samtools options
         for (String param : params.keySet()) {
             if (checkParam(param)) {
+                String sep = param.length() == 1 ? " -" : " --";
                 String value = params.getString(param);
-                sb.append(param.length() == 1 ? " -" : " --").append(param);
-                if (StringUtils.isNotEmpty(value) && !"null".equals(value)) {
-                    sb.append(" ").append(value);
+                if (StringUtils.isEmpty(value)) {
+                    sb.append(sep).append(param);
+                } else {
+                    switch (value.toLowerCase()) {
+                        case "false":
+                            // Nothing to do
+                            break;
+                        case "null":
+                        case "true":
+                            // Only param must be appended
+                            sb.append(sep).append(param);
+                            break;
+                        default:
+                            // Otherwise, param + value must be appended
+                            sb.append(sep).append(param).append(" ").append(value);
+                            break;
+                    }
                 }
             }
         }
