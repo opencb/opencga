@@ -9,6 +9,7 @@ import java.util.List;
 public class KnockoutByVariant {
 
     private String id;
+    private String dbSnp;
     private String chromosome;
     private int start;
     private int end;
@@ -27,18 +28,19 @@ public class KnockoutByVariant {
     }
 
     public KnockoutByVariant(String id, List<KnockoutByIndividual> individuals) {
-        this(id, null, -1, -1, 0, null, null, null, null, null, individuals);
+        this(id, "", null, -1, -1, 0, null, null, null, null, null, individuals);
     }
 
     public KnockoutByVariant(String id, String chromosome, int start, int end, int length, String reference, String alternate,
                              List<KnockoutByIndividual> individuals) {
-        this(id, chromosome, start, end, length, reference, alternate, null, null, null, individuals);
+        this(id, "", chromosome, start, end, length, reference, alternate, null, null, null, individuals);
     }
 
-    public KnockoutByVariant(String id, String chromosome, int start, int end, int length, String reference, String alternate,
+    public KnockoutByVariant(String id, String dbSnp, String chromosome, int start, int end, int length, String reference, String alternate,
                              VariantType type, List<PopulationFrequency> populationFrequencies,
                              List<ClinicalSignificance> clinicalSignificance, List<KnockoutByIndividual> individuals) {
         this.id = id;
+        this.dbSnp = dbSnp;
         this.chromosome = chromosome;
         this.start = start;
         this.end = end;
@@ -56,6 +58,7 @@ public class KnockoutByVariant {
     public String toString() {
         final StringBuilder sb = new StringBuilder("KnockoutByVariant{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", dbSnp='").append(dbSnp).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
@@ -72,6 +75,7 @@ public class KnockoutByVariant {
     }
 
     public KnockoutByVariant setVariantFields(KnockoutVariant knockoutVariant) {
+        this.dbSnp = knockoutVariant.getDbSnp();
         this.chromosome = knockoutVariant.getChromosome();
         this.start = knockoutVariant.getStart();
         this.end = knockoutVariant.getEnd();
@@ -90,6 +94,15 @@ public class KnockoutByVariant {
 
     public KnockoutByVariant setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getDbSnp() {
+        return dbSnp;
+    }
+
+    public KnockoutByVariant setDbSnp(String dbSnp) {
+        this.dbSnp = dbSnp;
         return this;
     }
 
