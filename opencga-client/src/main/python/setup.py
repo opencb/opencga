@@ -37,7 +37,8 @@ setup(
         'requests >= 2.7',
         'pip >= 7.1.2',
         'pathlib >= 1.0.1',
-        'pyyaml >= 3.12'
+        'pyyaml >= 3.12',
+        'pandas >= 1.1.5'
     ],
     project_urls={
         'Documentation': 'http://docs.opencb.org/display/opencga/Python',

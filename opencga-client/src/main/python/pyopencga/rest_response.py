@@ -1,4 +1,5 @@
 import sys
+import pandas as pd
 
 from pyopencga.commons import deprecated
 
@@ -117,6 +118,11 @@ class RestResponse:
             for result in response['results'][:limit]:
                 values = [self._get_param_value(result, field) for field in fields]
                 outfhand.write(separator.join(map(str, values)) + '\n')
+
+    def to_data_frame(self, response_pos=None):
+        responses = [self.get_response(response_pos)] if response_pos is not None else self.get_responses()
+        return pd.concat([pd.json_normalize(result) for response in responses
+                          for result in response['results']]).reset_index(drop=True)
 
     def get_response_events(self, event_type=None):
         """

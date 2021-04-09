@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -308,7 +309,15 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 .setBioformat(commandOptions.bioformat)
                 .setDescription(commandOptions.description)
                 .setTags(commandOptions.tags)
-                .setSampleIds(commandOptions.sampleIds);
+                .setSampleIds(commandOptions.sampleIds)
+                .setSoftware(new Software(
+                        commandOptions.softwareName,
+                        commandOptions.softwareVersion,
+                        commandOptions.softwareRepository,
+                        commandOptions.softwareCommit,
+                        commandOptions.softwareWebsite,
+                        commandOptions.softwareParams.isEmpty() ? null : commandOptions.softwareParams
+                ));
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
