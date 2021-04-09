@@ -454,12 +454,6 @@ public class OpenCGAWSServer {
         queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
 
-//      Exceptions
-        if (query.containsKey("status")) {
-            query.put("status.name", query.get("status"));
-            query.remove("status");
-        }
-
         // Remove deprecated fields
         query.remove("variableSet");
         query.remove("annotationsetName");
