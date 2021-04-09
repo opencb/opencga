@@ -62,7 +62,9 @@ iva:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/rewrite-target: /iva/$2
       # kubernetes.io/tls-acme: "true"
-    host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+    hosts:
+      - "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+      - ""              # Accept access by IP .Testing purposes only.
     # Accepts / , /iva and /iva/....
     paths:
       - /iva(/|$)(.*)

@@ -143,11 +143,15 @@ analysis:
 
 rest:
   ingress:
-    host: "opencga.$(getOutput "privateDnsZonesName")"
+    hosts:
+     - ""
+     - "opencga.$(getOutput "privateDnsZonesName")"
 
 iva:
   ingress:
-    host: "opencga.$(getOutput "privateDnsZonesName")"
+    hosts:
+     - ""
+     - "opencga.$(getOutput "privateDnsZonesName")"
 
 EOF
 
