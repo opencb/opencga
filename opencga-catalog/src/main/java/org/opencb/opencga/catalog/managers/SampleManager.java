@@ -25,7 +25,6 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -42,10 +41,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -580,6 +576,86 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
+    }
+
+    // TODO: This method should be private. This should only be accessible internally.
+    public OpenCGAResult<Sample> resetRgaIndexes(String studyStr, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("token", token);
+
+        OpenCGAResult<Sample> result;
+        try {
+            authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+            result = sampleDBAdaptor.setRgaIndexes(study.getUid(), new RgaIndex(RgaIndex.Status.NOT_INDEXED, TimeUtils.getTime()));
+
+            auditManager.audit(userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw new CatalogException("Could not reset all sample RGA indexes", e);
+        }
+
+        return result;
+    }
+
+    // TODO: This method should be somehow private. This should only be accessible internally.
+    public OpenCGAResult<Sample> updateRgaIndexes(String studyStr, List<String> samples, RgaIndex rgaIndex, String token)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("samples", samples)
+                .append("rgaIndex", rgaIndex)
+                .append("token", token);
+
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        InternalGetDataResult<Sample> sampleResult = null;
+
+        OpenCGAResult<Sample> result;
+        try {
+            auditManager.initAuditBatch(operationUuid);
+
+            authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+
+            ParamUtils.checkNotEmptyArray(samples, "samples");
+            ParamUtils.checkObj(rgaIndex, "RgaIndex");
+            ParamUtils.checkObj(rgaIndex.getStatus(), "RgaIndex status");
+
+            rgaIndex.setDate(TimeUtils.getTime());
+
+            sampleResult = internalGet(study.getUid(), samples, INCLUDE_SAMPLE_IDS, userId, false);
+            result = sampleDBAdaptor.setRgaIndexes(study.getUid(),
+                    sampleResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList()), rgaIndex);
+
+            for (Sample sample : sampleResult.getResults()) {
+                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_RGA_INDEX, Enums.Resource.SAMPLE, sample.getId(),
+                        sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            }
+        } catch (CatalogException e) {
+            if (sampleResult == null) {
+                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_RGA_INDEX, Enums.Resource.SAMPLE, "", "", study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            } else {
+                for (Sample sample : sampleResult.getResults()) {
+                    auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_RGA_INDEX, Enums.Resource.SAMPLE, sample.getId(),
+                            sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                }
+            }
+            throw new CatalogException("Could not reset all sample RGA indexes", e);
+        } finally {
+            auditManager.finishAuditBatch(operationUuid);
+        }
+
+        return result;
     }
 
     public OpenCGAResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,

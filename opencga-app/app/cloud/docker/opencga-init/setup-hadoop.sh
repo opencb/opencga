@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # INIT_HADOOP_SSH_DNS
 # INIT_HADOOP_SSH_USER
@@ -13,20 +13,20 @@ if [ -z "${INIT_HADOOP_SSH_PASS}" ] ; then
   # If empty, assume ssh-key exists in the system
   SSHPASS_CMD=""
 else
-  SSHPASS=$INIT_HADOOP_SSH_PASS
+  export SSHPASS=$INIT_HADOOP_SSH_PASS
   # If non zero, use sshpass command
   SSHPASS_CMD="sshpass -e"
 fi
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60"
-if [ ! -z ${INIT_HADOOP_SSH_KEY} ] && [ -f ${INIT_HADOOP_SSH_KEY} ] ; then
+if [ -n "${INIT_HADOOP_SSH_KEY}" ] && [ -f "${INIT_HADOOP_SSH_KEY}" ] ; then
   SSH_OPTS="${SSH_OPTS} -i ${INIT_HADOOP_SSH_KEY}"
 fi
 
 HADOOP_USER_HOST="$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS"
 
 FILE=/opt/volume/conf/hadoop
-if [ -d "$FILE" ]; then
+if [ -d "$FILE" ] && [ "${OVERWRITE_CONFIGURATION:-false}" == "false" ]; then
     echo "$FILE already exists"
     echo "Copy jar-with-dependencies to hadoop"
     $SSHPASS_CMD scp ${SSH_OPTS} -r /opt/opencga/*.jar "$HADOOP_USER_HOST":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"

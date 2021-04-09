@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -25,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -70,6 +72,12 @@ public class ParamUtils {
     public static void checkObj(Object obj, String name) throws CatalogParameterException {
         if (obj == null) {
             throw new CatalogParameterException("Parameter '" + name + "' is missing or null.");
+        }
+    }
+
+    public static void checkNotEmptyArray(List<?> obj, String name) throws CatalogParameterException {
+        if (CollectionUtils.isEmpty(obj)) {
+            throw new CatalogParameterException("Parameter '" + name + "' is null or empty.");
         }
     }
 

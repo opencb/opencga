@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -416,9 +415,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
                 // Validate there is only one sample per member
                 for (Individual member : family.getMembers()) {
-                    if (member.getSamples() == null || member.getSamples().isEmpty()) {
-                        throw new CatalogException("Missing sample for member '" + member.getId() + "'");
-                    }
                     if (member.getSamples().size() > 1) {
                         throw new CatalogException("More than one sample found for member '" + member.getId() + "'.");
                     }
@@ -435,6 +431,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 if (proband == null) {
                     throw new CatalogException("Proband '" + clinicalAnalysis.getProband().getId() + "' not found in family");
                 }
+                if (proband.getSamples() == null || proband.getSamples().isEmpty()) {
+                    throw new CatalogException("Missing samples for proband '" + proband.getId() + "'");
+                }
+
                 clinicalAnalysis.setProband(proband);
 
                 // Validate the proband has a disorder

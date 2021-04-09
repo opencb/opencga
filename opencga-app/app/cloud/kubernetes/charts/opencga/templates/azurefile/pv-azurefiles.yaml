@@ -13,6 +13,7 @@ spec:
   azureFile:
     secretName: {{ .Values.azureStorageAccount.secretName }}
     shareName: {{ .Values.azureStorageAccount.volumes.conf.shareName }}
+    secretNamespace: {{ .Release.Namespace }}
     readOnly: false
 ---
 apiVersion: v1
@@ -29,6 +30,7 @@ spec:
   azureFile:
     secretName: {{ .Values.azureStorageAccount.secretName }}
     shareName: {{ .Values.azureStorageAccount.volumes.analysisconf.shareName }}
+    secretNamespace: {{ .Release.Namespace }}
     readOnly: false
 ---
 apiVersion: v1
@@ -45,6 +47,7 @@ spec:
   azureFile:
     secretName: {{ .Values.azureStorageAccount.secretName }}
     shareName: {{ .Values.azureStorageAccount.volumes.sessions.shareName }}
+    secretNamespace: {{ .Release.Namespace }}
     readOnly: false
 ---
 apiVersion: v1
@@ -61,5 +64,6 @@ spec:
   azureFile:
     secretName: {{ .Values.azureStorageAccount.secretName }}
     shareName: {{ .Values.azureStorageAccount.volumes.variants.shareName }}
+    secretNamespace: {{ .Release.Namespace }}
     readOnly: false
 {{- end }}

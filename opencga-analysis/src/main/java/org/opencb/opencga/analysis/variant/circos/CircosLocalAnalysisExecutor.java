@@ -25,7 +25,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -50,7 +49,6 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.opencb.biodata.models.variant.avro.VariantType.*;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_INPUT_PATH;
 import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
@@ -71,7 +69,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     private boolean plotIndels = false;
     private boolean plotRearrangements = false;
 
-    private Map<String, String> errors;
+    private ConcurrentHashMap<String, Exception> errors;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -107,7 +105,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         ExecutorService threadPool = Executors.newFixedThreadPool(4);
 
-        errors = new HashMap<>();
+        errors = new ConcurrentHashMap<>();
         List<Future<Boolean>> futureList = new ArrayList<>(4);
         futureList.add(threadPool.submit(getNamedThread("SNV", () -> snvQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("COPY_NUMBER", () -> copyNumberQuery(query, storageManager))));
@@ -153,10 +151,16 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
         } else {
             StringBuilder msg = new StringBuilder();
-            for (Map.Entry<String, String> error : errors.entrySet()) {
-                msg.append("Error on track ").append(error.getKey()).append(": ").append(error.getValue()).append(". ");
+            for (Map.Entry<String, Exception> error : errors.entrySet()) {
+                msg.append("Error on track ").append(error.getKey()).append(": ").append(error.getValue().getMessage()).append(". ");
             }
-            throw new ToolException(msg.toString());
+            ToolException exception = new ToolException(msg.toString());
+            if (errors.size() == 1) {
+                exception.initCause(errors.values().iterator().next());
+            } else {
+                errors.values().forEach(exception::addSuppressed);
+            }
+            throw exception;
         }
     }
 
@@ -232,7 +236,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch(Exception e) {
-            errors.put("SNV", e.getMessage());
+            errors.put("SNV", e);
             return false;
         } finally {
             if (pw != null) {
@@ -309,7 +313,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch (Exception e) {
-            errors.put("COPY-NUMBER", e.getMessage());
+            errors.put("COPY-NUMBER", e);
             return false;
         } finally {
             if (pw != null) {
@@ -389,7 +393,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch(Exception e){
-            errors.put("INDEL", e.getMessage());
+            errors.put("INDEL", e);
             return false;
 //            throw new ToolExecutorException(e);
         } finally {
@@ -470,7 +474,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch (Exception e) {
-            errors.put("REARRANGEMENT", e.getMessage());
+            errors.put("REARRANGEMENT", e);
             return false;
         } finally {
             if (pw != null) {

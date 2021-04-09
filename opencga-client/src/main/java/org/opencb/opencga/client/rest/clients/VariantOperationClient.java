@@ -280,10 +280,10 @@ public class VariantOperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> configureSampleIndex(SampleIndexConfiguration data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> configureSampleIndex(SampleIndexConfiguration data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("operation", null, "variant/sample/index", null, "configure", params, POST, ObjectMap.class);
+        return execute("operation", null, "variant/sample/index", null, "configure", params, POST, Job.class);
     }
 
     /**

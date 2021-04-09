@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.analysis.knockout;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
+import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.util.*;
 
@@ -27,7 +28,9 @@ public class KnockoutByIndividual {
     private String id;
     private String sampleId;
     private String motherId;
+    private String motherSampleId;
     private String fatherId;
+    private String fatherSampleId;
     private Sex sex;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
@@ -91,12 +94,30 @@ public class KnockoutByIndividual {
         return this;
     }
 
+    public String getMotherSampleId() {
+        return motherSampleId;
+    }
+
+    public KnockoutByIndividual setMotherSampleId(String motherSampleId) {
+        this.motherSampleId = motherSampleId;
+        return this;
+    }
+
     public String getFatherId() {
         return fatherId;
     }
 
     public KnockoutByIndividual setFatherId(String fatherId) {
         this.fatherId = fatherId;
+        return this;
+    }
+
+    public String getFatherSampleId() {
+        return fatherSampleId;
+    }
+
+    public KnockoutByIndividual setFatherSampleId(String fatherSampleId) {
+        this.fatherSampleId = fatherSampleId;
         return this;
     }
 

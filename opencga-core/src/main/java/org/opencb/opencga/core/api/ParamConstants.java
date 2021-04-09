@@ -41,6 +41,8 @@ public class ParamConstants {
 
     public static final String INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+    public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
+    public static final String INTERNAL_INDEX_STATUS_DESCRIPTION = "Filter by internal index status";
 
     public static final String STATUS_PARAM = "status";
     public static final String STATUS_DESCRIPTION = "Filter by status";
@@ -92,7 +94,33 @@ public class ParamConstants {
     public static final String MEMBERS_GROUP = "@members";
     public static final String ADMINS_GROUP = "@admins";
 
+    // -------------------- AUDIT -------------------------
+    public static final String OPERATION_ID = "operationId";
+    public static final String OPERATION_ID_DESCRIPTION = "Audit operation UUID";
+    public static final String USER_ID = "userId";
+    public static final String ACTION = "action";
+    public static final String ACTION_DESCRIPTION = "Action performed by the user";
+    public static final String RESOURCE = "resource";
+    public static final String RESOURCE_DESCRIPTION = "Resource involved";
+    public static final String RESOURCE_ID = "resourceId";
+    public static final String RESOURCE_ID_DESCRIPTION = "Resource ID";
+    public static final String RESOURCE_UUID = "resourceUuid";
+    public static final String RESOURCE_UUID_DESCRIPTION = "resource UUID";
+    public static final String STATUS = "status";
+    public static final String DATE = "date";
+    public static final String DATE_DESCRIPTION = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+
+    // ---------------------------------------------
+
+    public static final String USER = "user";
     public static final String USER_DESCRIPTION = "User ID";
+    public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
+    public static final String USER_ACCOUNT_TYPE = "account";
+    public static final String USER_ACCOUNT_TYPE_DESCRIPTION = "Account type [GUEST, FULL, ADMINISTRATOR]";
+    public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
+    public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
+    public static final String USER_CREATION_DATE = "creationDate";
+    public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
 
     // ---------------------------------------------
 
@@ -216,7 +244,7 @@ public class ParamConstants {
 
     public static final String PANEL_SOURCE = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
-            + "sources are 'panelapp' and 'genecensus'";
+            + "sources are 'panelapp' and 'cancer-gene-census'";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "

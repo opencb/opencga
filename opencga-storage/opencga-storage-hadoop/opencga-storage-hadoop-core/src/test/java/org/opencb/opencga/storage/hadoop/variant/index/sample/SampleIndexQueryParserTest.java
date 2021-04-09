@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.core.Region;
@@ -35,6 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import java.util.*;
 import java.util.function.Function;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants.ANTISENSE;
@@ -42,7 +44,7 @@ import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotati
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter.DELTA;
+import static org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField.DELTA;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.groupRegions;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.validSampleIndexQuery;
 
@@ -198,9 +200,9 @@ public class SampleIndexQueryParserTest {
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
-        q = new Query(TYPE.key(), "INDEL,SNV,INSERTION,DELETION,CNV,BREAKEND,MNV").append(SAMPLE.key(), "S1");
+        q = new Query(TYPE.key(), "INDEL,SNV,INSERTION,DELETION,BREAKEND,MNV").append(SAMPLE.key(), "S1");
         sampleIndexQuery = parse(q);
-        assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
+        assertThat(sampleIndexQuery.getVariantTypes(), anyOf(nullValue(), is(Collections.emptyList())));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "INDEL,SNV").append(SAMPLE.key(), "S1");
@@ -307,10 +309,11 @@ public class SampleIndexQueryParserTest {
             query = new Query(QUAL.key(), ">=" + qual);
             fileQuery = parseFileQuery(query, "", null);
             checkQualFilter(">=" + qual, qual, RangeIndexField.MAX, fileQuery);
-            if (qual == 0 || Arrays.binarySearch(qualThresholds, qual) >= 0) {
-                assertFalse(isValidParam(query, QUAL));
+            // Qual == 0 is not an special case anymore
+            if (/*qual == 0 || */Arrays.binarySearch(qualThresholds, qual) >= 0) {
+                assertFalse(">=" + qual, isValidParam(query, QUAL));
             } else {
-                assertTrue(isValidParam(query, QUAL));
+                assertTrue(">=" + qual, isValidParam(query, QUAL));
             }
 
             query = new Query(QUAL.key(), ">" + qual);
@@ -326,7 +329,7 @@ public class SampleIndexQueryParserTest {
 
         assertEquals(message, minValueInclusive, qualQuery.getMinValueInclusive(), 0);
         assertEquals(message, maxValueExclusive, qualQuery.getMaxValueExclusive(), 0);
-        assertEquals(message, RangeIndexFieldFilter.getRangeCode(minValueInclusive, qualThresholds), qualQuery.getMinCodeInclusive());
+        assertEquals(message, RangeIndexField.getRangeCode(minValueInclusive, qualThresholds), qualQuery.getMinCodeInclusive());
         assertEquals(message, RangeIndexFieldFilter.getRangeCodeExclusive(maxValueExclusive, qualThresholds), qualQuery.getMaxCodeExclusive());
     }
 
@@ -385,7 +388,7 @@ public class SampleIndexQueryParserTest {
 
         assertEquals(message, minValueInclusive, qualQuery.getMinValueInclusive(), 0);
         assertEquals(message, maxValueExclusive, qualQuery.getMaxValueExclusive(), 0);
-        assertEquals(message, RangeIndexFieldFilter.getRangeCode(minValueInclusive, dpThresholds), qualQuery.getMinCodeInclusive());
+        assertEquals(message, RangeIndexField.getRangeCode(minValueInclusive, dpThresholds), qualQuery.getMinCodeInclusive());
         assertEquals(message, RangeIndexFieldFilter.getRangeCodeExclusive(maxValueExclusive, dpThresholds), qualQuery.getMaxCodeExclusive());
     }
 

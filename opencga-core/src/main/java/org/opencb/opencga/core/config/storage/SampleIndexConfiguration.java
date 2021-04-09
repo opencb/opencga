@@ -27,9 +27,9 @@ public class SampleIndexConfiguration {
                         IndexFieldConfiguration.Type.CATEGORICAL,
                         VCFConstants.PASSES_FILTERS_v4))
                 .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS))
+                        IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL, QUAL_THRESHOLDS).setNullable(false))
                 .addFileIndexField(new IndexFieldConfiguration(
-                        IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS));
+                        IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY, DP_THRESHOLDS).setNullable(false));
 
         sampleIndexConfiguration.getFileIndexConfiguration()
                 .setFilePositionBits(DEFAULT_FILE_POSITION_SIZE_BITS);
@@ -40,6 +40,15 @@ public class SampleIndexConfiguration {
                 "add_two_extra_bits", "to_allow_backward", "compatibility"));
         sampleIndexConfiguration.getFileIndexConfiguration().setFixedFieldsFirst(false);
         return sampleIndexConfiguration;
+    }
+
+    public void validate() {
+        for (IndexFieldConfiguration customField : fileIndexConfiguration.getCustomFields()) {
+            customField.validate();
+        }
+        for (PopulationFrequencyRange populationRange : populationRanges) {
+            populationRange.validate();
+        }
     }
 
     public static class FileIndexConfiguration {
@@ -119,12 +128,14 @@ public class SampleIndexConfiguration {
             super(Source.ANNOTATION, studyPopulation, DEFAULT_THRESHOLDS);
             this.study = studyPopulation.split(":")[0];
             this.population = studyPopulation.split(":")[1];
+            setNullable(false);
         }
 
         public PopulationFrequencyRange(String study, String population) {
             super(Source.ANNOTATION, study + ":" + population, DEFAULT_THRESHOLDS);
             this.study = study;
             this.population = population;
+            setNullable(false);
         }
 
         @ConstructorProperties({"source", "key", "type"})
@@ -134,10 +145,6 @@ public class SampleIndexConfiguration {
 
         public String getStudy() {
             return study;
-        }
-
-        public String getStudyAndPopulation() {
-            return study + ":" + population;
         }
 
         public PopulationFrequencyRange setStudy(String study) {
@@ -194,7 +201,7 @@ public class SampleIndexConfiguration {
     public SampleIndexConfiguration addPopulationRange(SampleIndexConfiguration.PopulationFrequencyRange populationRange) {
         if (populationRanges.contains(populationRange)) {
             throw new IllegalArgumentException("Duplicated population '"
-                    + populationRange.getStudyAndPopulation() + "' in SampleIndexConfiguration");
+                    + populationRange.getKey() + "' in SampleIndexConfiguration");
         }
         this.populationRanges.add(populationRange);
         return this;

@@ -1,20 +1,18 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class GeneRgaConverter implements ComplexTypeConverter<List<RgaKnockoutByGene>, List<RgaDataModel>> {
-
-    private Logger logger;
+public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTypeConverter<List<RgaKnockoutByGene>, List<RgaDataModel>> {
 
     // This object contains the list of solr fields that are required in order to fully build each of the RgaKnockoutByGene fields
     private static final Map<String, List<String>> CONVERTER_MAP;
@@ -35,7 +33,11 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<RgaKnockoutBy
         CONVERTER_MAP.put("individuals.numParents", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.NUM_PARENTS));
         CONVERTER_MAP.put("individuals.motherId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_ID));
+        CONVERTER_MAP.put("individuals.motherSampleId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.MOTHER_SAMPLE_ID));
         CONVERTER_MAP.put("individuals.fatherId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_ID));
+        CONVERTER_MAP.put("individuals.fatherSampleId", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
+                RgaDataModel.FATHER_SAMPLE_ID));
         CONVERTER_MAP.put("individuals.transcripts.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.TRANSCRIPT_ID));
         CONVERTER_MAP.put("individuals.transcripts.chromosome", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
@@ -66,10 +68,11 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<RgaKnockoutBy
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.CLINICAL_SIGNIFICANCES));
         CONVERTER_MAP.put("individuals.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.GENE_ID,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.CONSEQUENCE_TYPES));
+
+        logger = LoggerFactory.getLogger(GeneRgaConverter.class);
     }
 
     public GeneRgaConverter() {
-        this.logger = LoggerFactory.getLogger(GeneRgaConverter.class);
     }
 
     @Override
@@ -102,9 +105,7 @@ public class GeneRgaConverter implements ComplexTypeConverter<List<RgaKnockoutBy
                 }
             }
             if (knockoutIndividual == null) {
-                knockoutIndividual = new RgaKnockoutByGene.KnockoutIndividual();
-                knockoutIndividual.setId(rgaDataModel.getIndividualId());
-                knockoutIndividual.setSampleId(rgaDataModel.getSampleId());
+                knockoutIndividual = new KnockoutByGene.KnockoutIndividual(fillIndividualInfo(rgaDataModel));
                 knockoutIndividual.setTranscripts(new LinkedList<>());
 
                 knockoutByGene.addIndividual(knockoutIndividual);

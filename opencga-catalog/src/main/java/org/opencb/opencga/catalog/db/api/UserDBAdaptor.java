@@ -121,6 +121,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         ACCOUNT("account", TEXT_ARRAY, ""),
+        ACCOUNT_TYPE("account.type", TEXT, ""),
+        ACCOUNT_AUTHENTICATION_ID("account.authentication.id", TEXT, ""),
+        ACCOUNT_CREATION_DATE("account.creationDate", TEXT, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         QUOTA("quota", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -133,6 +136,8 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
         PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
         PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
+
+        SHARED_PROJECTS("sharedProjects", TEXT_ARRAY, ""),
 
         TOOL_ID("tools.id", INTEGER_ARRAY, ""),
         TOOL_NAME("tools.name", TEXT_ARRAY, ""),

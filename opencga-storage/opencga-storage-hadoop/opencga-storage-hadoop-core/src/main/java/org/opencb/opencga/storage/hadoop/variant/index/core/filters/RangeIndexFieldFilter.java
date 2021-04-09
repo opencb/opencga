@@ -6,7 +6,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 
 public class RangeIndexFieldFilter extends IndexFieldFilter {
 
-    public static final double DELTA = 0.0000001;
     private final RangeIndexField index;
     private final double minValueInclusive;
     private final double maxValueExclusive;
@@ -19,35 +18,44 @@ public class RangeIndexFieldFilter extends IndexFieldFilter {
     }
 
     public RangeIndexFieldFilter(RangeIndexField index, String op, double value) {
-        this(index, queryRange(op, value, index.getMin(), index.getMax()));
-    }
-
-    public RangeIndexFieldFilter(RangeIndexField index, double[] range) {
         super(index);
         this.index = index;
-        double[] thresholds = index.getThresholds();
-        double min = index.getMin();
-        double max = index.getMax();
 
-        byte[] rangeCode = getRangeCodes(range, thresholds);
-
-        boolean exactFilter;
-        if (rangeCode[0] == 0) {
-            if (rangeCode[1] - 1 == thresholds.length) {
-                exactFilter = equalsTo(range[0], min) && equalsTo(range[1], max);
-            } else {
-                exactFilter = equalsTo(range[1], thresholds[rangeCode[1] - 1]) && equalsTo(range[0], min);
-            }
-        } else if (rangeCode[1] - 1 == thresholds.length) {
-            exactFilter = equalsTo(range[0], thresholds[rangeCode[0] - 1]) && equalsTo(range[1], max);
-        } else {
-            exactFilter = false;
+        switch (op) {
+            case "":
+            case "=":
+            case "==":
+                this.minValueInclusive = value;
+                this.maxValueExclusive = value + RangeIndexField.DELTA;
+                break;
+            case "<=":
+            case "<<=":
+                // Range is with exclusive end. For inclusive "<=" operator, need to add a DELTA to the value
+                value += RangeIndexField.DELTA;
+            case "<":
+            case "<<":
+                this.minValueInclusive = index.getMin();
+                this.maxValueExclusive = value;
+                break;
+            case ">":
+            case ">>":
+                // Range is with inclusive start. For exclusive ">" operator, need to add a DELTA to the value
+                value += RangeIndexField.DELTA;
+            case ">=":
+            case ">>=":
+                this.minValueInclusive = value;
+                this.maxValueExclusive = index.getMax();
+                break;
+            default:
+                throw new VariantQueryException("Unknown query operator" + op);
         }
-        this.minValueInclusive = range[0];
-        this.maxValueExclusive = range[1];
-        this.minCodeInclusive = rangeCode[0];
-        this.maxCodeExclusive = rangeCode[1];
-        this.exactFilter = exactFilter;
+
+        this.minCodeInclusive = (byte) index.encode(minValueInclusive);
+        this.maxCodeExclusive = (byte) index.encodeExclusive(maxValueExclusive);
+
+
+        this.exactFilter = (minValueInclusive == index.getMin() || index.containsThreshold(minValueInclusive))
+                        && (maxValueExclusive == index.getMax() || index.containsThreshold(maxValueExclusive));
     }
 
     @Override
@@ -93,21 +101,17 @@ public class RangeIndexFieldFilter extends IndexFieldFilter {
                 + '}';
     }
 
-
-    public static double[] queryRange(String op, double value) {
-        return queryRange(op, value, Double.MIN_VALUE, Double.MAX_VALUE);
-    }
-
+    @Deprecated
     public static double[] queryRange(String op, double value, double min, double max) {
         switch (op) {
             case "":
             case "=":
             case "==":
-                return new double[]{value, value + DELTA};
+                return new double[]{value, value + RangeIndexField.DELTA};
             case "<=":
             case "<<=":
                 // Range is with exclusive end. For inclusive "<=" operator, need to add a DELTA to the value
-                value += DELTA;
+                value += RangeIndexField.DELTA;
             case "<":
             case "<<":
                 return new double[]{min, value};
@@ -115,7 +119,7 @@ public class RangeIndexFieldFilter extends IndexFieldFilter {
             case ">":
             case ">>":
                 // Range is with inclusive start. For exclusive ">" operator, need to add a DELTA to the value
-                value += DELTA;
+                value += RangeIndexField.DELTA;
             case ">=":
             case ">>=":
                 return new double[]{value, max};
@@ -124,43 +128,14 @@ public class RangeIndexFieldFilter extends IndexFieldFilter {
         }
     }
 
+    @Deprecated
     public static byte[] getRangeCodes(double[] queryRange, double[] thresholds) {
-        return new byte[]{getRangeCode(queryRange[0], thresholds), getRangeCodeExclusive(queryRange[1], thresholds)};
+        return new byte[]{RangeIndexField.getRangeCode(queryRange[0], thresholds), getRangeCodeExclusive(queryRange[1], thresholds)};
     }
 
+    @Deprecated
     public static byte getRangeCodeExclusive(double queryValue, double[] thresholds) {
-        return (byte) (1 + getRangeCode(queryValue - DELTA, thresholds));
-    }
-
-    /**
-     * Gets the range code given a value and a list of ranges.
-     * Each point in the array indicates a range threshold.
-     *
-     * range 1 = ( -inf , th[0] )       ~   value < th[0]
-     * range 2 = [ th[0] , th[1] )      ~   value >= th[0] && value < th[1]
-     * range n = [ th[n-1] , +inf )     ~   value >= th[n-1]
-     *
-     * @param value     Value to convert
-     * @param thresholds    List of thresholds
-     * @return range code
-     */
-    public static byte getRangeCode(double value, double[] thresholds) {
-        byte code = (byte) (thresholds.length);
-        for (byte i = 0; i < thresholds.length; i++) {
-            if (lessThan(value, thresholds[i])) {
-                code = i;
-                break;
-            }
-        }
-        return code;
-    }
-
-    public static boolean lessThan(double a, double b) {
-        return a < b && !equalsTo(a, b);
-    }
-
-    public static boolean equalsTo(double a, double b) {
-        return Math.abs(a - b) < (DELTA / 10);
+        return (byte) (1 + RangeIndexField.getRangeCode(queryValue - RangeIndexField.DELTA, thresholds));
     }
 
 }

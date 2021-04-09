@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -174,18 +175,13 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups")
-    @ApiOperation(value = "Return the groups present in the study", response = Group.class)
+    @ApiOperation(value = "Return the groups present in the study. For owners and administrators only.", response = CustomGroup.class)
     public Response getGroups(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true)
-                @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
-            @ApiParam(value = "[DEPRECATED] Replaced by id.") @QueryParam("name") String groupName,
             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
-            if (StringUtils.isNotEmpty(groupName)) {
-                groupId = groupName;
-            }
-            return createOkResponse(catalogManager.getStudyManager().getGroup(studyStr, groupId, token));
+            return createOkResponse(catalogManager.getStudyManager().getCustomGroups(studyStr, groupId, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -458,6 +454,37 @@ public class StudyWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
+    @GET
+    @Path("/{study}/audit/search")
+    @ApiOperation(value = "Search audit collection", response = AuditRecord.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query")
+    })
+    public Response auditSearch(
+            @ApiParam(value = ParamConstants.STUDY_ID_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyId,
+            @ApiParam(value = ParamConstants.OPERATION_ID_DESCRIPTION) @QueryParam(ParamConstants.OPERATION_ID) String operationId,
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION) @QueryParam(ParamConstants.USER_ID) String userId,
+            @ApiParam(value = ParamConstants.ACTION_DESCRIPTION) @QueryParam(ParamConstants.ACTION) String action,
+            @ApiParam(value = ParamConstants.RESOURCE_DESCRIPTION) @QueryParam(ParamConstants.RESOURCE) Enums.Resource resource,
+            @ApiParam(value = ParamConstants.RESOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.RESOURCE_ID) String resourceId,
+            @ApiParam(value = ParamConstants.RESOURCE_UUID_DESCRIPTION) @QueryParam(ParamConstants.RESOURCE_UUID) String resourceUuid,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS) AuditRecord.Status.Result status,
+            @ApiParam(value = ParamConstants.DATE_DESCRIPTION) @QueryParam(ParamConstants.DATE) String date) {
+        try {
+            OpenCGAResult<AuditRecord> queryResult = catalogManager.getAuditManager().search(studyId, query, queryOptions, token);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
     private void fixVariable(Variable variable) {
         variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());

@@ -721,7 +721,7 @@ public class VariantWebService extends AnalysisWebService {
             statsResult.setNumMatches(result.getNumMatches());
             statsResult.setEvents(result.getEvents());
             statsResult.setTime(result.getTime());
-            statsResult.setNode(result.getNode());
+            statsResult.setFederationNode(result.getFederationNode());
             return statsResult;
         });
     }

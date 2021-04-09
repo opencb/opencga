@@ -393,9 +393,9 @@ public class InternalMainTest {
 
         // stats run
         execute("alignment", "stats-run",
-                "--session-id", sessionId,
+                "--token", sessionId,
                 "--study", studyId,
-                "--input-file", bamFile.getName(),
+                "--file", bamFile.getName(),
                 "-o", temporalDir);
 
         assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));
@@ -418,6 +418,34 @@ public class InternalMainTest {
         resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
         assertEquals(1, resultFiles.getNumResults());
         System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
+    }
+
+    @Test
+    public void testSamtoolsStats() throws CatalogException, IOException, ToolException {
+        createStudy(datastores, "s1");
+
+        String filename = "HG00096.chrom20.small.bam";
+        File bamFile = opencga.createFile(studyId, filename, sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "_stats", sessionId);
+        // samtools stats
+        System.out.println("---------------   samtools stats   ---------------");
+
+        String temporalDir7 = opencga.createTmpOutdir(studyId, "_alignment7", sessionId);
+        String statsFile = temporalDir7 + "/alignment.stats";
+
+        execute("alignment", "samtools-run",
+                "--token", sessionId,
+                "--study", studyId,
+                "--command", "stats",
+                "--input-file", bamFile.getPath(),
+                "--output-filename", statsFile,
+                "--samtools-params", "F=0xB00",
+                "--samtools-params", "remove-dups=true",
+                "-o", temporalDir7);
+
+        assertEquals(2, Files.list(Paths.get(temporalDir7)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(statsFile).exists());
     }
 
     @Test

@@ -23,7 +23,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -496,14 +495,14 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult count(Query query, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        authorizationManager.checkIsAdmin(userId);
+        authorizationManager.isInstallationAdministrator(userId);
 
         return jobDBAdaptor.count(query);
     }
 
     public DBIterator<Job> iterator(Query query, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        authorizationManager.checkIsAdmin(userId);
+        authorizationManager.isInstallationAdministrator(userId);
 
         return jobDBAdaptor.iterator(query, options);
     }

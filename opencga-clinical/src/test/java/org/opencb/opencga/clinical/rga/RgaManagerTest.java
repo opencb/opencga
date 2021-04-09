@@ -22,10 +22,7 @@ import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.RgaException;
-import org.opencb.opencga.storage.core.rga.RgaEngine;
-import org.opencb.opencga.storage.core.rga.RgaEngineTest;
-import org.opencb.opencga.storage.core.rga.RgaSolrExtenalResource;
+import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +34,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.opencb.opencga.storage.core.rga.RgaUtilsTest.createKnockoutByIndividual;
+import static org.opencb.opencga.clinical.rga.RgaUtilsTest.createKnockoutByIndividual;
 
 public class RgaManagerTest {
 

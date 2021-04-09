@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -61,6 +60,7 @@ public class CatalogManager implements AutoCloseable {
     private IOManagerFactory ioManagerFactory;
     private CatalogIOManager catalogIOManager;
 
+    private AdminManager adminManager;
     private UserManager userManager;
     private ProjectManager projectManager;
     private StudyManager studyManager;
@@ -101,6 +101,7 @@ public class CatalogManager implements AutoCloseable {
         authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, configuration);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
 
+        adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
@@ -212,7 +213,7 @@ public class CatalogManager implements AutoCloseable {
 
     public void deleteCatalogDB(String token) throws CatalogException, URISyntaxException {
         String userId = userManager.getUserId(token);
-        if (!authorizationManager.checkIsAdmin(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogException("Only the admin can delete the database");
         }
 
@@ -268,6 +269,10 @@ public class CatalogManager implements AutoCloseable {
     @Override
     public void close() throws CatalogException {
         catalogDBAdaptorFactory.close();
+    }
+
+    public AdminManager getAdminManager() {
+        return adminManager;
     }
 
     public UserManager getUserManager() {

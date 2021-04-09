@@ -59,6 +59,7 @@ public final class Enums {
     }
 
     public enum Resource {
+        AUDIT,
         USER,
         PROJECT,
         STUDY,
@@ -169,6 +170,10 @@ public final class Enums {
         IMPORT_EXTERNAL_USERS,
         IMPORT_EXTERNAL_GROUP_OF_USERS,
         SYNC_EXTERNAL_GROUP_OF_USERS,
+
+        // RGA
+        RESET_RGA_INDEXES,
+        UPDATE_RGA_INDEX,
 
         // Variants
         VARIANT_STORAGE_OPERATION,

@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 
 /**
@@ -162,7 +162,7 @@ public final class IndexUtils {
             case ">=":
             case ">>=":
                 // Index is using operator ">". To use ">=" operator, need to subtract a DELTA to the value
-                value -= RangeIndexFieldFilter.DELTA;
+                value -= RangeIndexField.DELTA;
             case ">":
             case ">>":
                 if (value >= indexThreshold) {

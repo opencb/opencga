@@ -1,5 +1,9 @@
 package org.opencb.opencga.core.config.storage;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.beans.ConstructorProperties;
 import java.util.Arrays;
 import java.util.Objects;
@@ -10,6 +14,16 @@ public class IndexFieldConfiguration {
     protected Type type;
     protected double[] thresholds;
     protected String[] values;
+    protected boolean nullable = true;
+
+    public IndexFieldConfiguration(IndexFieldConfiguration other) {
+        this.source = other.source;
+        this.key = other.key;
+        this.type = other.type;
+        this.thresholds = ArrayUtils.clone(other.thresholds);
+        this.values = ArrayUtils.clone(other.values);
+        this.nullable = other.nullable;
+    }
 
     @ConstructorProperties({"source", "key", "type"})
     protected IndexFieldConfiguration(Source source, String key, Type type) {
@@ -19,9 +33,13 @@ public class IndexFieldConfiguration {
     }
 
     public IndexFieldConfiguration(Source source, String key, double[] thresholds) {
+        this(source, key, thresholds, Type.RANGE_LT);
+    }
+
+    public IndexFieldConfiguration(Source source, String key, double[] thresholds, Type rangeType) {
         this.key = key;
         this.source = source;
-        this.type = Type.RANGE;
+        this.type = rangeType;
         this.thresholds = thresholds;
         this.values = null;
     }
@@ -34,6 +52,7 @@ public class IndexFieldConfiguration {
         this.values = values;
     }
 
+    @JsonIgnore
     public String getId() {
         return getSource() + ":" + getKey();
     }
@@ -73,6 +92,51 @@ public class IndexFieldConfiguration {
         return this;
     }
 
+    public boolean getNullable() {
+        return nullable;
+    }
+
+    public IndexFieldConfiguration setNullable(boolean nullable) {
+        this.nullable = nullable;
+        return this;
+    }
+
+    public void validate() {
+        if (key == null) {
+            throw new IllegalArgumentException("Missing field KEY in index custom field");
+        }
+        if (source == null) {
+            throw new IllegalArgumentException("Missing field SOURCE in index custom field " + key);
+        }
+        if (type == null) {
+            throw new IllegalArgumentException("Missing field TYPE in index custom field " + source + ":" + key);
+        }
+        switch (type) {
+            case RANGE_LT:
+            case RANGE_GT:
+                if (thresholds == null || thresholds.length == 0) {
+                    throw new IllegalArgumentException("Missing 'thresholds' for index custom field " + getId());
+                }
+                if (!ArrayUtils.isSorted(thresholds)) {
+                    throw new IllegalArgumentException("Thresholds must be sorted!");
+                }
+//                if (Integer.bitCount(thresholds.length + 1) != 1) {
+//                    throw new IllegalArgumentException("Invalid number of thresholds. Got "
+//                            + thresholds.length + " thresholds. "
+//                            + "Must be a power of 2 minus 1. e.g. 1, 3, 7, 15...");
+//                }
+                break;
+            case CATEGORICAL:
+            case CATEGORICAL_MULTI_VALUE:
+                if (values == null || values.length == 0) {
+                    throw new IllegalArgumentException("Missing 'values' for index custom field " + getId());
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown type " + type + " for index custom field " + getId());
+        }
+    }
+
     public enum Source {
         VARIANT,
         META,
@@ -82,9 +146,37 @@ public class IndexFieldConfiguration {
     }
 
     public enum Type {
-        RANGE,
+        RANGE_LT,
+        RANGE_GT,
         CATEGORICAL,
-        CATEGORICAL_MULTI_VALUE
+        CATEGORICAL_MULTI_VALUE;
+
+        @JsonCreator
+        public static Type forValues(String value) {
+            if (value == null) {
+                return null;
+            }
+            switch (value.toUpperCase()) {
+                case "RANGE":
+                case "RANGE_LT":
+                case "RANGELT":
+                case "RANGE_GE":
+                case "RANGEGE":
+                    return RANGE_LT;
+                case "RANGE_GT":
+                case "RANGEGT":
+                case "RANGE_LE":
+                case "RANGELE":
+                    return RANGE_GT;
+                case "CATEGORICAL":
+                    return CATEGORICAL;
+                case "CATEGORICAL_MULTI_VALUE":
+                case "CATEGORICALMULTIVALUE":
+                    return CATEGORICAL_MULTI_VALUE;
+                default:
+                    throw new IllegalArgumentException("Unknown index field type " + value);
+            }
+        }
     }
 
     @Override

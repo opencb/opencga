@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -1280,6 +1279,11 @@ public class FileManager extends AnnotationSetManager<File> {
 
     void fixQueryObject(Study study, Query query, String user) throws CatalogException {
         super.fixQueryObject(query);
+
+        if (query.containsKey(ParamConstants.INTERNAL_INDEX_STATUS_PARAM)) {
+            query.put(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), query.get(ParamConstants.INTERNAL_INDEX_STATUS_PARAM));
+            query.remove(ParamConstants.INTERNAL_INDEX_STATUS_PARAM);
+        }
 
         if (query.containsKey(FileDBAdaptor.QueryParams.ID.key())) {
             if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {

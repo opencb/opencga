@@ -464,12 +464,6 @@ public class OpenCGAWSServer {
         queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
 
-//      Exceptions
-        if (query.containsKey("status")) {
-            query.put("status.name", query.get("status"));
-            query.remove("status");
-        }
-
         // Remove deprecated fields
         query.remove("variableSet");
         query.remove("annotationsetName");
@@ -664,7 +658,7 @@ public class OpenCGAWSServer {
     }
 
     private static void setFederationServer(OpenCGAResult result, UriInfo uriInfo) {
-        result.setNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
+        result.setFederationNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
                 GitRepositoryState.get().getBuildVersion()));
     }
 

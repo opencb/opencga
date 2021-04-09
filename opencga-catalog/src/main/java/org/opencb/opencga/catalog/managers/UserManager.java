@@ -17,12 +17,12 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.AzureADAuthenticationManager;
@@ -30,11 +30,14 @@ import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManag
 import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
@@ -188,6 +191,7 @@ public class UserManager extends AbstractManager {
         if (user.getAccount().getType() == null) {
             user.getAccount().setType(Account.AccountType.GUEST);
         }
+        user.getAccount().setCreationDate(TimeUtils.getTime());
 
         try {
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
@@ -482,40 +486,169 @@ public class UserManager extends AbstractManager {
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<User> get(String userId, QueryOptions options, String token)
+    public OpenCGAResult<User> get(String userId, QueryOptions options, String token) throws CatalogException {
+        return get(Collections.singletonList(userId), options, token);
+//        ParamUtils.checkParameter(userId, "userId");
+//        ParamUtils.checkParameter(token, "sessionId");
+//        options = ParamUtils.defaultObject(options, QueryOptions::new);
+//
+//        ObjectMap auditParams = new ObjectMap()
+//                .append("userId", userId)
+//                .append("options", options)
+//                .append("token", token);
+//        try {
+//            userId = getCatalogUserId(userId, token);
+//            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options);
+//
+//            // Remove some unnecessary and prohibited parameters
+//            for (User user : userDataResult.getResults()) {
+//                if (user.getProjects() != null) {
+//                    for (Project project : user.getProjects()) {
+//                        if (project.getStudies() != null) {
+//                            for (Study study : project.getStudies()) {
+//                                study.setVariableSets(null);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            auditManager.auditInfo(userId, Enums.Resource.USER, userId, "", "", "", auditParams,
+//                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+//            return userDataResult;
+//        } catch (CatalogException e) {
+//            auditManager.auditInfo(userId, Enums.Resource.USER, userId, "", "", "", auditParams,
+//                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+//            throw e;
+//        }
+    }
+
+    /**
+     * Gets the user information.
+     *
+     * @param userIdList   List of user id
+     * @param options      QueryOptions
+     * @param token        Token belonging to the user itself or administrator of any study shared with the user list requested.
+     * @return The requested users
+     * @throws CatalogException CatalogException
+     */
+    public OpenCGAResult<User> get(List<String> userIdList, QueryOptions options, String token)
             throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(token, "sessionId");
+        ParamUtils.checkNotEmptyArray(userIdList, "userId");
+        ParamUtils.checkParameter(token, "token");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         ObjectMap auditParams = new ObjectMap()
-                .append("userId", userId)
+                .append("userIdList", userIdList)
                 .append("options", options)
                 .append("token", token);
-        try {
-            userId = getCatalogUserId(userId, token);
-            OpenCGAResult<User> userDataResult = userDBAdaptor.get(userId, options);
+        String userId = getUserId(token);
 
-            // Remove some unnecessary and prohibited parameters
-            for (User user : userDataResult.getResults()) {
-                if (user.getProjects() != null) {
-                    for (Project project : user.getProjects()) {
-                        if (project.getStudies() != null) {
-                            for (Study study : project.getStudies()) {
-                                study.setVariableSets(null);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        auditManager.initAuditBatch(operationUuid);
+        try {
+            OpenCGAResult<User> userDataResult;
+
+            if (userIdList.size() == 1 && userId.equals(userIdList.get(0))) {
+                 userDataResult = userDBAdaptor.get(userId, options);
+                auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, userId, "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                return userDataResult;
+            }
+            // We will obtain the users this user is administrating
+            QueryOptions adminOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                    UserDBAdaptor.QueryParams.PROJECTS.key() + "." + ProjectDBAdaptor.QueryParams.STUDIES.key() + "."
+                            + StudyDBAdaptor.QueryParams.GROUPS.key(), UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + "."
+                    + ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.GROUPS.key()));
+            userDataResult = userDBAdaptor.get(userId, adminOptions);
+            User admin = userDataResult.first();
+
+            Set<String> users = new HashSet<>();
+            boolean isAdmin = false;
+
+            if (admin.getProjects() != null) {
+                for (Project project : admin.getProjects()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            isAdmin = true;
+                            for (Group group : study.getGroups()) {
+                                if (StudyManager.MEMBERS.equals(group.getId())) {
+                                    users.addAll(group.getUserIds());
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (admin.getSharedProjects() != null) {
+                for (Project project : admin.getSharedProjects()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            boolean isAdminInStudy = false;
+                            Set<String> usersInStudy = new HashSet<>();
+                            for (Group group : study.getGroups()) {
+                                if (StudyManager.ADMINS.equals(group.getId()) && group.getUserIds().contains(userId)) {
+                                    isAdminInStudy = true;
+                                }
+                                if (StudyManager.MEMBERS.equals(group.getId())) {
+                                    usersInStudy.addAll(group.getUserIds());
+                                }
+                            }
+                            if (isAdminInStudy) {
+                                isAdmin = true;
+                                users.addAll(usersInStudy);
                             }
                         }
                     }
                 }
             }
 
-            auditManager.auditInfo(userId, Enums.Resource.USER, userId, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return userDataResult;
+            if (!isAdmin) {
+                throw new CatalogAuthorizationException("Only owners or administrators can see other user information");
+            }
+
+            // Filter only the users the userId can get information for
+            List<String> auxUserList = userIdList.stream().filter(users::contains).collect(Collectors.toList());
+
+            Query query = new Query(UserDBAdaptor.QueryParams.ID.key(), auxUserList);
+            OpenCGAResult<User> result = userDBAdaptor.get(query, options);
+            Map<String, User> userMap = new HashMap<>();
+            for (User user : result.getResults()) {
+                userMap.put(user.getId(), user);
+            }
+
+            // Ensure order and audit
+            List<User> finalUserList = new ArrayList<>(userIdList.size());
+            List<Event> eventList = new ArrayList<>(userIdList.size());
+            for (String tmpUserId : userIdList) {
+                if (userMap.containsKey(tmpUserId)) {
+                    finalUserList.add(userMap.get(tmpUserId));
+                    auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                } else {
+                    finalUserList.add(new User().setId(tmpUserId));
+
+                    String msg = "'" + userId + "' is not administrating a study of user '" + tmpUserId + "' or user does not exist.";
+                    eventList.add(new Event(Event.Type.ERROR, msg));
+
+                    auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, tmpUserId, msg)));
+                }
+            }
+
+            result.setResults(finalUserList);
+            result.setEvents(eventList);
+
+            return result;
         } catch (CatalogException e) {
-            auditManager.auditInfo(userId, Enums.Resource.USER, userId, "", "", "", auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            for (String tmpUserId : userIdList) {
+                auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, tmpUserId, "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationUuid);
         }
     }
 

@@ -235,19 +235,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/sample/index/configure")
-    @ApiOperation(value = "Update SampleIndex configuration", response = ObjectMap.class)
+    @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
-        return run(() -> {
-            StopWatch stopWatch = StopWatch.createStarted();
-            variantManager.configureSampleIndex(study, sampleIndexConfiguration, token);
-
-            return new DataResult<>()
-                    .setResults(Collections.singletonList(sampleIndexConfiguration))
-                    .setNumResults(1)
-                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
-        });
+        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, token));
     }
 
     @POST

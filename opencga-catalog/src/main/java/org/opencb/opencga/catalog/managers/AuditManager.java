@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.audit;
+package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,6 +213,36 @@ public class AuditManager {
         }
     }
 
+    public OpenCGAResult<AuditRecord> search(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+
+            query.remove(AuditDBAdaptor.QueryParams.STUDY_ID.key());
+            query.put(AuditDBAdaptor.QueryParams.STUDY_UUID.key(), study.getUuid());
+            OpenCGAResult<AuditRecord> result = auditDBAdaptor.get(query, options);
+
+            auditSearch(userId, Enums.Resource.AUDIT, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditSearch(userId, Enums.Resource.AUDIT, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     /**
      * Groups the matching entries by some fields.
      *
@@ -230,7 +262,7 @@ public class AuditManager {
 
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        if (authorizationManager.checkIsAdmin(userId)) {
+        if (authorizationManager.isInstallationAdministrator(userId)) {
             return auditDBAdaptor.groupBy(query, fields, options);
         }
         throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");

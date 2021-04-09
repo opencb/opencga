@@ -56,10 +56,9 @@ spec:
         - mountPath: /usr/local/apache2/htdocs/iva/conf
           name: ivaconf
       volumes:
-      - azureFile:
-          secretName: {{ .Values.azureStorageAccount.secretName }}
-          shareName: {{ .Values.iva.volumes.ivaconf.shareName }}
-        name: ivaconf
+      - name: ivaconf
+        persistentVolumeClaim:
+          claimName: {{ include "pvcIvaconf" . | quote }}
       {{- with .Values.iva.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

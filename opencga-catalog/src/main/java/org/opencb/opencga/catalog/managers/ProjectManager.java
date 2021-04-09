@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -175,6 +174,7 @@ public class ProjectManager extends AbstractManager {
         Query query = new Query()
                 .append(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.UUID.key(), projectUuid);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         return projectDBAdaptor.get(query, options);
     }
 
@@ -553,7 +553,7 @@ public class ProjectManager extends AbstractManager {
 
     public void importReleases(String owner, String inputDirStr, String sessionId) throws CatalogException, IOException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        if (!authorizationManager.checkIsAdmin(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
         }
 
@@ -669,7 +669,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportByFileNames(String studyStr, File outputDir, File filePath, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        if (!authorizationManager.checkIsAdmin(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 
@@ -853,7 +853,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportReleases(String projectStr, int release, String outputDirStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        if (!authorizationManager.checkIsAdmin(userId)) {
+        if (!authorizationManager.isInstallationAdministrator(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 

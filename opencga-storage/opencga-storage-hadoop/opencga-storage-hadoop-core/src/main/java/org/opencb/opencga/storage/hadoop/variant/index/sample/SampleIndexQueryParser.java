@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.NoOpIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
@@ -998,10 +999,10 @@ public class SampleIndexQueryParser {
                 boolean populationFilterFullyCovered = false;
                 int popFreqIdx = 0;
                 for (PopulationFrequencyRange populationRange : schema.getConfiguration().getPopulationRanges()) {
-                    if (populationRange.getStudyAndPopulation().equals(studyPop)) {
+                    if (populationRange.getKey().equals(studyPop)) {
                         populationInSampleIndex = true;
                         RangeQuery rangeQuery = getRangeQuery(keyOpValue.getOp(), freqFilter, populationRange.getThresholds(),
-                                0, 1 + RangeIndexFieldFilter.DELTA);
+                                0, 1 + RangeIndexField.DELTA);
 
                         popFreqQuery.add(new PopulationFrequencyQuery(rangeQuery,
                                 popFreqIdx, populationRange.getStudy(),
@@ -1101,14 +1102,14 @@ public class SampleIndexQueryParser {
         boolean exactQuery;
         if (rangeCode[0] == 0) {
             if (rangeCode[1] - 1 == thresholds.length) {
-                exactQuery = RangeIndexFieldFilter.equalsTo(range[0], min) && RangeIndexFieldFilter.equalsTo(range[1], max);
+                exactQuery = RangeIndexField.equalsTo(range[0], min) && RangeIndexField.equalsTo(range[1], max);
             } else {
-                exactQuery = RangeIndexFieldFilter.equalsTo(range[1], thresholds[rangeCode[1] - 1])
-                        && RangeIndexFieldFilter.equalsTo(range[0], min);
+                exactQuery = RangeIndexField.equalsTo(range[1], thresholds[rangeCode[1] - 1])
+                        && RangeIndexField.equalsTo(range[0], min);
             }
         } else if (rangeCode[1] - 1 == thresholds.length) {
-            exactQuery = RangeIndexFieldFilter.equalsTo(range[0], thresholds[rangeCode[0] - 1])
-                    && RangeIndexFieldFilter.equalsTo(range[1], max);
+            exactQuery = RangeIndexField.equalsTo(range[0], thresholds[rangeCode[0] - 1])
+                    && RangeIndexField.equalsTo(range[1], max);
         } else {
             exactQuery = false;
         }

@@ -604,7 +604,7 @@
                 <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
 
                 <!-- Client -->
-                <OPENCGA.CLIENT.REST.HOST>http://localhost:9090/${opencga.war.name}</OPENCGA.CLIENT.REST.HOST>
+                <OPENCGA.CLIENT.REST.HOST>https://ws.opencb.org/opencga-prod</OPENCGA.CLIENT.REST.HOST>
                 <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>

@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.rga;
+package org.opencb.opencga.clinical.rga;
 
 import org.apache.solr.client.solrj.beans.Field;
 
@@ -29,7 +29,13 @@ public class RgaDataModel {
     private String fatherId;
 
     @Field
+    private String fatherSampleId;
+
+    @Field
     private String motherId;
+
+    @Field
+    private String motherSampleId;
 
     @Field
     private int numParents;
@@ -101,7 +107,9 @@ public class RgaDataModel {
     public static final String PHENOTYPES = "phenotypes";
     public static final String DISORDERS = "disorders";
     public static final String MOTHER_ID = "motherId";
+    public static final String MOTHER_SAMPLE_ID = "motherSampleId";
     public static final String FATHER_ID = "fatherId";
+    public static final String FATHER_SAMPLE_ID = "fatherSampleId";
     public static final String NUM_PARENTS = "numParents";
     public static final String GENE_ID = "geneId";
     public static final String GENE_NAME = "geneName";
@@ -129,43 +137,6 @@ public class RgaDataModel {
     public RgaDataModel() {
     }
 
-    public RgaDataModel(String id, String individualId, String sampleId, String sex, List<String> phenotypes, List<String> disorders,
-                        String fatherId, String motherId, int numParents, String geneId, String geneName, String geneBiotype,
-                        String chromosome, String strand, int start, int end, String transcriptId, String transcriptBiotype,
-                        List<String> variants, List<String> types, List<String> knockoutTypes, List<String> filters,
-                        List<String> consequenceTypes, List<String> clinicalSignificances, Map<String, List<Float>> populationFrequencies,
-                        List<String> compoundFilters, List<String> phenotypeJson, List<String> disorderJson, List<String> variantJson) {
-        this.id = id;
-        this.individualId = individualId;
-        this.sampleId = sampleId;
-        this.sex = sex;
-        this.phenotypes = phenotypes;
-        this.disorders = disorders;
-        this.fatherId = fatherId;
-        this.motherId = motherId;
-        this.numParents = numParents;
-        this.geneId = geneId;
-        this.geneName = geneName;
-        this.geneBiotype = geneBiotype;
-        this.chromosome = chromosome;
-        this.strand = strand;
-        this.start = start;
-        this.end = end;
-        this.transcriptId = transcriptId;
-        this.transcriptBiotype = transcriptBiotype;
-        this.variants = variants;
-        this.types = types;
-        this.knockoutTypes = knockoutTypes;
-        this.filters = filters;
-        this.consequenceTypes = consequenceTypes;
-        this.clinicalSignificances = clinicalSignificances;
-        this.populationFrequencies = populationFrequencies;
-        this.compoundFilters = compoundFilters;
-        this.phenotypeJson = phenotypeJson;
-        this.disorderJson = disorderJson;
-        this.variantJson = variantJson;
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RgaDataModel{");
@@ -176,7 +147,9 @@ public class RgaDataModel {
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
         sb.append(", fatherId='").append(fatherId).append('\'');
+        sb.append(", fatherSampleId='").append(fatherSampleId).append('\'');
         sb.append(", motherId='").append(motherId).append('\'');
+        sb.append(", motherSampleId='").append(motherSampleId).append('\'');
         sb.append(", numParents=").append(numParents);
         sb.append(", geneId='").append(geneId).append('\'');
         sb.append(", geneName='").append(geneName).append('\'');
@@ -271,6 +244,24 @@ public class RgaDataModel {
 
     public RgaDataModel setMotherId(String motherId) {
         this.motherId = motherId;
+        return this;
+    }
+
+    public String getFatherSampleId() {
+        return fatherSampleId;
+    }
+
+    public RgaDataModel setFatherSampleId(String fatherSampleId) {
+        this.fatherSampleId = fatherSampleId;
+        return this;
+    }
+
+    public String getMotherSampleId() {
+        return motherSampleId;
+    }
+
+    public RgaDataModel setMotherSampleId(String motherSampleId) {
+        this.motherSampleId = motherSampleId;
         return this;
     }
 

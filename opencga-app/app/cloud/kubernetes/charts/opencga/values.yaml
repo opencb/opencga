@@ -5,11 +5,13 @@
 deploySolr: false
 deployMongo: false
 
-catalog:
-  database:
-    hosts: "FILL_ME"
-    user: "FILL_ME"
-    password: "FILL_ME"
+mongodb:
+  hosts: "FILL_ME"
+  user: "FILL_ME"
+  password: "FILL_ME"
+  ssl: true
+  authenticationDatabase : "admin"
+  authenticationMechanism : "SCRAM-SHA-1"
 
 cellbase:
   host: "http://ws.opencb.org/cellbase/"
@@ -23,7 +25,6 @@ analysis:
     options:
       k8s:
         masterNode: "FILL_ME"
-        namespace: "FILL_ME"
 
 solr:
   hosts: "FILL_ME"
@@ -83,7 +84,7 @@ rest:
     # fsGroup: 2000
 
   securityContext:
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     runAsUser: 1001
     # capabilities:
     #   drop:
@@ -157,7 +158,7 @@ master:
     # fsGroup: 2000
 
   securityContext:
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     runAsUser: 1001
     # capabilities:
     #   drop:
@@ -191,8 +192,12 @@ init:
     repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
     pullPolicy: IfNotPresent
 
+  configuration:
+    # Overwrite configuration from image.
+    overwrite: false
+
   securityContext:
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     runAsUser: 1001
     # capabilities:
     #   drop:

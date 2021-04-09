@@ -14,6 +14,8 @@ parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
 parser.add_argument("--catalog-database-ssl", required=False, default=True)
+parser.add_argument("--catalog-database-authentication-database", required=False, default="admin")
+parser.add_argument("--catalog-database-authentication-mechanism", required=False)
 parser.add_argument("--catalog-search-hosts", required=True)
 parser.add_argument("--catalog-search-user", required=False)
 parser.add_argument("--catalog-search-password", required=False)
@@ -124,7 +126,10 @@ config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
 config["catalog"]["database"]["options"]["sslEnabled"] = args.catalog_database_ssl
 config["catalog"]["database"]["options"]["sslInvalidCertificatesAllowed"] = True
-config["catalog"]["database"]["options"]["authenticationDatabase"] = "admin"
+if args.catalog_database_authentication_database is not None:
+    config["catalog"]["database"]["options"]["authenticationDatabase"] = args.catalog_database_authentication_database
+if args.catalog_database_authentication_mechanism is not None:
+    config["catalog"]["database"]["options"]["authenticationMechanism"] = args.catalog_database_authentication_mechanism
 
 # Inject search database
 catalog_search_hosts = args.catalog_search_hosts.replace('\"','').replace('[','').replace(']','').split(",")

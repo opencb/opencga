@@ -291,11 +291,27 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     } else {
                         sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), individual.getId());
                         knockoutByIndividual.setId(individual.getId());
-                        if (individual.getFather() != null) {
+                        List<String> parentsIndividuals = new ArrayList<>(2);
+                        if (individual.getFather() != null && individual.getFather().getId() != null) {
                             knockoutByIndividual.setFatherId(individual.getFather().getId());
+                            parentsIndividuals.add(knockoutByIndividual.getFatherId());
                         }
-                        if (individual.getMother() != null) {
+                        if (individual.getMother() != null && individual.getMother().getId() != null) {
                             knockoutByIndividual.setMotherId(individual.getMother().getId());
+                            parentsIndividuals.add(knockoutByIndividual.getMotherId());
+                        }
+                        if (!parentsIndividuals.isEmpty()) {
+                            for (Individual parent : catalogManager.getIndividualManager().get(study, parentsIndividuals,
+                                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                                            IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".id")), token).getResults()) {
+                                if (parent.getSamples() != null && !parent.getSamples().isEmpty()) {
+                                    if (parent.getId().equals(knockoutByIndividual.getFatherId())) {
+                                        knockoutByIndividual.setFatherSampleId(parent.getSamples().get(0).getId());
+                                    } else {
+                                        knockoutByIndividual.setMotherSampleId(parent.getSamples().get(0).getId());
+                                    }
+                                }
+                            }
                         }
                         knockoutByIndividual.setSex(individual.getSex());
                         knockoutByIndividual.setDisorders(individual.getDisorders());

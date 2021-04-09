@@ -573,11 +573,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
                 && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
+            QueryOptions studyOptions = options == null ? QueryOptions.empty() : extractNestedOptions(options, "studies");
             for (Project project : queryResult.getResults()) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                 try {
                     OpenCGAResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(clientSession, studyQuery,
-                            options);
+                            studyOptions);
                     project.setStudies(studyDataResult.getResults());
                 } catch (CatalogDBException e) {
                     logger.error("{}", e.getMessage(), e);

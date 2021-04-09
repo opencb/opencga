@@ -16,22 +16,27 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.OpenCgaMongoConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static org.opencb.opencga.catalog.db.api.AuditDBAdaptor.QueryParams.STATUS_NAME;
 
 
 /**
@@ -42,10 +47,12 @@ import java.util.*;
 public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdaptor {
 
     private final MongoDBCollection auditCollection;
+    private final OpenCgaMongoConverter<AuditRecord> auditConverter;
 
     public AuditMongoDBAdaptor(MongoDBCollection auditCollection, Configuration configuration) {
         super(configuration, LoggerFactory.getLogger(AuditMongoDBAdaptor.class));
         this.auditCollection = auditCollection;
+        this.auditConverter = new OpenCgaMongoConverter<>(AuditRecord.class);
     }
 
     @Override
@@ -71,29 +78,10 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
 
     @Override
     public OpenCGAResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
+        Bson bson = parseQuery(query);
+        logger.debug("Audit query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        List<DBObject> mongoQueryList = new LinkedList<>();
-        for (Map.Entry<String, Object> entry : query.entrySet()) {
-            String key = entry.getKey().split("\\.")[0];
-            try {
-                if (MongoDBUtils.isDataStoreOption(key) || MongoDBUtils.isOtherKnownOption(key)) {
-                    continue;   //Exclude DataStore options
-                }
-                // FIXME Pedro!! fix this please
-//                AuditFilterOption option = AuditFilterOption.valueOf(key);
-//                switch (option) {
-//                    default:
-//                        String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
-//                        addCompQueryFilter(option, entry.getKey(), query, queryKey, mongoQueryList);
-//                        break;
-//                }
-            } catch (IllegalArgumentException e) {
-                throw new CatalogDBException(e);
-            }
-        }
-        DataResult<AuditRecord> result = auditCollection.find(new Document("$and", mongoQueryList), null, AuditRecord.class, queryOptions);
-        return endQuery(startTime, result);
+        return new OpenCGAResult<>(auditCollection.find(bson, auditConverter, queryOptions));
     }
 
     @Override
@@ -114,14 +102,19 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
             }
             try {
                 switch (queryParam) {
-                    case DATE:
-                        addAutoOrQuery("timeStamp", queryParam.key(), query, queryParam.type(), andBsonList);
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(STATUS_NAME.key(), queryParam.key(), query, STATUS_NAME.type(), andBsonList);
                         break;
-                    case RESOURCE:
-                    case ACTION:
-                    case BEFORE:
-                    case AFTER:
+                    case OPERATION_ID:
                     case USER_ID:
+                    case ACTION:
+                    case RESOURCE:
+                    case RESOURCE_ID:
+                    case RESOURCE_UUID:
+                    case STUDY_ID:
+                    case STUDY_UUID:
+                    case DATE:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:

@@ -5,11 +5,11 @@ import org.opencb.opencga.analysis.variant.operations.VariantFileIndexJobLaunche
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenericJulieRunCommandOptions;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +41,9 @@ public class OperationsCommandOptions {
     public static final String VARIANT_SCORE_INDEX = "variant-score-index";
     public static final String VARIANT_SCORE_DELETE = "variant-score-delete";
 
-    public static final String VARIANT_SAMPLE_GENOTYPE_INDEX = "variant-sample-genotype-index";
-    public static final String VARIANT_FAMILY_GENOTYPE_INDEX = "variant-family-genotype-index";
+    public static final String VARIANT_SAMPLE_INDEX = "variant-sample-index";
+    public static final String VARIANT_SAMPLE_INDEX_CONFIGURE = "variant-sample-index-configure";
+    public static final String VARIANT_FAMILY_INDEX = "variant-family-index";
 
     public static final String VARIANT_FAMILY_AGGREGATE = "variant-family-aggregate";
     public static final String VARIANT_AGGREGATE = "variant-aggregate";
@@ -61,6 +62,7 @@ public class OperationsCommandOptions {
     public final VariantScoreDeleteCommandOptions variantScoreDelete;
 
     public final VariantSampleGenotypeIndexCommandOptions variantSampleIndex;
+    public final VariantSampleIndexConfigureCommandOptions variantSampleIndexConfigure;
     public final VariantFamilyGenotypeIndexCommandOptions variantFamilyIndex;
 
     public final VariantFamilyAggregateCommandOptions variantAggregateFamily;
@@ -96,6 +98,7 @@ public class OperationsCommandOptions {
         variantScoreIndex = new VariantScoreIndexCommandOptions();
         variantScoreDelete = new VariantScoreDeleteCommandOptions();
         variantSampleIndex = new VariantSampleGenotypeIndexCommandOptions();
+        variantSampleIndexConfigure = new VariantSampleIndexConfigureCommandOptions();
         variantFamilyIndex = new VariantFamilyGenotypeIndexCommandOptions();
         variantAggregateFamily = new VariantFamilyAggregateCommandOptions();
         variantAggregate = new VariantAggregateCommandOptions();
@@ -247,7 +250,7 @@ public class OperationsCommandOptions {
         public GeneralCliOptions.StudyOption study = new GeneralCliOptions.StudyOption();
     }
 
-    @Parameters(commandNames = {VARIANT_SAMPLE_GENOTYPE_INDEX}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
+    @Parameters(commandNames = {VARIANT_SAMPLE_INDEX}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
     public class VariantSampleGenotypeIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -270,7 +273,20 @@ public class OperationsCommandOptions {
         public boolean overwrite;
     }
 
-    @Parameters(commandNames = {VARIANT_FAMILY_GENOTYPE_INDEX}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)
+    @Parameters(commandNames = {VARIANT_SAMPLE_INDEX_CONFIGURE}, commandDescription = "Modify sample index configuration")
+    public class VariantSampleIndexConfigureCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--sample-index-configuration-file"}, required = true, description = "File containing the new SampleIndexConfiguration to upload in JSON format.")
+        public String sampleIndex;
+    }
+
+    @Parameters(commandNames = {VARIANT_FAMILY_INDEX}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)
     public class VariantFamilyGenotypeIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate

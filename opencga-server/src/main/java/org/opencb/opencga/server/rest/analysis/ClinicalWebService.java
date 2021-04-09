@@ -44,7 +44,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.storage.core.rga.RgaQueryParams;
+import org.opencb.opencga.clinical.rga.RgaQueryParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
