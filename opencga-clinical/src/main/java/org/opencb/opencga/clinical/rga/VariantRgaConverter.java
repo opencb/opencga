@@ -7,15 +7,11 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutByVariant>, List<RgaDataModel>> {
-
-    private Logger logger;
-    private IndividualRgaConverter individualRgaConverter;
+public class VariantRgaConverter extends AbstractRgaConverter implements ComplexTypeConverter<List<KnockoutByVariant>, List<RgaDataModel>> {
 
     // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByIndividual fields
     private static final Map<String, List<String>> CONVERTER_MAP;
@@ -35,6 +31,10 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_ID));
         CONVERTER_MAP.put("individuals.fatherId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_ID));
+        CONVERTER_MAP.put("individuals.motherSampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_SAMPLE_ID));
+        CONVERTER_MAP.put("individuals.fatherSampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_SAMPLE_ID));
         CONVERTER_MAP.put("individuals.phenotypes", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
         CONVERTER_MAP.put("individuals.disorders", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
@@ -78,11 +78,11 @@ public class VariantRgaConverter implements ComplexTypeConverter<List<KnockoutBy
         CONVERTER_MAP.put("individuals.genes.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.VARIANT_JSON,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
                 RgaDataModel.CLINICAL_SIGNIFICANCES));
+
+        logger = LoggerFactory.getLogger(VariantRgaConverter.class);
     }
 
     public VariantRgaConverter() {
-        this.logger = LoggerFactory.getLogger(VariantRgaConverter.class);
-        this.individualRgaConverter = new IndividualRgaConverter();
     }
 
     @Override
