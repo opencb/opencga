@@ -1347,15 +1347,23 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             parameters.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         }
 
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getFather())) {
-            OpenCGAResult<Individual> queryResult = internalGet(studyUid, updateParams.getFather(), INCLUDE_INDIVIDUAL_IDS, userId);
+        if (updateParams != null && updateParams.getFather() != null) {
+            if (StringUtils.isNotEmpty(updateParams.getFather())) {
+                OpenCGAResult<Individual> queryResult = internalGet(studyUid, updateParams.getFather(), INCLUDE_INDIVIDUAL_IDS, userId);
+                parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), queryResult.first().getUid());
+            } else {
+                parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), -1L);
+            }
             parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), queryResult.first().getUid());
         }
-        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getMother())) {
-            OpenCGAResult<Individual> queryResult = internalGet(studyUid, updateParams.getMother(), INCLUDE_INDIVIDUAL_IDS, userId);
+        if (updateParams != null && updateParams.getMother() != null) {
+            if (StringUtils.isNotEmpty(updateParams.getMother())) {
+                OpenCGAResult<Individual> queryResult = internalGet(studyUid, updateParams.getMother(), INCLUDE_INDIVIDUAL_IDS, userId);
+                parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), queryResult.first().getUid());
+            } else {
+                parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), -1L);
+            }
             parameters.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
-            parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), queryResult.first().getUid());
         }
 
         checkUpdateAnnotations(study, individual, parameters, options, VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor,
