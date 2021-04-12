@@ -1868,6 +1868,32 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testRemoveIndividualParents() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), token);
+        individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), token);
+
+        DataResult<Individual> individualDataResult = individualManager.update(studyFqn, "child",
+                new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+        assertEquals(1, individualDataResult.getNumUpdated());
+
+        Individual individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
+
+        assertEquals("mother", individual.getMother().getId());
+        assertEquals(1, individual.getMother().getVersion());
+
+        assertEquals("father", individual.getFather().getId());
+        assertEquals(1, individual.getFather().getVersion());
+
+        individualManager.update(studyFqn, "child", new IndividualUpdateParams().setFather("").setMother(""), QueryOptions.empty(), token);
+        individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
+
+        assertNull(individual.getMother().getId());
+        assertNull(individual.getFather().getId());
+    }
+
+    @Test
     public void testIndividualRelatives() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         individualManager.create(studyFqn, new Individual().setId("proband").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
