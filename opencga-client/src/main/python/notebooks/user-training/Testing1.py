@@ -111,4 +111,34 @@ plt.close()
 #%%
 
 
+#%% md
+#
+# **Situation:** I am interested in getting a list of all participants in RD, GRCh38, that have:
+# (A) SNVs in NOD2 gene that have MAF of <0.01 in gnomad_NFE AND are missense, start_lost, stop_gained, or stop_lost
+# split by hets and homs.
+#
+# - How I can submit this query but instead of NOD2, for a list of 10 genes (example list: IL3, IL31, IL32, IL34, IL6, IL6R, IL10RA, IL10RB,  IL7, IL7R) to the openCGA server
 
+#%%
+
+# Define the parameters we want to query
+
+genes = ['NOD2','IL3']
+limit = 5
+type = ['SNV']
+ct = ['missense_variant','start_lost','stop_gained','stop_lost']    #List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578
+populationFrequencyMaf='gnomAD_NFE:ALL<0.01'
+
+
+
+variants = variant_client.query(study=study, gene=genes, type=type, ct=ct,
+                                populationFrequencyMaf=populationFrequencyMaf, limit=limit) # Other params: exclude='annotation'
+
+
+variants.print_results('id')
+#pprint(variants.get_result(0))
+
+#%%
+
+variants = variant_client.query_sample(study=study, variant='16:50744624:C:T')
+variants.print_results()
