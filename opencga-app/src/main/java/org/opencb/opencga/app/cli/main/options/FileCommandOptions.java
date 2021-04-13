@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
@@ -30,7 +27,9 @@ import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -319,6 +318,24 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--tags"}, description = "Comma separated list of sample names or ids", arity = 1)
         public List<String> tags;
+
+        @Parameter(names = {"--software-name"}, description = "Software name", arity = 1)
+        public String softwareName;
+
+        @Parameter(names = {"--software-version"}, description = "Software version", arity = 1)
+        public String softwareVersion;
+
+        @Parameter(names = {"--software-repository"}, description = "Software repository", arity = 1)
+        public String softwareRepository;
+
+        @Parameter(names = {"--software-commit"}, description = "Software commit", arity = 1)
+        public String softwareCommit;
+
+        @Parameter(names = {"--software-website"}, description = "Software website", arity = 1)
+        public String softwareWebsite;
+
+        @DynamicParameter(names = {"--software-params"}, description = "Software params")
+        public Map<String, String> softwareParams = new HashMap<>();
 
     }
 

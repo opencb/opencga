@@ -98,7 +98,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void tearDown() throws Exception {
     }
 
-    private DataResult<Family> createDummyFamily() throws CatalogException {
+    private Family getDummyFamily() {
         Disorder disease1 = new Disorder("dis1", "Disease 1", "HPO", null, "", null);
         Disorder disease2 = new Disorder("dis2", "Disease 2", "HPO", null, "", null);
 
@@ -140,9 +140,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 ))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("family", "family", null, Arrays.asList(disease1, disease2),
+        return new Family("family", "family", null, Arrays.asList(disease1, disease2),
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
                 Collections.emptyList(), Collections.emptyMap());
+    }
+
+    private DataResult<Family> createDummyFamily() throws CatalogException {
+        Family family = getDummyFamily();
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
@@ -242,6 +246,43 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertNotEquals(clinical.first().getComments().get(0).getDate(), clinical.first().getComments().get(1).getDate());
         assertEquals(Long.parseLong(clinical.first().getComments().get(0).getDate()) + 1,
                 Long.parseLong(clinical.first().getComments().get(1).getDate()));
+    }
+
+    @Test
+    public void createClinicalWithMissingSamplesInFamily() throws CatalogException {
+        Family family = getDummyFamily();
+        for (Individual member : family.getMembers()) {
+            if (!member.getId().equals("child1")) {
+                member.setSamples(Collections.emptyList());
+            }
+        }
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+
+        // And only add sample to proband
+        for (Individual member : family.getMembers()) {
+            if (member.getId().equals("child1")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            }
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setProband(new Individual().setId("child1"));
+        clinicalAnalysis.setFamily(family);
+        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
+                clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        assertEquals("child1", clinicalAnalysisDataResult.first().getFamily().getMembers().get(0).getId());
+        assertEquals("father", clinicalAnalysisDataResult.first().getFamily().getMembers().get(1).getId());
+        assertEquals("mother", clinicalAnalysisDataResult.first().getFamily().getMembers().get(2).getId());
+        assertEquals("child2", clinicalAnalysisDataResult.first().getFamily().getMembers().get(3).getId());
+        assertEquals("child3", clinicalAnalysisDataResult.first().getFamily().getMembers().get(4).getId());
+        assertEquals("sample2", clinicalAnalysisDataResult.first().getFamily().getMembers().get(0).getSamples().get(0).getId());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(1).getSamples().isEmpty());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(2).getSamples().isEmpty());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(3).getSamples().isEmpty());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(4).getSamples().isEmpty());
     }
 
     @Test

@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
 import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
+import static org.opencb.opencga.core.models.common.Status.READY;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -504,12 +505,25 @@ public class TextOutputWriter extends AbstractOutputWriter {
             FileTree fileTree = iterator.next();
             File file = fileTree.getFile();
 
-            sb.append(String.format("%s %s  [%s, %s, %s]\n",
-                    indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
-                    file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
-                    file.getName(),
-                    file.getInternal() != null && file.getInternal().getStatus() != null ? file.getInternal().getStatus().getName() : "",
-                    humanReadableByteCount(file.getSize(), false)));
+            if (!indent.isEmpty()) {
+                sb.append(indent);
+                sb.append(iterator.hasNext() ? "├──" : "└──");
+                sb.append(" ");
+            }
+            if (file.getType() == File.Type.FILE) {
+                sb.append(file.getName());
+                sb.append("  [");
+                if (file.getInternal() != null
+                        && file.getInternal().getStatus() != null
+                        && !READY.equals(file.getInternal().getStatus().getName())) {
+                    sb.append(file.getInternal().getStatus().getName()).append(", ");
+                }
+                sb.append(humanReadableByteCount(file.getSize(), false)).append("]");
+
+            } else {
+                sb.append(file.getName()).append("/");
+            }
+            sb.append("\n");
 
             if (file.getType() == File.Type.DIRECTORY) {
                 printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext()? "│   " : "    "));
