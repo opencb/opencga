@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import org.apache.solr.client.solrj.beans.Field;
 
@@ -97,9 +97,6 @@ public class RgaDataModel {
     @Field
     private List<String> disorderJson;
 
-    @Field
-    private List<String> variantJson;
-
     public static final String ID = "id";
     public static final String INDIVIDUAL_ID = "individualId";
     public static final String SAMPLE_ID = "sampleId";
@@ -130,9 +127,6 @@ public class RgaDataModel {
     public static final String COMPOUND_FILTERS = "compoundFilters";
     public static final String PHENOTYPE_JSON = "phenotypeJson";
     public static final String DISORDER_JSON = "disorderJson";
-    public static final String VARIANT_JSON = "variantJson";
-    public static final String AUTHORISED = "authorised";
-    public static final String UNAUTHORISED = "unauthorised";
 
     public RgaDataModel() {
     }
@@ -170,7 +164,6 @@ public class RgaDataModel {
         sb.append(", compoundFilters=").append(compoundFilters);
         sb.append(", phenotypeJson=").append(phenotypeJson);
         sb.append(", disorderJson=").append(disorderJson);
-        sb.append(", variantJson=").append(variantJson);
         sb.append('}');
         return sb.toString();
     }
@@ -442,15 +435,6 @@ public class RgaDataModel {
 
     public RgaDataModel setDisorderJson(List<String> disorderJson) {
         this.disorderJson = disorderJson;
-        return this;
-    }
-
-    public List<String> getVariantJson() {
-        return variantJson;
-    }
-
-    public RgaDataModel setVariantJson(List<String> variantJson) {
-        this.variantJson = variantJson;
         return this;
     }
 

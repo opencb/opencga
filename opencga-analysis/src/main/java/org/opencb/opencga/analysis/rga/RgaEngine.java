@@ -1,9 +1,10 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
@@ -12,12 +13,13 @@ import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
+import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
+import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,16 +38,19 @@ public class RgaEngine implements Closeable {
     private VariantRgaConverter variantConverter;
     private StorageConfiguration storageConfiguration;
 
+    private VariantStorageManager variantStorageManager;
+
     private Logger logger;
 
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
 
-    public RgaEngine(StorageConfiguration storageConfiguration) {
+    public RgaEngine(VariantStorageManager variantStorageManager, StorageConfiguration storageConfiguration) {
         this.individualRgaConverter = new IndividualRgaConverter();
         this.geneConverter = new GeneRgaConverter();
         this.variantConverter = new VariantRgaConverter();
         this.parser = new RgaQueryParser();
         this.storageConfiguration = storageConfiguration;
+        this.variantStorageManager = variantStorageManager;
 
         this.solrManager = new SolrManager(storageConfiguration.getRga().getHosts(), storageConfiguration.getRga().getMode(),
                 storageConfiguration.getRga().getTimeout());
@@ -138,8 +143,10 @@ public class RgaEngine implements Closeable {
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByIndividual> queryResult;
         try {
+            List<Variant> variantList = null;
             DataResult<RgaDataModel> result = solrCollection.query(solrQuery, RgaDataModel.class);
-            List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(result.getResults());
+            List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(result.getResults(),
+                    variantList);
             queryResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), knockoutByIndividuals.size(), knockoutByIndividuals,
                     -1);
         } catch (SolrServerException e) {
@@ -225,8 +232,9 @@ public class RgaEngine implements Closeable {
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<RgaKnockoutByGene> queryResult;
         try {
+            List<Variant> variantList = null;
             DataResult<RgaDataModel> result = solrCollection.query(solrQuery, RgaDataModel.class);
-            List<RgaKnockoutByGene> knockoutByGeneList = geneConverter.convertToDataModelType(result.getResults());
+            List<RgaKnockoutByGene> knockoutByGeneList = geneConverter.convertToDataModelType(result.getResults(), variantList);
             queryResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), knockoutByGeneList.size(), knockoutByGeneList,
                     result.getNumMatches());
         } catch (SolrServerException e) {
@@ -254,8 +262,9 @@ public class RgaEngine implements Closeable {
         SolrCollection solrCollection = solrManager.getCollection(collection);
         DataResult<KnockoutByVariant> queryResult;
         try {
+            List<Variant> variantList = null;
             DataResult<RgaDataModel> result = solrCollection.query(solrQuery, RgaDataModel.class);
-            List<KnockoutByVariant> knockoutByVariants = variantConverter.convertToDataModelType(result.getResults(),
+            List<KnockoutByVariant> knockoutByVariants = variantConverter.convertToDataModelType(result.getResults(), variantList,
                     query.getAsStringList(RgaQueryParams.VARIANTS.key()));
             queryResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), knockoutByVariants.size(), knockoutByVariants,
                     -1);

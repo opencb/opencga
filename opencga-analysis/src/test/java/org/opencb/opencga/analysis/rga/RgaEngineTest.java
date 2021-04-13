@@ -1,5 +1,6 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -7,10 +8,16 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,34 +26,47 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.clinical.rga.RgaUtilsTest.createKnockoutByIndividual;
 
 public class RgaEngineTest {
 
+    private CatalogManager catalogManager;
     private StorageConfiguration storageConfiguration;
+    private VariantStorageManager variantStorageManager;
+
+    private RgaEngine rgaEngine;
+    private String collection;
+
+    private List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
 
     @Rule
     public RgaSolrExtenalResource solr = new RgaSolrExtenalResource();
 
     @Before
-    public void before() throws IOException {
+    public void before() throws IOException, CatalogException, RgaException, SolrServerException {
         try (InputStream is = RgaEngineTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
             storageConfiguration = StorageConfiguration.load(is);
         }
+        Configuration configuration;
+        try (InputStream is = RgaEngineTest.class.getClassLoader().getResourceAsStream("configuration-test.yml")) {
+            configuration = Configuration.load(is);
+        }
+        this.catalogManager = new CatalogManager(configuration);
+
+        this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
+
+        rgaEngine = solr.configure(variantStorageManager, storageConfiguration);
+
+        collection = solr.coreName;
+        rgaEngine.create(collection);
+
+        knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(2));
+
+        rgaEngine.insert(collection, knockoutByIndividualList);
     }
 
     @Test
     public void testIndividualQuery() throws Exception {
-        RgaEngine rgaEngine = solr.configure(storageConfiguration);
-
-        String collection = solr.coreName;
-        rgaEngine.create(collection);
-
-        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
-
-        rgaEngine.insert(collection, knockoutByIndividualList);
         OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, new Query(), new QueryOptions());
 
         assertEquals(2, result.getNumResults());
@@ -95,17 +115,6 @@ public class RgaEngineTest {
 
     @Test
     public void testIncludeExcludeIndividualQuery() throws Exception {
-        RgaEngine rgaEngine = solr.configure(storageConfiguration);
-
-        String collection = solr.coreName;
-        rgaEngine.create(collection);
-
-        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
-
-        rgaEngine.insert(collection, knockoutByIndividualList);
-
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("sampleId", "disorders", "genesMap.name"));
         OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, new Query(), options);
         assertEquals(2, result.getNumResults());
@@ -179,16 +188,6 @@ public class RgaEngineTest {
 
     @Test
     public void testGeneQuery() throws Exception {
-        RgaEngine rgaEngine = solr.configure(storageConfiguration);
-
-        String collection = solr.coreName;
-        rgaEngine.create(collection);
-
-        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
-
-        rgaEngine.insert(collection, knockoutByIndividualList);
         OpenCGAResult<RgaKnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), new QueryOptions());
 
         assertEquals(4, result.getNumResults());
@@ -246,17 +245,6 @@ public class RgaEngineTest {
 
     @Test
     public void testIncludeExcludeGeneQuery() throws Exception {
-        RgaEngine rgaEngine = solr.configure(storageConfiguration);
-
-        String collection = solr.coreName;
-        rgaEngine.create(collection);
-
-        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
-
-        rgaEngine.insert(collection, knockoutByIndividualList);
-
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("name", "individuals.transcriptsMap.chromosome"));
         OpenCGAResult<RgaKnockoutByGene> result = rgaEngine.geneQuery(collection, new Query(), options);
         assertEquals(4, result.getNumResults());
@@ -325,16 +313,6 @@ public class RgaEngineTest {
 
     @Test
     public void testVariantQuery() throws Exception {
-        RgaEngine rgaEngine = solr.configure(storageConfiguration);
-
-        String collection = solr.coreName;
-        rgaEngine.create(collection);
-
-        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
-
-        rgaEngine.insert(collection, knockoutByIndividualList);
         OpenCGAResult<KnockoutByVariant> result = rgaEngine.variantQuery(collection, new Query(), new QueryOptions());
 
         assertEquals(6, result.getNumResults());
@@ -342,17 +320,6 @@ public class RgaEngineTest {
 
     @Test
     public void testIncludeExcludeVariantQuery() throws Exception {
-        RgaEngine rgaEngine = solr.configure(storageConfiguration);
-
-        String collection = solr.coreName;
-        rgaEngine.create(collection);
-
-        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
-
-        rgaEngine.insert(collection, knockoutByIndividualList);
-
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("individuals.sampleId", "individuals.disorders",
                 "individuals.genesMap.name"));
         OpenCGAResult<KnockoutByVariant> result = rgaEngine.variantQuery(collection, new Query(), options);
@@ -440,17 +407,6 @@ public class RgaEngineTest {
 
     @Test
     public void testFacet() throws Exception {
-        RgaEngine rgaEngine = solr.configure(storageConfiguration);
-
-        String collection = solr.coreName;
-        rgaEngine.create(collection);
-
-        List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
-
-        rgaEngine.insert(collection, knockoutByIndividualList);
-
         QueryOptions options = new QueryOptions(QueryOptions.FACET, RgaQueryParams.DISORDERS.key());
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, new Query(), options);
         assertEquals(1, facetFieldDataResult.getNumResults());

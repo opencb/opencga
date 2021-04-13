@@ -1,7 +1,8 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
@@ -19,63 +20,62 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
     static {
         // We always include individual id in the response because we always want to return the numIndividuals populated
         CONVERTER_MAP = new HashMap<>();
-        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID));
-        CONVERTER_MAP.put("individuals.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID));
-        CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.SAMPLE_ID));
-        CONVERTER_MAP.put("individuals.sex", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID,
+        CONVERTER_MAP.put("id", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("individuals.id", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("individuals.sampleId", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID));
+        CONVERTER_MAP.put("individuals.sex", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.SEX));
-        CONVERTER_MAP.put("individuals.numParents", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.numParents", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.NUM_PARENTS));
-        CONVERTER_MAP.put("individuals.motherId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.motherId", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_ID));
-        CONVERTER_MAP.put("individuals.fatherId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.fatherId", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_ID));
-        CONVERTER_MAP.put("individuals.motherSampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.motherSampleId", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.MOTHER_SAMPLE_ID));
-        CONVERTER_MAP.put("individuals.fatherSampleId", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.fatherSampleId", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.FATHER_SAMPLE_ID));
-        CONVERTER_MAP.put("individuals.phenotypes", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.phenotypes", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.PHENOTYPES, RgaDataModel.PHENOTYPE_JSON));
-        CONVERTER_MAP.put("individuals.disorders", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.disorders", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.DISORDERS, RgaDataModel.DISORDER_JSON));
         CONVERTER_MAP.put("individuals.stats", Collections.emptyList());
-        CONVERTER_MAP.put("individuals.genes.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.id", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID));
-        CONVERTER_MAP.put("individuals.genes.name", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.name", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_NAME));
-        CONVERTER_MAP.put("individuals.genes.chromosome", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.chromosome", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.CHROMOSOME));
-        CONVERTER_MAP.put("individuals.genes.biotype", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.biotype", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.GENE_BIOTYPE));
-        CONVERTER_MAP.put("individuals.genes.transcripts.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.transcripts.id", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID));
-        CONVERTER_MAP.put("individuals.genes.transcripts.chromosome", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.transcripts.chromosome", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CHROMOSOME));
-        CONVERTER_MAP.put("individuals.genes.transcripts.start", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.transcripts.start", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.START));
-        CONVERTER_MAP.put("individuals.genes.transcripts.end", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.transcripts.end", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.END));
-        CONVERTER_MAP.put("individuals.genes.transcripts.biotype", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.transcripts.biotype", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TRANSCRIPT_BIOTYPE));
-        CONVERTER_MAP.put("individuals.genes.transcripts.strand", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.transcripts.strand", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
-        CONVERTER_MAP.put("individuals.genes.transcripts.variants.id", Arrays.asList(RgaDataModel.VARIANT_JSON, RgaDataModel.VARIANTS,
+        CONVERTER_MAP.put("individuals.genes.transcripts.variants.id", Arrays.asList(RgaDataModel.SAMPLE_ID, RgaDataModel.VARIANTS,
                 RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
-        CONVERTER_MAP.put("individuals.genes.transcripts.variants.filter", Arrays.asList(RgaDataModel.VARIANT_JSON,
+        CONVERTER_MAP.put("individuals.genes.transcripts.variants.filter", Arrays.asList(RgaDataModel.SAMPLE_ID,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS));
-        CONVERTER_MAP.put("individuals.genes.transcripts.variants.type", Arrays.asList(RgaDataModel.VARIANT_JSON,
+        CONVERTER_MAP.put("individuals.genes.transcripts.variants.type", Arrays.asList(RgaDataModel.SAMPLE_ID,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES));
-        CONVERTER_MAP.put("individuals.genes.transcripts.variants.knockoutType", Arrays.asList(RgaDataModel.VARIANT_JSON,
+        CONVERTER_MAP.put("individuals.genes.transcripts.variants.knockoutType", Arrays.asList(RgaDataModel.SAMPLE_ID,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
                 RgaDataModel.KNOCKOUT_TYPES));
-        CONVERTER_MAP.put("individuals.genes.transcripts.variants.populationFrequencies", Arrays.asList(RgaDataModel.VARIANT_JSON,
+        CONVERTER_MAP.put("individuals.genes.transcripts.variants.populationFrequencies", Arrays.asList(RgaDataModel.SAMPLE_ID,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
                 RgaDataModel.POPULATION_FREQUENCIES));
-        CONVERTER_MAP.put("individuals.genes.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.VARIANT_JSON,
+        CONVERTER_MAP.put("individuals.genes.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.SAMPLE_ID,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
                 RgaDataModel.CONSEQUENCE_TYPES));
-        CONVERTER_MAP.put("individuals.genes.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.VARIANT_JSON,
+        CONVERTER_MAP.put("individuals.genes.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.SAMPLE_ID,
                 RgaDataModel.VARIANTS, RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID,
                 RgaDataModel.CLINICAL_SIGNIFICANCES));
 
@@ -87,11 +87,17 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
 
     @Override
     public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
-        return convertToDataModelType(rgaDataModelList, Collections.emptyList());
+        throw new UnsupportedOperationException("Use other converter passing the list of variants");
     }
 
-    public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList, List<String> variantList) {
-        Set<String> variantIds = new HashSet<>(variantList);
+    public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList, List<Variant> variantList,
+                                                          List<String> includeVariants) {
+        Set<String> variantIds = new HashSet<>(includeVariants);
+
+        Map<String, Variant> variantMap = new HashMap<>();
+        for (Variant variant : variantList) {
+            variantMap.put(variant.getId(), variant);
+        }
 
         // In this list, we will store the keys of result in the order they have been processed so order is kept
         List<String> variantOrder = new LinkedList<>();
@@ -112,7 +118,7 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
                 }
             }
             if (!auxVariantIds.isEmpty()) {
-                IndividualRgaConverter.extractKnockoutByIndividualMap(rgaDataModel, variantIds, individualMap);
+                IndividualRgaConverter.extractKnockoutByIndividualMap(rgaDataModel, variantMap, individualMap);
 
                 for (String auxVariantId : auxVariantIds) {
                     if (StringUtils.isNotEmpty(rgaDataModel.getIndividualId())) {

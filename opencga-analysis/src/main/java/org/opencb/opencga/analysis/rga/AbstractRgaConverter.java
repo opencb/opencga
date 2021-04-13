@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Disorder;

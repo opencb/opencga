@@ -1,11 +1,11 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
-import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 
 import static org.junit.Assert.*;
 

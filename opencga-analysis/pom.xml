@@ -122,6 +122,16 @@
             <version>2.1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
+<!--        RGA test dependencies -->
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-solrj</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
+        </dependency>
+<!--        /RGA -->
     </dependencies>
 
     <build>

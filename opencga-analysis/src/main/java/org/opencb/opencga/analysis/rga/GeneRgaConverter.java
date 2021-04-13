@@ -1,9 +1,8 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
@@ -51,23 +50,23 @@ public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTyp
         CONVERTER_MAP.put("individuals.transcripts.strand", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
         CONVERTER_MAP.put("individuals.transcripts.variants.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("individuals.transcripts.variants.genotype", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("individuals.transcripts.variants.filter", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.FILTERS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.FILTERS));
         CONVERTER_MAP.put("individuals.transcripts.variants.qual", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("individuals.transcripts.variants.type", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.TYPES));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.TYPES));
         CONVERTER_MAP.put("individuals.transcripts.variants.knockoutType", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.KNOCKOUT_TYPES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.KNOCKOUT_TYPES));
         CONVERTER_MAP.put("individuals.transcripts.variants.populationFrequencies", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.POPULATION_FREQUENCIES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.POPULATION_FREQUENCIES));
         CONVERTER_MAP.put("individuals.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.CLINICAL_SIGNIFICANCES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.CLINICAL_SIGNIFICANCES));
         CONVERTER_MAP.put("individuals.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANT_JSON, RgaDataModel.CONSEQUENCE_TYPES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.CONSEQUENCE_TYPES));
 
         logger = LoggerFactory.getLogger(GeneRgaConverter.class);
     }
@@ -77,6 +76,15 @@ public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTyp
 
     @Override
     public List<RgaKnockoutByGene> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
+        throw new UnsupportedOperationException("Use other converter passing a list of variants");
+    }
+
+    public List<RgaKnockoutByGene> convertToDataModelType(List<RgaDataModel> rgaDataModelList, List<Variant> variantList) {
+        Map<String, Variant> variantMap = new HashMap<>();
+        for (Variant variant : variantList) {
+            variantMap.put(variant.getId(), variant);
+        }
+
         Map<String, RgaKnockoutByGene> result = new HashMap<>();
         for (RgaDataModel rgaDataModel : rgaDataModelList) {
             if (!result.containsKey(rgaDataModel.getGeneId())) {
@@ -118,20 +126,8 @@ public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTyp
                 knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
 
                 knockoutIndividual.addTranscripts(Collections.singletonList(knockoutTranscript));
-
-                if (rgaDataModel.getVariantJson() != null) {
-                    List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
-                    for (String variantJson : rgaDataModel.getVariantJson()) {
-                        try {
-                            KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
-                                    KnockoutVariant.class);
-                            knockoutVariantList.add(knockoutVariant);
-                        } catch (JsonProcessingException e) {
-                            logger.warn("Could not parse KnockoutVariants: {}", e.getMessage(), e);
-                        }
-                    }
-                    knockoutTranscript.setVariants(knockoutVariantList);
-                }
+                List<KnockoutVariant> knockoutVariantList = RgaUtils.extractKnockoutVariants(rgaDataModel, variantMap, null);
+                knockoutTranscript.setVariants(knockoutVariantList);
             }
         }
 

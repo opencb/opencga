@@ -28,6 +28,7 @@ import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationA
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -35,7 +36,7 @@ import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.clinical.rga.RgaManager;
+import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
@@ -44,7 +45,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.clinical.rga.RgaQueryParams;
+import org.opencb.opencga.analysis.rga.RgaQueryParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -71,6 +72,7 @@ public class ClinicalWebService extends AnalysisWebService {
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
     public static final AtomicReference<RgaManager> rgaManagerAtomicRef = new AtomicReference<>();
+    public static final AtomicReference<VariantStorageManager> variantStorageManagerAtomicRef = new AtomicReference<>();
 
     public ClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -87,12 +89,27 @@ public class ClinicalWebService extends AnalysisWebService {
             synchronized (rgaManagerAtomicRef) {
                 rgaManager = rgaManagerAtomicRef.get();
                 if (rgaManager == null) {
-                    rgaManager = new RgaManager(catalogManager, storageEngineFactory);
+                    VariantStorageManager variantStorageManager = getVariantStorageManager();
+                    rgaManager = new RgaManager(catalogManager, variantStorageManager, storageEngineFactory);
                     rgaManagerAtomicRef.set(rgaManager);
                 }
             }
         }
         return rgaManager;
+    }
+
+    private VariantStorageManager getVariantStorageManager() {
+        VariantStorageManager variantStorageManager = variantStorageManagerAtomicRef.get();
+        if (variantStorageManager == null) {
+            synchronized (variantStorageManagerAtomicRef) {
+                variantStorageManager = variantStorageManagerAtomicRef.get();
+                if (variantStorageManager == null) {
+                    variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+                    variantStorageManagerAtomicRef.set(variantStorageManager);
+                }
+            }
+        }
+        return variantStorageManager;
     }
 
 //    public ClinicalWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,

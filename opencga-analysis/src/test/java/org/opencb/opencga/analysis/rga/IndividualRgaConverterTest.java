@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Before;
@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.opencb.opencga.clinical.rga.RgaUtilsTest.createKnockoutByIndividual;
 
 public class IndividualRgaConverterTest {
 
@@ -24,8 +23,8 @@ public class IndividualRgaConverterTest {
     @Test
     public void convertToDataModelType() throws JsonProcessingException {
         List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
+        knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(2));
 
         List<RgaDataModel> rgaDataModels = converter.convertToStorageType(knockoutByIndividualList);
         List<KnockoutByIndividual> knockoutByIndividuals = converter.convertToDataModelType(rgaDataModels);

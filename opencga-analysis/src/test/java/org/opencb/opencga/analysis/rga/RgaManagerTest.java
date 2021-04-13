@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.junit.Before;
@@ -6,10 +6,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
@@ -21,8 +24,7 @@ import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.clinical.rga.exceptions.RgaException;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +36,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.opencb.opencga.clinical.rga.RgaUtilsTest.createKnockoutByIndividual;
 
 public class RgaManagerTest {
 
@@ -61,8 +62,9 @@ public class RgaManagerTest {
         }
 
         catalogManager = catalogManagerResource.getCatalogManager();
+        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
 
-        rgaEngine = solr.configure(storageConfiguration);
+        rgaEngine = solr.configure(variantStorageManager, storageConfiguration);
         rgaManager = new RgaManager(catalogManagerResource.getConfiguration(), storageConfiguration, rgaEngine);
 
         loadCatalog();
@@ -98,8 +100,8 @@ public class RgaManagerTest {
         rgaEngine.create(collection);
 
         List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(2);
-        knockoutByIndividualList.add(createKnockoutByIndividual(1));
-        knockoutByIndividualList.add(createKnockoutByIndividual(2));
+        knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(1));
+        knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(2));
 
         rgaEngine.insert(collection, knockoutByIndividualList);
     }

@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -7,6 +7,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -14,7 +16,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -54,17 +55,20 @@ public class RgaManager implements AutoCloseable {
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
 
-    public RgaManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
+    public RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager,
+                      StorageEngineFactory storageEngineFactory) {
         this.catalogManager = catalogManager;
         this.storageConfiguration = storageEngineFactory.getStorageConfiguration();
-        this.rgaEngine = new RgaEngine(storageConfiguration);
+        this.rgaEngine = new RgaEngine(variantStorageManager, storageConfiguration);
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
     public RgaManager(Configuration configuration, StorageConfiguration storageConfiguration) throws CatalogException {
         this.catalogManager = new CatalogManager(configuration);
         this.storageConfiguration = storageConfiguration;
-        this.rgaEngine = new RgaEngine(storageConfiguration);
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
+        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+        this.rgaEngine = new RgaEngine(variantStorageManager, storageConfiguration);
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
@@ -527,6 +531,51 @@ public class RgaManager implements AutoCloseable {
         stopWatch.stop();
         return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, sampleIds.size(), 0, updatedSamples, 0);
     }
+
+//    public List<KnockoutVariant> PetterQuery(List<String> variants, Set<String> transcripts, String study, ArrayList<String> samples,
+//    String token, KnockoutVariant.KnockoutType knockoutType)
+//            throws CatalogException, IOException, StorageEngineException {
+//        Query query = new Query(VariantQueryParam.ID.key(), variants)
+//                .append(VariantQueryParam.STUDY.key(), study)
+//                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), samples)
+//                .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT,DP");
+//        List<Variant> result = get(query, new QueryOptions(), token).getResults();
+//        List<KnockoutVariant> knockoutVariants = new LinkedList<>();
+//        for (Variant variant : result) {
+//            VariantAnnotation annotation = variant.getAnnotation();
+////
+////            for (PopulationFrequency populationFrequency : annotation.getPopulationFrequencies()) {
+//////                populationFrequency.getStudy()
+//////                populationFrequency.getPopulation()
+////            }
+////
+////            // Clinvar and Cosmic
+////            for (EvidenceEntry evidenceEntry : annotation.getTraitAssociation()) {
+////                ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
+////            }
+//            List<ConsequenceType> myConsequenceTypes = new ArrayList<>(transcripts.size());
+//            for (ConsequenceType consequenceType : annotation.getConsequenceTypes()) {
+//                String geneName = consequenceType.getGeneName();
+//                String transcriptId = consequenceType.getEnsemblTranscriptId();
+//                if (transcripts.contains(transcriptId)) {
+////                    for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
+////
+////                    }
+//                    myConsequenceTypes.add(consequenceType);
+//                }
+//            }
+//            StudyEntry studyEntry = variant.getStudies().get(0);
+//            int samplePosition = 0;
+//            for (SampleEntry sample : studyEntry.getSamples()) {
+//                String sampleId = samples.get(samplePosition++);
+//                for (ConsequenceType ct : myConsequenceTypes) {
+//                    knockoutVariants.add(new KnockoutVariant(variant, studyEntry, studyEntry.getFile(sample.getFileIndex()), sample,
+//                    annotation, ct, knockoutType));
+//                }
+//            }
+//        }
+//        return knockoutVariants;
+//    }
 
     public OpenCGAResult<FacetField> aggregationStats(String studyStr, Query query, QueryOptions options, String fields, String token)
             throws CatalogException, IOException, RgaException {
