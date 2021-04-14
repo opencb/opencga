@@ -42,7 +42,7 @@
 
     <properties>
         <opencga.version>2.0.2-SNAPSHOT</opencga.version>
-        <pyopencga.version>2.0.1.1</pyopencga.version>
+        <pyopencga.version>2.0.1.2</pyopencga.version>
         <iva.version>2.1.0-beta</iva.version>
         <cellbase.version>4.8.0</cellbase.version>
         <biodata.version>2.0.6-SNAPSHOT</biodata.version>
