@@ -126,7 +126,8 @@ public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTyp
                 knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
 
                 knockoutIndividual.addTranscripts(Collections.singletonList(knockoutTranscript));
-                List<KnockoutVariant> knockoutVariantList = RgaUtils.extractKnockoutVariants(rgaDataModel, variantMap, null);
+                List<KnockoutVariant> knockoutVariantList = RgaUtils.extractKnockoutVariants(rgaDataModel, variantMap,
+                        Collections.emptySet());
                 knockoutTranscript.setVariants(knockoutVariantList);
             }
         }

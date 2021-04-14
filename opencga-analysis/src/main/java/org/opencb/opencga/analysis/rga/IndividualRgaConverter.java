@@ -187,15 +187,6 @@ public class IndividualRgaConverter extends AbstractRgaConverter
         if (knockoutByIndividual.getGenes() != null) {
             for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
                 for (KnockoutTranscript transcript : gene.getTranscripts()) {
-                    List<String> variantJson = new ArrayList<>(transcript.getVariants().size());
-                    for (KnockoutVariant variant : transcript.getVariants()) {
-                        // Only keep population frequencies from ALL
-                        if (variant.getPopulationFrequencies() != null) {
-                            variant.getPopulationFrequencies().removeIf(popFreq -> !popFreq.getPopulation().equals("ALL"));
-                        }
-                        variantJson.add(JacksonUtils.getDefaultObjectMapper().writeValueAsString(variant));
-                    }
-
                     List<String> compoundFilters = processFilters(transcript);
 
                     List<String> phenotypes = populatePhenotypes(knockoutByIndividual.getPhenotypes());
@@ -219,8 +210,8 @@ public class IndividualRgaConverter extends AbstractRgaConverter
                         disorderJson = Collections.emptyList();
                     }
 
-                    List<String> variantIds = new LinkedList<>();
-                    Set<String> knockoutTypes = new HashSet<>();
+                    List<String> variantIds = new ArrayList<>(transcript.getVariants().size());
+                    List<String> knockoutTypes = new ArrayList<>(transcript.getVariants().size());
                     Set<String> types = new HashSet<>();
                     Set<String> consequenceTypes = new HashSet<>();
                     Set<String> clinicalSignificances = new HashSet<>();
@@ -228,9 +219,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter
 
                     for (KnockoutVariant variant : transcript.getVariants()) {
                         variantIds.add(variant.getId());
-                        if (variant.getKnockoutType() != null) {
-                            knockoutTypes.add(variant.getKnockoutType().name());
-                        }
+                        knockoutTypes.add(variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "");
                         if (variant.getType() != null) {
                             types.add(variant.getType().name());
                         }
@@ -292,7 +281,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter
                             .setTranscriptBiotype(transcript.getBiotype())
                             .setVariants(variantIds)
                             .setTypes(new ArrayList<>(types))
-                            .setKnockoutTypes(new ArrayList<>(knockoutTypes))
+                            .setKnockoutTypes(knockoutTypes)
                             .setFilters(new ArrayList<>(filters))
                             .setConsequenceTypes(new ArrayList<>(consequenceTypes))
                             .setClinicalSignificances(new ArrayList<>(clinicalSignificances))

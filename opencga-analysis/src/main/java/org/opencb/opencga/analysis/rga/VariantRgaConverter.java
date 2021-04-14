@@ -135,25 +135,57 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
                 individualList.add(individualMap.get(individualId));
             }
 
-            KnockoutByVariant knockoutByVariant = new KnockoutByVariant(variantId, individualList);
+            List<KnockoutByIndividual> filteredIndividualList = new ArrayList<>(individualList.size());
+            KnockoutVariant knockoutVariant = null;
+            for (KnockoutByIndividual knockoutByIndividual : individualList) {
+                List<KnockoutByIndividual.KnockoutGene> geneList = new LinkedList<>();
+                // Look for nested variant info
+                if (CollectionUtils.isNotEmpty(knockoutByIndividual.getGenes())) {
+                    for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
+                        List<KnockoutTranscript> knockoutTranscriptList = new LinkedList<>();
 
-            // Look for nested variant info
-            KnockoutByIndividual knockoutByIndividual = individualList.get(0);
-            if (CollectionUtils.isNotEmpty(knockoutByIndividual.getGenes())) {
-                KnockoutByIndividual.KnockoutGene gene = knockoutByIndividual.getGenes().stream().findFirst().get();
-                if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
-                    KnockoutTranscript transcript = gene.getTranscripts().stream().findFirst().get();
-                    if (CollectionUtils.isNotEmpty(transcript.getVariants())) {
-                        for (KnockoutVariant transcriptVariant : transcript.getVariants()) {
-                            if (variantId.equals(transcriptVariant.getId())) {
-                                knockoutByVariant.setVariantFields(transcriptVariant);
-                                break;
+                        if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
+                            for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                                List<KnockoutVariant> filteredVariantList = new LinkedList<>();
+
+                                if (CollectionUtils.isNotEmpty(transcript.getVariants())) {
+                                    for (KnockoutVariant transcriptVariant : transcript.getVariants()) {
+                                        if (variantId.equals(transcriptVariant.getId())) {
+                                            // Only add the expected variant to the list
+                                            filteredVariantList.add(transcriptVariant);
+                                            knockoutVariant = transcriptVariant;
+                                        }
+                                    }
+                                }
+                                if (!filteredVariantList.isEmpty()) {
+                                    knockoutTranscriptList.add(new KnockoutTranscript(transcript.getId(), transcript.getChromosome(),
+                                            transcript.getStart(), transcript.getEnd(), transcript.getBiotype(), transcript.getStrand(),
+                                            filteredVariantList));
+                                }
                             }
+                        }
+
+                        if (!knockoutTranscriptList.isEmpty()) {
+                            KnockoutByIndividual.KnockoutGene knockoutGene = new KnockoutByIndividual.KnockoutGene(gene.getId(), gene.getName(),
+                                    gene.getChromosome(), gene.getStart(), gene.getEnd(), gene.getBiotype(), gene.getStrand());
+                            knockoutGene.setTranscripts(knockoutTranscriptList);
+                            geneList.add(knockoutGene);
                         }
                     }
                 }
+                if (!geneList.isEmpty()) {
+                    KnockoutByIndividual filteredIndividual = new KnockoutByIndividual(knockoutByIndividual.getId(),
+                            knockoutByIndividual.getSampleId(), knockoutByIndividual.getMotherId(), knockoutByIndividual.getMotherSampleId(),
+                            knockoutByIndividual.getFatherId(), knockoutByIndividual.getFatherSampleId(), knockoutByIndividual.getSex(),
+                            knockoutByIndividual.getPhenotypes(), knockoutByIndividual.getDisorders(), knockoutByIndividual.getStats());
+                    filteredIndividual.setGenes(geneList);
+
+                    filteredIndividualList.add(filteredIndividual);
+                }
             }
 
+            KnockoutByVariant knockoutByVariant = new KnockoutByVariant(variantId, filteredIndividualList);
+            knockoutByVariant.setVariantFields(knockoutVariant);
             knockoutVariantList.add(knockoutByVariant);
         }
         return knockoutVariantList;

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
@@ -28,9 +29,12 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +54,11 @@ public class RgaManager implements AutoCloseable {
     private CatalogManager catalogManager;
     private StorageConfiguration storageConfiguration;
     private final RgaEngine rgaEngine;
+    private final VariantStorageManager variantStorageManager;
+
+    private IndividualRgaConverter individualRgaConverter;
+    private GeneRgaConverter geneConverter;
+    private VariantRgaConverter variantConverter;
 
     private final Logger logger;
 
@@ -59,7 +68,13 @@ public class RgaManager implements AutoCloseable {
                       StorageEngineFactory storageEngineFactory) {
         this.catalogManager = catalogManager;
         this.storageConfiguration = storageEngineFactory.getStorageConfiguration();
-        this.rgaEngine = new RgaEngine(variantStorageManager, storageConfiguration);
+        this.rgaEngine = new RgaEngine(storageConfiguration);
+        this.variantStorageManager = variantStorageManager;
+
+        this.individualRgaConverter = new IndividualRgaConverter();
+        this.geneConverter = new GeneRgaConverter();
+        this.variantConverter = new VariantRgaConverter();
+
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
@@ -67,15 +82,27 @@ public class RgaManager implements AutoCloseable {
         this.catalogManager = new CatalogManager(configuration);
         this.storageConfiguration = storageConfiguration;
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-        this.rgaEngine = new RgaEngine(variantStorageManager, storageConfiguration);
+        this.variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+        this.rgaEngine = new RgaEngine(storageConfiguration);
+
+        this.individualRgaConverter = new IndividualRgaConverter();
+        this.geneConverter = new GeneRgaConverter();
+        this.variantConverter = new VariantRgaConverter();
+
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
-    public RgaManager(Configuration configuration, StorageConfiguration storageConfiguration, RgaEngine rgaEngine) throws CatalogException {
+    public RgaManager(Configuration configuration, StorageConfiguration storageConfiguration, VariantStorageManager variantStorageManager,
+                      RgaEngine rgaEngine) throws CatalogException {
         this.catalogManager = new CatalogManager(configuration);
         this.storageConfiguration = storageConfiguration;
         this.rgaEngine = rgaEngine;
+        this.variantStorageManager = variantStorageManager;
+
+        this.individualRgaConverter = new IndividualRgaConverter();
+        this.geneConverter = new GeneRgaConverter();
+        this.variantConverter = new VariantRgaConverter();
+
         this.logger = LoggerFactory.getLogger(getClass());
     }
 
@@ -207,7 +234,34 @@ public class RgaManager implements AutoCloseable {
         }
         auxQuery.put("sampleId", sampleIds);
 
-        OpenCGAResult<KnockoutByIndividual> result = rgaEngine.individualQuery(collection, auxQuery, queryOptions);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<List<Variant>> variantFuture = executor.submit(
+                () -> variantStorageQuery(study.getFqn(), sampleIds, auxQuery, options, token)
+        );
+
+        Future<OpenCGAResult<RgaDataModel>> tmpResultFuture = executor.submit(
+                () -> rgaEngine.individualQuery(collection, auxQuery, queryOptions)
+        );
+
+        List<Variant> variantList;
+        try {
+            variantList = variantFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
+        }
+
+        OpenCGAResult<RgaDataModel> tmpResult;
+        try {
+            tmpResult = tmpResultFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
+        }
+
+        List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(tmpResult.getResults(),
+                variantList);
+        OpenCGAResult<KnockoutByIndividual> result = new OpenCGAResult<>(tmpResult.getTime(), tmpResult.getEvents(),
+                knockoutByIndividuals.size(), knockoutByIndividuals, -1);
+
         if (count) {
             result.setNumMatches(numTotalResults);
         }
@@ -217,6 +271,39 @@ public class RgaManager implements AutoCloseable {
         result.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
 
         return result;
+    }
+
+    private List<Variant> variantStorageQuery(String study, List<String> sampleIds, Query query, QueryOptions options, String token)
+            throws CatalogException, IOException, StorageEngineException, RgaException {
+        String collection = getCollectionName(study);
+
+        DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query,
+                new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS).append(QueryOptions.LIMIT, -1));
+        if (result.getNumResults() == 0) {
+            return Collections.emptyList();
+        }
+        List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+
+        if (variantIds.size() > 1000) {
+            // TODO: Batches
+            variantIds = variantIds.subList(0, 100);
+        }
+
+        Query variantQuery = new Query(VariantQueryParam.ID.key(), variantIds)
+                .append(VariantQueryParam.STUDY.key(), study)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds)
+                .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT,DP");
+
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.EXCLUDE, Arrays.asList(
+//                        VariantField.ANNOTATION_POPULATION_FREQUENCIES,
+                        VariantField.ANNOTATION_CYTOBAND,
+                        VariantField.ANNOTATION_CONSERVATION,
+                        VariantField.ANNOTATION_DRUGS,
+                        VariantField.ANNOTATION_GENE_EXPRESSION
+                ));
+
+        return variantStorageManager.get(variantQuery, queryOptions, token).getResults();
     }
 
     public OpenCGAResult<RgaKnockoutByGene> geneQuery(String studyStr, Query query, QueryOptions options, String token)
@@ -269,16 +356,29 @@ public class RgaManager implements AutoCloseable {
             auxQuery.put(RgaDataModel.GENE_ID, geneIds);
         }
 
-        Set<String> includeIndividualIds;
+        if (!auxQuery.containsKey("sampleId") && !auxQuery.containsKey("individualId") && includeIndividuals.isEmpty()) {
+            // We perform a facet to get the different individual ids matching the user query
+            DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
+                    new QueryOptions(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_ID).append(QueryOptions.LIMIT, -1));
+            if (result.getNumResults() == 0) {
+                stopWatch.stop();
+                return OpenCGAResult.empty(RgaKnockoutByGene.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+            }
+            includeIndividuals = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+        }
+
+        Set<String> includeSampleIds;
         if (!isOwnerOrAdmin) {
             if (!includeIndividuals.isEmpty()) {
-                // 3. Get list of individual ids for which the user has permissions from the list of includeInviduals provided
-                Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                        + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
-                        .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
+                // 3. Get list of indexed sample ids for which the user has permissions from the list of includeIndividuals provided
+                Query sampleQuery = new Query()
+                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
+                                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), includeIndividuals);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                        SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), sampleQuery, token);
-                includeIndividualIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+                        SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+                includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             } else {
                 // 2. Check permissions
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
@@ -289,34 +389,72 @@ public class RgaManager implements AutoCloseable {
                 }
                 List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
-                // 3. Get list of individual ids for which the user has permissions
+                // 3. Get list of sample ids for which the user has permissions
                 Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
                         + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                        SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), sampleQuery, token);
-                includeIndividualIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+                        SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+                includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             }
         } else {
-            includeIndividualIds = new HashSet<>(includeIndividuals);
+            // Obtain samples
+            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED);
+
+            if (!includeIndividuals.isEmpty()) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
+            } else {
+                // TODO: Include only the samples that will be necessary
+                logger.warn("Include only the samples that are actually necessary");
+            }
+
+            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                    SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+            includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<List<Variant>> variantFuture = executor.submit(
+                () -> variantStorageQuery(study.getFqn(), new ArrayList<>(includeSampleIds), auxQuery, options, token)
+        );
+
+        Future<OpenCGAResult<RgaDataModel>> tmpResultFuture = executor.submit(
+                () -> rgaEngine.geneQuery(collection, auxQuery, queryOptions)
+        );
+
+        List<Variant> variantList;
+        try {
+            variantList = variantFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
+        }
+
+        OpenCGAResult<RgaDataModel> tmpResult;
+        try {
+            tmpResult = tmpResultFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
         }
 
         // 4. Solr gene query
-        OpenCGAResult<RgaKnockoutByGene> knockoutResult = rgaEngine.geneQuery(collection, auxQuery, queryOptions);
+        List<RgaKnockoutByGene> knockoutResultList = geneConverter.convertToDataModelType(tmpResult.getResults(), variantList);
+        OpenCGAResult<RgaKnockoutByGene> knockoutResult = new OpenCGAResult<>(tmpResult.getTime(), tmpResult.getEvents(),
+                knockoutResultList.size(), knockoutResultList, -1);
+
         knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
         try {
             knockoutResult.setNumMatches(numTotalResults != null ? numTotalResults.get() : -1);
         } catch (InterruptedException | ExecutionException e) {
             knockoutResult.setNumMatches(-1);
         }
-        if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
+        if (isOwnerOrAdmin && includeSampleIds.isEmpty()) {
             return knockoutResult;
         } else {
             // 5. Filter out individual or samples for which user does not have permissions
             for (RgaKnockoutByGene knockout : knockoutResult.getResults()) {
                 List<RgaKnockoutByGene.KnockoutIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
                 for (RgaKnockoutByGene.KnockoutIndividual individual : knockout.getIndividuals()) {
-                    if (includeIndividualIds.contains(individual.getId())) {
+                    if (includeSampleIds.contains(individual.getSampleId())) {
                         individualList.add(individual);
                     }
                 }
@@ -377,55 +515,97 @@ public class RgaManager implements AutoCloseable {
             auxQuery.put(RgaDataModel.VARIANTS, variantIds);
         }
 
-        Set<String> includeIndividualIds;
+        Set<String> includeSampleIds;
         if (!isOwnerOrAdmin) {
             if (!includeIndividuals.isEmpty()) {
-                // 3. Get list of individual ids for which the user has permissions from the list of includeInviduals provided
-                Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                        + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                // 3. Get list of sample ids for which the user has permissions from the list of includeIndividuals provided
+                Query sampleQuery = new Query()
+                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
+                                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                        SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), sampleQuery, token);
-                includeIndividualIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+                        SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+                includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             } else {
                 // 2. Check permissions
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery,
-                        new QueryOptions(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_ID).append(QueryOptions.LIMIT, -1));
+                        new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID).append(QueryOptions.LIMIT, -1));
                 if (result.getNumResults() == 0) {
                     stopWatch.stop();
                     return OpenCGAResult.empty(KnockoutByVariant.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
                 }
-                List<String> individualIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue)
+                List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue)
                         .collect(Collectors.toList());
 
                 // 3. Get list of individual ids for which the user has permissions
-                Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                        + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
-                        .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualIds);
+                Query sampleQuery = new Query()
+                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
+                                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
-                        SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), sampleQuery, token);
-                includeIndividualIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
+                        SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+                includeSampleIds = new HashSet<>((List<String>) authorisedSampleIdResult.getResults());
             }
         } else {
-            includeIndividualIds = new HashSet<>(includeIndividuals);
+            // Obtain samples
+            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED);
+
+            if (!includeIndividuals.isEmpty()) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
+            } else {
+                // TODO: Include only the samples that will be necessary
+                logger.warn("Include only the samples that are actually necessary");
+            }
+
+            OpenCGAResult<?> sampleResult = catalogManager.getSampleManager().distinct(study.getFqn(),
+                    SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
+            includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<List<Variant>> variantFuture = executor.submit(
+                () -> variantStorageQuery(study.getFqn(), new ArrayList<>(includeSampleIds), auxQuery, options, token)
+        );
+
+        Future<OpenCGAResult<RgaDataModel>> tmpResultFuture = executor.submit(
+                () -> rgaEngine.geneQuery(collection, auxQuery, queryOptions)
+        );
+
+        List<Variant> variantList;
+        try {
+            variantList = variantFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
+        }
+
+        OpenCGAResult<RgaDataModel> tmpResult;
+        try {
+            tmpResult = tmpResultFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
         }
 
         // 4. Solr gene query
-        OpenCGAResult<KnockoutByVariant> knockoutResult = rgaEngine.variantQuery(collection, auxQuery, queryOptions);
+        List<KnockoutByVariant> knockoutResultList = variantConverter.convertToDataModelType(tmpResult.getResults(), variantList,
+                query.getAsStringList(RgaQueryParams.VARIANTS.key()));
+        OpenCGAResult<KnockoutByVariant> knockoutResult = new OpenCGAResult<>(tmpResult.getTime(), tmpResult.getEvents(),
+                knockoutResultList.size(), knockoutResultList, -1);
+
         knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
         try {
             knockoutResult.setNumMatches(numTotalResults != null ? numTotalResults.get() : -1);
         } catch (InterruptedException | ExecutionException e) {
             knockoutResult.setNumMatches(-1);
         }
-        if (isOwnerOrAdmin && includeIndividualIds.isEmpty()) {
+        if (isOwnerOrAdmin && includeSampleIds.isEmpty()) {
             return knockoutResult;
         } else {
             // 5. Filter out individual or samples for which user does not have permissions
             for (KnockoutByVariant knockout : knockoutResult.getResults()) {
                 List<KnockoutByIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
                 for (KnockoutByIndividual individual : knockout.getIndividuals()) {
-                    if (includeIndividualIds.contains(individual.getId())) {
+                    if (includeSampleIds.contains(individual.getId())) {
                         individualList.add(individual);
                     }
                 }
@@ -658,7 +838,8 @@ public class RgaManager implements AutoCloseable {
                         knockoutByIndividualList.add(knockoutByIndividual);
                         count++;
                         if (count % KNOCKOUT_INSERT_BATCH_SIZE == 0) {
-                            rgaEngine.insert(collection, knockoutByIndividualList);
+                            List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList);
+                            rgaEngine.insert(collection, rgaDataModelList);
                             logger.debug("Loaded {} knockoutByIndividual entries from '{}'", count, path);
 
                             // Update RGA Index status
@@ -677,7 +858,8 @@ public class RgaManager implements AutoCloseable {
 
                     // Insert the remaining entries
                     if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-                        rgaEngine.insert(collection, knockoutByIndividualList);
+                        List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList);
+                        rgaEngine.insert(collection, rgaDataModelList);
                         logger.debug("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
 
                         // Update RGA Index status

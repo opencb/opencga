@@ -72,10 +72,12 @@ public class RgaSolrExtenalResource extends ExternalResource {
     protected void after() {
         super.after();
         try {
-            if (embeded) {
-                ((RgaSolrExtenalResource.MyEmbeddedSolrServer) solrClient).realClose();
-            } else {
-                solrClient.close();
+            if (solrClient != null) {
+                if (embeded) {
+                    ((RgaSolrExtenalResource.MyEmbeddedSolrServer) solrClient).realClose();
+                } else {
+                    solrClient.close();
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -84,8 +86,8 @@ public class RgaSolrExtenalResource extends ExternalResource {
         }
     }
 
-    public RgaEngine configure(VariantStorageManager variantStorageManager, StorageConfiguration storageConfiguration) {
-        RgaEngine rgaEngine = new RgaEngine(variantStorageManager, storageConfiguration);
+    public RgaEngine configure(StorageConfiguration storageConfiguration) {
+        RgaEngine rgaEngine = new RgaEngine(storageConfiguration);
         rgaEngine.setSolrManager(new SolrManager(solrClient, "localhost", "core"));
         return rgaEngine;
     }
