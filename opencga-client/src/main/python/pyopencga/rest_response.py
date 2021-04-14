@@ -86,8 +86,11 @@ class RestResponse:
         else:
             return result2
 
-    def print_results(self, fields=None, response_pos=None, limit=None, separator='\t', metadata=True, outfile=None):
+    def print_results(self, fields=None, response_pos=None, limit=None, separator='\t', title=None,
+                      metadata=True, outfile=None):
         outfhand = sys.stdout if outfile is None else open(outfile, 'w')
+        if title is not None:
+            outfhand.write(title + '\n' + '-'*(len(title)+5) + '\n')
         if metadata:
             for event_type in ['INFO', 'WARNING', 'ERROR']:
                 for event in self.get_response_events(event_type):
