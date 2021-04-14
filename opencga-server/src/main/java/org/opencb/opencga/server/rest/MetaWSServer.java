@@ -16,17 +16,14 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.monitor.HealthCheckDependencies;
-import org.opencb.opencga.core.models.monitor.HealthCheckDependency;
 import org.opencb.opencga.core.models.monitor.HealthCheckResponse;
 
 import javax.servlet.http.HttpServletRequest;
@@ -36,7 +33,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by pfurio on 05/05/17.
@@ -87,7 +86,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     public Response status(
             @ApiParam(value = "API token for health check. When passed all of the dependencies and their status will be displayed. "
                     + "The dependencies will be checked if this parameter is not used, but they won't be part of the response.")
-                @QueryParam("token") String token) {
+            @QueryParam("token") String token) {
         try {
             if (StringUtils.isEmpty(sessionId) && StringUtils.isNotEmpty(token)) {
                 sessionId = token;
@@ -106,8 +105,20 @@ public class MetaWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-/*name: token
-          description: API token for health check. When passed all of the dependencies and their status will be displayed. The dependencies will be checked if this parameter is not used, but they won't be part of the response.
 
-* */
+    @GET
+    @Path("/status")
+    @ApiOperation(httpMethod = "GET", value = "Database status.")
+    public Response status() {
+        try {
+            QueryResult queryResult = new QueryResult();
+            queryResult.setId("Status");
+            queryResult.setDbTime(0);
+            HealthCheckResponse healthCheckResponse = catalogManager.healthCheck(httpServletRequest.getRequestURI(), "");
+            queryResult.setResult(Collections.singletonList(new ObjectMap("ok", healthCheckResponse.getComponents().contains("MongoDB"))));
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 }
