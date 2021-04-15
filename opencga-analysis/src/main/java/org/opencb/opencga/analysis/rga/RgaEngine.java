@@ -147,39 +147,16 @@ public class RgaEngine implements Closeable {
     }
 
     /**
-     * Return the list of RgaDataModel objects from a Solr core/collection given a query.
+     * Return an RgaDataModel iterator given a query.
      *
      * @param collection   Collection name
      * @param query        Query
      * @param queryOptions Query options
-     * @return List of RgaDataModel objects
+     * @return RgaIterator.
      * @throws RgaException RgaException
      * @throws IOException   IOException
      */
-    public OpenCGAResult<RgaDataModel> geneQuery(String collection, Query query, QueryOptions queryOptions)
-            throws RgaException, IOException {
-        SolrQuery solrQuery = parser.parseQuery(query);
-        fixGeneOptions(queryOptions, solrQuery);
-        solrQuery.setRows(Integer.MAX_VALUE);
-        SolrCollection solrCollection = solrManager.getCollection(collection);
-        try {
-            return new OpenCGAResult<>(solrCollection.query(solrQuery, RgaDataModel.class));
-        } catch (SolrServerException e) {
-            throw new RgaException("Error executing RgaKnockoutByGene query", e);
-        }
-    }
-
-    /**
-     * Return the list of RgaDataModel objects from a Solr core/collection given a query.
-     *
-     * @param collection   Collection name
-     * @param query        Query
-     * @param queryOptions Query options
-     * @return List of RgaDataModel objects
-     * @throws RgaException RgaException
-     * @throws IOException   IOException
-     */
-    public RgaIterator geneQueryIterator(String collection, Query query, QueryOptions queryOptions) throws RgaException {
+    public RgaIterator geneQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
         fixGeneOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
@@ -203,23 +180,21 @@ public class RgaEngine implements Closeable {
     }
 
     /**
-     * Return the list of RgaDataModel objects from a Solr core/collection given a query.
+     * Return an RgaDataModel iterator given a query.
      *
      * @param collection   Collection name
      * @param query        Query
      * @param queryOptions Query options
-     * @return List of RgaDataModel objects
+     * @return RgaIterator object.
      * @throws RgaException RgaException
      * @throws IOException   IOException
      */
-    public OpenCGAResult<RgaDataModel> variantQuery(String collection, Query query, QueryOptions queryOptions)
-            throws RgaException, IOException {
+    public RgaIterator variantQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
         fixVariantOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
-        SolrCollection solrCollection = solrManager.getCollection(collection);
         try {
-            return new OpenCGAResult<>(solrCollection.query(solrQuery, RgaDataModel.class));
+            return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
             throw new RgaException("Error executing KnockoutByVariant query", e);
         }

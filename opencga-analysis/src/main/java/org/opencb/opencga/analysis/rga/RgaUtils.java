@@ -273,23 +273,15 @@ class RgaUtils {
 
                 if (variantMap.containsKey(variantId) && (variantIds.isEmpty() || variantIds.contains(variantId))) {
                         Variant variant = variantMap.get(variantId);
-                        StudyEntry studyEntry = variant.getStudies().get(0);
-                        // TODO: Check fileentry
-                        FileEntry fileEntry = variant.getStudies().get(0).getFiles().get(0);
-                        SampleEntry sampleEntry = variant.getStudies().get(0).getSample(rgaDataModel.getSampleId());
-                        VariantAnnotation variantAnnotation = variant.getAnnotation();
-                        // TODO: Check consequence type
-                        ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
 
+                        SampleEntry sampleEntry = variant.getStudies().get(0).getSample(rgaDataModel.getSampleId());
                         KnockoutVariant.KnockoutType knockoutType = null;
                         if (CollectionUtils.isNotEmpty(rgaDataModel.getKnockoutTypes())) {
                             knockoutType = KnockoutVariant.KnockoutType.valueOf(rgaDataModel.getKnockoutTypes().get(i));
                         }
 
                         // Convert just once
-                        KnockoutVariant knockoutVariant = new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry,
-                                variantAnnotation, consequenceType, knockoutType);
-
+                        KnockoutVariant knockoutVariant = convertToKnockoutVariant(variant, sampleEntry, knockoutType);
 
                     knockoutVariantList.add(knockoutVariant);
                 }
@@ -299,5 +291,20 @@ class RgaUtils {
         return knockoutVariantList;
     }
 
+    static KnockoutVariant convertToKnockoutVariant(Variant variant) {
+        return convertToKnockoutVariant(variant, null, null);
+    }
+
+    // Default converter
+    static KnockoutVariant convertToKnockoutVariant(Variant variant, SampleEntry sampleEntry, KnockoutVariant.KnockoutType knockoutType) {
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        // TODO: Check fileentry
+        FileEntry fileEntry = variant.getStudies().get(0).getFiles().get(0);
+        VariantAnnotation variantAnnotation = variant.getAnnotation();
+        // TODO: Check consequence type
+        ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
+
+        return new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry, variantAnnotation, consequenceType, knockoutType);
+    }
 
 }

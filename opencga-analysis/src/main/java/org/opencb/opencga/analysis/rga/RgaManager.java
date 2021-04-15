@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
@@ -30,7 +29,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
@@ -393,7 +391,7 @@ public class RgaManager implements AutoCloseable {
         );
 
         Future<RgaIterator> tmpResultFuture = executor.submit(
-                () -> rgaEngine.geneQueryIterator(collection, auxQuery, queryOptions)
+                () -> rgaEngine.geneQuery(collection, auxQuery, queryOptions)
         );
 
         VariantDBIterator variantDBIterator;
@@ -547,9 +545,7 @@ public class RgaManager implements AutoCloseable {
                 () -> variantStorageQuery(study.getFqn(), new ArrayList<>(includeSampleIds), auxQuery, options, token)
         );
 
-        Future<OpenCGAResult<RgaDataModel>> tmpResultFuture = executor.submit(
-                () -> rgaEngine.geneQuery(collection, auxQuery, queryOptions)
-        );
+        Future<RgaIterator> rgaIteratorFuture = executor.submit(() -> rgaEngine.variantQuery(collection, auxQuery, queryOptions));
 
         VariantDBIterator variantDBIterator;
         try {
@@ -558,18 +554,23 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException(e.getMessage(), e);
         }
 
-        OpenCGAResult<RgaDataModel> tmpResult;
+        RgaIterator rgaIterator;
         try {
-            tmpResult = tmpResultFuture.get();
+            rgaIterator = rgaIteratorFuture.get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RgaException(e.getMessage(), e);
         }
 
+        int skipIndividuals = queryOptions.getInt(RgaQueryParams.SKIP_INDIVIDUAL);
+        int limitIndividuals = queryOptions.getInt(RgaQueryParams.LIMIT_INDIVIDUAL, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
+
         // 4. Solr gene query
-        List<KnockoutByVariant> knockoutResultList = variantConverter.convertToDataModelType(tmpResult.getResults(), variantDBIterator,
-                query.getAsStringList(RgaQueryParams.VARIANTS.key()));
-        OpenCGAResult<KnockoutByVariant> knockoutResult = new OpenCGAResult<>(tmpResult.getTime(), tmpResult.getEvents(),
-                knockoutResultList.size(), knockoutResultList, -1);
+        List<KnockoutByVariant> knockoutResultList = variantConverter.convertToDataModelType(rgaIterator, variantDBIterator,
+                query.getAsStringList(RgaQueryParams.VARIANTS.key()), skipIndividuals, limitIndividuals);
+
+        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+        OpenCGAResult<KnockoutByVariant> knockoutResult = new OpenCGAResult<>(time, Collections.emptyList(), knockoutResultList.size(),
+                knockoutResultList, -1);
 
         knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
         try {

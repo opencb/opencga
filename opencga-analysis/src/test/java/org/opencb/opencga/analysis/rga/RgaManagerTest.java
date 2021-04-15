@@ -273,6 +273,7 @@ public class RgaManagerTest {
                 .append(RgaQueryParams.LIMIT_INDIVIDUAL, 1);
 
         for (int skip = 0; skip < 4; skip++) {
+            System.out.println("Skip " + skip);
             options.put(RgaQueryParams.SKIP_INDIVIDUAL, skip);
             OpenCGAResult<RgaKnockoutByGene> result = rgaManager.geneQuery(STUDY, new Query(), options, ownerToken);
 
@@ -379,7 +380,54 @@ public class RgaManagerTest {
                     fail("Unexpected variant id '" + variant.getId() + "'");
             }
         }
+    }
 
+    @Test
+    public void testVariantQueryLimitNestedIndividual() throws CatalogException, IOException, RgaException {
+        Map<String, Set<String>> variantIndividualMap = new HashMap<>();
+        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 5)
+                .append(RgaQueryParams.LIMIT_INDIVIDUAL, 1);
+
+        for (int skip = 0; skip < 4; skip++) {
+            System.out.println("Skip " + skip);
+            options.put(RgaQueryParams.SKIP_INDIVIDUAL, skip);
+            OpenCGAResult<KnockoutByVariant> result = rgaManager.variantQuery(STUDY, new Query(), options, ownerToken);
+
+            assertEquals(5, result.getNumResults());
+            for (KnockoutByVariant variant : result.getResults()) {
+                assertTrue(variant.getNumIndividuals() > 2);
+                assertTrue(variant.getIndividuals().size() <= 1);
+
+                if (skip < 2) {
+                    assertTrue(variant.isHasNextIndividual());
+                }
+
+                if (!variant.getIndividuals().isEmpty()) {
+                    if (!variantIndividualMap.containsKey(variant.getId())) {
+                        variantIndividualMap.put(variant.getId(), new HashSet<>());
+                    }
+
+                    Set<String> individualSet = variantIndividualMap.get(variant.getId());
+                    assertFalse(individualSet.contains(variant.getIndividuals().get(0).getId()));
+                    individualSet.add(variant.getIndividuals().get(0).getId());
+                }
+            }
+        }
+
+        assertEquals(5, variantIndividualMap.size());
+        for (Set<String> individualSet : variantIndividualMap.values()) {
+            assertTrue(individualSet.size() > 2);
+        }
+
+        // Skip all nested individuals
+        options.put(RgaQueryParams.SKIP_INDIVIDUAL, 4);
+        OpenCGAResult<KnockoutByVariant> result = rgaManager.variantQuery(STUDY, new Query(), options, ownerToken);
+        assertEquals(5, result.getNumResults());
+        for (KnockoutByVariant variant : result.getResults()) {
+            assertTrue(variant.getNumIndividuals() > 2);
+            assertTrue(variant.getIndividuals().isEmpty());
+            assertFalse(variant.isHasNextIndividual());
+        }
     }
 
     @Test

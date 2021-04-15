@@ -4,6 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
@@ -13,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class VariantRgaConverter extends AbstractRgaConverter implements ComplexTypeConverter<List<KnockoutByVariant>, List<RgaDataModel>> {
+public class VariantRgaConverter extends AbstractRgaConverter {
 
     // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByIndividual fields
     private static final Map<String, List<String>> CONVERTER_MAP;
@@ -86,14 +87,15 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
     public VariantRgaConverter() {
     }
 
-    @Override
-    public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
-        throw new UnsupportedOperationException("Use other converter passing the list of variants");
+
+    public List<KnockoutByVariant> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator,
+                                                          List<String> includeVariants) {
+        return convertToDataModelType(rgaIterator, variantDBIterator, includeVariants, 0, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
     }
 
-    public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList, VariantDBIterator variantDBIterator,
-                                                          List<String> includeVariants) {
-        Set<String> variantIds = new HashSet<>(includeVariants);
+    public List<KnockoutByVariant> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator,
+                                                          List<String> includeVariants, int skipIndividuals, int limitIndividuals) {
+        Set<String> includeVariantIds = new HashSet<>(includeVariants);
 
         Map<String, Variant> variantMap = new HashMap<>();
         while (variantDBIterator.hasNext()) {
@@ -101,30 +103,48 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
             variantMap.put(variant.getId(), variant);
         }
 
+        Map<String, ProcessedIndividuals> variantIndividualMap = new HashMap<>();
+
         // In this list, we will store the keys of result in the order they have been processed so order is kept
         List<String> variantOrder = new LinkedList<>();
         Map<String, Set<String>> result = new HashMap<>();
 
         Map<String, KnockoutByIndividual> individualMap = new HashMap<>();
-        for (RgaDataModel rgaDataModel : rgaDataModelList) {
+        while (rgaIterator.hasNext()) {
+            RgaDataModel rgaDataModel = rgaIterator.next();
+
             List<String> auxVariantIds = new LinkedList<>();
             for (String variant : rgaDataModel.getVariants()) {
-                if (variantIds.isEmpty() || variantIds.contains(variant)) {
+                if (includeVariantIds.isEmpty() || includeVariantIds.contains(variant)) {
                     auxVariantIds.add(variant);
                     if (!result.containsKey(variant)) {
                         result.put(variant, new HashSet<>());
 
                         // The variant will be processed, so we add it to the order list
                         variantOrder.add(variant);
+
+                        // Add also to the map to control the nested individuals that should actually be processed
+                        variantIndividualMap.put(variant, new ProcessedIndividuals(limitIndividuals, skipIndividuals));
                     }
                 }
             }
             if (!auxVariantIds.isEmpty()) {
-                IndividualRgaConverter.extractKnockoutByIndividualMap(rgaDataModel, variantMap, individualMap);
+                boolean processNestedIndividual = false;
+                for (String variant : auxVariantIds) {
+                    ProcessedIndividuals processedIndividuals = variantIndividualMap.get(variant);
+                    if (processedIndividuals.processIndividual(rgaDataModel.getIndividualId())) {
+                        processNestedIndividual = true;
+                        break;
+                    }
+                }
+                if (processNestedIndividual) {
+                    IndividualRgaConverter.extractKnockoutByIndividualMap(rgaDataModel, variantMap, individualMap);
 
-                for (String auxVariantId : auxVariantIds) {
-                    if (StringUtils.isNotEmpty(rgaDataModel.getIndividualId())) {
-                        result.get(auxVariantId).add(rgaDataModel.getIndividualId());
+                    for (String auxVariantId : auxVariantIds) {
+                        ProcessedIndividuals processedIndividuals = variantIndividualMap.get(auxVariantId);
+                        if (processedIndividuals.processIndividual(rgaDataModel.getIndividualId())) {
+                            result.get(auxVariantId).add(rgaDataModel.getIndividualId());
+                        }
                     }
                 }
             }
@@ -187,17 +207,21 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
             }
 
             KnockoutByVariant knockoutByVariant = new KnockoutByVariant(variantId, filteredIndividualList);
+            if (knockoutVariant == null) {
+                // It hasn't been processed because the skipIndividuals is higher than the actual number of individuals having that variant
+                Variant variant = variantMap.get(variantId);
+                knockoutVariant = RgaUtils.convertToKnockoutVariant(variant);
+            }
             knockoutByVariant.setVariantFields(knockoutVariant);
+
+            ProcessedIndividuals processedIndividuals = variantIndividualMap.get(variantId);
+            knockoutByVariant.setNumIndividuals(processedIndividuals.getNumIndividuals());
+            knockoutByVariant.setHasNextIndividual(processedIndividuals.getNumIndividuals() > skipIndividuals + limitIndividuals);
+
             knockoutVariantList.add(knockoutByVariant);
         }
         return knockoutVariantList;
     }
-
-    @Override
-    public List<RgaDataModel> convertToStorageType(List<KnockoutByVariant> knockoutByVariants) {
-        return null;
-    }
-
 
     public List<String> getIncludeFields(List<String> includeFields) {
         Set<String> toInclude = new HashSet<>();
