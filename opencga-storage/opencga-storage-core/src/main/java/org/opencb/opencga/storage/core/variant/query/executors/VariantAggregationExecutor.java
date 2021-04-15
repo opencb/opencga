@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.query.executors;
 
+import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -57,7 +58,9 @@ public abstract class VariantAggregationExecutor {
         }
 
         String facet = options.getString(QueryOptions.FACET);
-
+        if (StringUtils.isEmpty(facet)) {
+            throw new VariantQueryException("Empty facet query!");
+        }
         try {
             return aggregation(query, options, facet);
         } catch (Exception e) {
