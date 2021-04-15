@@ -8,9 +8,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public abstract class AbstractRgaConverter {
 
@@ -54,6 +52,46 @@ public abstract class AbstractRgaConverter {
         }
 
         return knockoutByIndividual;
+    }
+
+    protected class ProcessedIndividuals {
+
+        private int limit;
+        private int skip;
+
+        private Set<String> excludedIndividuals;
+        private Set<String> includedIndividuals;
+
+        public ProcessedIndividuals(int limit, int skip) {
+            this.limit = limit;
+            this.skip = skip;
+
+            this.excludedIndividuals = new HashSet<>();
+            this.includedIndividuals = new HashSet<>();
+        }
+
+        private void addIndividual(String individual) {
+            if (!excludedIndividuals.contains(individual) && !includedIndividuals.contains(individual)) {
+                if (limit > includedIndividuals.size()) {
+                    if (skip > excludedIndividuals.size()) {
+                        excludedIndividuals.add(individual);
+                    } else {
+                        includedIndividuals.add(individual);
+                    }
+                } else {
+                    excludedIndividuals.add(individual);
+                }
+            }
+        }
+
+        public boolean processIndividual(String individual) {
+            addIndividual(individual);
+            return includedIndividuals.contains(individual);
+        }
+
+        public int getNumIndividuals() {
+            return includedIndividuals.size() + excludedIndividuals.size();
+        }
     }
 
 }

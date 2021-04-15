@@ -82,6 +82,13 @@ public class RgaQueryParams implements QueryParam {
     public static final String INCLUDE_INDIVIDUAL_DESCR = "Include only the comma separated list of individuals to the response";
     public static final String INCLUDE_INDIVIDUAL = "includeIndividual";
 
+    public static final int DEFAULT_INDIVIDUAL_LIMIT = 1000;
+    public static final String LIMIT_INDIVIDUAL_DESCR = "Limit number of individuals returned (default: " + DEFAULT_INDIVIDUAL_LIMIT + ")";
+    public static final String LIMIT_INDIVIDUAL = "limitIndividual";
+
+    public static final String SKIP_INDIVIDUAL_DESCR = "Number of individuals to skip";
+    public static final String SKIP_INDIVIDUAL = "skipIndividual";
+
     public RgaQueryParams(String key, Type type, String description) {
         this.key = key;
         this.type = type;

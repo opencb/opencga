@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -168,6 +169,26 @@ public class RgaEngine implements Closeable {
         }
     }
 
+    /**
+     * Return the list of RgaDataModel objects from a Solr core/collection given a query.
+     *
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options
+     * @return List of RgaDataModel objects
+     * @throws RgaException RgaException
+     * @throws IOException   IOException
+     */
+    public RgaIterator geneQueryIterator(String collection, Query query, QueryOptions queryOptions) throws RgaException {
+        SolrQuery solrQuery = parser.parseQuery(query);
+        fixGeneOptions(queryOptions, solrQuery);
+        solrQuery.setRows(Integer.MAX_VALUE);
+        try {
+            return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
+        } catch (SolrServerException e) {
+            throw new RgaException("Error executing RgaKnockoutByGene query", e);
+        }
+    }
 
     private void fixGeneOptions(QueryOptions queryOptions, SolrQuery solrQuery) {
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {

@@ -267,6 +267,53 @@ public class RgaManagerTest {
     }
 
     @Test
+    public void testGeneQueryLimitNestedIndividual() throws CatalogException, IOException, RgaException {
+        Map<String, Set<String>> geneIndividualMap = new HashMap<>();
+        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 5)
+                .append(RgaQueryParams.LIMIT_INDIVIDUAL, 1);
+
+        for (int skip = 0; skip < 4; skip++) {
+            options.put(RgaQueryParams.SKIP_INDIVIDUAL, skip);
+            OpenCGAResult<RgaKnockoutByGene> result = rgaManager.geneQuery(STUDY, new Query(), options, ownerToken);
+
+            assertEquals(5, result.getNumResults());
+            for (RgaKnockoutByGene gene : result.getResults()) {
+                assertTrue(gene.getNumIndividuals() > 2);
+                assertTrue(gene.getIndividuals().size() <= 1);
+
+                if (skip < 2) {
+                    assertTrue(gene.isHasNextIndividual());
+                }
+
+                if (!gene.getIndividuals().isEmpty()) {
+                    if (!geneIndividualMap.containsKey(gene.getId())) {
+                        geneIndividualMap.put(gene.getId(), new HashSet<>());
+                    }
+
+                    Set<String> individualSet = geneIndividualMap.get(gene.getId());
+                    assertFalse(individualSet.contains(gene.getIndividuals().get(0).getId()));
+                    individualSet.add(gene.getIndividuals().get(0).getId());
+                }
+            }
+        }
+
+        assertEquals(5, geneIndividualMap.size());
+        for (Set<String> individualSet : geneIndividualMap.values()) {
+            assertTrue(individualSet.size() > 2);
+        }
+
+        // Skip all nested individuals
+        options.put(RgaQueryParams.SKIP_INDIVIDUAL, 4);
+        OpenCGAResult<RgaKnockoutByGene> result = rgaManager.geneQuery(STUDY, new Query(), options, ownerToken);
+        assertEquals(5, result.getNumResults());
+        for (RgaKnockoutByGene gene : result.getResults()) {
+            assertTrue(gene.getNumIndividuals() > 2);
+            assertTrue(gene.getIndividuals().isEmpty());
+            assertFalse(gene.isHasNextIndividual());
+        }
+    }
+
+    @Test
     public void testGeneQueryLimit() throws CatalogException, IOException, RgaException {
         Set<String> geneIds = new HashSet<>();
 

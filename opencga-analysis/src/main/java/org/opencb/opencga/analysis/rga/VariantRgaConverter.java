@@ -8,6 +8,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -90,12 +91,13 @@ public class VariantRgaConverter extends AbstractRgaConverter implements Complex
         throw new UnsupportedOperationException("Use other converter passing the list of variants");
     }
 
-    public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList, List<Variant> variantList,
+    public List<KnockoutByVariant> convertToDataModelType(List<RgaDataModel> rgaDataModelList, VariantDBIterator variantDBIterator,
                                                           List<String> includeVariants) {
         Set<String> variantIds = new HashSet<>(includeVariants);
 
         Map<String, Variant> variantMap = new HashMap<>();
-        for (Variant variant : variantList) {
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
             variantMap.put(variant.getId(), variant);
         }
 

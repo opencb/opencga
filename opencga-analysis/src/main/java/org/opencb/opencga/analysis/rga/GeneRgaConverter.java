@@ -2,16 +2,17 @@ package org.opencb.opencga.analysis.rga;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTypeConverter<List<RgaKnockoutByGene>, List<RgaDataModel>> {
+public class GeneRgaConverter extends AbstractRgaConverter {
 
     // This object contains the list of solr fields that are required in order to fully build each of the RgaKnockoutByGene fields
     private static final Map<String, List<String>> CONVERTER_MAP;
@@ -74,33 +75,43 @@ public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTyp
     public GeneRgaConverter() {
     }
 
-    @Override
-    public List<RgaKnockoutByGene> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
-        throw new UnsupportedOperationException("Use other converter passing a list of variants");
+    public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator) {
+        return convertToDataModelType(rgaIterator, variantDBIterator, 0, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
     }
 
-    public List<RgaKnockoutByGene> convertToDataModelType(List<RgaDataModel> rgaDataModelList, List<Variant> variantList) {
+    public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator,
+                                                          int skipIndividuals, int limitIndividuals) {
         Map<String, Variant> variantMap = new HashMap<>();
-        for (Variant variant : variantList) {
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
             variantMap.put(variant.getId(), variant);
         }
 
+        Map<String, ProcessedIndividuals> geneIndividualMap = new HashMap<>();
+
         Map<String, RgaKnockoutByGene> result = new HashMap<>();
-        for (RgaDataModel rgaDataModel : rgaDataModelList) {
+        while (rgaIterator.hasNext()) {
+            RgaDataModel rgaDataModel = rgaIterator.next();
             if (!result.containsKey(rgaDataModel.getGeneId())) {
                 RgaKnockoutByGene knockoutByGene = new RgaKnockoutByGene();
                 knockoutByGene.setId(rgaDataModel.getGeneId());
                 knockoutByGene.setName(rgaDataModel.getGeneName());
-//                knockoutByGene.setChromosome(xxxxx);
-//                knockoutByGene.setStart(xxxx);
-//                knockoutByGene.setEnd(xxxx);
-//                knockoutByGene.setStrand(xxxx);
-//                knockoutByGene.setBiotype(xxxx);
-//                knockoutByGene.setAnnotation(xxxx);
+                knockoutByGene.setChromosome(rgaDataModel.getChromosome());
+                knockoutByGene.setStart(rgaDataModel.getStart());
+                knockoutByGene.setEnd(rgaDataModel.getEnd());
+                knockoutByGene.setStrand(rgaDataModel.getStrand());
+                knockoutByGene.setBiotype(rgaDataModel.getGeneBiotype());
 
-                knockoutByGene.setIndividuals(new LinkedList<>());
+                knockoutByGene.setIndividuals(new ArrayList<>(limitIndividuals));
                 knockoutByGene.setNumIndividuals(0);
                 result.put(rgaDataModel.getGeneId(), knockoutByGene);
+                geneIndividualMap.put(rgaDataModel.getGeneId(), new ProcessedIndividuals(limitIndividuals, skipIndividuals));
+            }
+
+            ProcessedIndividuals processedIndividuals = geneIndividualMap.get(rgaDataModel.getGeneId());
+            if (!processedIndividuals.processIndividual(rgaDataModel.getIndividualId())) {
+                // Skip this individual
+                continue;
             }
 
             RgaKnockoutByGene knockoutByGene = result.get(rgaDataModel.getGeneId());
@@ -117,7 +128,6 @@ public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTyp
                 knockoutIndividual.setTranscripts(new LinkedList<>());
 
                 knockoutByGene.addIndividual(knockoutIndividual);
-                knockoutByGene.setNumIndividuals(knockoutByGene.getNumIndividuals() + 1);
             }
 
             if (StringUtils.isNotEmpty(rgaDataModel.getTranscriptId())) {
@@ -132,14 +142,15 @@ public class GeneRgaConverter extends AbstractRgaConverter implements ComplexTyp
             }
         }
 
+        // Adjust numIndividuals
+        for (RgaKnockoutByGene knockoutByGene : result.values()) {
+            ProcessedIndividuals processedIndividuals = geneIndividualMap.get(knockoutByGene.getId());
+            knockoutByGene.setNumIndividuals(processedIndividuals.getNumIndividuals());
+            knockoutByGene.setHasNextIndividual(processedIndividuals.getNumIndividuals() > skipIndividuals + limitIndividuals);
+        }
+
         return new ArrayList<>(result.values());
     }
-
-    @Override
-    public List<RgaDataModel> convertToStorageType(List<RgaKnockoutByGene> object) {
-        return null;
-    }
-
 
     public List<String> getIncludeFields(List<String> includeFields) {
         Set<String> toInclude = new HashSet<>();
