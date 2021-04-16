@@ -9,8 +9,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
@@ -20,8 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class IndividualRgaConverter extends AbstractRgaConverter
-        implements ComplexTypeConverter<List<KnockoutByIndividual>, List<RgaDataModel>> {
+public class IndividualRgaConverter extends AbstractRgaConverter {
 
     // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByIndividual fields
     private static final Map<String, List<String>> CONVERTER_MAP;
@@ -76,12 +75,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter
     public IndividualRgaConverter() {
     }
 
-    @Override
-    public List<KnockoutByIndividual> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
-        throw new UnsupportedOperationException("Use other converter passing a list of variants");
-    }
-
-    public List<KnockoutByIndividual> convertToDataModelType(List<RgaDataModel> rgaDataModelList, VariantDBIterator variantDBIterator) {
+    public List<KnockoutByIndividual> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator) {
         // In this list, we will store the keys of result in the order they have been processed so order is kept
         List<String> knockoutByIndividualOrder = new LinkedList<>();
         Map<String, KnockoutByIndividual> result = new HashMap<>();
@@ -92,7 +86,9 @@ public class IndividualRgaConverter extends AbstractRgaConverter
             variantMap.put(variant.getId(), variant);
         }
 
-        for (RgaDataModel rgaDataModel : rgaDataModelList) {
+        while (rgaIterator.hasNext()) {
+            RgaDataModel rgaDataModel = rgaIterator.next();
+
             if (!result.containsKey(rgaDataModel.getIndividualId())) {
                 knockoutByIndividualOrder.add(rgaDataModel.getIndividualId());
             }

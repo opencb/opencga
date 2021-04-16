@@ -15,8 +15,6 @@ import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,23 +110,20 @@ public class RgaEngine implements Closeable {
     }
 
     /**
-     * Return the list of RgaDataModel objects from a Solr core/collection given a query.
+     * Return an RgaDataModel iterator given a query.
      *
      * @param collection   Collection name
      * @param query        Query
      * @param queryOptions Query options
-     * @return List of RgaDataModel objects
+     * @return RgaIterator.
      * @throws RgaException RgaException
-     * @throws IOException   IOException
      */
-    public OpenCGAResult<RgaDataModel> individualQuery(String collection, Query query, QueryOptions queryOptions)
-            throws RgaException, IOException {
+    public RgaIterator individualQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException{
         SolrQuery solrQuery = parser.parseQuery(query);
         fixIndividualOptions(queryOptions, solrQuery);
         solrQuery.setRows(Integer.MAX_VALUE);
-        SolrCollection solrCollection = solrManager.getCollection(collection);
         try {
-            return new OpenCGAResult<>(solrCollection.query(solrQuery, RgaDataModel.class));
+            return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {
             throw new RgaException("Error executing KnockoutByIndividual query", e);
         }
@@ -154,7 +149,6 @@ public class RgaEngine implements Closeable {
      * @param queryOptions Query options
      * @return RgaIterator.
      * @throws RgaException RgaException
-     * @throws IOException   IOException
      */
     public RgaIterator geneQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);
@@ -187,7 +181,6 @@ public class RgaEngine implements Closeable {
      * @param queryOptions Query options
      * @return RgaIterator object.
      * @throws RgaException RgaException
-     * @throws IOException   IOException
      */
     public RgaIterator variantQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException {
         SolrQuery solrQuery = parser.parseQuery(query);

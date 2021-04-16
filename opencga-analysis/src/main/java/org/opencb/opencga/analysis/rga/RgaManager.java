@@ -239,9 +239,7 @@ public class RgaManager implements AutoCloseable {
                 () -> variantStorageQuery(study.getFqn(), sampleIds, auxQuery, options, token)
         );
 
-        Future<OpenCGAResult<RgaDataModel>> tmpResultFuture = executor.submit(
-                () -> rgaEngine.individualQuery(collection, auxQuery, queryOptions)
-        );
+        Future<RgaIterator> rgaIteratorFuture = executor.submit(() -> rgaEngine.individualQuery(collection, auxQuery, queryOptions));
 
         VariantDBIterator variantDBIterator;
         try {
@@ -250,17 +248,17 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException(e.getMessage(), e);
         }
 
-        OpenCGAResult<RgaDataModel> tmpResult;
+        RgaIterator rgaIterator;
         try {
-            tmpResult = tmpResultFuture.get();
+            rgaIterator = rgaIteratorFuture.get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RgaException(e.getMessage(), e);
         }
 
-        List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(tmpResult.getResults(),
-                variantDBIterator);
-        OpenCGAResult<KnockoutByIndividual> result = new OpenCGAResult<>(tmpResult.getTime(), tmpResult.getEvents(),
-                knockoutByIndividuals.size(), knockoutByIndividuals, -1);
+        List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(rgaIterator, variantDBIterator);
+        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+        OpenCGAResult<KnockoutByIndividual> result = new OpenCGAResult<>(time, Collections.emptyList(), knockoutByIndividuals.size(),
+                knockoutByIndividuals, -1);
 
         if (count) {
             result.setNumMatches(numTotalResults);
@@ -268,7 +266,6 @@ public class RgaManager implements AutoCloseable {
         if (event != null) {
             result.setEvents(Collections.singletonList(event));
         }
-        result.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
 
         return result;
     }
