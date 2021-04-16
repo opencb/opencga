@@ -555,6 +555,12 @@ public class RgaManager implements AutoCloseable {
     }
 
     public void index(String studyStr, String fileStr, String token) throws CatalogException, RgaException, IOException {
+        File file = catalogManager.getFileManager().get(studyStr, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+        Path filePath = Paths.get(file.getUri());
+        index(studyStr, filePath, token);
+    }
+
+    public void index(String studyStr, Path file, String token) throws CatalogException, IOException, RgaException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         try {
@@ -564,9 +570,7 @@ public class RgaManager implements AutoCloseable {
             throw new CatalogException("Only owners or admins can index", e.getCause());
         }
 
-        File file = catalogManager.getFileManager().get(studyStr, fileStr, FileManager.INCLUDE_FILE_URI_PATH, token).first();
-
-        load(study.getFqn(), Paths.get(file.getUri()), token);
+        load(study.getFqn(), file, token);
     }
 
     /**

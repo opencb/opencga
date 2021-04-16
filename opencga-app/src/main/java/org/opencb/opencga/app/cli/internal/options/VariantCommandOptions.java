@@ -1174,9 +1174,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--index"}, description = "Index result for Recessive Gene Analysis")
         public boolean index;
-
-        @Parameter(names = {"--index-job-tags"}, description = "Job tags for the RGA index job generated.")
-        public List<String> indexJobTags;
     }
 
     @Parameters(commandNames = SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND, commandDescription = SampleEligibilityAnalysis.DESCRIPTION)
