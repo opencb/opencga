@@ -492,6 +492,9 @@ public abstract class OpenCgaTool {
         if (StringUtils.isEmpty(executorId) && params != null) {
             executorId = params.getString(EXECUTOR_ID);
         }
+
+        System.out.println("getToolExecutor ::: " + clazz + ", " + executorId);
+        System.out.println(executorParams.toJson());
         return getToolExecutor(clazz, executorId);
     }
 

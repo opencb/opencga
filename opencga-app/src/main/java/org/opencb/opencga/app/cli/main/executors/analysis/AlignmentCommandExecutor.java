@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.alignment.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
@@ -82,6 +83,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "stats-run":
                 queryResponse = statsRun();
+                break;
+            case "flag-stats-run":
+                queryResponse = flagStatsRun();
                 break;
             case "stats-info":
                 queryResponse = statsInfo();
@@ -336,7 +340,17 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
         params.putAll(getJobParams());
 
-        return openCGAClient.getAlignmentClient().runStats(new AlignmentStatsParams(cliOptions.file), params);
+        return openCGAClient.getAlignmentClient().runStats(new AlignmentStatsParams(cliOptions.file, cliOptions.outdir), params);
+    }
+
+    private RestResponse<Job> flagStatsRun() throws ClientException {
+        AlignmentCommandOptions.FlagStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.flagStatsAlignmentCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return null;
+//        return openCGAClient.getAlignmentClient().runFlagStats(new AlignmentStatsParams(cliOptions.file), params);
     }
 
     private RestResponse<SamtoolsStats> statsInfo() throws ClientException {

@@ -21,15 +21,11 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.picard.io.HsMetricsParser;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.executors.PicardWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -84,36 +80,36 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
     }
 
     private void runFlagStats() throws ToolException {
-        if (alignmentQcMetrics.getSamtoolsFlagstats() != null) {
-            // Samtools flag stats already exists!
-            addWarning("Skipping samtools/flagstat analysis: it was already computed");
-            return;
-        }
-
-        // Check BAM file
-        if (catalogBamFile == null) {
-            addWarning("Skipping samtools/flagstat analysis: no BAM file was provided");
-            return;
-        }
-
-        ObjectMap params = new ObjectMap();
-
-        Path outDir = getOutDir().resolve("flagstat");
-        Path scratchDir = outDir.resolve("scratch");
-        scratchDir.toFile().mkdirs();
-
-        SamtoolsWrapperAnalysisExecutor executor = new SamtoolsWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir,
-                catalogManager, getToken());
-
-        executor.setCommand("flagstat");
-        executor.setBamFile(catalogBamFile.getId());
-        executor.run();
-
-        // Check for result
-        SamtoolsFlagstats flagtats = executor.getFlagstatsResult();
-        if (flagtats != null) {
-            alignmentQcMetrics.setSamtoolsFlagstats(flagtats);
-        }
+//        if (alignmentQcMetrics.getSamtoolsFlagstats() != null) {
+//            // Samtools flag stats already exists!
+//            addWarning("Skipping samtools/flagstat analysis: it was already computed");
+//            return;
+//        }
+//
+//        // Check BAM file
+//        if (catalogBamFile == null) {
+//            addWarning("Skipping samtools/flagstat analysis: no BAM file was provided");
+//            return;
+//        }
+//
+//        ObjectMap params = new ObjectMap();
+//
+//        Path outDir = getOutDir().resolve("flagstat");
+//        Path scratchDir = outDir.resolve("scratch");
+//        scratchDir.toFile().mkdirs();
+//
+//        SamtoolsWrapperAnalysisExecutor executor = new SamtoolsWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir,
+//                catalogManager, getToken());
+//
+//        executor.setCommand("flagstat");
+//        executor.setBamFile(catalogBamFile.getId());
+//        executor.run();
+//
+//        // Check for result
+//        SamtoolsFlagstats flagtats = executor.getFlagstatsResult();
+//        if (flagtats != null) {
+//            alignmentQcMetrics.setSamtoolsFlagstats(flagtats);
+//        }
     }
 
     private void runHsMetrics() throws ToolException {

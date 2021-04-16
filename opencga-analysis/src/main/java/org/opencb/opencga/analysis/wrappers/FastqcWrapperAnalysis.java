@@ -19,20 +19,15 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Tool(id = FastqcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = FastqcWrapperAnalysis.DESCRIPTION)
@@ -96,8 +91,8 @@ public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
         return this;
     }
 
-    @Override
-    public String getDockerImageName() {
-        return null;
-    }
+//    @Override
+//    public String getDockerImageName() {
+//        return null;
+//    }
 }

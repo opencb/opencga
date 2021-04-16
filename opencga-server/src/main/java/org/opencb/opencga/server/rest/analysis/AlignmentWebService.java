@@ -31,7 +31,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -48,7 +50,7 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
+import static org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
@@ -379,9 +381,9 @@ public class AlignmentWebService extends AnalysisWebService {
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/stats/run")
-    @ApiOperation(value = ALIGNMENT_STATS_DESCRIPTION, response = Job.class)
-    public Response statsRun(
+    @Path("/flagstats/run")
+    @ApiOperation(value = ALIGNMENT_FLAG_STATS_DESCRIPTION, response = Job.class)
+    public Response flagStatsRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
@@ -392,7 +394,7 @@ public class AlignmentWebService extends AnalysisWebService {
         logger.debug("ObjectMap: {}", params);
 
         SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams();
-        samtoolsParams.setCommand("stats");
+        samtoolsParams.setCommand("flagstat");
         samtoolsParams.setInputFile(params.getFile());
 
         Map<String, String> statsParams = new HashMap<>();
@@ -402,6 +404,34 @@ public class AlignmentWebService extends AnalysisWebService {
         logger.debug("ObjectMap (Samtools) : {}", samtoolsParams);
 
         return submitJob(SamtoolsWrapperAnalysis.ID, study, samtoolsParams, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/stats/run")
+    @ApiOperation(value = ALIGNMENT_STATS_DESCRIPTION, response = Job.class)
+    public Response statsRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentStatsParams.DESCRIPTION, required = true) AlignmentStatsParams params) {
+
+        return submitJob(AlignmentStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+
+//        logger.debug("ObjectMap: {}", params);
+//
+//        SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams();
+//        samtoolsParams.setCommand("stats");
+//        samtoolsParams.setInputFile(params.getFile());
+//
+//        Map<String, String> statsParams = new HashMap<>();
+//        statsParams.put(INDEX_STATS_PARAM, "true");
+//        samtoolsParams.setSamtoolsParams(statsParams);
+//
+//        logger.debug("ObjectMap (Samtools) : {}", samtoolsParams);
+//
+//        return submitJob(SamtoolsWrapperAnalysis.ID, study, samtoolsParams, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET

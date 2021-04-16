@@ -18,9 +18,13 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
 
 import java.nio.file.Paths;
 import java.util.Map;
@@ -38,7 +42,8 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
  */
 public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
-    private final AlignmentCommandOptions alignmentCommandOptions;
+    private AlignmentCommandOptions alignmentCommandOptions;
+    private String jobId;
 //    private AlignmentStorageEngine alignmentStorageManager;
 
     public AlignmentCommandExecutor(AlignmentCommandOptions options) {
@@ -52,12 +57,18 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         configure();
+
+        jobId = alignmentCommandOptions.internalJobOptions.jobId;
+
         switch (subCommandString) {
             case "index-run":
                 indexRun();
                 break;
             case "stats-run":
                 statsRun();
+                break;
+            case "flagstats-run":
+                flagStatsRun();
                 break;
             case "coverage-run":
                 coverageRun();
@@ -125,9 +136,26 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void statsRun() throws ToolException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
+        ObjectMap params = new AlignmentStatsParams(
+                cliOptions.file,
+                cliOptions.outdir
+        ).toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        alignmentManager.statsRun(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
+        System.out.println("alignment command executor: params = " + params.toJson());
+        System.out.println("----> cliOptions.study = " + cliOptions.study);
+        System.out.println("----> cliOptions.outdir = " + cliOptions.outdir);
+
+        toolRunner.execute(AlignmentStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
+    private void flagStatsRun() throws ToolException {
+        AlignmentCommandOptions.FlagStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.flagStatsAlignmentCommandOptions;
+
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory,
+                alignmentCommandOptions.internalJobOptions.jobId);
+
+        alignmentManager.flagStatsRun(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
     private void coverageRun() throws ToolException {

@@ -17,19 +17,10 @@
 package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.wrappers.executors.PicardWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
-
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.util.*;
 
 @Tool(id = PicardWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT,
         description = "")
@@ -74,10 +65,10 @@ public class PicardWrapperAnalysis extends OpenCgaWrapperAnalysis {
         );
     }
 
-    @Override
-    public String getDockerImageName() {
-        return PICARD_DOCKER_IMAGE;
-    }
+//    @Override
+//    public String getDockerImageName() {
+//        return PICARD_DOCKER_IMAGE;
+//    }
 
 
     public String getCommand() {
