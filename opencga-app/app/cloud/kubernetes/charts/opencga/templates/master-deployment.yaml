@@ -97,8 +97,6 @@ spec:
           value: {{ include "pvcAnalysisconf" . | quote }}
         - name: "INIT_ANALYSIS_EXECUTION_MODE"
           value: {{ .Values.analysis.execution.id | quote }}
-        - name: "INIT_MAX_CONCURRENT_JOBS"
-          value: {{ .Values.analysis.index.variant.maxConcurrentJobs  | quote }}
         volumeMounts:
           - name: default-conf
             mountPath: /opt/opencga/default-conf

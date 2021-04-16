@@ -127,7 +127,7 @@ config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
 config["catalog"]["database"]["options"]["sslEnabled"] = args.catalog_database_ssl
 config["catalog"]["database"]["options"]["sslInvalidCertificatesAllowed"] = True
-if args.catalog_database_replica_set is not None:
+if args.catalog_database_replica_set is not None and args.catalog_database_replica_set != "":
     config["catalog"]["database"]["options"]["replicaSet"] = args.catalog_database_replica_set
 if args.catalog_database_authentication_database is not None:
     config["catalog"]["database"]["options"]["authenticationDatabase"] = args.catalog_database_authentication_database
