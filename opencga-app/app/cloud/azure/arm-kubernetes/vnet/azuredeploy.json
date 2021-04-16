@@ -32,8 +32,7 @@
                         "name" : "hdinsight",
                         "addressPrefix": "10.0.8.0/24",
                         "nsg": {
-                            "name": "nsg-hdi",
-                            "serviceTag" : "HDInsight"
+                            "name": "nsg-hdi"
                         }
                     },
                     "mongodb" : {
@@ -74,48 +73,6 @@
             "location": "[resourceGroup().location]",
             "properties": {
                 "securityRules": [
-                    {
-                        "name": "Allow_HDInsight_Management_Traffic_Specific_IPs",
-                        "properties": {
-                            "description": "Allow traffic from the Azure health and management services to reach HDInsight - Specific IPs list",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "443",
-                            "sourceAddressPrefixes": ["168.61.49.99", "23.99.5.239", "168.61.48.131", "138.91.141.162"],
-                            "destinationAddressPrefix": "VirtualNetwork",
-                            "access": "Allow",
-                            "priority": 300,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "Allow_HDInsight_Management_Traffic",
-                        "properties": {
-                            "description": "Allow traffic from the Azure health and management services to reach HDInsight - Service Tag",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "443",
-                            "sourceAddressPrefix": "[parameters('config').subnets.hdinsight.nsg.serviceTag]",
-                            "destinationAddressPrefix": "*",
-                            "access": "Allow",
-                            "priority": 301,
-                            "direction": "Inbound"
-                        }
-                    },
-                    {
-                        "name": "Allow_Azure_Resolver_Traffic",
-                        "properties": {
-                            "description": "Allow access from Azure's recursive resolver",
-                            "protocol": "*",
-                            "sourcePortRange": "*",
-                            "destinationPortRange": "443",
-                            "sourceAddressPrefix": "168.63.129.16",
-                            "destinationAddressPrefix": "VirtualNetwork",
-                            "access": "Allow",
-                            "priority": 302,
-                            "direction": "Inbound"
-                        }
-                    }
                 ]
             }
         },

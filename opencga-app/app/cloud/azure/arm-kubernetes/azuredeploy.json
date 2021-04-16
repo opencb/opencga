@@ -245,8 +245,7 @@
                             "name" : "hdinsight",
                             "addressPrefix": "10.0.8.0/24",
                             "nsg": {
-                                "name": "[concat(parameters('nsgNamePrefix'), '-hdi')]",
-                                "serviceTag" : "HDInsight"
+                                "name": "[concat(parameters('nsgNamePrefix'), '-hdi')]"
                             }
                         },
                         "mongodb" : {
