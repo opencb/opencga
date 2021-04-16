@@ -712,6 +712,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = RgaQueryParams.INCLUDE_INDIVIDUAL, value = RgaQueryParams.INCLUDE_INDIVIDUAL_DESCR, example = "ind1,ind2,ind3", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = RgaQueryParams.SKIP_INDIVIDUAL, value = RgaQueryParams.SKIP_INDIVIDUAL_DESCR, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = RgaQueryParams.LIMIT_INDIVIDUAL, value = RgaQueryParams.LIMIT_INDIVIDUAL_DESCR, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "sampleId", value = RgaQueryParams.SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "individualId", value = RgaQueryParams.INDIVIDUAL_ID_DESCR, dataType = "string", paramType = "query"),
@@ -758,6 +760,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = RgaQueryParams.INCLUDE_INDIVIDUAL, value = RgaQueryParams.INCLUDE_INDIVIDUAL_DESCR, example = "ind1,ind2,ind3", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = RgaQueryParams.SKIP_INDIVIDUAL, value = RgaQueryParams.SKIP_INDIVIDUAL_DESCR, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = RgaQueryParams.LIMIT_INDIVIDUAL, value = RgaQueryParams.LIMIT_INDIVIDUAL_DESCR, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "sampleId", value = RgaQueryParams.SAMPLE_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "individualId", value = RgaQueryParams.INDIVIDUAL_ID_DESCR, dataType = "string", paramType = "query"),
