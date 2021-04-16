@@ -23,7 +23,7 @@ public class TemplateStudy extends StudyCreateParams {
     private List<VariableSetCreateParams> variableSets;
     private List<TemplateFile> files;
 
-//    private StudyVariantEngineConfiguration variantEngineConfiguration;
+    private StudyVariantEngineConfiguration variantEngineConfiguration;
 
     public List<SampleCreateParams> getSamples() {
         return samples;
@@ -94,6 +94,15 @@ public class TemplateStudy extends StudyCreateParams {
 
     public TemplateStudy setFiles(List<TemplateFile> files) {
         this.files = files;
+        return this;
+    }
+
+    public StudyVariantEngineConfiguration getVariantEngineConfiguration() {
+        return variantEngineConfiguration;
+    }
+
+    public TemplateStudy setVariantEngineConfiguration(StudyVariantEngineConfiguration variantEngineConfiguration) {
+        this.variantEngineConfiguration = variantEngineConfiguration;
         return this;
     }
 }

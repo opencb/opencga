@@ -31,13 +31,18 @@ import org.opencb.opencga.client.template.config.TemplateFile;
 import org.opencb.opencga.client.template.config.TemplateProject;
 import org.opencb.opencga.client.template.config.TemplateStudy;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
-import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.file.FileCreateParams;
+import org.opencb.opencga.core.models.file.FileFetch;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
@@ -50,6 +55,7 @@ import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
+import org.opencb.opencga.core.models.study.StudyVariantEngineConfiguration;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -125,10 +131,12 @@ public class TemplateManager {
                 if (CollectionUtils.isNotEmpty(study.getPanels())) {
                     createPanels(studyFqn, study);
                 }
-// TODO
-//                if (CollectionUtils.isNotEmpty(study.getClinicalAnalysis())) {
-//                    createClinicalAnalysis(study);
-//                }
+                if (CollectionUtils.isNotEmpty(study.getClinicalAnalyses())) {
+                    createClinicalAnalyses(studyFqn, study);
+                }
+                if (study.getVariantEngineConfiguration() != null) {
+                    configureVariantEngine(studyFqn, study);
+                }
                 if (CollectionUtils.isNotEmpty(study.getFiles())) {
                     List<String> studyIndexVcfJobIds = fetchFiles(template, studyFqn, study);
                     projectIndexVcfJobIds.addAll(studyIndexVcfJobIds);
@@ -468,6 +476,46 @@ public class TemplateManager {
                 openCGAClient.getDiseasePanelClient().create(panel, params);
             }
         }
+    }
+
+    private void createClinicalAnalyses(String studyFqn, TemplateStudy study) throws ClientException {
+        List<ClinicalAnalysisCreateParams> clinicalAnalyses = study.getClinicalAnalyses();
+        if (CollectionUtils.isEmpty(clinicalAnalyses)) {
+            return;
+        }
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, studyFqn);
+        Set<String> existing = Collections.emptySet();
+        if (resume) {
+            openCGAClient.setThrowExceptionOnError(false);
+            existing = openCGAClient.getClinicalAnalysisClient()
+                    .info(clinicalAnalyses.stream().map(ClinicalAnalysisCreateParams::getId).collect(Collectors.joining(",")),
+                            new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
+                    .allResults()
+                    .stream()
+                    .map(ClinicalAnalysis::getId)
+                    .collect(Collectors.toSet());
+            openCGAClient.setThrowExceptionOnError(true);
+        }
+        for (ClinicalAnalysisCreateParams createParams : clinicalAnalyses) {
+            if (!existing.contains(createParams.getId())) {
+                openCGAClient.getClinicalAnalysisClient().create(createParams, params);
+            }
+        }
+    }
+
+    private void configureVariantEngine(String studyFqn, TemplateStudy study) throws ClientException {
+        StudyVariantEngineConfiguration configuration = study.getVariantEngineConfiguration();
+        if (configuration == null) {
+            return;
+        }
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, studyFqn);
+        if (configuration.getOptions() != null && !configuration.getOptions().isEmpty()) {
+            openCGAClient.getVariantOperationClient().configureVariant(configuration.getOptions(), params);
+        }
+        if (configuration.getSampleIndex() != null) {
+            openCGAClient.getVariantOperationClient().configureSampleIndex(configuration.getSampleIndex(), params);
+        }
+
     }
 
     private List<String> fetchFiles(TemplateConfiguration template, String studyFqn, TemplateStudy study)
