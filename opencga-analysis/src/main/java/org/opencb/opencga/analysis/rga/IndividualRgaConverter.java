@@ -121,14 +121,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
             KnockoutByIndividual knockoutByIndividual = fillIndividualInfo(rgaDataModel);
 
             List<KnockoutByIndividual.KnockoutGene> geneList = new LinkedList<>();
-            KnockoutByIndividual.KnockoutGene knockoutGene = new KnockoutByIndividual.KnockoutGene();
-            knockoutGene.setId(rgaDataModel.getGeneId());
-            knockoutGene.setName(rgaDataModel.getGeneName());
-            knockoutGene.setTranscripts(new LinkedList<>());
-            geneList.add(knockoutGene);
-
             knockoutByIndividual.setGenes(geneList);
-
             result.put(rgaDataModel.getIndividualId(), knockoutByIndividual);
         }
 
@@ -143,19 +136,23 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
             knockoutGene = new KnockoutByIndividual.KnockoutGene();
             knockoutGene.setId(rgaDataModel.getGeneId());
             knockoutGene.setName(rgaDataModel.getGeneName());
+            knockoutGene.setStrand(rgaDataModel.getStrand());
+            knockoutGene.setBiotype(rgaDataModel.getGeneBiotype());
+            knockoutGene.setStart(rgaDataModel.getStart());
+            knockoutGene.setEnd(rgaDataModel.getEnd());
             knockoutGene.setTranscripts(new LinkedList<>());
 
             knockoutByIndividual.addGene(knockoutGene);
         }
 
         if (StringUtils.isNotEmpty(rgaDataModel.getTranscriptId())) {
-            // Add new transcript
-            KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
-            knockoutGene.addTranscripts(Collections.singletonList(knockoutTranscript));
-
-            knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
             List<KnockoutVariant> knockoutVariantList = RgaUtils.extractKnockoutVariants(rgaDataModel, variantMap, variantIds);
-            knockoutTranscript.setVariants(knockoutVariantList);
+
+            // Add new transcript
+            KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId(), rgaDataModel.getChromosome(),
+                    rgaDataModel.getStart(), rgaDataModel.getEnd(), rgaDataModel.getTranscriptBiotype(), rgaDataModel.getStrand(),
+                    knockoutVariantList);
+            knockoutGene.addTranscripts(Collections.singletonList(knockoutTranscript));
         }
     }
 
