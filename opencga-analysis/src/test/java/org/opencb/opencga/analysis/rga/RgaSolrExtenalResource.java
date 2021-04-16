@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -8,6 +8,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
@@ -71,10 +72,12 @@ public class RgaSolrExtenalResource extends ExternalResource {
     protected void after() {
         super.after();
         try {
-            if (embeded) {
-                ((RgaSolrExtenalResource.MyEmbeddedSolrServer) solrClient).realClose();
-            } else {
-                solrClient.close();
+            if (solrClient != null) {
+                if (embeded) {
+                    ((RgaSolrExtenalResource.MyEmbeddedSolrServer) solrClient).realClose();
+                } else {
+                    solrClient.close();
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -31,7 +31,7 @@ for name in variant rga file sample individual family cohort job; do
   if [ $name == "variant" ]; then
     cp -v $OPENCGA_HOME/opencga-storage/opencga-storage-core/target/classes/managed-schema $CONFIG_SET_DIR/conf
   elif [ $name == "rga" ]; then
-    cp -v $OPENCGA_HOME/opencga-storage/opencga-storage-core/target/classes/rga/managed-schema $CONFIG_SET_DIR/conf
+    cp -v $OPENCGA_HOME/opencga-clinical/target/classes/rga/managed-schema $CONFIG_SET_DIR/conf
   else
     cp -v $OPENCGA_HOME/opencga-catalog/target/classes/solr/$name-managed-schema $CONFIG_SET_DIR/conf/managed-schema
   fi

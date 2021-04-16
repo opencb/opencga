@@ -67,7 +67,7 @@ public class KnockoutVariant {
         this.reference = variant.getReference();
         this.alternate = variant.getAlternate();
         this.type = variant.getType();
-        this.genotype = sample.getData().get(0);
+        this.genotype = sample != null ? sample.getData().get(0) : null;
         this.depth = getDepth(study, file, sample);
         this.filter = file.getData().get(StudyEntry.FILTER);
         this.qual = file.getData().get(StudyEntry.QUAL);
@@ -294,6 +294,9 @@ public class KnockoutVariant {
 
 
     public static Integer getDepth(StudyEntry study, FileEntry file, SampleEntry sample) {
+        if (sample == null || study == null) {
+            return null;
+        }
         Integer dpId = study.getSampleDataKeyPosition(VCFConstants.DEPTH_KEY);
         if (dpId != null) {
             String dpStr = sample.getData().get(dpId);

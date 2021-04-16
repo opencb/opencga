@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.clinical.rga;
 
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
-import org.opencb.opencga.clinical.rga.RgaManager;
+import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;

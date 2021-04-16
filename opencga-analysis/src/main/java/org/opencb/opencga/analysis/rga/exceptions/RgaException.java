@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga.exceptions;
+package org.opencb.opencga.analysis.rga.exceptions;
 
 public class RgaException extends Exception {
 

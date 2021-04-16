@@ -1,4 +1,4 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
@@ -9,18 +9,18 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.opencga.clinical.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class IndividualRgaConverter extends AbstractRgaConverter
-        implements ComplexTypeConverter<List<KnockoutByIndividual>, List<RgaDataModel>> {
+public class IndividualRgaConverter extends AbstractRgaConverter {
 
     // This object contains the list of solr fields that are required in order to fully build each of the KnockoutByIndividual fields
     private static final Map<String, List<String>> CONVERTER_MAP;
@@ -55,19 +55,19 @@ public class IndividualRgaConverter extends AbstractRgaConverter
         CONVERTER_MAP.put("genes.transcripts.strand",
                 Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
         CONVERTER_MAP.put("genes.transcripts.variants.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("genes.transcripts.variants.filter", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("genes.transcripts.variants.type", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("genes.transcripts.variants.knockoutType", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.KNOCKOUT_TYPES, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.KNOCKOUT_TYPES, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("genes.transcripts.variants.populationFrequencies", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("genes.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CLINICAL_SIGNIFICANCES, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CLINICAL_SIGNIFICANCES, RgaDataModel.VARIANTS));
         CONVERTER_MAP.put("genes.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES, RgaDataModel.VARIANT_JSON));
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES, RgaDataModel.VARIANTS));
 
         logger = LoggerFactory.getLogger(IndividualRgaConverter.class);
     }
@@ -75,16 +75,24 @@ public class IndividualRgaConverter extends AbstractRgaConverter
     public IndividualRgaConverter() {
     }
 
-    @Override
-    public List<KnockoutByIndividual> convertToDataModelType(List<RgaDataModel> rgaDataModelList) {
+    public List<KnockoutByIndividual> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator) {
         // In this list, we will store the keys of result in the order they have been processed so order is kept
         List<String> knockoutByIndividualOrder = new LinkedList<>();
         Map<String, KnockoutByIndividual> result = new HashMap<>();
-        for (RgaDataModel rgaDataModel : rgaDataModelList) {
+
+        Map<String, Variant> variantMap = new HashMap<>();
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+            variantMap.put(variant.getId(), variant);
+        }
+
+        while (rgaIterator.hasNext()) {
+            RgaDataModel rgaDataModel = rgaIterator.next();
+
             if (!result.containsKey(rgaDataModel.getIndividualId())) {
                 knockoutByIndividualOrder.add(rgaDataModel.getIndividualId());
             }
-            extractKnockoutByIndividualMap(rgaDataModel, result);
+            extractKnockoutByIndividualMap(rgaDataModel, variantMap, result);
         }
 
         List<KnockoutByIndividual> knockoutByIndividualList = new ArrayList<>(knockoutByIndividualOrder.size());
@@ -94,31 +102,26 @@ public class IndividualRgaConverter extends AbstractRgaConverter
         return knockoutByIndividualList;
     }
 
-    public static void extractKnockoutByIndividualMap(RgaDataModel rgaDataModel, Map<String, KnockoutByIndividual> result) {
-        extractKnockoutByIndividualMap(rgaDataModel, new HashSet<>(), result);
+    public static void extractKnockoutByIndividualMap(RgaDataModel rgaDataModel, Map<String, Variant> variantMap,
+                                                      Map<String, KnockoutByIndividual> result) {
+        extractKnockoutByIndividualMap(rgaDataModel, variantMap, new HashSet<>(), result);
     }
 
     /**
      * Extract a map containing the processed KnockoutByindividuals.
      *
      * @param rgaDataModel RgaDataModel instance.
+     * @param variantMap Map of variants.
      * @param variantIds Set of variant ids to be included in the result. If empty, include all of them.
      * @param result Map containing the KnockoutByIndividual's processed.
      */
-    public static void extractKnockoutByIndividualMap(RgaDataModel rgaDataModel, Set<String> variantIds,
+    public static void extractKnockoutByIndividualMap(RgaDataModel rgaDataModel, Map<String, Variant> variantMap, Set<String> variantIds,
                                                       Map<String, KnockoutByIndividual> result) {
         if (!result.containsKey(rgaDataModel.getIndividualId())) {
             KnockoutByIndividual knockoutByIndividual = fillIndividualInfo(rgaDataModel);
 
             List<KnockoutByIndividual.KnockoutGene> geneList = new LinkedList<>();
-            KnockoutByIndividual.KnockoutGene knockoutGene = new KnockoutByIndividual.KnockoutGene();
-            knockoutGene.setId(rgaDataModel.getGeneId());
-            knockoutGene.setName(rgaDataModel.getGeneName());
-            knockoutGene.setTranscripts(new LinkedList<>());
-            geneList.add(knockoutGene);
-
             knockoutByIndividual.setGenes(geneList);
-
             result.put(rgaDataModel.getIndividualId(), knockoutByIndividual);
         }
 
@@ -133,42 +136,23 @@ public class IndividualRgaConverter extends AbstractRgaConverter
             knockoutGene = new KnockoutByIndividual.KnockoutGene();
             knockoutGene.setId(rgaDataModel.getGeneId());
             knockoutGene.setName(rgaDataModel.getGeneName());
+            knockoutGene.setStrand(rgaDataModel.getStrand());
+            knockoutGene.setBiotype(rgaDataModel.getGeneBiotype());
+            knockoutGene.setStart(rgaDataModel.getStart());
+            knockoutGene.setEnd(rgaDataModel.getEnd());
             knockoutGene.setTranscripts(new LinkedList<>());
 
             knockoutByIndividual.addGene(knockoutGene);
         }
 
         if (StringUtils.isNotEmpty(rgaDataModel.getTranscriptId())) {
-            // Add new transcript
-            KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId());
-            knockoutGene.addTranscripts(Collections.singletonList(knockoutTranscript));
+            List<KnockoutVariant> knockoutVariantList = RgaUtils.extractKnockoutVariants(rgaDataModel, variantMap, variantIds);
 
-            knockoutTranscript.setBiotype(rgaDataModel.getTranscriptBiotype());
-            if (rgaDataModel.getVariantJson() != null) {
-                List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
-                for (String variantJson : rgaDataModel.getVariantJson()) {
-                    try {
-                        KnockoutVariant knockoutVariant = JacksonUtils.getDefaultObjectMapper().readValue(variantJson,
-                                KnockoutVariant.class);
-                        if (StringUtils.isEmpty(knockoutVariant.getChromosome())) {
-                            // Fill typical variant fields
-                            Variant variant = new Variant(knockoutVariant.getId());
-                            knockoutVariant.setChromosome(variant.getChromosome());
-                            knockoutVariant.setStart(variant.getStart());
-                            knockoutVariant.setEnd(variant.getEnd());
-                            knockoutVariant.setLength(variant.getLength());
-                            knockoutVariant.setReference(variant.getReference());
-                            knockoutVariant.setAlternate(variant.getAlternate());
-                        }
-                        if (variantIds.isEmpty() || variantIds.contains(knockoutVariant.getId())) {
-                            knockoutVariantList.add(knockoutVariant);
-                        }
-                    } catch (JsonProcessingException e) {
-                        logger.warn("Could not parse KnockoutVariants: {}", e.getMessage(), e);
-                    }
-                }
-                knockoutTranscript.setVariants(knockoutVariantList);
-            }
+            // Add new transcript
+            KnockoutTranscript knockoutTranscript = new KnockoutTranscript(rgaDataModel.getTranscriptId(), rgaDataModel.getChromosome(),
+                    rgaDataModel.getStart(), rgaDataModel.getEnd(), rgaDataModel.getTranscriptBiotype(), rgaDataModel.getStrand(),
+                    knockoutVariantList);
+            knockoutGene.addTranscripts(Collections.singletonList(knockoutTranscript));
         }
     }
 
@@ -198,15 +182,6 @@ public class IndividualRgaConverter extends AbstractRgaConverter
         if (knockoutByIndividual.getGenes() != null) {
             for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
                 for (KnockoutTranscript transcript : gene.getTranscripts()) {
-                    List<String> variantJson = new ArrayList<>(transcript.getVariants().size());
-                    for (KnockoutVariant variant : transcript.getVariants()) {
-                        // Only keep population frequencies from ALL
-                        if (variant.getPopulationFrequencies() != null) {
-                            variant.getPopulationFrequencies().removeIf(popFreq -> !popFreq.getPopulation().equals("ALL"));
-                        }
-                        variantJson.add(JacksonUtils.getDefaultObjectMapper().writeValueAsString(variant));
-                    }
-
                     List<String> compoundFilters = processFilters(transcript);
 
                     List<String> phenotypes = populatePhenotypes(knockoutByIndividual.getPhenotypes());
@@ -230,8 +205,8 @@ public class IndividualRgaConverter extends AbstractRgaConverter
                         disorderJson = Collections.emptyList();
                     }
 
-                    List<String> variantIds = new LinkedList<>();
-                    Set<String> knockoutTypes = new HashSet<>();
+                    List<String> variantIds = new ArrayList<>(transcript.getVariants().size());
+                    List<String> knockoutTypes = new ArrayList<>(transcript.getVariants().size());
                     Set<String> types = new HashSet<>();
                     Set<String> consequenceTypes = new HashSet<>();
                     Set<String> clinicalSignificances = new HashSet<>();
@@ -239,9 +214,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter
 
                     for (KnockoutVariant variant : transcript.getVariants()) {
                         variantIds.add(variant.getId());
-                        if (variant.getKnockoutType() != null) {
-                            knockoutTypes.add(variant.getKnockoutType().name());
-                        }
+                        knockoutTypes.add(variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "");
                         if (variant.getType() != null) {
                             types.add(variant.getType().name());
                         }
@@ -303,15 +276,14 @@ public class IndividualRgaConverter extends AbstractRgaConverter
                             .setTranscriptBiotype(transcript.getBiotype())
                             .setVariants(variantIds)
                             .setTypes(new ArrayList<>(types))
-                            .setKnockoutTypes(new ArrayList<>(knockoutTypes))
+                            .setKnockoutTypes(knockoutTypes)
                             .setFilters(new ArrayList<>(filters))
                             .setConsequenceTypes(new ArrayList<>(consequenceTypes))
                             .setClinicalSignificances(new ArrayList<>(clinicalSignificances))
                             .setPopulationFrequencies(popFreqs)
                             .setCompoundFilters(compoundFilters)
                             .setPhenotypeJson(phenotypeJson)
-                            .setDisorderJson(disorderJson)
-                            .setVariantJson(variantJson);
+                            .setDisorderJson(disorderJson);
                     result.add(model);
                 }
             }

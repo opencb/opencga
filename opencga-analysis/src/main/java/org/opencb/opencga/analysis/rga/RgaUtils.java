@@ -1,7 +1,14 @@
-package org.opencb.opencga.clinical.rga;
+package org.opencb.opencga.analysis.rga;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
-import org.opencb.opencga.clinical.rga.exceptions.RgaException;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
@@ -9,7 +16,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.clinical.rga.RgaDataModel.*;
+import static org.opencb.opencga.analysis.rga.RgaDataModel.*;
 
 class RgaUtils {
 
@@ -105,7 +112,6 @@ class RgaUtils {
         ALL_PARAMS.add(RgaDataModel.COMPOUND_FILTERS);
         ALL_PARAMS.add(PHENOTYPE_JSON);
         ALL_PARAMS.add(DISORDER_JSON);
-        ALL_PARAMS.add(VARIANT_JSON);
 
         PARAM_TYPES = new HashMap<>();
         // Variant params
@@ -118,7 +124,6 @@ class RgaUtils {
         params.add(COMPOUND_FILTERS);
         params.add(PHENOTYPE_JSON);
         params.add(DISORDER_JSON);
-        params.add(VARIANT_JSON);
         PARAM_TYPES.put("variants", params);
 
         // Transcript params
@@ -251,6 +256,55 @@ class RgaUtils {
         }
     }
 
+    /**
+     * Extract complete list of KnockoutVariants for current RgaDataModel document.
+     *
+     * @param rgaDataModel RgaDataModel document.
+     * @param variantMap   Map of variants.
+     * @param variantIds   Set of variants to be included in the result.
+     * @return a complete list of KnockoutVariants.
+     */
+    static List<KnockoutVariant> extractKnockoutVariants(RgaDataModel rgaDataModel, Map<String, Variant> variantMap,
+                                                         Set<String> variantIds) {
+        List<KnockoutVariant> knockoutVariantList = new LinkedList<>();
+        if (rgaDataModel.getVariants() != null) {
+            for (int i = 0; i < rgaDataModel.getVariants().size(); i++) {
+                String variantId = rgaDataModel.getVariants().get(i);
 
+                if (variantMap.containsKey(variantId) && (variantIds.isEmpty() || variantIds.contains(variantId))) {
+                        Variant variant = variantMap.get(variantId);
+
+                        SampleEntry sampleEntry = variant.getStudies().get(0).getSample(rgaDataModel.getSampleId());
+                        KnockoutVariant.KnockoutType knockoutType = null;
+                        if (CollectionUtils.isNotEmpty(rgaDataModel.getKnockoutTypes())) {
+                            knockoutType = KnockoutVariant.KnockoutType.valueOf(rgaDataModel.getKnockoutTypes().get(i));
+                        }
+
+                        // Convert just once
+                        KnockoutVariant knockoutVariant = convertToKnockoutVariant(variant, sampleEntry, knockoutType);
+
+                    knockoutVariantList.add(knockoutVariant);
+                }
+            }
+        }
+
+        return knockoutVariantList;
+    }
+
+    static KnockoutVariant convertToKnockoutVariant(Variant variant) {
+        return convertToKnockoutVariant(variant, null, null);
+    }
+
+    // Default converter
+    static KnockoutVariant convertToKnockoutVariant(Variant variant, SampleEntry sampleEntry, KnockoutVariant.KnockoutType knockoutType) {
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        // TODO: Check fileentry
+        FileEntry fileEntry = variant.getStudies().get(0).getFiles().get(0);
+        VariantAnnotation variantAnnotation = variant.getAnnotation();
+        // TODO: Check consequence type
+        ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
+
+        return new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry, variantAnnotation, consequenceType, knockoutType);
+    }
 
 }

@@ -41,6 +41,20 @@ public class KnockoutByIndividual {
     public KnockoutByIndividual() {
     }
 
+    public KnockoutByIndividual(String id, String sampleId, String motherId, String motherSampleId, String fatherId, String fatherSampleId,
+                                Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders, GeneKnockoutByIndividualStats stats) {
+        this.id = id;
+        this.sampleId = sampleId;
+        this.motherId = motherId;
+        this.motherSampleId = motherSampleId;
+        this.fatherId = fatherId;
+        this.fatherSampleId = fatherSampleId;
+        this.sex = sex;
+        this.phenotypes = phenotypes;
+        this.disorders = disorders;
+        this.stats = stats;
+    }
+
     public KnockoutByIndividual(String id, String sampleId, Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders,
                                 GeneKnockoutByIndividualStats stats) {
         this.id = id;
@@ -57,7 +71,9 @@ public class KnockoutByIndividual {
         sb.append("id='").append(id).append('\'');
         sb.append(", sampleId='").append(sampleId).append('\'');
         sb.append(", motherId='").append(motherId).append('\'');
+        sb.append(", motherSampleId='").append(motherSampleId).append('\'');
         sb.append(", fatherId='").append(fatherId).append('\'');
+        sb.append(", fatherSampleId='").append(fatherSampleId).append('\'');
         sb.append(", sex=").append(sex);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
