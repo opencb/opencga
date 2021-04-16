@@ -54,28 +54,14 @@ spec:
               key: hdInsightSshPassword
         - name: "INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
           value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/"
-
         - name: "INIT_SEARCH_HOSTS"
-        {{- if .Values.deploySolr }}
-          value: http://opencga-solr-svc:8983
-        {{- else }}
-          value:  {{ .Values.solr.hosts | toString | quote }}
-        {{- end }}
+          value: {{ include "solrHosts" . | quote  }}
         - name: "INIT_CATALOG_SEARCH_HOSTS"
-        {{- if .Values.deploySolr }}
-        value: http://opencga-solr-svc:8983
-        {{- else }}
-        value:  {{ .Values.solr.hosts | toString | quote }}
-        {{- end }}
+          value: {{ include "solrHosts" . | quote }}
         - name: "INIT_CLINICAL_HOSTS"
-          value:  {{ .Values.solr.hosts | toString | quote}}
-
+          value: {{ include "solrHosts" . | toString | quote }}
         - name: "INIT_CATALOG_DATABASE_HOSTS"
-        {{- if .Values.deployMongo }}
-          value:  opencga-mongodb-replicaset
-        {{- else }}
-          value:  {{ .Values.mongodb.hosts | toString | quote}}
-        {{- end }} 
+          value: {{ include "mongodb.hosts" .  | quote }}
         - name: "INIT_CATALOG_DATABASE_USER"
           value:  {{ .Values.mongodb.user  }}
         - name: "INIT_CATALOG_DATABASE_PASSWORD"
@@ -84,7 +70,9 @@ spec:
               name: {{ include "opencga.secretName" . }}
               key: mongoDbPassword
         - name: "INIT_CATALOG_DATABASE_SSL"
-          value: {{ .Values.mongodb.ssl  }}
+          value: {{ .Values.mongodb.ssl | toString | quote }}
+        - name: "INIT_CATALOG_DATABASE_REPLICA_SET"
+          value: {{ include "mongodb.replicaSet" . | toString | quote }}
         - name: "INIT_CATALOG_DATABASE_AUTHENTICATION_MECHANISM"
           value: {{ .Values.mongodb.authenticationMechanism  }}
         - name: "INIT_CATALOG_DATABASE_AUTHENTICATION_DATABASE"

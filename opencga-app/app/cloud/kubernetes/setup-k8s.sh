@@ -5,6 +5,9 @@ set -e
 function printUsage() {
   echo ""
   echo "Deploy required Helm charts for a fully working OpenCGA installation"
+  echo " - solr-operator"
+  echo " - zk-operator"
+  echo " - mongodb-operator"
   echo " - opencga-nginx"
   echo " - opencga"
   echo " - iva"
@@ -162,8 +165,8 @@ function configureContext() {
   kubectl config use-context "$K8S_CONTEXT"
 
   # Create a namespace for opencga
-  if ! kubectl get namespace "${K8S_NAMESPACE}"; then
-    kubectl create namespace "${K8S_NAMESPACE}"
+  if ! kubectl get namespace "${K8S_NAMESPACE}" --context "$K8S_CONTEXT"; then
+    kubectl create namespace "${K8S_NAMESPACE}" --context "$K8S_CONTEXT"
   fi
 
   kubectl config set-context "${K8S_CONTEXT}" --namespace="${K8S_NAMESPACE}"
@@ -172,24 +175,74 @@ function configureContext() {
 function deployNginx() {
   # Use Helm to deploy an NGINX ingress controller
   ## Deploy in the same namespace
+  ## https://docs.nginx.com/nginx-ingress-controller/installation/installation-with-helm/
 
-  helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+#  helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+#  helm repo add nginx-stable https://helm.nginx.com/stable
+  helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
   helm repo update
 
   NAME="opencga-nginx${NAME_SUFFIX}"
   echo "# Deploy NGINX ${NAME}"
-  helm upgrade ${NAME} stable/nginx-ingress \
-    --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}" --version 1.27.0 \
+  helm upgrade ${NAME} ingress-nginx/ingress-nginx \
+    --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}"  \
     -f charts/nginx/values.yaml \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --timeout 10m ${HELM_OPTS}
 }
 
+function deployZkOperator() {
+  # https://github.com/pravega/zookeeper-operator/tree/master/charts/zookeeper#installing-the-chart
+  # Manual installation of ZK operator. Won't be needed when using solr-operator v0.3.0
+  #  See https://github.com/apache/solr-operator/pull/231
+
+  NAME="zk-operator"
+  helm repo add pravega https://charts.pravega.io
+  helm repo update
+
+  helm upgrade ${NAME} pravega/zookeeper-operator \
+    --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}" --version=v0.2.9 \
+    --install --wait --timeout 10m ${HELM_OPTS}
+}
+
+function deploySolrOperator() {
+  # Solr operator version 0.2.8 and below was developed by bloomberg.
+  # Since version 0.3.0 (TBA), the operator was moved to apache fundation.
+  #  See https://github.com/apache/solr-operator/issues/183
+
+  # https://artifacthub.io/packages/helm/apache-solr/solr-operator
+  # https://github.com/apache/solr-operator/tree/master/helm/solr-operator
+  NAME="solr-operator"
+  #helm repo add solr-operator https://bloomberg.github.io/solr-operator/charts
+  helm repo add apache-solr https://solr.apache.org/charts
+
+  SOLR_OPERATOR_VERSION="v0.2.8"
+
+  helm upgrade ${NAME} apache-solr/solr-operator \
+    --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}" --version "${SOLR_OPERATOR_VERSION}" \
+    -f charts/solr/values.yaml \
+    --values "${HELM_VALUES_FILE}" \
+    --install --wait --timeout 10m ${HELM_OPTS}
+}
+
+function deployMongodbOperator() {
+  NAME="mongodb-operator${NAME_SUFFIX}"
+  DATE=$(date "+%Y%m%d%H%M%S")
+  ./charts/mongodb-operator/fetch-mongodb-operator-files.sh
+
+  helm upgrade "${NAME}" charts/mongodb-operator \
+    --values "${HELM_VALUES_FILE}" \
+    --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
+  if [ $DRY_RUN == "false" ]; then
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+  fi
+}
+
 function deployOpenCGA() {
+  DATE=$(date "+%Y%m%d%H%M%S")
   if [[ -n "$OPENCGA_CONF_DIR" ]]; then
     NAME="opencga${NAME_SUFFIX}"
     echo "# Deploy OpenCGA ${NAME}"
-    DATE=$(date "+%Y%m%d%H%M%S")
     OPENCGA_CHART="${OUTPUT_DIR:?}/${NAME}_${DATE}_tmp/"
     if [ $KEEP_TMP_FILES == "false" ]; then
       trap 'rm -rf "${OPENCGA_CHART:?}"' EXIT
@@ -215,11 +268,12 @@ function deployOpenCGA() {
 function deployIVA() {
   NAME="iva${NAME_SUFFIX}"
   echo "# Deploy IVA ${NAME}"
+  DATE=$(date "+%Y%m%d%H%M%S")
   helm upgrade ${NAME} charts/iva \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
   if [ $DRY_RUN == "false" ]; then
-    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" > "${OUTPUT_DIR}/helm-${NAME}-manifest-$(date "+%Y%m%d%H%M%S").yaml"
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
   fi
 }
 
@@ -229,6 +283,18 @@ configureContext
 
 if [[ "$WHAT" == "NGINX" || "$WHAT" == "ALL" ]]; then
   deployNginx
+fi
+
+if [[ "$WHAT" == "SOLROPERATOR" || "$WHAT" == "ALL" ]]; then
+  deploySolrOperator
+fi
+
+if [[ "$WHAT" == "ZKOPERATOR" || "$WHAT" == "ALL" ]]; then
+  deployZkOperator
+fi
+
+if [[ "$WHAT" == "MONGODBOPERATOR" || "$WHAT" == "ALL" ]]; then
+  deployMongodbOperator
 fi
 
 if [[ "$WHAT" == "OPENCGA" || "$WHAT" == "ALL" ]]; then

@@ -103,14 +103,41 @@ function configureContext() {
 }
 
 function generateHelmValuesFile() {
-
+  if [ "$(getParameter "deploySolrAksPool")" == "true" ]; then
+    solrAgentPool=solr
+  else
+    solrAgentPool=default
+  fi
+  if [ "$(getParameter "deployMongoDBAksPool")" == "true" ]; then
+    mongodbAgentPool=mongodb
+  else
+    mongodbAgentPool=default
+  fi
   ## Generate helm values file
   cat >> "${helmValues}" << EOF
 # $(date "+%Y%m%d%H%M%S")
 # Auto generated file from deployment output ${deploymentOut}
 
 solr:
-  hosts: "$(getOutput "solrHostsCSV")"
+  external:
+    hosts: "$(getOutput "solrHostsCSV")"
+  deploy:
+    enabled: "$(getParameter "deploySolr")"
+    nodeSelector:
+      agentpool: "$solrAgentPool"
+    zookeeper:
+      nodeSelector:
+        agentpool: "$mongodbAgentPool"
+
+mongodb:
+  user: "$(getOutput "mongoDbUser")"
+  password: "$(getOutput "mongoDbPassword")"
+  external:
+    hosts: "$(getOutput "mongoDbHostsCSV")"
+  deploy:
+    enabled: "$(getParameter "deployMongoDB")"
+    nodeSelector:
+      agentpool: "$mongodbAgentPool"
 
 hadoop:
   sshDns: "$(getOutput "hdInsightSshDns")"
@@ -125,12 +152,6 @@ opencga:
   host: "http://opencga.$(getOutput "privateDnsZonesName")/opencga"
   admin:
     password: "$(getOutput "openCgaAdminPassword")"
-
-catalog:
-  database:
-    hosts: "$(getOutput "mongoDbHostsCSV")"
-    user: "$(getOutput "mongoDbUser")"
-    password: "$(getOutput "mongoDbPassword")"
 
 analysis:
   execution:
@@ -204,7 +225,7 @@ echo "# Generate helm values file ${helmValues}"
 generateHelmValuesFile
 
 echo "setup-k8s.sh --context \"${K8S_CONTEXT}\" --values \"${allHelmValues}\""
-../../kubernetes/setup-k8s.sh --context "${K8S_CONTEXT}" --values "${allHelmValues}"
+../../kubernetes/setup-k8s.sh --context "${K8S_CONTEXT}" --values "${allHelmValues}" --verbose
 
 echo "# Register Ingress domain name (if needed)"
 registerIngressDomainName

@@ -6,6 +6,14 @@
             "type": "bool",
             "defaultValue": true
         },
+        "createMongoDBSubnet": {
+            "type": "bool",
+            "defaultValue": true
+        },
+        "createSolrSubnet": {
+            "type": "bool",
+            "defaultValue": true
+        },
         "config": {
             "type": "object",
             "defaultValue": {
@@ -164,32 +172,6 @@
                     },
                     {
                         "type": "Microsoft.Network/virtualNetworks/subnets",
-                        "name": "[parameters('config').subnets.mongodb.name]",
-                        "properties": {
-                            "addressPrefix": "[parameters('config').subnets.mongodb.addressPrefix]",
-                            "ipConfigurations": [
-                            ],
-                            "delegations": [
-                            ],
-                            "serviceEndpoints": [
-                            ]
-                        }
-                    },
-                    {
-                        "type": "Microsoft.Network/virtualNetworks/subnets",
-                        "name": "[parameters('config').subnets.solr.name]",
-                        "properties": {
-                            "addressPrefix": "[parameters('config').subnets.solr.addressPrefix]",
-                            "ipConfigurations": [
-                            ],
-                            "delegations": [
-                            ],
-                            "serviceEndpoints": [
-                            ]
-                        }
-                    },
-                    {
-                        "type": "Microsoft.Network/virtualNetworks/subnets",
                         "name": "[parameters('config').subnets.login.name]",
                         "properties": {
                             "addressPrefix": "[parameters('config').subnets.login.addressPrefix]",
@@ -236,6 +218,36 @@
                     {
                         "service": "Microsoft.Storage"
                     }
+                ]
+            }
+        },
+        {
+            "condition": "[parameters('createMongoDBSubnet')]",
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2018-08-01",
+            "name": "[concat(parameters('config').name, '/', parameters('config').subnets.mongodb.name)]",
+            "properties": {
+                "addressPrefix": "[parameters('config').subnets.mongodb.addressPrefix]",
+                "ipConfigurations": [
+                ],
+                "delegations": [
+                ],
+                "serviceEndpoints": [
+                ]
+            }
+        },
+        {
+            "condition": "[parameters('createSolrSubnet')]",
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2018-08-01",
+            "name": "[concat(parameters('config').name, '/', parameters('config').subnets.solr.name)]",
+            "properties": {
+                "addressPrefix": "[parameters('config').subnets.solr.addressPrefix]",
+                "ipConfigurations": [
+                ],
+                "delegations": [
+                ],
+                "serviceEndpoints": [
                 ]
             }
         }

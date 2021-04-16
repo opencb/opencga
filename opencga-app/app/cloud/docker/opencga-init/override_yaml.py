@@ -16,6 +16,7 @@ parser.add_argument("--catalog-database-password", required=True)
 parser.add_argument("--catalog-database-ssl", required=False, default=True)
 parser.add_argument("--catalog-database-authentication-database", required=False, default="admin")
 parser.add_argument("--catalog-database-authentication-mechanism", required=False)
+parser.add_argument("--catalog-database-replica-set", required=False)
 parser.add_argument("--catalog-search-hosts", required=True)
 parser.add_argument("--catalog-search-user", required=False)
 parser.add_argument("--catalog-search-password", required=False)
@@ -126,6 +127,8 @@ config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
 config["catalog"]["database"]["options"]["sslEnabled"] = args.catalog_database_ssl
 config["catalog"]["database"]["options"]["sslInvalidCertificatesAllowed"] = True
+if args.catalog_database_replica_set is not None:
+    config["catalog"]["database"]["options"]["replicaSet"] = args.catalog_database_replica_set
 if args.catalog_database_authentication_database is not None:
     config["catalog"]["database"]["options"]["authenticationDatabase"] = args.catalog_database_authentication_database
 if args.catalog_database_authentication_mechanism is not None:

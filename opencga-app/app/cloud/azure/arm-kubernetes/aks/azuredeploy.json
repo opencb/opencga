@@ -146,6 +146,14 @@
                 "description": "The size of the Virtual Machine."
             }
         },
+        "mongodbAgentPool" : {
+            "type": "bool",
+            "defaultValue": false
+        },
+        "solrAgentPool" : {
+            "type": "bool",
+            "defaultValue": false
+        },
         "skipRoleAssignment" : {
             "type": "bool",
             "defaultValue": false
@@ -213,7 +221,7 @@
         {
             "type": "Microsoft.ContainerService/managedClusters",
             "name": "[parameters('aksClusterName')]",
-            "apiVersion": "2020-01-01",
+            "apiVersion": "2021-02-01",
             "location": "[resourceGroup().location]",
             "properties": {
                 "kubernetesVersion": "[parameters('kubernetesVersion')]",
@@ -243,6 +251,7 @@
                 },
                 "networkProfile": {
                     "networkPlugin": "azure",
+                    "loadBalancerSku": "Standard",
                     "serviceCidr": "[parameters('aksServiceCIDR')]",
                     "dnsServiceIP": "[parameters('aksDnsServiceIP')]",
                     "dockerBridgeCidr": "[parameters('aksDockerBridgeCIDR')]"
@@ -254,6 +263,7 @@
                         "count": "[parameters('aksAgentCount')]",
                         "vmSize": "[parameters('aksAgentVMSize')]",
                         "osType": "Linux",
+                        "mode": "System",
                         "storageProfile": "ManagedDisks",
                         "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
                         "dnsPrefix": "agents",
@@ -282,6 +292,46 @@
                         "enableAutoScaling": true,
                         "minCount": 1,
                         "maxCount": "[parameters('maxJobsPoolAgents')]",
+                        "type": "VirtualMachineScaleSets"
+                    },
+                    "dependsOn": [
+                        "[resourceId('Microsoft.ContainerService/managedClusters',parameters('aksClusterName'))]"
+                    ]
+                },
+                {
+                    "condition" : "[parameters('mongodbAgentPool')]",
+                    "name": "mongodb",
+                    "type": "agentPools",
+                    "apiVersion": "2020-01-01",
+                    "properties": {
+                        "osDiskSizeGB": "[parameters('aksAgentOsDiskSizeGB')]",
+                        "count": 3,
+                        "maxPods": 30,
+                        "vmSize": "Standard_E4s_v3",
+                        "osType": "Linux",
+                        "storageProfile": "ManagedDisks",
+                        "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
+                        "dnsPrefix": "mongodb",
+                        "type": "VirtualMachineScaleSets"
+                    },
+                    "dependsOn": [
+                        "[resourceId('Microsoft.ContainerService/managedClusters',parameters('aksClusterName'))]"
+                    ]
+                },
+                {
+                    "condition" : "[parameters('solrAgentPool')]",
+                    "name": "solr",
+                    "type": "agentPools",
+                    "apiVersion": "2020-01-01",
+                    "properties": {
+                        "osDiskSizeGB": "[parameters('aksAgentOsDiskSizeGB')]",
+                        "count": 2,
+                        "maxPods": 30,
+                        "vmSize": "Standard_E4s_v3",
+                        "osType": "Linux",
+                        "storageProfile": "ManagedDisks",
+                        "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
+                        "dnsPrefix": "solr",
                         "type": "VirtualMachineScaleSets"
                     },
                     "dependsOn": [
