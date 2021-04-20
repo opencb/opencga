@@ -19,7 +19,7 @@ public class AlignmentQualityControl implements Serializable {
     private List<GeneCoverageStats> geneCoverageStats;
 
     public AlignmentQualityControl() {
-        this(null, null, null, null, null, new ArrayList<>());
+        this(null, new FastQc(), new SamtoolsStats(), new SamtoolsFlagstats(), new HsMetrics(), new ArrayList<>());
     }
 
     public AlignmentQualityControl(String fileId, FastQc fastQc, SamtoolsStats samtoolsStats, SamtoolsFlagstats samtoolsFlagstats,

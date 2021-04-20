@@ -78,6 +78,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         SAMPLE_IDS("sampleIds", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
+        QUALITY_CONTROL("qualityControl", OBJECT, ""),
+
         JOB_ID("jobId", TEXT, ""),
 
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),

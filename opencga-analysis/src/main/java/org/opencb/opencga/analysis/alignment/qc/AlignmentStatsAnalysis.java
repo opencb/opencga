@@ -28,16 +28,15 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileQualityControl;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-import java.io.FileInputStream;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readLines;
@@ -120,19 +119,28 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
             if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
                 SamtoolsStats alignmentStats = SamtoolsWrapperAnalysis.parseSamtoolsStats(statsFile.toFile(), catalogBamFile.getId());
 
+                List<String> images = new ArrayList<>();
                 for (java.io.File file : getOutDir().toFile().listFiles()) {
                     if (file.getName().endsWith("png")) {
-                        FileInputStream fileInputStreamReader = new FileInputStream(file);
-                        byte[] bytes = new byte[(int) file.length()];
-                        fileInputStreamReader.read(bytes);
-
-                        String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
-//                        System.out.println(file.getName());
-//                        System.out.println(img);
+                        // TODO: fix relative path (from jobs dir) in a fancier way
+//                        String relativeFilePath = getOutDir().toUri().relativize(file.toURI()).getPath();
+                        int index = file.getAbsolutePath().indexOf("JOBS/");
+                        String relativeFilePath = (index == -1 ? file.getName() : file.getAbsolutePath().substring(index));
+                        images.add(relativeFilePath);
                     }
                 }
+                alignmentStats.setImages(images);
 
-                // TODO: save stats and images inside the File data model
+                // Update quality control for the catalog file
+                FileQualityControl qc = catalogBamFile.getQualityControl();
+                // Sanity check
+                if (qc == null) {
+                    qc = new FileQualityControl();
+                }
+                qc.getAlignmentQualityControl().setSamtoolsStats(alignmentStats);
+
+                catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
+                        QueryOptions.empty(), getToken());
             }
         });
     }
