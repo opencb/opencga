@@ -481,4 +481,5 @@ public class ParamConstants {
     public static final String COMMAND_PARAMETER = "command";
     public static final String COMMAND_PARAMETER_DESCRIPTION = "Command name to execute in this tool.";
 
+    public static final String FIELD_PARAM = "field";
 }
