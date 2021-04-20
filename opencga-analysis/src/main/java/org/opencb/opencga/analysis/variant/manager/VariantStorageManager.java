@@ -94,8 +94,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.FILE_GET_QUERY_OPTIONS;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE;
-import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE_DEFAULT;
+import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public class VariantStorageManager extends StorageManager implements AutoCloseable {
@@ -628,6 +627,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         int skip = options.getInt(SKIP, 0);
                         // Make initial batchLimit shorter
                         int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 3 + skip);
+                        // but not too short
+                        batchLimit = Math.max(100, batchLimit);
                         int batchSkip = 0;
                         int numReadSamples = 0;
                         int numValidSamples = 0;
@@ -740,6 +741,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
                                 int numTotalSamples = ((int) (expectedSamplesCount * (((float) numValidSamples) / numReadSamples)));
                                 result.setNumTotalSamples(numTotalSamples);
+                                result.setApproximateCountSamplingSize(numReadSamples);
                             }
                             result.setApproximateCount(true);
                         }
