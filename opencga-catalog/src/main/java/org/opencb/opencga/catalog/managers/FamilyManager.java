@@ -930,7 +930,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             if (updateParams != null && ListUtils.isNotEmpty(updateParams.getPhenotypes())) {
                 tmpFamily.setPhenotypes(updateParams.getPhenotypes());
-            } else if (ListUtils.isNotEmpty(updateParams.getMembers())) {
+            } else if (updateParams != null && ListUtils.isNotEmpty(updateParams.getMembers())) {
                 // Recalculate phenotypes if list of members has changed
                 tmpFamily.setPhenotypes(Collections.emptyList());
                 parameters.put(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), tmpFamily.getPhenotypes());
@@ -939,7 +939,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             }
             if (updateParams != null && ListUtils.isNotEmpty(updateParams.getDisorders())) {
                 tmpFamily.setDisorders(updateParams.getDisorders());
-            } else if (ListUtils.isNotEmpty(updateParams.getMembers())) {
+            } else if (updateParams != null && ListUtils.isNotEmpty(updateParams.getMembers())) {
                 // Recalculate disorders if list of members has changed
                 tmpFamily.setDisorders(Collections.emptyList());
                 parameters.put(FamilyDBAdaptor.QueryParams.DISORDERS.key(), tmpFamily.getDisorders());
