@@ -164,7 +164,9 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkObj(user, "User");
         ParamUtils.checkValidUserId(user.getId());
         ParamUtils.checkParameter(user.getName(), "name");
-        checkEmail(user.getEmail());
+        if (StringUtils.isNotEmpty(user.getEmail())) {
+            checkEmail(user.getEmail());
+        }
         ParamUtils.checkObj(user.getAccount(), "account");
         user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
         user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
