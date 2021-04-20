@@ -39,6 +39,7 @@
         <module>opencga-client</module>
         <module>opencga-server</module>
         <module>opencga-clinical</module>
+        <module>opencga-test</module>
     </modules>
 
     <properties>
@@ -64,7 +65,7 @@
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
-        <opencga-storage-hadoop-deps.id-default>hdp2.6</opencga-storage-hadoop-deps.id-default>
+        <opencga-storage-hadoop-deps.id-default>hdp3.1</opencga-storage-hadoop-deps.id-default>
 
         <!-- This prevents findbugs plugin to check all the dependency locations -->
         <dependency.locations.enabled>false</dependency.locations.enabled>

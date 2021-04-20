@@ -2,32 +2,92 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-deploySolr: false
-deployMongo: false
-
 mongodb:
-  hosts: "FILL_ME"
   user: "FILL_ME"
   password: "FILL_ME"
   ssl: true
   authenticationDatabase : "admin"
   authenticationMechanism : "SCRAM-SHA-1"
 
+  # MongoDB can either be deployed in the same Kubernetes instance, or be provided externally.
+
+  external:
+    hosts: "FILL_ME"
+
+  # https://docs.mongodb.com/kubernetes-operator/stable/tutorial/resize-pv-storage/
+  deploy:
+    enabled: false
+    name: "rs0"
+    version: "4.2.6"
+    replicas: 3
+
+    volume:
+      size: "128Gi"
+
+    resources:
+      limits:
+        cpu: "2"
+        memory: "10G"
+      requests:
+        cpu: "1"
+        memory: "8G"
+
+    nodeSelector:
+      agentpool: mongodb
+
+solr:
+  external:
+    hosts: "FILL_ME"
+  deploy:
+    enabled: false
+    name: "solr"
+    replicas: 2
+
+    image:
+      repository: "library/solr" # TODO: Value not supported yet
+      tag: 8.7.0
+    imagePullSecret: "" # TODO: Value not supported yet
+
+    javaMem: "-Xms1g -Xmx3g"
+    opts: "-Dsolr.autoSoftCommit.maxTime=10000"
+    GCTune: "-XX:SurvivorRatio=4 -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=8"
+
+    volume:
+      size: "512Gi"
+
+    resources:
+      limits:
+        memory: "1G"
+      requests:
+        cpu: "65m"
+        memory: "156Mi"
+
+    nodeSelector:
+      agentpool: solr
+
+    zookeeper:
+      replicas: 2
+      volume:
+        size: "5Gi"
+      resources:
+        limits:
+          memory: "1G"
+        requests:
+          cpu: "65m"
+          memory: "156Mi"
+
+      nodeSelector:
+        agentpool: solr
+
 cellbase:
   host: "http://ws.opencb.org/cellbase/"
 
 analysis:
-  index:
-    variant:
-      maxConcurrentJobs: 100
   execution:
     id: "k8s"
     options:
       k8s:
         masterNode: "FILL_ME"
-
-solr:
-  hosts: "FILL_ME"
 
 hadoop:
   sshDns: "FILL_ME"
@@ -101,7 +161,9 @@ rest:
       kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       # kubernetes.io/tls-acme: "true"
-    host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+    hosts:
+      - "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+      - ""              # Accept access by IP .Testing purposes only.
     # Accepts /opencga and /opencga/....
     paths:
     - /opencga(/|$)

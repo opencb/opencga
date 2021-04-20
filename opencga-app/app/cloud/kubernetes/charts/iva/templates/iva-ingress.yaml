@@ -1,6 +1,7 @@
 {{- if .Values.iva.ingress.enabled -}}
 {{- $fullName := .Values.iva.name -}}
 {{- $svcPort := .Values.iva.service.port -}}
+{{- $paths := .Values.iva.ingress.paths -}}
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
@@ -23,21 +24,15 @@ spec:
   {{- end }}
 {{- end }}
   rules:
-    - host: {{ .Values.iva.ingress.host | quote }}
+  {{- range .Values.iva.ingress.hosts }}
+    - host: {{ . | quote }}
       http:
         paths:
-        {{- range .Values.iva.ingress.paths }}
+          {{- range $paths }}
           - path: {{ . }}
             backend:
               serviceName: {{ $fullName }}
               servicePort: {{ $svcPort }}
-        {{- end }}
-    - http:
-        paths:
-        {{- range .Values.iva.ingress.paths }}
-          - path: {{ . }}
-            backend:
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
-        {{- end }}
+          {{- end }}
+  {{- end }}
 {{- end }}

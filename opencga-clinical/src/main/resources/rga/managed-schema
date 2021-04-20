@@ -574,7 +574,9 @@
     <field name="phenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="disorders" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="fatherId" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="fatherSampleId" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="motherId" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="motherSampleId" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="numParents" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="geneId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="geneName" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -594,7 +596,6 @@
     <field name="compoundFilters" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="phenotypeJson" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="disorderJson" type="string" indexed="false" stored="true" multiValued="true"/>
-    <field name="variantJson" type="string" indexed="false" stored="true" multiValued="true"/>
 
     <dynamicField name="populationFrequencies_*" type="float" indexed="true" stored="true" multiValued="true"/>
     <!--

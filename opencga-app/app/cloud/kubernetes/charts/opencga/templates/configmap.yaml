@@ -3,5 +3,8 @@ kind: ConfigMap
 metadata:
   name: {{ include "opencga.defaultConf.name" . }}
 data:
-  {{- (.Files.Glob "conf/**.yml").AsConfig | nindent 2 }}
-  {{- (.Files.Glob "conf/**.xml").AsConfig | nindent 2 }}
+  k8s.yml: |
+    {{ include "opencga.labels" . | nindent 4 }}
+  {{- if ( ne (len (.Files.Glob "conf/**.{xml,yml,yaml}")) 0) }}
+  {{- (.Files.Glob "conf/**.{xml,yml,yaml}").AsConfig | nindent 2 }}
+  {{- end }}

@@ -130,25 +130,25 @@ public class SampleVariantStatsAggregationQuery {
                             && isIndel(facetField.getBuckets().get(0).getValue())
                             && CollectionUtils.isNotEmpty(facetField.getBuckets().get(0).getFacetFields())) {
                         for (FacetField.Bucket bucket : facetField.getBuckets().get(0).getFacetFields().get(0).getBuckets()) {
-                            String[] split = StringUtils.replaceChars(bucket.getValue(), "[]() ", "").split(",");
-                            String start = split[0];
-                            String endStr = split[1];
+                            Range<Double> range = Range.parse(bucket.getValue());
                             int count = (int) bucket.getCount();
 //                        [start, end)
                             IndelLength indelLength = stats.getIndelLengthCount();
-                            if (endStr.equals("inf")) {
-                                indelLength.setGte20(indelLength.getGte20() + count);
-                            } else {
-                                int end = Integer.parseInt(endStr);
-                                if (end != 1) {
-                                    if (end <= 5) {
-                                        indelLength.setLt5(indelLength.getLt5() + count);
-                                    } else if (end <= 10) {
-                                        indelLength.setLt10(indelLength.getLt10() + count);
-                                    } else if (end <= 20) {
-                                        indelLength.setLt20(indelLength.getLt20() + count);
-                                    } else {
-                                        indelLength.setGte20(indelLength.getGte20() + count);
+                            if (!range.isNA()) {
+                                if (range.isEndInfinity()) {
+                                    indelLength.setGte20(indelLength.getGte20() + count);
+                                } else {
+                                    int end = range.getEnd().intValue();
+                                    if (end != 1) {
+                                        if (end <= 5) {
+                                            indelLength.setLt5(indelLength.getLt5() + count);
+                                        } else if (end <= 10) {
+                                            indelLength.setLt10(indelLength.getLt10() + count);
+                                        } else if (end <= 20) {
+                                            indelLength.setLt20(indelLength.getLt20() + count);
+                                        } else {
+                                            indelLength.setGte20(indelLength.getGte20() + count);
+                                        }
                                     }
                                 }
                             }
@@ -193,7 +193,9 @@ public class SampleVariantStatsAggregationQuery {
                         int count = (int) bucket.getCount();
                         //[start, end)
                         DepthCount depthCount = stats.getDepthCount();
-                        if (range.isEndInfinity()) {
+                        if (range.isNA()) {
+                            depthCount.setNa(depthCount.getNa() + count);
+                        } else if (range.isEndInfinity()) {
                             depthCount.setGte20(depthCount.getGte20() + count);
                         } else {
                             double end = range.getEnd();

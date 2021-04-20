@@ -29,6 +29,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -40,6 +41,7 @@ import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
@@ -98,7 +100,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     public void tearDown() throws Exception {
     }
 
-    private DataResult<Family> createDummyFamily() throws CatalogException {
+    private Family getDummyFamily() {
         Disorder disease1 = new Disorder("dis1", "Disease 1", "HPO", null, "", null);
         Disorder disease2 = new Disorder("dis2", "Disease 2", "HPO", null, "", null);
 
@@ -140,9 +142,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 ))
                 .setParentalConsanguinity(true);
 
-        Family family = new Family("family", "family", null, Arrays.asList(disease1, disease2),
+        return new Family("family", "family", null, Arrays.asList(disease1, disease2),
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
                 Collections.emptyList(), Collections.emptyMap());
+    }
+
+    private DataResult<Family> createDummyFamily() throws CatalogException {
+        Family family = getDummyFamily();
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
@@ -150,6 +156,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily, boolean createDefaultInterpretation) throws CatalogException {
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setStatus(new Status().setId(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION))
                 .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
                 .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
@@ -242,6 +249,43 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertNotEquals(clinical.first().getComments().get(0).getDate(), clinical.first().getComments().get(1).getDate());
         assertEquals(Long.parseLong(clinical.first().getComments().get(0).getDate()) + 1,
                 Long.parseLong(clinical.first().getComments().get(1).getDate()));
+    }
+
+    @Test
+    public void createClinicalWithMissingSamplesInFamily() throws CatalogException {
+        Family family = getDummyFamily();
+        for (Individual member : family.getMembers()) {
+            if (!member.getId().equals("child1")) {
+                member.setSamples(Collections.emptyList());
+            }
+        }
+        familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+
+        // And only add sample to proband
+        for (Individual member : family.getMembers()) {
+            if (member.getId().equals("child1")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            }
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setProband(new Individual().setId("child1"));
+        clinicalAnalysis.setFamily(family);
+        DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
+                clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        assertEquals("child1", clinicalAnalysisDataResult.first().getFamily().getMembers().get(0).getId());
+        assertEquals("father", clinicalAnalysisDataResult.first().getFamily().getMembers().get(1).getId());
+        assertEquals("mother", clinicalAnalysisDataResult.first().getFamily().getMembers().get(2).getId());
+        assertEquals("child2", clinicalAnalysisDataResult.first().getFamily().getMembers().get(3).getId());
+        assertEquals("child3", clinicalAnalysisDataResult.first().getFamily().getMembers().get(4).getId());
+        assertEquals("sample2", clinicalAnalysisDataResult.first().getFamily().getMembers().get(0).getSamples().get(0).getId());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(1).getSamples().isEmpty());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(2).getSamples().isEmpty());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(3).getSamples().isEmpty());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().get(4).getSamples().isEmpty());
     }
 
     @Test
@@ -1759,6 +1803,44 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, search.getNumResults());
         assertTrue(StringUtils.isNotEmpty(search.first().getProband().getId()));
         assertTrue(StringUtils.isEmpty(search.first().getProband().getName()));
+    }
+
+    @Test
+    public void searchClinicalAnalysisByStatus() throws CatalogException {
+        createDummyEnvironment(true, false);
+        createDummyEnvironment(false, false);
+
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.DONE),
+                new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key()), sessionIdUser);
+        assertEquals(0, search.getNumResults());
+
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.READY_FOR_INTERPRETATION),
+                new QueryOptions(), sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        for (ClinicalAnalysis result : search.getResults()) {
+            assertEquals(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION, result.getStatus().getId());
+        }
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, search.first().getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam(ClinicalAnalysisStatus.REJECTED)), QueryOptions.empty(),
+                sessionIdUser);
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.READY_FOR_INTERPRETATION),
+                new QueryOptions(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        for (ClinicalAnalysis result : search.getResults()) {
+            assertEquals(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION, result.getStatus().getId());
+        }
+
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.REJECTED),
+                new QueryOptions(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        for (ClinicalAnalysis result : search.getResults()) {
+            assertEquals(ClinicalAnalysisStatus.REJECTED, result.getStatus().getId());
+        }
     }
 
     @Test

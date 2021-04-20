@@ -72,7 +72,7 @@
         },
         "logAnalyticsWorkspaceName": {
             "type": "string",
-            "defaultValue": "[concat(parameters('clusterName'), uniqueString(resourceGroup().id))]"
+            "defaultValue": "[concat(parameters('clusterName'), uniqueString(parameters('rgPrefix')))]"
         },
         "privateDnsZonesName": {
             "type": "string",
@@ -86,6 +86,13 @@
             "defaultValue": "[concat(parameters('clusterName'), '-aks')]",
             "metadata": {
                 "description": "Azure Kubernetes Service name"
+            }
+        },
+        "kubernetesVersion": {
+            "defaultValue": "1.16.13",
+            "type": "string",
+            "metadata": {
+                "description": "The version of Kubernetes."
             }
         },
         "aksServicePrincipalAppId": {
@@ -108,6 +115,34 @@
             "type": "securestring",
             "metadata": {
                 "description": "The RSA data for the SSH Public Key used to authenticate the following machines: WebServers, DaemonVM, Mongo, Solr and Zookeeper."
+            }
+        },
+        "deploySolr" : {
+            "type": "bool",
+            "defaultValue": "true",
+            "metadata": {
+                "description": "Deploy a Solr database"
+            }
+        },
+        "deploySolrAksPool": {
+            "type": "bool",
+            "defaultValue": "false",
+            "metadata": {
+                "description": "Deploy a K8s pool of VMs dedicated for Solr"
+            }
+        },
+        "deployMongoDB" : {
+            "type": "bool",
+            "defaultValue": "true",
+            "metadata": {
+                "description": "Deploy a MongoDB database"
+            }
+        },
+        "deployMongoDBAksPool": {
+            "type": "bool",
+            "defaultValue": "false",
+            "metadata": {
+                "description": "Deploy a K8s pool of VMs dedicated for MongoDB"
             }
         },
         "mongoDBPassword": {
@@ -210,8 +245,7 @@
                             "name" : "hdinsight",
                             "addressPrefix": "10.0.8.0/24",
                             "nsg": {
-                                "name": "[concat(parameters('nsgNamePrefix'), '-hdi')]",
-                                "serviceTag" : "HDInsight"
+                                "name": "[concat(parameters('nsgNamePrefix'), '-hdi')]"
                             }
                         },
                         "mongodb" : {
@@ -377,7 +411,10 @@
             }
         ],
         "selectedSize": "[variables('sizingOptions')[parameters('deploymentSize')]]",
-        "createAciSubnet": "[equals(parameters('jobsAgentPoolOrVirtualNode'), 'VirtualNode')]"
+        "createAciSubnet": "[equals(parameters('jobsAgentPoolOrVirtualNode'), 'VirtualNode')]",
+        "createMongoDBSubnet": "[parameters('deployMongoDB')]",
+        "createSolrSubnet": "[parameters('deploySolr')]",
+        "hdInsightResourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]"
     },
     "resources": [
         {
@@ -408,6 +445,12 @@
                     },
                     "createAciSubnet": {
                         "value": "[variables('createAciSubnet')]"
+                    },
+                    "createMongoDBSubnet": {
+                        "value": "[variables('createMongoDBSubnet')]"
+                    },
+                    "createSolrSubnet": {
+                        "value": "[variables('createSolrSubnet')]"
                     }
                 }
             }
@@ -499,7 +542,7 @@
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('location')]",
-            "name": "[concat(parameters('rgPrefix'),'-hdinsight')]",
+            "name": "[variables('hdInsightResourceGroup')]",
             "properties": {
             }
         },
@@ -553,7 +596,7 @@
                     "yarnSiteMemoryInMb": {
                         "value": "[variables('selectedSize').hdInsight.yarnSiteMemoryInMb]"
                     },
-                    "enableHBaseAcceleratedWrites": { 
+                    "enableHBaseAcceleratedWrites": {
                         "value": "[variables('selectedSize').hdInsight.enableHBaseAcceleratedWrites]"
                     },
                     "sshPassword": {
@@ -623,6 +666,9 @@
                     "aksServicePrincipalAppId": {
                         "value": "[parameters('aksServicePrincipalAppId')]"
                     },
+                    "kubernetesVersion": {
+                        "value": "[parameters('kubernetesVersion')]"
+                    },
                     "aksAgentCount": {
                         "value": "[variables('selectedSize').aks.nodeCount]"
                     },
@@ -649,6 +695,12 @@
                     },
                     "aksNodeResourceGroup": {
                         "value": "[concat(parameters('rgPrefix'), '-agentpools')]"
+                    },
+                    "solrAgentPool": {
+                        "value": "[and(parameters('deploySolrAksPool'), not(parameters('deploySolr')))]"
+                    },
+                    "mongodbAgentPool": {
+                        "value": "[and(parameters('deployMongoDBAksPool'), not(parameters('deployMongoDB')))]"
                     },
                     "vnetId": {
                         "value": "[reference('vnet').outputs.vnetId.value]"
@@ -726,6 +778,7 @@
             }
         },
         {
+            "condition" : "[parameters('deploySolr')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('location')]",
@@ -734,6 +787,7 @@
             }
         },
         {
+            "condition" : "[parameters('deploySolr')]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-solr')]",
             "apiVersion": "2018-05-01",
@@ -798,6 +852,7 @@
             }
         },
         {
+            "condition" : "[parameters('deployMongoDB')]",
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2018-05-01",
             "location": "[parameters('location')]",
@@ -806,6 +861,7 @@
             }
         },
         {
+            "condition" : "[parameters('deployMongoDB')]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-mongodb')]",
             "apiVersion": "2018-05-01",
@@ -922,29 +978,33 @@
             "type": "string",
             "value": "[reference('hdinsight').outputs.clusterSshPassword.value]"
         },
+        "hdInsightResourceGroup": {
+            "type": "string",
+            "value": "[variables('hdInsightResourceGroup')]"
+        },
         "hdInsightEnableMonitor": {
             "type": "string",
             "value": "[reference('hdinsight').outputs.enableMonitor.value]"
         },
         "mongoDbHostsCSV": {
             "type": "string",
-            "value": "[replace(replace(replace(replace(string(reference('mongodb').outputs.dnsNames.value), ' ', ''), '[{\"fqdn\":\"', ''), '\"},{\"fqdn\":\"', ','), '\"}]', '')]"
+            "value": "[if (parameters('deployMongoDB'), replace(replace(replace(replace(string(reference('mongodb').outputs.dnsNames.value), ' ', ''), '[{\"fqdn\":\"', ''), '\"},{\"fqdn\":\"', ','), '\"}]', ''), '')]"
         },
         "mongoDbUser": {
             "type": "string",
-            "value": "[reference('mongodb').outputs.mongoDBUser.value]"
+            "value": "[parameters('adminUsername')]"
         },
         "mongoDbPassword": {
             "type": "string",
-            "value": "[reference('mongodb').outputs.mongoDBPassword.value]"
+            "value": "[parameters('mongoDBPassword')]"
         },
         "solrHostsCSV": {
             "type": "string",
-            "value": "[replace(replace(replace(replace(string(reference('solr').outputs.solrURLs.value), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', '')]"
+            "value": "[if (parameters('deploySolr'), replace(replace(replace(replace(string(reference('solr').outputs.solrURLs.value), ' ', ''), '[{\"host\":\"', ''), '\"},{\"host\":\"', ','), '\"}]', ''), '')]"
         },
         "solrConnectionDetails": {
             "type": "array",
-            "value": "[reference('solr').outputs.solrConnectionDetails.value]"
+            "value": "[if (parameters('deploySolr'), reference('solr').outputs.solrConnectionDetails.value, createArray())]"
         },
         "privateDnsZonesName": {
             "type": "string",

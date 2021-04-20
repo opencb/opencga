@@ -17,6 +17,7 @@ function printUsage() {
   echo "     --spf  --service-principal-file    Azure service principal deploy parameters file. Execute createsp.sh to obtain the service principal parameters"
   echo "     --hf   --helm-file                 Helm values file. Used when calling to 'setup-k8s.sh' "
   echo "     -h     --help                      Print this help"
+  echo "            --verbose                   Verbose mode. Print debugging messages about the progress."
   echo ""
 }
 
@@ -74,6 +75,10 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    --verbose)
+    set -x
+    shift # past argument
+    ;;
     *)    # unknown option
     echo "Unknown option $key"
     printUsage
@@ -109,7 +114,7 @@ az account set --subscription "${subscriptionName}"
 
 # Run validation to get final parameters.
 finalParameters=$(az deployment sub validate \
-    --template-file <(jq '{parameters:.parameters, "$schema":."$schema" , resources:[], contentVersion:.contentVersion}' azuredeploy.json) \
+    --template-file <(grep -v "^//" azuredeploy.json | jq '{parameters:.parameters, "$schema":."$schema" , resources:[], contentVersion:.contentVersion}') \
     --location "${location}" \
     --parameters @"${azudeDeployParameters}"  \
     --parameters @"${spAzudeDeployParameters}"  \
@@ -185,7 +190,16 @@ function getOutput() {
   jq -r '.properties.outputs.'${1}'.value' ${deploymentOut}
 }
 
+function getParameter() {
+  jq -r '.properties.parameters.'${1}'.value' ${deploymentOut}
+}
+
 # Enable HDInsight monitor
-$(getOutput hdInsightEnableMonitor)
+hdInsightClusterName=$(getParameter hdInsightClusterName)
+hdInsightResourceGroup=$(getOutput hdInsightResourceGroup)
+hdInsightMonitorEnabled=$(az hdinsight monitor show --name "$hdInsightClusterName" --resource-group "$hdInsightResourceGroup" --query clusterMonitoringEnabled)
+if [ $hdInsightMonitorEnabled != "true" ]; then
+  $(getOutput hdInsightEnableMonitor)
+fi
 
 ./setup-aks.sh --subscription "${subscriptionName}" --azure-output-file "${deploymentOut}" --helm-file "${helmDeployParameters}"

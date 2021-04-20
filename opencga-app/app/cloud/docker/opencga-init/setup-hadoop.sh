@@ -25,26 +25,24 @@ fi
 
 HADOOP_USER_HOST="$INIT_HADOOP_SSH_USER@$INIT_HADOOP_SSH_DNS"
 
-FILE=/opt/volume/conf/hadoop
-if [ -d "$FILE" ] && [ "${OVERWRITE_CONFIGURATION:-false}" == "false" ]; then
-    echo "$FILE already exists"
-    echo "Copy jar-with-dependencies to hadoop"
-    $SSHPASS_CMD scp ${SSH_OPTS} -r /opt/opencga/*.jar "$HADOOP_USER_HOST":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
-else
-    #$SSHPASS_CMD ssh ${SSH_OPTS} "$HADOOP_USER_HOST" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
+HADOOP_CONF_DIR=/opt/volume/conf/hadoop
 
-    # copy conf files from Hadoop cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
-    # place these files in /opt/opencga/conf/hadoop, by e.g.:
-    echo "Fetching Hadoop configuration"
-    $SSHPASS_CMD ssh ${SSH_OPTS} "$HADOOP_USER_HOST" hbase classpath | tr ":" "\n" | grep "/conf$" | grep "hadoop\|hbase" | sort | uniq | while read i ; do
-      $SSHPASS_CMD scp ${SSH_OPTS} -r "$HADOOP_USER_HOST:${i}"/* /opt/opencga/conf/hadoop
-    done
+#$SSHPASS_CMD ssh ${SSH_OPTS} "$HADOOP_USER_HOST" "sudo sed -i '/<name>hbase.client.keyvalue.maxsize<\/name>/!b;n;c<value>0</value>' /etc/hbase/conf/hbase-site.xml"
 
-    # Copy the OpenCGA installation directory to the Hadoop cluster
-    $SSHPASS_CMD ssh ${SSH_OPTS} "$HADOOP_USER_HOST" mkdir -p "$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
-    # TODO - Optimize this down to only required jars
-    $SSHPASS_CMD scp ${SSH_OPTS} -r /opt/opencga/* "$HADOOP_USER_HOST":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
+# copy conf files from Hadoop cluster (from /etc/hadoop/conf & /etc/hbase/conf) to opencga VM
+# place these files in /opt/opencga/conf/hadoop, by e.g.:
+echo "Fetching Hadoop configuration"
+$SSHPASS_CMD ssh ${SSH_OPTS} "$HADOOP_USER_HOST" hbase classpath | tr ":" "\n" | grep "/conf$" | grep "hadoop\|hbase" | sort | uniq | while read i ; do
+  $SSHPASS_CMD scp ${SSH_OPTS} -r "$HADOOP_USER_HOST:${i}"/* /opt/opencga/conf/hadoop
+done
 
-    mkdir -p "$FILE"
-    cp -r /opt/opencga/conf/hadoop/* "$FILE"
-fi
+# Copy the OpenCGA installation directory to the Hadoop cluster
+$SSHPASS_CMD ssh ${SSH_OPTS} "$HADOOP_USER_HOST" mkdir -p "$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
+echo "Copy jar-with-dependencies to hadoop"
+$SSHPASS_CMD scp ${SSH_OPTS} /opt/opencga/*.jar "$HADOOP_USER_HOST":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
+echo "Copy other libs"
+# TODO - Optimize this down to only required jars
+$SSHPASS_CMD scp ${SSH_OPTS} -r /opt/opencga/libs "$HADOOP_USER_HOST":"$INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
+
+mkdir -p "$HADOOP_CONF_DIR"
+cp -r /opt/opencga/conf/hadoop/* "$HADOOP_CONF_DIR"
