@@ -3,7 +3,7 @@ package org.opencb.opencga.core.models.alignment;
 import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
+import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 
 import java.io.Serializable;
@@ -12,22 +12,22 @@ import java.util.List;
 
 public class AlignmentQualityControl implements Serializable {
     private String fileId;
-    private FastQc fastQc;
+    private FastQcMetrics fastQcMetrics;
     private SamtoolsStats samtoolsStats;
-    private SamtoolsFlagstats samtoolsFlagstats;
+    private SamtoolsFlagstats samtoolsFlagStats;
     private HsMetrics hsMetrics;
     private List<GeneCoverageStats> geneCoverageStats;
 
     public AlignmentQualityControl() {
-        this(null, new FastQc(), new SamtoolsStats(), new SamtoolsFlagstats(), new HsMetrics(), new ArrayList<>());
+        this(null, new FastQcMetrics(), new SamtoolsStats(), new SamtoolsFlagstats(), new HsMetrics(), new ArrayList<>());
     }
 
-    public AlignmentQualityControl(String fileId, FastQc fastQc, SamtoolsStats samtoolsStats, SamtoolsFlagstats samtoolsFlagstats,
+    public AlignmentQualityControl(String fileId, FastQcMetrics fastQcMetrics, SamtoolsStats samtoolsStats, SamtoolsFlagstats samtoolsFlagStats,
                                    HsMetrics hsMetrics, List<GeneCoverageStats> geneCoverageStats) {
         this.fileId = fileId;
-        this.fastQc = fastQc;
+        this.fastQcMetrics = fastQcMetrics;
         this.samtoolsStats = samtoolsStats;
-        this.samtoolsFlagstats = samtoolsFlagstats;
+        this.samtoolsFlagStats = samtoolsFlagStats;
         this.hsMetrics = hsMetrics;
         this.geneCoverageStats = geneCoverageStats;
     }
@@ -36,9 +36,9 @@ public class AlignmentQualityControl implements Serializable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("AlignmentQualityControl{");
         sb.append("fileId='").append(fileId).append('\'');
-        sb.append(", fastQc=").append(fastQc);
+        sb.append(", fastQcMetrics=").append(fastQcMetrics);
         sb.append(", samtoolsStats=").append(samtoolsStats);
-        sb.append(", samtoolsFlagstats=").append(samtoolsFlagstats);
+        sb.append(", samtoolsFlagstats=").append(samtoolsFlagStats);
         sb.append(", hsMetrics=").append(hsMetrics);
         sb.append(", geneCoverageStats=").append(geneCoverageStats);
         sb.append('}');
@@ -54,12 +54,12 @@ public class AlignmentQualityControl implements Serializable {
         return this;
     }
 
-    public FastQc getFastQc() {
-        return fastQc;
+    public FastQcMetrics getFastQcMetrtics() {
+        return fastQcMetrics;
     }
 
-    public AlignmentQualityControl setFastQc(FastQc fastQc) {
-        this.fastQc = fastQc;
+    public AlignmentQualityControl setFastQcMetrics(FastQcMetrics fastQcMetrics) {
+        this.fastQcMetrics = fastQcMetrics;
         return this;
     }
 
@@ -72,12 +72,12 @@ public class AlignmentQualityControl implements Serializable {
         return this;
     }
 
-    public SamtoolsFlagstats getSamtoolsFlagstats() {
-        return samtoolsFlagstats;
+    public SamtoolsFlagstats getSamtoolsFlagStats() {
+        return samtoolsFlagStats;
     }
 
-    public AlignmentQualityControl setSamtoolsFlagstats(SamtoolsFlagstats samtoolsFlagstats) {
-        this.samtoolsFlagstats = samtoolsFlagstats;
+    public AlignmentQualityControl setSamtoolsFlagStats(SamtoolsFlagstats samtoolsFlagStats) {
+        this.samtoolsFlagStats = samtoolsFlagStats;
         return this;
     }
 

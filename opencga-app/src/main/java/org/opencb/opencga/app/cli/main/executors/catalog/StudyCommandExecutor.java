@@ -224,7 +224,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     }
 
     /************************************************* Groups commands *********************************************************/
-    private RestResponse<Group> groups() throws CatalogException, ClientException {
+    private RestResponse<CustomGroup> groups() throws CatalogException, ClientException {
         logger.debug("Groups");
 
         studiesCommandOptions.groupsCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsCommandOptions.study);

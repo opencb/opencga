@@ -102,16 +102,20 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 //                    }
 //                    break;
 //                }
+                case "flagstat": {
+                    File file = getOutDir().resolve(STDOUT_FILENAME).toFile();
+                    List<String> lines = readLines(file, Charset.defaultCharset());
+                    if (lines.size() > 0 && lines.get(0).contains("QC-passed")) {
+                        FileUtils.copyFile(file, outputFile);
+                        success = true;
+                    }
+                    break;
+                }
                 case "stats": {
                     File file = getOutDir().resolve(STDOUT_FILENAME).toFile();
                     List<String> lines = readLines(file, Charset.defaultCharset());
                     if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
                         FileUtils.copyFile(file, outputFile);
-//                        if (getExecutorParams().containsKey(INDEX_STATS_PARAM) && getExecutorParams().getBoolean(INDEX_STATS_PARAM) && !isIndexed()) {
-//                        SamtoolsStats alignmentStats = parseSamtoolsStats(outputFile, new File(getInputFile()).getName());
-//                        System.out.println("samtools wrapper local analysis executor, stats: " + alignmentStats.toString());
-//                            indexStats(alignmentStats);
-//                        }
                         success = true;
                     }
                     break;
@@ -171,6 +175,10 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
             }
             case "stats": {
                 outputFilename = prefix + ".stats.txt";
+                break;
+            }
+            case "flagstat": {
+                outputFilename = prefix + ".flagstats.txt";
                 break;
             }
             case "depth": {
@@ -266,6 +274,11 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                     sb.append(" --ref-seq ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/")
                             .append(file.getName());
                 }
+                file = new File(getInputFile());
+                sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
+                break;
+            }
+            case "flagstat": {
                 file = new File(getInputFile());
                 sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 break;
@@ -366,6 +379,14 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
                     case "r":
                     case "ref-seq":
                     case "t": {
+                        return false;
+                    }
+                }
+                break;
+            }
+            case "flagstat": {
+                switch (param) {
+                    case "input-fmt-option": {
                         return false;
                     }
                 }

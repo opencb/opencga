@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
@@ -389,21 +390,8 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = AlignmentStatsParams.DESCRIPTION, required = true) AlignmentStatsParams params) {
-
-        logger.debug("ObjectMap: {}", params);
-
-        SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams();
-        samtoolsParams.setCommand("flagstat");
-        samtoolsParams.setInputFile(params.getFile());
-
-        Map<String, String> statsParams = new HashMap<>();
-        statsParams.put(INDEX_STATS_PARAM, "true");
-        samtoolsParams.setSamtoolsParams(statsParams);
-
-        logger.debug("ObjectMap (Samtools) : {}", samtoolsParams);
-
-        return submitJob(SamtoolsWrapperAnalysis.ID, study, samtoolsParams, jobName, jobDescription, dependsOn, jobTags);
+            @ApiParam(value = AlignmentFlagStatsParams.DESCRIPTION, required = true) AlignmentFlagStatsParams params) {
+        return submitJob(AlignmentFlagStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

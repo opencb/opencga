@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.wrappers.executors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
+import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -56,7 +56,7 @@ public class FastqcWrapperAnalysisExecutor extends OpenCgaWrapperAnalysisExecuto
         runCommandLine(sb.toString());
     }
 
-    public FastQc getResult() throws ToolException {
+    public FastQcMetrics getResult() throws ToolException {
         return null;
 //        File[] files = outDir.toFile().listFiles();
 //        if (files != null) {

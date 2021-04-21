@@ -653,6 +653,7 @@ public class TemplateManager {
                 file.getRelatedFiles(),
                 file.getStatus(),
                 file.getAnnotationSets(),
+                file.getQualityControl(),
                 file.getStats(),
                 file.getAttributes()
         ), params);

@@ -18,8 +18,6 @@ package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
-import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
@@ -83,7 +81,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
     private Sample sample;
     private File catalogBamFile;
     private SampleVariantQualityControlMetrics variantQcMetrics;
-    private SampleAlignmentQualityControlMetrics alignmentQcMetrics;
+    //private SampleAlignmentQualityControlMetrics alignmentQcMetrics;
     private Job variantStatsJob = null;
     private Job signatureJob = null;
     private Job fastQcJob = null;
@@ -156,7 +154,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Get sample quality control metrics to update
-        alignmentQcMetrics = getSampleAlignmentQualityControlMetrics();
+//        alignmentQcMetrics = getSampleAlignmentQualityControlMetrics();
         variantQcMetrics = sample.getQualityControl().getVariantMetrics();
 
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
@@ -173,19 +171,20 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                 .setSignatureId(signatureId)
                 .setSignatureQuery(signatureQuery)
                 .setGenesForCoverageStats(genesForCoverageStats)
-                .setAlignmentQcMetrics(alignmentQcMetrics);
+//                .setAlignmentQcMetrics(alignmentQcMetrics)
+        ;
 
         // Step by step
         step(VARIANT_STATS_STEP, () -> runVariantStats());
-        step(FASTQC_STEP, () -> runFastQc());//executor.setQcType(SampleQcAnalysisExecutor.QcType.FASTQC).execute());
+//        step(FASTQC_STEP, () -> runFastQc());//executor.setQcType(SampleQcAnalysisExecutor.QcType.FASTQC).execute());
         step(FLAG_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FLAG_STATS).execute());
         step(HS_METRICS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.HS_METRICS).execute());
         step(GENE_COVERAGE_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.GENE_COVERAGE_STATS).execute());
         step(MUTATIONAL_SIGNATUR_STEP, () -> runSignature());
 
         // Finally, update sample quality control metrics
-        alignmentQcMetrics = executor.getAlignmentQcMetrics();
-        updateSampleQualityControlMetrics(alignmentQcMetrics);
+//        alignmentQcMetrics = executor.getAlignmentQcMetrics();
+//        updateSampleQualityControlMetrics(alignmentQcMetrics);
     }
 
     private void runVariantStats() throws ToolException {
@@ -275,69 +274,69 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
     }
 
 
-    private void runFastQc() throws ToolException {
-        if (fastQcJob == null) {
-            addWarning("Skipping FastQc analysis");
-            return;
-        }
-
-        if (CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
-            FastQc fastQc = null;
-
-            // First, look for fastqc_data.txt to parse it
-            for (File file: fastQcJob.getOutput()) {
-                if (file.getName().equals("fastqc_data.txt")) {
-                    try {
-                        fastQc = FastQcParser.parse(Paths.get(file.getUri().getPath()).toFile());
-                    } catch (IOException e) {
-                        throw new ToolException(e);
-                    }
-                }
-            }
-
-            // Second, add images to the FastQc object
-            if (fastQc != null) {
-                for (File file : fastQcJob.getOutput()) {
-                    switch (file.getName()) {
-                        case "adapter_content.png": {
-                            fastQc.getAdapterContent().setFile(file.getId());
-                            break;
-                        }
-                        case "per_base_n_content.png": {
-                            fastQc.getPerBaseNContent().setFile(file.getId());
-                            break;
-                        }
-                        case "per_base_sequence_content.png": {
-                            fastQc.getPerBaseSeqContent().setFile(file.getId());
-                            break;
-                        }
-                        case "per_sequence_quality.png": {
-                            fastQc.getPerSeqQualityScore().setFile(file.getId());
-                            break;
-                        }
-                        case "duplication_levels.png": {
-                            fastQc.getSeqDuplicationLevel().setFile(file.getId());
-                            break;
-                        }
-                        case "per_base_quality.png": {
-                            fastQc.getPerBaseSeqQuality().setFile(file.getId());
-                            break;
-                        }
-                        case "per_sequence_gc_content.png": {
-                            fastQc.getPerSeqGcContent().setFile(file.getId());
-                            break;
-                        }
-                        case "sequence_length_distribution.png": {
-                            fastQc.getSeqLengthDistribution().setFile(file.getId());
-                            break;
-                        }
-                    }
-                }
-
-                alignmentQcMetrics.setFastQc(fastQc);
-            }
-        }
-    }
+//    private void runFastQc() throws ToolException {
+//        if (fastQcJob == null) {
+//            addWarning("Skipping FastQc analysis");
+//            return;
+//        }
+//
+//        if (CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
+//            FastQc fastQc = null;
+//
+//            // First, look for fastqc_data.txt to parse it
+//            for (File file: fastQcJob.getOutput()) {
+//                if (file.getName().equals("fastqc_data.txt")) {
+//                    try {
+//                        fastQc = FastQcParser.parse(Paths.get(file.getUri().getPath()).toFile());
+//                    } catch (IOException e) {
+//                        throw new ToolException(e);
+//                    }
+//                }
+//            }
+//
+//            // Second, add images to the FastQc object
+//            if (fastQc != null) {
+//                for (File file : fastQcJob.getOutput()) {
+//                    switch (file.getName()) {
+//                        case "adapter_content.png": {
+//                            fastQc.getAdapterContent().setFile(file.getId());
+//                            break;
+//                        }
+//                        case "per_base_n_content.png": {
+//                            fastQc.getPerBaseNContent().setFile(file.getId());
+//                            break;
+//                        }
+//                        case "per_base_sequence_content.png": {
+//                            fastQc.getPerBaseSeqContent().setFile(file.getId());
+//                            break;
+//                        }
+//                        case "per_sequence_quality.png": {
+//                            fastQc.getPerSeqQualityScore().setFile(file.getId());
+//                            break;
+//                        }
+//                        case "duplication_levels.png": {
+//                            fastQc.getSeqDuplicationLevel().setFile(file.getId());
+//                            break;
+//                        }
+//                        case "per_base_quality.png": {
+//                            fastQc.getPerBaseSeqQuality().setFile(file.getId());
+//                            break;
+//                        }
+//                        case "per_sequence_gc_content.png": {
+//                            fastQc.getPerSeqGcContent().setFile(file.getId());
+//                            break;
+//                        }
+//                        case "sequence_length_distribution.png": {
+//                            fastQc.getSeqLengthDistribution().setFile(file.getId());
+//                            break;
+//                        }
+//                    }
+//                }
+//
+//                alignmentQcMetrics.setFastQc(fastQc);
+//            }
+//        }
+//    }
 
     private SampleAlignmentQualityControlMetrics getSampleAlignmentQualityControlMetrics() {
         String bamFileId = (catalogBamFile == null) ? "" : catalogBamFile.getId();

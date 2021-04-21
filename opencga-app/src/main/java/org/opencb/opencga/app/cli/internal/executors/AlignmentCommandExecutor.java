@@ -18,12 +18,14 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
 
 import java.nio.file.Paths;
@@ -142,20 +144,19 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         ).toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        System.out.println("alignment command executor: params = " + params.toJson());
-        System.out.println("----> cliOptions.study = " + cliOptions.study);
-        System.out.println("----> cliOptions.outdir = " + cliOptions.outdir);
-
         toolRunner.execute(AlignmentStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void flagStatsRun() throws ToolException {
         AlignmentCommandOptions.FlagStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.flagStatsAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory,
-                alignmentCommandOptions.internalJobOptions.jobId);
+        ObjectMap params = new AlignmentFlagStatsParams(
+                cliOptions.file,
+                cliOptions.outdir
+        ).toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        alignmentManager.flagStatsRun(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
+        toolRunner.execute(AlignmentFlagStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void coverageRun() throws ToolException {

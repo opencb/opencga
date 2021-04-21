@@ -84,7 +84,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "stats-run":
                 queryResponse = statsRun();
                 break;
-            case "flag-stats-run":
+            case "flagstats-run":
                 queryResponse = flagStatsRun();
                 break;
             case "coverage-index-run":
@@ -346,10 +346,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
         params.putAll(getJobParams());
 
-        return null;
-//        return openCGAClient.getAlignmentClient().runFlagStats(new AlignmentStatsParams(cliOptions.file), params);
+        return openCGAClient.getAlignmentClient().runFlagstats(new AlignmentFlagStatsParams(cliOptions.file, cliOptions.outdir), params);
     }
-    
+
     //-------------------------------------------------------------------------
     // COVERAGE: index/run, info, query and stats
     //-------------------------------------------------------------------------
