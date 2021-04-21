@@ -360,7 +360,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private String getMail(Attributes attributes) throws NamingException {
-        return (String) attributes.get("mail").get(0);
+        return attributes.get("mail") != null ? (String) attributes.get("mail").get(0) : "";
     }
 
     private String getUID(Attributes attributes) throws NamingException {

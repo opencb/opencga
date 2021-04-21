@@ -171,7 +171,8 @@
                                 "subnet": "[parameters('subnetId')]"
                             }
                         },
-        "workernode": "[if(parameters('enableHBaseAcceleratedWrites'), union(variables('workernodeBase'), variables('dataDisksGroups1')), variables('workernodeBase'))]"
+        "workernode": "[if(parameters('enableHBaseAcceleratedWrites'), union(variables('workernodeBase'), variables('dataDisksGroups1')), variables('workernodeBase'))]",
+        "privateDnsZonesName": "azurehdinsight.net"
     },
     "resources": [
         {
@@ -252,6 +253,9 @@
                         },
                         "yarn-site": {
                             "yarn.nodemanager.resource.memory-mb": "[parameters('yarnSiteMemoryInMb')]"
+                        },
+                        "hbase-site": {
+                            "hbase.client.keyvalue.maxsize": "0"
                         }
                     }
                 },
@@ -310,8 +314,11 @@
                             ]
                         }
                     ]
+                },
+                "networkProperties": {
+                    "resourceProviderConnection": "Outbound",
+                    "privateLink": "Disabled"
                 }
-                
             },
             "identity": {
                 "type": "UserAssigned",
@@ -343,9 +350,95 @@
                     }
                 }
             ]
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2018-09-01",
+            "name": "[variables('privateDnsZonesName')]",
+            "location": "global",
+            "tags": {},
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2018-09-01",
+            "name": "[concat(variables('privateDnsZonesName'), '/', uniqueString(parameters('vnetId')))]",
+            "location": "global",
+            "properties": {
+                "virtualNetwork": {
+                    "id": "[parameters('vnetId')]"
+                },
+                "registrationEnabled": false
+            },
+            "dependsOn": [
+                "[variables('privateDnsZonesName')]"
+            ]
+        },
+
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "hdInsightRecords",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZonesName'))]",
+                "[resourceId('Microsoft.HDInsight/clusters', parameters('clusterName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "expressionEvaluationOptions": {
+                    "scope": "inner"
+                },
+                "parameters": {
+                    "connectivityEndpoints": {
+                        "value": "[reference(resourceId('Microsoft.HDInsight/clusters', parameters('clusterName'))).connectivityEndpoints]"
+                    }
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "connectivityEndpoints": {
+                            "type": "array"
+                        }
+                    },
+                    "variables": {
+                        "privateDnsZonesName": "azurehdinsight.net"
+                    },
+                    "resources": [
+                        {
+                            "copy": {
+                                "name": "hdi-record",
+                                "count": "[length(parameters('connectivityEndpoints'))]"
+                            },
+                            "type": "Microsoft.Network/privateDnsZones/A",
+                            "apiVersion": "2018-09-01",
+                            "name": "[concat(
+                                variables('privateDnsZonesName'), 
+                                '/',
+                                replace(
+                                    parameters('connectivityEndpoints')[copyIndex()].location, 
+                                    concat('.' , variables('privateDnsZonesName')), 
+                                    '')
+                                )]",
+                            "properties": {
+                                "ttl": 3600,
+                                "aRecords": [
+                                    {
+                                        "ipv4Address": "[parameters('connectivityEndpoints')[copyIndex()].privateIPAddress]"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
         }
     ],
     "outputs": {
+        "ref": {
+            "type": "object",
+            "value": "[reference(resourceId('Microsoft.HDInsight/clusters', parameters('clusterName')))]"
+        },
         "clusterSshDNSName": {
             "type": "string",
             "value": "[concat(parameters('clusterName'),'-ssh.azurehdinsight.net')]"

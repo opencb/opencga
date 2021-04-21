@@ -3220,12 +3220,16 @@ public class FileManager extends AnnotationSetManager<File> {
 //        boolean resync = params.getBoolean("resync", false);
 //        String checksum = params.getString(FileDBAdaptor.QueryParams.CHECKSUM.key(), "");
 
-        final List<FileRelatedFile> relatedFiles = params.getRelatedFiles();
-        if (relatedFiles != null) {
-            for (FileRelatedFile relatedFile : relatedFiles) {
-                File tmpFile = internalGet(study.getUid(), relatedFile.getFile().getId(), INCLUDE_FILE_URI_PATH, userId).first();
-                relatedFile.setFile(tmpFile);
+        final List<FileRelatedFile> relatedFiles;
+        final List<SmallRelatedFileParams> relatedFilesParams = params.getRelatedFiles();
+        if (relatedFilesParams != null) {
+            relatedFiles = new ArrayList<>(relatedFilesParams.size());
+            for (SmallRelatedFileParams relatedFileParams : relatedFilesParams) {
+                File tmpFile = internalGet(study.getUid(), relatedFileParams.getFile(), INCLUDE_FILE_URI_PATH, userId).first();
+                relatedFiles.add(new FileRelatedFile(tmpFile, relatedFileParams.getRelation()));
             }
+        } else {
+            relatedFiles = null;
         }
 
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.

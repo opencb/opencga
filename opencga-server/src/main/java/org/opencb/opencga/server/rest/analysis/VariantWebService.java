@@ -631,11 +631,16 @@ public class VariantWebService extends AnalysisWebService {
     public Response sampleAggregationStats(@ApiParam(value =
             "List of facet fields separated by semicolons, e.g.: studies;type."
                     + " For nested faceted fields use >>, e.g.: chromosome>>type ."
-                    + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam("fields") String fields) {
+                    + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.put(QueryOptions.FACET, fields);
+            if (StringUtils.isEmpty(field)) {
+                String fields = queryOptions.getString("fields");
+                queryOptions.put(QueryOptions.FACET, fields);
+            } else {
+                queryOptions.put(QueryOptions.FACET, field);
+            }
             Query query = getVariantQuery(queryOptions);
             return variantManager.facet(query, queryOptions, token);
         });
@@ -816,11 +821,16 @@ public class VariantWebService extends AnalysisWebService {
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
     })
-    public Response getAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
+    public Response getAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.put(QueryOptions.FACET, fields);
+            if (StringUtils.isEmpty(field)) {
+                String fields = queryOptions.getString("fields");
+                queryOptions.put(QueryOptions.FACET, fields);
+            } else {
+                queryOptions.put(QueryOptions.FACET, field);
+            }
             Query query = getVariantQuery(queryOptions);
 
             return variantManager.facet(query, queryOptions, token);

@@ -1,12 +1,15 @@
-1. Get the application URL by running these commands:
+## OpenCGA
+Get the application URL by running these commands:
 {{- if .Values.rest.ingress.enabled }}
 {{- $paths := .Values.rest.ingress.paths -}}
 {{- range $host := .Values.rest.ingress.hosts }}
   {{- range $path := $paths }}
-  http{{ if $.Values.rest.ingress.tls }}s{{ end }}://{{ $host }}{{ $path }}
+  http{{ if $.Values.rest.ingress.tls }}s{{ end }}://{{ $host | default "EXTERNAL_CLUSTER_IP" }}{{ $path | replace "(/|$)" "" }}
   {{- end }}
 {{- end }}
-{{- else if contains "NodePort" .Values.rest.service.type }}
+{{- end }}
+
+{{- if contains "NodePort" .Values.rest.service.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "opencga.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
   echo http://$NODE_IP:$NODE_PORT
@@ -17,6 +20,27 @@
   echo http://$SERVICE_IP:{{ .Values.rest.service.port }}
 {{- else if contains "ClusterIP" .Values.rest.service.type }}
   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "opencga.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
-  echo "Visit http://127.0.0.1:8080 to use your application"
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:80
+
+  Visit: http://localhost:8080/opencga
+
+{{- end }}
+{{- if .Values.mongodb.deploy.enabled }}
+
+## MongoDB
+Connect to MongoDB database running these commands:
+
+  export SERVICE_NAME="service/{{ .Values.mongodb.deploy.name }}-svc"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $SERVICE_NAME 27018:27017
+  echo "mongo --host localhost --port 27018 --authenticationDatabase {{ .Values.mongodb.authenticationDatabase }} --authenticationMechanism {{ .Values.mongodb.authenticationMechanism }} --username {{ .Values.mongodb.user }} --password XXXXX"
+
+{{- end }}
+{{- if .Values.solr.deploy.enabled }}
+
+## Solr
+Connect to Solr database running these commands:
+
+  export SERVICE_NAME="service/{{ .Values.solr.deploy.name }}-solrcloud-headless"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $SERVICE_NAME 18983:8983
+  echo "Visit http://127.0.0.1:18983 to access Solr GUI"
 {{- end }}

@@ -103,14 +103,41 @@ function configureContext() {
 }
 
 function generateHelmValuesFile() {
-
+  if [ "$(getParameter "deploySolrAksPool")" == "true" ]; then
+    solrAgentPool=solr
+  else
+    solrAgentPool=default
+  fi
+  if [ "$(getParameter "deployMongoDBAksPool")" == "true" ]; then
+    mongodbAgentPool=mongodb
+  else
+    mongodbAgentPool=default
+  fi
   ## Generate helm values file
   cat >> "${helmValues}" << EOF
 # $(date "+%Y%m%d%H%M%S")
 # Auto generated file from deployment output ${deploymentOut}
 
 solr:
-  hosts: "$(getOutput "solrHostsCSV")"
+  external:
+    hosts: "$(getOutput "solrHostsCSV")"
+  deploy:
+    enabled: "$(getParameter "deploySolr")"
+    nodeSelector:
+      agentpool: "$solrAgentPool"
+    zookeeper:
+      nodeSelector:
+        agentpool: "$mongodbAgentPool"
+
+mongodb:
+  user: "$(getOutput "mongoDbUser")"
+  password: "$(getOutput "mongoDbPassword")"
+  external:
+    hosts: "$(getOutput "mongoDbHostsCSV")"
+  deploy:
+    enabled: "$(getParameter "deployMongoDB")"
+    nodeSelector:
+      agentpool: "$mongodbAgentPool"
 
 hadoop:
   sshDns: "$(getOutput "hdInsightSshDns")"
@@ -126,20 +153,11 @@ opencga:
   admin:
     password: "$(getOutput "openCgaAdminPassword")"
 
-catalog:
-  database:
-    hosts: "$(getOutput "mongoDbHostsCSV")"
-    user: "$(getOutput "mongoDbUser")"
-    password: "$(getOutput "mongoDbPassword")"
-
 analysis:
   execution:
     options:
       k8s:
         masterNode: "https://$(getOutput "aksApiServerAddress"):443"
-  index:
-    variant:
-      maxConcurrentJobs: "100"
 
 rest:
   ingress:
@@ -168,7 +186,7 @@ function registerIngressDomainName() {
   EXTERNAL_IP=$(kubectl get services \
              --context "${K8S_CONTEXT}" \
              -o "jsonpath={.status.loadBalancer.ingress[0].ip}" \
-             opencga-nginx-nginx-ingress-controller)
+             opencga-nginx-ingress-nginx-controller)
 
   ACTUAL_IP=$(az network private-dns record-set a show \
              --subscription "${subscriptionName}" \
@@ -176,7 +194,7 @@ function registerIngressDomainName() {
              --zone-name $(getOutput "privateDnsZonesName")       \
              --name opencga 2> /dev/null | jq .aRecords[].ipv4Address -r)
 
-  if [ ! $ACTUAL_IP = "" ] && [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
+  if [ "$ACTUAL_IP" != "" ] && [ "$ACTUAL_IP" != "$EXTERNAL_IP" ] ; then
     echo "Delete outdated A record: opencga.$(getOutput "privateDnsZonesName") : ${ACTUAL_IP}"
     az network private-dns record-set a delete              \
       --subscription "${subscriptionName}"                  \
@@ -185,7 +203,7 @@ function registerIngressDomainName() {
       --name opencga
   fi
 
-  if [ $ACTUAL_IP = "" ] || [ ! $ACTUAL_IP = $EXTERNAL_IP ] ; then
+  if [ "$ACTUAL_IP" == "" ] || [ "$ACTUAL_IP" != "$EXTERNAL_IP" ] ; then
     echo "Create A record: opencga.$(getOutput "privateDnsZonesName") : ${EXTERNAL_IP}"
     az network private-dns record-set a add-record          \
       --subscription "${subscriptionName}"                  \
@@ -204,7 +222,7 @@ echo "# Generate helm values file ${helmValues}"
 generateHelmValuesFile
 
 echo "setup-k8s.sh --context \"${K8S_CONTEXT}\" --values \"${allHelmValues}\""
-../../kubernetes/setup-k8s.sh --context "${K8S_CONTEXT}" --values "${allHelmValues}"
+../../kubernetes/setup-k8s.sh --context "${K8S_CONTEXT}" --values "${allHelmValues}" --verbose
 
 echo "# Register Ingress domain name (if needed)"
 registerIngressDomainName

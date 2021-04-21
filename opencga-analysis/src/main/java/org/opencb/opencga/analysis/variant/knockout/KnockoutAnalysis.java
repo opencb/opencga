@@ -26,14 +26,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
-import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.tools.annotations.ToolParams;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -46,8 +41,10 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.BufferedWriter;
@@ -75,7 +72,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         steps.add(getId());
         steps.add("add-metadata-to-output-files");
         if (analysisParams.isIndex()) {
-            steps.add("launch-index");
+            steps.add("index");
         }
         return steps;
     }
@@ -382,33 +379,27 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         });
 
         if (analysisParams.isIndex()) {
-            step("launch-index", () -> {
-                String thisJobOutdir = getCatalogManager()
-                        .getJobManager()
-                        .get(getStudyFqn(), getJobId(), new QueryOptions(), getToken()).first().getOutDir()
-                        .getPath();
-                if (!thisJobOutdir.endsWith("/")) {
-                    thisJobOutdir += "/";
-                }
-                String individualsOutputFileName = getIndividualsOutputFile().getFileName().toString();
-                RgaAnalysisParams rgaAnalysisParams = new RgaAnalysisParams(thisJobOutdir + individualsOutputFileName);
-
-                Job rgaJob = getCatalogManager().getJobManager().submit(getStudyFqn(), RgaAnalysis.ID, Enums.Priority.MEDIUM,
-                        rgaAnalysisParams.toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudyFqn())), null, null,
-                        Collections.singletonList(getJobId()), analysisParams.getIndexJobTags(), getToken()).first();
-                addAttribute("rga-index-job", rgaJob.getId());
-                addAttribute("rga-index-job-uuid", rgaJob.getUuid());
-                logger.info("Run index job : " + rgaJob.getId());
+            step("index", () -> {
+                RgaManager rgaManager = new RgaManager(configuration, storageConfiguration);
+                rgaManager.index(study, getIndividualsOutputFile(), token);
             });
         }
     }
 
     private Path getIndividualsOutputFile() {
-        return getOutDir().resolve(KNOCKOUT_INDIVIDUALS_JSON);
+        if (analysisParams.isIndex()) {
+            return getScratchDir().resolve(KNOCKOUT_INDIVIDUALS_JSON);
+        } else {
+            return getOutDir().resolve(KNOCKOUT_INDIVIDUALS_JSON);
+        }
     }
 
     private Path getGenesOutputFile() {
-        return getOutDir().resolve(KNOCKOUT_GENES_JSON);
+        if (analysisParams.isIndex()) {
+            return getScratchDir().resolve(KNOCKOUT_GENES_JSON);
+        } else {
+            return getOutDir().resolve(KNOCKOUT_GENES_JSON);
+        }
     }
 
 }

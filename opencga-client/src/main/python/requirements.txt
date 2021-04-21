@@ -2,3 +2,4 @@ requests
 pip
 pathlib
 pyyaml
+pandas

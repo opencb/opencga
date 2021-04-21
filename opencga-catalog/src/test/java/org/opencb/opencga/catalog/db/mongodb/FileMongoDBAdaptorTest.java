@@ -90,7 +90,9 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getFileTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
+        File file = catalogFileDBAdaptor.get(new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), user3.getProjects().get(0).getStudies().get(0).getUid())
+                .append(FileDBAdaptor.QueryParams.NAME.key(), "file.vcf"), QueryOptions.empty()).first();
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), null);
         System.out.println(fileDataResult);
         try {
@@ -117,21 +119,10 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void getAllFilesTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        DataResult<File> allFiles = catalogFileDBAdaptor.getAllInStudy(studyId, null);
-        List<File> files = allFiles.getResults();
-        List<File> expectedFiles = user3.getProjects().get(0).getStudies().get(0).getFiles();
-        assertEquals(expectedFiles.size(), files.size());
-        for (File expectedFile : expectedFiles) {
-            boolean found = false;
-            for (File fileResult : allFiles.getResults()) {
-                if (fileResult.getUid() == expectedFile.getUid())
-                    found = true;
-            }
-            if (!found) {
-                throw new CatalogDBException("The file " + expectedFile.getName() + " could not be found.");
-            }
-        }
+        List<File> files = catalogFileDBAdaptor.get(
+                new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), user3.getProjects().get(0).getStudies().get(0).getUid()),
+                QueryOptions.empty()).getResults();
+        assertEquals(2, files.size());
     }
 
 //    // Test if the lookup operation works fine
@@ -163,7 +154,9 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void modifyFileTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
-        File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
+        File file = catalogFileDBAdaptor.get(new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), user3.getProjects().get(0).getStudies().get(0).getUid())
+                .append(FileDBAdaptor.QueryParams.NAME.key(), "file.vcf"), QueryOptions.empty()).first();
         long fileId = file.getUid();
 
         Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + RandomStringUtils.randomAlphanumeric(20));
@@ -343,7 +336,9 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
 
-        File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
+        File file = catalogFileDBAdaptor.get(new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), user3.getProjects().get(0).getStudies().get(0).getUid())
+                .append(FileDBAdaptor.QueryParams.NAME.key(), "file.vcf"), QueryOptions.empty()).first();
         catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
                 Arrays.asList(sample1.getId(), sample2.getId())), options);
 
@@ -377,7 +372,9 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
-        List<File> files = user3.getProjects().get(0).getStudies().get(0).getFiles();
+        List<File> files = catalogFileDBAdaptor.get(new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), user3.getProjects().get(0).getStudies().get(0).getUid()),
+                QueryOptions.empty()).getResults();
         File file = files.get(0);
         File file2 = files.get(1);
         ObjectMap action = new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), ParamUtils.BasicUpdateAction.ADD);

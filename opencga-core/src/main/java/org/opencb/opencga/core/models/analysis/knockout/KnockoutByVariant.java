@@ -22,23 +22,25 @@ public class KnockoutByVariant {
     private List<ClinicalSignificance> clinicalSignificance;
 
     private int numIndividuals;
+    private boolean hasNextIndividual;
     private List<KnockoutByIndividual> individuals;
 
     public KnockoutByVariant() {
     }
 
     public KnockoutByVariant(String id, List<KnockoutByIndividual> individuals) {
-        this(id, "", null, -1, -1, 0, null, null, null, null, null, individuals);
+        this(id, "", null, -1, -1, 0, null, null, null, null, null, individuals, false);
     }
 
     public KnockoutByVariant(String id, String chromosome, int start, int end, int length, String reference, String alternate,
                              List<KnockoutByIndividual> individuals) {
-        this(id, "", chromosome, start, end, length, reference, alternate, null, null, null, individuals);
+        this(id, "", chromosome, start, end, length, reference, alternate, null, null, null, individuals, false);
     }
 
     public KnockoutByVariant(String id, String dbSnp, String chromosome, int start, int end, int length, String reference, String alternate,
                              VariantType type, List<PopulationFrequency> populationFrequencies,
-                             List<ClinicalSignificance> clinicalSignificance, List<KnockoutByIndividual> individuals) {
+                             List<ClinicalSignificance> clinicalSignificance, List<KnockoutByIndividual> individuals,
+                             boolean hasNextIndividual) {
         this.id = id;
         this.dbSnp = dbSnp;
         this.chromosome = chromosome;
@@ -52,6 +54,7 @@ public class KnockoutByVariant {
         this.clinicalSignificance = clinicalSignificance;
         this.numIndividuals = individuals != null ? individuals.size() : 0;
         this.individuals = individuals;
+        this.hasNextIndividual = hasNextIndividual;
     }
 
     @Override
@@ -69,6 +72,7 @@ public class KnockoutByVariant {
         sb.append(", populationFrequencies=").append(populationFrequencies);
         sb.append(", clinicalSignificance=").append(clinicalSignificance);
         sb.append(", numIndividuals=").append(numIndividuals);
+        sb.append(", hasNextIndividual=").append(hasNextIndividual);
         sb.append(", individuals=").append(individuals);
         sb.append('}');
         return sb.toString();
@@ -193,6 +197,15 @@ public class KnockoutByVariant {
 
     public KnockoutByVariant setNumIndividuals(int numIndividuals) {
         this.numIndividuals = numIndividuals;
+        return this;
+    }
+
+    public boolean isHasNextIndividual() {
+        return hasNextIndividual;
+    }
+
+    public KnockoutByVariant setHasNextIndividual(boolean hasNextIndividual) {
+        this.hasNextIndividual = hasNextIndividual;
         return this;
     }
 
