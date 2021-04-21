@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.rga;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -15,6 +16,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.rga.RgaDataModel.*;
 
@@ -23,6 +25,7 @@ class RgaUtils {
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<?<=?|>>?=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
 
     static final String SEPARATOR = "__";
+    static final String INNER_SEPARATOR = "-";
 
     private static final Map<String, String> ENCODE_MAP;
     private static final Map<String, String> DECODE_MAP;
@@ -305,6 +308,71 @@ class RgaUtils {
         ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
 
         return new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry, variantAnnotation, consequenceType, knockoutType);
+    }
+
+    public static class CodedVariant {
+        //  1:2233232:A:T __ SNV __ COMP_HET __ VR_R __ A_J
+        private String variantId;
+        private String type;
+        private String knockoutType;
+        private List<String> populationFrequencies;
+        private Set<String> consequenceType;
+
+        public CodedVariant(String variantId, String type, String knockoutType, List<String> consequenceTypeList,
+                            float thousandGenomesPopFreq, float gnomadPopFreq) throws RgaException {
+            this.variantId = variantId;
+            this.type = type;
+            this.knockoutType = knockoutType;
+            this.consequenceType = new HashSet<>();
+            for (String consequenceType : consequenceTypeList) {
+                this.consequenceType.add(String.valueOf(VariantQueryUtils.parseConsequenceType(consequenceType)));
+            }
+            this.populationFrequencies = new ArrayList<>(2);
+            this.populationFrequencies.add(
+                    RgaUtils.encode(THOUSAND_GENOMES_STUDY.toUpperCase() + SEPARATOR + getPopulationFrequencyKey(thousandGenomesPopFreq)));
+            this.populationFrequencies.add(
+                    RgaUtils.encode(GNOMAD_GENOMES_STUDY.toUpperCase() + SEPARATOR + getPopulationFrequencyKey(gnomadPopFreq)));
+        }
+
+        public CodedVariant(String fullVariant) throws RgaException {
+            String[] split = fullVariant.split(SEPARATOR);
+            if (split.length != 5) {
+                throw new RgaException("Unexpected variant string received '" + fullVariant
+                        + "'. Expected {id}__{type}__{knockoutType}__{conseqType}__{popFreqs}");
+            }
+
+            this.variantId = split[0];
+            this.type = split[1];
+            this.knockoutType = split[2];
+            this.consequenceType = new HashSet<>();
+            this.consequenceType.addAll(Arrays.asList(split[3].split(INNER_SEPARATOR)));
+            this.populationFrequencies = Arrays.asList(split[4].split(INNER_SEPARATOR));
+        }
+
+        public String getFullVariant() {
+            return variantId + SEPARATOR + type + SEPARATOR + knockoutType + SEPARATOR + StringUtils.join(consequenceType, INNER_SEPARATOR)
+                    + SEPARATOR + StringUtils.join(populationFrequencies, INNER_SEPARATOR);
+        }
+
+        public String getVariantId() {
+            return variantId;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getKnockoutType() {
+            return knockoutType;
+        }
+
+        public Set<String> getConsequenceType() {
+            return consequenceType;
+        }
+
+        public List<String> getPopulationFrequencies() {
+            return populationFrequencies;
+        }
     }
 
 }

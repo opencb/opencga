@@ -590,6 +590,7 @@
     <field name="variants" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="types" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="knockoutTypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="fullVariantInfo" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="filters" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="consequenceTypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="clinicalSignificances" type="string" indexed="true" stored="true" multiValued="true"/>

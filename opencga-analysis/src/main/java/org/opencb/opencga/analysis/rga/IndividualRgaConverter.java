@@ -207,24 +207,32 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
 
                     List<String> variantIds = new ArrayList<>(transcript.getVariants().size());
                     List<String> knockoutTypes = new ArrayList<>(transcript.getVariants().size());
+                    List<String> variantKnockoutList = new ArrayList<>(transcript.getVariants().size());
                     Set<String> types = new HashSet<>();
                     Set<String> consequenceTypes = new HashSet<>();
                     Set<String> clinicalSignificances = new HashSet<>();
                     Set<String> filters = new HashSet<>();
 
-                    for (KnockoutVariant variant : transcript.getVariants()) {
+                    Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
+                    List<KnockoutVariant> variants = transcript.getVariants();
+                    for (int i = 0; i < variants.size(); i++) {
+                        KnockoutVariant variant = variants.get(i);
                         variantIds.add(variant.getId());
-                        knockoutTypes.add(variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "");
+                        String knockoutType = variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "";
+                        knockoutTypes.add(knockoutType);
                         if (variant.getType() != null) {
                             types.add(variant.getType().name());
                         }
+                        List<String> variantConsequenceTypes = new ArrayList<>();
                         if (variant.getSequenceOntologyTerms() != null) {
                             for (SequenceOntologyTerm sequenceOntologyTerm : variant.getSequenceOntologyTerms()) {
                                 if (sequenceOntologyTerm.getAccession() != null) {
-                                    consequenceTypes.add(sequenceOntologyTerm.getAccession());
+                                    variantConsequenceTypes.add(sequenceOntologyTerm.getAccession());
                                 }
                             }
                         }
+                        consequenceTypes.addAll(variantConsequenceTypes);
+
                         if (variant.getClinicalSignificance() != null) {
                             for (ClinicalSignificance clinicalSignificance : variant.getClinicalSignificance()) {
                                 if (clinicalSignificance != null) {
@@ -235,8 +243,13 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         if (StringUtils.isNotEmpty(variant.getFilter())) {
                             filters.add(variant.getFilter());
                         }
+
+                        float thousandPopFreq = getPopulationFrequency(i, RgaUtils.THOUSAND_GENOMES_STUDY, popFreqs);
+                        float gnomadPopFreq = getPopulationFrequency(i, RgaUtils.GNOMAD_GENOMES_STUDY, popFreqs);
+                        RgaUtils.CodedVariant codedVariant = new RgaUtils.CodedVariant(variant.getId(), variant.getType().name(),
+                                variant.getKnockoutType().name(), variantConsequenceTypes, thousandPopFreq, gnomadPopFreq);
+                        variantKnockoutList.add(codedVariant.getFullVariant());
                     }
-                    Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
                     String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
                     String individualId = knockoutByIndividual.getId();
@@ -277,6 +290,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                             .setVariants(variantIds)
                             .setTypes(new ArrayList<>(types))
                             .setKnockoutTypes(knockoutTypes)
+                            .setFullVariantInfo(variantKnockoutList)
                             .setFilters(new ArrayList<>(filters))
                             .setConsequenceTypes(new ArrayList<>(consequenceTypes))
                             .setClinicalSignificances(new ArrayList<>(clinicalSignificances))
@@ -290,6 +304,25 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         }
 
         return result;
+    }
+
+    private float getPopulationFrequency(int variantPosition, String population, Map<String, List<Float>> popFreqMap) throws RgaException {
+        if (!population.equals(RgaUtils.THOUSAND_GENOMES_STUDY) && !population.equals(RgaUtils.GNOMAD_GENOMES_STUDY)) {
+            throw new RgaException("Unexpected population '" + population + "'");
+        }
+
+        String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
+        String mapKey = pfKey + population;
+
+        if (!popFreqMap.containsKey(mapKey)) {
+            throw new RgaException("Unexpected map key '" + mapKey + "'");
+        }
+        List<Float> popFreqList = popFreqMap.get(mapKey);
+        if (variantPosition < 0 || variantPosition >= popFreqList.size()) {
+            throw new RgaException("Variant position not found");
+        }
+
+        return popFreqList.get(variantPosition);
     }
 
     private Map<String, List<Float>> getPopulationFrequencies(KnockoutTranscript transcript) {
@@ -306,9 +339,9 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         }
 
         for (KnockoutVariant variant : transcript.getVariants()) {
+            boolean gnomad = false;
+            boolean thousandG = false;
             if (variant.getPopulationFrequencies() != null) {
-                boolean gnomad = false;
-                boolean thousandG = false;
                 for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
                     if (populationFrequency.getPopulation().equals("ALL")) {
                         if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
@@ -320,12 +353,12 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         }
                     }
                 }
-                if (!thousandG) {
-                    popFreqs.get(thousandGenomeKey).add(0f);
-                }
-                if (!gnomad) {
-                    popFreqs.get(gnomadGenomeKey).add(0f);
-                }
+            }
+            if (!thousandG) {
+                popFreqs.get(thousandGenomeKey).add(0f);
+            }
+            if (!gnomad) {
+                popFreqs.get(gnomadGenomeKey).add(0f);
             }
         }
 
