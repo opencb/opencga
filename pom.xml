@@ -45,8 +45,8 @@
         <pyopencga.version>2.0.3-SNAPSHOT</pyopencga.version>
         <iva.version>2.1.0-beta</iva.version>
         <cellbase.version>4.8.0</cellbase.version>
-        <biodata.version>2.0.5</biodata.version>
-        <java-common-libs.version>4.0.6</java-common-libs.version>
+        <biodata.version>2.0.6-SNAPSHOT</biodata.version>
+        <java-common-libs.version>4.0.7-SNAPSHOT</java-common-libs.version>
         <oskar.version>0.2.0</oskar.version>
 <!--        <bionet.version>0.2.0-SNAPSHOT</bionet.version>-->
         <jackson.version>2.10.1</jackson.version>
