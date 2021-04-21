@@ -48,6 +48,10 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
     public VariantQueryResult() {
     }
 
+    public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result) {
+        this(time, numResults, numMatches, events, result, null, null, null, null, null);
+    }
+
     public VariantQueryResult(long time, int numResults, long numMatches, List<Event> events, List<T> result,
                               Map<String, List<String>> samples, String source) {
         this(time, numResults, numMatches, events, result, samples, source, null, null, null);
@@ -57,14 +61,24 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
                               Map<String, List<String>> samples, String source, Boolean approximateCount,
                               Integer approximateCountSamplingSize, Integer numTotalSamples) {
         super((int) time, events, numResults, result, numMatches);
-        setSamples(samples);
-        setSource(source);
-        setApproximateCount(approximateCount);
-        setApproximateCountSamplingSize(approximateCountSamplingSize);
+        if(samples != null) {
+            setSamples(samples);
+        }
+        if(source != null) {
+            setSource(source);
+        }
+        if(approximateCount != null) {
+            setApproximateCount(approximateCount);
+        }
+        if(approximateCountSamplingSize != null) {
+            setApproximateCountSamplingSize(approximateCountSamplingSize);
+        }
         if (samples != null) {
             setNumSamples(samples.values().stream().mapToInt(List::size).sum());
         }
-        setNumTotalSamples(numTotalSamples);
+        if (numTotalSamples != null) {
+            setNumTotalSamples(numTotalSamples);
+        }
     }
 
     public VariantQueryResult(DataResult<T> dataResult) {
@@ -91,9 +105,11 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         }
         if (samples != null) {
             this.setNumSamples(samples.values().stream().mapToInt(List::size).sum());
+            this.setNumTotalSamples(getNumSamples());
         }
-        this.setNumTotalSamples(getNumSamples());
-        this.setSource(source);
+        if (source != null) {
+            this.setSource(source);
+        }
     }
 
     public Map<String, List<String>> getSamples() {
