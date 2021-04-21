@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
@@ -73,10 +74,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
@@ -96,8 +94,7 @@ import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.FILE_GET_QUERY_OPTIONS;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE;
-import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE_DEFAULT;
+import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public class VariantStorageManager extends StorageManager implements AutoCloseable {
@@ -630,7 +627,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         int skip = options.getInt(SKIP, 0);
                         // Make initial batchLimit shorter
                         int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 3 + skip);
+                        // but not too short
+                        batchLimit = Math.max(100, batchLimit);
                         int batchSkip = 0;
+                        int numReadSamples = 0;
+                        int numValidSamples = 0;
+                        boolean exactNumSamples = false;
 
                         String studyFqn = query.getString(STUDY.key());
                         options.putAll(query);
@@ -664,6 +666,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                     .map(SampleEntry::getSampleId)
                                     .collect(Collectors.toList());
                             moreResults = samplesInResult.size() == batchLimit;
+                            // The count of samples is exact if there is no more results
+                            exactNumSamples = !moreResults;
+                            numReadSamples += samplesInResult.size();
 
                             StopWatch checkPermissionsStopWatch = StopWatch.createStarted();
                             String userId = catalogManager.getUserManager().getUserId(token);
@@ -680,6 +685,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             auditAttributes.put("checkSamplePermissionsTimeMillis",
                                     checkPermissionsStopWatch.getTime(TimeUnit.MILLISECONDS)
                                             + auditAttributes.getInt("checkSamplePermissionsTimeMillis", 0));
+                            numValidSamples += validSamples.size();
                             List<String> samplesToReturn;
                             if (skip > validSamples.size()) {
                                 samplesToReturn = Collections.emptyList();
@@ -713,25 +719,33 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         variantResult.getStudies().get(0).setSamples(sampleEntries);
                         variantResult.getStudies().get(0).setFiles(fileEntries);
 
-                        ObjectMap attributes = new ObjectMap();
-//                        VariantStats stats = variantResult.getStudies().get(0).getStats(StudyEntry.DEFAULT_COHORT);
-//                        if (stats != null) {
-//                            List<String> genotypesFilter = new ArrayList<>(options.getAsStringList(GENOTYPE.key()));
-//                            if (genotypesFilter.isEmpty()) {
-//                                genotypesFilter.add(GenotypeClass.MAIN_ALT.name());
-//                            }
-//                            int expectedSamplesCount = 0;
-//                            List<String> gtsInVariant = new ArrayList<>(stats.getGenotypeCount().keySet());
-//                            List<String> genotypesToReturn = GenotypeClass.filter(genotypesFilter, gtsInVariant);
-//                            for (String gt : genotypesToReturn) {
-//                                expectedSamplesCount += stats.getGenotypeCount().getOrDefault(gt, 0);
-//                            }
-//                        }
-//                        result.getAttributes().put(NUM_SAMPLES.key(), samplesToReturn.size());
-//                        result.getAttributes().put(NUM_TOTAL_SAMPLES.key(), validSamples.size());
+                        VariantQueryResult<Variant> result = new VariantQueryResult<>(
+                                ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
+                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), null, null)
+                                .setNumSamples(sampleEntries.size());
+                        if (exactNumSamples) {
+                            result.setNumTotalSamples(numValidSamples).setApproximateCount(false);
+                        } else {
+                            VariantStats stats = variantResult.getStudies().get(0).getStats(StudyEntry.DEFAULT_COHORT);
+                            if (stats != null) {
+                                List<String> genotypesFilter = new ArrayList<>(options.getAsStringList(GENOTYPE.key()));
+                                if (genotypesFilter.isEmpty()) {
+                                    genotypesFilter.add(GenotypeClass.MAIN_ALT.name());
+                                }
+                                int expectedSamplesCount = 0;
+                                List<String> gtsInVariant = new ArrayList<>(stats.getGenotypeCount().keySet());
+                                List<String> genotypesToReturn = GenotypeClass.filter(genotypesFilter, gtsInVariant);
+                                for (String gt : genotypesToReturn) {
+                                    expectedSamplesCount += stats.getGenotypeCount().getOrDefault(gt, 0);
+                                }
 
-                        return new DataResult<>(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
-                                new ArrayList<>(), 1, Collections.singletonList(variantResult), 1, attributes);
+                                int numTotalSamples = ((int) (expectedSamplesCount * (((float) numValidSamples) / numReadSamples)));
+                                result.setNumTotalSamples(numTotalSamples);
+                                result.setApproximateCountSamplingSize(numReadSamples);
+                            }
+                            result.setApproximateCount(true);
+                        }
+                        return result;
                     });
         }
     }
