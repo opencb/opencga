@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.wrappers;
+package org.opencb.opencga.analysis.wrappers.fastqc;
 
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -50,6 +51,19 @@ public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     @Override
     protected void run() throws Exception {
+        step(getId(), () -> {
+            getToolExecutor(FastqcWrapperAnalysisExecutor.class);
+//                    .run();
+//            executor
+//                    .setStudy(study)
+//                    .setSampleName(sampleName)
+//                    .setRefGenomePath(refGenomePath)
+//                    .setMutationalSignaturePath(mutationalSignaturePath)
+//                    .setOpenCgaHome(getOpencgaHome())
+//                    .execute();
+        });
+
+/*
         step(() -> {
 
             try {
@@ -80,6 +94,7 @@ public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 throw new ToolException(e);
             }
         });
+        */
     }
 
     public String getFile() {

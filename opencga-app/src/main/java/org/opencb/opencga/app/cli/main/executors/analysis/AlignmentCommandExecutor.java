@@ -87,6 +87,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "flagstats-run":
                 queryResponse = flagStatsRun();
                 break;
+            case "fastqcmetrics-run":
+                queryResponse = fastQcMetricsRun();
+                break;
             case "coverage-index-run":
                 queryResponse = coverageRun();
                 break;
@@ -347,6 +350,17 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         params.putAll(getJobParams());
 
         return openCGAClient.getAlignmentClient().runFlagstats(new AlignmentFlagStatsParams(cliOptions.file, cliOptions.outdir), params);
+    }
+
+    private RestResponse<Job> fastQcMetricsRun() throws ClientException {
+        AlignmentCommandOptions.FastQcMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions
+                .fastQcMetricsAlignmentCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return openCGAClient.getAlignmentClient().runFastqcmetrics(new AlignmentFastQcMetricsParams(cliOptions.file, cliOptions.outdir),
+                params);
     }
 
     //-------------------------------------------------------------------------

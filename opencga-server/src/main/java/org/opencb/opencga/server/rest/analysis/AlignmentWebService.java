@@ -21,7 +21,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
@@ -31,17 +30,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.alignment.*;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -51,7 +49,6 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
@@ -378,21 +375,8 @@ public class AlignmentWebService extends AnalysisWebService {
     }
 
     //-------------------------------------------------------------------------
-    // STATS: run, info and query
+    // Quality control: stats, flagstats, fastqcmetrics and hsmetrics
     //-------------------------------------------------------------------------
-
-    @POST
-    @Path("/flagstats/run")
-    @ApiOperation(value = ALIGNMENT_FLAG_STATS_DESCRIPTION, response = Job.class)
-    public Response flagStatsRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = AlignmentFlagStatsParams.DESCRIPTION, required = true) AlignmentFlagStatsParams params) {
-        return submitJob(AlignmentFlagStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
 
     @POST
     @Path("/stats/run")
@@ -408,6 +392,31 @@ public class AlignmentWebService extends AnalysisWebService {
         return submitJob(AlignmentStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @POST
+    @Path("/flagstats/run")
+    @ApiOperation(value = ALIGNMENT_FLAG_STATS_DESCRIPTION, response = Job.class)
+    public Response flagStatsRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentFlagStatsParams.DESCRIPTION, required = true) AlignmentFlagStatsParams params) {
+        return submitJob(AlignmentFlagStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/fastqcmetrics/run")
+    @ApiOperation(value = ALIGNMENT_FASTQC_METRICS_DESCRIPTION, response = Job.class)
+    public Response fastQcMetricsRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentFastQcMetricsParams.DESCRIPTION, required = true) AlignmentFastQcMetricsParams params) {
+        return submitJob(AlignmentFastQcMetricsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
     //-------------------------------------------------------------------------
     // W R A P P E R S
     //-------------------------------------------------------------------------

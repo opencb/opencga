@@ -54,7 +54,7 @@ public class AlignmentQualityControl implements Serializable {
         return this;
     }
 
-    public FastQcMetrics getFastQcMetrtics() {
+    public FastQcMetrics getFastQcMetrics() {
         return fastQcMetrics;
     }
 

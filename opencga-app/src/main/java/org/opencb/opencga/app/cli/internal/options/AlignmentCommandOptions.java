@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
 import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
@@ -37,6 +38,7 @@ public class AlignmentCommandOptions {
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
     public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
+    public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
@@ -69,6 +71,7 @@ public class AlignmentCommandOptions {
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
+        this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
@@ -195,8 +198,27 @@ public class AlignmentCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"flag-stats-run"}, commandDescription = ALIGNMENT_FLAG_STATS_DESCRIPTION)
+    @Parameters(commandNames = {"flagstats-run"}, commandDescription = ALIGNMENT_FLAG_STATS_DESCRIPTION)
     public class FlagStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"fastqcmetrics-run"}, commandDescription = ALIGNMENT_FASTQC_METRICS_DESCRIPTION)
+    public class FastQcMetricsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;

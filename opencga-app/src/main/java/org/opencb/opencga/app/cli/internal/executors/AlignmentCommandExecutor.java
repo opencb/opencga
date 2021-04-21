@@ -18,13 +18,16 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.AlignmentFastQcMetricsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
 
@@ -71,6 +74,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 break;
             case "flagstats-run":
                 flagStatsRun();
+                break;
+            case "fastqcmetrics-run":
+                fastQcMetricsRun();
                 break;
             case "coverage-run":
                 coverageRun();
@@ -157,6 +163,19 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(AlignmentFlagStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
+    private void fastQcMetricsRun() throws ToolException {
+        AlignmentCommandOptions.FastQcMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions
+                .fastQcMetricsAlignmentCommandOptions;
+
+        ObjectMap params = new AlignmentFastQcMetricsParams(
+                cliOptions.file,
+                cliOptions.outdir
+        ).toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(AlignmentFastQcMetricsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void coverageRun() throws ToolException {
