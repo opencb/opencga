@@ -135,7 +135,7 @@ public class RgaManager implements AutoCloseable {
         );
 
         Future<RgaIterator> rgaIteratorFuture = executor.submit(() -> rgaEngine.individualQuery(collection, preprocess.getQuery(),
-                preprocess.getQueryOptions()));
+                QueryOptions.empty()));
 
         VariantDBIterator variantDBIterator;
         try {
@@ -673,6 +673,154 @@ public class RgaManager implements AutoCloseable {
         return result;
     }
 
+    public OpenCGAResult<KnockoutByGeneSummary> geneSummary(String studyStr, Query query, QueryOptions options, String token)
+            throws CatalogException, IOException, RgaException {
+        Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+        String userId = catalogManager.getUserManager().getUserId(token);
+        String collection = getCollectionName(study.getFqn());
+
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
+        }
+
+        catalogManager.getAuthorizationManager().checkCanViewStudy(study.getUid(), userId);
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
+        QueryOptions queryOptions = setDefaultLimit(options);
+
+        Query auxQuery = query != null ? new Query(query) : new Query();
+
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+
+        // Get numTotalResults in a future
+        Future<Integer> numTotalResults = null;
+        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
+            numTotalResults = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.GENE_ID + ")");
+                try {
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return -1;
+            });
+        }
+
+        List<String> geneIds = auxQuery.getAsStringList(RgaDataModel.GENE_ID);
+        auxQuery.remove(RgaDataModel.GENE_ID);
+        // If the user is querying by gene id, we don't need to do a facet first
+        if (geneIds.isEmpty()) {
+            // 1st. we perform a facet to get the different gene ids matching the user query and using the skip and limit values
+            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaDataModel.GENE_ID);
+            facetOptions.putIfNotNull(QueryOptions.LIMIT, queryOptions.get(QueryOptions.LIMIT));
+            facetOptions.putIfNotNull(QueryOptions.SKIP, queryOptions.get(QueryOptions.SKIP));
+
+            DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+            if (result.getNumResults() == 0) {
+                stopWatch.stop();
+                return OpenCGAResult.empty(KnockoutByGeneSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+            }
+            geneIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+        }
+
+        List<Future<KnockoutByGeneSummary>> geneSummaryFutureList = new ArrayList<>(geneIds.size());
+        for (String geneId : geneIds) {
+            geneSummaryFutureList.add(executor.submit(() -> calculateGeneSummary(collection, auxQuery, geneId)));
+        }
+
+        List<KnockoutByGeneSummary> knockoutByGeneSummaryList = new ArrayList<>(geneIds.size());
+        try {
+            for (Future<KnockoutByGeneSummary> summaryFuture : geneSummaryFutureList) {
+                knockoutByGeneSummaryList.add(summaryFuture.get());
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
+        }
+
+        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+        OpenCGAResult<KnockoutByGeneSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
+                knockoutByGeneSummaryList.size(), knockoutByGeneSummaryList, -1);
+
+        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
+            try {
+                assert numTotalResults != null;
+                result.setNumMatches(numTotalResults.get());
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RgaException(e.getMessage(), e);
+            }
+        }
+
+        return result;
+    }
+
+    private KnockoutByGeneSummary calculateGeneSummary(String collection, Query query, String geneId) throws RgaException, IOException {
+        Query auxQuery = new Query(query);
+        auxQuery.put(RgaQueryParams.GENE_ID.key(), geneId);
+
+        // 1. Get KnockoutByGene information
+        Query individualQuery = new Query(RgaQueryParams.GENE_ID.key(), geneId);
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.LIMIT, 1)
+                .append(QueryOptions.EXCLUDE, "individuals");
+        RgaIterator rgaIterator = rgaEngine.geneQuery(collection, individualQuery, options);
+
+        if (!rgaIterator.hasNext()) {
+            throw new RgaException("Unexpected error. Gene '" + geneId + "' not found");
+        }
+        RgaDataModel rgaDataModel = rgaIterator.next();
+        KnockoutByGeneSummary geneSummary = new KnockoutByGeneSummary(rgaDataModel.getGeneId(), rgaDataModel.getGeneName(),
+                rgaDataModel.getChromosome(), rgaDataModel.getStart(), rgaDataModel.getEnd(), rgaDataModel.getStrand(),
+                rgaDataModel.getGeneBiotype(), null, null);
+
+        // 2. Get KnockoutType counts
+        QueryOptions knockoutTypeFacet = new QueryOptions()
+                .append(QueryOptions.LIMIT, -1)
+                .append(QueryOptions.FACET, RgaDataModel.FULL_VARIANT_INFO);
+        DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
+        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
+        for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
+            knockoutTypeCount.processVariant(variantBucket.getValue());
+        }
+        VariantStats variantStats = new VariantStats(knockoutTypeCount.getNumVariants(),knockoutTypeCount.getNumHomVariants(),
+                knockoutTypeCount.getNumCompHetVariants(), knockoutTypeCount.getNumHetVariants(),
+                knockoutTypeCount.getNumDelOverlapVariants());
+        geneSummary.setVariantStats(variantStats);
+
+        // 3. Get individual knockout type counts
+        QueryOptions geneFacet = new QueryOptions()
+                .append(QueryOptions.LIMIT, -1)
+                .append(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_ID + ">>" + RgaDataModel.KNOCKOUT_TYPES);
+        facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, geneFacet);
+        IndividualStats individualStats = new IndividualStats(facetFieldDataResult.first().getBuckets().size(), 0, 0, 0, 0);
+        for (FacetField.Bucket individualBucket : facetFieldDataResult.first().getBuckets()) {
+            for (FacetField.Bucket knockoutTypeBucket : individualBucket.getFacetFields().get(0).getBuckets()) {
+                KnockoutVariant.KnockoutType knockoutType = KnockoutVariant.KnockoutType.valueOf(knockoutTypeBucket.getValue());
+                switch (knockoutType) {
+                    case HOM_ALT:
+                        individualStats.setNumHomAlt(individualStats.getNumHomAlt() + 1);
+                        break;
+                    case COMP_HET:
+                        individualStats.setNumCompHet(individualStats.getNumCompHet() + 1);
+                        break;
+                    case HET_ALT:
+                        individualStats.setNumHetAlt(individualStats.getNumHetAlt() + 1);
+                        break;
+                    case DELETION_OVERLAP:
+                        individualStats.setNumDelOverlap(individualStats.getNumDelOverlap() + 1);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + knockoutType);
+                }
+            }
+        }
+        geneSummary.setIndividualStats(individualStats);
+
+        return geneSummary;
+    }
+
     private KnockoutByIndividualSummary calculateIndividualSummary(String collection, Query query, String sampleId)
             throws RgaException, IOException {
         Query auxQuery = new Query(query);
@@ -702,11 +850,10 @@ public class RgaManager implements AutoCloseable {
         for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
             knockoutTypeCount.processVariant(variantBucket.getValue());
         }
-        knockoutByIndividualSummary.setNumVariants(knockoutTypeCount.getNumVariants());
-        knockoutByIndividualSummary.setNumCompHet(knockoutTypeCount.getNumCompHetVariants());
-        knockoutByIndividualSummary.setNumHomAlt(knockoutTypeCount.getNumHomVariants());
-        knockoutByIndividualSummary.setNumHetAlt(knockoutTypeCount.getNumHetVariants());
-        knockoutByIndividualSummary.setNumDelOverlap(knockoutTypeCount.getNumDelOverlapVariants());
+        VariantStats variantStats = new VariantStats(knockoutTypeCount.getNumVariants(),knockoutTypeCount.getNumHomVariants(),
+                knockoutTypeCount.getNumCompHetVariants(), knockoutTypeCount.getNumHetVariants(),
+                knockoutTypeCount.getNumDelOverlapVariants());
+        knockoutByIndividualSummary.setVariantStats(variantStats);
 
         // 3. Get gene id list
         QueryOptions geneFacet = new QueryOptions()
@@ -722,7 +869,7 @@ public class RgaManager implements AutoCloseable {
         return knockoutByIndividualSummary;
     }
 
-    private class KnockoutTypeCount {
+    private static class KnockoutTypeCount {
 
         private Set<String> knockoutTypeQuery;
         private Set<String> popFreqQuery;
@@ -736,7 +883,7 @@ public class RgaManager implements AutoCloseable {
         private Set<String> delOverlapVariantIds;
 
         public KnockoutTypeCount(Query query) {
-            // TODO: Add manual filters (predicates)
+            // TODO: Process query object
             knockoutTypeQuery = new HashSet<>();
             popFreqQuery = new HashSet<>();
             typeQuery = new HashSet<>();

@@ -5,9 +5,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class KnockoutByIndividualSummary {
 
@@ -22,11 +20,7 @@ public class KnockoutByIndividualSummary {
     private List<Disorder> disorders;
 
     private List<String> genes;
-    private int numVariants;
-    private int numHomAlt;
-    private int numCompHet;
-    private int numHetAlt;
-    private int numDelOverlap;
+    private VariantStats variantStats;
 
     public KnockoutByIndividualSummary() {
     }
@@ -35,13 +29,12 @@ public class KnockoutByIndividualSummary {
         this(knockoutByIndividual.getId(), knockoutByIndividual.getSampleId(), knockoutByIndividual.getMotherId(),
                 knockoutByIndividual.getMotherSampleId(), knockoutByIndividual.getFatherId(), knockoutByIndividual.getFatherSampleId(),
                 knockoutByIndividual.getSex(), knockoutByIndividual.getPhenotypes(), knockoutByIndividual.getDisorders(),
-                Collections.emptyList(), 0, 0, 0, 0, 0);
+                Collections.emptyList(), null);
     }
 
     public KnockoutByIndividualSummary(String id, String sampleId, String motherId, String motherSampleId, String fatherId,
                                        String fatherSampleId, IndividualProperty.Sex sex, List<Phenotype> phenotypes,
-                                       List<Disorder> disorders, List<String> genes, int numVariants, int numHomAlt, int numCompHet,
-                                       int numHetAlt, int numDelOverlap) {
+                                       List<Disorder> disorders, List<String> genes, VariantStats variantStats) {
         this.id = id;
         this.sampleId = sampleId;
         this.motherId = motherId;
@@ -52,11 +45,7 @@ public class KnockoutByIndividualSummary {
         this.phenotypes = phenotypes;
         this.disorders = disorders;
         this.genes = genes;
-        this.numVariants = numVariants;
-        this.numHomAlt = numHomAlt;
-        this.numCompHet = numCompHet;
-        this.numHetAlt = numHetAlt;
-        this.numDelOverlap = numDelOverlap;
+        this.variantStats = variantStats;
     }
 
     @Override
@@ -72,11 +61,7 @@ public class KnockoutByIndividualSummary {
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
         sb.append(", genes=").append(genes);
-        sb.append(", numVariants=").append(numVariants);
-        sb.append(", numHomAlt=").append(numHomAlt);
-        sb.append(", numCompHet=").append(numCompHet);
-        sb.append(", numHetAlt=").append(numHetAlt);
-        sb.append(", numDelOverlap=").append(numDelOverlap);
+        sb.append(", variantStats=").append(variantStats);
         sb.append('}');
         return sb.toString();
     }
@@ -171,48 +156,12 @@ public class KnockoutByIndividualSummary {
         return this;
     }
 
-    public int getNumVariants() {
-        return numVariants;
+    public VariantStats getVariantStats() {
+        return variantStats;
     }
 
-    public KnockoutByIndividualSummary setNumVariants(int numVariants) {
-        this.numVariants = numVariants;
-        return this;
-    }
-
-    public int getNumHomAlt() {
-        return numHomAlt;
-    }
-
-    public KnockoutByIndividualSummary setNumHomAlt(int numHomAlt) {
-        this.numHomAlt = numHomAlt;
-        return this;
-    }
-
-    public int getNumCompHet() {
-        return numCompHet;
-    }
-
-    public KnockoutByIndividualSummary setNumCompHet(int numCompHet) {
-        this.numCompHet = numCompHet;
-        return this;
-    }
-
-    public int getNumHetAlt() {
-        return numHetAlt;
-    }
-
-    public KnockoutByIndividualSummary setNumHetAlt(int numHetAlt) {
-        this.numHetAlt = numHetAlt;
-        return this;
-    }
-
-    public int getNumDelOverlap() {
-        return numDelOverlap;
-    }
-
-    public KnockoutByIndividualSummary setNumDelOverlap(int numDelOverlap) {
-        this.numDelOverlap = numDelOverlap;
+    public KnockoutByIndividualSummary setVariantStats(VariantStats variantStats) {
+        this.variantStats = variantStats;
         return this;
     }
 }
