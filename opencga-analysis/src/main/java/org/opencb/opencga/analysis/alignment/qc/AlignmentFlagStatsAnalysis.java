@@ -16,12 +16,14 @@
 
 package org.opencb.opencga.analysis.alignment.qc;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.io.SamtoolsFlagstatsParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -34,6 +36,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,34 +94,39 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
 
         setUpStorageEngineExecutor(study);
 
+        Path flagStatsFile = getOutDir().resolve(new java.io.File(catalogBamFile.getUri().getPath()).getName() + ".flagstats.txt");
+
         step(SAMTOOLS_FLAG_STATS_STEP, () -> {
             executorParams.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
             getToolExecutor(SamtoolsWrapperAnalysisExecutor.class)
                     .setCommand("flagstat")
                     .setInputFile(catalogBamFile.getUri().getPath())
                     .execute();
+
+            // Check results
+            java.io.File stdoutFile = getOutDir().resolve(DockerWrapperAnalysisExecutor.STDOUT_FILENAME).toFile();
+            List<String> lines = readLines(stdoutFile, Charset.defaultCharset());
+            if (lines.size() > 0 && lines.get(0).contains("QC-passed")) {
+                FileUtils.copyFile(stdoutFile, flagStatsFile.toFile());
+            } else {
+                throw new ToolException("Something wrong happened running samtools-flagstat.");
+            }
         });
 
         step(SAVE_ALIGNMENT_FLAG_STATS_STEP, () -> {
 
-            Path flagStatsFile = getOutDir().resolve(new java.io.File(catalogBamFile.getUri().getPath()).getName() + ".flagstats.txt");
+            SamtoolsFlagstats flagStats = SamtoolsFlagstatsParser.parse(flagStatsFile);
 
-            if (flagStatsFile.toFile().exists()) {
-                SamtoolsFlagstats flagStats = SamtoolsFlagstatsParser.parse(flagStatsFile);
-
-                // Update quality control for the catalog file
-                FileQualityControl qc = catalogBamFile.getQualityControl();
-                // Sanity check
-                if (qc == null) {
-                    qc = new FileQualityControl();
-                }
-                qc.getAlignmentQualityControl().setSamtoolsFlagStats(flagStats);
-
-                catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
-                        QueryOptions.empty(), getToken());
-            } else {
-                throw new ToolException("Something wrong happened: flag stats file " + flagStatsFile.getFileName() + " not found!");
+            // Update quality control for the catalog file
+            FileQualityControl qc = catalogBamFile.getQualityControl();
+            // Sanity check
+            if (qc == null) {
+                qc = new FileQualityControl();
             }
+            qc.getAlignmentQualityControl().setSamtoolsFlagStats(flagStats);
+
+            catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
+                    QueryOptions.empty(), getToken());
         });
     }
 }

@@ -16,11 +16,13 @@
 
 package org.opencb.opencga.analysis.alignment.qc;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -104,44 +106,50 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
                     .setCommand("stats")
                     .setInputFile(catalogBamFile.getUri().getPath())
                     .execute();
+
+            // Check results
+            java.io.File stdoutFile = getOutDir().resolve(DockerWrapperAnalysisExecutor.STDOUT_FILENAME).toFile();
+            List<String> lines = readLines(stdoutFile, Charset.defaultCharset());
+            if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
+                FileUtils.copyFile(stdoutFile, statsFile.toFile());
+            } else {
+                throw new ToolException("Something wrong happened running samtools-stats.");
+            }
         });
 
         step(PLOT_BAMSTATS_STEP, () -> {
             executorParams.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
             getToolExecutor(SamtoolsWrapperAnalysisExecutor.class)
                     .setCommand("plot-bamstats")
-                    .setInputFile(getOutDir().resolve(statsFile.toFile().getName()).toString())
+                    .setInputFile(statsFile.toString())
                     .execute();
         });
 
         step(SAVE_ALIGNMENT_STATS_STEP, () -> {
-            List<String> lines = readLines(statsFile.toFile(), Charset.defaultCharset());
-            if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
-                SamtoolsStats alignmentStats = SamtoolsWrapperAnalysis.parseSamtoolsStats(statsFile.toFile(), catalogBamFile.getId());
+            SamtoolsStats alignmentStats = SamtoolsWrapperAnalysis.parseSamtoolsStats(statsFile.toFile(), catalogBamFile.getId());
 
-                List<String> images = new ArrayList<>();
-                for (java.io.File file : getOutDir().toFile().listFiles()) {
-                    if (file.getName().endsWith("png")) {
-                        // TODO: fix relative path (from jobs dir) in a fancier way
+            List<String> images = new ArrayList<>();
+            for (java.io.File file : getOutDir().toFile().listFiles()) {
+                if (file.getName().endsWith("png")) {
+                    // TODO: fix relative path (from jobs dir) in a fancier way
 //                        String relativeFilePath = getOutDir().toUri().relativize(file.toURI()).getPath();
-                        int index = file.getAbsolutePath().indexOf("JOBS/");
-                        String relativeFilePath = (index == -1 ? file.getName() : file.getAbsolutePath().substring(index));
-                        images.add(relativeFilePath);
-                    }
+                    int index = file.getAbsolutePath().indexOf("JOBS/");
+                    String relativeFilePath = (index == -1 ? file.getName() : file.getAbsolutePath().substring(index));
+                    images.add(relativeFilePath);
                 }
-                alignmentStats.setImages(images);
-
-                // Update quality control for the catalog file
-                FileQualityControl qc = catalogBamFile.getQualityControl();
-                // Sanity check
-                if (qc == null) {
-                    qc = new FileQualityControl();
-                }
-                qc.getAlignmentQualityControl().setSamtoolsStats(alignmentStats);
-
-                catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
-                        QueryOptions.empty(), getToken());
             }
+            alignmentStats.setImages(images);
+
+            // Update quality control for the catalog file
+            FileQualityControl qc = catalogBamFile.getQualityControl();
+            // Sanity check
+            if (qc == null) {
+                qc = new FileQualityControl();
+            }
+            qc.getAlignmentQualityControl().setSamtoolsStats(alignmentStats);
+
+            catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
+                    QueryOptions.empty(), getToken());
         });
     }
 }

@@ -1,8 +1,7 @@
 package org.opencb.opencga.analysis.wrappers.samtools;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.exec.Command;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -10,16 +9,7 @@ import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.charset.Charset;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import static org.apache.commons.io.FileUtils.readLines;
+import java.util.*;
 
 @ToolExecutor(id = SamtoolsWrapperAnalysisExecutor.ID,
         tool = SamtoolsWrapperAnalysis.ID,
@@ -40,9 +30,6 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private String targetRegionFile;
     private String readsNotSelectedFilename;
 
-    private String outputFilename;
-    private File outputFile;
-
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
@@ -55,6 +42,100 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         return GitRepositoryState.get().getBuildVersion();
     }
 
+    @Override
+    public void run() throws ToolException {
+        switch (command) {
+            case "stats":
+                runStats();
+                break;
+            case "flagstat":
+                runFlagstat();
+                break;
+            case "plot-bamstats":
+                runPlotBamStats();
+                break;
+            default:
+                throw new ToolException("Samtools command '" + command + "' is not supported yet.");
+        }
+    }
+
+    private void runStats() throws ToolException {
+        StringBuilder sb = initCommandLine();
+
+        // Append mounts
+        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("", getInputFile()),
+                new ImmutablePair<>("reference", getReferenceFile()), new ImmutablePair<>("t", getTargetRegionFile()),
+                new ImmutablePair<>("ref-seq", getRefSeqFile())));
+
+        Map<String, String> mountMap = appendMounts(inputFilenames, sb);
+
+        // Append docker image, version and command
+        appendCommand("samtools " + command, sb);
+
+        // Append input file params
+        appendInputFiles(inputFilenames, mountMap, sb);
+
+        // Append other params
+        Set<String> skipParams =  new HashSet<>(Arrays.asList("reference", "t", "target-regions", "ref-seq", "r"));
+        appendOtherParams(skipParams, sb);
+
+        // Execute command and redirect stdout and stderr to the files
+        logger.info("Docker command line: " + sb.toString());
+        runCommandLine(sb.toString());
+    }
+
+    private void runPlotBamStats() throws ToolException {
+        StringBuilder sb = initCommandLine();
+
+        // Append mounts
+        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("", getInputFile())));
+
+        Map<String, String> mountMap = appendMounts(inputFilenames, sb);
+
+        // Append docker image, version and command
+        appendCommand(command, sb);
+
+        // Append input file params
+        appendInputFiles(inputFilenames, mountMap, sb);
+
+        // Append output file params
+        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("p", " ")));
+        appendOutputFiles(outputFilenames, sb);
+
+        // Append other params
+        Set<String> skipParams =  new HashSet<>(Arrays.asList("p", "prefix", "r", "ref-stats", "s", "do-ref-stats", "t", "targets"));
+        appendOtherParams(skipParams, sb);
+
+        // Execute command and redirect stdout and stderr to the files
+        logger.info("Docker command line: " + sb.toString());
+        runCommandLine(sb.toString());
+    }
+
+    private void runFlagstat() throws ToolException {
+        StringBuilder sb = initCommandLine();
+
+        // Append mounts
+        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("", getInputFile())));
+
+        Map<String, String> mountMap = appendMounts(inputFilenames, sb);
+
+        // Append docker image, version and command
+        appendCommand("samtools " + command, sb);
+
+        // Append input file params
+        appendInputFiles(inputFilenames, mountMap, sb);
+
+        // Append other params
+        Set<String> skipParams =  new HashSet<>(Arrays.asList("input-fmt-option"));
+        appendOtherParams(skipParams, sb);
+
+        // Execute command and redirect stdout and stderr to the files
+        logger.info("Docker command line: " + sb.toString());
+        runCommandLine(sb.toString());
+    }
+
+
+    /*
     @Override
     protected void run() throws Exception {
         outputFilename = getOutputFilename();
@@ -428,7 +509,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         }
         return true;
     }
-
+*/
     public String getStudy() {
         return study;
     }
