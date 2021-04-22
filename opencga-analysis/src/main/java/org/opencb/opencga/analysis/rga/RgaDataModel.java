@@ -89,7 +89,7 @@ public class RgaDataModel {
     private List<String> clinicalSignificances;
 
     @Field(POPULATION_FREQUENCIES)
-    private Map<String, List<Float>> populationFrequencies;
+    private Map<String, List<String>> populationFrequencies;
 
     @Field
     private List<String> compoundFilters;
@@ -416,11 +416,11 @@ public class RgaDataModel {
         return this;
     }
 
-    public Map<String, List<Float>> getPopulationFrequencies() {
+    public Map<String, List<String>> getPopulationFrequencies() {
         return populationFrequencies;
     }
 
-    public RgaDataModel setPopulationFrequencies(Map<String, List<Float>> populationFrequencies) {
+    public RgaDataModel setPopulationFrequencies(Map<String, List<String>> populationFrequencies) {
         this.populationFrequencies = populationFrequencies;
         return this;
     }

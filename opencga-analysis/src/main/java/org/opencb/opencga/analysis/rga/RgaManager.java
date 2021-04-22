@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -872,7 +873,7 @@ public class RgaManager implements AutoCloseable {
     private static class KnockoutTypeCount {
 
         private Set<String> knockoutTypeQuery;
-        private Set<String> popFreqQuery;
+        private List<Set<String>> popFreqQuery;
         private Set<String> typeQuery;
         private Set<String> consequenceTypeQuery;
 
@@ -882,10 +883,9 @@ public class RgaManager implements AutoCloseable {
         private Set<String> hetVariantIds;
         private Set<String> delOverlapVariantIds;
 
-        public KnockoutTypeCount(Query query) {
-            // TODO: Process query object
+        public KnockoutTypeCount(Query query) throws RgaException {
             knockoutTypeQuery = new HashSet<>();
-            popFreqQuery = new HashSet<>();
+            popFreqQuery = new LinkedList<>();
             typeQuery = new HashSet<>();
             consequenceTypeQuery = new HashSet<>();
             variantIds = new HashSet<>();
@@ -893,6 +893,22 @@ public class RgaManager implements AutoCloseable {
             homVariantIds = new HashSet<>();
             hetVariantIds = new HashSet<>();
             delOverlapVariantIds = new HashSet<>();
+
+            query = ParamUtils.defaultObject(query, Query::new);
+            knockoutTypeQuery.addAll(query.getAsStringList(RgaQueryParams.KNOCKOUT.key()));
+            typeQuery.addAll(query.getAsStringList(RgaQueryParams.TYPE.key()));
+            consequenceTypeQuery.addAll(query.getAsStringList(RgaQueryParams.CONSEQUENCE_TYPE.key())
+                    .stream()
+                    .map(VariantQueryUtils::parseConsequenceType)
+                    .map(String::valueOf)
+                    .collect(Collectors.toList()));
+            List<String> popFreqs = query.getAsStringList(RgaQueryParams.POPULATION_FREQUENCY.key(), ";");
+            if (!popFreqs.isEmpty()) {
+                Map<String, List<String>> popFreqList = RgaUtils.parsePopulationFrequencyQuery(popFreqs);
+                for (List<String> values : popFreqList.values()) {
+                    popFreqQuery.add(new HashSet<>(values));
+                }
+            }
         }
 
         public void processVariant(String variant) throws RgaException {
@@ -901,9 +917,12 @@ public class RgaManager implements AutoCloseable {
             if (!knockoutTypeQuery.isEmpty() && !knockoutTypeQuery.contains(codedVariant.getKnockoutType())) {
                 return;
             }
-            if (!popFreqQuery.isEmpty()
-                    && codedVariant.getPopulationFrequencies().stream().noneMatch((popFreq) -> popFreqQuery.contains(popFreq))) {
-                return;
+            if (!popFreqQuery.isEmpty()) {
+                for (Set<String> popFreq : popFreqQuery) {
+                    if (codedVariant.getPopulationFrequencies().stream().noneMatch(popFreq::contains)) {
+                        return;
+                    }
+                }
             }
             if (!typeQuery.isEmpty() && !typeQuery.contains(codedVariant.getType())) {
                 return;

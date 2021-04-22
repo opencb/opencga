@@ -16,7 +16,6 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.rga.RgaDataModel.*;
 
@@ -25,7 +24,7 @@ class RgaUtils {
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<?<=?|>>?=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
 
     static final String SEPARATOR = "__";
-    static final String INNER_SEPARATOR = "-";
+    static final String INNER_SEPARATOR = "--";
 
     private static final Map<String, String> ENCODE_MAP;
     private static final Map<String, String> DECODE_MAP;
@@ -177,11 +176,11 @@ class RgaUtils {
     /** Calculate the list of population frequency values to look for in the db.
      *
      * @param filters A list containing {study}[<|>|<=|>=]{number}. e.g. 1kG_phase3<0.01";
-     * @return the list of population frequency values to look for in the db.
+     * @return the list of population frequency values to look for in the db with their corresponding population key.
      * @throws RgaException RgaException.
      */
-    static List<List<String>> parsePopulationFrequencyQuery(List<String> filters) throws RgaException {
-        List<List<String>> result = new ArrayList<>(filters.size());
+    static Map<String, List<String>> parsePopulationFrequencyQuery(List<String> filters) throws RgaException {
+        Map<String, List<String>> result = new HashMap<>();
         for (String filter : filters) {
             KeyOpValue<String, String> keyOpValue = parseKeyOpValue(filter);
             if (keyOpValue.getKey() == null) {
@@ -219,7 +218,7 @@ class RgaUtils {
                     throw new RgaException("Unknown operator '" + keyOpValue.getOp() + "'");
             }
 
-            result.add(values);
+            result.put(keyOpValue.getKey(), values);
         }
 
         return result;
@@ -319,7 +318,7 @@ class RgaUtils {
         private Set<String> consequenceType;
 
         public CodedVariant(String variantId, String type, String knockoutType, List<String> consequenceTypeList,
-                            float thousandGenomesPopFreq, float gnomadPopFreq) throws RgaException {
+                            String thousandGenomesPopFreq, String gnomadPopFreq) {
             this.variantId = variantId;
             this.type = type;
             this.knockoutType = knockoutType;
@@ -327,11 +326,7 @@ class RgaUtils {
             for (String consequenceType : consequenceTypeList) {
                 this.consequenceType.add(String.valueOf(VariantQueryUtils.parseConsequenceType(consequenceType)));
             }
-            this.populationFrequencies = new ArrayList<>(2);
-            this.populationFrequencies.add(
-                    RgaUtils.encode(THOUSAND_GENOMES_STUDY.toUpperCase() + SEPARATOR + getPopulationFrequencyKey(thousandGenomesPopFreq)));
-            this.populationFrequencies.add(
-                    RgaUtils.encode(GNOMAD_GENOMES_STUDY.toUpperCase() + SEPARATOR + getPopulationFrequencyKey(gnomadPopFreq)));
+            this.populationFrequencies = Arrays.asList(thousandGenomesPopFreq, gnomadPopFreq);
         }
 
         public CodedVariant(String fullVariant) throws RgaException {

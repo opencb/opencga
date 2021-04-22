@@ -239,6 +239,67 @@ public class RgaManagerTest {
             assertTrue(individual.getVariantStats().getNumCompHet() > 0 || individual.getVariantStats().getNumDelOverlap() > 0
                     || individual.getVariantStats().getNumHetAlt() > 0 || individual.getVariantStats().getNumHomAlt() > 0);
         }
+
+        result = rgaManager.individualSummary(STUDY, new Query(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET.name()),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (KnockoutByIndividualSummary individual : result.getResults()) {
+            assertNotNull(individual.getId());
+            assertNotNull(individual.getVariantStats());
+            assertTrue(individual.getGenes().size() > 0);
+            assertTrue(individual.getVariantStats().getCount() > 0);
+            assertTrue(individual.getVariantStats().getNumCompHet() > 0);
+            assertEquals(0, individual.getVariantStats().getNumDelOverlap());
+            assertEquals(0, individual.getVariantStats().getNumHetAlt());
+            assertEquals(0, individual.getVariantStats().getNumHomAlt());
+        }
+
+        result = rgaManager.individualSummary(STUDY, new Query(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.HOM_ALT.name()),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(4, result.getNumResults());
+        for (KnockoutByIndividualSummary individual : result.getResults()) {
+            assertNotNull(individual.getId());
+            assertNotNull(individual.getVariantStats());
+            assertTrue(individual.getGenes().size() > 0);
+            assertTrue(individual.getVariantStats().getCount() > 0);
+            assertTrue(individual.getVariantStats().getNumHomAlt() > 0);
+            assertEquals(0, individual.getVariantStats().getNumDelOverlap());
+            assertEquals(0, individual.getVariantStats().getNumHetAlt());
+            assertEquals(0, individual.getVariantStats().getNumCompHet());
+        }
+
+        result = rgaManager.individualSummary(STUDY, new Query(RgaQueryParams.CONSEQUENCE_TYPE.key(), "SO:0001630"), QueryOptions.empty(), ownerToken);
+        assertEquals(4, result.getNumResults());
+        for (KnockoutByIndividualSummary individual : result.getResults()) {
+            assertNotNull(individual.getId());
+            assertNotNull(individual.getVariantStats());
+            assertTrue(individual.getGenes().size() > 0);
+            assertTrue(individual.getVariantStats().getCount() > 0);
+            assertTrue(individual.getVariantStats().getNumHomAlt() > 0);
+            assertEquals(0, individual.getVariantStats().getNumDelOverlap());
+            assertEquals(0, individual.getVariantStats().getNumHetAlt());
+            assertEquals(0, individual.getVariantStats().getNumCompHet());
+        }
+
+        result = rgaManager.individualSummary(STUDY,
+                new Query(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<0.001;"
+                        + RgaUtils.GNOMAD_GENOMES_STUDY + ">0.01"), QueryOptions.empty(),
+                ownerToken);
+        assertEquals(4, result.getNumResults());
+        boolean compHetFound = false;
+        for (KnockoutByIndividualSummary individual : result.getResults()) {
+            assertNotNull(individual.getId());
+            assertNotNull(individual.getVariantStats());
+            assertTrue(individual.getGenes().size() > 0);
+            assertTrue(individual.getVariantStats().getCount() > 0);
+            assertTrue(individual.getVariantStats().getNumHomAlt() > 0);
+            assertEquals(0, individual.getVariantStats().getNumDelOverlap());
+            assertEquals(0, individual.getVariantStats().getNumHetAlt());
+            if (individual.getVariantStats().getNumCompHet() > 0) {
+                compHetFound = true;
+            }
+        }
+        assertTrue(compHetFound);
     }
 
     @Test
