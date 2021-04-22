@@ -197,7 +197,6 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
 
     protected void runCommandLine(String cmdline) throws ToolException {
         try {
-            System.out.println("Docker command line:\n" + cmdline);
             new Command(cmdline)
                     .setOutputOutputStream(
                             new DataOutputStream(new FileOutputStream(getOutDir().resolve(getId() + "." + STDOUT_FILENAME).toFile())))
