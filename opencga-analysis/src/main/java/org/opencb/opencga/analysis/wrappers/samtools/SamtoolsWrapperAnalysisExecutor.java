@@ -3,7 +3,7 @@ package org.opencb.opencga.analysis.wrappers.samtools;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.analysis.wrappers.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -29,9 +29,6 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
     public final static String ID = SamtoolsWrapperAnalysis.ID + "-local";
 
-    public final static String DOCKER_IMAGE_NAME = "opencb/opencga-samtools";
-    public final static String DOCKER_IMAGE_VERSION = GitRepositoryState.get().getBuildVersion();
-
     private String study;
     private String command;
     private String inputFile;
@@ -47,6 +44,16 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     private File outputFile;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    @Override
+    public String getDockerImageName() {
+        return "opencb/opencga-samtools";
+    }
+
+    @Override
+    public String getDockerImageVersion() {
+        return GitRepositoryState.get().getBuildVersion();
+    }
 
     @Override
     protected void run() throws Exception {
@@ -202,7 +209,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         Map<String, String> srcTargetMap = getDockerMountMap(inputFiles);
 
-        StringBuilder sb = initDockerCommandLine(srcTargetMap, DOCKER_IMAGE_NAME, DOCKER_IMAGE_VERSION);
+        StringBuilder sb = initDockerCommandLine(srcTargetMap, getDockerImageName(), getDockerImageVersion());
 
         // Samtools command
         if ("plot-bamstats".equals(getCommand())) {
@@ -213,7 +220,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Samtools options
         for (String param : getExecutorParams().keySet()) {
-            if (isValidParameter(param)) {
+            if (skipParameter(param)) {
                 String sep = param.length() == 1 ? " -" : " --";
                 String value = getExecutorParams().getString(param);
                 if (StringUtils.isEmpty(value)) {
@@ -347,8 +354,8 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
     }
 
     @Override
-    protected boolean isValidParameter(String param) {
-        if (!super.isValidParameter(param)) {
+    protected boolean skipParameter(String param) {
+        if (!super.skipParameter(param)) {
             return false;
         }
 

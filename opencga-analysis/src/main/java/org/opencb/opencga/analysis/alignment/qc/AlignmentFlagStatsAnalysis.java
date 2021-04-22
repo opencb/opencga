@@ -91,8 +91,6 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
 
         setUpStorageEngineExecutor(study);
 
-        Path flagStatsFile = getOutDir().resolve(new java.io.File(catalogBamFile.getUri().getPath()).getName() + ".flagstats.txt");
-
         step(SAMTOOLS_FLAG_STATS_STEP, () -> {
             executorParams.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
             getToolExecutor(SamtoolsWrapperAnalysisExecutor.class)
@@ -102,6 +100,8 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
         });
 
         step(SAVE_ALIGNMENT_FLAG_STATS_STEP, () -> {
+
+            Path flagStatsFile = getOutDir().resolve(new java.io.File(catalogBamFile.getUri().getPath()).getName() + ".flagstats.txt");
 
             if (flagStatsFile.toFile().exists()) {
                 SamtoolsFlagstats flagStats = SamtoolsFlagstatsParser.parse(flagStatsFile);

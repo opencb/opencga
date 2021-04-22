@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.wrappers.fastqc;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.analysis.wrappers.DockerWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.slf4j.Logger;
@@ -23,12 +23,20 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
     public final static String ID = FastqcWrapperAnalysis.ID + "-local";
 
-    public final static String DOCKER_IMAGE_NAME = "dceoy/fastqc";
-
     private String study;
     private String inputFile;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    @Override
+    public String getDockerImageName() {
+        return "dceoy/fastqc";
+    }
+
+    @Override
+    public String getDockerImageVersion() {
+        return "";
+    }
 
     @Override
     protected void run() throws Exception {
@@ -57,7 +65,7 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
         Map<String, String> srcTargetMap = getDockerMountMap(inputFiles);
 
-        StringBuilder sb = initDockerCommandLine(srcTargetMap, DOCKER_IMAGE_NAME, "");
+        StringBuilder sb = initDockerCommandLine(srcTargetMap, getDockerImageName(), getDockerImageVersion());
 
         // Input file parameter
         File file;
@@ -66,7 +74,7 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
         // Fastqc options
         for (String param : getExecutorParams().keySet()) {
-            if (isValidParameter(param)) {
+            if (skipParameter(param)) {
                 String sep = param.length() == 1 ? " -" : " --";
                 String value = getExecutorParams().getString(param);
                 if (StringUtils.isEmpty(value)) {
@@ -97,8 +105,8 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
     }
 
     @Override
-    protected boolean isValidParameter(String param) {
-        if (!super.isValidParameter(param)) {
+    protected boolean skipParameter(String param) {
+        if (!super.skipParameter(param)) {
             return false;
         }
 

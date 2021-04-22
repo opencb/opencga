@@ -31,7 +31,6 @@ import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -57,20 +56,15 @@ import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermission
 public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats, FastQC," +
-            "samtools/flagstat, picard/CollectHsMetrics and gene coverage stats; and for somatic samples, mutational signature";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats and gene coverage"
+        + " stats; and for somatic samples, mutational signature";
 
     public  static final String VARIANT_STATS_STEP = "variant-stats";
-    public  static final String FASTQC_STEP = "fastqc";
-    public  static final String HS_METRICS_STEP = "hs-metrics";
-    public  static final String FLAG_STATS_STEP = "flag-stats";
     public  static final String GENE_COVERAGE_STEP = "gene-coverage-stats";
     public  static final String MUTATIONAL_SIGNATUR_STEP = "mutational-signature";
 
     private String studyId;
     private String sampleId;
-    private String dictFile;
-    private String baitFile;
     private String variantStatsId;
     private String variantStatsDecription;
     private Query variantStatsQuery;
@@ -81,10 +75,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
     private Sample sample;
     private File catalogBamFile;
     private SampleVariantQualityControlMetrics variantQcMetrics;
-    //private SampleAlignmentQualityControlMetrics alignmentQcMetrics;
     private Job variantStatsJob = null;
     private Job signatureJob = null;
-    private Job fastQcJob = null;
 
     @Override
     protected void check() throws Exception {
@@ -124,8 +116,7 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(VARIANT_STATS_STEP, FASTQC_STEP, FLAG_STATS_STEP, HS_METRICS_STEP, GENE_COVERAGE_STEP,
-                MUTATIONAL_SIGNATUR_STEP);
+        return Arrays.asList(VARIANT_STATS_STEP, GENE_COVERAGE_STEP, MUTATIONAL_SIGNATUR_STEP);
     }
 
     @Override
@@ -142,9 +133,6 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                                 .first();
                     } else if (dependsOnJob.getId().startsWith(MutationalSignatureAnalysis.ID)) {
                         signatureJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
-                                .first();
-                    } else if (dependsOnJob.getId().startsWith(FastqcWrapperAnalysis.ID)) {
-                        fastQcJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
                                 .first();
                     }
                 }
@@ -163,8 +151,6 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         executor.setStudyId(studyId)
                 .setSample(sample)
                 .setCatalogBamFile(catalogBamFile)
-                .setDictFile(dictFile)
-                .setBaitFile(baitFile)
                 .setVariantStatsId(variantStatsId)
                 .setVariantStatsDecription(variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
@@ -176,9 +162,6 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
         // Step by step
         step(VARIANT_STATS_STEP, () -> runVariantStats());
-//        step(FASTQC_STEP, () -> runFastQc());//executor.setQcType(SampleQcAnalysisExecutor.QcType.FASTQC).execute());
-        step(FLAG_STATS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.FLAG_STATS).execute());
-        step(HS_METRICS_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.HS_METRICS).execute());
         step(GENE_COVERAGE_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.GENE_COVERAGE_STATS).execute());
         step(MUTATIONAL_SIGNATUR_STEP, () -> runSignature());
 
@@ -387,24 +370,6 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     public SampleQcAnalysis setSampleId(String sampleId) {
         this.sampleId = sampleId;
-        return this;
-    }
-
-    public String getDictFile() {
-        return dictFile;
-    }
-
-    public SampleQcAnalysis setDictFile(String dictFile) {
-        this.dictFile = dictFile;
-        return this;
-    }
-
-    public String getBaitFile() {
-        return baitFile;
-    }
-
-    public SampleQcAnalysis setBaitFile(String baitFile) {
-        this.baitFile = baitFile;
         return this;
     }
 

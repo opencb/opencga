@@ -20,15 +20,18 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentHsMetricsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentFastQcMetricsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
+import org.opencb.opencga.core.models.alignment.AlignmentHsMetricsParams;
 import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
 
 import java.nio.file.Paths;
@@ -77,6 +80,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 break;
             case "fastqcmetrics-run":
                 fastQcMetricsRun();
+                break;
+            case "hsmetrics-run":
+                hsMetricsRun();
                 break;
             case "coverage-run":
                 coverageRun();
@@ -176,6 +182,20 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(AlignmentFastQcMetricsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
+    private void hsMetricsRun() throws ToolException {
+        AlignmentCommandOptions.HsMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions.hsMetricsAlignmentCommandOptions;
+
+        ObjectMap params = new AlignmentHsMetricsParams(
+                cliOptions.bamFile,
+                cliOptions.bedFile,
+                cliOptions.dictFile,
+                cliOptions.outdir
+        ).toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(AlignmentHsMetricsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void coverageRun() throws ToolException {

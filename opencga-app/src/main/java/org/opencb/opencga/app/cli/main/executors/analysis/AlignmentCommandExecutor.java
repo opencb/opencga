@@ -24,7 +24,6 @@ import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
@@ -36,7 +35,6 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.alignment.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
@@ -89,6 +87,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "fastqcmetrics-run":
                 queryResponse = fastQcMetricsRun();
+                break;
+            case "hsmetrics-run":
+                queryResponse = hsMetricsRun();
                 break;
             case "coverage-index-run":
                 queryResponse = coverageRun();
@@ -361,6 +362,17 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getAlignmentClient().runFastqcmetrics(new AlignmentFastQcMetricsParams(cliOptions.file, cliOptions.outdir),
                 params);
+    }
+
+    private RestResponse<Job> hsMetricsRun() throws ClientException {
+        AlignmentCommandOptions.HsMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions
+                .hsMetricsAlignmentCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return openCGAClient.getAlignmentClient().runHsmetrics(new AlignmentHsMetricsParams(cliOptions.bamFile, cliOptions.bedFile,
+                cliOptions.dictFile, cliOptions.outdir), params);
     }
 
     //-------------------------------------------------------------------------

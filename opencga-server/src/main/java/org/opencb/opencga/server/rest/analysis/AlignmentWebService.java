@@ -32,9 +32,11 @@ import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentHsMetricsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -417,6 +419,20 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = AlignmentFastQcMetricsParams.DESCRIPTION, required = true) AlignmentFastQcMetricsParams params) {
         return submitJob(AlignmentFastQcMetricsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
+
+    @POST
+    @Path("/hsmetrics/run")
+    @ApiOperation(value = ALIGNMENT_HS_METRICS_DESCRIPTION, response = Job.class)
+    public Response hsMetricsRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentHsMetricsParams.DESCRIPTION, required = true) AlignmentHsMetricsParams params) {
+        return submitJob(AlignmentHsMetricsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
     //-------------------------------------------------------------------------
     // W R A P P E R S
     //-------------------------------------------------------------------------

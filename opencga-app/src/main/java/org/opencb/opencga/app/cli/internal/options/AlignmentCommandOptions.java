@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.internal.options;
 import com.beust.jcommander.*;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
@@ -39,6 +40,7 @@ public class AlignmentCommandOptions {
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
     public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
     public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
+    public HsMetricsAlignmentCommandOptions hsMetricsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
@@ -72,6 +74,7 @@ public class AlignmentCommandOptions {
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
         this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
+        this.hsMetricsAlignmentCommandOptions = new HsMetricsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
@@ -231,6 +234,31 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"hsmetrics-run"}, commandDescription = ALIGNMENT_HS_METRICS_DESCRIPTION)
+    public class HsMetricsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " (BAM file)", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--bed-file"}, description = FILE_ID_DESCRIPTION + " (BED file with the interest regions)", required = true, arity = 1)
+        public String bedFile;
+
+        @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " (dictionary file)", required = true, arity = 1)
+        public String dictFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

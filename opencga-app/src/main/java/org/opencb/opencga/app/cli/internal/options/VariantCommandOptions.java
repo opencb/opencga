@@ -1371,12 +1371,6 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
 
-        @Parameter(names = {"--dict-file"}, description = "Dictionary file of the reference genome (for computing HS metrics).")
-        public String dictFile;
-
-        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format (for HS metrics).")
-        public String baitFile;
-
         @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID.")
         public String variantStatsId;
 

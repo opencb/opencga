@@ -340,6 +340,7 @@ public class ParamConstants {
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats (based on samtools/stats command) for a given alignment file";
     public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given alignment file";
     public static final String ALIGNMENT_FASTQC_METRICS_DESCRIPTION = "Compute sequence stats (based on FastQC tool) for a given alignment file";
+    public static final String ALIGNMENT_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics (based on Picard tool) for a given alignment file";
 
     // ---------------------------------------------
     // alignment query
