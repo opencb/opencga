@@ -337,6 +337,7 @@ public class ParamConstants {
     public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs germline)";
+    public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file (including stats, flag stats, FastQC and HS metrics)";
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats (based on samtools/stats command) for a given alignment file";
     public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given alignment file";
     public static final String ALIGNMENT_FASTQC_METRICS_DESCRIPTION = "Compute sequence stats (based on FastQC tool) for a given alignment file";

@@ -37,6 +37,7 @@ public class AlignmentCommandOptions {
 
     public IndexAlignmentCommandOptions indexAlignmentCommandOptions;
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
+    public QcAlignmentCommandOptions qcAlignmentCommandOptions;
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
     public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
     public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
@@ -71,6 +72,7 @@ public class AlignmentCommandOptions {
 
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
+        this.qcAlignmentCommandOptions = new QcAlignmentCommandOptions();
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
         this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
@@ -180,6 +182,25 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--count"}, description = COUNT_DESCRIPTION, required = false, arity = 0)
         public boolean count;
+    }
+
+    @Parameters(commandNames = {"qc-run"}, commandDescription = ALIGNMENT_QC_DESCRIPTION)
+    public class QcAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
     }
 
     @Parameters(commandNames = {"stats-run"}, commandDescription = ALIGNMENT_STATS_DESCRIPTION)

@@ -254,6 +254,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
         alignmentSubCommands.addCommand("index-run", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("qc-run", alignmentCommandOptions.qcAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("flagstats-run", alignmentCommandOptions.flagStatsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("fastqcmetrics-run", alignmentCommandOptions.fastQcMetricsAlignmentCommandOptions);

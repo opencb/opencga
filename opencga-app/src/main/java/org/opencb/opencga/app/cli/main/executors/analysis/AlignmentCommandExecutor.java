@@ -79,6 +79,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "query":
                 query();
                 break;
+            case "qc-run":
+                queryResponse = qcRun();
+                break;
             case "stats-run":
                 queryResponse = statsRun();
                 break;
@@ -332,8 +335,17 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     //-------------------------------------------------------------------------
-    // STATS: run and info
+    // QC: stats, flag stats, FastQC and HS metrics
     //-------------------------------------------------------------------------
+
+    private RestResponse<Job> qcRun() throws ClientException {
+        AlignmentCommandOptions.QcAlignmentCommandOptions cliOptions = alignmentCommandOptions.qcAlignmentCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return openCGAClient.getAlignmentClient().runQc(new AlignmentQcParams(cliOptions.file, cliOptions.outdir), params);
+    }
 
     private RestResponse<Job> statsRun() throws ClientException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;

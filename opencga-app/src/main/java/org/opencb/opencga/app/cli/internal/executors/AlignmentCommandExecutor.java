@@ -18,10 +18,7 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentFastQcMetricsAnalysis;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentHsMetricsAnalysis;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.*;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
@@ -29,10 +26,7 @@ import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.AlignmentFastQcMetricsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentHsMetricsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
+import org.opencb.opencga.core.models.alignment.*;
 
 import java.nio.file.Paths;
 import java.util.Map;
@@ -71,6 +65,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         switch (subCommandString) {
             case "index-run":
                 indexRun();
+                break;
+            case "qc-run":
+                qcRun();
                 break;
             case "stats-run":
                 statsRun();
@@ -146,6 +143,18 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 //            System.out.println(readAlignment);
 //        }
 //    }
+
+    private void qcRun() throws ToolException {
+        AlignmentCommandOptions.QcAlignmentCommandOptions cliOptions = alignmentCommandOptions.qcAlignmentCommandOptions;
+
+        ObjectMap params = new AlignmentQcParams(
+                cliOptions.file,
+                cliOptions.outdir
+        ).toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(AlignmentQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
 
     private void statsRun() throws ToolException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
