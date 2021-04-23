@@ -1250,17 +1250,6 @@ public class RgaManager implements AutoCloseable {
 
                     // Insert the remaining entries
                     if (CollectionUtils.isNotEmpty(knockoutByIndividualList)) {
-                        for (KnockoutByIndividual knockoutByIndividual : knockoutByIndividualList) {
-                            try {
-                                catalogManager.getIndividualManager().create(study, new Individual()
-                                                .setId(knockoutByIndividual.getId())
-                                                .setSamples(Collections.singletonList(new Sample().setId(knockoutByIndividual.getSampleId()))),
-                                        QueryOptions.empty(), token);
-                            } catch (CatalogException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
                         List<RgaDataModel> rgaDataModelList = individualRgaConverter.convertToStorageType(knockoutByIndividualList);
                         rgaEngine.insert(collection, rgaDataModelList);
                         logger.debug("Loaded remaining {} knockoutByIndividual entries from '{}'", count, path);
