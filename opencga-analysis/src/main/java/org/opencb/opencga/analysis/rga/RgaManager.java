@@ -63,6 +63,11 @@ public class RgaManager implements AutoCloseable {
     private final Logger logger;
 
     private static final int KNOCKOUT_INSERT_BATCH_SIZE = 25;
+    private static ExecutorService executor;
+
+    static {
+        executor = Executors.newCachedThreadPool();
+    }
 
     public RgaManager(CatalogManager catalogManager, VariantStorageManager variantStorageManager,
                       StorageEngineFactory storageEngineFactory) {
@@ -129,7 +134,6 @@ public class RgaManager implements AutoCloseable {
             throw e;
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
         Future<VariantDBIterator> variantFuture = executor.submit(
                 () -> variantStorageQuery(study.getFqn(), preprocess.getQuery().getAsStringList("sampleId"), preprocess.getQuery(),
                         options, token)
@@ -185,8 +189,6 @@ public class RgaManager implements AutoCloseable {
 
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
-
-        ExecutorService executor = Executors.newFixedThreadPool(3);
 
         // Get numTotalResults in a future
         Future<Integer> numTotalResults = null;
@@ -357,7 +359,6 @@ public class RgaManager implements AutoCloseable {
 
         Future<Integer> numTotalResults = null;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
-            ExecutorService executor = Executors.newSingleThreadExecutor();
             numTotalResults = executor.submit(() -> {
                 QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.VARIANTS + ")");
                 try {
@@ -434,7 +435,6 @@ public class RgaManager implements AutoCloseable {
             includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
         Future<VariantDBIterator> variantFuture = executor.submit(
                 () -> variantStorageQuery(study.getFqn(), new ArrayList<>(includeSampleIds), auxQuery, options, token)
         );
@@ -646,7 +646,6 @@ public class RgaManager implements AutoCloseable {
         preprocess.getQuery().remove(RgaQueryParams.SAMPLE_ID.key());
         List<KnockoutByIndividualSummary> knockoutByIndividualSummaryList = new ArrayList<>(sampleIds.size());
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
         List<Future<KnockoutByIndividualSummary>> futureList = new ArrayList<>(sampleIds.size());
         for (String sampleId : sampleIds) {
             futureList.add(executor.submit(() -> calculateIndividualSummary(collection, preprocess.getQuery(), sampleId)));
@@ -692,8 +691,6 @@ public class RgaManager implements AutoCloseable {
         QueryOptions queryOptions = setDefaultLimit(options);
 
         Query auxQuery = query != null ? new Query(query) : new Query();
-
-        ExecutorService executor = Executors.newFixedThreadPool(4);
 
         // Get numTotalResults in a future
         Future<Integer> numTotalResults = null;
