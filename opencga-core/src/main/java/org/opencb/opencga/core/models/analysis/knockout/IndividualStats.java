@@ -1,79 +1,67 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
-public class IndividualStats {
+public class IndividualStats extends VariantStats {
 
-    private int count;
-    private int numHomAlt;
-    private int numCompHet;
-    private int numHetAlt;
-    private int numDelOverlap;
+    private VariantStats noParents;
+    private VariantStats singleParent;
+    private VariantStats bothParents;
 
     public IndividualStats() {
     }
 
-    public IndividualStats(int count, int numHomAlt, int numCompHet, int numHetAlt, int numDelOverlap) {
-        this.count = count;
-        this.numHomAlt = numHomAlt;
-        this.numCompHet = numCompHet;
-        this.numHetAlt = numHetAlt;
-        this.numDelOverlap = numDelOverlap;
+    public IndividualStats(VariantStats noParents, VariantStats singleParent, VariantStats bothParents) {
+        super(noParents.getCount() + singleParent.getCount() + bothParents.getCount(),
+                noParents.getNumHomAlt() + singleParent.getNumHomAlt() + bothParents.getNumHomAlt(),
+                noParents.getNumCompHet() + singleParent.getNumCompHet() + bothParents.getNumCompHet(),
+                noParents.getNumHetAlt() + singleParent.getNumHetAlt() + bothParents.getNumHetAlt(),
+                noParents.getNumDelOverlap() + singleParent.getNumDelOverlap() + bothParents.getNumDelOverlap());
+        this.noParents = noParents;
+        this.singleParent = singleParent;
+        this.bothParents = bothParents;
+    }
+
+    public IndividualStats(int count, int numHomAlt, int numCompHet, int numHetAlt, int numDelOverlap, VariantStats noParents,
+                           VariantStats singleParent, VariantStats bothParents) {
+        super(count, numHomAlt, numCompHet, numHetAlt, numDelOverlap);
+        this.noParents = noParents;
+        this.singleParent = singleParent;
+        this.bothParents = bothParents;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualStats{");
-        sb.append("count=").append(count);
-        sb.append(", numHomAlt=").append(numHomAlt);
-        sb.append(", numCompHet=").append(numCompHet);
-        sb.append(", numHetAlt=").append(numHetAlt);
-        sb.append(", numDelOverlap=").append(numDelOverlap);
+        sb.append("noParents=").append(noParents);
+        sb.append(", singleParent=").append(singleParent);
+        sb.append(", bothParents=").append(bothParents);
         sb.append('}');
         return sb.toString();
     }
 
-    public int getCount() {
-        return count;
+    public VariantStats getNoParents() {
+        return noParents;
     }
 
-    public IndividualStats setCount(int count) {
-        this.count = count;
+    public IndividualStats setNoParents(VariantStats noParents) {
+        this.noParents = noParents;
         return this;
     }
 
-    public int getNumHomAlt() {
-        return numHomAlt;
+    public VariantStats getSingleParent() {
+        return singleParent;
     }
 
-    public IndividualStats setNumHomAlt(int numHomAlt) {
-        this.numHomAlt = numHomAlt;
+    public IndividualStats setSingleParent(VariantStats singleParent) {
+        this.singleParent = singleParent;
         return this;
     }
 
-    public int getNumCompHet() {
-        return numCompHet;
+    public VariantStats getBothParents() {
+        return bothParents;
     }
 
-    public IndividualStats setNumCompHet(int numCompHet) {
-        this.numCompHet = numCompHet;
+    public IndividualStats setBothParents(VariantStats bothParents) {
+        this.bothParents = bothParents;
         return this;
     }
-
-    public int getNumHetAlt() {
-        return numHetAlt;
-    }
-
-    public IndividualStats setNumHetAlt(int numHetAlt) {
-        this.numHetAlt = numHetAlt;
-        return this;
-    }
-
-    public int getNumDelOverlap() {
-        return numDelOverlap;
-    }
-
-    public IndividualStats setNumDelOverlap(int numDelOverlap) {
-        this.numDelOverlap = numDelOverlap;
-        return this;
-    }
-
 }
