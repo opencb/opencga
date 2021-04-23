@@ -82,18 +82,6 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "qc-run":
                 queryResponse = qcRun();
                 break;
-            case "stats-run":
-                queryResponse = statsRun();
-                break;
-            case "flagstats-run":
-                queryResponse = flagStatsRun();
-                break;
-            case "fastqcmetrics-run":
-                queryResponse = fastQcMetricsRun();
-                break;
-            case "hsmetrics-run":
-                queryResponse = hsMetricsRun();
-                break;
             case "coverage-index-run":
                 queryResponse = coverageRun();
                 break;
@@ -344,47 +332,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
         params.putAll(getJobParams());
 
-        return openCGAClient.getAlignmentClient().runQc(new AlignmentQcParams(cliOptions.file, cliOptions.outdir), params);
-    }
-
-    private RestResponse<Job> statsRun() throws ClientException {
-        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
-
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
-        params.putAll(getJobParams());
-
-        return openCGAClient.getAlignmentClient().runStats(new AlignmentStatsParams(cliOptions.file, cliOptions.outdir), params);
-    }
-
-    private RestResponse<Job> flagStatsRun() throws ClientException {
-        AlignmentCommandOptions.FlagStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.flagStatsAlignmentCommandOptions;
-
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
-        params.putAll(getJobParams());
-
-        return openCGAClient.getAlignmentClient().runFlagstats(new AlignmentFlagStatsParams(cliOptions.file, cliOptions.outdir), params);
-    }
-
-    private RestResponse<Job> fastQcMetricsRun() throws ClientException {
-        AlignmentCommandOptions.FastQcMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions
-                .fastQcMetricsAlignmentCommandOptions;
-
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
-        params.putAll(getJobParams());
-
-        return openCGAClient.getAlignmentClient().runFastqcmetrics(new AlignmentFastQcMetricsParams(cliOptions.file, cliOptions.outdir),
-                params);
-    }
-
-    private RestResponse<Job> hsMetricsRun() throws ClientException {
-        AlignmentCommandOptions.HsMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions
-                .hsMetricsAlignmentCommandOptions;
-
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
-        params.putAll(getJobParams());
-
-        return openCGAClient.getAlignmentClient().runHsmetrics(new AlignmentHsMetricsParams(cliOptions.bamFile, cliOptions.bedFile,
-                cliOptions.dictFile, cliOptions.outdir), params);
+        return openCGAClient.getAlignmentClient().runQc(new AlignmentQcParams(cliOptions.bamFile, cliOptions.bedFile, cliOptions.dictFile,
+                cliOptions.runSamtoolsStats, cliOptions.runSamtoolsFlagStats, cliOptions.runFastQC, cliOptions.runHsMetrics,
+                cliOptions.outdir), params);
     }
 
     //-------------------------------------------------------------------------

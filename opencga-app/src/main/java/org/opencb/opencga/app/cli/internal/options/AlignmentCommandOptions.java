@@ -196,8 +196,26 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String file;
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " for the BAM file", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--bed-file"}, description = FILE_ID_DESCRIPTION + " for the BED file, mandatory to compute hybrid-selection (HS) metrics", required = false, arity = 1)
+        public String bedFile;
+
+        @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " for the dictionary file, mandatory to compute hybrid-selection (Hs) metrics", required = false, arity = 1)
+        public String dictFile;
+
+        @Parameter(names = {"--run-samtools-stats"}, description = ALIGNMENT_QC_SAMTOOLS_STATS_DESCRIPTION, required = false, arity = 0)
+        public boolean runSamtoolsStats;
+
+        @Parameter(names = {"--run-samtools-flagstats"}, description = ALIGNMENT_QC_SAMTOOLS_FLAG_STATS_DESCRIPTION, required = false, arity = 0)
+        public boolean runSamtoolsFlagStats;
+
+        @Parameter(names = {"--run-fastqc"}, description = ALIGNMENT_QC_FASTQC_DESCRIPTION, required = false, arity = 0)
+        public boolean runFastQC;
+
+        @Parameter(names = {"--run-hs-metrics"}, description = ALIGNMENT_QC_HS_METRICS_DESCRIPTION, required = false, arity = 0)
+        public boolean runHsMetrics;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

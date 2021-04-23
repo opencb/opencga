@@ -19,7 +19,8 @@ package org.opencb.opencga.app.cli.internal.executors;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.*;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
@@ -148,7 +149,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         AlignmentCommandOptions.QcAlignmentCommandOptions cliOptions = alignmentCommandOptions.qcAlignmentCommandOptions;
 
         ObjectMap params = new AlignmentQcParams(
-                cliOptions.file,
+                cliOptions.bamFile,
+                cliOptions.bedFile,
+                cliOptions.dictFile,
+                cliOptions.runSamtoolsStats,
+                cliOptions.runSamtoolsFlagStats,
+                cliOptions.runFastQC,
+                cliOptions.runHsMetrics,
                 cliOptions.outdir
         ).toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);

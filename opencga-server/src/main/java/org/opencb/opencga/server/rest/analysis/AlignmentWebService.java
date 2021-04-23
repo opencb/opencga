@@ -391,58 +391,6 @@ public class AlignmentWebService extends AnalysisWebService {
         return submitJob(AlignmentQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
-    @POST
-    @Path("/stats/run")
-    @ApiOperation(value = ALIGNMENT_STATS_DESCRIPTION, response = Job.class)
-    public Response statsRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = AlignmentStatsParams.DESCRIPTION, required = true) AlignmentStatsParams params) {
-        return submitJob(AlignmentStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
-    @POST
-    @Path("/flagstats/run")
-    @ApiOperation(value = ALIGNMENT_FLAG_STATS_DESCRIPTION, response = Job.class)
-    public Response flagStatsRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = AlignmentFlagStatsParams.DESCRIPTION, required = true) AlignmentFlagStatsParams params) {
-        return submitJob(AlignmentFlagStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
-    @POST
-    @Path("/fastqcmetrics/run")
-    @ApiOperation(value = ALIGNMENT_FASTQC_METRICS_DESCRIPTION, response = Job.class)
-    public Response fastQcMetricsRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = AlignmentFastQcMetricsParams.DESCRIPTION, required = true) AlignmentFastQcMetricsParams params) {
-        return submitJob(AlignmentFastQcMetricsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
-    @POST
-    @Path("/hsmetrics/run")
-    @ApiOperation(value = ALIGNMENT_HS_METRICS_DESCRIPTION, response = Job.class)
-    public Response hsMetricsRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = AlignmentHsMetricsParams.DESCRIPTION, required = true) AlignmentHsMetricsParams params) {
-        return submitJob(AlignmentHsMetricsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
-    }
-
     //-------------------------------------------------------------------------
     // W R A P P E R S
     //-------------------------------------------------------------------------
