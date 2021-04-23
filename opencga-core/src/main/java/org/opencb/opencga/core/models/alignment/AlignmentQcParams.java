@@ -3,7 +3,8 @@ package org.opencb.opencga.core.models.alignment;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class AlignmentQcParams extends ToolParams {
-    public static final String DESCRIPTION = "Alignment QC params";
+    public static final String DESCRIPTION = "Alignment quality control (QC) parameters. The BAM file is mandatory ever but the BED file" +
+            " and the dictionary files are only mandatory for computing hybrid-selection (HS) metrics";
 
     private String bamFile;
     private String bedFile;
