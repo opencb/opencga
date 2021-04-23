@@ -115,14 +115,11 @@ public class RgaQueryParser {
             parseStringValue(query, CONSEQUENCE_TYPE, RgaDataModel.CONSEQUENCE_TYPES, filterList);
 
             if (!popFreqValues.isEmpty()) {
-                List<List<String>> encodedPopFreqs = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
+                Map<String, List<String>> encodedPopFreqs = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
 
-                List<String> popFreqList = new ArrayList<>(encodedPopFreqs.size());
-                for (List<String> encodedPopFreq : encodedPopFreqs) {
-                    parseStringValue(encodedPopFreq, "", popFreqList, "||");
+                for (Map.Entry<String, List<String>> entry : encodedPopFreqs.entrySet()) {
+                    parseStringValue(entry.getValue(), RgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
                 }
-                // TODO: The pop freq key is dynamic
-                parseStringValue(popFreqList, RgaDataModel.POPULATION_FREQUENCIES, filterList, "&&");
             }
         } else if (count > 1) {
             if (knockoutValues.size() == 1 && KnockoutVariant.KnockoutType.COMP_HET.name().equals(knockoutValues.get(0).toUpperCase())) {
@@ -161,7 +158,7 @@ public class RgaQueryParser {
         }
 
         // Pop. freq
-        List<List<String>> popFreqQueryList = RgaUtils.parsePopulationFrequencyQuery(popFreqList);
+        Map<String, List<String>> popFreqQueryList = RgaUtils.parsePopulationFrequencyQuery(popFreqList);
 
         buildComplexQuery(Collections.singletonList(koValue), generateSortedCombinations(filterValues),
                 generateSortedCombinations(ctValues), popFreqQueryList, filterList);
@@ -201,13 +198,13 @@ public class RgaQueryParser {
         }
 
         // Pop. freq
-        List<List<String>> popFreqQueryList = RgaUtils.parsePopulationFrequencyQuery(popFreqList);
+        Map<String, List<String>> popFreqQueryList = RgaUtils.parsePopulationFrequencyQuery(popFreqList);
 
         buildComplexQuery(koValues, filterValues, ctValues, popFreqQueryList, filterList);
     }
 
     private void buildComplexQuery(List<String> koValues, List<String> filterValues, List<String> ctValues,
-                                   List<List<String>> popFreqQueryList, List<String> filterList) {
+                                   Map<String, List<String>> popFreqQueryList, List<String> filterList) {
         if (ctValues.isEmpty() && popFreqQueryList.isEmpty()) {
             // KT + FILTER
             List<String> orFilterList = new LinkedList<>();
@@ -220,7 +217,7 @@ public class RgaQueryParser {
         } else if (!ctValues.isEmpty() && !popFreqQueryList.isEmpty()) {
             // KT + FILTER + CT + POP_FREQ
             List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-            for (List<String> tmpPopFreqList : popFreqQueryList) {
+            for (List<String> tmpPopFreqList  : popFreqQueryList.values()) {
                 List<String> orQueryList = new LinkedList<>();
                 for (String popFreq : tmpPopFreqList) {
                     for (String koValue : koValues) {
@@ -248,7 +245,7 @@ public class RgaQueryParser {
         } else { // POP_FREQ not empty
             // KT + FILTER + POP_FREQ
             List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-            for (List<String> tmpPopFreqList : popFreqQueryList) {
+            for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
                 List<String> orQueryList = new LinkedList<>();
                 for (String popFreq : tmpPopFreqList) {
                     for (String koValue : koValues) {

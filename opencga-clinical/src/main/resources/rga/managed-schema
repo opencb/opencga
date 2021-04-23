@@ -590,6 +590,7 @@
     <field name="variants" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="types" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="knockoutTypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="fullVariantInfo" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="filters" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="consequenceTypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="clinicalSignificances" type="string" indexed="true" stored="true" multiValued="true"/>
@@ -597,7 +598,7 @@
     <field name="phenotypeJson" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="disorderJson" type="string" indexed="false" stored="true" multiValued="true"/>
 
-    <dynamicField name="populationFrequencies_*" type="float" indexed="true" stored="true" multiValued="true"/>
+    <dynamicField name="populationFrequencies_*" type="string" indexed="true" stored="true" multiValued="true"/>
     <!--
        The field 'filter' contains info about the KnockoutType, filter, consequence type and population frequencies:
             [KO, KO__FILTER, KO__FILTER__CT, KO__FILTER__CT__PF]

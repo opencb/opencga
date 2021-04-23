@@ -121,7 +121,8 @@ public class RgaEngine implements Closeable {
     public RgaIterator individualQuery(String collection, Query query, QueryOptions queryOptions) throws RgaException{
         SolrQuery solrQuery = parser.parseQuery(query);
         fixIndividualOptions(queryOptions, solrQuery);
-        solrQuery.setRows(Integer.MAX_VALUE);
+//        solrQuery.setRows(Integer.MAX_VALUE);
+        solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE));
         try {
             return new RgaIterator(solrManager.getSolrClient(), collection, solrQuery);
         } catch (SolrServerException e) {

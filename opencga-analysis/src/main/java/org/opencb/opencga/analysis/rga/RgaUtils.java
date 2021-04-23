@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.rga;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -23,6 +24,7 @@ class RgaUtils {
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<?<=?|>>?=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
 
     static final String SEPARATOR = "__";
+    static final String INNER_SEPARATOR = "--";
 
     private static final Map<String, String> ENCODE_MAP;
     private static final Map<String, String> DECODE_MAP;
@@ -174,11 +176,11 @@ class RgaUtils {
     /** Calculate the list of population frequency values to look for in the db.
      *
      * @param filters A list containing {study}[<|>|<=|>=]{number}. e.g. 1kG_phase3<0.01";
-     * @return the list of population frequency values to look for in the db.
+     * @return the list of population frequency values to look for in the db with their corresponding population key.
      * @throws RgaException RgaException.
      */
-    static List<List<String>> parsePopulationFrequencyQuery(List<String> filters) throws RgaException {
-        List<List<String>> result = new ArrayList<>(filters.size());
+    static Map<String, List<String>> parsePopulationFrequencyQuery(List<String> filters) throws RgaException {
+        Map<String, List<String>> result = new HashMap<>();
         for (String filter : filters) {
             KeyOpValue<String, String> keyOpValue = parseKeyOpValue(filter);
             if (keyOpValue.getKey() == null) {
@@ -216,7 +218,7 @@ class RgaUtils {
                     throw new RgaException("Unknown operator '" + keyOpValue.getOp() + "'");
             }
 
-            result.add(values);
+            result.put(keyOpValue.getKey(), values);
         }
 
         return result;
@@ -305,6 +307,67 @@ class RgaUtils {
         ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
 
         return new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry, variantAnnotation, consequenceType, knockoutType);
+    }
+
+    public static class CodedVariant {
+        //  1:2233232:A:T __ SNV __ COMP_HET __ VR_R __ A_J
+        private String variantId;
+        private String type;
+        private String knockoutType;
+        private List<String> populationFrequencies;
+        private Set<String> consequenceType;
+
+        public CodedVariant(String variantId, String type, String knockoutType, List<String> consequenceTypeList,
+                            String thousandGenomesPopFreq, String gnomadPopFreq) {
+            this.variantId = variantId;
+            this.type = type;
+            this.knockoutType = knockoutType;
+            this.consequenceType = new HashSet<>();
+            for (String consequenceType : consequenceTypeList) {
+                this.consequenceType.add(String.valueOf(VariantQueryUtils.parseConsequenceType(consequenceType)));
+            }
+            this.populationFrequencies = Arrays.asList(thousandGenomesPopFreq, gnomadPopFreq);
+        }
+
+        public CodedVariant(String fullVariant) throws RgaException {
+            String[] split = fullVariant.split(SEPARATOR);
+            if (split.length != 5) {
+                throw new RgaException("Unexpected variant string received '" + fullVariant
+                        + "'. Expected {id}__{type}__{knockoutType}__{conseqType}__{popFreqs}");
+            }
+
+            this.variantId = split[0];
+            this.type = split[1];
+            this.knockoutType = split[2];
+            this.consequenceType = new HashSet<>();
+            this.consequenceType.addAll(Arrays.asList(split[3].split(INNER_SEPARATOR)));
+            this.populationFrequencies = Arrays.asList(split[4].split(INNER_SEPARATOR));
+        }
+
+        public String getFullVariant() {
+            return variantId + SEPARATOR + type + SEPARATOR + knockoutType + SEPARATOR + StringUtils.join(consequenceType, INNER_SEPARATOR)
+                    + SEPARATOR + StringUtils.join(populationFrequencies, INNER_SEPARATOR);
+        }
+
+        public String getVariantId() {
+            return variantId;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getKnockoutType() {
+            return knockoutType;
+        }
+
+        public Set<String> getConsequenceType() {
+            return consequenceType;
+        }
+
+        public List<String> getPopulationFrequencies() {
+            return populationFrequencies;
+        }
     }
 
 }
