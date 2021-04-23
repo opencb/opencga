@@ -167,7 +167,7 @@ public class VariantStatsOperationManager extends OperationManager {
      *
      * @param studyFqn      Study fqn
      * @param cohortIds     Set of cohorts
-     * @param updateStats   Update already existing stats
+     * @param overwriteStats Overwrite stats
      * @param resume        Resume statistics calculation
      * @param sessionId     User's sessionId
      * @return Map from cohortId to Cohort
