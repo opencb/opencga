@@ -58,6 +58,10 @@ public class SampleVariantStatsAggregationQuery {
 
         query.put(STUDY.key(), studyStr);
         query.remove(SAMPLE.key());
+
+        // Test if there is any valid VariantAggregationExecutor
+        engine.getVariantAggregationExecutor(new Query(query), new QueryOptions(QueryOptions.FACET, "chromosome"));
+
         Future<DataResult<FacetField>> submit = THREAD_POOL.submit(() -> {
             DataResult<FacetField> result = engine.facet(
                     new Query(query)
