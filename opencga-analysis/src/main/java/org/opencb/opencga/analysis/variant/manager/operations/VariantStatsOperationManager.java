@@ -63,7 +63,7 @@ public class VariantStatsOperationManager extends OperationManager {
         Aggregation aggregation = getAggregation(catalogManager, study, params, token);
         cohorts = checkCohorts(study, aggregation, cohorts, params, token);
 
-        boolean updateStats = params.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
+        boolean overwriteStats = params.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         boolean resume = params.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
 
         // Synchronize catalog with storage
@@ -71,7 +71,7 @@ public class VariantStatsOperationManager extends OperationManager {
                 new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
         synchronizer.synchronizeCatalogStudyFromStorage(study, token);
 
-        Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(study, cohorts, updateStats, resume, token);
+        Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(study, cohorts, overwriteStats, resume, token);
 
         QueryOptions calculateStatsOptions = new QueryOptions(params);
         calculateStatsOptions.putIfNotEmpty(REGION.key(), region);
@@ -174,7 +174,7 @@ public class VariantStatsOperationManager extends OperationManager {
      * @throws CatalogException if an error on Catalog
      */
     protected Map<String, List<String>> checkCanCalculateCohorts(String studyFqn, List<String> cohortIds,
-                                                                 boolean updateStats, boolean resume, String sessionId)
+                                                                 boolean overwriteStats, boolean resume, String sessionId)
             throws CatalogException, StorageEngineException {
         Map<String, List<String>> cohortMap = new HashMap<>(cohortIds.size());
         for (String cohortId : cohortIds) {
@@ -185,7 +185,7 @@ public class VariantStatsOperationManager extends OperationManager {
                 case CohortStatus.INVALID:
                     break;
                 case CohortStatus.READY:
-                    if (updateStats) {
+                    if (overwriteStats) {
                         catalogManager.getCohortManager().setStatus(studyFqn, cohortId, CohortStatus.INVALID, "", sessionId);
                         break;
                     } else {
