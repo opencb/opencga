@@ -77,6 +77,9 @@ public class RgaDataModel {
     private List<String>  knockoutTypes;
 
     @Field
+    private List<String> fullVariantInfo;
+
+    @Field
     private List<String> filters;
 
     @Field
@@ -86,7 +89,7 @@ public class RgaDataModel {
     private List<String> clinicalSignificances;
 
     @Field(POPULATION_FREQUENCIES)
-    private Map<String, List<Float>> populationFrequencies;
+    private Map<String, List<String>> populationFrequencies;
 
     @Field
     private List<String> compoundFilters;
@@ -118,6 +121,7 @@ public class RgaDataModel {
     public static final String TRANSCRIPT_ID = "transcriptId";
     public static final String TRANSCRIPT_BIOTYPE = "transcriptBiotype";
     public static final String VARIANTS = "variants";
+    public static final String FULL_VARIANT_INFO = "fullVariantInfo";
     public static final String TYPES = "types";
     public static final String KNOCKOUT_TYPES = "knockoutTypes";
     public static final String FILTERS = "filters";
@@ -157,6 +161,7 @@ public class RgaDataModel {
         sb.append(", variants=").append(variants);
         sb.append(", types=").append(types);
         sb.append(", knockoutTypes=").append(knockoutTypes);
+        sb.append(", fullVariantInfo=").append(fullVariantInfo);
         sb.append(", filters=").append(filters);
         sb.append(", consequenceTypes=").append(consequenceTypes);
         sb.append(", clinicalSignificances=").append(clinicalSignificances);
@@ -375,6 +380,15 @@ public class RgaDataModel {
         return this;
     }
 
+    public List<String> getFullVariantInfo() {
+        return fullVariantInfo;
+    }
+
+    public RgaDataModel setFullVariantInfo(List<String> fullVariantInfo) {
+        this.fullVariantInfo = fullVariantInfo;
+        return this;
+    }
+
     public List<String> getFilters() {
         return filters;
     }
@@ -402,11 +416,11 @@ public class RgaDataModel {
         return this;
     }
 
-    public Map<String, List<Float>> getPopulationFrequencies() {
+    public Map<String, List<String>> getPopulationFrequencies() {
         return populationFrequencies;
     }
 
-    public RgaDataModel setPopulationFrequencies(Map<String, List<Float>> populationFrequencies) {
+    public RgaDataModel setPopulationFrequencies(Map<String, List<String>> populationFrequencies) {
         this.populationFrequencies = populationFrequencies;
         return this;
     }

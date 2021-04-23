@@ -207,24 +207,31 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
 
                     List<String> variantIds = new ArrayList<>(transcript.getVariants().size());
                     List<String> knockoutTypes = new ArrayList<>(transcript.getVariants().size());
+                    List<String> variantKnockoutList = new ArrayList<>(transcript.getVariants().size());
                     Set<String> types = new HashSet<>();
                     Set<String> consequenceTypes = new HashSet<>();
                     Set<String> clinicalSignificances = new HashSet<>();
                     Set<String> filters = new HashSet<>();
 
-                    for (KnockoutVariant variant : transcript.getVariants()) {
+                    Map<String, List<String>> popFreqs = getPopulationFrequencies(transcript);
+                    List<KnockoutVariant> variants = transcript.getVariants();
+                    for (KnockoutVariant variant : variants) {
                         variantIds.add(variant.getId());
-                        knockoutTypes.add(variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "");
+                        String knockoutType = variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "";
+                        knockoutTypes.add(knockoutType);
                         if (variant.getType() != null) {
                             types.add(variant.getType().name());
                         }
+                        List<String> variantConsequenceTypes = new ArrayList<>();
                         if (variant.getSequenceOntologyTerms() != null) {
                             for (SequenceOntologyTerm sequenceOntologyTerm : variant.getSequenceOntologyTerms()) {
                                 if (sequenceOntologyTerm.getAccession() != null) {
-                                    consequenceTypes.add(sequenceOntologyTerm.getAccession());
+                                    variantConsequenceTypes.add(sequenceOntologyTerm.getAccession());
                                 }
                             }
                         }
+                        consequenceTypes.addAll(variantConsequenceTypes);
+
                         if (variant.getClinicalSignificance() != null) {
                             for (ClinicalSignificance clinicalSignificance : variant.getClinicalSignificance()) {
                                 if (clinicalSignificance != null) {
@@ -232,11 +239,17 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                                 }
                             }
                         }
+
                         if (StringUtils.isNotEmpty(variant.getFilter())) {
                             filters.add(variant.getFilter());
                         }
+
+                        Map<String, String> variantPopFreq = getPopulationFrequencies(variant);
+                        RgaUtils.CodedVariant codedVariant = new RgaUtils.CodedVariant(variant.getId(), variant.getType().name(),
+                                variant.getKnockoutType().name(), variantConsequenceTypes,
+                                variantPopFreq.get(RgaUtils.THOUSAND_GENOMES_STUDY), variantPopFreq.get(RgaUtils.GNOMAD_GENOMES_STUDY));
+                        variantKnockoutList.add(codedVariant.getFullVariant());
                     }
-                    Map<String, List<Float>> popFreqs = getPopulationFrequencies(transcript);
 
                     String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
                     String individualId = knockoutByIndividual.getId();
@@ -277,6 +290,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                             .setVariants(variantIds)
                             .setTypes(new ArrayList<>(types))
                             .setKnockoutTypes(knockoutTypes)
+                            .setFullVariantInfo(variantKnockoutList)
                             .setFilters(new ArrayList<>(filters))
                             .setConsequenceTypes(new ArrayList<>(consequenceTypes))
                             .setClinicalSignificances(new ArrayList<>(clinicalSignificances))
@@ -292,7 +306,26 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         return result;
     }
 
-    private Map<String, List<Float>> getPopulationFrequencies(KnockoutTranscript transcript) {
+    private float getPopulationFrequency(int variantPosition, String population, Map<String, List<Float>> popFreqMap) throws RgaException {
+        if (!population.equals(RgaUtils.THOUSAND_GENOMES_STUDY) && !population.equals(RgaUtils.GNOMAD_GENOMES_STUDY)) {
+            throw new RgaException("Unexpected population '" + population + "'");
+        }
+
+        String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
+        String mapKey = pfKey + population;
+
+        if (!popFreqMap.containsKey(mapKey)) {
+            throw new RgaException("Unexpected map key '" + mapKey + "'");
+        }
+        List<Float> popFreqList = popFreqMap.get(mapKey);
+        if (variantPosition < 0 || variantPosition >= popFreqList.size()) {
+            throw new RgaException("Variant position not found");
+        }
+
+        return popFreqList.get(variantPosition);
+    }
+
+    private Map<String, List<Float>> getPopulationFrequenciesOld(KnockoutTranscript transcript) {
         Map<String, List<Float>> popFreqs = new HashMap<>();
 
         String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
@@ -306,9 +339,9 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         }
 
         for (KnockoutVariant variant : transcript.getVariants()) {
+            boolean gnomad = false;
+            boolean thousandG = false;
             if (variant.getPopulationFrequencies() != null) {
-                boolean gnomad = false;
-                boolean thousandG = false;
                 for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
                     if (populationFrequency.getPopulation().equals("ALL")) {
                         if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
@@ -320,16 +353,75 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         }
                     }
                 }
-                if (!thousandG) {
-                    popFreqs.get(thousandGenomeKey).add(0f);
-                }
-                if (!gnomad) {
-                    popFreqs.get(gnomadGenomeKey).add(0f);
-                }
+            }
+            if (!thousandG) {
+                popFreqs.get(thousandGenomeKey).add(0f);
+            }
+            if (!gnomad) {
+                popFreqs.get(gnomadGenomeKey).add(0f);
             }
         }
 
         return popFreqs;
+    }
+
+    private Map<String, List<String>> getPopulationFrequencies(KnockoutTranscript transcript) throws RgaException {
+        String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
+
+        String thousandGenomeKey = pfKey + RgaUtils.THOUSAND_GENOMES_STUDY;
+        String gnomadGenomeKey = pfKey + RgaUtils.GNOMAD_GENOMES_STUDY;
+
+        Set<String> thousandPopFreqs = new HashSet<>();
+        Set<String> gnomadPopFreqs = new HashSet<>();
+
+        for (KnockoutVariant variant : transcript.getVariants()) {
+            Map<String, String> variantFreqs = getPopulationFrequencies(variant);
+            thousandPopFreqs.add(variantFreqs.get(RgaUtils.THOUSAND_GENOMES_STUDY));
+            gnomadPopFreqs.add(variantFreqs.get(RgaUtils.GNOMAD_GENOMES_STUDY));
+        }
+
+        Map<String, List<String>> popFreqs = new HashMap<>();
+        if (!transcript.getVariants().isEmpty()) {
+            popFreqs.put(thousandGenomeKey, new ArrayList<>(thousandPopFreqs));
+            popFreqs.put(gnomadGenomeKey, new ArrayList<>(gnomadPopFreqs));
+        }
+
+        return popFreqs;
+    }
+
+    private Map<String, String> getPopulationFrequencies(KnockoutVariant variant) throws RgaException {
+        Map<String, String> variantFreqMap = new HashMap<>();
+
+        if (variant.getPopulationFrequencies() != null) {
+            for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
+                if (populationFrequency.getPopulation().equals("ALL")) {
+                    if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                        String encodedPopFrequency = getEncodedPopFrequency(RgaUtils.THOUSAND_GENOMES_STUDY,
+                                populationFrequency.getAltAlleleFreq());
+                        variantFreqMap.put(RgaUtils.THOUSAND_GENOMES_STUDY, encodedPopFrequency);
+                    } else if (RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                        String encodedPopFrequency = getEncodedPopFrequency(RgaUtils.GNOMAD_GENOMES_STUDY,
+                                populationFrequency.getAltAlleleFreq());
+                        variantFreqMap.put(RgaUtils.GNOMAD_GENOMES_STUDY, encodedPopFrequency);
+                    }
+                }
+            }
+        }
+        if (!variantFreqMap.containsKey(RgaUtils.THOUSAND_GENOMES_STUDY)) {
+            String encodedPopFrequency = getEncodedPopFrequency(RgaUtils.THOUSAND_GENOMES_STUDY, 0f);
+            variantFreqMap.put(RgaUtils.THOUSAND_GENOMES_STUDY, encodedPopFrequency);
+        }
+        if (!variantFreqMap.containsKey(RgaUtils.GNOMAD_GENOMES_STUDY)) {
+            String encodedPopFrequency = getEncodedPopFrequency(RgaUtils.GNOMAD_GENOMES_STUDY, 0f);
+            variantFreqMap.put(RgaUtils.GNOMAD_GENOMES_STUDY, encodedPopFrequency);
+        }
+
+        return variantFreqMap;
+    }
+
+    private String getEncodedPopFrequency(String population, float value) throws RgaException {
+        String populationFrequencyKey = RgaUtils.getPopulationFrequencyKey(value);
+        return RgaUtils.encode(population.toUpperCase() + RgaUtils.SEPARATOR + populationFrequencyKey);
     }
 
     private List<String> processFilters(KnockoutTranscript transcript) throws RgaException {
