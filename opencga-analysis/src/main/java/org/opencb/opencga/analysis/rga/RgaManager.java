@@ -921,11 +921,12 @@ public class RgaManager implements AutoCloseable {
             // 3. Get gene id list
             QueryOptions geneFacet = new QueryOptions()
                     .append(QueryOptions.LIMIT, -1)
-                    .append(QueryOptions.FACET, RgaDataModel.GENE_ID);
+                    .append(QueryOptions.FACET, RgaDataModel.GENE_ID + ">>" + RgaDataModel.GENE_NAME);
             facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, geneFacet);
-            List<String> geneIds = facetFieldDataResult.first().getBuckets()
+            List<KnockoutByIndividualSummary.Gene> geneIds = facetFieldDataResult.first().getBuckets()
                     .stream()
-                    .map(FacetField.Bucket::getValue)
+                    .map((bucket) -> new KnockoutByIndividualSummary.Gene(bucket.getValue(),
+                            bucket.getFacetFields().get(0).getBuckets().get(0).getValue()))
                     .collect(Collectors.toList());
             knockoutByIndividualSummary.setGenes(geneIds);
 
