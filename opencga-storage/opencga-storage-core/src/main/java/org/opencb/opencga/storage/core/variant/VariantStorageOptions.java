@@ -51,6 +51,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     STATS_LOAD_THREADS("stats.load.numThreads", 4),
     STATS_LOAD_BATCH_SIZE("stats.load.batchSize", 100),
     STATS_OVERWRITE("stats.overwrite", false),          //Overwrite stats already present
+    @Deprecated
     STATS_UPDATE("stats.update", false),                //Calculate missing stats
     STATS_AGGREGATION("stats.aggregation.type", Aggregation.NONE),
     STATS_AGGREGATION_MAPPING_FILE("stats.aggregation.mappingFile"),

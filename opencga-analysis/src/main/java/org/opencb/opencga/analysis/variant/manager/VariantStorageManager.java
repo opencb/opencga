@@ -299,12 +299,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secure(query, empty(), token, (engine) -> engine.getAnnotationMetadata(name));
     }
 
-    public void stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
+    public Collection<String> stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
-        secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
-            new VariantStatsOperationManager(this, engine).stats(getStudyFqn(study, token), cohorts, region, params, token);
-            return null;
+        return secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
+            return new VariantStatsOperationManager(this, engine)
+                    .stats(getStudyFqn(study, token), cohorts, region, params, token);
         });
     }
 

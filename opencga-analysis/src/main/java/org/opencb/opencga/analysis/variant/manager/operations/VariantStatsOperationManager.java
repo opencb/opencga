@@ -58,7 +58,7 @@ public class VariantStatsOperationManager extends OperationManager {
     }
 
 
-    public void stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
+    public Collection<String> stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
             throws IOException, StorageEngineException, CatalogException {
         Aggregation aggregation = getAggregation(catalogManager, study, params, token);
         cohorts = checkCohorts(study, aggregation, cohorts, params, token);
@@ -97,6 +97,7 @@ public class VariantStatsOperationManager extends OperationManager {
             }
             throw new StorageEngineException("Error calculating statistics.", e);
         }
+        return cohortsMap.keySet();
 
     }
 
