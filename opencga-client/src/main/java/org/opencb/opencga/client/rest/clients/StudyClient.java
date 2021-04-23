@@ -18,22 +18,10 @@ package org.opencb.opencga.client.rest.clients;
 
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
-import org.opencb.opencga.core.models.study.CustomGroup;
-import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.GroupCreateParams;
-import org.opencb.opencga.core.models.study.GroupUpdateParams;
-import org.opencb.opencga.core.models.study.PermissionRule;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
-import org.opencb.opencga.core.models.study.StudyCreateParams;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
-import org.opencb.opencga.core.models.study.VariableSetCreateParams;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -193,9 +181,9 @@ public class StudyClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<AuditRecord> searchAudit(String study, ObjectMap params) throws ClientException {
+    public RestResponse<Object> searchAudit(String study, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("studies", study, "audit", null, "search", params, GET, AuditRecord.class);
+        return execute("studies", study, "audit", null, "search", params, GET, Object.class);
     }
 
     /**
