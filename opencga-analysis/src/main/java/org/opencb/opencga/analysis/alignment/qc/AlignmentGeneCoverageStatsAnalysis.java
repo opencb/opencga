@@ -46,6 +46,9 @@ public class AlignmentGeneCoverageStatsAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION;
     public static final int GENE_LIST_MAXIMUM_SIZE = 10;
 
+    private static final String COMPUTE_GENE_COVERAGE_STEP = "compute-gene-coverage-stats";
+    private static final String UPDATE_QUAlITY_CONTROL_STEP = "update-quality-control";
+
     private File catalogBamFile;
     private List<String> targetGenes;
 
@@ -79,12 +82,21 @@ public class AlignmentGeneCoverageStatsAnalysis extends OpenCgaToolScopeStudy {
         targetGenes = new ArrayList<>(new HashSet<>(analysisParams.getGenes()));
     }
 
-    private static final String COMPUTE_GENE_COVERAGE_STEP = "gene-coverage-stats";
-    private static final String UPDATE_QUAlITY_CONTROL_STEP = "update-quality-control";
+    @Override
+    protected List<String> getSteps() {
+        List<String> steps = new ArrayList<>();
+        steps.add(COMPUTE_GENE_COVERAGE_STEP);
+        steps.add(UPDATE_QUAlITY_CONTROL_STEP);
+        return steps;
+    }
 
     @Override
     protected void run() throws ToolException {
+
+        setUpStorageEngineExecutor(study);
+
         AlignmentGeneCoverageStatsAnalysisExecutor executor = getToolExecutor(AlignmentGeneCoverageStatsAnalysisExecutor.class)
+                .setStudyId(getStudy())
                 .setBamFileId(catalogBamFile.getId())
                 .setGenes(targetGenes);
 

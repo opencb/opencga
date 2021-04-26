@@ -30,16 +30,15 @@ import static org.opencb.opencga.core.api.ParamConstants.LOW_COVERAGE_REGION_THR
 public class AlignmentGeneCoverageStatsLocalAnalysisExecutor extends AlignmentGeneCoverageStatsAnalysisExecutor
         implements StorageToolExecutor {
 
+    public final static String ID = AlignmentGeneCoverageStatsAnalysis.ID + "-local";
+
     @Override
     public void run() throws ToolException {
         try {
             OpenCGAResult<GeneCoverageStats> geneCoverageStatsResult = getAlignmentStorageManager().coverageStats(getStudyId(),
                     getBamFileId(), getGenes(), Integer.parseInt(LOW_COVERAGE_REGION_THRESHOLD_DEFAULT), getToken());
 
-            if (geneCoverageStatsResult.getNumResults() != 1) {
-                throw new ToolException("Something wrong happened when computing gene coverage stats: no results returned");
-            }
-            geneCoverageStats.add(geneCoverageStatsResult.first());
+            geneCoverageStats = geneCoverageStatsResult.getResults();
         } catch (Exception e) {
             throw new ToolException(e);
         }

@@ -318,8 +318,8 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String file;
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " (BAM file)", required = true, arity = 1)
+        public String bamFile;
 
         @Parameter(names = {"--genes"}, description = GENE_DESCRIPTION, required = true, arity = 1)
         public String genes;

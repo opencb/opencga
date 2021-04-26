@@ -174,7 +174,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 .geneCoverageStatsAlignmentCommandOptions;
 
         ObjectMap params = new AlignmentGeneCoverageStatsParams(
-                cliOptions.file,
+                cliOptions.bamFile,
                 Arrays.asList(cliOptions.genes.split(",")),
                 cliOptions.outdir
         ).toObjectMap(cliOptions.commonOptions.params)
