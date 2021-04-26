@@ -918,15 +918,14 @@ public class RgaManager implements AutoCloseable {
                     knockoutTypeCount.getNumDelOverlapVariants());
             knockoutByIndividualSummary.setVariantStats(variantStats);
 
-            // 3. Get gene id list
+            // 3. Get gene name list
             QueryOptions geneFacet = new QueryOptions()
                     .append(QueryOptions.LIMIT, -1)
-                    .append(QueryOptions.FACET, RgaDataModel.GENE_ID + ">>" + RgaDataModel.GENE_NAME);
+                    .append(QueryOptions.FACET, RgaDataModel.GENE_NAME);
             facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, geneFacet);
-            List<KnockoutByIndividualSummary.Gene> geneIds = facetFieldDataResult.first().getBuckets()
+            List<String> geneIds = facetFieldDataResult.first().getBuckets()
                     .stream()
-                    .map((bucket) -> new KnockoutByIndividualSummary.Gene(bucket.getValue(),
-                            bucket.getFacetFields().get(0).getBuckets().get(0).getValue()))
+                    .map(FacetField.Bucket::getValue)
                     .collect(Collectors.toList());
             knockoutByIndividualSummary.setGenes(geneIds);
 

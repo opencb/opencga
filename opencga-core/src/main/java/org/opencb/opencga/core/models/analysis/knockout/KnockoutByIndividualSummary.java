@@ -19,7 +19,7 @@ public class KnockoutByIndividualSummary {
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
-    private List<Gene> genes;
+    private List<String> genes;
     private VariantStats variantStats;
 
     public KnockoutByIndividualSummary() {
@@ -34,7 +34,7 @@ public class KnockoutByIndividualSummary {
 
     public KnockoutByIndividualSummary(String id, String sampleId, String motherId, String motherSampleId, String fatherId,
                                        String fatherSampleId, IndividualProperty.Sex sex, List<Phenotype> phenotypes,
-                                       List<Disorder> disorders, List<Gene> genes, VariantStats variantStats) {
+                                       List<Disorder> disorders, List<String> genes, VariantStats variantStats) {
         this.id = id;
         this.sampleId = sampleId;
         this.motherId = motherId;
@@ -147,11 +147,11 @@ public class KnockoutByIndividualSummary {
         return this;
     }
 
-    public List<Gene> getGenes() {
+    public List<String> getGenes() {
         return genes;
     }
 
-    public KnockoutByIndividualSummary setGenes(List<Gene> genes) {
+    public KnockoutByIndividualSummary setGenes(List<String> genes) {
         this.genes = genes;
         return this;
     }
@@ -163,46 +163,6 @@ public class KnockoutByIndividualSummary {
     public KnockoutByIndividualSummary setVariantStats(VariantStats variantStats) {
         this.variantStats = variantStats;
         return this;
-    }
-
-    public static class Gene {
-        private String id;
-        private String name;
-
-        public Gene() {
-        }
-
-        public Gene(String id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("Gene{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", name='").append(name).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public Gene setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public Gene setName(String name) {
-            this.name = name;
-            return this;
-        }
     }
 
 }
