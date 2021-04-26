@@ -41,9 +41,7 @@ import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
@@ -81,6 +79,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "qc-run":
                 queryResponse = qcRun();
+                break;
+            case "gene-coverage-stats-run":
+                queryResponse = geneCoverageStatsRun();
                 break;
             case "coverage-index-run":
                 queryResponse = coverageRun();
@@ -335,6 +336,17 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getAlignmentClient().runQc(new AlignmentQcParams(cliOptions.bamFile, cliOptions.bedFile, cliOptions.dictFile,
                 cliOptions.runSamtoolsStats, cliOptions.runSamtoolsFlagStats, cliOptions.runFastQC, cliOptions.runHsMetrics,
                 cliOptions.outdir), params);
+    }
+
+    private RestResponse<Job> geneCoverageStatsRun() throws ClientException {
+        AlignmentCommandOptions.GeneCoverageStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions
+                .geneCoverageStatsAlignmentCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return openCGAClient.getAlignmentClient().genecoveragestatsQc(new AlignmentGeneCoverageStatsParams(cliOptions.file,
+                Arrays.asList(cliOptions.genes.split(",")), cliOptions.outdir), params);
     }
 
     //-------------------------------------------------------------------------

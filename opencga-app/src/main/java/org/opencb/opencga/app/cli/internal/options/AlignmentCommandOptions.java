@@ -17,7 +17,8 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
@@ -38,10 +39,11 @@ public class AlignmentCommandOptions {
     public IndexAlignmentCommandOptions indexAlignmentCommandOptions;
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
     public QcAlignmentCommandOptions qcAlignmentCommandOptions;
-    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
-    public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
-    public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
-    public HsMetricsAlignmentCommandOptions hsMetricsAlignmentCommandOptions;
+    public GeneCoverageStatsAlignmentCommandOptions geneCoverageStatsAlignmentCommandOptions;
+//    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
+//    public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
+//    public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
+//    public HsMetricsAlignmentCommandOptions hsMetricsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
@@ -73,10 +75,11 @@ public class AlignmentCommandOptions {
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         this.qcAlignmentCommandOptions = new QcAlignmentCommandOptions();
-        this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
-        this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
-        this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
-        this.hsMetricsAlignmentCommandOptions = new HsMetricsAlignmentCommandOptions();
+        this.geneCoverageStatsAlignmentCommandOptions = new GeneCoverageStatsAlignmentCommandOptions();
+//        this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
+//        this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
+//        this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
+//        this.hsMetricsAlignmentCommandOptions = new HsMetricsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
@@ -298,6 +301,28 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " (dictionary file)", required = true, arity = 1)
         public String dictFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"gene-coverage-stats-run"}, commandDescription = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION)
+    public class GeneCoverageStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"--genes"}, description = GENE_DESCRIPTION, required = true, arity = 1)
+        public String genes;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

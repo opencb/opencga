@@ -391,6 +391,20 @@ public class AlignmentWebService extends AnalysisWebService {
         return submitJob(AlignmentQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @POST
+    @Path("/qc/genecoveragestats")
+    @ApiOperation(value = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION, response = Job.class)
+    public Response geneCoverageStatsRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentGeneCoverageStatsParams.DESCRIPTION, required = true) AlignmentGeneCoverageStatsParams params) {
+
+        return submitJob(AlignmentGeneCoverageStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
     //-------------------------------------------------------------------------
     // W R A P P E R S
     //-------------------------------------------------------------------------

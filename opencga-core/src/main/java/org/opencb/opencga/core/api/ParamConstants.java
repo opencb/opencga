@@ -342,6 +342,7 @@ public class ParamConstants {
     public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given alignment file";
     public static final String ALIGNMENT_FASTQC_METRICS_DESCRIPTION = "Compute sequence stats (based on FastQC tool) for a given alignment file";
     public static final String ALIGNMENT_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics (based on Picard tool) for a given alignment file";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION = "Compute gene coverage stats for a given alignment file and a list of genes";
     public static final String ALIGNMENT_QC_SAMTOOLS_STATS_DESCRIPTION = "Compute samtools stats";
     public static final String ALIGNMENT_QC_SAMTOOLS_FLAG_STATS_DESCRIPTION = "Compute samtools flag stats";
     public static final String ALIGNMENT_QC_FASTQC_DESCRIPTION = "Compute FastQC";
