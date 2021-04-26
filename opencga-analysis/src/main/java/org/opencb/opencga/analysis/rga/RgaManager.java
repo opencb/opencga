@@ -814,68 +814,55 @@ public class RgaManager implements AutoCloseable {
             // 2. Get KnockoutType counts
             QueryOptions knockoutTypeFacet = new QueryOptions()
                     .append(QueryOptions.LIMIT, -1)
-                    .append(QueryOptions.FACET, RgaDataModel.FULL_VARIANT_INFO);
+                    .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
             DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
             KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
             for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
-                knockoutTypeCount.processVariant(variantBucket.getValue());
+                RgaUtils.CodedFeature codedFeature = RgaUtils.CodedFeature.parseEncodedId(variantBucket.getValue());
+                knockoutTypeCount.processFeature(codedFeature);
             }
-            VariantStats variantStats = new VariantStats(knockoutTypeCount.getNumVariants(), knockoutTypeCount.getNumHomVariants(),
-                    knockoutTypeCount.getNumCompHetVariants(), knockoutTypeCount.getNumHetVariants(),
-                    knockoutTypeCount.getNumDelOverlapVariants());
+            VariantStats variantStats = new VariantStats(knockoutTypeCount.getNumIds(), knockoutTypeCount.getNumHomIds(),
+                    knockoutTypeCount.getNumCompHetIds(), knockoutTypeCount.getNumHetIds(),
+                    knockoutTypeCount.getNumDelOverlapIds());
             geneSummary.setVariantStats(variantStats);
 
             // 3. Get individual knockout type counts
             QueryOptions geneFacet = new QueryOptions()
                     .append(QueryOptions.LIMIT, -1)
-                    .append(QueryOptions.FACET, RgaDataModel.NUM_PARENTS + ">>" + RgaDataModel.INDIVIDUAL_ID + ">>"
-                            + RgaDataModel.KNOCKOUT_TYPES);
+                    .append(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_SUMMARY);
             facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, geneFacet);
-            VariantStats noParents = new VariantStats();
-            VariantStats singleParent = new VariantStats();
-            VariantStats bothParents = new VariantStats();
+            KnockoutTypeCount noParentsCount = new KnockoutTypeCount(auxQuery);
+            KnockoutTypeCount singleParentCount = new KnockoutTypeCount(auxQuery);
+            KnockoutTypeCount bothParentsCount = new KnockoutTypeCount(auxQuery);
 
-            for (FacetField.Bucket numParentsBucket : facetFieldDataResult.first().getBuckets()) {
-                VariantStats auxVariantStats;
-                switch (numParentsBucket.getValue()) {
-                    case "0":
-                        auxVariantStats = noParents;
+            for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
+                RgaUtils.CodedIndividual codedIndividual = RgaUtils.CodedIndividual.parseEncodedId(bucket.getValue());
+                KnockoutTypeCount auxKnockoutType;
+                switch (codedIndividual.getNumParents()) {
+                    case 0:
+                        auxKnockoutType = noParentsCount;
                         break;
-                    case "1":
-                        auxVariantStats = singleParent;
+                    case 1:
+                        auxKnockoutType = singleParentCount;
                         break;
-                    case "2":
-                        auxVariantStats = bothParents;
+                    case 2:
+                        auxKnockoutType = bothParentsCount;
                         break;
                     default:
-                        throw new IllegalStateException("Unexpected value: " + numParentsBucket.getValue());
+                        throw new IllegalStateException("Unexpected value: " + codedIndividual.getNumParents());
                 }
-                for (FacetField.Bucket individualBucket : numParentsBucket.getFacetFields().get(0).getBuckets()) {
-                    for (FacetField.Bucket knockoutTypeBucket : individualBucket.getFacetFields().get(0).getBuckets()) {
-                        KnockoutVariant.KnockoutType knockoutType = KnockoutVariant.KnockoutType.valueOf(knockoutTypeBucket.getValue());
-                        switch (knockoutType) {
-                            case HOM_ALT:
-                                auxVariantStats.setNumHomAlt(auxVariantStats.getNumHomAlt() + 1);
-                                break;
-                            case COMP_HET:
-                                auxVariantStats.setNumCompHet(auxVariantStats.getNumCompHet() + 1);
-                                break;
-                            case HET_ALT:
-                                auxVariantStats.setNumHetAlt(auxVariantStats.getNumHetAlt() + 1);
-                                break;
-                            case DELETION_OVERLAP:
-                                auxVariantStats.setNumDelOverlap(auxVariantStats.getNumDelOverlap() + 1);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unexpected value: " + knockoutType);
-                        }
-                        auxVariantStats.setCount(auxVariantStats.getNumCompHet() + auxVariantStats.getNumHomAlt()
-                                + auxVariantStats.getNumHetAlt() + auxVariantStats.getNumDelOverlap());
-                    }
-                }
-            }
 
-            geneSummary.setIndividualStats(new IndividualStats(noParents, singleParent, bothParents));
+                auxKnockoutType.processFeature(codedIndividual);
+            }
+            VariantStats noParentIndividualStats = new VariantStats(noParentsCount.getNumIds(), noParentsCount.getNumHomIds(),
+                    noParentsCount.getNumCompHetIds(), noParentsCount.getNumHetIds(), noParentsCount.getNumDelOverlapIds());
+            VariantStats singleParentIndividualStats = new VariantStats(singleParentCount.getNumIds(), singleParentCount.getNumHomIds(),
+                    singleParentCount.getNumCompHetIds(), singleParentCount.getNumHetIds(), singleParentCount.getNumDelOverlapIds());
+            VariantStats bothParentIndividualStats = new VariantStats(bothParentsCount.getNumIds(), bothParentsCount.getNumHomIds(),
+                    bothParentsCount.getNumCompHetIds(), bothParentsCount.getNumHetIds(), bothParentsCount.getNumDelOverlapIds());
+
+            geneSummary.setIndividualStats(new IndividualStats(noParentIndividualStats, singleParentIndividualStats,
+                    bothParentIndividualStats));
 
             knockoutByGeneSummaryList.add(geneSummary);
         }
@@ -907,15 +894,16 @@ public class RgaManager implements AutoCloseable {
             // 2. Get KnockoutType counts
             QueryOptions knockoutTypeFacet = new QueryOptions()
                     .append(QueryOptions.LIMIT, -1)
-                    .append(QueryOptions.FACET, RgaDataModel.FULL_VARIANT_INFO);
+                    .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
             DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
             KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(auxQuery);
             for (FacetField.Bucket variantBucket : facetFieldDataResult.first().getBuckets()) {
-                knockoutTypeCount.processVariant(variantBucket.getValue());
+                RgaUtils.CodedFeature codedFeature = RgaUtils.CodedFeature.parseEncodedId(variantBucket.getValue());
+                knockoutTypeCount.processFeature(codedFeature);
             }
-            VariantStats variantStats = new VariantStats(knockoutTypeCount.getNumVariants(), knockoutTypeCount.getNumHomVariants(),
-                    knockoutTypeCount.getNumCompHetVariants(), knockoutTypeCount.getNumHetVariants(),
-                    knockoutTypeCount.getNumDelOverlapVariants());
+            VariantStats variantStats = new VariantStats(knockoutTypeCount.getNumIds(), knockoutTypeCount.getNumHomIds(),
+                    knockoutTypeCount.getNumCompHetIds(), knockoutTypeCount.getNumHetIds(),
+                    knockoutTypeCount.getNumDelOverlapIds());
             knockoutByIndividualSummary.setVariantStats(variantStats);
 
             // 3. Get gene name list
@@ -942,22 +930,22 @@ public class RgaManager implements AutoCloseable {
         private Set<String> typeQuery;
         private Set<String> consequenceTypeQuery;
 
-        private Set<String> variantIds;
-        private Set<String> compHetVariantIds;
-        private Set<String> homVariantIds;
-        private Set<String> hetVariantIds;
-        private Set<String> delOverlapVariantIds;
+        private Set<String> ids;
+        private Set<String> compHetIds;
+        private Set<String> homIds;
+        private Set<String> hetIds;
+        private Set<String> delOverlapIds;
 
         public KnockoutTypeCount(Query query) throws RgaException {
             knockoutTypeQuery = new HashSet<>();
             popFreqQuery = new LinkedList<>();
             typeQuery = new HashSet<>();
             consequenceTypeQuery = new HashSet<>();
-            variantIds = new HashSet<>();
-            compHetVariantIds = new HashSet<>();
-            homVariantIds = new HashSet<>();
-            hetVariantIds = new HashSet<>();
-            delOverlapVariantIds = new HashSet<>();
+            ids = new HashSet<>();
+            compHetIds = new HashSet<>();
+            homIds = new HashSet<>();
+            hetIds = new HashSet<>();
+            delOverlapIds = new HashSet<>();
 
             query = ParamUtils.defaultObject(query, Query::new);
             knockoutTypeQuery.addAll(query.getAsStringList(RgaQueryParams.KNOCKOUT.key()));
@@ -976,65 +964,63 @@ public class RgaManager implements AutoCloseable {
             }
         }
 
-        public void processVariant(String variant) throws RgaException {
-            RgaUtils.CodedVariant codedVariant = new RgaUtils.CodedVariant(variant);
-
-            if (!knockoutTypeQuery.isEmpty() && !knockoutTypeQuery.contains(codedVariant.getKnockoutType())) {
+        public void processFeature(RgaUtils.CodedFeature codedFeature) {
+            if (!knockoutTypeQuery.isEmpty() && !knockoutTypeQuery.contains(codedFeature.getKnockoutType())) {
                 return;
             }
             if (!popFreqQuery.isEmpty()) {
                 for (Set<String> popFreq : popFreqQuery) {
-                    if (codedVariant.getPopulationFrequencies().stream().noneMatch(popFreq::contains)) {
+                    if (codedFeature.getPopulationFrequencies().stream().noneMatch(popFreq::contains)) {
                         return;
                     }
                 }
             }
-            if (!typeQuery.isEmpty() && !typeQuery.contains(codedVariant.getType())) {
+            if (!typeQuery.isEmpty() && !typeQuery.contains(codedFeature.getType())) {
                 return;
             }
             if (!consequenceTypeQuery.isEmpty()
-                    && codedVariant.getConsequenceType().stream().noneMatch((ct) -> consequenceTypeQuery.contains(ct))) {
+                    && codedFeature.getConsequenceType().stream().noneMatch((ct) -> consequenceTypeQuery.contains(ct))) {
                 return;
             }
 
-            variantIds.add(codedVariant.getVariantId());
-            KnockoutVariant.KnockoutType knockoutType = KnockoutVariant.KnockoutType.valueOf(codedVariant.getKnockoutType());
+            ids.add(codedFeature.getId());
+            KnockoutVariant.KnockoutType knockoutType = KnockoutVariant.KnockoutType.valueOf(codedFeature.getKnockoutType());
             switch (knockoutType) {
                 case HOM_ALT:
-                    homVariantIds.add(codedVariant.getVariantId());
+                    homIds.add(codedFeature.getId());
                     break;
                 case COMP_HET:
-                    compHetVariantIds.add(codedVariant.getVariantId());
+                    compHetIds.add(codedFeature.getId());
                     break;
                 case HET_ALT:
-                    hetVariantIds.add(codedVariant.getVariantId());
+                    hetIds.add(codedFeature.getId());
                     break;
                 case DELETION_OVERLAP:
-                    delOverlapVariantIds.add(codedVariant.getVariantId());
+                    delOverlapIds.add(codedFeature.getId());
                     break;
                 default:
-                    throw new IllegalStateException("Unexpected value: " + codedVariant.getKnockoutType());
+                    throw new IllegalStateException("Unexpected value: " + codedFeature.getKnockoutType());
             }
         }
 
-        public int getNumVariants() {
-            return variantIds.size();
+        public int getNumIds() {
+            return ids.size();
         }
 
-        public int getNumCompHetVariants() {
-            return compHetVariantIds.size();
+        public int getNumCompHetIds() {
+            return compHetIds.size();
         }
 
-        public int getNumHomVariants() {
-            return homVariantIds.size();
+        public int getNumHomIds() {
+            return homIds.size();
         }
 
-        public int getNumHetVariants() {
-            return hetVariantIds.size();
+        public int getNumHetIds() {
+            return hetIds.size();
         }
 
-        public int getNumDelOverlapVariants() {
-            return delOverlapVariantIds.size();
+        public int getNumDelOverlapIds() {
+            return delOverlapIds.size();
         }
     }
 

@@ -205,6 +205,18 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         disorderJson = Collections.emptyList();
                     }
 
+                    String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
+                    String individualId = knockoutByIndividual.getId();
+
+                    int numParents = 0;
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherId())) {
+                        numParents++;
+                    }
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getMotherId())) {
+                        numParents++;
+                    }
+
+                    Set<String> individualKnockoutSet = new HashSet<>();
                     List<String> variantIds = new ArrayList<>(transcript.getVariants().size());
                     List<String> knockoutTypes = new ArrayList<>(transcript.getVariants().size());
                     List<String> variantKnockoutList = new ArrayList<>(transcript.getVariants().size());
@@ -245,21 +257,16 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         }
 
                         Map<String, String> variantPopFreq = getPopulationFrequencies(variant);
-                        RgaUtils.CodedVariant codedVariant = new RgaUtils.CodedVariant(variant.getId(), variant.getType().name(),
+                        RgaUtils.CodedFeature codedFeature = new RgaUtils.CodedFeature(variant.getId(), variant.getType().name(),
                                 variant.getKnockoutType().name(), variantConsequenceTypes,
                                 variantPopFreq.get(RgaUtils.THOUSAND_GENOMES_STUDY), variantPopFreq.get(RgaUtils.GNOMAD_GENOMES_STUDY));
-                        variantKnockoutList.add(codedVariant.getFullVariant());
-                    }
+                        variantKnockoutList.add(codedFeature.getEncodedId());
 
-                    String id = knockoutByIndividual.getSampleId() + "_" + gene.getId() + "_" + transcript.getId();
-                    String individualId = knockoutByIndividual.getId();
-
-                    int numParents = 0;
-                    if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherId())) {
-                        numParents++;
-                    }
-                    if (StringUtils.isNotEmpty(knockoutByIndividual.getMotherId())) {
-                        numParents++;
+                        RgaUtils.CodedIndividual codedIndividual = new RgaUtils.CodedIndividual(individualId, variant.getType().name(),
+                                variant.getKnockoutType().name(), variantConsequenceTypes,
+                                variantPopFreq.get(RgaUtils.THOUSAND_GENOMES_STUDY), variantPopFreq.get(RgaUtils.GNOMAD_GENOMES_STUDY),
+                                numParents);
+                        individualKnockoutSet.add(codedIndividual.getEncodedId());
                     }
 
                     String sex = knockoutByIndividual.getSex() != null
@@ -290,7 +297,8 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                             .setVariants(variantIds)
                             .setTypes(new ArrayList<>(types))
                             .setKnockoutTypes(knockoutTypes)
-                            .setFullVariantInfo(variantKnockoutList)
+                            .setIndividualSummary(new ArrayList<>(individualKnockoutSet))
+                            .setVariantSummary(variantKnockoutList)
                             .setFilters(new ArrayList<>(filters))
                             .setConsequenceTypes(new ArrayList<>(consequenceTypes))
                             .setClinicalSignificances(new ArrayList<>(clinicalSignificances))
