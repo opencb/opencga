@@ -307,8 +307,8 @@ public class RgaManager implements AutoCloseable {
         int limitIndividuals = queryOptions.getInt(RgaQueryParams.LIMIT_INDIVIDUAL, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
 
         // 4. Solr gene query
-        List<RgaKnockoutByGene> knockoutResultList = geneConverter.convertToDataModelType(rgaIterator, variantDBIterator, skipIndividuals,
-                limitIndividuals);
+        List<RgaKnockoutByGene> knockoutResultList = geneConverter.convertToDataModelType(rgaIterator, variantDBIterator,
+                includeIndividuals, skipIndividuals, limitIndividuals);
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<RgaKnockoutByGene> knockoutResult = new OpenCGAResult<>(time, Collections.emptyList(), knockoutResultList.size(),
                 knockoutResultList, -1);
@@ -459,7 +459,7 @@ public class RgaManager implements AutoCloseable {
 
         // 4. Solr gene query
         List<KnockoutByVariant> knockoutResultList = variantConverter.convertToDataModelType(rgaIterator, variantDBIterator,
-                query.getAsStringList(RgaQueryParams.VARIANTS.key()), skipIndividuals, limitIndividuals);
+                query.getAsStringList(RgaQueryParams.VARIANTS.key()), includeIndividuals, skipIndividuals, limitIndividuals);
 
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByVariant> knockoutResult = new OpenCGAResult<>(time, Collections.emptyList(), knockoutResultList.size(),
@@ -478,7 +478,7 @@ public class RgaManager implements AutoCloseable {
             for (KnockoutByVariant knockout : knockoutResult.getResults()) {
                 List<KnockoutByIndividual> individualList = new ArrayList<>(knockout.getIndividuals().size());
                 for (KnockoutByIndividual individual : knockout.getIndividuals()) {
-                    if (includeSampleIds.contains(individual.getId())) {
+                    if (includeSampleIds.contains(individual.getSampleId())) {
                         individualList.add(individual);
                     }
                 }
@@ -500,10 +500,10 @@ public class RgaManager implements AutoCloseable {
         }
         List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
-//        if (variantIds.size() > 1000) {
-//            // TODO: Batches
-//            variantIds = variantIds.subList(0, 100);
-//        }
+        if (variantIds.size() > 500) {
+            // TODO: Batches
+            variantIds = variantIds.subList(0, 500);
+        }
 
         Query variantQuery = new Query(VariantQueryParam.ID.key(), variantIds)
                 .append(VariantQueryParam.STUDY.key(), study)

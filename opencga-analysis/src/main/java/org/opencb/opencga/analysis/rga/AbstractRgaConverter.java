@@ -55,16 +55,18 @@ public abstract class AbstractRgaConverter {
     }
 
     protected class ProcessedIndividuals {
-
+        // User parameters
         private int limit;
         private int skip;
+        private Set<String> includeIndividuals;
 
         private Set<String> excludedIndividuals;
         private Set<String> includedIndividuals;
 
-        public ProcessedIndividuals(int limit, int skip) {
+        public ProcessedIndividuals(int limit, int skip, List<String> includeIndividuals) {
             this.limit = limit;
             this.skip = skip;
+            this.includeIndividuals = new HashSet<>(includeIndividuals);
 
             this.excludedIndividuals = new HashSet<>();
             this.includedIndividuals = new HashSet<>();
@@ -73,10 +75,10 @@ public abstract class AbstractRgaConverter {
         private void addIndividual(String individual) {
             if (!excludedIndividuals.contains(individual) && !includedIndividuals.contains(individual)) {
                 if (limit > includedIndividuals.size()) {
-                    if (skip > excludedIndividuals.size()) {
-                        excludedIndividuals.add(individual);
-                    } else {
+                    if ((!includeIndividuals.isEmpty() && includeIndividuals.contains(individual)) || skip <= excludedIndividuals.size()) {
                         includedIndividuals.add(individual);
+                    } else {
+                        excludedIndividuals.add(individual);
                     }
                 } else {
                     excludedIndividuals.add(individual);

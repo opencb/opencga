@@ -76,11 +76,11 @@ public class GeneRgaConverter extends AbstractRgaConverter {
     }
 
     public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator) {
-        return convertToDataModelType(rgaIterator, variantDBIterator, 0, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
+        return convertToDataModelType(rgaIterator, variantDBIterator, Collections.emptyList(), 0, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
     }
 
     public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator,
-                                                          int skipIndividuals, int limitIndividuals) {
+                                                          List<String> includeIndividuals, int skipIndividuals, int limitIndividuals) {
         Map<String, Variant> variantMap = new HashMap<>();
         while (variantDBIterator.hasNext()) {
             Variant variant = variantDBIterator.next();
@@ -105,7 +105,8 @@ public class GeneRgaConverter extends AbstractRgaConverter {
                 knockoutByGene.setIndividuals(new ArrayList<>(limitIndividuals));
                 knockoutByGene.setNumIndividuals(0);
                 result.put(rgaDataModel.getGeneId(), knockoutByGene);
-                geneIndividualMap.put(rgaDataModel.getGeneId(), new ProcessedIndividuals(limitIndividuals, skipIndividuals));
+                geneIndividualMap.put(rgaDataModel.getGeneId(), new ProcessedIndividuals(limitIndividuals, skipIndividuals,
+                        includeIndividuals));
             }
 
             ProcessedIndividuals processedIndividuals = geneIndividualMap.get(rgaDataModel.getGeneId());

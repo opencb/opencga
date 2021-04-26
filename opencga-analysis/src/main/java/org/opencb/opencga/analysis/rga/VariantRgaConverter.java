@@ -90,11 +90,13 @@ public class VariantRgaConverter extends AbstractRgaConverter {
 
     public List<KnockoutByVariant> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator,
                                                           List<String> includeVariants) {
-        return convertToDataModelType(rgaIterator, variantDBIterator, includeVariants, 0, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
+        return convertToDataModelType(rgaIterator, variantDBIterator, includeVariants, Collections.emptyList(), 0,
+                RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
     }
 
     public List<KnockoutByVariant> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator,
-                                                          List<String> includeVariants, int skipIndividuals, int limitIndividuals) {
+                                                          List<String> includeVariants, List<String> includeIndividuals,
+                                                          int skipIndividuals, int limitIndividuals) {
         Set<String> includeVariantIds = new HashSet<>(includeVariants);
 
         Map<String, Variant> variantMap = new HashMap<>();
@@ -124,7 +126,7 @@ public class VariantRgaConverter extends AbstractRgaConverter {
                         variantOrder.add(variant);
 
                         // Add also to the map to control the nested individuals that should actually be processed
-                        variantIndividualMap.put(variant, new ProcessedIndividuals(limitIndividuals, skipIndividuals));
+                        variantIndividualMap.put(variant, new ProcessedIndividuals(limitIndividuals, skipIndividuals, includeIndividuals));
                     }
                 }
             }
