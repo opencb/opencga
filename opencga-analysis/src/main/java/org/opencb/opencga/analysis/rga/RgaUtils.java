@@ -4,14 +4,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -41,7 +40,11 @@ class RgaUtils {
     public static final Set<String> ALL_PARAMS;
     public static final Map<String, Set<String>> PARAM_TYPES;
 
+    private static final Logger logger;
+
     static {
+        logger = LoggerFactory.getLogger(RgaUtils.class);
+
         ENCODE_MAP = new HashMap<>();
 
         // KNOCKOUT TYPE
@@ -273,7 +276,10 @@ class RgaUtils {
             for (int i = 0; i < rgaDataModel.getVariants().size(); i++) {
                 String variantId = rgaDataModel.getVariants().get(i);
 
-                if (variantMap.containsKey(variantId) && (variantIds.isEmpty() || variantIds.contains(variantId))) {
+                if (variantIds.isEmpty() || variantIds.contains(variantId)) {
+                    KnockoutVariant knockoutVariant;
+
+                    if (variantMap.containsKey(variantId)) {
                         Variant variant = variantMap.get(variantId);
 
                         SampleEntry sampleEntry = variant.getStudies().get(0).getSample(rgaDataModel.getSampleId());
@@ -283,8 +289,35 @@ class RgaUtils {
                         }
 
                         // Convert just once
-                        KnockoutVariant knockoutVariant = convertToKnockoutVariant(variant, sampleEntry, knockoutType);
+                        knockoutVariant = convertToKnockoutVariant(variant, sampleEntry, knockoutType);
+                    } else if (CollectionUtils.isNotEmpty(rgaDataModel.getVariantSummary())) {
+                        String variantSummaryId = rgaDataModel.getVariantSummary().get(i);
+                        // Get the basic information from variant summary object
+                        try {
+                            CodedFeature codedFeature = CodedFeature.parseEncodedId(variantSummaryId);
+                            Variant variant = new Variant(variantId);
 
+                            knockoutVariant = new KnockoutVariant()
+                                    .setId(codedFeature.getId())
+                                    .setKnockoutType(KnockoutVariant.KnockoutType.valueOf(codedFeature.getKnockoutType()))
+                                    .setType(VariantType.valueOf(codedFeature.getType()))
+                                    .setChromosome(variant.getChromosome())
+                                    .setStart(variant.getStart())
+                                    .setEnd(variant.getEnd())
+                                    .setLength(variant.getLength());
+                        } catch (RgaException e) {
+                            logger.warn("Could not parse coded variant {}", variantSummaryId, e);
+                            knockoutVariant = new KnockoutVariant().setId(variantId);
+                        }
+                    } else {
+                        Variant variant = new Variant(variantId);
+                        knockoutVariant = new KnockoutVariant()
+                                .setId(variantId)
+                                .setChromosome(variant.getChromosome())
+                                .setStart(variant.getStart())
+                                .setEnd(variant.getEnd())
+                                .setLength(variant.getLength());
+                    }
                     knockoutVariantList.add(knockoutVariant);
                 }
             }
