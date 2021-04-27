@@ -261,41 +261,14 @@ public class RgaManager implements AutoCloseable {
             includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
         }
 
-        Future<VariantDBIterator> variantFuture = null;
-        if (includeVariants(geneConverter, options)) {
-            variantFuture = executor.submit(
-                    () -> variantStorageQuery(study.getFqn(), new ArrayList<>(includeSampleIds), auxQuery, options, token)
-            );
-        }
-
-        Future<RgaIterator> tmpResultFuture = executor.submit(
-                () -> rgaEngine.geneQuery(collection, auxQuery, queryOptions)
-        );
-
-        VariantDBIterator variantDBIterator;
-        if (variantFuture != null) {
-            try {
-                variantDBIterator = variantFuture.get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RgaException(e.getMessage(), e);
-            }
-        } else {
-            variantDBIterator = VariantDBIterator.EMPTY_ITERATOR;
-        }
-
-        RgaIterator rgaIterator;
-        try {
-            rgaIterator = tmpResultFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RgaException(e.getMessage(), e);
-        }
+        RgaIterator rgaIterator = rgaEngine.geneQuery(collection, auxQuery, queryOptions);
 
         int skipIndividuals = queryOptions.getInt(RgaQueryParams.SKIP_INDIVIDUAL);
         int limitIndividuals = queryOptions.getInt(RgaQueryParams.LIMIT_INDIVIDUAL, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
 
         // 4. Solr gene query
-        List<RgaKnockoutByGene> knockoutResultList = geneConverter.convertToDataModelType(rgaIterator, variantDBIterator,
-                includeIndividuals, skipIndividuals, limitIndividuals);
+        List<RgaKnockoutByGene> knockoutResultList = geneConverter.convertToDataModelType(rgaIterator, includeIndividuals, skipIndividuals,
+                limitIndividuals);
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<RgaKnockoutByGene> knockoutResult = new OpenCGAResult<>(time, Collections.emptyList(), knockoutResultList.size(),
                 knockoutResultList, -1);
