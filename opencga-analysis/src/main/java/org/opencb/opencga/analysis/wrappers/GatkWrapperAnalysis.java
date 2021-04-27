@@ -19,9 +19,9 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -107,12 +107,12 @@ public class GatkWrapperAnalysis extends OpenCgaWrapperAnalysis {
         });
     }
 
-    @Override
-    public String getDockerImageName() {
-        return GATK_DOCKER_IMAGE;
-    }
+//    @Override
+//    public String getDockerImageName() {
+//        return GATK_DOCKER_IMAGE;
+//    }
 
-    @Override
+//    @Override
     public String getCommandLine() throws ToolException {
         StringBuilder sb = new StringBuilder("docker run ");
 
@@ -125,7 +125,7 @@ public class GatkWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
 
         // Docker image and version
-        sb.append(getDockerImageName());
+        sb.append(GATK_DOCKER_IMAGE);
         if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }

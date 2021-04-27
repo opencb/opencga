@@ -128,9 +128,10 @@ public class ToolExecutorFactory {
         if (annotation == null) {
             return false;
         }
-        if (!annotation.tool().equals(toolId)) {
-            return false;
-        }
+        // JT commented it to allow tools to call any executor (even executors from other tools)
+//        if (!annotation.tool().equals(toolId)) {
+//            return false;
+//        }
         if (StringUtils.isNotEmpty(toolExecutorId) && !toolExecutorId.equals(annotation.id())) {
             return false;
         }

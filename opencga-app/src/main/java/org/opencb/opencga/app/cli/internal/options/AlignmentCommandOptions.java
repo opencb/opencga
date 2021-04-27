@@ -17,7 +17,11 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 
@@ -34,8 +38,12 @@ public class AlignmentCommandOptions {
 
     public IndexAlignmentCommandOptions indexAlignmentCommandOptions;
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
-    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
-    public StatsInfoAlignmentCommandOptions statsInfoAlignmentCommandOptions;
+    public QcAlignmentCommandOptions qcAlignmentCommandOptions;
+    public GeneCoverageStatsAlignmentCommandOptions geneCoverageStatsAlignmentCommandOptions;
+//    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
+//    public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
+//    public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
+//    public HsMetricsAlignmentCommandOptions hsMetricsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
@@ -66,8 +74,12 @@ public class AlignmentCommandOptions {
 
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
-        this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
-        this.statsInfoAlignmentCommandOptions = new StatsInfoAlignmentCommandOptions();
+        this.qcAlignmentCommandOptions = new QcAlignmentCommandOptions();
+        this.geneCoverageStatsAlignmentCommandOptions = new GeneCoverageStatsAlignmentCommandOptions();
+//        this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
+//        this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
+//        this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
+//        this.hsMetricsAlignmentCommandOptions = new HsMetricsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
@@ -175,6 +187,43 @@ public class AlignmentCommandOptions {
         public boolean count;
     }
 
+    @Parameters(commandNames = {"qc-run"}, commandDescription = ALIGNMENT_QC_DESCRIPTION)
+    public class QcAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " for the BAM file", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--bed-file"}, description = FILE_ID_DESCRIPTION + " for the BED file, mandatory to compute hybrid-selection (HS) metrics", required = false, arity = 1)
+        public String bedFile;
+
+        @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " for the dictionary file, mandatory to compute hybrid-selection (Hs) metrics", required = false, arity = 1)
+        public String dictFile;
+
+        @Parameter(names = {"--run-samtools-stats"}, description = ALIGNMENT_QC_SAMTOOLS_STATS_DESCRIPTION, required = false, arity = 0)
+        public boolean runSamtoolsStats;
+
+        @Parameter(names = {"--run-samtools-flagstats"}, description = ALIGNMENT_QC_SAMTOOLS_FLAG_STATS_DESCRIPTION, required = false, arity = 0)
+        public boolean runSamtoolsFlagStats;
+
+        @Parameter(names = {"--run-fastqc"}, description = ALIGNMENT_QC_FASTQC_DESCRIPTION, required = false, arity = 0)
+        public boolean runFastQC;
+
+        @Parameter(names = {"--run-hs-metrics"}, description = ALIGNMENT_QC_HS_METRICS_DESCRIPTION, required = false, arity = 0)
+        public boolean runHsMetrics;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
     @Parameters(commandNames = {"stats-run"}, commandDescription = ALIGNMENT_STATS_DESCRIPTION)
     public class StatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
@@ -194,8 +243,8 @@ public class AlignmentCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"stats-info"}, commandDescription = ALIGNMENT_STATS_INFO_DESCRIPTION)
-    public class StatsInfoAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {"flagstats-run"}, commandDescription = ALIGNMENT_FLAG_STATS_DESCRIPTION)
+    public class FlagStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -208,6 +257,72 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"fastqcmetrics-run"}, commandDescription = ALIGNMENT_FASTQC_METRICS_DESCRIPTION)
+    public class FastQcMetricsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"hsmetrics-run"}, commandDescription = ALIGNMENT_HS_METRICS_DESCRIPTION)
+    public class HsMetricsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " (BAM file)", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--bed-file"}, description = FILE_ID_DESCRIPTION + " (BED file with the interest regions)", required = true, arity = 1)
+        public String bedFile;
+
+        @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " (dictionary file)", required = true, arity = 1)
+        public String dictFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"gene-coverage-stats-run"}, commandDescription = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION)
+    public class GeneCoverageStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " (BAM file)", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--genes"}, description = GENE_DESCRIPTION, required = true, arity = 1)
+        public String genes;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;

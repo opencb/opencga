@@ -178,7 +178,7 @@ else:
 
 # get a list with all images
 if not args.images:
-    images = ["base", "init", "demo", "r"]
+    images = ["base", "init", "demo", "r", "samtools"]
 else:
     imagesUnsorted = args.images.split(",")
     images = []
