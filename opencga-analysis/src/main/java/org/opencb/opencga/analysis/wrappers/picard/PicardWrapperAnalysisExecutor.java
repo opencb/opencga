@@ -76,7 +76,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("I", getBamFile()),
+        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("I", getBedFile()),
                 new ImmutablePair<>("SD", getDictFile())));
 
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
@@ -96,6 +96,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
+        logger.info("Docker command line: " + sb.toString());
         runCommandLine(sb.toString());
     }
 
@@ -123,6 +124,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
+        logger.info("Docker command line: " + sb.toString());
         runCommandLine(sb.toString());
     }
 
@@ -160,6 +162,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
+        logger.info("Docker command line: " + sb.toString());
         runCommandLine(sb.toString());
     }
 

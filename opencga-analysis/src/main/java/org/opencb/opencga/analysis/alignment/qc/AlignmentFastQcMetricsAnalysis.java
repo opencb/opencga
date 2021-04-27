@@ -17,15 +17,12 @@
 package org.opencb.opencga.analysis.alignment.qc;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
-import org.opencb.biodata.formats.alignment.samtools.io.SamtoolsFlagstatsParser;
 import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.formats.sequence.fastqc.io.FastQcParser;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentFastQcMetricsParams;

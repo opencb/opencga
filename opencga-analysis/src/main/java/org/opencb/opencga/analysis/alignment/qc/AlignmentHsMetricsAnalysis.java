@@ -121,7 +121,8 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
                     .execute();
 
             if (!baitFile.exists()) {
-                throw new ToolException("Something wrong happened when running picard/BedToIntervalList");
+                throw new ToolException("Something wrong happened when running picard/BedToIntervalList. Please, check the stderr file for"
+                        + " more details.");
             }
         });
 
@@ -137,8 +138,9 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
                     .setOutFile(hsMetricsFile.getName())
                     .execute();
 
-            if (hsMetricsFile.exists()) {
-                throw new ToolException("Something wrong happened when running picard/CollectHsMetrics");
+            if (!hsMetricsFile.exists()) {
+                throw new ToolException("Something wrong happened when running picard/CollectHsMetrics. Please, check the stderr file for"
+                        + " more details.");
             }
         });
 
