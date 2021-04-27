@@ -42,7 +42,7 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
