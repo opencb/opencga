@@ -484,7 +484,14 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private Set<String> resolveVariantQuery(TreeQuery.QueryNode node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, StorageEngineException, IOException, ExecutionException, InterruptedException {
+            throws ExecutionException, InterruptedException {
+        if (baseQuery.isEmpty()) {
+            if (includeSamples == null) {
+                // Force get all samples
+                includeSamples = getAllSamplesForce();
+            }
+            return new HashSet<>(includeSamples);
+        }
 //        if (params.getBoolean("direct")) {
 //            return resolveQueryDirect(node, baseQuery, includeSamples);
 //        } else {
@@ -539,7 +546,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             int inputSampleSize = samples.size();
             individualQuery.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samples);
             samples = getCatalogManager().getIndividualManager()
-                    .search(studyFqn, individualQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), getToken())
+                    .search(studyFqn, individualQuery, new QueryOptions(QueryOptions.INCLUDE, "id,samples.id"), getToken())
                     .getResults()
                     .stream()
                     .map(Individual::getSamples)
