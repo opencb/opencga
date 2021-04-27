@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
 import org.junit.Test;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
+import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.formats.sequence.fastqc.Summary;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
@@ -569,7 +569,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         SampleQualityControl qualityControl = new SampleQualityControl();
 
         SampleAlignmentQualityControlMetrics metrics = new SampleAlignmentQualityControlMetrics();
-        metrics.setFastQc(new FastQc().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality",
+        metrics.setFastQc(new FastQcMetrics().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality",
                 "perSeqQualityScores", "perBaseSeqContent", "perSeqGcContent", "perBaseNContent", "seqLengthDistribution",
                 "seqDuplicationLevels", "overrepresentedSeqs", "adapterContent", "kmerContent")));
 

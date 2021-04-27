@@ -21,15 +21,11 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.picard.HsMetrics;
 import org.opencb.biodata.formats.alignment.picard.io.HsMetricsParser;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.wrappers.executors.FastqcWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.executors.PicardWrapperAnalysisExecutor;
-import org.opencb.opencga.analysis.wrappers.executors.SamtoolsWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -62,16 +58,6 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
 
         switch (qcType) {
 
-            case FLAG_STATS: {
-                runFlagStats();
-                break;
-            }
-
-            case HS_METRICS: {
-                runHsMetrics();
-                break;
-            }
-
             case GENE_COVERAGE_STATS: {
                 runGeneCoverageStats();
                 break;
@@ -80,136 +66,6 @@ public class SampleQcLocalAnalysisExecutor extends SampleQcAnalysisExecutor impl
             default: {
                 throw new ToolException("Unknown quality control type: " + qcType);
             }
-        }
-    }
-
-    private void runFlagStats() throws ToolException {
-        if (alignmentQcMetrics.getSamtoolsFlagstats() != null) {
-            // Samtools flag stats already exists!
-            addWarning("Skipping samtools/flagstat analysis: it was already computed");
-            return;
-        }
-
-        // Check BAM file
-        if (catalogBamFile == null) {
-            addWarning("Skipping samtools/flagstat analysis: no BAM file was provided");
-            return;
-        }
-
-        ObjectMap params = new ObjectMap();
-
-        Path outDir = getOutDir().resolve("flagstat");
-        Path scratchDir = outDir.resolve("scratch");
-        scratchDir.toFile().mkdirs();
-
-        SamtoolsWrapperAnalysisExecutor executor = new SamtoolsWrapperAnalysisExecutor(getStudyId(), params, outDir, scratchDir,
-                catalogManager, getToken());
-
-        executor.setCommand("flagstat");
-        executor.setBamFile(catalogBamFile.getId());
-        executor.run();
-
-        // Check for result
-        SamtoolsFlagstats flagtats = executor.getFlagstatsResult();
-        if (flagtats != null) {
-            alignmentQcMetrics.setSamtoolsFlagstats(flagtats);
-        }
-    }
-
-    private void runHsMetrics() throws ToolException {
-        addWarning("Skipping picard/CollectHsMetrics analysis: not yet implemented");
-
-        if (alignmentQcMetrics.getHsMetrics() != null) {
-            // Hs metrics already exists!
-            addWarning("Skipping picard/CollectHsMetrics analysis: it was already computed");
-            return;
-        }
-
-        // Check BAM file
-        if (catalogBamFile == null) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no BAM file was provided and no BAM file found for sample " + sample.getId());
-            return;
-        }
-
-        // Check bait file
-        if (StringUtils.isEmpty(getBaitFile())) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no bait file was provided");
-            return;
-        }
-        File bedBaitFile;
-        try {
-            bedBaitFile = AnalysisUtils.getCatalogFile(getBaitFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-
-        // Check dictionary file
-        if (StringUtils.isEmpty(getDictFile())) {
-            addWarning("Skipping picard/CollectHsMetrics analysis: no dictionary file was provided");
-            return;
-        }
-        File dictFile;
-        try {
-            dictFile = AnalysisUtils.getCatalogFile(getDictFile(), getStudyId(), catalogManager.getFileManager(), getToken());
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-
-        // Run picard/BedToIntervalList, to convert BED file to INTERVAL
-        String intervalFilename = bedBaitFile.getName() + ".interval";
-        ObjectMap params = new ObjectMap()
-                .append("I", bedBaitFile.getId())
-                .append("SD", dictFile.getId())
-                .append("O", intervalFilename);
-
-
-        Path picardDir = getOutDir().resolve("picard");
-        Path picardScratchDir = picardDir.resolve("scratch");
-        picardScratchDir.toFile().mkdirs();
-
-        PicardWrapperAnalysisExecutor picardExecutor = new PicardWrapperAnalysisExecutor(getStudyId(), params, picardDir, picardScratchDir,
-                catalogManager, getToken());
-
-        picardExecutor.setCommand("BedToIntervalList");
-        picardExecutor.run();
-
-        if (!picardDir.resolve(intervalFilename).toFile().exists()) {
-            throw new ToolException("Error converting BED file '" + getBaitFile() + "' to interval format using Picard"
-                    + " command: " + picardExecutor.getCommand());
-        }
-
-        // Link interval file to catalog, we need to do it to execute CollectHsMetrics
-        File intervalFile;
-        try {
-            intervalFile = catalogManager.getFileManager().link(getStudyId(), picardDir.resolve(intervalFilename).toUri(),
-                    "BedToIntervalList." + RandomStringUtils.randomAlphabetic(6), new ObjectMap("parents", true), getToken()).first();
-
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-
-        // Run picard/CollectHsMetrics
-        String hsMetricsFilename = "hsmetrics.txt";
-        params = new ObjectMap()
-                .append("I", catalogBamFile.getId())
-                .append("BI", intervalFile.getId())
-                .append("TI", intervalFile.getId())
-                .append("O", hsMetricsFilename);
-        picardExecutor = new PicardWrapperAnalysisExecutor(getStudyId(), params, picardDir, picardScratchDir, catalogManager, getToken());
-
-        picardExecutor.setCommand("CollectHsMetrics");
-        picardExecutor.run();
-
-        if (!picardDir.resolve(hsMetricsFilename).toFile().exists()) {
-            throw new ToolException("Error running Picard command: " + picardExecutor.getCommand());
-        }
-
-        try {
-            // Parse Hs metrics and update sample quality control
-            HsMetrics hsMetrics = HsMetricsParser.parse(picardDir.resolve(hsMetricsFilename).toFile());
-            alignmentQcMetrics.setHsMetrics(hsMetrics);
-        } catch (IOException e) {
-            throw new ToolException(e);
         }
     }
 

@@ -24,7 +24,6 @@ import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
@@ -42,9 +41,7 @@ import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
@@ -80,11 +77,11 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "query":
                 query();
                 break;
-            case "stats-run":
-                queryResponse = statsRun();
+            case "qc-run":
+                queryResponse = qcRun();
                 break;
-            case "stats-info":
-                queryResponse = statsInfo();
+            case "gene-coverage-stats-run":
+                queryResponse = geneCoverageStatsRun();
                 break;
             case "coverage-index-run":
                 queryResponse = coverageRun();
@@ -327,24 +324,29 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     //-------------------------------------------------------------------------
-    // STATS: run and info
+    // QC: stats, flag stats, FastQC and HS metrics
     //-------------------------------------------------------------------------
 
-    private RestResponse<Job> statsRun() throws ClientException {
-        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+    private RestResponse<Job> qcRun() throws ClientException {
+        AlignmentCommandOptions.QcAlignmentCommandOptions cliOptions = alignmentCommandOptions.qcAlignmentCommandOptions;
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
         params.putAll(getJobParams());
 
-        return openCGAClient.getAlignmentClient().runStats(new AlignmentStatsParams(cliOptions.file), params);
+        return openCGAClient.getAlignmentClient().runQc(new AlignmentQcParams(cliOptions.bamFile, cliOptions.bedFile, cliOptions.dictFile,
+                cliOptions.runSamtoolsStats, cliOptions.runSamtoolsFlagStats, cliOptions.runFastQC, cliOptions.runHsMetrics,
+                cliOptions.outdir), params);
     }
 
-    private RestResponse<SamtoolsStats> statsInfo() throws ClientException {
-        AlignmentCommandOptions.StatsInfoAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsInfoAlignmentCommandOptions;
+    private RestResponse<Job> geneCoverageStatsRun() throws ClientException {
+        AlignmentCommandOptions.GeneCoverageStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions
+                .geneCoverageStatsAlignmentCommandOptions;
 
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
 
-        return openCGAClient.getAlignmentClient().infoStats(cliOptions.file, params);
+        return openCGAClient.getAlignmentClient().genecoveragestatsQc(new AlignmentGeneCoverageStatsParams(cliOptions.bamFile,
+                Arrays.asList(cliOptions.genes.split(",")), cliOptions.outdir), params);
     }
 
     //-------------------------------------------------------------------------

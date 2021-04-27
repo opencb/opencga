@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.tools.result.ExecutionResult;

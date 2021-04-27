@@ -296,7 +296,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                                 Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                                 "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
                                 false, 0, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "",
-                                study.getRelease(), Collections.emptyList(), Collections.emptyMap(), new CustomStatus(),
+                                study.getRelease(), Collections.emptyList(), null, Collections.emptyMap(), new CustomStatus(),
                                 FileInternal.initialize(), Collections.emptyMap());
                         file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         file.setTags(Collections.emptyList());

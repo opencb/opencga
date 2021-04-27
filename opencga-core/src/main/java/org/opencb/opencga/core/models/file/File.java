@@ -71,6 +71,8 @@ public class File extends Annotable {
     private List<String> tags;
     private List<FileRelatedFile> relatedFiles;
 
+    private FileQualityControl qualityControl;
+
     @Deprecated
     private Map<String, Object> stats;
     private CustomStatus status;
@@ -84,22 +86,22 @@ public class File extends Annotable {
                 long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
                 false, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
-                Collections.emptyList(), Collections.emptyMap(), new CustomStatus(), internal, Collections.emptyMap());
+                Collections.emptyList(), null, Collections.emptyMap(), new CustomStatus(), internal, Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
-                List<String> sampleIds, Software software, String jobId, Map<String, Object> stats,
+                List<String> sampleIds, Software software, String jobId, FileQualityControl qualityControl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                false, size, software, new FileExperiment(), sampleIds, Collections.emptyList(), jobId, -1, Collections.emptyList(), stats,
-                new CustomStatus(), internal, attributes);
+                false, size, software, new FileExperiment(), sampleIds, Collections.emptyList(), jobId, -1, Collections.emptyList(),
+                qualityControl, stats, new CustomStatus(), internal, attributes);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum, String creationDate,
                 String modificationDate, String description, boolean external, long size, Software software, FileExperiment experiment,
                 List<String> sampleIds, List<FileRelatedFile> relatedFiles, String jobId, int release,
-                List<AnnotationSet> annotationSets, Map<String, Object> stats, CustomStatus status, FileInternal internal,
-                Map<String, Object> attributes) {
+                List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats, CustomStatus status,
+                FileInternal internal, Map<String, Object> attributes) {
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
@@ -122,6 +124,7 @@ public class File extends Annotable {
         this.relatedFiles = relatedFiles;
         this.annotationSets = annotationSets;
         this.jobId = jobId;
+        this.qualityControl = qualityControl;
         this.stats = stats;
         this.status = status;
         this.attributes = attributes;
@@ -233,11 +236,11 @@ public class File extends Annotable {
         sb.append(", jobId='").append(jobId).append('\'');
         sb.append(", tags=").append(tags);
         sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", stats=").append(stats);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append('}');
         return sb.toString();
     }
@@ -254,19 +257,12 @@ public class File extends Annotable {
         return this;
     }
 
-    public String getUuid() {
-        return uuid;
-    }
-
-    public File setUuid(String uuid) {
-        this.uuid = uuid;
-        return this;
-    }
-
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public File setId(String id) {
         this.id = id;
         return this;
@@ -278,6 +274,16 @@ public class File extends Annotable {
 
     public File setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    @Override
+    public String getUuid() {
+        return uuid;
+    }
+
+    public File setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 
@@ -308,6 +314,15 @@ public class File extends Annotable {
         return this;
     }
 
+    public String getChecksum() {
+        return checksum;
+    }
+
+    public File setChecksum(String checksum) {
+        this.checksum = checksum;
+        return this;
+    }
+
     public URI getUri() {
         return uri;
     }
@@ -323,25 +338,6 @@ public class File extends Annotable {
 
     public File setPath(String path) {
         this.path = path;
-        this.id = StringUtils.isNotEmpty(this.path) ? StringUtils.replace(this.path, "/", ":") : this.path;
-        return this;
-    }
-
-    public String getChecksum() {
-        return checksum;
-    }
-
-    public File setChecksum(String checksum) {
-        this.checksum = checksum;
-        return this;
-    }
-
-    public String getCreationDate() {
-        return creationDate;
-    }
-
-    public File setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
         return this;
     }
 
@@ -351,6 +347,15 @@ public class File extends Annotable {
 
     public File setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public File setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 
@@ -381,30 +386,12 @@ public class File extends Annotable {
         return this;
     }
 
-    public FileInternal getInternal() {
-        return internal;
-    }
-
-    public File setInternal(FileInternal internal) {
-        this.internal = internal;
-        return this;
-    }
-
     public long getSize() {
         return size;
     }
 
     public File setSize(long size) {
         this.size = size;
-        return this;
-    }
-
-    public List<String> getSampleIds() {
-        return sampleIds;
-    }
-
-    public File setSampleIds(List<String> sampleIds) {
-        this.sampleIds = sampleIds;
         return this;
     }
 
@@ -417,15 +404,6 @@ public class File extends Annotable {
         return this;
     }
 
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public File setTags(List<String> tags) {
-        this.tags = tags;
-        return this;
-    }
-
     public FileExperiment getExperiment() {
         return experiment;
     }
@@ -435,12 +413,12 @@ public class File extends Annotable {
         return this;
     }
 
-    public List<FileRelatedFile> getRelatedFiles() {
-        return relatedFiles;
+    public List<String> getSampleIds() {
+        return sampleIds;
     }
 
-    public File setRelatedFiles(List<FileRelatedFile> relatedFiles) {
-        this.relatedFiles = relatedFiles;
+    public File setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
         return this;
     }
 
@@ -453,17 +431,37 @@ public class File extends Annotable {
         return this;
     }
 
-    public File setAnnotationSets(List<AnnotationSet> annotationSets) {
-        super.setAnnotationSets(annotationSets);
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public File setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 
-    @Deprecated
+    public List<FileRelatedFile> getRelatedFiles() {
+        return relatedFiles;
+    }
+
+    public File setRelatedFiles(List<FileRelatedFile> relatedFiles) {
+        this.relatedFiles = relatedFiles;
+        return this;
+    }
+
+    public FileQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public File setQualityControl(FileQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
+        return this;
+    }
+
     public Map<String, Object> getStats() {
         return stats;
     }
 
-    @Deprecated
     public File setStats(Map<String, Object> stats) {
         this.stats = stats;
         return this;
@@ -475,6 +473,15 @@ public class File extends Annotable {
 
     public File setStatus(CustomStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public FileInternal getInternal() {
+        return internal;
+    }
+
+    public File setInternal(FileInternal internal) {
+        this.internal = internal;
         return this;
     }
 
