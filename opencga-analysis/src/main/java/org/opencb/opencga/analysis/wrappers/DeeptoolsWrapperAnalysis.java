@@ -18,14 +18,10 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -125,12 +121,12 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         });
     }
 
-    @Override
-    public String getDockerImageName() {
-        return DEEPTOOLS_DOCKER_IMAGE;
-    }
+//    @Override
+//    public String getDockerImageName() {
+//        return DEEPTOOLS_DOCKER_IMAGE;
+//    }
 
-    @Override
+//    @Override
     public String getCommandLine() throws ToolException {
         StringBuilder sb = new StringBuilder("docker run ");
 
@@ -142,7 +138,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
 
         // Docker image and version
-        sb.append(getDockerImageName());
+        sb.append(DEEPTOOLS_DOCKER_IMAGE);
         if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }

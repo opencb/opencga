@@ -37,7 +37,7 @@ import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.models.FileInfo;
 import org.opencb.opencga.analysis.models.StudyInfo;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -153,22 +153,45 @@ public class AlignmentStorageManager extends StorageManager {
     //-------------------------------------------------------------------------
 
     public void statsRun(String study, String inputFile, String outdir, String token) throws ToolException {
+//        ObjectMap params = new ObjectMap();
+//
+//        AlignmentStatsAnalysis analysis = new AlignmentStatsAnalysis();
+//        analysis.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
+//
+//        analysis.setStudy(study)
+//                .setFile(inputFile)
+//                .start();
+//
+//        params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
+//
+//        // Filter flag:
+//        //   - not primary alignment (0x100)
+//        //   - read fails platform/vendor quality checks (0x200)
+//        //   - supplementary alignment (0x800)
+//        params.put("F", "0xB00");
+//
+//        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
+//        samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
+//
+//        samtools.setStudy(study);
+//        samtools.setCommand("stats")
+//                .setInputFile(inputFile)
+//                .setOutputFilename(Paths.get(inputFile).getFileName() + ".stats.txt");
+//
+//        samtools.start();
+    }
+
+    public void flagStatsRun(String study, String inputFile, String outdir, String token) throws ToolException {
         ObjectMap params = new ObjectMap();
         params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
-
-        // Filter flag:
-        //   - not primary alignment (0x100)
-        //   - read fails platform/vendor quality checks (0x200)
-        //   - supplementary alignment (0x800)
-        params.put("F", "0xB00");
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
 
         samtools.setStudy(study);
-        samtools.setCommand("stats")
+        samtools.setCommand("flagstats")
                 .setInputFile(inputFile)
-                .setOutputFilename(Paths.get(inputFile).getFileName() + ".stats.txt");
+                .setOutputFilename(Paths.get(inputFile).getFileName() + ".flagstats.txt");
 
         samtools.start();
     }

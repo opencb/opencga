@@ -178,8 +178,12 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
         alignmentSubCommands.addCommand("index-run", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsInfoAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("qc-run", alignmentCommandOptions.qcAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("gene-coverage-stats-run", alignmentCommandOptions.geneCoverageStatsAlignmentCommandOptions);
+//        alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
+//        alignmentSubCommands.addCommand("flagstats-run", alignmentCommandOptions.flagStatsAlignmentCommandOptions);
+//        alignmentSubCommands.addCommand("fastqcmetrics-run", alignmentCommandOptions.fastQcMetricsAlignmentCommandOptions);
+//        alignmentSubCommands.addCommand("hsmetrics-run", alignmentCommandOptions.hsMetricsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-run", alignmentCommandOptions.coverageAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
         alignmentSubCommands.addCommand(BWA_RUN_COMMAND, alignmentCommandOptions.bwaCommandOptions);

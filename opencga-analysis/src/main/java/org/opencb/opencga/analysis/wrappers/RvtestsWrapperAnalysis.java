@@ -94,12 +94,12 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         });
     }
 
-    @Override
-    public String getDockerImageName() {
-        return RVTESTS_DOCKER_IMAGE;
-    }
+//    @Override
+//    public String getDockerImageName() {
+//        return RVTESTS_DOCKER_IMAGE;
+//    }
 
-    @Override
+//    @Override
     public String getCommandLine() {
         StringBuilder sb = new StringBuilder("docker run ");
 
@@ -119,7 +119,7 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
 
         // Docker image and version
-        sb.append(getDockerImageName());
+        sb.append(RVTESTS_DOCKER_IMAGE);
         if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }

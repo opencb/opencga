@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.wrappers;
+package org.opencb.opencga.analysis.wrappers.picard;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.commons.exec.Command;
-import org.opencb.opencga.analysis.wrappers.executors.PicardWrapperAnalysisExecutor;
+import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
-
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.util.*;
 
 @Tool(id = PicardWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT,
         description = "")
@@ -38,8 +29,6 @@ public class PicardWrapperAnalysis extends OpenCgaWrapperAnalysis {
     public final static String ID = "picard";
     public final static String DESCRIPTION = "Picard is a set of command line tools (in Java) for manipulating high-throughput sequencing"
             + " (HTS) data and formats such as SAM/BAM/CRAM and VCF.";
-
-    public final static String PICARD_DOCKER_IMAGE = "broadinstitute/picard";
 
     private String command;
 
@@ -64,20 +53,21 @@ public class PicardWrapperAnalysis extends OpenCgaWrapperAnalysis {
     @Override
     protected void run() throws Exception {
 
-        step(() -> {
-                    PicardWrapperAnalysisExecutor executor = new PicardWrapperAnalysisExecutor(getStudy(), params, getOutDir(),
-                            getScratchDir(), catalogManager, token);
-
-                    executor.setCommand(command);
-                    executor.run();
-                }
-        );
+        throw new ToolException("Not yet implemented!!");
+//        step(() -> {
+//                    PicardWrapperAnalysisExecutor executor = new PicardWrapperAnalysisExecutor(getStudy(), params, getOutDir(),
+//                            getScratchDir(), catalogManager, token);
+//
+//                    executor.setCommand(command);
+//                    executor.run();
+//                }
+//        );
     }
 
-    @Override
-    public String getDockerImageName() {
-        return PICARD_DOCKER_IMAGE;
-    }
+//    @Override
+//    public String getDockerImageName() {
+//        return PICARD_DOCKER_IMAGE;
+//    }
 
 
     public String getCommand() {

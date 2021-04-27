@@ -873,8 +873,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantCommandOptions.internalJobOptions.jobId, token);
         sampleQcAnalysis.setStudyId(cliOptions.study)
                 .setSampleId(cliOptions.sample)
-                .setDictFile(cliOptions.dictFile)
-                .setBaitFile(cliOptions.baitFile)
                 .setVariantStatsId(cliOptions.variantStatsId)
                 .setVariantStatsDecription(cliOptions.variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
