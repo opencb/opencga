@@ -767,8 +767,8 @@ public class VariantClient extends AbstractParentClient {
     }
 
     /**
-     * Run quality control (QC) for a given sample. It includes variant stats and gene coverage stats; and for somatic samples, mutational
-     *     signature.
+     * Run quality control (QC) for a given sample. It includes variant stats, FastQC,samtools/flagstat, picard/CollectHsMetrics and gene
+     *     coverage stats; and for somatic samples, mutational signature.
      * @param data Sample QC analysis params.
      * @param params Map containing any of the following optional parameters.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.

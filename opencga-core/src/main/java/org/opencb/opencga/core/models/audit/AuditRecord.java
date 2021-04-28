@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.audit;
+package org.opencb.opencga.core.models.audit;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;

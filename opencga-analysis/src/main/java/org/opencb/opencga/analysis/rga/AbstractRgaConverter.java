@@ -96,4 +96,8 @@ public abstract class AbstractRgaConverter {
         }
     }
 
+    public abstract List<String> getIncludeFields(List<String> includeFields);
+
+    public abstract List<String> getIncludeFromExcludeFields(List<String> excludeFields);
+
 }

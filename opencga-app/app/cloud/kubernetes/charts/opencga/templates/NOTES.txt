@@ -32,7 +32,8 @@ Connect to MongoDB database running these commands:
 
   export SERVICE_NAME="service/{{ .Values.mongodb.deploy.name }}-svc"
   kubectl --namespace {{ .Release.Namespace }} port-forward $SERVICE_NAME 27018:27017
-  echo "mongo --host localhost --port 27018 --authenticationDatabase {{ .Values.mongodb.authenticationDatabase }} --authenticationMechanism {{ .Values.mongodb.authenticationMechanism }} --username {{ .Values.mongodb.user }} --password XXXXX"
+
+  mongo --host localhost --port 27018 --authenticationDatabase {{ .Values.mongodb.authenticationDatabase }} --authenticationMechanism {{ .Values.mongodb.authenticationMechanism }} --username {{ .Values.mongodb.user }} --password XXXXX
 
 {{- end }}
 {{- if .Values.solr.deploy.enabled }}
@@ -42,5 +43,6 @@ Connect to Solr database running these commands:
 
   export SERVICE_NAME="service/{{ .Values.solr.deploy.name }}-solrcloud-headless"
   kubectl --namespace {{ .Release.Namespace }} port-forward $SERVICE_NAME 18983:8983
-  echo "Visit http://127.0.0.1:18983 to access Solr GUI"
+
+  Visit http://127.0.0.1:18983 to access Solr GUI
 {{- end }}

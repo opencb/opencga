@@ -456,7 +456,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param options   Other options
      *                  {@link VariantStorageOptions#STATS_AGGREGATION_MAPPING_FILE}
      *                  {@link VariantStorageOptions#STATS_OVERWRITE}
-     *                  {@link VariantStorageOptions#STATS_UPDATE}
      *                  {@link VariantStorageOptions#LOAD_THREADS}
      *                  {@link VariantStorageOptions#LOAD_BATCH_SIZE}
      *                  {@link VariantQueryParam#REGION}
@@ -506,12 +505,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 for (URI uri : files) {
                     String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
                     fileIds.add(metadataManager.getFileId(studyMetadata.getId(), fileName));
-                }
-                Integer defaultCohortId = metadataManager.getCohortId(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
-                CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadata.getId(), defaultCohortId);
-                if (defaultCohort.isStatsReady()) {
-                    logger.debug("Cohort '{}':{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
-                    statsOptions.append(VariantStorageOptions.STATS_UPDATE.key(), true);
                 }
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
                         .buildFilename(studyMetadata.getName(), fileIds.get(0)) + "." + TimeUtils.getTime());

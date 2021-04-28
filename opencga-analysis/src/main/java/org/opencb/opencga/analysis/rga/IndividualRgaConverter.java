@@ -55,19 +55,22 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         CONVERTER_MAP.put("genes.transcripts.strand",
                 Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
         CONVERTER_MAP.put("genes.transcripts.variants.id", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("genes.transcripts.variants.filter", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS, RgaDataModel.VARIANTS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.FILTERS, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("genes.transcripts.variants.type", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES, RgaDataModel.VARIANTS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.TYPES, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("genes.transcripts.variants.knockoutType", Arrays.asList(RgaDataModel.INDIVIDUAL_ID, RgaDataModel.GENE_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.KNOCKOUT_TYPES, RgaDataModel.VARIANTS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.KNOCKOUT_TYPES, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("genes.transcripts.variants.populationFrequencies", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES, RgaDataModel.VARIANTS));
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.POPULATION_FREQUENCIES, RgaDataModel.VARIANTS,
+                RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("genes.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CLINICAL_SIGNIFICANCES, RgaDataModel.VARIANTS));
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CLINICAL_SIGNIFICANCES, RgaDataModel.VARIANTS,
+                RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("genes.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES, RgaDataModel.VARIANTS));
+                RgaDataModel.GENE_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.CONSEQUENCE_TYPES, RgaDataModel.VARIANTS,
+                RgaDataModel.VARIANT_SUMMARY));
 
         logger = LoggerFactory.getLogger(IndividualRgaConverter.class);
     }
@@ -75,16 +78,12 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
     public IndividualRgaConverter() {
     }
 
-    public List<KnockoutByIndividual> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator) {
+    public List<KnockoutByIndividual> convertToDataModelType(RgaIterator rgaIterator) {
         // In this list, we will store the keys of result in the order they have been processed so order is kept
         List<String> knockoutByIndividualOrder = new LinkedList<>();
         Map<String, KnockoutByIndividual> result = new HashMap<>();
 
-        Map<String, Variant> variantMap = new HashMap<>();
-        while (variantDBIterator.hasNext()) {
-            Variant variant = variantDBIterator.next();
-            variantMap.put(variant.getId(), variant);
-        }
+        Map<String, Variant> variantMap = Collections.emptyMap();
 
         while (rgaIterator.hasNext()) {
             RgaDataModel rgaDataModel = rgaIterator.next();
@@ -710,6 +709,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         return new ArrayList(disorderIds);
     }
 
+    @Override
     public List<String> getIncludeFields(List<String> includeFields) {
         Set<String> toInclude = new HashSet<>();
         for (String includeField : includeFields) {
@@ -722,6 +722,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         return new ArrayList<>(toInclude);
     }
 
+    @Override
     public List<String> getIncludeFromExcludeFields(List<String> excludeFields) {
         Set<String> excludedFields = new HashSet<>();
 

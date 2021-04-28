@@ -133,29 +133,9 @@ public class RgaManager implements AutoCloseable {
             throw e;
         }
 
-        Future<VariantDBIterator> variantFuture = executor.submit(
-                () -> variantStorageQuery(study.getFqn(), preprocess.getQuery().getAsStringList("sampleId"), preprocess.getQuery(),
-                        options, token)
-        );
+        RgaIterator rgaIterator = rgaEngine.individualQuery(collection, preprocess.getQuery(), QueryOptions.empty());
 
-        Future<RgaIterator> rgaIteratorFuture = executor.submit(() -> rgaEngine.individualQuery(collection, preprocess.getQuery(),
-                QueryOptions.empty()));
-
-        VariantDBIterator variantDBIterator;
-        try {
-            variantDBIterator = variantFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RgaException(e.getMessage(), e);
-        }
-
-        RgaIterator rgaIterator;
-        try {
-            rgaIterator = rgaIteratorFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RgaException(e.getMessage(), e);
-        }
-
-        List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(rgaIterator, variantDBIterator);
+        List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(rgaIterator);
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByIndividual> result = new OpenCGAResult<>(time, Collections.emptyList(), knockoutByIndividuals.size(),
                 knockoutByIndividuals, -1);
@@ -281,34 +261,14 @@ public class RgaManager implements AutoCloseable {
             includeSampleIds = new HashSet<>((List<String>) sampleResult.getResults());
         }
 
-        Future<VariantDBIterator> variantFuture = executor.submit(
-                () -> variantStorageQuery(study.getFqn(), new ArrayList<>(includeSampleIds), auxQuery, options, token)
-        );
-
-        Future<RgaIterator> tmpResultFuture = executor.submit(
-                () -> rgaEngine.geneQuery(collection, auxQuery, queryOptions)
-        );
-
-        VariantDBIterator variantDBIterator;
-        try {
-            variantDBIterator = variantFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RgaException(e.getMessage(), e);
-        }
-
-        RgaIterator rgaIterator;
-        try {
-            rgaIterator = tmpResultFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RgaException(e.getMessage(), e);
-        }
+        RgaIterator rgaIterator = rgaEngine.geneQuery(collection, auxQuery, queryOptions);
 
         int skipIndividuals = queryOptions.getInt(RgaQueryParams.SKIP_INDIVIDUAL);
         int limitIndividuals = queryOptions.getInt(RgaQueryParams.LIMIT_INDIVIDUAL, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
 
         // 4. Solr gene query
-        List<RgaKnockoutByGene> knockoutResultList = geneConverter.convertToDataModelType(rgaIterator, variantDBIterator,
-                includeIndividuals, skipIndividuals, limitIndividuals);
+        List<RgaKnockoutByGene> knockoutResultList = geneConverter.convertToDataModelType(rgaIterator, includeIndividuals, skipIndividuals,
+                limitIndividuals);
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<RgaKnockoutByGene> knockoutResult = new OpenCGAResult<>(time, Collections.emptyList(), knockoutResultList.size(),
                 knockoutResultList, -1);
@@ -493,16 +453,18 @@ public class RgaManager implements AutoCloseable {
             throws CatalogException, IOException, StorageEngineException, RgaException {
         String collection = getCollectionName(study);
 
-        DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query,
-                new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS).append(QueryOptions.LIMIT, -1));
-        if (result.getNumResults() == 0) {
-            return VariantDBIterator.EMPTY_ITERATOR;
+        List<String> variantIds = query.getAsStringList(RgaDataModel.VARIANTS);
+        if (variantIds.isEmpty()) {
+            DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query,
+                    new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS).append(QueryOptions.LIMIT, -1));
+            if (result.getNumResults() == 0) {
+                return VariantDBIterator.EMPTY_ITERATOR;
+            }
+            variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
         }
-        List<String> variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
-        if (variantIds.size() > 500) {
-            // TODO: Batches
-            variantIds = variantIds.subList(0, 500);
+        if (variantIds.size() > RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT) {
+            throw new RgaException("Too many variants requested");
         }
 
         Query variantQuery = new Query(VariantQueryParam.ID.key(), variantIds)
@@ -1339,6 +1301,25 @@ public class RgaManager implements AutoCloseable {
     @Override
     public void close() throws Exception {
         rgaEngine.close();
+    }
+
+    private boolean includeVariants(AbstractRgaConverter converter, QueryOptions queryOptions) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            for (String include : converter.getIncludeFields(queryOptions.getAsStringList(QueryOptions.INCLUDE))) {
+                if (include.contains("variant")) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            for (String include : converter.getIncludeFromExcludeFields(queryOptions.getAsStringList(QueryOptions.EXCLUDE))) {
+                if (include.contains("variant")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
     }
 
 }

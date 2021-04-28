@@ -225,6 +225,7 @@ public class VariantRgaConverter extends AbstractRgaConverter {
         return knockoutVariantList;
     }
 
+    @Override
     public List<String> getIncludeFields(List<String> includeFields) {
         Set<String> toInclude = new HashSet<>();
         for (String includeField : includeFields) {
@@ -237,6 +238,7 @@ public class VariantRgaConverter extends AbstractRgaConverter {
         return new ArrayList<>(toInclude);
     }
 
+    @Override
     public List<String> getIncludeFromExcludeFields(List<String> excludeFields) {
         Set<String> excludedFields = new HashSet<>();
 

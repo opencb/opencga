@@ -207,10 +207,6 @@ public class SampleIndexConfiguration {
         return this;
     }
 
-    public List<IndexFieldConfiguration> getFileIndexFieldsConfiguration() {
-        return fileIndexConfiguration.getCustomFields();
-    }
-
     public FileIndexConfiguration getFileIndexConfiguration() {
         return fileIndexConfiguration;
     }

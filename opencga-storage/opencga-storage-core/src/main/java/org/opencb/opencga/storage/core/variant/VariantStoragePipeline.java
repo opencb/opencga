@@ -60,7 +60,9 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -661,8 +663,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         for (Integer fileId : finalFileIds) {
             samples.addAll(getMetadataManager().getFileMetadata(studyId, fileId).getSamples());
         }
-        getMetadataManager().addSamplesToCohort(studyId, defaultCohortName, samples);
-
+        CohortMetadata cohortMetadata = getMetadataManager().addSamplesToCohort(studyId, defaultCohortName, samples);
+        if (cohortMetadata.getStatsStatus().equals(TaskMetadata.Status.READY)) {
+            getMetadataManager().updateCohortMetadata(studyId, cohortMetadata.getId(), CohortMetadata::setInvalidStats);
+        }
         logger.info("Add " + samples.size() + " loaded samples to Default Cohort \"" + defaultCohortName + '"');
 
         // Update indexed files

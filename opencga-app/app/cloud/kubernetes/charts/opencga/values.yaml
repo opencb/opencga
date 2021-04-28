@@ -80,7 +80,7 @@ solr:
         agentpool: solr
 
 cellbase:
-  host: "http://ws.opencb.org/cellbase/"
+  host: "https://ws.opencb.org/cellbase/"
 
 analysis:
   execution:

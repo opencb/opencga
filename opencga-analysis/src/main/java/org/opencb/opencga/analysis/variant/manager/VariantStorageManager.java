@@ -42,7 +42,7 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -299,12 +299,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secure(query, empty(), token, (engine) -> engine.getAnnotationMetadata(name));
     }
 
-    public void stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
+    public Collection<String> stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
-        secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
-            new VariantStatsOperationManager(this, engine).stats(getStudyFqn(study, token), cohorts, region, params, token);
-            return null;
+        return secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
+            return new VariantStatsOperationManager(this, engine)
+                    .stats(getStudyFqn(study, token), cohorts, region, params, token);
         });
     }
 
