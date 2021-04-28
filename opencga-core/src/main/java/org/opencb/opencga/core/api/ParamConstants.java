@@ -452,8 +452,8 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String SAMTOOLS_COMMANDS = "'sort', 'index' , 'view', 'stats', 'dict', 'faidx', 'depth'";
-    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Samtools command: " + SAMTOOLS_COMMANDS;
+    public static final String SAMTOOLS_COMMANDS_SUPPORTED = "sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats";
+    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Supported Samtools commands: " + SAMTOOLS_COMMANDS_SUPPORTED;
 
     public static final String INPUT_FILE_DESCRIPTION = "Input file (full path).";
     public static final String INPUT_FILE_PARAM = "inputFile";
@@ -476,8 +476,9 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String PICARD_TOOL_NAME_PARAMETER = "command";
-    public static final String PICARD_TOOL_NAME_DESCRIPTION = "Picard tool name to execute. Supported tools: CollectHsMetrics, CollectWgsMetrics, BedToInvervalList";
+    public static final String PICARD_COMMANDS_SUPPORTED = "CollectHsMetrics, CollectWgsMetrics, BedToIntervalList";
+    public static final String PICARD_COMMAND_DESCRIPTION = "Supported Picard commands: " + PICARD_COMMANDS_SUPPORTED;
+
     // ---------------------------------------------
 
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "

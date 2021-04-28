@@ -16,66 +16,94 @@
 
 package org.opencb.opencga.analysis.wrappers.picard;
 
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
+import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-@Tool(id = PicardWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT,
-        description = "")
-public class PicardWrapperAnalysis extends OpenCgaWrapperAnalysis {
+import static org.opencb.opencga.core.api.ParamConstants.PICARD_COMMANDS_SUPPORTED;
+import static org.opencb.opencga.core.api.ParamConstants.PICARD_COMMAND_DESCRIPTION;
+
+@Tool(id = PicardWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = PicardWrapperAnalysis.DESCRIPTION)
+public class PicardWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     public final static String ID = "picard";
     public final static String DESCRIPTION = "Picard is a set of command line tools (in Java) for manipulating high-throughput sequencing"
-            + " (HTS) data and formats such as SAM/BAM/CRAM and VCF.";
+            + " (HTS) data and formats such as SAM/BAM/CRAM and VCF. " + PICARD_COMMAND_DESCRIPTION;
 
-    private String command;
+    @ToolParams
+    protected final PicardWrapperParams analysisParams = new PicardWrapperParams();
+
+    private String bamFilePath = null;
+    private String bedFilePath = null;
+    private String baitIntervalsFilePath = null;
+    private String targetIntervalsFilePath = null;
+    private String dictFilePath = null;
+    private String refSeqFilePath = null;
 
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(command)) {
+        if (StringUtils.isEmpty(analysisParams.getCommand())) {
             throw new ToolException("Missig Picard command.");
         }
 
-        switch (command) {
-            case "CollectHsMetrics":
-            case "CollectWgsMetrics":
-            case "BedToIntervalList":
-                break;
-            default:
-                throw new ToolException("Picard tool name '" + command + "' is not available. Supported tools: CollectHsMetrics,"
-                        + " CollectWgsMetrics, BedToIntervalList");
+        if (!AnalysisUtils.isSupportedCommand(PICARD_COMMANDS_SUPPORTED)) {
+            throw new ToolException("Picard command '" + analysisParams.getCommand() + "' is not available. Supported commands are "
+                    + PICARD_COMMANDS_SUPPORTED);
+        }
+
+        // Get files from catalog
+        FileManager fileManager = catalogManager.getFileManager();
+        if (StringUtils.isNotEmpty(analysisParams.getBamFile())) {
+            bamFilePath = AnalysisUtils.getCatalogFile(analysisParams.getBamFile(), study, fileManager, token).getUri().getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getBedFile())) {
+            bedFilePath = AnalysisUtils.getCatalogFile(analysisParams.getBedFile(), study, fileManager, token).getUri().getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getBaitIntervalsFile())) {
+            baitIntervalsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getBaitIntervalsFile(), study, fileManager, token).getUri()
+                    .getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getTargetIntervalsFile())) {
+            targetIntervalsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getTargetIntervalsFile(), study, fileManager,
+                    token).getUri().getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getDictFile())) {
+            dictFilePath = AnalysisUtils.getCatalogFile(analysisParams.getDictFile(), study, fileManager, token)
+                    .getUri().getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getRefSeqFile())) {
+            refSeqFilePath = AnalysisUtils.getCatalogFile(analysisParams.getRefSeqFile(), study, fileManager, token)
+                    .getUri().getPath();
         }
     }
 
     @Override
     protected void run() throws Exception {
+        setUpStorageEngineExecutor(study);
 
-        throw new ToolException("Not yet implemented!!");
-//        step(() -> {
-//                    PicardWrapperAnalysisExecutor executor = new PicardWrapperAnalysisExecutor(getStudy(), params, getOutDir(),
-//                            getScratchDir(), catalogManager, token);
-//
-//                    executor.setCommand(command);
-//                    executor.run();
-//                }
-//        );
-    }
+        step(() -> {
+            if (MapUtils.isNotEmpty(analysisParams.getPicardParams())) {
+                executorParams.appendAll(analysisParams.getPicardParams());
+            }
 
-//    @Override
-//    public String getDockerImageName() {
-//        return PICARD_DOCKER_IMAGE;
-//    }
-
-
-    public String getCommand() {
-        return command;
-    }
-
-    public PicardWrapperAnalysis setCommand(String command) {
-        this.command = command;
-        return this;
+            getToolExecutor(PicardWrapperAnalysisExecutor.class)
+                    .setCommand(analysisParams.getCommand())
+                    .setBamFile(bamFilePath)
+                    .setBedFile(bedFilePath)
+                    .setBaitIntervalsFile(baitIntervalsFilePath)
+                    .setTargetIntervalsFile(targetIntervalsFilePath)
+                    .setDictFile(dictFilePath)
+                    .setRefSeqFile(refSeqFilePath)
+                    .setOutFilename(analysisParams.getOutFilename())
+                    .execute();
+        });
     }
 }

@@ -479,8 +479,15 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> picard() throws ClientException {
         PicardWrapperParams picardWrapperParams = new PicardWrapperParams(
                 alignmentCommandOptions.picardCommandOptions.command,
+                alignmentCommandOptions.picardCommandOptions.bamFile,
+                alignmentCommandOptions.picardCommandOptions.bedFile,
+                alignmentCommandOptions.picardCommandOptions.baitIntervalsFile,
+                alignmentCommandOptions.picardCommandOptions.targetIntervalsFile,
+                alignmentCommandOptions.picardCommandOptions.dictFile,
+                alignmentCommandOptions.picardCommandOptions.refSeqFile,
+                alignmentCommandOptions.picardCommandOptions.outFilename,
                 alignmentCommandOptions.picardCommandOptions.outdir,
-                alignmentCommandOptions.picardCommandOptions.commonOptions.params
+                alignmentCommandOptions.picardCommandOptions.picardParams
         );
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.picardCommandOptions.study);
         return openCGAClient.getAlignmentClient().runPicard(picardWrapperParams, params);

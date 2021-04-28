@@ -26,7 +26,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
     private String targetIntervalsFile;
     private String dictFile;
     private String refSeqFile;
-    private String outFile;
+    private String outFilename;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -88,7 +88,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendInputFiles(inputFilenames, mountMap, sb);
 
         // Append output file params
-        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", getOutFile())));
+        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", getOutFilename())));
         appendOutputFiles(outputFilenames, sb);
 
         // Append other params
@@ -116,7 +116,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendInputFiles(inputFilenames, mountMap, sb);
 
         // Append output file params
-        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", getOutFile())));
+        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", getOutFilename())));
         appendOutputFiles(outputFilenames, sb);
 
         // Append other params
@@ -139,7 +139,7 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
         // Prepare output files
         List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(
-                new ImmutablePair<>("O", getOutFile())
+                new ImmutablePair<>("O", getOutFilename())
         ));
 
         StringBuilder sb = initCommandLine();
@@ -238,12 +238,12 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         return this;
     }
 
-    public String getOutFile() {
-        return outFile;
+    public String getOutFilename() {
+        return outFilename;
     }
 
-    public PicardWrapperAnalysisExecutor setOutFile(String outFile) {
-        this.outFile = outFile;
+    public PicardWrapperAnalysisExecutor setOutFilename(String outFilename) {
+        this.outFilename = outFilename;
         return this;
     }
 }

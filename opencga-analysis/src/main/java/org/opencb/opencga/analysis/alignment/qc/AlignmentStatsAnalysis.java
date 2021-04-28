@@ -102,6 +102,12 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
 
         step(SAMTOOLS_STATS_STEP, () -> {
             executorParams.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
+            // Filter flag:
+            //   - not primary alignment (0x100)
+            //   - read fails platform/vendor quality checks (0x200)
+            //   - supplementary alignment (0x800)
+            executorParams.put("F", "0xB00");
+
             getToolExecutor(SamtoolsWrapperAnalysisExecutor.class)
                     .setCommand("stats")
                     .setInputFile(catalogBamFile.getUri().getPath())

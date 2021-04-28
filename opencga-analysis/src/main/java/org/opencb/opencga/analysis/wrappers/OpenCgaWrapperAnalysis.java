@@ -29,6 +29,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+@Deprecated
 public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
     public final String DOCKER_IMAGE_VERSION_PARAM = "DOCKER_IMAGE_VERSION";
