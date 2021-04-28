@@ -29,7 +29,7 @@ import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
 import org.opencb.opencga.core.models.alignment.BwaWrapperParams;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
-import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
+import org.opencb.opencga.core.models.alignment.FastqcWrapperParams;
 import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
 import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.job.Job;
@@ -188,7 +188,7 @@ public class AlignmentClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runFastqc(FastQcWrapperParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runFastqc(FastqcWrapperParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "alignment/fastqc", null, "run", params, POST, Job.class);

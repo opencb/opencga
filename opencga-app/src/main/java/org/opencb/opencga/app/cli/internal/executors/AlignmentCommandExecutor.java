@@ -28,10 +28,7 @@ import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
-import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
-import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
+import org.opencb.opencga.core.models.alignment.*;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -322,18 +319,17 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private void fastqc() throws Exception {
         AlignmentCommandOptions.FastqcCommandOptions cliOptions = alignmentCommandOptions.fastqcCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-        params.putAll(cliOptions.fastqcParams);
 
-        FastqcWrapperAnalysis fastqc = new FastqcWrapperAnalysis();
-        fastqc.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new FastqcWrapperParams(
+                cliOptions.inputFile,
+                cliOptions.contaminantsFile,
+                cliOptions.adaptersFile,
+                cliOptions.limitsFile,
+                cliOptions.outdir,
+                cliOptions.fastqcParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        fastqc.setStudy(cliOptions.study);
-
-        fastqc.setFile(cliOptions.file);
-
-        fastqc.start();
+        toolRunner.execute(FastqcWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // Picard

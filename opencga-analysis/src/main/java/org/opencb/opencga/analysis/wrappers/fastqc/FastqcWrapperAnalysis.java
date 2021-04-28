@@ -17,97 +17,65 @@
 package org.opencb.opencga.analysis.wrappers.fastqc;
 
 
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
-import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.analysis.AnalysisUtils;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.core.models.alignment.FastqcWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
-
-import java.io.File;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.util.List;
-import java.util.stream.Collectors;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 @Tool(id = FastqcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = FastqcWrapperAnalysis.DESCRIPTION)
-public class FastqcWrapperAnalysis extends OpenCgaWrapperAnalysis {
+public class FastqcWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     public final static String ID = "fastqc";
-    public final static String DESCRIPTION = "A quality control tool for high throughput sequence data.";
+    public final static String DESCRIPTION = "A high throughput sequence QC analysis tool";
 
-    public final static String FASTQC_DOCKER_IMAGE = "dceoy/fastqc";
+    @ToolParams
+    protected final FastqcWrapperParams analysisParams = new FastqcWrapperParams();
 
-    private String file;
+    private String inputFilePath = null;
+    private String contaminantsFilePath = null;
+    private String adaptersFilePath = null;
+    private String limitsFilePath = null;
 
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(file)) {
-            throw new ToolException("Missing input file when executing 'fastqc'.");
+        // Get files from catalog
+        FileManager fileManager = catalogManager.getFileManager();
+        if (StringUtils.isNotEmpty(analysisParams.getInputFile())) {
+            inputFilePath = AnalysisUtils.getCatalogFile(analysisParams.getInputFile(), study, fileManager, token).getUri().getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getContaminantsFile())) {
+            contaminantsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getContaminantsFile(), study, fileManager, token).getUri()
+                    .getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getAdaptersFile())) {
+            adaptersFilePath = AnalysisUtils.getCatalogFile(analysisParams.getAdaptersFile(), study, fileManager, token).getUri().getPath();
+        }
+        if (StringUtils.isNotEmpty(analysisParams.getLimitsFile())) {
+            limitsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getLimitsFile(), study, fileManager, token).getUri().getPath();
         }
     }
 
     @Override
     protected void run() throws Exception {
-        step(getId(), () -> {
-            getToolExecutor(FastqcWrapperAnalysisExecutor.class);
-//                    .run();
-//            executor
-//                    .setStudy(study)
-//                    .setSampleName(sampleName)
-//                    .setRefGenomePath(refGenomePath)
-//                    .setMutationalSignaturePath(mutationalSignaturePath)
-//                    .setOpenCgaHome(getOpencgaHome())
-//                    .execute();
-        });
+        setUpStorageEngineExecutor(study);
 
-/*
         step(() -> {
-
-            try {
-                FastqcWrapperAnalysisExecutor executor = new FastqcWrapperAnalysisExecutor(getStudy(), params, getOutDir(),
-                        getScratchDir(), catalogManager, token);
-
-                executor.setFile(file);
-                executor.run();
-
-                // Check fastqc errors
-                boolean success = false;
-                List<String> filenames = Files.walk(getOutDir()).map(f -> f.getFileName().toString()).collect(Collectors.toList());
-                for (String filename : filenames) {
-                    if (filename.endsWith("html")) {
-                        success = true;
-                        break;
-                    }
-                }
-                if (!success) {
-                    File file = getScratchDir().resolve(STDERR_FILENAME).toFile();
-                    String msg = "Something wrong happened when executing FastQC";
-                    if (file.exists()) {
-                        msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), "\n");
-                    }
-                    throw new ToolException(msg);
-                }
-            } catch (Exception e) {
-                throw new ToolException(e);
+            if (MapUtils.isNotEmpty(analysisParams.getFastqcParams())) {
+                executorParams.appendAll(analysisParams.getFastqcParams());
             }
+
+            getToolExecutor(FastqcWrapperAnalysisExecutor.class)
+                    .setInputFile(inputFilePath)
+                    .setContaminantsFile(contaminantsFilePath)
+                    .setAdaptersFile(adaptersFilePath)
+                    .setLimitsFile(limitsFilePath)
+                    .execute();
         });
-        */
     }
-
-    public String getFile() {
-        return file;
-    }
-
-    public FastqcWrapperAnalysis setFile(String file) {
-        this.file = file;
-        return this;
-    }
-
-//    @Override
-//    public String getDockerImageName() {
-//        return null;
-//    }
 }
