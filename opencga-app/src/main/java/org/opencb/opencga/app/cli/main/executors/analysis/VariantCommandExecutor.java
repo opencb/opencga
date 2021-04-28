@@ -504,7 +504,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.annotate,
                         variantIndex.genericVariantIndexOptions.annotator,
                         variantIndex.genericVariantIndexOptions.overwriteAnnotations,
-                        variantIndex.genericVariantIndexOptions.indexSearch),
+                        variantIndex.genericVariantIndexOptions.indexSearch,
+                        variantIndex.skipIndexedFiles),
                 getParams(variantIndex.study));
     }
 

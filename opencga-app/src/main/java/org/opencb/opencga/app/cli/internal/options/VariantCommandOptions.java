@@ -229,6 +229,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
         public boolean stdout;
+
+        @Parameter(names = {"--skip-indexed-files"}, description = "Do not fail if any of the input files was already indexed.")
+        public boolean skipIndexedFiles;
     }
 
     @Parameters(commandNames = {SECONDARY_INDEX_COMMAND}, commandDescription = "Creates a secondary index using a search engine")

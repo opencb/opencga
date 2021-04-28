@@ -41,7 +41,7 @@ public class ChromDensityVariantAggregationExecutor extends VariantAggregationEx
     }
 
     @Override
-    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet) throws Exception {
+    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet, List<String> reason) throws Exception {
         return isPureChromDensityFacet(facet);
     }
 

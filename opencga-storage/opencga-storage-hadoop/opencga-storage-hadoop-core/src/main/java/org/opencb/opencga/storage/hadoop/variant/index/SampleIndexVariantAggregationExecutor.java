@@ -17,6 +17,8 @@ import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
@@ -31,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser.CHROM_DENSITY;
 
 public class SampleIndexVariantAggregationExecutor extends VariantAggregationExecutor {
@@ -60,8 +62,24 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     }
 
     @Override
-    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet) throws Exception {
+    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet, List<String> reason) throws Exception {
         if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
+
+            // Check if the query is fully covered
+            Query filteredQuery = new Query(query);
+            sampleIndexDBAdaptor.parseSampleIndexQuery(filteredQuery);
+            Set<VariantQueryParam> params = VariantQueryUtils.validParams(filteredQuery, true);
+            params.remove(VariantQueryParam.STUDY);
+
+            if (!params.isEmpty()) {
+                // Query filters not covered
+                for (VariantQueryParam param : params) {
+                    reason.add("Can't use " + getClass().getSimpleName() + " filtering by \""
+                            + param.key() + " : " + filteredQuery.getString(param.key()) + "\"");
+                }
+                return false;
+            }
+
             SampleIndexSchema schema = null;
             for (String fieldFacedMulti : facet.split(FACET_SEPARATOR)) {
                 for (String fieldFaced : fieldFacedMulti.split(NESTED_FACET_SEPARATOR)) {

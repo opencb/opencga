@@ -376,7 +376,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.aggregationMappingFile,
                 cliOptions.genericVariantIndexOptions.annotate,
                 cliOptions.genericVariantIndexOptions.annotator,
-                cliOptions.genericVariantIndexOptions.overwriteAnnotations, cliOptions.genericVariantIndexOptions.indexSearch)
+                cliOptions.genericVariantIndexOptions.overwriteAnnotations,
+                cliOptions.genericVariantIndexOptions.indexSearch,
+                cliOptions.skipIndexedFiles)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study)
                 .append(VariantStorageOptions.STDIN.key(), cliOptions.stdin)

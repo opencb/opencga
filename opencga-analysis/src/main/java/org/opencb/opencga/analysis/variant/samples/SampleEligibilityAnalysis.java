@@ -365,30 +365,27 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         allSamplesFuture = executorService
                 .submit(() -> new ArrayList<>(getVariantStorageManager().getIndexedSamples(studyFqn, getToken())));
 
-        Query baseQuery = new Query();
-        baseQuery.put(VariantQueryParam.STUDY.key(), studyFqn);
-
-        return resolveNode(treeQuery.getRoot(), baseQuery, null);
+        return resolveNode(treeQuery.getRoot(), null);
     }
 
-    private List<String> resolveNode(TreeQuery.Node node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, StorageEngineException, IOException, ExecutionException, InterruptedException {
+    private List<String> resolveNode(TreeQuery.Node node, List<String> includeSamples)
+            throws CatalogException, ExecutionException, InterruptedException {
         switch (node.getType()) {
             case QUERY:
-                return resolveQuery(((TreeQuery.QueryNode) node), baseQuery, includeSamples);
+                return resolveQuery(((TreeQuery.QueryNode) node), includeSamples);
             case COMPLEMENT:
-                return resolveComplementQuery(((TreeQuery.ComplementNode) node), baseQuery, includeSamples);
+                return resolveComplementQuery(((TreeQuery.ComplementNode) node), includeSamples);
             case INTERSECTION:
-                return resolveIntersectNode(((TreeQuery.IntersectionNode) node), baseQuery, includeSamples);
+                return resolveIntersectNode(((TreeQuery.IntersectionNode) node), includeSamples);
             case UNION:
-                return resolveUnionNode(((TreeQuery.UnionNode) node), baseQuery, includeSamples);
+                return resolveUnionNode(((TreeQuery.UnionNode) node), includeSamples);
             default:
                 throw new IllegalArgumentException("Unknown node type " + node.getType());
         }
     }
 
-    private List<String> resolveUnionNode(TreeQuery.UnionNode node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, StorageEngineException, IOException, ExecutionException, InterruptedException {
+    private List<String> resolveUnionNode(TreeQuery.UnionNode node, List<String> includeSamples)
+            throws CatalogException, ExecutionException, InterruptedException {
 
         if (includeSamples == null) {
             includeSamples = getAllSamplesIfDone();
@@ -408,7 +405,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             if (includeSamples != null && includeSamples.isEmpty()) {
                 logger.info("Skip node '{}'. All samples found", subNode);
             } else {
-                List<String> thisNodeResult = resolveNode(subNode, baseQuery, includeSamples);
+                List<String> thisNodeResult = resolveNode(subNode, includeSamples);
                 if (includeSamples != null) {
                     includeSamples.removeAll(thisNodeResult);
                 }
@@ -419,8 +416,8 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         return new ArrayList<>(result);
     }
 
-    private List<String> resolveIntersectNode(TreeQuery.IntersectionNode node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, StorageEngineException, IOException, ExecutionException, InterruptedException {
+    private List<String> resolveIntersectNode(TreeQuery.IntersectionNode node, List<String> includeSamples)
+            throws CatalogException, ExecutionException, InterruptedException {
 
         logger.info("Execute intersect-node with {} children at for {} samples",
                 node.getNodes().size(), includeSamples == null ? "?" : includeSamples.size());
@@ -430,18 +427,18 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             if (includeSamples != null && includeSamples.isEmpty()) {
                 logger.info("Skip node '{}'", subNode);
             } else {
-                includeSamples = resolveNode(subNode, baseQuery, includeSamples);
+                includeSamples = resolveNode(subNode, includeSamples);
             }
         }
 
         return includeSamples;
     }
 
-    private List<String> resolveComplementQuery(TreeQuery.ComplementNode node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, IOException, StorageEngineException, ExecutionException, InterruptedException {
+    private List<String> resolveComplementQuery(TreeQuery.ComplementNode node, List<String> includeSamples)
+            throws CatalogException, ExecutionException, InterruptedException {
 
         logger.info("Execute complement-node for {} samples", includeSamples == null ? "?" : includeSamples.size());
-        List<String> subSamples = resolveNode(node.getNodes().get(0), baseQuery, includeSamples);
+        List<String> subSamples = resolveNode(node.getNodes().get(0), includeSamples);
         if (includeSamples == null) {
             // Force get all samples
             includeSamples = getAllSamplesForce();
@@ -453,15 +450,15 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         return includeSamples;
     }
 
-    private List<String> resolveQuery(TreeQuery.QueryNode node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, StorageEngineException, IOException, ExecutionException, InterruptedException {
+    private List<String> resolveQuery(TreeQuery.QueryNode node, List<String> includeSamples)
+            throws CatalogException, ExecutionException, InterruptedException {
         if (includeSamples == null) {
             logger.info("Execute leaf-node '{}'", node);
         } else {
             logger.info("Execute leaf-node '{}' for {} samples", node, includeSamples.size());
         }
 
-        Query variantsQuery = node.getQuery();
+        Query variantsQuery = new Query(node.getQuery());
         Query sampleQuery = new Query();
         Query individualQuery = new Query();
         for (String key : new HashSet<>(variantsQuery.keySet())) {
@@ -475,7 +472,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             }
         }
 
-        Set<String> samples = resolveVariantQuery(node, baseQuery, includeSamples);
+        Set<String> samples = resolveVariantQuery(node, variantsQuery, includeSamples);
         samples = resolveSampleCatalogQuery(sampleQuery, samples);
         samples = resolveIndividualCatalogQuery(individualQuery, samples);
 
@@ -483,8 +480,15 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         return new ArrayList<>(samples);
     }
 
-    private Set<String> resolveVariantQuery(TreeQuery.QueryNode node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, StorageEngineException, IOException, ExecutionException, InterruptedException {
+    private Set<String> resolveVariantQuery(TreeQuery.QueryNode node, Query variantsQuery, List<String> includeSamples)
+            throws ExecutionException, InterruptedException {
+        if (variantsQuery.isEmpty()) {
+            if (includeSamples == null) {
+                // Force get all samples
+                includeSamples = getAllSamplesForce();
+            }
+            return new HashSet<>(includeSamples);
+        }
 //        if (params.getBoolean("direct")) {
 //            return resolveQueryDirect(node, baseQuery, includeSamples);
 //        } else {
@@ -492,12 +496,12 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
 //        }
 
         try {
-            return resolveVariantQuerySamplesData(node, baseQuery, new AtomicReference<>(includeSamples));
+            return resolveVariantQuerySamplesData(node, variantsQuery, new AtomicReference<>(includeSamples));
         } catch (Exception e) {
             try {
                 logger.warn("Error resolving variant query node: {}", e.getMessage());
                 logger.warn("Retry one time");
-                return resolveVariantQuerySamplesData(node, baseQuery, new AtomicReference<>(includeSamples));
+                return resolveVariantQuerySamplesData(node, variantsQuery, new AtomicReference<>(includeSamples));
             } catch (Exception e2) {
                 e.addSuppressed(e2);
                 throw e;
@@ -539,7 +543,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             int inputSampleSize = samples.size();
             individualQuery.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samples);
             samples = getCatalogManager().getIndividualManager()
-                    .search(studyFqn, individualQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), getToken())
+                    .search(studyFqn, individualQuery, new QueryOptions(QueryOptions.INCLUDE, "id,samples.id"), getToken())
                     .getResults()
                     .stream()
                     .map(Individual::getSamples)
@@ -558,12 +562,12 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
         return samples;
     }
 
-    private Set<String> resolveVariantQuerySamplesData(TreeQuery.QueryNode node, Query baseQuery,
+    private Set<String> resolveVariantQuerySamplesData(TreeQuery.QueryNode node, Query query,
                                                        AtomicReference<List<String>> includeSamplesInputR)
             throws ExecutionException, InterruptedException {
-        Query query = new Query(baseQuery);
-        query.putAll(node.getQuery());
         final String genotypes;
+        query = new Query(query);
+        query.put(VariantQueryParam.STUDY.key(), studyFqn);
         if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {
             String genotypesValue = query.getString(VariantQueryParam.GENOTYPE.key());
             query.remove(VariantQueryParam.GENOTYPE.key());
