@@ -457,7 +457,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = FastQcWrapperParams.DESCRIPTION, required = true) FastQcWrapperParams params) {
+            @ApiParam(value = FastqcWrapperParams.DESCRIPTION, required = true) FastqcWrapperParams params) {
         return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 

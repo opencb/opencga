@@ -10,18 +10,17 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
 
 public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
 
     public final static String DOCKER_INPUT_PATH = "/data/input";
     public final static String DOCKER_OUTPUT_PATH = "/data/output";
 
-    public static final String STDOUT_FILENAME = "executor.stdout.txt";
-    public static final String STDERR_FILENAME = "executor.stderr.txt";
+    public static final String STDOUT_FILENAME = "stdout.txt";
+    public static final String STDERR_FILENAME = "stderr.txt";
 
     public abstract String getDockerImageName();
     public abstract String getDockerImageVersion();

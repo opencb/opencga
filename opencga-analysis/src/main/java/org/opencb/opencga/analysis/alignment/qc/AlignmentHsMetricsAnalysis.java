@@ -117,7 +117,7 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
                     .setCommand("BedToIntervalList")
                     .setBedFile(catalogBedFile.getUri().getPath())
                     .setDictFile(catalogDictFile.getUri().getPath())
-                    .setOutFile(baitFile.getName())
+                    .setOutFilename(baitFile.getName())
                     .execute();
 
             if (!baitFile.exists()) {
@@ -135,7 +135,7 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
 //                    .setRefSeqFile(catalogRefSeqFile.getUri().getPath())
                     .setBaitIntervalsFile(baitFile.getAbsolutePath())
                     .setTargetIntervalsFile(baitFile.getAbsolutePath())
-                    .setOutFile(hsMetricsFile.getName())
+                    .setOutFilename(hsMetricsFile.getName())
                     .execute();
 
             if (!hsMetricsFile.exists()) {

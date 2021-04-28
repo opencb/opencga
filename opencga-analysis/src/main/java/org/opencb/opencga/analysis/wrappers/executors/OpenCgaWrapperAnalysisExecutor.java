@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Deprecated
 public abstract class OpenCgaWrapperAnalysisExecutor extends OpenCgaToolExecutor {
 
     public final String DOCKER_IMAGE_VERSION_PARAM = "DOCKER_IMAGE_VERSION";

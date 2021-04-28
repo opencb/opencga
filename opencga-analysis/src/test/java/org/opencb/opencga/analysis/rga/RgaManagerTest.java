@@ -447,6 +447,15 @@ public class RgaManagerTest {
             }
         }
 
+        result = rgaManager.variantQuery(STUDY, new Query(), QueryOptions.empty(), userToken);
+        assertEquals(10, result.getNumResults());
+
+        result = rgaManager.variantQuery(STUDY, new Query(), new QueryOptions(QueryOptions.SKIP, 10), userToken);
+        assertEquals(10, result.getNumResults());
+
+        result = rgaManager.variantQuery(STUDY, new Query(), new QueryOptions(QueryOptions.SKIP, 20), userToken);
+        assertEquals(10, result.getNumResults());
+
         result = rgaManager.variantQuery(STUDY, new Query(RgaQueryParams.VARIANTS.key(),
                 Arrays.asList("15:41991315:A:T", "1:2441358:T:C", "1:59125683:C:T")), QueryOptions.empty(), userToken);
         assertEquals(3, result.getNumResults());

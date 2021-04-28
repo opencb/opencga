@@ -7,7 +7,6 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -51,23 +50,27 @@ public class GeneRgaConverter extends AbstractRgaConverter {
         CONVERTER_MAP.put("individuals.transcripts.strand", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
                 RgaDataModel.TRANSCRIPT_ID, RgaDataModel.STRAND));
         CONVERTER_MAP.put("individuals.transcripts.variants.id", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.genotype", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.filter", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.FILTERS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.FILTERS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.qual", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.type", Arrays.asList(RgaDataModel.GENE_ID, RgaDataModel.INDIVIDUAL_ID,
-                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.TYPES));
+                RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.TYPES, RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.knockoutType", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.KNOCKOUT_TYPES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.KNOCKOUT_TYPES,
+                RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.populationFrequencies", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.POPULATION_FREQUENCIES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.POPULATION_FREQUENCIES,
+                RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.clinicalSignificance", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.CLINICAL_SIGNIFICANCES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.CLINICAL_SIGNIFICANCES,
+                RgaDataModel.VARIANT_SUMMARY));
         CONVERTER_MAP.put("individuals.transcripts.variants.sequenceOntologyTerms", Arrays.asList(RgaDataModel.GENE_ID,
-                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.CONSEQUENCE_TYPES));
+                RgaDataModel.INDIVIDUAL_ID, RgaDataModel.TRANSCRIPT_ID, RgaDataModel.VARIANTS, RgaDataModel.CONSEQUENCE_TYPES,
+                RgaDataModel.VARIANT_SUMMARY));
 
         logger = LoggerFactory.getLogger(GeneRgaConverter.class);
     }
@@ -75,17 +78,13 @@ public class GeneRgaConverter extends AbstractRgaConverter {
     public GeneRgaConverter() {
     }
 
-    public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator) {
-        return convertToDataModelType(rgaIterator, variantDBIterator, Collections.emptyList(), 0, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
+    public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator) {
+        return convertToDataModelType(rgaIterator, Collections.emptyList(), 0, RgaQueryParams.DEFAULT_INDIVIDUAL_LIMIT);
     }
 
-    public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator,
-                                                          List<String> includeIndividuals, int skipIndividuals, int limitIndividuals) {
-        Map<String, Variant> variantMap = new HashMap<>();
-        while (variantDBIterator.hasNext()) {
-            Variant variant = variantDBIterator.next();
-            variantMap.put(variant.getId(), variant);
-        }
+    public List<RgaKnockoutByGene> convertToDataModelType(RgaIterator rgaIterator, List<String> includeIndividuals, int skipIndividuals,
+                                                          int limitIndividuals) {
+        Map<String, Variant> variantMap = Collections.emptyMap();
 
         Map<String, ProcessedIndividuals> geneIndividualMap = new HashMap<>();
 
@@ -153,6 +152,7 @@ public class GeneRgaConverter extends AbstractRgaConverter {
         return new ArrayList<>(result.values());
     }
 
+    @Override
     public List<String> getIncludeFields(List<String> includeFields) {
         Set<String> toInclude = new HashSet<>();
         for (String includeField : includeFields) {
@@ -165,6 +165,7 @@ public class GeneRgaConverter extends AbstractRgaConverter {
         return new ArrayList<>(toInclude);
     }
 
+    @Override
     public List<String> getIncludeFromExcludeFields(List<String> excludeFields) {
         Set<String> excludedFields = new HashSet<>();
 

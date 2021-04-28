@@ -9,7 +9,21 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
+
 public class AnalysisUtils {
+
+    public static boolean isSupportedCommand(String commands) {
+        Set<String> commandSet = new HashSet<>(Arrays.asList(commands.replace(" ", "").split(",")));
+        if (!commandSet.contains(commands)) {
+            return true;
+        }
+        return false;
+    }
 
     public static File getBamFileBySampleId(String sampleId, String studyId, FileManager fileManager, String token) throws ToolException {
         // Look for the bam file for each sample
