@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
@@ -21,6 +24,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.*;
+import org.opencb.opencga.core.models.analysis.knockout.VariantStats;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -468,9 +472,11 @@ public class RgaManager implements AutoCloseable {
         }
 
         Query variantQuery = new Query(VariantQueryParam.ID.key(), variantIds)
-                .append(VariantQueryParam.STUDY.key(), study)
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds)
-                .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT,DP");
+                .append(VariantQueryParam.STUDY.key(), study);
+        if (!sampleIds.isEmpty()) {
+            variantQuery.append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds)
+                    .append(VariantQueryParam.INCLUDE_SAMPLE_DATA.key(), "GT,DP");
+        }
 
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.EXCLUDE, Arrays.asList(
@@ -749,6 +755,209 @@ public class RgaManager implements AutoCloseable {
         }
 
         return result;
+    }
+
+
+    public OpenCGAResult<KnockoutByVariantSummary> variantSummary(String studyStr, Query query, QueryOptions options, String token)
+            throws CatalogException, IOException, RgaException {
+        Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+        String userId = catalogManager.getUserManager().getUserId(token);
+        String collection = getCollectionName(study.getFqn());
+        if (!rgaEngine.isAlive(collection)) {
+            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
+        }
+
+        catalogManager.getAuthorizationManager().checkCanViewStudy(study.getUid(), userId);
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+
+        QueryOptions queryOptions = setDefaultLimit(options);
+
+        Query auxQuery = query != null ? new Query(query) : new Query();
+
+        Future<Integer> numTotalResults = null;
+        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
+            numTotalResults = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.VARIANTS + ")");
+                try {
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                } catch (Exception e) {
+                    logger.error("Could not obtain the count: {}", e.getMessage(), e);
+                }
+                return -1;
+            });
+        }
+
+        List<String> variantIds = auxQuery.getAsStringList(RgaDataModel.VARIANTS);
+        // If the user is querying by variant id, we don't need to do a facet first
+        if (variantIds.isEmpty()) {
+            // 1st. we perform a facet to get the different variant ids matching the user query and using the skip and limit values
+            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS);
+            facetOptions.putIfNotNull(QueryOptions.LIMIT, queryOptions.get(QueryOptions.LIMIT));
+            facetOptions.putIfNotNull(QueryOptions.SKIP, queryOptions.get(QueryOptions.SKIP));
+
+            DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+            if (result.getNumResults() == 0) {
+                stopWatch.stop();
+                return OpenCGAResult.empty(KnockoutByVariantSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+            }
+            variantIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+            auxQuery.put(RgaDataModel.VARIANTS, variantIds);
+        }
+
+        Future<VariantDBIterator> variantFuture = executor.submit(
+                () -> variantStorageQuery(study.getFqn(), Collections.emptyList(), auxQuery, QueryOptions.empty(), token)
+        );
+
+        // Generate 4 batches to create 4 threads
+        int batchSize = 4;
+        List<List<String>> batchList = new ArrayList<>(batchSize);
+        int size = (int) Math.ceil(variantIds.size() / (double) batchSize);
+
+        List<String> batch = null;
+        for (int i = 0; i < variantIds.size(); i++) {
+            if (i % size == 0) {
+                if (batch != null) {
+                    batchList.add(batch);
+                }
+                batch = new ArrayList<>(size);
+            }
+            batch.add(variantIds.get(i));
+        }
+        batchList.add(batch);
+
+        List<Future<List<KnockoutByVariantSummary>>> variantSummaryList = new ArrayList<>(batchSize);
+
+        for (List<String> variantIdList : batchList) {
+            variantSummaryList.add(executor.submit(() -> calculatePartialSolrVariantSummary(collection, auxQuery, variantIdList)));
+        }
+
+        Map<String, KnockoutByVariantSummary> variantSummaryMap = new HashMap<>();
+        try {
+            for (Future<List<KnockoutByVariantSummary>> summaryFuture : variantSummaryList) {
+                for (KnockoutByVariantSummary knockoutByVariantSummary : summaryFuture.get()) {
+                    variantSummaryMap.put(knockoutByVariantSummary.getId(), knockoutByVariantSummary);
+                }
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
+        }
+
+        VariantDBIterator variantDBIterator;
+        try {
+            variantDBIterator = variantFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RgaException(e.getMessage(), e);
+        }
+
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+
+            VariantAnnotation variantAnnotation = variant.getAnnotation();
+            ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
+
+            KnockoutByVariantSummary knockoutByVariantSummary = variantSummaryMap.get(variant.getId());
+            knockoutByVariantSummary.setDbSnp(variantAnnotation.getId());
+            knockoutByVariantSummary.setChromosome(variant.getChromosome());
+            knockoutByVariantSummary.setStart(variant.getStart());
+            knockoutByVariantSummary.setEnd(variant.getEnd());
+            knockoutByVariantSummary.setLength(variant.getLength());
+            knockoutByVariantSummary.setReference(variant.getReference());
+            knockoutByVariantSummary.setAlternate(variant.getAlternate());
+            knockoutByVariantSummary.setType(variant.getType());
+            knockoutByVariantSummary.setPopulationFrequencies(variantAnnotation.getPopulationFrequencies());
+            knockoutByVariantSummary.setSequenceOntologyTerms(consequenceType.getSequenceOntologyTerms());
+            knockoutByVariantSummary.setGenes(variantAnnotation.getXrefs()
+                    .stream()
+                    .filter(xref -> "HGNC".equals(xref.getSource()))
+                    .map(Xref::getId)
+                    .collect(Collectors.toList())
+            );
+        }
+
+        List<KnockoutByVariantSummary> knockoutByVariantSummaryList = new ArrayList<>(variantSummaryMap.values());
+
+        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+        OpenCGAResult<KnockoutByVariantSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
+                knockoutByVariantSummaryList.size(), knockoutByVariantSummaryList, -1);
+
+        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
+            try {
+                assert numTotalResults != null;
+                result.setNumMatches(numTotalResults.get());
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RgaException(e.getMessage(), e);
+            }
+        }
+
+        return result;
+    }
+
+    private List<KnockoutByVariantSummary> calculatePartialSolrVariantSummary(String collection, Query query, List<String> variantIdList)
+            throws IOException, RgaException {
+        List<KnockoutByVariantSummary> knockoutByVariantSummaryList = new ArrayList<>(variantIdList.size());
+        for (String variantId : variantIdList) {
+            KnockoutByVariantSummary knockoutByVariantSummary = new KnockoutByVariantSummary().setId(variantId);
+
+            Query auxQuery = new Query(query);
+            auxQuery.put(RgaDataModel.VARIANTS, variantId);
+
+            // 1. Get clinical significances
+            QueryOptions knockoutTypeFacet = new QueryOptions()
+                    .append(QueryOptions.LIMIT, -1)
+                    .append(QueryOptions.FACET, RgaDataModel.CLINICAL_SIGNIFICANCES);
+            DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
+            knockoutByVariantSummary.setClinicalSignificances(facetFieldDataResult.first()
+                    .getBuckets()
+                    .stream()
+                    .map(FacetField.Bucket::getValue)
+                    .map(ClinicalSignificance::valueOf)
+                    .collect(Collectors.toList())
+            );
+
+            // 2. Get individual knockout type counts
+            QueryOptions geneFacet = new QueryOptions()
+                    .append(QueryOptions.LIMIT, -1)
+                    .append(QueryOptions.FACET, RgaDataModel.INDIVIDUAL_SUMMARY);
+            facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, geneFacet);
+            KnockoutTypeCount noParentsCount = new KnockoutTypeCount(auxQuery);
+            KnockoutTypeCount singleParentCount = new KnockoutTypeCount(auxQuery);
+            KnockoutTypeCount bothParentsCount = new KnockoutTypeCount(auxQuery);
+
+            for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
+                RgaUtils.CodedIndividual codedIndividual = RgaUtils.CodedIndividual.parseEncodedId(bucket.getValue());
+                KnockoutTypeCount auxKnockoutType;
+                switch (codedIndividual.getNumParents()) {
+                    case 0:
+                        auxKnockoutType = noParentsCount;
+                        break;
+                    case 1:
+                        auxKnockoutType = singleParentCount;
+                        break;
+                    case 2:
+                        auxKnockoutType = bothParentsCount;
+                        break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + codedIndividual.getNumParents());
+                }
+
+                auxKnockoutType.processFeature(codedIndividual);
+            }
+            VariantStats noParentIndividualStats = new VariantStats(noParentsCount.getNumIds(), noParentsCount.getNumHomIds(),
+                    noParentsCount.getNumCompHetIds(), noParentsCount.getNumHetIds(), noParentsCount.getNumDelOverlapIds());
+            VariantStats singleParentIndividualStats = new VariantStats(singleParentCount.getNumIds(), singleParentCount.getNumHomIds(),
+                    singleParentCount.getNumCompHetIds(), singleParentCount.getNumHetIds(), singleParentCount.getNumDelOverlapIds());
+            VariantStats bothParentIndividualStats = new VariantStats(bothParentsCount.getNumIds(), bothParentsCount.getNumHomIds(),
+                    bothParentsCount.getNumCompHetIds(), bothParentsCount.getNumHetIds(), bothParentsCount.getNumDelOverlapIds());
+
+            knockoutByVariantSummary.setIndividualStats(new IndividualStats(noParentIndividualStats, singleParentIndividualStats,
+                    bothParentIndividualStats));
+
+            knockoutByVariantSummaryList.add(knockoutByVariantSummary);
+        }
+        return knockoutByVariantSummaryList;
     }
 
     private List<KnockoutByGeneSummary> calculateGeneSummary(String collection, Query query, List<String> geneIdList)
