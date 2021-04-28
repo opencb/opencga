@@ -15,6 +15,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
@@ -45,8 +46,14 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
             case VARIANT_CONFIGURE:
                 queryResponse = variantConfigure();
                 break;
+//            case VARIANT_INDEX:
+//                queryResponse = variantIndex();
+//                break;
             case VARIANT_INDEX_LAUNCHER:
                 queryResponse = variantIndexLauncher();
+                break;
+            case VARIANT_STATS_INDEX:
+                queryResponse = variantStatsIndex();
                 break;
             case VARIANT_SECONDARY_INDEX:
                 queryResponse = variantSecondaryIndex();
@@ -120,6 +127,21 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.ignoreFailed,
                         cliOptions.maxJobs,
                         VariantIndexParams.fromParams(VariantIndexParams.class, cliOptions.indexParams)), params);
+    }
+
+    private RestResponse<Job> variantStatsIndex() throws ClientException {
+        OperationsCommandOptions.VariantStatsIndexCommandOptions cliOptions = operationsCommandOptions.variantStatsIndex;
+
+        ObjectMap params = getParams(cliOptions);
+
+        return openCGAClient.getVariantOperationClient().indexVariantStats(
+                new VariantStatsIndexParams(
+                        cliOptions.cohort,
+                        cliOptions.region,
+                        cliOptions.overwriteStats,
+                        cliOptions.resume,
+                        cliOptions.aggregated,
+                        cliOptions.aggregationMappingFile), params);
     }
 
     private RestResponse<Job> variantSecondaryIndex() throws ClientException {

@@ -67,20 +67,19 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
                 VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
                 VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
-        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
 
         if (cohorts == null) {
             cohorts = new LinkedHashMap<>();
         }
 
-        preCalculateStats(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite, updateStats, options);
+        preCalculateStats(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite, options);
         overwrite = checkOverwrite(variantDBAdaptor.getMetadataManager(), studyMetadata, cohorts, overwrite);
 
 //        VariantSourceStats variantSourceStats = new VariantSourceStats(/*FILE_ID*/, Integer.toString(studyMetadata.getStudyId()));
 
         // reader, tasks and writer
         Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getMetadataManager(),
-                studyMetadata, cohorts.keySet(), overwrite, updateStats, options);
+                studyMetadata, cohorts.keySet(), options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = VariantStatisticsManager.buildIncludeExclude().append(QueryOptions.SORT, true);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
