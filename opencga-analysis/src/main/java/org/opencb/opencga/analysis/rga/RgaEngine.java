@@ -1,6 +1,8 @@
 package org.opencb.opencga.analysis.rga;
 
+import javafx.scene.paint.Stop;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -20,7 +22,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class RgaEngine implements Closeable {
 
@@ -30,8 +35,13 @@ public class RgaEngine implements Closeable {
     private GeneRgaConverter geneConverter;
     private VariantRgaConverter variantConverter;
     private StorageConfiguration storageConfiguration;
+    private static Map<String, SolrCollection> solrCollectionMap;
 
     private Logger logger;
+
+    static {
+        solrCollectionMap = new HashMap<>();
+    }
 
     public RgaEngine(StorageConfiguration storageConfiguration) {
         this.individualRgaConverter = new IndividualRgaConverter();
@@ -217,7 +227,7 @@ public class RgaEngine implements Closeable {
      */
     public long count(String collection, Query query) throws RgaException, IOException {
         SolrQuery solrQuery = parser.parseQuery(query);
-        SolrCollection solrCollection = solrManager.getCollection(collection);
+        SolrCollection solrCollection = getSolrCollection(collection);
 
         try {
             return solrCollection.count(solrQuery).getResults().get(0);
@@ -239,6 +249,7 @@ public class RgaEngine implements Closeable {
     public DataResult<FacetField> facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
         SolrQuery solrQuery = parser.parseQuery(query);
+        StopWatch stopWatch = StopWatch.createStarted();
 
         if (queryOptions.containsKey(QueryOptions.FACET)
                 && org.apache.commons.lang3.StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
@@ -259,17 +270,17 @@ public class RgaEngine implements Closeable {
             }
         }
 
-        SolrCollection solrCollection = solrManager.getCollection(collection);
+        SolrCollection solrCollection = getSolrCollection(collection);
         DataResult<FacetField> facetResult;
         try {
             facetResult = solrCollection.facet(solrQuery, null);
         } catch (SolrServerException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
         }
+        logger.info("Facet '{}': {} milliseconds", solrQuery.toString(), stopWatch.getTime(TimeUnit.MILLISECONDS));
 
         return facetResult;
     }
-
 
     @Override
     public void close() throws IOException {
@@ -283,5 +294,15 @@ public class RgaEngine implements Closeable {
     public RgaEngine setSolrManager(SolrManager solrManager) {
         this.solrManager = solrManager;
         return this;
+    }
+
+    private SolrCollection getSolrCollection(String collection) {
+        if (solrCollectionMap.containsKey(collection)) {
+            return solrCollectionMap.get(collection);
+        } else {
+            SolrCollection solrCollection = solrManager.getCollection(collection);
+            solrCollectionMap.put(collection, solrCollection);
+            return solrCollection;
+        }
     }
 }
