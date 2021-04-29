@@ -583,17 +583,6 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION + " (FastQ, SAM or BAM file)", required = true)
         public String inputFile;
 
-        @Parameter(names = {"--contaminants-file"}, description = FILE_ID_DESCRIPTION + " (file which contains the list of" +
-                "  contaminants to screen overrepresented sequences against)")
-        public String contaminantsFile;
-
-        @Parameter(names = {"--adapters-file"}, description = FILE_ID_DESCRIPTION + " (adapter sequences file)")
-        public String adaptersFile;
-
-        @Parameter(names = {"--limits-file"}, description = FILE_ID_DESCRIPTION + " (file which contains a set of criteria"
-                + " which will be used to determine the warn/error limits for the various modules)")
-        public String limitsFile;
-
         @DynamicParameter(names = {"--fastqc-params"}, description = "FastQc parameters e.g.:. --fastqc-params kmers=10")
         public Map<String, String> fastqcParams = new HashMap<>();
 

@@ -314,9 +314,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new FastqcWrapperParams(
                 cliOptions.inputFile,
-                cliOptions.contaminantsFile,
-                cliOptions.adaptersFile,
-                cliOptions.limitsFile,
                 cliOptions.outdir,
                 cliOptions.fastqcParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);

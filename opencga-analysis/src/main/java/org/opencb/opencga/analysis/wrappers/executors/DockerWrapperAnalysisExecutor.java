@@ -1,8 +1,11 @@
 package org.opencb.opencga.analysis.wrappers.executors;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -12,8 +15,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.*;
-
-import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
 
 public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor {
 
@@ -153,7 +154,30 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
         }
     }
 
-    protected boolean skipParameter(String param) {
+    public static List<Pair<String, String>> getInputFilenames(String inputFile, Set<String> fileParamNames, ObjectMap executorParams) {
+        List<Pair<String, String>> inputFilenames = new ArrayList<>();
+        if (StringUtils.isNotEmpty(inputFile)) {
+            inputFilenames.add(new ImmutablePair<>("", inputFile));
+        }
+
+        if (MapUtils.isNotEmpty(executorParams)) {
+            for (String paramName : executorParams.keySet()) {
+                if (skipParameter(paramName)) {
+                    continue;
+                }
+
+                if (fileParamNames.contains(paramName)) {
+                    Pair<String, String> pair = new ImmutablePair<>(paramName, executorParams.get(paramName).toString());
+                    inputFilenames.add(pair);
+                }
+
+            }
+        }
+
+        return inputFilenames;
+    }
+
+    protected static boolean skipParameter(String param) {
         switch (param) {
             case "opencgaHome":
             case "token":

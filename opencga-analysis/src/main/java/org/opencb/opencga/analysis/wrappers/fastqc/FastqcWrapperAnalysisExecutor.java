@@ -19,9 +19,6 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
     private String study;
     private String inputFile;
-    private String contaminantsFile;
-    private String adaptersFile;
-    private String limitsFile;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -40,10 +37,8 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("", getInputFile()),
-                new ImmutablePair<>("contaminants", getContaminantsFile()), new ImmutablePair<>("adapters", getAdaptersFile()),
-                new ImmutablePair<>("limits", getLimitsFile())));
-
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(),
+                FastqcWrapperAnalysis.FILE_PARAM_NAMES, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -57,11 +52,10 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendOutputFiles(outputFilenames, sb);
 
         // Append other params
-        Set<String> skipParams =  new HashSet<>(Arrays.asList("o", "outdir", "d", "dir", "j", "java", "c", "contaminants", "a", "adapters",
-                "l", "limits"));
+        Set<String> skipParams =  new HashSet<>(Arrays.asList("o", "outdir", "d", "dir", "j", "java"));
         appendOtherParams(skipParams, sb);
 
-        // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
+        // Execute command and redirect stdout and stderr to the files
         logger.info("Docker command line: " + sb.toString());
         runCommandLine(sb.toString());
     }
@@ -81,33 +75,6 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
     public FastqcWrapperAnalysisExecutor setInputFile(String inputFile) {
         this.inputFile = inputFile;
-        return this;
-    }
-
-    public String getContaminantsFile() {
-        return contaminantsFile;
-    }
-
-    public FastqcWrapperAnalysisExecutor setContaminantsFile(String contaminantsFile) {
-        this.contaminantsFile = contaminantsFile;
-        return this;
-    }
-
-    public String getAdaptersFile() {
-        return adaptersFile;
-    }
-
-    public FastqcWrapperAnalysisExecutor setAdaptersFile(String adaptersFile) {
-        this.adaptersFile = adaptersFile;
-        return this;
-    }
-
-    public String getLimitsFile() {
-        return limitsFile;
-    }
-
-    public FastqcWrapperAnalysisExecutor setLimitsFile(String limitsFile) {
-        this.limitsFile = limitsFile;
         return this;
     }
 }

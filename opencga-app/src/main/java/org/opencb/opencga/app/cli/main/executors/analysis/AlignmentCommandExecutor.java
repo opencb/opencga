@@ -460,9 +460,6 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> fastqc() throws ClientException {
         FastqcWrapperParams fastQcWrapperParams = new FastqcWrapperParams(
                 alignmentCommandOptions.fastqcCommandOptions.inputFile,
-                alignmentCommandOptions.fastqcCommandOptions.contaminantsFile,
-                alignmentCommandOptions.fastqcCommandOptions.adaptersFile,
-                alignmentCommandOptions.fastqcCommandOptions.limitsFile,
                 alignmentCommandOptions.fastqcCommandOptions.outdir,
                 alignmentCommandOptions.fastqcCommandOptions.fastqcParams
         );

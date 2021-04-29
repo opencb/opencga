@@ -27,19 +27,20 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.util.*;
+
 @Tool(id = FastqcWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = FastqcWrapperAnalysis.DESCRIPTION)
 public class FastqcWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     public final static String ID = "fastqc";
     public final static String DESCRIPTION = "A high throughput sequence QC analysis tool";
 
+    public final static Set<String> FILE_PARAM_NAMES = new HashSet<>(Arrays.asList("l", "limits", "a", "adapters", "c", "contaminants"));
+
     @ToolParams
     protected final FastqcWrapperParams analysisParams = new FastqcWrapperParams();
 
     private String inputFilePath = null;
-    private String contaminantsFilePath = null;
-    private String adaptersFilePath = null;
-    private String limitsFilePath = null;
 
     protected void check() throws Exception {
         super.check();
@@ -49,15 +50,18 @@ public class FastqcWrapperAnalysis extends OpenCgaToolScopeStudy {
         if (StringUtils.isNotEmpty(analysisParams.getInputFile())) {
             inputFilePath = AnalysisUtils.getCatalogFile(analysisParams.getInputFile(), study, fileManager, token).getUri().getPath();
         }
-        if (StringUtils.isNotEmpty(analysisParams.getContaminantsFile())) {
-            contaminantsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getContaminantsFile(), study, fileManager, token).getUri()
-                    .getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getAdaptersFile())) {
-            adaptersFilePath = AnalysisUtils.getCatalogFile(analysisParams.getAdaptersFile(), study, fileManager, token).getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getLimitsFile())) {
-            limitsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getLimitsFile(), study, fileManager, token).getUri().getPath();
+
+        if (MapUtils.isNotEmpty(analysisParams.getFastqcParams())) {
+            Map<String, String> updatedMap = new HashMap<>();
+            for (Map.Entry<String, String> entry : analysisParams.getFastqcParams().entrySet()) {
+                if (FILE_PARAM_NAMES.contains(entry.getKey())) {
+                    updatedMap.put(entry.getKey(), AnalysisUtils.getCatalogFile(entry.getValue(), study, fileManager, token)
+                            .getUri().getPath());
+                }
+            }
+            if (MapUtils.isNotEmpty(updatedMap)) {
+                analysisParams.getFastqcParams().putAll(updatedMap);
+            }
         }
     }
 
@@ -72,9 +76,6 @@ public class FastqcWrapperAnalysis extends OpenCgaToolScopeStudy {
 
             getToolExecutor(FastqcWrapperAnalysisExecutor.class)
                     .setInputFile(inputFilePath)
-                    .setContaminantsFile(contaminantsFilePath)
-                    .setAdaptersFile(adaptersFilePath)
-                    .setLimitsFile(limitsFilePath)
                     .execute();
         });
     }
