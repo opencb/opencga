@@ -264,7 +264,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         DatastoreStatus datastoreStatus = new DatastoreStatus();
         datastoreStatus.setStatus(DatastoreStatus.Status.UP);
-        datastoreStatus.setResponseTime(metaCollection.count(new Document()).getDbTime() + " ms");
+        //datastoreStatus.setResponseTime(metaCollection.count(new Document()).getDbTime() + " ms");
         statusList.add(datastoreStatus);
 
         return statusList;
