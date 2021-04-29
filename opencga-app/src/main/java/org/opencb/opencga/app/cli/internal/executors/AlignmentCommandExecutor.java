@@ -280,14 +280,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new SamtoolsWrapperParams(
                 cliOptions.command,
                 cliOptions.inputFile,
-                cliOptions.outputFilename,
-                cliOptions.referenceFile,
-                cliOptions.readGroupFile,
-                cliOptions.bedFile,
-                cliOptions.refSeqFile,
-                cliOptions.referenceNamesFile,
-                cliOptions.targetRegionFile,
-                cliOptions.readsNotSelectedFilename,
                 cliOptions.outdir,
                 cliOptions.samtoolsParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);

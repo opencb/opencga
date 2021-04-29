@@ -433,23 +433,13 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // Samtools
 
     private RestResponse<Job> samtools() throws ClientException {
-        SamtoolsWrapperParams wrapperParams = new SamtoolsWrapperParams(
-                alignmentCommandOptions.samtoolsCommandOptions.command,
-                alignmentCommandOptions.samtoolsCommandOptions.inputFile,
-                alignmentCommandOptions.samtoolsCommandOptions.outputFilename,
-                alignmentCommandOptions.samtoolsCommandOptions.referenceFile,
-                alignmentCommandOptions.samtoolsCommandOptions.readGroupFile,
-                alignmentCommandOptions.samtoolsCommandOptions.bedFile,
-                alignmentCommandOptions.samtoolsCommandOptions.refSeqFile,
-                alignmentCommandOptions.samtoolsCommandOptions.referenceNamesFile,
-                alignmentCommandOptions.samtoolsCommandOptions.targetRegionFile,
-                alignmentCommandOptions.samtoolsCommandOptions.readsNotSelectedFilename,
-                alignmentCommandOptions.samtoolsCommandOptions.outdir,
-                alignmentCommandOptions.samtoolsCommandOptions.samtoolsParams
-        );
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.samtoolsCommandOptions.study);
+        AlignmentCommandOptions.SamtoolsCommandOptions cliOptions = alignmentCommandOptions.samtoolsCommandOptions;
 
-        return openCGAClient.getAlignmentClient().runSamtools(wrapperParams, params);
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return openCGAClient.getAlignmentClient().runSamtools(new SamtoolsWrapperParams(cliOptions.command, cliOptions.inputFile,
+                cliOptions.outdir, cliOptions.samtoolsParams), params);
     }
 
     // Deeptools

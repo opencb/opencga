@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.wrappers.executors;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.exec.Command;
@@ -120,7 +121,7 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
                 continue;
             }
 
-            if (skipParams.contains(paramName)) {
+            if (CollectionUtils.isNotEmpty(skipParams) && skipParams.contains(paramName)) {
                 continue;
             }
             sb.append(" ");

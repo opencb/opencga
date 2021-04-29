@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.wrappers.samtools;
 
 import com.google.common.base.CaseFormat;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.FileSystemUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
@@ -33,8 +34,13 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMAND_DESCRIPTION;
@@ -49,13 +55,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     protected final SamtoolsWrapperParams analysisParams = new SamtoolsWrapperParams();
 
-    private String bamFilePath = null;
-    private String bedFilePath = null;
-    private String readGroupFilePath = null;
-    private String readsNotSelectedFilenamePath = null;
-    private String referenceFilePath = null;
-    private String referenceNamesFilePath = null;
-    private String refSeqFilePath = null;
+    private String inputFilePath = null;
 
     protected void check() throws Exception {
         super.check();
@@ -72,29 +72,22 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
         // Get files from catalog
         FileManager fileManager = catalogManager.getFileManager();
         if (StringUtils.isNotEmpty(analysisParams.getInputFile())) {
-            bamFilePath = AnalysisUtils.getCatalogFile(analysisParams.getInputFile(), study, fileManager, token).getUri().getPath();
+            inputFilePath = AnalysisUtils.getCatalogFile(analysisParams.getInputFile(), study, fileManager, token).getUri().getPath();
         }
-        if (StringUtils.isNotEmpty(analysisParams.getBedFile())) {
-            bedFilePath = AnalysisUtils.getCatalogFile(analysisParams.getBedFile(), study, fileManager, token).getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getReadGroupFile())) {
-            readGroupFilePath = AnalysisUtils.getCatalogFile(analysisParams.getReadGroupFile(), study, fileManager, token).getUri()
-                    .getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getReadsNotSelectedFilename())) {
-            readsNotSelectedFilenamePath = AnalysisUtils.getCatalogFile(analysisParams.getReadsNotSelectedFilename(), study, fileManager,
-                    token).getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getReferenceFile())) {
-            referenceFilePath = AnalysisUtils.getCatalogFile(analysisParams.getReferenceFile(), study, fileManager, token)
-                    .getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getReferenceNamesFile())) {
-            referenceNamesFilePath = AnalysisUtils.getCatalogFile(analysisParams.getReferenceNamesFile(), study, fileManager, token)
-                    .getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getRefSeqFile())) {
-            refSeqFilePath = AnalysisUtils.getCatalogFile(analysisParams.getRefSeqFile(), study, fileManager, token).getUri().getPath();
+
+        if (MapUtils.isNotEmpty(analysisParams.getSamtoolsParams())) {
+            Set<String> fileParams = getFileParamNames(analysisParams.getCommand());
+
+            Map<String, String> updatedMap = new HashMap<>();
+            for (Map.Entry<String, String> entry : analysisParams.getSamtoolsParams().entrySet()) {
+                if (fileParams.contains(entry.getKey())) {
+                    updatedMap.put(entry.getKey(), AnalysisUtils.getCatalogFile(entry.getValue(), study, fileManager, token)
+                            .getUri().getPath());
+                }
+            }
+            if (MapUtils.isNotEmpty(updatedMap)) {
+                analysisParams.getSamtoolsParams().putAll(updatedMap);
+            }
         }
     }
 
@@ -109,14 +102,37 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
 
             getToolExecutor(SamtoolsWrapperAnalysisExecutor.class)
                     .setCommand(analysisParams.getCommand())
-                    .setInputFile(bamFilePath)
-                    .setBedFile(bedFilePath)
-                    .setReadGroupFile(readGroupFilePath)
-                    .setReadsNotSelectedFilename(readsNotSelectedFilenamePath)
-                    .setReferenceFile(referenceFilePath)
-                    .setReferenceNamesFile(referenceNamesFilePath)
-                    .setRefSeqFile(refSeqFilePath)
+                    .setInputFile(inputFilePath)
                     .execute();
+
+            // Index management
+            switch (analysisParams.getCommand()) {
+                case "index": {
+                    String indexFilePath;
+                    if (executorParams.containsKey("c")) {
+                        indexFilePath = inputFilePath + ".csi";
+                    } else {
+                        indexFilePath = inputFilePath + ".bai";
+                    }
+                    if (new java.io.File(indexFilePath).exists()) {
+                        // Create symobolic link
+                        Path target = Paths.get(indexFilePath);
+                        Path symbolic = getOutDir().resolve(target.getFileName().toString());
+                        Files.createSymbolicLink(symbolic, target);
+                    }
+                    break;
+                }
+                case "faidx": {
+                    String indexFilePath = inputFilePath + ".fai";
+                    if (new java.io.File(indexFilePath).exists()) {
+                        // Create symobolic link
+                        Path target = Paths.get(indexFilePath);
+                        Path symbolic = getOutDir().resolve(target.getFileName().toString());
+                        Files.createSymbolicLink(symbolic, target);
+                    }
+                    break;
+                }
+            }
         });
     }
 
@@ -150,123 +166,43 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         return alignmentStats;
     }
-//
-//    private void indexStats(SamtoolsStats alignmentStats) throws CatalogException, IOException {
-//        // Convert AlignmentStats to map in order to create an AnnotationSet
-//        Map<String, Object> annotations = JacksonUtils.getDefaultObjectMapper().convertValue(alignmentStats, Map.class);
-//        AnnotationSet annotationSet = new AnnotationSet(ALIGNMENT_STATS_VARIABLE_SET, ALIGNMENT_STATS_VARIABLE_SET, annotations);
-//
-//        // Update catalog
-//        FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
-//        catalogManager.getFileManager().update(getStudy(), inputCatalogFile.getId(), updateParams, QueryOptions.empty(), token);
-//    }
-//
-////    private boolean isIndexed() {
-////        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
-////        try {
-////            fileResult = catalogManager.getFileManager().get(getStudy(), inputCatalogFile.getId(), QueryOptions.empty(), token);
-////
-////            if (fileResult.getNumResults() == 1) {
-////                for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
-////                    if (ALIGNMENT_STATS_VARIABLE_SET.equals(annotationSet.getId())) {
-////                        return true;
-////                    }
-////                }
-////            }
-////        } catch (CatalogException e) {
-////            return false;
-////        }
-////
-////        return false;
-////    }
-//
-//    public String getCommand() {
-//        return command;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setCommand(String command) {
-//        this.command = command;
-//        return this;
-//    }
-//
-//    public String getInputFile() {
-//        return inputFile;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setInputFile(String inputFile) {
-//        this.inputFile = inputFile;
-//        return this;
-//    }
-//
-//    public String getOutputFilename() {
-//        return outputFilename;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setOutputFilename(String outputFilename) {
-//        this.outputFilename = outputFilename;
-//        return this;
-//    }
-//
-//    public String getReferenceFile() {
-//        return referenceFile;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setReferenceFile(String referenceFile) {
-//        this.referenceFile = referenceFile;
-//        return this;
-//    }
-//
-//    public String getReadGroupFile() {
-//        return readGroupFile;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setReadGroupFile(String readGroupFile) {
-//        this.readGroupFile = readGroupFile;
-//        return this;
-//    }
-//
-//    public String getBedFile() {
-//        return bedFile;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setBedFile(String bedFile) {
-//        this.bedFile = bedFile;
-//        return this;
-//    }
-//
-//    public String getReferenceNamesFile() {
-//        return referenceNamesFile;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setReferenceNamesFile(String referenceNamesFile) {
-//        this.referenceNamesFile = referenceNamesFile;
-//        return this;
-//    }
-//
-//    public String getTargetRegionFile() {
-//        return targetRegionFile;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setTargetRegionFile(String targetRegionFile) {
-//        this.targetRegionFile = targetRegionFile;
-//        return this;
-//    }
-//
-//    public String getRefSeqFile() {
-//        return refSeqFile;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setRefSeqFile(String refSeqFile) {
-//        this.refSeqFile = refSeqFile;
-//        return this;
-//    }
-//
-//    public String getReadsNotSelectedFilename() {
-//        return readsNotSelectedFilename;
-//    }
-//
-//    public SamtoolsWrapperAnalysis setReadsNotSelectedFilename(String readsNotSelectedFilename) {
-//        this.readsNotSelectedFilename = readsNotSelectedFilename;
-//        return this;
-//    }
+
+    public static Set<String> getFileParamNames(String command) {
+        Set<String> fileParamNames = new HashSet<>();
+        switch (command) {
+            case "sort":
+                fileParamNames.add("reference");
+                break;
+            case "view":
+                fileParamNames.add("U");
+                fileParamNames.add("t");
+                fileParamNames.add("L");
+                fileParamNames.add("R");
+                fileParamNames.add("T");
+                fileParamNames.add("reference");
+                break;
+            case "stats":
+                fileParamNames.add("r");
+                fileParamNames.add("ref-seq");
+                fileParamNames.add("reference");
+                fileParamNames.add("t");
+                fileParamNames.add("target-regions");
+                break;
+            case "depth":
+                fileParamNames.add("reference");
+                break;
+            case "plot-bamstats":
+                fileParamNames.add("r");
+                fileParamNames.add("ref-stats");
+                fileParamNames.add("s");
+                fileParamNames.add("do-ref-stats");
+                fileParamNames.add("t");
+                fileParamNames.add("targets");
+                break;
+            default:
+                break;
+
+        }
+        return  fileParamNames;
+    }
 }

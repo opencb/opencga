@@ -524,30 +524,6 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--input-file"}, description = INPUT_FILE_DESCRIPTION)
         public String inputFile;
 
-        @Parameter(names = {"--output-filename"}, description = OUTPUT_FILENAME_DESCRIPTION)
-        public String outputFilename;
-
-        @Parameter(names = {"--reference-file"}, description = REFERENCE_FILE_DESCRIPTION)
-        public String referenceFile;
-
-        @Parameter(names = {"--read-group-file"}, description = READ_GROUP_FILE_DESCRIPTION)
-        public String readGroupFile;
-
-        @Parameter(names = {"--bed-file"}, description = BED_FILE_DESCRIPTION)
-        public String bedFile;
-
-        @Parameter(names = {"--ref-seq-file"}, description = REF_SEQ_FILE_DESCRIPTION)
-        public String refSeqFile;
-
-        @Parameter(names = {"--reference-names-file"}, description = REFERENCE_NAMES_DESCRIPTION)
-        public String referenceNamesFile;
-
-        @Parameter(names = {"--target-region-file"}, description = TARGET_REGION_DESCRIPTION)
-        public String targetRegionFile;
-
-        @Parameter(names = {"--reads-not-selected-filename"}, description = READS_NOT_SELECTED_FILENAME_DESCRIPTION)
-        public String readsNotSelectedFilename;
-
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
 
