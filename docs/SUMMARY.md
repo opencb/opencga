@@ -70,6 +70,7 @@
   * [Individual](manual/data-models/individual.md)
 * [Using JupyterLab](manual/using-jupyterlab.md)
 * [Administrator](manual/administrator/README.md)
+  * [Templates / Manifest](manual/administrator/templates-manifest.md)
   * [User Management](manual/administrator/user-management.md)
 
 ## About
