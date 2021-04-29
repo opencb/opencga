@@ -253,7 +253,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                     ? DatastoreStatus.Status.UP : DatastoreStatus.Status.DOWN);
             // Per-machine response time is measured by doing ping to the machine. it's not possible to create a connection
             // to one single machine in the rep set
-            datastoreStatus.setResponseTime(getPingResponseTime(datastoreStatus.getHost()));
+            //datastoreStatus.setResponseTime(getPingResponseTime(datastoreStatus.getHost()));
             datastoreStatusList.add(datastoreStatus);
         }
         return datastoreStatusList;
@@ -264,7 +264,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         DatastoreStatus datastoreStatus = new DatastoreStatus();
         datastoreStatus.setStatus(DatastoreStatus.Status.UP);
-        datastoreStatus.setResponseTime(metaCollection.count(new Document()).getDbTime() + " ms");
+        //datastoreStatus.setResponseTime(metaCollection.count(new Document()).getDbTime() + " ms");
         statusList.add(datastoreStatus);
 
         return statusList;
