@@ -55,8 +55,10 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.*;
-import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -66,7 +68,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
-import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
 import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
@@ -76,7 +77,6 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
@@ -87,8 +87,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -1202,21 +1202,6 @@ public class VariantWebService extends AnalysisWebService {
                 }
             }
 
-            boolean runFastQc = false;
-            if (catalogBamFile != null) {
-                if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getAlignmentMetrics())) {
-                    runFastQc = true;
-                } else {
-                    runFastQc = true;
-                    for (SampleAlignmentQualityControlMetrics metrics : sample.getQualityControl().getAlignmentMetrics()) {
-                        if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
-                            runFastQc = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
             // Run variant stats if necessary
             if (runVariantStats) {
                 SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
@@ -1240,19 +1225,6 @@ public class VariantWebService extends AnalysisWebService {
                         null, null, null, null);
                 Job signatureJob = jobResult.first();
                 dependsOnList.add(signatureJob.getId());
-            }
-
-            // Run FastQC, if bam file exists
-            if (runFastQc) {
-                Map<String, String> dynamicParams = new HashMap<>();
-                dynamicParams.put("extract", "true");
-                FastQcWrapperParams fastQcParams = new FastQcWrapperParams(catalogBamFile.getId(), null, dynamicParams);
-                logger.info("fastQcParams = " + fastQcParams);
-
-                DataResult<Job> jobResult = submitJobRaw(FastqcWrapperAnalysis.ID, null, study, fastQcParams,
-                        null, null, null, null);
-                Job fastqcJob = jobResult.first();
-                dependsOnList.add(fastqcJob.getId());
             }
 
             return submitJobRaw(SampleQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);

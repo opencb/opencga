@@ -20,10 +20,12 @@ import io.jsonwebtoken.lang.Collections;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -36,8 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.LOAD;
-import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.TRANSFORM;
+import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.*;
 
 @Tool(id = VariantIndexOperationTool.ID, description = VariantIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
@@ -45,7 +46,9 @@ public class VariantIndexOperationTool extends OperationTool {
     public static final String ID = "variant-index";
     public static final String DESCRIPTION = "Index variant files into the variant storage";
 
-    private VariantIndexParams indexParams = new VariantIndexParams();
+    @ToolParams
+    protected VariantIndexParams indexParams = new VariantIndexParams();
+
     private String study;
 
     public void setFile(String file) {
@@ -64,7 +67,6 @@ public class VariantIndexOperationTool extends OperationTool {
     protected void check() throws Exception {
         super.check();
 
-        indexParams.updateParams(params);
         study = getStudyFqn();
 
         params.put(LOAD, indexParams.isLoad());
@@ -104,6 +106,7 @@ public class VariantIndexOperationTool extends OperationTool {
         params.put(VariantStorageOptions.POST_LOAD_CHECK.key(), indexParams.getPostLoadCheck());
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexParams.isIndexSearch());
         params.put(VariantStorageOptions.DEDUPLICATION_POLICY.key(), indexParams.getDeduplicationPolicy());
+        params.put(SKIP_INDEXED_FILES, indexParams.isSkipIndexedFiles());
     }
 
     @Override
@@ -123,10 +126,14 @@ public class VariantIndexOperationTool extends OperationTool {
             List<StoragePipelineResult> results =
                     variantStorageManager.index(study, indexParams.getFile(), getOutDir(keepIntermediateFiles).toString(), params, token);
             addAttribute("indexedFiles", Collections.size(results));
-            if (Collections.isEmpty(results)) {
-                addWarning("Nothing to do!");
-            }
             addAttribute("StoragePipelineResult", results);
+            if (Collections.isEmpty(results)) {
+                if (indexParams.isSkipIndexedFiles()) {
+                    addWarning("Nothing to do!");
+                } else {
+                    throw new ToolException("Nothing to do!");
+                }
+            }
             for (StoragePipelineResult result : results) {
                 inputFiles.add(result.getInput());
             }

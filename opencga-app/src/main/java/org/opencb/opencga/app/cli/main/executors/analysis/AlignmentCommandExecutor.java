@@ -41,7 +41,10 @@ import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
@@ -465,8 +468,11 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // FastQC
 
     private RestResponse<Job> fastqc() throws ClientException {
-        FastQcWrapperParams fastQcWrapperParams = new FastQcWrapperParams(
-                alignmentCommandOptions.fastqcCommandOptions.file,
+        FastqcWrapperParams fastQcWrapperParams = new FastqcWrapperParams(
+                alignmentCommandOptions.fastqcCommandOptions.inputFile,
+                alignmentCommandOptions.fastqcCommandOptions.contaminantsFile,
+                alignmentCommandOptions.fastqcCommandOptions.adaptersFile,
+                alignmentCommandOptions.fastqcCommandOptions.limitsFile,
                 alignmentCommandOptions.fastqcCommandOptions.outdir,
                 alignmentCommandOptions.fastqcCommandOptions.fastqcParams
         );

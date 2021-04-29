@@ -71,6 +71,7 @@
 * [Using JupyterLab](manual/using-jupyterlab.md)
 * [Administrator](manual/administrator/README.md)
   * [User Management](manual/administrator/user-management.md)
+  * [Templates / Manifest](manual/administrator/templates-manifest.md)
 
 ## About
 

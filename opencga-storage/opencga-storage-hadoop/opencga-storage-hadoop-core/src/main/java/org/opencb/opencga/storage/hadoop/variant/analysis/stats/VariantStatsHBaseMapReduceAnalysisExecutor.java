@@ -68,7 +68,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
                     studyId,
                     null,
                     params
-            ), engine.getOptions(), "Calculate sample variant stats");
+            ), "Calculate variant stats");
 
         } catch (VariantQueryException | StorageEngineException e) {
             throw new ToolExecutorException(e);
