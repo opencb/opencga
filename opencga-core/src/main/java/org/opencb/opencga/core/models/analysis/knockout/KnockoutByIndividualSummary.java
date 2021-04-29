@@ -164,4 +164,5 @@ public class KnockoutByIndividualSummary {
         this.variantStats = variantStats;
         return this;
     }
+
 }

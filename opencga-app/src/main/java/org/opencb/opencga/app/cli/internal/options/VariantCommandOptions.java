@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
@@ -34,6 +35,7 @@ import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
@@ -227,6 +229,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
         public boolean stdout;
+
+        @Parameter(names = {"--skip-indexed-files"}, description = "Do not fail if any of the input files was already indexed.")
+        public boolean skipIndexedFiles;
     }
 
     @Parameters(commandNames = {SECONDARY_INDEX_COMMAND}, commandDescription = "Creates a secondary index using a search engine")
@@ -377,12 +382,9 @@ public class VariantCommandOptions {
         public String variantsFile;
     }
 
-    @Parameters(commandNames = {VariantStatsCommandOptions.STATS_RUN_COMMAND}, commandDescription = "Create and load stats into a database.")
+    @Parameters(commandNames = {VariantStatsCommandOptions.STATS_RUN_COMMAND}, commandDescription = VariantStatsAnalysis.DESCRIPTION)
     public class VariantStatsCommandOptions extends GeneralCliOptions.StudyOption {
         public static final String STATS_RUN_COMMAND = "stats-run";
-
-        @ParametersDelegate
-        public GenericVariantStatsOptions genericVariantStatsOptions = new GenericVariantStatsOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -404,11 +406,23 @@ public class VariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
 
-        @Parameter(names = {"--index"}, description = "Index stats in the variant storage database", arity = 0)
-        public boolean index;
-
         @Parameter(names = {"--samples"}, description = "List of samples to use as cohort to calculate stats")
         public List<String> samples;
+
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        public String region;
+
+        @Parameter(names = {"--gene"}, description = "List of genes.")
+        public String gene;
+
+        @Parameter(names = {"--output-file-name"}, description = "Output file name. Default: database name", arity = 1)
+        public String fileName;
+
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
+        public Aggregation aggregated = Aggregation.NONE;
+
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        public String aggregationMappingFile;
     }
 
     @Parameters(commandNames = {GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
@@ -1370,12 +1384,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
-
-        @Parameter(names = {"--dict-file"}, description = "Dictionary file of the reference genome (for computing HS metrics).")
-        public String dictFile;
-
-        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format (for HS metrics).")
-        public String baitFile;
 
         @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID.")
         public String variantStatsId;

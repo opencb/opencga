@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -499,7 +499,7 @@ public class FileManager extends AnnotationSetManager<File> {
         switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
                 File file = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path, description,
-                        FileInternal.initialize(), 0, null, null, jobId, null, null);
+                        FileInternal.initialize(), 0, null, null, jobId, null, null, null);
                 fileDataResult = create(studyStr, file, parents, null, options, token);
                 break;
             case DIRECTORY_EXISTS:
@@ -544,7 +544,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                       String description, long size, Map<String, Object> stats, Map<String, Object> attributes,
                                       boolean parents, String content, QueryOptions options, String token) throws CatalogException {
         File file = new File(type, format, bioformat, path, description, FileInternal.initialize(), size, Collections.emptyList(), null, "",
-                stats, attributes);
+                null, stats, attributes);
         return create(studyStr, file, parents, content, options, token);
     }
 
@@ -676,7 +676,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
                         new FileInternal(new FileStatus(FileStatus.READY), new FileIndex(), Collections.emptyMap(), new MissingSamples()),
-                        0, Collections.emptyList(), null, "", Collections.emptyMap(), Collections.emptyMap());
+                        0, Collections.emptyList(), null, "", null, Collections.emptyMap(), Collections.emptyMap());
                 validateNewFile(study, parentFile, sessionId, false);
                 parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, sessionId)
                         .first().getUid();
@@ -3104,7 +3104,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, null, new FileExperiment(),
                 Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(), null,
-                new CustomStatus(), FileInternal.initialize(), null);
+                null, new CustomStatus(), FileInternal.initialize(), null);
         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
@@ -3307,7 +3307,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 File.Bioformat.NONE, dir, destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), params.getDescription(), true, 0, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                Collections.emptyMap(),
+                                null, Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(),
                                 FileInternal.initialize(), Collections.emptyMap());
                         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
@@ -3366,7 +3366,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 File.Bioformat.NONE, fileUri, destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), params.getDescription(), true, size, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                Collections.emptyMap(),
+                                null, Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(), internal,
                                 new HashMap<>());
                         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
@@ -3457,8 +3457,8 @@ public class FileManager extends AnnotationSetManager<File> {
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
-                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyMap(),
-                new CustomStatus(), FileInternal.initialize(), Collections.emptyMap());
+                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), null,
+                Collections.emptyMap(), new CustomStatus(), FileInternal.initialize(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 

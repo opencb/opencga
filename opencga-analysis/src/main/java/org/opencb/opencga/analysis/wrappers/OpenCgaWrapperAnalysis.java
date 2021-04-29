@@ -29,6 +29,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+@Deprecated
 public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
     public final String DOCKER_IMAGE_VERSION_PARAM = "DOCKER_IMAGE_VERSION";
@@ -42,30 +43,30 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
     protected Map<String, URI> fileUriMap = new HashMap<>();
 
-    @Deprecated
-    public abstract String getDockerImageName();
+//    @Deprecated
+//    public abstract String getDockerImageName();
 
-    protected String getCommandLine() throws ToolException {
-        return getCommandLine("--");
-    }
-
-    protected String getCommandLine(String prefix) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("run docker ").append(getDockerImageName());
-        for (String key : params.keySet()) {
-            String value = params.getString(key);
-            sb.append(" ").append(prefix).append(key);
-            if (StringUtils.isNotEmpty(value)) {
-                sb.append(" ").append(value);
-            }
-        }
-        return sb.toString();
-    }
-
-    protected String getCatalogPath(String inputFile) throws ToolException {
-//        return new File(getCatalogFile(inputFile).getPath()).getParent();
-        return getCatalogFile(inputFile).getPath();
-    }
+//    protected String getCommandLine() throws ToolException {
+//        return getCommandLine("--");
+//    }
+//
+//    protected String getCommandLine(String prefix) {
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("run docker ").append(getDockerImageName());
+//        for (String key : params.keySet()) {
+//            String value = params.getString(key);
+//            sb.append(" ").append(prefix).append(key);
+//            if (StringUtils.isNotEmpty(value)) {
+//                sb.append(" ").append(value);
+//            }
+//        }
+//        return sb.toString();
+//    }
+//
+//    protected String getCatalogPath(String inputFile) throws ToolException {
+////        return new File(getCatalogFile(inputFile).getPath()).getParent();
+//        return getCatalogFile(inputFile).getPath();
+//    }
 
     protected org.opencb.opencga.core.models.file.File getCatalogFile(String inputFile) throws ToolException {
         // Get catalog path

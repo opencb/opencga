@@ -60,7 +60,7 @@ import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -653,6 +653,7 @@ public class TemplateManager {
                 file.getRelatedFiles(),
                 file.getStatus(),
                 file.getAnnotationSets(),
+                file.getQualityControl(),
                 file.getStats(),
                 file.getAttributes()
         ), params);
@@ -716,8 +717,8 @@ public class TemplateManager {
 
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, fqn)
                 .append(ParamConstants.JOB_DEPENDS_ON, indexVcfJobIds);
-        VariantStatsAnalysisParams data = new VariantStatsAnalysisParams();
-        data.setIndex(true);
+        VariantStatsIndexParams data = new VariantStatsIndexParams();
+
         data.setAggregated(Aggregation.NONE);
         for (TemplateFile file : study.getFiles()) {
             if (file.getName().endsWith(".properties")
@@ -739,8 +740,8 @@ public class TemplateManager {
             data.setCohort(Collections.singletonList(StudyEntry.DEFAULT_COHORT));
         }
 
-        return checkJob(openCGAClient.getVariantClient()
-                .runStats(data, params));
+        return checkJob(openCGAClient.getVariantOperationClient()
+                .indexVariantStats(data, params));
     }
 
     private String variantAnnot(TemplateProject project, List<String> indexVcfJobIds) throws ClientException {

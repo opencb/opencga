@@ -42,7 +42,7 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -99,8 +99,7 @@ import static org.opencb.opencga.analysis.variant.manager.operations.VariantFile
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE;
-import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE_DEFAULT;
+import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public class VariantStorageManager extends StorageManager implements AutoCloseable {
@@ -299,12 +298,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secure(query, empty(), token, (engine) -> engine.getAnnotationMetadata(name));
     }
 
-    public void stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
+    public Collection<String> stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
-        secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
-            new VariantStatsOperationManager(this, engine).stats(getStudyFqn(study, token), cohorts, region, params, token);
-            return null;
+        return secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
+            return new VariantStatsOperationManager(this, engine)
+                    .stats(getStudyFqn(study, token), cohorts, region, params, token);
         });
     }
 
@@ -670,6 +669,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         int skip = options.getInt(SKIP, 0);
                         // Make initial batchLimit shorter
                         int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 3 + skip);
+                        // but not too short
+                        batchLimit = Math.max(100, batchLimit);
                         int batchSkip = 0;
                         int numReadSamples = 0;
                         int numValidSamples = 0;
@@ -782,6 +783,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
                                 int numTotalSamples = ((int) (expectedSamplesCount * (((float) numValidSamples) / numReadSamples)));
                                 result.setNumTotalSamples(numTotalSamples);
+                                result.setApproximateCountSamplingSize(numReadSamples);
                             }
                             result.setApproximateCount(true);
                         }

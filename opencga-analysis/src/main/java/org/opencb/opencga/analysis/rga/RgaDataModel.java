@@ -77,9 +77,6 @@ public class RgaDataModel {
     private List<String>  knockoutTypes;
 
     @Field
-    private List<String> fullVariantInfo;
-
-    @Field
     private List<String> filters;
 
     @Field
@@ -90,6 +87,18 @@ public class RgaDataModel {
 
     @Field(POPULATION_FREQUENCIES)
     private Map<String, List<String>> populationFrequencies;
+
+    /**
+     * {variantId}__{type}__{knockoutType}__{conseqType}__{popFreqs}
+     */
+    @Field
+    private List<String> variantSummary;
+
+    /**
+     * {individualId}__{type}__{knockoutType}__{conseqType}__{popFreqs}__{numParents}
+     */
+    @Field
+    private List<String> individualSummary;
 
     @Field
     private List<String> compoundFilters;
@@ -121,13 +130,14 @@ public class RgaDataModel {
     public static final String TRANSCRIPT_ID = "transcriptId";
     public static final String TRANSCRIPT_BIOTYPE = "transcriptBiotype";
     public static final String VARIANTS = "variants";
-    public static final String FULL_VARIANT_INFO = "fullVariantInfo";
     public static final String TYPES = "types";
     public static final String KNOCKOUT_TYPES = "knockoutTypes";
     public static final String FILTERS = "filters";
     public static final String CONSEQUENCE_TYPES = "consequenceTypes";
     public static final String CLINICAL_SIGNIFICANCES = "clinicalSignificances";
     public static final String POPULATION_FREQUENCIES = "populationFrequencies_*";
+    public static final String VARIANT_SUMMARY = "variantSummary";
+    public static final String INDIVIDUAL_SUMMARY = "individualSummary";
     public static final String COMPOUND_FILTERS = "compoundFilters";
     public static final String PHENOTYPE_JSON = "phenotypeJson";
     public static final String DISORDER_JSON = "disorderJson";
@@ -161,11 +171,12 @@ public class RgaDataModel {
         sb.append(", variants=").append(variants);
         sb.append(", types=").append(types);
         sb.append(", knockoutTypes=").append(knockoutTypes);
-        sb.append(", fullVariantInfo=").append(fullVariantInfo);
+        sb.append(", variantSummary=").append(variantSummary);
         sb.append(", filters=").append(filters);
         sb.append(", consequenceTypes=").append(consequenceTypes);
         sb.append(", clinicalSignificances=").append(clinicalSignificances);
         sb.append(", populationFrequencies=").append(populationFrequencies);
+        sb.append(", individualSummary=").append(individualSummary);
         sb.append(", compoundFilters=").append(compoundFilters);
         sb.append(", phenotypeJson=").append(phenotypeJson);
         sb.append(", disorderJson=").append(disorderJson);
@@ -380,12 +391,12 @@ public class RgaDataModel {
         return this;
     }
 
-    public List<String> getFullVariantInfo() {
-        return fullVariantInfo;
+    public List<String> getVariantSummary() {
+        return variantSummary;
     }
 
-    public RgaDataModel setFullVariantInfo(List<String> fullVariantInfo) {
-        this.fullVariantInfo = fullVariantInfo;
+    public RgaDataModel setVariantSummary(List<String> variantSummary) {
+        this.variantSummary = variantSummary;
         return this;
     }
 
@@ -422,6 +433,15 @@ public class RgaDataModel {
 
     public RgaDataModel setPopulationFrequencies(Map<String, List<String>> populationFrequencies) {
         this.populationFrequencies = populationFrequencies;
+        return this;
+    }
+
+    public List<String> getIndividualSummary() {
+        return individualSummary;
+    }
+
+    public RgaDataModel setIndividualSummary(List<String> individualSummary) {
+        this.individualSummary = individualSummary;
         return this;
     }
 

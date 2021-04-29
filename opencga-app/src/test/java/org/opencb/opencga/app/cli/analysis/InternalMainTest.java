@@ -21,7 +21,6 @@ import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -61,7 +60,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.core.api.ParamConstants.AVERAGE_QUALITY;
 import static org.opencb.opencga.core.api.ParamConstants.REGION_PARAM;
 
 /**
@@ -400,24 +398,24 @@ public class InternalMainTest {
 
         assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));
 
-        // stats info
-        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
-        DataResult<SamtoolsStats> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
-        assertEquals(1, statsInfo.getNumMatches());
-//        assert(statsInfo.getResults().get(0).length() > 0);
-        System.out.println(statsInfo);
-
-        // stats query
-        Query query = new Query();
-        query.put(AVERAGE_QUALITY, ">55");
-        QueryOptions queryOptions = QueryOptions.empty();
-        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
-        assertEquals(0, resultFiles.getNumResults());
-
-        query.put(AVERAGE_QUALITY, ">30");
-        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
-        assertEquals(1, resultFiles.getNumResults());
-        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
+//        // stats info
+//        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+//        DataResult<SamtoolsStats> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
+//        assertEquals(1, statsInfo.getNumMatches());
+////        assert(statsInfo.getResults().get(0).length() > 0);
+//        System.out.println(statsInfo);
+//
+//        // stats query
+//        Query query = new Query();
+//        query.put(AVERAGE_QUALITY, ">55");
+//        QueryOptions queryOptions = QueryOptions.empty();
+//        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(0, resultFiles.getNumResults());
+//
+//        query.put(AVERAGE_QUALITY, ">30");
+//        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(1, resultFiles.getNumResults());
+//        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
     }
 
     @Test

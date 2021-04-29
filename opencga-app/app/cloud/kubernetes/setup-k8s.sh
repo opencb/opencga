@@ -228,6 +228,7 @@ function deploySolrOperator() {
 function deployMongodbOperator() {
   NAME="mongodb-operator${NAME_SUFFIX}"
   DATE=$(date "+%Y%m%d%H%M%S")
+  chmod +x ./charts/mongodb-operator/fetch-mongodb-operator-files.sh
   ./charts/mongodb-operator/fetch-mongodb-operator-files.sh
 
   helm upgrade "${NAME}" charts/mongodb-operator \
@@ -251,8 +252,7 @@ function deployOpenCGA() {
     mkdir "$OPENCGA_CHART"
     mkdir "$OPENCGA_CHART"/conf
     cp -r charts/opencga/* "${OPENCGA_CHART:?}"
-    cp -r "${OPENCGA_CONF_DIR:?}"/*.yml "$OPENCGA_CHART"/conf
-    cp -r "${OPENCGA_CONF_DIR:?}"/log4j2.*.xml "$OPENCGA_CHART"/conf
+    cp "${OPENCGA_CONF_DIR:?}"/* "$OPENCGA_CHART"/conf
   else
     OPENCGA_CHART=charts/opencga/
   fi

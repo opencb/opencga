@@ -1,7 +1,9 @@
 package org.opencb.opencga.app.cli.main.options;
 
 import com.beust.jcommander.*;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.variant.operations.VariantFileIndexJobLauncherTool;
+import org.opencb.opencga.analysis.variant.operations.VariantStatsIndexOperationTool;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenericJulieRunCommandOptions;
@@ -9,7 +11,6 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,8 @@ public class OperationsCommandOptions {
     public static final String VARIANT_CONFIGURE = "variant-configure";
     public static final String VARIANT_INDEX_LAUNCHER = "variant-index-launcher";
 
+    public static final String VARIANT_STATS_INDEX = "variant-stats-index";
+
     public static final String VARIANT_SECONDARY_INDEX = "variant-secondary-index";
     public static final String VARIANT_SECONDARY_INDEX_DELETE = "variant-secondary-index-delete";
 
@@ -50,6 +53,8 @@ public class OperationsCommandOptions {
 
     public final VariantConfigureCommandOptions variantConfigure;
     public final VariantIndexLauncherCommandOptions variantIndexLauncher;
+
+    public final VariantStatsIndexCommandOptions variantStatsIndex;
 
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndex;
     public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDelete;
@@ -90,6 +95,7 @@ public class OperationsCommandOptions {
 
         variantConfigure = new VariantConfigureCommandOptions();
         variantIndexLauncher = new VariantIndexLauncherCommandOptions();
+        variantStatsIndex = new VariantStatsIndexCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
         variantSecondaryIndexDelete = new VariantSecondaryIndexDeleteCommandOptions();
         variantAnnotation = new VariantAnnotationIndexCommandOptions();
@@ -138,6 +144,35 @@ public class OperationsCommandOptions {
 
         @DynamicParameter(names = {"-I", "--index-params"}, description = "Specific variant index params")
         public Map<String, String> indexParams = new HashMap<>();
+    }
+
+    @Parameters(commandNames = {VARIANT_STATS_INDEX}, commandDescription = VariantStatsIndexOperationTool.DESCRIPTION)
+    public class VariantStatsIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @Parameter(names = {"--cohort"}, description = "Cohort Ids for the cohorts to be calculated.")
+        public List<String> cohort;
+
+        @Parameter(names = {"--overwrite", "--overwrite-stats"}, description = "Overwrite stats in variants already present")
+        public boolean overwriteStats = false;
+
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        public String region;
+
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
+        public Aggregation aggregated = Aggregation.NONE;
+
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        public String aggregationMappingFile;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed stats calculation", arity = 0)
+        public boolean resume;
+
     }
 
     @Parameters(commandNames = {VARIANT_SECONDARY_INDEX}, commandDescription = "Creates a secondary index using a search engine")

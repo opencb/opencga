@@ -4,14 +4,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.SampleEntry;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -41,7 +40,11 @@ class RgaUtils {
     public static final Set<String> ALL_PARAMS;
     public static final Map<String, Set<String>> PARAM_TYPES;
 
+    private static final Logger logger;
+
     static {
+        logger = LoggerFactory.getLogger(RgaUtils.class);
+
         ENCODE_MAP = new HashMap<>();
 
         // KNOCKOUT TYPE
@@ -273,7 +276,10 @@ class RgaUtils {
             for (int i = 0; i < rgaDataModel.getVariants().size(); i++) {
                 String variantId = rgaDataModel.getVariants().get(i);
 
-                if (variantMap.containsKey(variantId) && (variantIds.isEmpty() || variantIds.contains(variantId))) {
+                if (variantIds.isEmpty() || variantIds.contains(variantId)) {
+                    KnockoutVariant knockoutVariant;
+
+                    if (variantMap.containsKey(variantId)) {
                         Variant variant = variantMap.get(variantId);
 
                         SampleEntry sampleEntry = variant.getStudies().get(0).getSample(rgaDataModel.getSampleId());
@@ -283,8 +289,35 @@ class RgaUtils {
                         }
 
                         // Convert just once
-                        KnockoutVariant knockoutVariant = convertToKnockoutVariant(variant, sampleEntry, knockoutType);
+                        knockoutVariant = convertToKnockoutVariant(variant, sampleEntry, knockoutType);
+                    } else if (CollectionUtils.isNotEmpty(rgaDataModel.getVariantSummary())) {
+                        String variantSummaryId = rgaDataModel.getVariantSummary().get(i);
+                        // Get the basic information from variant summary object
+                        try {
+                            CodedFeature codedFeature = CodedFeature.parseEncodedId(variantSummaryId);
+                            Variant variant = new Variant(variantId);
 
+                            knockoutVariant = new KnockoutVariant()
+                                    .setId(codedFeature.getId())
+                                    .setKnockoutType(KnockoutVariant.KnockoutType.valueOf(codedFeature.getKnockoutType()))
+                                    .setType(VariantType.valueOf(codedFeature.getType()))
+                                    .setChromosome(variant.getChromosome())
+                                    .setStart(variant.getStart())
+                                    .setEnd(variant.getEnd())
+                                    .setLength(variant.getLength());
+                        } catch (RgaException e) {
+                            logger.warn("Could not parse coded variant {}", variantSummaryId, e);
+                            knockoutVariant = new KnockoutVariant().setId(variantId);
+                        }
+                    } else {
+                        Variant variant = new Variant(variantId);
+                        knockoutVariant = new KnockoutVariant()
+                                .setId(variantId)
+                                .setChromosome(variant.getChromosome())
+                                .setStart(variant.getStart())
+                                .setEnd(variant.getEnd())
+                                .setLength(variant.getLength());
+                    }
                     knockoutVariantList.add(knockoutVariant);
                 }
             }
@@ -309,17 +342,51 @@ class RgaUtils {
         return new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry, variantAnnotation, consequenceType, knockoutType);
     }
 
-    public static class CodedVariant {
-        //  1:2233232:A:T __ SNV __ COMP_HET __ VR_R __ A_J
-        private String variantId;
+    public static class CodedIndividual extends CodedFeature {
+        private int numParents;
+
+        public CodedIndividual(String id, String type, String knockoutType, List<String> consequenceTypeList,
+                               String thousandGenomesPopFreq, String gnomadPopFreq, int numParents) {
+            super(id, type, knockoutType, consequenceTypeList, thousandGenomesPopFreq, gnomadPopFreq);
+            this.numParents = numParents;
+        }
+
+        public static CodedIndividual parseEncodedId(String encodedId) throws RgaException {
+            String[] split = encodedId.split(SEPARATOR);
+            if (split.length != 6) {
+                throw new RgaException("Unexpected variant string received '" + encodedId
+                        + "'. Expected {id}__{type}__{knockoutType}__{conseqType}__{popFreqs}__{numParents}");
+            }
+
+            Set<String> consequenceType = new HashSet<>(Arrays.asList(split[3].split(INNER_SEPARATOR)));
+            String[] popFreqs = split[4].split(INNER_SEPARATOR);
+
+            return new CodedIndividual(split[0], split[1], split[2], new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1],
+                    Integer.parseInt(split[5]));
+        }
+
+        public String getEncodedId() {
+            return getId() + SEPARATOR + getType() + SEPARATOR + getKnockoutType() + SEPARATOR
+                    + StringUtils.join(getConsequenceType(), INNER_SEPARATOR) + SEPARATOR
+                    + StringUtils.join(getPopulationFrequencies(), INNER_SEPARATOR) + SEPARATOR + numParents;
+        }
+
+        public int getNumParents() {
+            return numParents;
+        }
+    }
+
+    public static class CodedFeature {
+        //  id __ SNV __ COMP_HET __ VR_R __ A_J
+        private String id;
         private String type;
         private String knockoutType;
         private List<String> populationFrequencies;
         private Set<String> consequenceType;
 
-        public CodedVariant(String variantId, String type, String knockoutType, List<String> consequenceTypeList,
+        public CodedFeature(String id, String type, String knockoutType, List<String> consequenceTypeList,
                             String thousandGenomesPopFreq, String gnomadPopFreq) {
-            this.variantId = variantId;
+            this.id = id;
             this.type = type;
             this.knockoutType = knockoutType;
             this.consequenceType = new HashSet<>();
@@ -329,28 +396,26 @@ class RgaUtils {
             this.populationFrequencies = Arrays.asList(thousandGenomesPopFreq, gnomadPopFreq);
         }
 
-        public CodedVariant(String fullVariant) throws RgaException {
-            String[] split = fullVariant.split(SEPARATOR);
+        public static CodedFeature parseEncodedId(String encodedId) throws RgaException {
+            String[] split = encodedId.split(SEPARATOR);
             if (split.length != 5) {
-                throw new RgaException("Unexpected variant string received '" + fullVariant
+                throw new RgaException("Unexpected variant string received '" + encodedId
                         + "'. Expected {id}__{type}__{knockoutType}__{conseqType}__{popFreqs}");
             }
 
-            this.variantId = split[0];
-            this.type = split[1];
-            this.knockoutType = split[2];
-            this.consequenceType = new HashSet<>();
-            this.consequenceType.addAll(Arrays.asList(split[3].split(INNER_SEPARATOR)));
-            this.populationFrequencies = Arrays.asList(split[4].split(INNER_SEPARATOR));
+            Set<String> consequenceType = new HashSet<>(Arrays.asList(split[3].split(INNER_SEPARATOR)));
+            String[] popFreqs = split[4].split(INNER_SEPARATOR);
+
+            return new CodedFeature(split[0], split[1], split[2], new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1]);
         }
 
-        public String getFullVariant() {
-            return variantId + SEPARATOR + type + SEPARATOR + knockoutType + SEPARATOR + StringUtils.join(consequenceType, INNER_SEPARATOR)
+        public String getEncodedId() {
+            return id + SEPARATOR + type + SEPARATOR + knockoutType + SEPARATOR + StringUtils.join(consequenceType, INNER_SEPARATOR)
                     + SEPARATOR + StringUtils.join(populationFrequencies, INNER_SEPARATOR);
         }
 
-        public String getVariantId() {
-            return variantId;
+        public String getId() {
+            return id;
         }
 
         public String getType() {

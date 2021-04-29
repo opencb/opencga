@@ -590,10 +590,11 @@
     <field name="variants" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="types" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="knockoutTypes" type="string" indexed="true" stored="true" multiValued="true"/>
-    <field name="fullVariantInfo" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="variantSummary" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="filters" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="consequenceTypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="clinicalSignificances" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="individualSummary" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="compoundFilters" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="phenotypeJson" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="disorderJson" type="string" indexed="false" stored="true" multiValued="true"/>

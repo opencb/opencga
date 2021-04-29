@@ -337,9 +337,16 @@ public class ParamConstants {
     public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs germline)";
-    public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats for a given alignment file";
-    public static final String ALIGNMENT_STATS_INFO_DESCRIPTION = "Show the stats for a given alignment file";
-    public static final String ALIGNMENT_STATS_QUERY_DESCRIPTION = "Fetch alignment files according to their stats";
+    public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file (including samtools stats, samtools flag stats, FastQC and HS metrics)";
+    public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats (based on samtools/stats command) for a given alignment file";
+    public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given alignment file";
+    public static final String ALIGNMENT_FASTQC_METRICS_DESCRIPTION = "Compute sequence stats (based on FastQC tool) for a given alignment file";
+    public static final String ALIGNMENT_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics (based on Picard tool) for a given alignment file";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION = "Compute gene coverage stats for a given alignment file and a list of genes";
+    public static final String ALIGNMENT_QC_SAMTOOLS_STATS_DESCRIPTION = "Compute samtools stats";
+    public static final String ALIGNMENT_QC_SAMTOOLS_FLAG_STATS_DESCRIPTION = "Compute samtools flag stats";
+    public static final String ALIGNMENT_QC_FASTQC_DESCRIPTION = "Compute FastQC";
+    public static final String ALIGNMENT_QC_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics based on the Picard/HsMetrics command";
 
     // ---------------------------------------------
     // alignment query
@@ -445,8 +452,8 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String SAMTOOLS_COMMANDS = "'sort', 'index' , 'view', 'stats', 'dict', 'faidx', 'depth'";
-    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Samtools command: " + SAMTOOLS_COMMANDS;
+    public static final String SAMTOOLS_COMMANDS_SUPPORTED = "sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats";
+    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Supported Samtools commands: " + SAMTOOLS_COMMANDS_SUPPORTED;
 
     public static final String INPUT_FILE_DESCRIPTION = "Input file (full path).";
     public static final String INPUT_FILE_PARAM = "inputFile";
@@ -469,8 +476,9 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String PICARD_TOOL_NAME_PARAMETER = "command";
-    public static final String PICARD_TOOL_NAME_DESCRIPTION = "Picard tool name to execute. Supported tools: CollectHsMetrics, CollectWgsMetrics, BedToInvervalList";
+    public static final String PICARD_COMMANDS_SUPPORTED = "CollectHsMetrics, CollectWgsMetrics, BedToIntervalList";
+    public static final String PICARD_COMMAND_DESCRIPTION = "Supported Picard commands: " + PICARD_COMMANDS_SUPPORTED;
+
     // ---------------------------------------------
 
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "

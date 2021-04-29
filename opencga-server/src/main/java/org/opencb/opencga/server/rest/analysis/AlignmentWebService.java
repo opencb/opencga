@@ -21,7 +21,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
@@ -31,14 +30,15 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.qc.*;
 import org.opencb.opencga.analysis.wrappers.*;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.alignment.*;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -48,7 +48,6 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis.INDEX_STATS_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
@@ -375,105 +374,35 @@ public class AlignmentWebService extends AnalysisWebService {
     }
 
     //-------------------------------------------------------------------------
-    // STATS: run, info and query
+    // Quality control (QC): stats, flag stats, FastQC and HS metrics
     //-------------------------------------------------------------------------
 
     @POST
-    @Path("/stats/run")
-    @ApiOperation(value = ALIGNMENT_STATS_DESCRIPTION, response = Job.class)
-    public Response statsRun(
+    @Path("/qc/run")
+    @ApiOperation(value = ALIGNMENT_QC_DESCRIPTION, response = Job.class)
+    public Response qcRun(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = AlignmentStatsParams.DESCRIPTION, required = true) AlignmentStatsParams params) {
+            @ApiParam(value = AlignmentQcParams.DESCRIPTION, required = true) AlignmentQcParams params) {
 
-        logger.debug("ObjectMap: {}", params);
-
-        SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams();
-        samtoolsParams.setCommand("stats");
-        samtoolsParams.setInputFile(params.getFile());
-
-        Map<String, String> statsParams = new HashMap<>();
-        statsParams.put(INDEX_STATS_PARAM, "true");
-        samtoolsParams.setSamtoolsParams(statsParams);
-
-        logger.debug("ObjectMap (Samtools) : {}", samtoolsParams);
-
-        return submitJob(SamtoolsWrapperAnalysis.ID, study, samtoolsParams, jobName, jobDescription, dependsOn, jobTags);
+        return submitJob(AlignmentQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
-    @GET
-    @Path("/stats/info")
-    @ApiOperation(value = ALIGNMENT_STATS_INFO_DESCRIPTION, response = SamtoolsStats.class)
-    public Response statsInfo(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
-                              @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
-        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-        try {
-            return createOkResponse(alignmentStorageManager.statsInfo(study, inputFile, token));
-        } catch (ToolException | CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
+    @POST
+    @Path("/qc/genecoveragestats")
+    @ApiOperation(value = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION, response = Job.class)
+    public Response geneCoverageStatsRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = AlignmentGeneCoverageStatsParams.DESCRIPTION, required = true) AlignmentGeneCoverageStatsParams params) {
 
-    @Deprecated
-    @GET
-    @Path("/stats/query")
-    @ApiOperation(value = ALIGNMENT_STATS_QUERY_DESCRIPTION, response = File.class, hidden = true)
-    public Response statsQuery(@ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-                               @ApiParam(value = RAW_TOTAL_SEQUENCES_DESCRIPTION) @QueryParam(RAW_TOTAL_SEQUENCES) String rawTotalSequences,
-                               @ApiParam(value = FILTERED_SEQUENCES_DESCRIPTION) @QueryParam(FILTERED_SEQUENCES) String filteredSequences,
-                               @ApiParam(value = READS_MAPPED_DESCRIPTION) @QueryParam(READS_MAPPED) String readsMapped,
-                               @ApiParam(value = READS_MAPPED_AND_PAIRED_DESCRIPTION) @QueryParam(READS_MAPPED_AND_PAIRED) String readsMappedAndPaired,
-                               @ApiParam(value = READS_UNMAPPED_DESCRIPTION) @QueryParam(READS_UNMAPPED) String readsUnmapped,
-                               @ApiParam(value = READS_PROPERLY_PAIRED_DESCRIPTION) @QueryParam(READS_PROPERLY_PAIRED) String readsProperlyPaired,
-                               @ApiParam(value = READS_PAIRED_DESCRIPTION) @QueryParam(READS_PAIRED) String readsPaired,
-                               @ApiParam(value = READS_DUPLICATED_DESCRIPTION) @QueryParam(READS_DUPLICATED) String readsDuplicated,
-                               @ApiParam(value = READS_MQ0_DESCRIPTION) @QueryParam(READS_MQ0) String readsMQ0,
-                               @ApiParam(value = READS_QC_FAILED_DESCRIPTION) @QueryParam(READS_QC_FAILED) String readsQCFailed,
-                               @ApiParam(value = NON_PRIMARY_ALIGNMENTS_DESCRIPTION) @QueryParam(NON_PRIMARY_ALIGNMENTS) String nonPrimaryAlignments,
-                               @ApiParam(value = MISMATCHES_DESCRIPTION) @QueryParam(MISMATCHES) String mismatches,
-                               @ApiParam(value = ERROR_RATE_DESCRIPTION) @QueryParam(ERROR_RATE) String errorRate,
-                               @ApiParam(value = AVERAGE_LENGTH_DESCRIPTION) @QueryParam(AVERAGE_LENGTH) String averageLength,
-                               @ApiParam(value = AVERAGE_FIRST_FRAGMENT_LENGTH_DESCRIPTION) @QueryParam(AVERAGE_FIRST_FRAGMENT_LENGTH) String averageFirstFragmentLength,
-                               @ApiParam(value = AVERAGE_LAST_FRAGMENT_LENGTH_DESCRIPTION) @QueryParam(AVERAGE_LAST_FRAGMENT_LENGTH) String averageLastFragmentLength,
-                               @ApiParam(value = AVERAGE_QUALITY_DESCRIPTION) @QueryParam(AVERAGE_QUALITY) String averageQuality,
-                               @ApiParam(value = INSERT_SIZE_AVERAGE_DESCRIPTION) @QueryParam(INSERT_SIZE_AVERAGE) String insertSizeAverage,
-                               @ApiParam(value = INSERT_SIZE_STANDARD_DEVIATION_DESCRIPTION) @QueryParam(INSERT_SIZE_STANDARD_DEVIATION) String insertSizeStandardDeviation,
-                               @ApiParam(value = PAIRS_WITH_OTHER_ORIENTATION_DESCRIPTION) @QueryParam(PAIRS_WITH_OTHER_ORIENTATION) String pairsWithOtherOrientation,
-                               @ApiParam(value = PAIRS_ON_DIFFERENT_CHROMOSOMES_DESCRIPTION) @QueryParam(PAIRS_ON_DIFFERENT_CHROMOSOMES) String pairsOnDifferentChromosomes,
-                               @ApiParam(value = PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION) @QueryParam(PERCENTAGE_OF_PROPERLY_PAIRED_READS) String percentageOfProperlyPairedReads) {
-        Query query = new Query();
-        query.putIfNotNull(RAW_TOTAL_SEQUENCES, rawTotalSequences);
-        query.putIfNotNull(FILTERED_SEQUENCES, filteredSequences);
-        query.putIfNotNull(READS_MAPPED, readsMapped);
-        query.putIfNotNull(READS_MAPPED_AND_PAIRED, readsMappedAndPaired);
-        query.putIfNotNull(READS_UNMAPPED, readsUnmapped);
-        query.putIfNotNull(READS_PROPERLY_PAIRED, readsProperlyPaired);
-        query.putIfNotNull(READS_PAIRED, readsPaired);
-        query.putIfNotNull(READS_DUPLICATED, readsDuplicated);
-        query.putIfNotNull(READS_MQ0, readsMQ0);
-        query.putIfNotNull(READS_QC_FAILED, readsQCFailed);
-        query.putIfNotNull(NON_PRIMARY_ALIGNMENTS, nonPrimaryAlignments);
-        query.putIfNotNull(MISMATCHES, mismatches);
-        query.putIfNotNull(ERROR_RATE, errorRate);
-        query.putIfNotNull(AVERAGE_LENGTH, averageLength);
-        query.putIfNotNull(AVERAGE_FIRST_FRAGMENT_LENGTH, averageFirstFragmentLength);
-        query.putIfNotNull(AVERAGE_LAST_FRAGMENT_LENGTH, averageLastFragmentLength);
-        query.putIfNotNull(AVERAGE_QUALITY, averageQuality);
-        query.putIfNotNull(INSERT_SIZE_AVERAGE, insertSizeAverage);
-        query.putIfNotNull(INSERT_SIZE_STANDARD_DEVIATION, insertSizeStandardDeviation);
-        query.putIfNotNull(PAIRS_WITH_OTHER_ORIENTATION, pairsWithOtherOrientation);
-        query.putIfNotNull(PAIRS_ON_DIFFERENT_CHROMOSOMES, pairsOnDifferentChromosomes);
-        query.putIfNotNull(PERCENTAGE_OF_PROPERLY_PAIRED_READS, percentageOfProperlyPairedReads);
-
-        try {
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-            return createOkResponse(alignmentStorageManager.statsQuery(study, query, QueryOptions.empty(), token));
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
+        return submitJob(AlignmentGeneCoverageStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     //-------------------------------------------------------------------------
@@ -528,7 +457,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = FastQcWrapperParams.DESCRIPTION, required = true) FastQcWrapperParams params) {
+            @ApiParam(value = FastqcWrapperParams.DESCRIPTION, required = true) FastqcWrapperParams params) {
         return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 

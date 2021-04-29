@@ -160,7 +160,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 secondaryIndexRemove();
                 break;
             case STATS_RUN_COMMAND:
-                stats();
+                statsRun();
                 break;
             case SCORE_INDEX_COMMAND:
                 scoreLoad();
@@ -376,7 +376,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.aggregationMappingFile,
                 cliOptions.genericVariantIndexOptions.annotate,
                 cliOptions.genericVariantIndexOptions.annotator,
-                cliOptions.genericVariantIndexOptions.overwriteAnnotations, cliOptions.genericVariantIndexOptions.indexSearch)
+                cliOptions.genericVariantIndexOptions.overwriteAnnotations,
+                cliOptions.genericVariantIndexOptions.indexSearch,
+                cliOptions.skipIndexedFiles)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study)
                 .append(VariantStorageOptions.STDIN.key(), cliOptions.stdin)
@@ -415,27 +417,38 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), params, token);
     }
 
-    private void stats() throws ToolException {
+    private void statsRun() throws ToolException {
         VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         ObjectMap params = new VariantStatsAnalysisParams(
                 cliOptions.cohort,
                 cliOptions.samples,
-                cliOptions.index,
+                cliOptions.region,
+                cliOptions.gene,
                 cliOptions.outdir,
-                cliOptions.genericVariantStatsOptions.fileName,
-                cliOptions.genericVariantStatsOptions.region,
-                cliOptions.genericVariantStatsOptions.gene,
-                cliOptions.genericVariantStatsOptions.overwriteStats,
-                cliOptions.genericVariantStatsOptions.updateStats,
-                cliOptions.genericVariantStatsOptions.resume,
-                cliOptions.genericVariantStatsOptions.aggregated,
-                cliOptions.genericVariantStatsOptions.aggregationMappingFile)
+                cliOptions.fileName,
+                cliOptions.aggregated,
+                cliOptions.aggregationMappingFile)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(VariantStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
+
+//    private void statsIndex() throws ToolException {
+//        VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
+//
+//        ObjectMap params = new VariantStatsIndexParams(
+//                cliOptions.cohort,
+//                cliOptions.overwriteStats,
+//                cliOptions.resume,
+//                cliOptions.aggregated,
+//                cliOptions.aggregationMappingFile)
+//                .toObjectMap(cliOptions.commonOptions.params)
+//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+//
+//        toolRunner.execute(VariantIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
+//    }
 
     private void scoreLoad() throws ToolException {
         VariantCommandOptions.VariantScoreIndexCommandOptions cliOptions = variantCommandOptions.variantScoreIndexCommandOptions;
@@ -873,8 +886,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantCommandOptions.internalJobOptions.jobId, token);
         sampleQcAnalysis.setStudyId(cliOptions.study)
                 .setSampleId(cliOptions.sample)
-                .setDictFile(cliOptions.dictFile)
-                .setBaitFile(cliOptions.baitFile)
                 .setVariantStatsId(cliOptions.variantStatsId)
                 .setVariantStatsDecription(cliOptions.variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)

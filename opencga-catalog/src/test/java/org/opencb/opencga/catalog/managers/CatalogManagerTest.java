@@ -214,6 +214,32 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     }
 
+    @Test
+    public void testUpdateUserConfig() throws CatalogException {
+        Map<String, Object> map = new HashMap<>();
+        map.put("key1", "value1");
+        map.put("key2", "value2");
+        catalogManager.getUserManager().setConfig("user", "a", map, token);
+
+        Map<String, Object> config = (Map<String, Object>) catalogManager.getUserManager().getConfig("user", "a", token).first();
+        assertEquals(2, config.size());
+        assertEquals("value1", config.get("key1"));
+        assertEquals("value2", config.get("key2"));
+
+        map = new HashMap<>();
+        map.put("key2", "value3");
+        catalogManager.getUserManager().setConfig("user", "a", map, token);
+        config = (Map<String, Object>) catalogManager.getUserManager().getConfig("user", "a", token).first();
+        assertEquals(1, config.size());
+        assertEquals("value3", config.get("key2"));
+
+        catalogManager.getUserManager().deleteConfig("user", "a", token);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getUserManager().getConfig("user", "a", token);
+    }
+
     private String getAdminToken() throws CatalogException, IOException {
         return catalogManager.getUserManager().loginAsAdmin("admin").getToken();
     }
