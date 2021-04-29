@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
@@ -602,6 +603,16 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         for (String study : studies) {
             for (String sample : sampleNames.get(study)) {
                 DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null);
+                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+            }
+        }
+    }
+
+    @Test
+    public void testSampleVariantStatsFail() throws Exception {
+        for (String study : studies) {
+            for (String sample : sampleNames.get(study)) {
+                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "synonymous_variant"));
                 System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
             }
         }

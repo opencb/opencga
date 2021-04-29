@@ -93,7 +93,7 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
         for (int i = 1; i < thresholds.length; i++) {
             ranges.add(new Range<>(thresholds[i - 1], startInclusive, thresholds[i], endInclusive));
         }
-        ranges.add(new Range<>(thresholds[thresholds.length - 1], false, max, false));
+        ranges.add(new Range<>(thresholds[thresholds.length - 1], startInclusive, max, false));
 
         // Check duplicated values
         for (int i = index.getNullable() ? 2 : 1; i < ranges.size() - 1; i++) {
@@ -186,6 +186,27 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
         return false;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Range<?> range = (Range<?>) o;
+        return startInclusive == range.startInclusive
+                && endInclusive == range.endInclusive
+                && Objects.equals(start, range.start)
+                && Objects.equals(end, range.end)
+                && Objects.equals(s, range.s);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(start, startInclusive, end, endInclusive, s);
+    }
+
     public static class NA<N extends Number & Comparable<N>> extends Range<N> {
 
         public NA() {
@@ -213,6 +234,23 @@ public class Range<N extends Number & Comparable<N>> implements Comparable<Range
                 return 0;
             } else {
                 return -1;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(toString());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null) {
+                return false;
+            } else {
+                return getClass() == o.getClass();
             }
         }
     }

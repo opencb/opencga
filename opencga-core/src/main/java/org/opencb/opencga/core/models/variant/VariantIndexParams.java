@@ -41,7 +41,7 @@ public class VariantIndexParams extends ToolParams {
                               boolean excludeGenotypes, String includeSampleData, String merge,
                               String deduplicationPolicy,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
-                              String annotator, boolean overwriteAnnotations, boolean indexSearch) {
+                              String annotator, boolean overwriteAnnotations, boolean indexSearch, boolean skipIndexedFiles) {
         this.file = file;
         this.resume = resume;
         this.outdir = outdir;
@@ -69,6 +69,7 @@ public class VariantIndexParams extends ToolParams {
         this.annotator = annotator;
         this.overwriteAnnotations = overwriteAnnotations;
         this.indexSearch = indexSearch;
+        this.skipIndexedFiles = skipIndexedFiles;
     }
 
     private String file;
@@ -105,6 +106,8 @@ public class VariantIndexParams extends ToolParams {
     private boolean overwriteAnnotations;
 
     private boolean indexSearch;
+
+    private boolean skipIndexedFiles;
 
     public String getFile() {
         return file;
@@ -349,4 +352,12 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
+    public boolean isSkipIndexedFiles() {
+        return skipIndexedFiles;
+    }
+
+    public VariantIndexParams setSkipIndexedFiles(boolean skipIndexedFiles) {
+        this.skipIndexedFiles = skipIndexedFiles;
+        return this;
+    }
 }
