@@ -20,23 +20,18 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
 import org.opencb.biodata.formats.alignment.samtools.io.SamtoolsFlagstatsParser;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileQualityControl;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.models.file.PostLinkToolParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -44,9 +39,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static org.apache.commons.io.FileUtils.readLines;
 import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_FLAG_STATS_DESCRIPTION;
@@ -130,7 +123,7 @@ public class AlignmentFlagStatsAnalysis extends OpenCgaToolScopeStudy {
             if (qc == null) {
                 qc = new FileQualityControl();
             }
-            qc.getAlignmentQualityControl().setSamtoolsFlagStats(flagStats);
+            qc.getAlignment().setSamtoolsFlagStats(flagStats);
 
             catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());

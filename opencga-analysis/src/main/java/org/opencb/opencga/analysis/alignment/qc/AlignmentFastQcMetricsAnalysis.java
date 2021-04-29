@@ -127,7 +127,7 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
                 if (qc == null) {
                     qc = new FileQualityControl();
                 }
-                qc.getAlignmentQualityControl().setFastQcMetrics(fastQcMetrics);
+                qc.getAlignment().setFastQcMetrics(fastQcMetrics);
 
                 catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
                         QueryOptions.empty(), getToken());

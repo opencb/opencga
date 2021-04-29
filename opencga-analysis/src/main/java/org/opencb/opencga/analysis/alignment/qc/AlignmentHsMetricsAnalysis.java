@@ -154,7 +154,7 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
             if (qc == null) {
                 qc = new FileQualityControl();
             }
-            qc.getAlignmentQualityControl().setHsMetrics(hsMetrics);
+            qc.getAlignment().setHsMetrics(hsMetrics);
 
             catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());

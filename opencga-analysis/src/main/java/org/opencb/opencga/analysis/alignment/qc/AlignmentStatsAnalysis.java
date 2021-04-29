@@ -125,6 +125,7 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
 
         step(PLOT_BAMSTATS_STEP, () -> {
             executorParams.put(EXECUTOR_ID, SamtoolsWrapperAnalysisExecutor.ID);
+            executorParams.remove("F");
             getToolExecutor(SamtoolsWrapperAnalysisExecutor.class)
                     .setCommand("plot-bamstats")
                     .setInputFile(statsFile.toString())
@@ -152,7 +153,7 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
             if (qc == null) {
                 qc = new FileQualityControl();
             }
-            qc.getAlignmentQualityControl().setSamtoolsStats(alignmentStats);
+            qc.getAlignment().setSamtoolsStats(alignmentStats);
 
             catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());

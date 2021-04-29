@@ -348,7 +348,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
         params.putAll(getJobParams());
 
-        return openCGAClient.getAlignmentClient().genecoveragestatsQc(new AlignmentGeneCoverageStatsParams(cliOptions.bamFile,
+        return openCGAClient.getAlignmentClient().runQcGeneCoverageStats(new AlignmentGeneCoverageStatsParams(cliOptions.bamFile,
                 Arrays.asList(cliOptions.genes.split(",")), cliOptions.outdir), params);
     }
 
