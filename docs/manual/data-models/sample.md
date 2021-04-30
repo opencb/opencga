@@ -8,19 +8,21 @@ Sample data model hosts information about any biological material, normally extr
 
 There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
 
-### Update and Create
+### Sample Fields subjected to Update and Create Operations
 
-**Create Fields**
+**Create Fields: `id`**
 
-**Update Fields**
+**Update Fields: `individualId, fileIds, processing, collection, somatic, annotationSets, qualityControl, description, phenotypes, status, attributes`**
 
-### Internal attributes
+### Fields for OpenCGA Internal use \(immutable\) 
+
+**`uuid, release, version, creationDate, modificationDate, internal`**
 
 ## Data Model
 
 ### Sample
 
-This is the main data model, it stores the most basic and important information. You can find the Java [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
+This is the main data model, it stores the most basic and important information. You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 <table>
   <thead>
