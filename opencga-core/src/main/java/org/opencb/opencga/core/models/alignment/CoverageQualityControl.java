@@ -1,23 +1,19 @@
 package org.opencb.opencga.core.models.alignment;
 
-import org.opencb.biodata.formats.alignment.picard.HsMetrics;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsFlagstats;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
-import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import org.opencb.biodata.models.alignment.GeneCoverageStats;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Coverage implements Serializable {
+public class CoverageQualityControl implements Serializable {
     private List<GeneCoverageStats> geneCoverageStats;
 
-    public Coverage() {
+    public CoverageQualityControl() {
         this(new ArrayList<>());
     }
 
-    public Coverage(List<GeneCoverageStats> geneCoverageStats) {
+    public CoverageQualityControl(List<GeneCoverageStats> geneCoverageStats) {
         this.geneCoverageStats = geneCoverageStats;
     }
 
@@ -33,7 +29,7 @@ public class Coverage implements Serializable {
         return geneCoverageStats;
     }
 
-    public Coverage setGeneCoverageStats(List<GeneCoverageStats> geneCoverageStats) {
+    public CoverageQualityControl setGeneCoverageStats(List<GeneCoverageStats> geneCoverageStats) {
         this.geneCoverageStats = geneCoverageStats;
         return this;
     }
