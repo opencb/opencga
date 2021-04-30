@@ -10,14 +10,13 @@ Remember that OpenCGA is highly configurable, and the use of templates constitut
 
 The templates define a way to easily ingest metadata into OpenCGA. You need different things:
 
-* **manfiest**: There is only one required file that you'd need to provide to use the template-related operations. This is a  `json` OR `yml` file named  `manifest.{json|yaml}` containing the specific configuration applied to the template. This file will define the root \(i.e: the study where you will perform the operation\). An example is provided below
+* **Manfiest**: There is only one required file that you'd need to provide to use the template-related operations. This is a  `json` OR `yml` file named  `manifest.{json|yaml}` containing the specific configuration applied to the template. This file will define the root \(i.e: the study where you will perform the operation\). An example is provided below
 
 ```text
 manifest.yaml
-
 ```
 
-* **metadata and clinical data**: You might need to provide a file per entity, where entities corresponds to one of the different comprehensive data models supported by OpenCGA Catalog \(**individuals, samples, files, families, cohorts, clinical\_analysis**\). Each file will contain the entity-related information that you want to ingest into Catalog. For usability purposes two main specifications will be accepted. You can find the file structures accepted below:
+* **Metadata and Clinical Data**: You might need to provide a file per entity, where entities corresponds to one of the different comprehensive data models supported by OpenCGA Catalog \(**individuals, samples, files, families, cohorts, clinical\_analysis**\). Each file will contain the entity-related information that you want to ingest into Catalog. For usability purposes two main specifications will be accepted. You can find the file structures accepted below:
 
 {% hint style="warning" %}
 NOTE: All the fields within each entity that are subjected to be manipulable by the users are clearly stated in the documentation of the entity data model. Please refer to [Data Models](../data-models/).
