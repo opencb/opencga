@@ -25,9 +25,9 @@ You might want to provide a single JSON or YAML file per entity. In the case of 
 
 The following entities are supported:
 
-* For  ndividuals.{json \| yaml}  
-* samples
-* files
+* For [Individual](../data-models/individual.md):  `individuals.{json|yaml}`  
+* For [Sample](../data-models/sample.md):  `samples.{json|yaml}`  
+* For   `individuals.{json|yaml}`  
 * families
 * cohorts
 * clinical\_analysis
