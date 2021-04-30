@@ -373,6 +373,7 @@ public class RgaManager implements AutoCloseable {
                 List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue)
                         .collect(Collectors.toList());
 
+                // TODO: Batches of samples to query catalog
                 // 3. Get list of individual ids for which the user has permissions
                 Query sampleQuery = new Query()
                         .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
@@ -625,6 +626,9 @@ public class RgaManager implements AutoCloseable {
                 knockoutByIndividualSummaryList.add(summaryFuture.get());
             }
         } catch (InterruptedException | ExecutionException e) {
+            if (RgaException.NO_RESULTS_FOUND.equals(e.getCause().getMessage())) {
+                return OpenCGAResult.empty(KnockoutByIndividualSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+            }
             throw new RgaException(e.getMessage(), e);
         }
 
@@ -705,6 +709,9 @@ public class RgaManager implements AutoCloseable {
                 knockoutByGeneSummaryList.add(summaryFuture.get());
             }
         } catch (InterruptedException | ExecutionException e) {
+            if (RgaException.NO_RESULTS_FOUND.equals(e.getCause().getMessage())) {
+                return OpenCGAResult.empty(KnockoutByGeneSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+            }
             throw new RgaException(e.getMessage(), e);
         }
 
@@ -920,7 +927,7 @@ public class RgaManager implements AutoCloseable {
         RgaIterator rgaIterator = rgaEngine.geneQuery(collection, individualQuery, options);
 
         if (!rgaIterator.hasNext()) {
-            throw new RgaException("Unexpected error. Gene '" + geneId + "' not found");
+            throw RgaException.noResultsMatching();
         }
         RgaDataModel rgaDataModel = rgaIterator.next();
         KnockoutByGeneSummary geneSummary = new KnockoutByGeneSummary(rgaDataModel.getGeneId(), rgaDataModel.getGeneName(),
@@ -989,14 +996,13 @@ public class RgaManager implements AutoCloseable {
         auxQuery.put(RgaQueryParams.SAMPLE_ID.key(), sampleId);
 
         // 1. Get KnockoutByIndividual information
-        Query individualQuery = new Query(RgaQueryParams.SAMPLE_ID.key(), sampleId);
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.LIMIT, 1)
                 .append(QueryOptions.EXCLUDE, "genes");
-        RgaIterator rgaIterator = rgaEngine.individualQuery(collection, individualQuery, options);
+        RgaIterator rgaIterator = rgaEngine.individualQuery(collection, auxQuery, options);
 
         if (!rgaIterator.hasNext()) {
-            throw new RgaException("Unexpected error. Sample '" + sampleId + "' not found");
+            throw RgaException.noResultsMatching();
         }
         RgaDataModel rgaDataModel = rgaIterator.next();
 
