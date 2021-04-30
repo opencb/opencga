@@ -930,35 +930,33 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
-        List<KnockoutVariant> allelePairs = new ArrayList<>();
-        Set<String> alleleVariantIds = new HashSet<>();
-        KnockoutVariant knockoutVariant = null;
+
+        boolean isCH = false;
+        Set<KnockoutVariant> currentVariantSet = new HashSet<>();
+        Set<KnockoutVariant> otherVariantSet = new HashSet<>();
         for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
             RgaUtils.CodedFeature codedVariant = RgaUtils.CodedFeature.parseEncodedId(bucket.getValue());
-            if (alleleVariantIds.contains(codedVariant.getId())) {
-                continue;
-            }
-            alleleVariantIds.add(codedVariant.getId());
             KnockoutVariant auxKnockoutVariant = RgaUtils.convertToKnockoutVariant(new Variant(codedVariant.getId()));
             auxKnockoutVariant.setKnockoutType(KnockoutVariant.KnockoutType.valueOf(codedVariant.getKnockoutType()));
-            allelePairs.add(auxKnockoutVariant);
 
             if (variantId.equals(auxKnockoutVariant.getId())) {
-                knockoutVariant = auxKnockoutVariant;
+                currentVariantSet.add(auxKnockoutVariant);
+                if (auxKnockoutVariant.getKnockoutType() == KnockoutVariant.KnockoutType.COMP_HET) {
+                    isCH = true;
+                }
+            } else if (auxKnockoutVariant.getKnockoutType() == KnockoutVariant.KnockoutType.COMP_HET) {
+                // We only store it otherwise if it is CH
+                otherVariantSet.add(auxKnockoutVariant);
             }
         }
-        if (allelePairs.size() > 1) {
-            if (knockoutVariant == null) {
-                throw new RgaException("Unexpected error. Internal knockout variant is null");
-            }
-            if (knockoutVariant.getKnockoutType() == KnockoutVariant.KnockoutType.COMP_HET) {
-                allelePairs.removeIf(next -> next.getKnockoutType() != KnockoutVariant.KnockoutType.COMP_HET);
-            } else {
-                // We only keep the variant itself
-                allelePairs = Collections.singletonList(knockoutVariant);
-            }
+        if (isCH) {
+            List<KnockoutVariant> allelePairList = new ArrayList<>(currentVariantSet.size() + otherVariantSet.size());
+            allelePairList.addAll(currentVariantSet);
+            allelePairList.addAll(otherVariantSet);
+            knockoutByVariantSummary.setAllelePairs(allelePairList);
+        } else {
+            knockoutByVariantSummary.setAllelePairs(new ArrayList<>(currentVariantSet));
         }
-        knockoutByVariantSummary.setAllelePairs(allelePairs);
 
         return knockoutByVariantSummary;
     }

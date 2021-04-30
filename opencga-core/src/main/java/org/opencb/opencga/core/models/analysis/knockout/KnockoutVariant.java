@@ -19,6 +19,8 @@ package org.opencb.opencga.core.models.analysis.knockout;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -106,6 +108,60 @@ public class KnockoutVariant {
         this.sequenceOntologyTerms = sequenceOntologyTerms;
         this.populationFrequencies = populationFrequencies;
         this.clinicalSignificance = clinicalSignificance;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        KnockoutVariant that = (KnockoutVariant) o;
+
+        return new EqualsBuilder()
+                .append(start, that.start)
+                .append(end, that.end)
+                .append(length, that.length)
+                .append(id, that.id)
+                .append(dbSnp, that.dbSnp)
+                .append(chromosome, that.chromosome)
+                .append(reference, that.reference)
+                .append(alternate, that.alternate)
+                .append(type, that.type)
+                .append(genotype, that.genotype)
+                .append(depth, that.depth)
+                .append(filter, that.filter)
+                .append(qual, that.qual)
+                .append(stats, that.stats)
+                .append(knockoutType, that.knockoutType)
+                .append(populationFrequencies, that.populationFrequencies)
+                .append(sequenceOntologyTerms, that.sequenceOntologyTerms)
+                .append(clinicalSignificance, that.clinicalSignificance)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(id)
+                .append(dbSnp)
+                .append(chromosome)
+                .append(start)
+                .append(end)
+                .append(length)
+                .append(reference)
+                .append(alternate)
+                .append(type)
+                .append(genotype)
+                .append(depth)
+                .append(filter)
+                .append(qual)
+                .append(stats)
+                .append(knockoutType)
+                .append(populationFrequencies)
+                .append(sequenceOntologyTerms)
+                .append(clinicalSignificance)
+                .toHashCode();
     }
 
     @Override
