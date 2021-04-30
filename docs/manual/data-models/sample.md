@@ -4,7 +4,13 @@
 
 Sample data model ...
 
-## Data Models
+### Update and Create
+
+...
+
+...
+
+## Data Model
 
 ### Sample
 
@@ -26,10 +32,10 @@ This is the main data model, it stores the most basic and important information.
         </p>
       </td>
       <td style="text-align:left">
-        <p>Unique Sample ID in the study, this can be repeated across different studies.
-          This is a mandatory parameter in the creation and cannot be changed at
-          the moment.</p>
-        <p><em>Constraints: Mandatory, Unique, Immutable</em>
+        <p><b>Unique</b> Sample ID in the study, this can be repeated across different
+          studies. This is a mandatory parameter in the creation and cannot be changed
+          at the moment.</p>
+        <p><em>Constraints: Required, Create</em>
         </p>
       </td>
     </tr>
