@@ -8,8 +8,8 @@ import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.Xref;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
@@ -31,6 +31,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -590,10 +591,14 @@ public class RgaManager implements AutoCloseable {
     public OpenCGAResult<KnockoutByIndividualSummary> individualSummary(String studyStr, Query query, QueryOptions options, String token)
             throws RgaException, CatalogException, IOException {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
+        String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
+
+        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
+                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
         StopWatch stopWatch = StopWatch.createStarted();
         ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -656,7 +661,8 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
-        catalogManager.getAuthorizationManager().checkCanViewStudy(study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
+                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -741,7 +747,8 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
         }
 
-        catalogManager.getAuthorizationManager().checkCanViewStudy(study.getUid(), userId);
+        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
+                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -812,7 +819,20 @@ public class RgaManager implements AutoCloseable {
             Variant variant = variantDBIterator.next();
 
             VariantAnnotation variantAnnotation = variant.getAnnotation();
-            ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
+            Set<String> sequenceOntologyId = new HashSet<>();
+            List<SequenceOntologyTerm> sequenceOntologyTermList = new LinkedList<>();
+            Set<String> geneNames = new HashSet<>();
+            for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
+                for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
+                    if (!sequenceOntologyId.contains(sequenceOntologyTerm.getName())) {
+                        sequenceOntologyId.add(sequenceOntologyTerm.getName());
+                        sequenceOntologyTermList.add(sequenceOntologyTerm);
+                    }
+                }
+                if (consequenceType.getGeneName() != null) {
+                    geneNames.add(consequenceType.getGeneName());
+                }
+            }
 
             KnockoutByVariantSummary knockoutByVariantSummary = variantSummaryMap.get(variant.getId());
             knockoutByVariantSummary.setDbSnp(variantAnnotation.getId());
@@ -824,15 +844,8 @@ public class RgaManager implements AutoCloseable {
             knockoutByVariantSummary.setAlternate(variant.getAlternate());
             knockoutByVariantSummary.setType(variant.getType());
             knockoutByVariantSummary.setPopulationFrequencies(variantAnnotation.getPopulationFrequencies());
-            knockoutByVariantSummary.setSequenceOntologyTerms(consequenceType.getSequenceOntologyTerms());
-            knockoutByVariantSummary.setGenes(variantAnnotation.getXrefs() != null
-                    ? variantAnnotation.getXrefs()
-                    .stream()
-                    .filter(xref -> "HGNC".equals(xref.getSource()))
-                    .map(Xref::getId)
-                    .collect(Collectors.toList())
-                    : Collections.emptyList()
-            );
+            knockoutByVariantSummary.setSequenceOntologyTerms(sequenceOntologyTermList);
+            knockoutByVariantSummary.setGenes(new ArrayList<>(geneNames));
         }
 
         List<KnockoutByVariantSummary> knockoutByVariantSummaryList = new ArrayList<>(variantSummaryMap.values());
