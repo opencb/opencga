@@ -9,26 +9,35 @@ public class BwaWrapperParams extends ToolParams {
 
     private String command;       // Valid values: index or mem
     private String fastaFile;     //  Fasta file
-    private String indexBaseFile; // Index base file
     private String fastq1File;    // FastQ #1 file
     private String fastq2File;    // FastQ #2 file
-    private String samFilename;   // SAM file name
     private String outdir;
     private Map<String, String> bwaParams;
 
     public BwaWrapperParams() {
     }
 
-    public BwaWrapperParams(String command, String fastaFile, String indexBaseFile, String fastq1File, String fastq2File, String samFilename,
-                            String outdir, Map<String, String> bwaParams) {
+    public BwaWrapperParams(String command, String fastaFile, String fastq1File, String fastq2File, String outdir,
+                            Map<String, String> bwaParams) {
         this.command = command;
         this.fastaFile = fastaFile;
-        this.indexBaseFile = indexBaseFile;
         this.fastq1File = fastq1File;
         this.fastq2File = fastq2File;
-        this.samFilename = samFilename;
         this.outdir = outdir;
         this.bwaParams = bwaParams;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("BwaWrapperParams{");
+        sb.append("command='").append(command).append('\'');
+        sb.append(", fastaFile='").append(fastaFile).append('\'');
+        sb.append(", fastq1File='").append(fastq1File).append('\'');
+        sb.append(", fastq2File='").append(fastq2File).append('\'');
+        sb.append(", outdir='").append(outdir).append('\'');
+        sb.append(", bwaParams=").append(bwaParams);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getCommand() {
@@ -49,15 +58,6 @@ public class BwaWrapperParams extends ToolParams {
         return this;
     }
 
-    public String getIndexBaseFile() {
-        return indexBaseFile;
-    }
-
-    public BwaWrapperParams setIndexBaseFile(String indexBaseFile) {
-        this.indexBaseFile = indexBaseFile;
-        return this;
-    }
-
     public String getFastq1File() {
         return fastq1File;
     }
@@ -73,15 +73,6 @@ public class BwaWrapperParams extends ToolParams {
 
     public BwaWrapperParams setFastq2File(String fastq2File) {
         this.fastq2File = fastq2File;
-        return this;
-    }
-
-    public String getSamFilename() {
-        return samFilename;
-    }
-
-    public BwaWrapperParams setSamFilename(String samFilename) {
-        this.samFilename = samFilename;
         return this;
     }
 

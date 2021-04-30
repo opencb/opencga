@@ -153,7 +153,7 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
             if (qc == null) {
                 qc = new FileQualityControl();
             }
-            qc.getAlignment().setSamtoolsStats(alignmentStats);
+            qc.getAlignmentQualityControl().setSamtoolsStats(alignmentStats);
 
             catalogManager.getFileManager().update(getStudy(), catalogBamFile.getId(), new FileUpdateParams().setQualityControl(qc),
                     QueryOptions.empty(), getToken());

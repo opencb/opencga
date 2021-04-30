@@ -415,19 +415,13 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // BWA
 
     private RestResponse<Job> bwa() throws ClientException {
-        BwaWrapperParams wrapperParams = new BwaWrapperParams(
-                alignmentCommandOptions.bwaCommandOptions.command,
-                alignmentCommandOptions.bwaCommandOptions.fastaFile,
-                alignmentCommandOptions.bwaCommandOptions.indexBaseFile,
-                alignmentCommandOptions.bwaCommandOptions.fastq1File,
-                alignmentCommandOptions.bwaCommandOptions.fastq2File,
-                alignmentCommandOptions.bwaCommandOptions.samFilename,
-                alignmentCommandOptions.bwaCommandOptions.outdir,
-                alignmentCommandOptions.bwaCommandOptions.commonOptions.params
-        );
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.bwaCommandOptions.study);
+        AlignmentCommandOptions.BwaCommandOptions cliOptions = alignmentCommandOptions.bwaCommandOptions;
 
-        return openCGAClient.getAlignmentClient().runBwa(wrapperParams, params);
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return openCGAClient.getAlignmentClient().runBwa(new BwaWrapperParams(cliOptions.command, cliOptions.fastaFile,
+                cliOptions.fastq1File, cliOptions.fastq2File, cliOptions.outdir, cliOptions.bwaParams), params);
     }
 
     // Samtools

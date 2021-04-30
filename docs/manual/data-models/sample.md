@@ -2,19 +2,35 @@
 
 ## Overview
 
-Sample data model ...
+Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
 
-## Data Models
+## Entity Field Attributes
+
+There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
+
+### Sample Fields subjected to Update and Create Operations
+
+**Create Fields: `id`**
+
+**Update Fields: `individualId, fileIds, processing, collection, somatic, annotationSets, qualityControl, description, phenotypes, status, attributes`**
+
+### Fields for OpenCGA Internal use \(immutable\) 
+
+**`uuid, release, version, creationDate, modificationDate, internal`**
+
+## Data Model
 
 ### Sample
 
-This is the main data model, it stores the most basic and important information. You can find the Java [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
+This is the main data model, it stores the most basic and important information. You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 <table>
   <thead>
     <tr>
-      <th style="text-align:left">Field</th>
-      <th style="text-align:left">Description</th>
+      <th style="text-align:left"><b>Field</b>
+      </th>
+      <th style="text-align:left"><b>Description</b>
+      </th>
     </tr>
   </thead>
   <tbody>
@@ -26,10 +42,10 @@ This is the main data model, it stores the most basic and important information.
         </p>
       </td>
       <td style="text-align:left">
-        <p>Unique Sample ID in the study, this can be repeated across different studies.
-          This is a mandatory parameter in the creation and cannot be changed at
-          the moment.</p>
-        <p><em>Constraints: Mandatory, Unique, Immutable</em>
+        <p><b>Unique</b> Sample ID in the study, this can be repeated across different
+          studies. This is a mandatory parameter in the creation and cannot be changed
+          at the moment.</p>
+        <p><em>Constraints: Required, Create</em>
         </p>
       </td>
     </tr>

@@ -471,6 +471,11 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String BWA_COMMANDS_SUPPORTED = "index, mem";
+    public static final String BWA_COMMAND_DESCRIPTION = "Supported BWA commands: " + BWA_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "
             + "if that does not work, it will try with REST";
 
