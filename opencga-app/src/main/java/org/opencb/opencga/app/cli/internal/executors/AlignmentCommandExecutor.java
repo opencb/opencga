@@ -333,13 +333,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new PicardWrapperParams(
                 cliOptions.command,
-                cliOptions.bamFile,
-                cliOptions.bedFile,
-                cliOptions.baitIntervalsFile,
-                cliOptions.targetIntervalsFile,
-                cliOptions.dictFile,
-                cliOptions.refSeqFile,
-                cliOptions.outFilename,
                 cliOptions.outdir,
                 cliOptions.picardParams)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);

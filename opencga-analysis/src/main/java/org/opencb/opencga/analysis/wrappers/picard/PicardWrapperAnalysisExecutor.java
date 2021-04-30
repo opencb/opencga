@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.wrappers.picard;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor;
@@ -20,13 +21,6 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
     private String study;
     private String command;
-    private String bamFile;
-    private String bedFile;
-    private String baitIntervalsFile;
-    private String targetIntervalsFile;
-    private String dictFile;
-    private String refSeqFile;
-    private String outFilename;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -59,26 +53,22 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
     public void run() throws ToolException {
         switch (command) {
             case "CollectHsMetrics":
-                runCollectHsMetrics();
-                break;
             case "CollectWgsMetrics":
-                runCollectWgsMetrics();
-                break;
             case "BedToIntervalList":
-                runBedToIntervalList();
+                runCommonCommand();
                 break;
             default:
                 throw new ToolException("Picard tool name '" + command + "' is not supported yet.");
         }
     }
 
-    private void runBedToIntervalList() throws ToolException {
+    private void runCommonCommand() throws ToolException {
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("I", getBedFile()),
-                new ImmutablePair<>("SD", getDictFile())));
-
+        Set<String> inputFileParamNames = PicardWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(null, inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -88,77 +78,20 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         appendInputFiles(inputFilenames, mountMap, sb);
 
         // Append output file params
-        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", getOutFilename())));
-        appendOutputFiles(outputFilenames, sb);
+        if (getExecutorParams().containsKey("O") || getExecutorParams().containsKey("OUTPUT")) {
+            String value = String.valueOf(getExecutorParams().get("O"));
+            if (StringUtils.isEmpty(value)) {
+                value = String.valueOf(getExecutorParams().get("OUTPUT"));
+            }
+            if (StringUtils.isNotEmpty(value)) {
+                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", value)));
+                appendOutputFiles(outputFilenames, sb);
+            }
+        }
 
         // Append other params
-        Set<String> skipParams =  new HashSet<>(Arrays.asList("I", "INPUT", "O", "OUTPUT", "SEQUENCE_DICTIONARY","SD"));
-        appendOtherParams(skipParams, sb);
-
-        // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
-        logger.info("Docker command line: " + sb.toString());
-        runCommandLine(sb.toString());
-    }
-
-    private void runCollectWgsMetrics() throws ToolException {
-        StringBuilder sb = initCommandLine();
-
-        // Append mounts
-        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("I", getBamFile()),
-                new ImmutablePair<>("R", getRefSeqFile())));
-
-        Map<String, String> mountMap = appendMounts(inputFilenames, sb);
-
-        // Append docker image, version and command
-        appendCommand("java -jar /usr/picard/picard.jar " + command, sb);
-
-        // Append input file params
-        appendInputFiles(inputFilenames, mountMap, sb);
-
-        // Append output file params
-        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("O", getOutFilename())));
-        appendOutputFiles(outputFilenames, sb);
-
-        // Append other params
-        Set<String> skipParams =  new HashSet<>(Arrays.asList("I", "INPUT", "O", "OUTPUT", "REFERENCE_SEQUENCE","R"));
-        appendOtherParams(skipParams, sb);
-
-        // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
-        logger.info("Docker command line: " + sb.toString());
-        runCommandLine(sb.toString());
-    }
-
-    private void runCollectHsMetrics() throws ToolException {
-        // Prepare input files
-        List<Pair<String, String>> inputFilenames = new ArrayList<>(Arrays.asList(
-                new ImmutablePair<>("I", getBamFile()),
-                new ImmutablePair<>("R", getRefSeqFile()),
-                new ImmutablePair<>("BI", getBaitIntervalsFile()),
-                new ImmutablePair<>("TI", getTargetIntervalsFile())
-        ));
-
-        // Prepare output files
-        List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(
-                new ImmutablePair<>("O", getOutFilename())
-        ));
-
-        StringBuilder sb = initCommandLine();
-
-        // Append mounts
-        Map<String, String> mountMap = appendMounts(inputFilenames, sb);
-
-        // Append docker image, version and command
-        appendCommand("java -jar /usr/picard/picard.jar " + command, sb);
-
-        // Append input file params
-        appendInputFiles(inputFilenames, mountMap, sb);
-
-        // Append output file params
-        appendOutputFiles(outputFilenames, sb);
-
-        // Append other params
-        Set<String> skipParams =  new HashSet<>(Arrays.asList("I", "INPUT", "O", "OUTPUT", "BAIT_INTERVALS", "BI", "TARGET_INTERVALS", "TI",
-                "REFERENCE_SEQUENCE","R"));
+        Set<String> skipParams =  new HashSet<>(Arrays.asList("arguments_file", "O", "OUTPUT"));
+        skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
@@ -181,69 +114,6 @@ public class PicardWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
 
     public PicardWrapperAnalysisExecutor setCommand(String command) {
         this.command = command;
-        return this;
-    }
-
-    public String getBamFile() {
-        return bamFile;
-    }
-
-    public PicardWrapperAnalysisExecutor setBamFile(String bamFile) {
-        this.bamFile = bamFile;
-        return this;
-    }
-
-    public String getBedFile() {
-        return bedFile;
-    }
-
-    public PicardWrapperAnalysisExecutor setBedFile(String bedFile) {
-        this.bedFile = bedFile;
-        return this;
-    }
-
-    public String getBaitIntervalsFile() {
-        return baitIntervalsFile;
-    }
-
-    public PicardWrapperAnalysisExecutor setBaitIntervalsFile(String baitIntervalsFile) {
-        this.baitIntervalsFile = baitIntervalsFile;
-        return this;
-    }
-
-    public String getTargetIntervalsFile() {
-        return targetIntervalsFile;
-    }
-
-    public PicardWrapperAnalysisExecutor setTargetIntervalsFile(String targetIntervalsFile) {
-        this.targetIntervalsFile = targetIntervalsFile;
-        return this;
-    }
-
-    public String getDictFile() {
-        return dictFile;
-    }
-
-    public PicardWrapperAnalysisExecutor setDictFile(String dictFile) {
-        this.dictFile = dictFile;
-        return this;
-    }
-
-    public String getRefSeqFile() {
-        return refSeqFile;
-    }
-
-    public PicardWrapperAnalysisExecutor setRefSeqFile(String refSeqFile) {
-        this.refSeqFile = refSeqFile;
-        return this;
-    }
-
-    public String getOutFilename() {
-        return outFilename;
-    }
-
-    public PicardWrapperAnalysisExecutor setOutFilename(String outFilename) {
-        this.outFilename = outFilename;
         return this;
     }
 }

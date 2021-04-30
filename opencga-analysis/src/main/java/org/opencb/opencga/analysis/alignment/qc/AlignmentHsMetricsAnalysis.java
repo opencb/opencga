@@ -112,12 +112,12 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
 
         step(PICARD_BEDTOINTERVALLIST_STEP, () -> {
             executorParams.put(EXECUTOR_ID, PicardWrapperAnalysisExecutor.ID);
+            executorParams.put("I", catalogBedFile.getUri().getPath());
+            executorParams.put("SD", catalogDictFile.getUri().getPath());
+            executorParams.put("O", baitFile.getName());
 
             getToolExecutor(PicardWrapperAnalysisExecutor.class)
                     .setCommand("BedToIntervalList")
-                    .setBedFile(catalogBedFile.getUri().getPath())
-                    .setDictFile(catalogDictFile.getUri().getPath())
-                    .setOutFilename(baitFile.getName())
                     .execute();
 
             if (!baitFile.exists()) {
@@ -128,14 +128,14 @@ public class AlignmentHsMetricsAnalysis extends OpenCgaToolScopeStudy {
 
         step(PICARD_COLLECTHSMETRICS_STEP, () -> {
             executorParams.put(EXECUTOR_ID, PicardWrapperAnalysisExecutor.ID);
+            executorParams.put("I", catalogBamFile.getUri().getPath());
+            executorParams.put("BI", baitFile.getAbsolutePath());
+            executorParams.put("TI", baitFile.getAbsolutePath());
+            executorParams.put("O", hsMetricsFile.getName());
+            executorParams.remove("SD");
 
             getToolExecutor(PicardWrapperAnalysisExecutor.class)
                     .setCommand("CollectHsMetrics")
-                    .setBamFile(catalogBamFile.getUri().getPath())
-//                    .setRefSeqFile(catalogRefSeqFile.getUri().getPath())
-                    .setBaitIntervalsFile(baitFile.getAbsolutePath())
-                    .setTargetIntervalsFile(baitFile.getAbsolutePath())
-                    .setOutFilename(hsMetricsFile.getName())
                     .execute();
 
             if (!hsMetricsFile.exists()) {

@@ -27,6 +27,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.util.*;
+
 import static org.opencb.opencga.core.api.ParamConstants.PICARD_COMMANDS_SUPPORTED;
 import static org.opencb.opencga.core.api.ParamConstants.PICARD_COMMAND_DESCRIPTION;
 
@@ -39,13 +41,6 @@ public class PicardWrapperAnalysis extends OpenCgaToolScopeStudy {
 
     @ToolParams
     protected final PicardWrapperParams analysisParams = new PicardWrapperParams();
-
-    private String bamFilePath = null;
-    private String bedFilePath = null;
-    private String baitIntervalsFilePath = null;
-    private String targetIntervalsFilePath = null;
-    private String dictFilePath = null;
-    private String refSeqFilePath = null;
 
     protected void check() throws Exception {
         super.check();
@@ -61,27 +56,19 @@ public class PicardWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Get files from catalog
         FileManager fileManager = catalogManager.getFileManager();
-        if (StringUtils.isNotEmpty(analysisParams.getBamFile())) {
-            bamFilePath = AnalysisUtils.getCatalogFile(analysisParams.getBamFile(), study, fileManager, token).getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getBedFile())) {
-            bedFilePath = AnalysisUtils.getCatalogFile(analysisParams.getBedFile(), study, fileManager, token).getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getBaitIntervalsFile())) {
-            baitIntervalsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getBaitIntervalsFile(), study, fileManager, token).getUri()
-                    .getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getTargetIntervalsFile())) {
-            targetIntervalsFilePath = AnalysisUtils.getCatalogFile(analysisParams.getTargetIntervalsFile(), study, fileManager,
-                    token).getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getDictFile())) {
-            dictFilePath = AnalysisUtils.getCatalogFile(analysisParams.getDictFile(), study, fileManager, token)
-                    .getUri().getPath();
-        }
-        if (StringUtils.isNotEmpty(analysisParams.getRefSeqFile())) {
-            refSeqFilePath = AnalysisUtils.getCatalogFile(analysisParams.getRefSeqFile(), study, fileManager, token)
-                    .getUri().getPath();
+        if (MapUtils.isNotEmpty(analysisParams.getPicardParams())) {
+            Set<String> fileParams = getFileParamNames(analysisParams.getCommand());
+
+            Map<String, String> updatedMap = new HashMap<>();
+            for (Map.Entry<String, String> entry : analysisParams.getPicardParams().entrySet()) {
+                if (fileParams.contains(entry.getKey())) {
+                    updatedMap.put(entry.getKey(), AnalysisUtils.getCatalogFile(entry.getValue(), study, fileManager, token)
+                            .getUri().getPath());
+                }
+            }
+            if (MapUtils.isNotEmpty(updatedMap)) {
+                analysisParams.getPicardParams().putAll(updatedMap);
+            }
         }
     }
 
@@ -96,14 +83,20 @@ public class PicardWrapperAnalysis extends OpenCgaToolScopeStudy {
 
             getToolExecutor(PicardWrapperAnalysisExecutor.class)
                     .setCommand(analysisParams.getCommand())
-                    .setBamFile(bamFilePath)
-                    .setBedFile(bedFilePath)
-                    .setBaitIntervalsFile(baitIntervalsFilePath)
-                    .setTargetIntervalsFile(targetIntervalsFilePath)
-                    .setDictFile(dictFilePath)
-                    .setRefSeqFile(refSeqFilePath)
-                    .setOutFilename(analysisParams.getOutFilename())
                     .execute();
         });
+    }
+
+    public static Set<String> getFileParamNames(String command) {
+        switch (command) {
+            case "BedToIntervalList":
+                return new HashSet<>(Arrays.asList("I", "INPUT", "SD", "SEQUENCE_DICTIONARY"));
+            case "CollectWgsMetrics":
+                return new HashSet<>(Arrays.asList("I", "INPUT", "R", "REFERENCE_SEQUENCE"));
+            case "CollectHsMetrics":
+                return new HashSet<>(Arrays.asList("I", "INPUT", "BI", "BAIT_INTERVALS", "TI", "TARGET_INTERVALS"));
+            default:
+                return new HashSet<>();
+        }
     }
 }

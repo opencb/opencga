@@ -170,7 +170,6 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
                     Pair<String, String> pair = new ImmutablePair<>(paramName, executorParams.get(paramName).toString());
                     inputFilenames.add(pair);
                 }
-
             }
         }
 

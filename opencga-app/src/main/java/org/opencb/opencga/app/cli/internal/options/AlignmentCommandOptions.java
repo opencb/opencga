@@ -605,34 +605,13 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
         public String study;
 
-        @Parameter(names = {"--command"}, description = PICARD_COMMAND_DESCRIPTION, required = true)
+        @Parameter(names = {"--command"}, description = PICARD_COMMAND_DESCRIPTION)
         public String command;
-
-        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " (BAM file)")
-        public String bamFile;
-
-        @Parameter(names = {"--bed-file"}, description = FILE_ID_DESCRIPTION + " (BEB file)")
-        public String bedFile;
-
-        @Parameter(names = {"--bait-intervals-file"}, description = FILE_ID_DESCRIPTION + " (BAIT file for intervals)")
-        public String baitIntervalsFile;
-
-        @Parameter(names = {"--target-intervals-file"}, description = FILE_ID_DESCRIPTION + " (BAIT file for target intervals)")
-        public String targetIntervalsFile;
-
-        @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " (dictionary file)")
-        public String dictFile;
-
-        @Parameter(names = {"--ref-seq-file"}, description = FILE_ID_DESCRIPTION + " (reference sequence file)")
-        public String refSeqFile;
-
-        @Parameter(names = {"--out-filename"}, description = "Output filename")
-        public String outFilename;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
 
-        @DynamicParameter(names = {"--pircard-params"}, description = "Picard parameters.")
+        @DynamicParameter(names = {"--picard-params"}, description = "Picard parameters.")
         public Map<String, String> picardParams = new HashMap<>();
     }
 }
