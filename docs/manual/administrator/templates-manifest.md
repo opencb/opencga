@@ -19,43 +19,42 @@ manifest.yaml
 
 * **metadata and clinical data**: You might need to provide a file per entity, where entities corresponds to one of the different comprehensive data models supported by OpenCGA Catalog \(**individuals, samples, files, families, cohorts, clinical\_analysis**\). Each file will contain the entity-related information that you want to ingest into Catalog. For usability purposes two main specifications will be accepted. You can find the file structures accepted below:
 
+{% hint style="warning" %}
+NOTE: All the fields within each entity that are subjected to be manipulable by the users are clearly stated in the documentation of the entity data model. Please refer to [Data Models](../data-models/).
+{% endhint %}
+
 ### JSON/YAML Files
 
 You might want to provide a single JSON or YAML file per entity. In the case of using JSON you should write one JSON per line, if YAML is used then you can just concat them separating by '---'.
 
-The following entities are supported:
+The following entities are supported. 
 
 * For [Individual](../data-models/individual.md):  `individuals.{json|yaml}`  
 * For [Sample](../data-models/sample.md):  `samples.{json|yaml}`  
-* For   `individuals.{json|yaml}`  
-* families
-* cohorts
-* clinical\_analysis
-
-
+* For  [File](../data-models/file.md): `files.{json|yaml}`  
+* For [Family](../data-models/family.md):  `families.{json|yaml}`
+* For  [Cohort](../data-models/cohort.md): `cohorts.{json|yaml}`  
+* For [Clinical Analysis](../../components-1/clinical.md): `clinical_anaysis.{json|yaml}`  
 
 ### TAB Files
 
-You can load data for individuals, samples, ... using TAB files.
-
-The columns are configurable...
-
-Rules:
+You can load data for the entities using **TAB separated txt files**. There are some simple construction rules that the user needs to follow for the ingestion to be successful:
 
 * First line starting with \# symbol containing the exact name of the corresponding data model
-* the order of the columns are not relevant
+* The column name must correspond to the field reserved in the entity data model. Refer to each entity data model documentation for checking the accepted fields. 
+* The order of the columns is not relevant.
 
 ```text
 individuals.txt:
-#id         name        sex         status.name     (phenotypes.id)
-NA001       pepe        yes         READY           
-NA002       ...
+#id         name        sex         status.name    
+NA001       uk1         yes         READY           
+NA002       uk2         no          READY
 
 
 individuals.phenotypes.txt
-#individualId   id              name        description
-NA001           HP:1234         klsalksa    sdasdasda
-NA002           HP:1234         klsalksa    sdasdasda
-study.groups.txt
+#Individualid    id            name                  source
+NA001            HP:0002664    Neoplasm              HPO
+NA001            HP:0002664    Lung Adenocarcinoma   HPO
+
 ```
 
