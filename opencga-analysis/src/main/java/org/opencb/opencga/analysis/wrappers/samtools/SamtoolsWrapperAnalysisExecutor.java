@@ -1,6 +1,5 @@
 package org.opencb.opencga.analysis.wrappers.samtools;
 
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -76,7 +75,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -87,6 +88,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append other params
         Set<String> skipParams = new HashSet<>(Arrays.asList("f"));
+        skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
@@ -98,7 +100,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -121,6 +125,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append other params
         Set<String> skipParams = new HashSet<>(Arrays.asList("u", "uri", "o", "output"));
+        skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
@@ -132,7 +137,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -152,6 +159,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append other params
         Set<String> skipParams = new HashSet<>(Arrays.asList("o"));
+        skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
@@ -163,7 +171,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -184,7 +194,10 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        // Append mounts
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -204,6 +217,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append other params
         Set<String> skipParams = new HashSet<>(Arrays.asList("T", "o"));
+        skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
@@ -215,7 +229,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -236,7 +252,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -257,7 +275,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -272,6 +292,7 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append other params
         Set<String> skipParams =  new HashSet<>(Arrays.asList("p", "prefix"));
+        skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
@@ -283,7 +304,9 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = getInputFilenames(command);
+        Set<String> inputFileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getInputFile(), inputFileParamNames,
+                getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
@@ -294,33 +317,12 @@ public class SamtoolsWrapperAnalysisExecutor extends DockerWrapperAnalysisExecut
 
         // Append other params
         Set<String> skipParams =  new HashSet<>(Arrays.asList("input-fmt-option"));
+        skipParams.addAll(inputFileParamNames);
         appendOtherParams(skipParams, sb);
 
         // Execute command and redirect stdout and stderr to the files
         logger.info("Docker command line: " + sb.toString());
         runCommandLine(sb.toString());
-    }
-
-    private List<Pair<String, String>> getInputFilenames(String command) {
-        List<Pair<String, String>> inputFilenames = new ArrayList<>();
-        inputFilenames.add(new ImmutablePair<>("", getInputFile()));
-
-        if (MapUtils.isNotEmpty(getExecutorParams())) {
-            Set<String> fileParamNames = SamtoolsWrapperAnalysis.getFileParamNames(command);
-            for (String paramName : getExecutorParams().keySet()) {
-                if (skipParameter(paramName)) {
-                    continue;
-                }
-
-                if (fileParamNames.contains(paramName)) {
-                    Pair<String, String> pair = new ImmutablePair<>(paramName, getExecutorParams().get(paramName).toString());
-                    inputFilenames.add(pair);
-                }
-
-            }
-        }
-
-        return inputFilenames;
     }
 
     public String getStudy() {

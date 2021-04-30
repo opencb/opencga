@@ -36,10 +36,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMAND_DESCRIPTION;
@@ -167,41 +164,18 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
     public static Set<String> getFileParamNames(String command) {
-        Set<String> fileParamNames = new HashSet<>();
         switch (command) {
-            case "sort":
-                fileParamNames.add("reference");
-                break;
-            case "view":
-                fileParamNames.add("U");
-                fileParamNames.add("t");
-                fileParamNames.add("L");
-                fileParamNames.add("R");
-                fileParamNames.add("T");
-                fileParamNames.add("reference");
-                break;
-            case "stats":
-                fileParamNames.add("r");
-                fileParamNames.add("ref-seq");
-                fileParamNames.add("reference");
-                fileParamNames.add("t");
-                fileParamNames.add("target-regions");
-                break;
             case "depth":
-                fileParamNames.add("reference");
-                break;
+            case "sort":
+                return new HashSet<>(Arrays.asList("reference"));
+            case "view":
+                return new HashSet<>(Arrays.asList("U", "t", "L", "R", "T", "reference"));
+            case "stats":
+                return new HashSet<>(Arrays.asList("r", "ref-seq", "reference", "t", "target-regions"));
             case "plot-bamstats":
-                fileParamNames.add("r");
-                fileParamNames.add("ref-stats");
-                fileParamNames.add("s");
-                fileParamNames.add("do-ref-stats");
-                fileParamNames.add("t");
-                fileParamNames.add("targets");
-                break;
+                return new HashSet<>(Arrays.asList("r", "ref-stats", "s", "do-ref-stats", "t", "targets"));
             default:
-                break;
-
+                return new HashSet<>();
         }
-        return  fileParamNames;
     }
 }
