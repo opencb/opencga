@@ -35,9 +35,9 @@ The following entities are supported.
 * For  [Cohort](../data-models/cohort.md): `cohorts.{json|yaml}`  
 * For [Clinical Analysis](../../components-1/clinical.md): `clinical_anaysis.{json|yaml}`  
 
-### TAB Files
+### TAB Text Files
 
-You can load data for the entities using **TAB separated txt files**. There are some simple construction rules that the user needs to follow for the ingestion to be successful:
+You can load data for the entities using **TAB separated .txt files**. There are some simple construction rules that the user needs to follow for the ingestion to be successful:
 
 * First line starting with \# symbol containing the exact name of the corresponding data model
 * The column name must correspond to the field reserved in the entity data model. Refer to each entity data model documentation for checking the accepted fields. 
@@ -46,8 +46,8 @@ You can load data for the entities using **TAB separated txt files**. There are 
 ```text
 individuals.txt:
 #id         name        sex         status.name    
-NA001       uk1         yes         READY           
-NA002       uk2         no          READY
+NA001       uk1         female      READY           
+NA002       uk2         male        READY
 
 
 individuals.phenotypes.txt
