@@ -68,6 +68,7 @@
 * [Data Models](manual/data-models/README.md)
   * [Sample](manual/data-models/sample.md)
   * [Individual](manual/data-models/individual.md)
+  * [Cohort](manual/data-models/cohort.md)
 * [Using JupyterLab](manual/using-jupyterlab.md)
 * [Administrator](manual/administrator/README.md)
   * [User Management](manual/administrator/user-management.md)
