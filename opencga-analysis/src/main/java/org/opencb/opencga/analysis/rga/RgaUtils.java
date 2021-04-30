@@ -332,12 +332,16 @@ class RgaUtils {
 
     // Default converter
     static KnockoutVariant convertToKnockoutVariant(Variant variant, SampleEntry sampleEntry, KnockoutVariant.KnockoutType knockoutType) {
-        StudyEntry studyEntry = variant.getStudies().get(0);
+        StudyEntry studyEntry = CollectionUtils.isNotEmpty(variant.getStudies()) ? variant.getStudies().get(0) : null;
         // TODO: Check fileentry
-        FileEntry fileEntry = variant.getStudies().get(0).getFiles().get(0);
+        FileEntry fileEntry = studyEntry != null && CollectionUtils.isNotEmpty(studyEntry.getFiles())
+                ? studyEntry.getFiles().get(0)
+                : null;
         VariantAnnotation variantAnnotation = variant.getAnnotation();
         // TODO: Check consequence type
-        ConsequenceType consequenceType = variantAnnotation.getConsequenceTypes().get(0);
+        ConsequenceType consequenceType = variantAnnotation != null && CollectionUtils.isNotEmpty(variantAnnotation.getConsequenceTypes())
+                ? variantAnnotation.getConsequenceTypes().get(0)
+                : null;
 
         return new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry, variantAnnotation, consequenceType, knockoutType);
     }

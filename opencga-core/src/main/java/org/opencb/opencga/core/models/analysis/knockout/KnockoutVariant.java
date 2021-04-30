@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -59,7 +60,7 @@ public class KnockoutVariant {
     public KnockoutVariant(Variant variant, StudyEntry study, FileEntry file, SampleEntry sample, VariantAnnotation annotation,
                            ConsequenceType ct, KnockoutType knockoutType) {
         this.id = variant.toString();
-        this.dbSnp = annotation.getId();
+        this.dbSnp = annotation != null ? annotation.getId() : null;
         this.chromosome = variant.getChromosome();
         this.start = variant.getStart();
         this.end = variant.getEnd();
@@ -67,14 +68,14 @@ public class KnockoutVariant {
         this.reference = variant.getReference();
         this.alternate = variant.getAlternate();
         this.type = variant.getType();
-        this.genotype = sample != null ? sample.getData().get(0) : null;
+        this.genotype = sample != null && CollectionUtils.isNotEmpty(sample.getData()) ? sample.getData().get(0) : null;
         this.depth = getDepth(study, file, sample);
-        this.filter = file.getData().get(StudyEntry.FILTER);
-        this.qual = file.getData().get(StudyEntry.QUAL);
-        this.stats = study.getStats(StudyEntry.DEFAULT_COHORT);
+        this.filter = file != null ? file.getData().get(StudyEntry.FILTER) : null;
+        this.qual = file != null ? file.getData().get(StudyEntry.QUAL) : null;
+        this.stats = study != null ? study.getStats(StudyEntry.DEFAULT_COHORT) : null;
         this.knockoutType = knockoutType;
         this.sequenceOntologyTerms = ct == null ? null : ct.getSequenceOntologyTerms();
-        this.populationFrequencies = annotation.getPopulationFrequencies();
+        this.populationFrequencies = annotation != null ? annotation.getPopulationFrequencies() : null;
         this.clinicalSignificance = getClinicalSignificance(annotation);
     }
 
@@ -308,7 +309,7 @@ public class KnockoutVariant {
     }
 
     public static List<ClinicalSignificance> getClinicalSignificance(VariantAnnotation annotation) {
-        if (annotation.getTraitAssociation() != null) {
+        if (annotation != null && annotation.getTraitAssociation() != null) {
             Set<ClinicalSignificance> uniqueValues = new HashSet<>();
             for (EvidenceEntry evidenceEntry : annotation.getTraitAssociation()) {
                 if (evidenceEntry.getVariantClassification() != null
@@ -318,6 +319,6 @@ public class KnockoutVariant {
             }
             return new ArrayList<>(uniqueValues);
         }
-        return Collections.emptyList();
+        return null;
     }
 }

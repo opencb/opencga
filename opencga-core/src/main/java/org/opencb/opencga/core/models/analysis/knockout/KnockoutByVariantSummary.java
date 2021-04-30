@@ -23,6 +23,7 @@ public class KnockoutByVariantSummary {
     private List<PopulationFrequency> populationFrequencies;
     private List<SequenceOntologyTerm> sequenceOntologyTerms;
     private List<ClinicalSignificance> clinicalSignificances;
+    private List<KnockoutVariant> allelePairs;
 
     private IndividualStats individualStats;
 
@@ -32,7 +33,7 @@ public class KnockoutByVariantSummary {
     public KnockoutByVariantSummary(String id, String dbSnp, String chromosome, int start, int end, int length, String reference,
                                     String alternate, VariantType type, List<String> genes, List<PopulationFrequency> populationFrequencies,
                                     List<SequenceOntologyTerm> sequenceOntologyTerms, List<ClinicalSignificance> clinicalSignificances,
-                                    IndividualStats individualStats) {
+                                    List<KnockoutVariant> allelePairs, IndividualStats individualStats) {
         this.id = id;
         this.dbSnp = dbSnp;
         this.chromosome = chromosome;
@@ -46,6 +47,7 @@ public class KnockoutByVariantSummary {
         this.populationFrequencies = populationFrequencies;
         this.sequenceOntologyTerms = sequenceOntologyTerms;
         this.clinicalSignificances = clinicalSignificances;
+        this.allelePairs = allelePairs;
         this.individualStats = individualStats;
     }
 
@@ -65,6 +67,7 @@ public class KnockoutByVariantSummary {
         sb.append(", populationFrequencies=").append(populationFrequencies);
         sb.append(", sequenceOntologyTerms=").append(sequenceOntologyTerms);
         sb.append(", clinicalSignificances=").append(clinicalSignificances);
+        sb.append(", allelePairs=").append(allelePairs);
         sb.append(", individualStats=").append(individualStats);
         sb.append('}');
         return sb.toString();
@@ -184,6 +187,15 @@ public class KnockoutByVariantSummary {
 
     public KnockoutByVariantSummary setClinicalSignificances(List<ClinicalSignificance> clinicalSignificances) {
         this.clinicalSignificances = clinicalSignificances;
+        return this;
+    }
+
+    public List<KnockoutVariant> getAllelePairs() {
+        return allelePairs;
+    }
+
+    public KnockoutByVariantSummary setAllelePairs(List<KnockoutVariant> allelePairs) {
+        this.allelePairs = allelePairs;
         return this;
     }
 
