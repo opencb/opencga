@@ -2,13 +2,19 @@
 
 ## Overview
 
-Sample data model ...
+Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
+
+## Entity Field Attributes
+
+There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
 
 ### Update and Create
 
-...
+**Create Fields**
 
-...
+**Update Fields**
+
+### Internal attributes
 
 ## Data Model
 
@@ -19,8 +25,10 @@ This is the main data model, it stores the most basic and important information.
 <table>
   <thead>
     <tr>
-      <th style="text-align:left">Field</th>
-      <th style="text-align:left">Description</th>
+      <th style="text-align:left"><b>Field</b>
+      </th>
+      <th style="text-align:left"><b>Description</b>
+      </th>
     </tr>
   </thead>
   <tbody>
