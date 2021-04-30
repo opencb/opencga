@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.wrappers.samtools;
 
 import com.google.common.base.CaseFormat;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.io.FileSystemUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;

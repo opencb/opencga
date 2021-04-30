@@ -32,6 +32,7 @@ import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.*;
 import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
@@ -177,21 +178,22 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = CoverageIndexParams.DESCRIPTION, required = true) CoverageIndexParams params) {
 
-        logger.debug("ObjectMap: {}", params);
-
-        DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams();
-        deeptoolsParams.setCommand("bamCoverage");
-        deeptoolsParams.setBamFile(params.getFile());
-
-        Map<String, String> bamCoverageParams = new HashMap<>();
-        bamCoverageParams.put("bs", String.valueOf(params.getWindowSize() < 1 ? 1 : params.getWindowSize()));
-        bamCoverageParams.put("of", "bigwig");
-        bamCoverageParams.put("minMappingQuality", "20");
-        deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
-
-        logger.debug("ObjectMap (DeepTools) : {}", bamCoverageParams);
-
-        return submitJob(DeeptoolsWrapperAnalysis.ID, study, deeptoolsParams, jobName, jobDescription, dependsOn, jobTags);
+        return null;
+        //        logger.debug("ObjectMap: {}", params);
+//
+//        DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams();
+//        deeptoolsParams.setCommand("bamCoverage");
+//        deeptoolsParams.setBamFile(params.getFile());
+//
+//        Map<String, String> bamCoverageParams = new HashMap<>();
+//        bamCoverageParams.put("bs", String.valueOf(params.getWindowSize() < 1 ? 1 : params.getWindowSize()));
+//        bamCoverageParams.put("of", "bigwig");
+//        bamCoverageParams.put("minMappingQuality", "20");
+//        deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
+//
+//        logger.debug("ObjectMap (DeepTools) : {}", bamCoverageParams);
+//
+//        return submitJob(DeeptoolsWrapperAnalysis.ID, study, deeptoolsParams, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET

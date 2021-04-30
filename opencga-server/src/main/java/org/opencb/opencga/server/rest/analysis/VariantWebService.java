@@ -55,7 +55,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
@@ -1094,12 +1094,13 @@ public class VariantWebService extends AnalysisWebService {
 
                     // Coverage file does not exit, a job must be submitted to create the .bw file
                     DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams()
-                            .setCommand("bamCoverage")
-                            .setBamFile(catalogBamFile.getId());
+                            .setCommand("bamCoverage");
 
                     Map<String, String> bamCoverageParams = new HashMap<>();
-                    bamCoverageParams.put("bs", "1");
-                    bamCoverageParams.put("of", "bigwig");
+                    bamCoverageParams.put("b", catalogBamFile.getId());
+                    bamCoverageParams.put("o", Paths.get(catalogBamFile.getUri()).getFileName() + ".bw");
+                    bamCoverageParams.put("binSize", "1");
+                    bamCoverageParams.put("outFileFormat", "bigwig");
                     bamCoverageParams.put("minMappingQuality", "20");
                     deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
 

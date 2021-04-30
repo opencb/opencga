@@ -461,6 +461,11 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String DEEPTOOLS_COMMANDS_SUPPORTED = "bamCoverage, bamCompare";
+    public static final String DEEPTOOLS_COMMAND_DESCRIPTION = "Supported Deeptools commands: " + DEEPTOOLS_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
     public static final String PICARD_COMMANDS_SUPPORTED = "CollectHsMetrics, CollectWgsMetrics, BedToIntervalList";
     public static final String PICARD_COMMAND_DESCRIPTION = "Supported Picard commands: " + PICARD_COMMANDS_SUPPORTED;
 

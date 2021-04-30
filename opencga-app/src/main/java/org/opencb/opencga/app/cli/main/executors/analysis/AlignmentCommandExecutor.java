@@ -445,14 +445,13 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // Deeptools
 
     private RestResponse<Job> deeptools() throws ClientException {
-        DeeptoolsWrapperParams deeptoolsWrapperParams = new DeeptoolsWrapperParams(
-                alignmentCommandOptions.deeptoolsCommandOptions.executable,
-                alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
-                alignmentCommandOptions.deeptoolsCommandOptions.outdir,
-                alignmentCommandOptions.deeptoolsCommandOptions.deeptoolsParams
-        );
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), alignmentCommandOptions.deeptoolsCommandOptions.study);
-        return openCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, params);
+        AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+        params.putAll(getJobParams());
+
+        return openCGAClient.getAlignmentClient().runDeeptools(new DeeptoolsWrapperParams(cliOptions.command,
+                cliOptions.outdir, cliOptions.deeptoolsParams), params);
     }
 
     // FastQC

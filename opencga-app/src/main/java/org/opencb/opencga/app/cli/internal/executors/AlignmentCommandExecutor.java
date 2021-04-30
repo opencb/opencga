@@ -21,7 +21,7 @@ import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
@@ -30,8 +30,10 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.*;
 
+import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
@@ -236,9 +238,18 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void coverageRun() throws ToolException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
+        Map<String, String> deeptoolsParams = new HashMap<>();
+        deeptoolsParams.put("b", String.valueOf(cliOptions.file));
+        deeptoolsParams.put("o", new File(cliOptions.file).getName() + ".bw");
+        deeptoolsParams.put("binSize", String.valueOf(cliOptions.windowSize));
 
-        alignmentManager.coverageRun(cliOptions.study, cliOptions.file, cliOptions.windowSize, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
+        ObjectMap params = new DeeptoolsWrapperParams(
+                "bamCoverage",
+                cliOptions.outdir,
+                deeptoolsParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void delete() {
@@ -291,20 +302,14 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private void deeptools() throws Exception {
         AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-        params.putAll(cliOptions.deeptoolsParams);
 
-        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
-        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new DeeptoolsWrapperParams(
+                cliOptions.command,
+                cliOptions.outdir,
+                cliOptions.deeptoolsParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        deeptools.setStudy(cliOptions.study);
-
-        deeptools.setCommand(cliOptions.executable)
-                .setBamFile(cliOptions.bamFile);
-
-        deeptools.start();
+        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // FastQC

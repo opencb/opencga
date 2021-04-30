@@ -18,7 +18,7 @@ package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
@@ -549,11 +549,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
-        @Parameter(names = {"--command"}, description = "Deeptools command. Valid values: bamCoverage.")
-        public String executable;
-
-        @Parameter(names = {"--bam-file"}, description = "BAM file.")
-        public String bamFile;
+        @Parameter(names = {"--command"}, description = DEEPTOOLS_COMMAND_DESCRIPTION)
+        public String command;
 
         @DynamicParameter(names = {"--deeptools-params"}, description = "Deeptools parameters e.g.:. --deeptools-params bs=1 --deeptools-params of=bigwig")
         public Map<String, String> deeptoolsParams = new HashMap<>();
