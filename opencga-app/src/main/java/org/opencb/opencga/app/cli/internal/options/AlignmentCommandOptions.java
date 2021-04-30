@@ -17,7 +17,7 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
-import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
@@ -478,14 +478,11 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
-        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index, mem.")
+        @Parameter(names = {"--command"}, description = BWA_COMMAND_DESCRIPTION)
         public String command;
 
         @Parameter(names = {"--fasta-file"}, description = "Fasta file.")
         public String fastaFile;
-
-        @Parameter(names = {"--index-base-file"}, description = "Index base file.")
-        public String indexBaseFile;
 
         @Parameter(names = {"--fastq1-file"}, description = "FastQ #1 file.")
         public String fastq1File;
@@ -493,11 +490,11 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--fastq2-file"}, description = "FastQ #2 file.")
         public String fastq2File;
 
-        @Parameter(names = {"--sam-filename"}, description = "SAM file name.")
-        public String samFilename;
-
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
+
+        @DynamicParameter(names = {"--bwa-params"}, description = "BWA parameters e.g.:. --bwa-params k=20 --bwa-params S=true")
+        public Map<String, String> bwaParams = new HashMap<>();
     }
 
     // Samtools

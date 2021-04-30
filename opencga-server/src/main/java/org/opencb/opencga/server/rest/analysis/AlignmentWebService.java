@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.*;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;

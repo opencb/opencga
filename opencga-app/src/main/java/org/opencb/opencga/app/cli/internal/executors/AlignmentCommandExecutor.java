@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
 import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
-import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
@@ -264,23 +264,17 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private void bwa() throws Exception {
         AlignmentCommandOptions.BwaCommandOptions cliOptions = alignmentCommandOptions.bwaCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
 
-        BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
-        bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new BwaWrapperParams(
+                cliOptions.command,
+                cliOptions.fastaFile,
+                cliOptions.fastq1File,
+                cliOptions.fastq2File,
+                cliOptions.outdir,
+                cliOptions.bwaParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        bwa.setStudy(cliOptions.study);
-
-        bwa.setCommand(cliOptions.command)
-                .setFastaFile(cliOptions.fastaFile)
-                .setIndexBaseFile(cliOptions.indexBaseFile)
-                .setFastq1File(cliOptions.fastq1File)
-                .setFastq2File(cliOptions.fastq2File)
-                .setSamFilename(cliOptions.samFilename);
-
-        bwa.start();
+        toolRunner.execute(BwaWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // Samtools
