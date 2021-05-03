@@ -819,16 +819,8 @@ public class RgaManager implements AutoCloseable {
             Variant variant = variantDBIterator.next();
 
             VariantAnnotation variantAnnotation = variant.getAnnotation();
-            Set<String> sequenceOntologyId = new HashSet<>();
-            List<SequenceOntologyTerm> sequenceOntologyTermList = new LinkedList<>();
             Set<String> geneNames = new HashSet<>();
             for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
-                for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
-                    if (!sequenceOntologyId.contains(sequenceOntologyTerm.getName())) {
-                        sequenceOntologyId.add(sequenceOntologyTerm.getName());
-                        sequenceOntologyTermList.add(sequenceOntologyTerm);
-                    }
-                }
                 if (consequenceType.getGeneName() != null) {
                     geneNames.add(consequenceType.getGeneName());
                 }
@@ -844,7 +836,6 @@ public class RgaManager implements AutoCloseable {
             knockoutByVariantSummary.setAlternate(variant.getAlternate());
             knockoutByVariantSummary.setType(variant.getType());
             knockoutByVariantSummary.setPopulationFrequencies(variantAnnotation.getPopulationFrequencies());
-            knockoutByVariantSummary.setSequenceOntologyTerms(sequenceOntologyTermList);
             knockoutByVariantSummary.setGenes(new ArrayList<>(geneNames));
         }
 
@@ -925,12 +916,13 @@ public class RgaManager implements AutoCloseable {
         knockoutByVariantSummary.setIndividualStats(new IndividualStats(noParentIndividualStats, singleParentIndividualStats,
                 bothParentIndividualStats));
 
-        // 3. Get allele pairs
+        // 3. Get allele pairs and CT from Variant summary
         knockoutTypeFacet = new QueryOptions()
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
 
+        Set<String> sequenceOntologyTerms = new HashSet<>();
         boolean isCH = false;
         Set<KnockoutVariant> currentVariantSet = new HashSet<>();
         Set<KnockoutVariant> otherVariantSet = new HashSet<>();
@@ -940,6 +932,7 @@ public class RgaManager implements AutoCloseable {
             auxKnockoutVariant.setKnockoutType(KnockoutVariant.KnockoutType.valueOf(codedVariant.getKnockoutType()));
 
             if (variantId.equals(auxKnockoutVariant.getId())) {
+                sequenceOntologyTerms.addAll(codedVariant.getConsequenceType());
                 currentVariantSet.add(auxKnockoutVariant);
                 if (auxKnockoutVariant.getKnockoutType() == KnockoutVariant.KnockoutType.COMP_HET) {
                     isCH = true;
@@ -949,6 +942,14 @@ public class RgaManager implements AutoCloseable {
                 otherVariantSet.add(auxKnockoutVariant);
             }
         }
+        List<SequenceOntologyTerm> sequenceOntologyTermList = new ArrayList<>(sequenceOntologyTerms.size());
+        for (String ct : sequenceOntologyTerms) {
+            String ctName = RgaUtils.decode(ct);
+            String ctId = String.format("SO:%0" + (7 - ct.length()) + "d%s", 0, ct);
+            sequenceOntologyTermList.add(new SequenceOntologyTerm(ctId, ctName));
+        }
+        knockoutByVariantSummary.setSequenceOntologyTerms(sequenceOntologyTermList);
+
         if (isCH) {
             List<KnockoutVariant> allelePairList = new ArrayList<>(currentVariantSet.size() + otherVariantSet.size());
             allelePairList.addAll(currentVariantSet);
