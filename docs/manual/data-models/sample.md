@@ -4,11 +4,11 @@
 
 Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
 
-## Entity Field Attributes
+## Sample Field Attributes
 
 There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
 
-### Sample Fields subjected to Update and Create Operations
+### Fields subjected to Update and Create Operations
 
 **Create Fields: `id`**
 
