@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.rga;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
@@ -115,9 +116,6 @@ public class RgaManager implements AutoCloseable {
             throws CatalogException, IOException, RgaException {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String collection = getCollectionName(study.getFqn());
-        if (!rgaEngine.isAlive(collection)) {
-            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
-        }
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -137,6 +135,37 @@ public class RgaManager implements AutoCloseable {
         RgaIterator rgaIterator = rgaEngine.individualQuery(collection, preprocess.getQuery(), QueryOptions.empty());
 
         List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(rgaIterator);
+
+        if (!preprocess.isOwnerOrAdmin) {
+            // Extract all parent sample ids
+            Set<String> parentSampleIds = new HashSet<>();
+            for (KnockoutByIndividual knockoutByIndividual : knockoutByIndividuals) {
+                if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherSampleId())) {
+                    parentSampleIds.add(knockoutByIndividual.getFatherSampleId());
+                }
+                if (StringUtils.isNotEmpty(knockoutByIndividual.getMotherSampleId())) {
+                    parentSampleIds.add(knockoutByIndividual.getMotherSampleId());
+                }
+            }
+            // Check parent permissions...
+            Set<String> authorisedSamples = getAuthorisedSamples(study.getFqn(), parentSampleIds, null, preprocess.getUserId(), token);
+            if (authorisedSamples.size() < parentSampleIds.size()) {
+                // Filter out parent sample ids
+                for (KnockoutByIndividual knockoutByIndividual : knockoutByIndividuals) {
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherSampleId())
+                            && !authorisedSamples.contains(knockoutByIndividual.getFatherSampleId())) {
+                        knockoutByIndividual.setFatherId("");
+                        knockoutByIndividual.setFatherSampleId("");
+                    }
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getMotherSampleId())
+                            && !authorisedSamples.contains(knockoutByIndividual.getMotherSampleId())) {
+                        knockoutByIndividual.setMotherId("");
+                        knockoutByIndividual.setMotherSampleId("");
+                    }
+                }
+            }
+        }
+
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByIndividual> result = new OpenCGAResult<>(time, Collections.emptyList(), knockoutByIndividuals.size(),
                 knockoutByIndividuals, -1);
@@ -591,14 +620,7 @@ public class RgaManager implements AutoCloseable {
     public OpenCGAResult<KnockoutByIndividualSummary> individualSummary(String studyStr, Query query, QueryOptions options, String token)
             throws RgaException, CatalogException, IOException {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-        String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getCollectionName(study.getFqn());
-        if (!rgaEngine.isAlive(collection)) {
-            throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
-        }
-
-        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
-                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
         StopWatch stopWatch = StopWatch.createStarted();
         ExecutorService executor = Executors.newFixedThreadPool(4);
@@ -616,6 +638,9 @@ public class RgaManager implements AutoCloseable {
             throw e;
         }
 
+        catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), preprocess.getUserId(),
+                StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
+
         List<String> sampleIds = preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
         preprocess.getQuery().remove(RgaQueryParams.SAMPLE_ID.key());
         List<KnockoutByIndividualSummary> knockoutByIndividualSummaryList = new ArrayList<>(sampleIds.size());
@@ -626,15 +651,46 @@ public class RgaManager implements AutoCloseable {
             futureList.add(executor.submit(() -> calculateIndividualSummary(collection, preprocess.getQuery(), sampleId)));
         }
 
+        Set<String> parentSampleIds = new HashSet<>();
         try {
             for (Future<KnockoutByIndividualSummary> summaryFuture : futureList) {
-                knockoutByIndividualSummaryList.add(summaryFuture.get());
+                KnockoutByIndividualSummary knockoutByIndividualSummary = summaryFuture.get();
+                if (!preprocess.isOwnerOrAdmin()) {
+                    if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getFatherSampleId())) {
+                        parentSampleIds.add(knockoutByIndividualSummary.getFatherSampleId());
+                    }
+                    if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getMotherSampleId())) {
+                        parentSampleIds.add(knockoutByIndividualSummary.getMotherSampleId());
+                    }
+                }
+
+                knockoutByIndividualSummaryList.add(knockoutByIndividualSummary);
             }
         } catch (InterruptedException | ExecutionException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getCause().getMessage())) {
                 return OpenCGAResult.empty(KnockoutByIndividualSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
             }
             throw new RgaException(e.getMessage(), e);
+        }
+
+        if (!parentSampleIds.isEmpty()) {
+            // Check parent permissions...
+            Set<String> authorisedSamples = getAuthorisedSamples(study.getFqn(), parentSampleIds, null, preprocess.getUserId(), token);
+            // Filter out parent sample ids
+            if (authorisedSamples.size() < parentSampleIds.size()) {
+                for (KnockoutByIndividualSummary knockoutByIndividualSummary : knockoutByIndividualSummaryList) {
+                    if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getFatherSampleId())
+                            && !authorisedSamples.contains(knockoutByIndividualSummary.getFatherSampleId())) {
+                        knockoutByIndividualSummary.setFatherId("");
+                        knockoutByIndividualSummary.setFatherSampleId("");
+                    }
+                    if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getMotherSampleId())
+                            && !authorisedSamples.contains(knockoutByIndividualSummary.getMotherSampleId())) {
+                        knockoutByIndividualSummary.setMotherId("");
+                        knockoutByIndividualSummary.setMotherSampleId("");
+                    }
+                }
+            }
         }
 
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
@@ -1085,6 +1141,17 @@ public class RgaManager implements AutoCloseable {
         return knockoutByIndividualSummary;
     }
 
+    private Set<String> getAuthorisedSamples(String study, Set<String> sampleIds, List<SampleAclEntry.SamplePermissions> otherPermissions,
+                                             String userId, String token) throws CatalogException {
+        Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(otherPermissions)) {
+            query.put(ACL_PARAM, userId + ":" + StringUtils.join(otherPermissions, ","));
+        }
+
+        OpenCGAResult<?> distinct = catalogManager.getSampleManager().distinct(study, SampleDBAdaptor.QueryParams.ID.key(), query, token);
+        return distinct.getResults().stream().map(String::valueOf).collect(Collectors.toSet());
+    }
+
     private static class KnockoutTypeCount {
 
         private Set<String> knockoutTypeQuery;
@@ -1198,6 +1265,8 @@ public class RgaManager implements AutoCloseable {
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
 
         Preprocess preprocessResult = new Preprocess();
+        preprocessResult.setUserId(userId);
+        preprocessResult.setOwnerOrAdmin(isOwnerOrAdmin);
         preprocessResult.setQuery(query != null ? new Query(query) : new Query());
         preprocessResult.setQueryOptions(setDefaultLimit(options));
         QueryOptions queryOptions = preprocessResult.getQueryOptions();
@@ -1316,12 +1385,34 @@ public class RgaManager implements AutoCloseable {
 
     private class Preprocess {
 
+        private String userId;
+        private boolean isOwnerOrAdmin;
+
         private Query query;
         private QueryOptions queryOptions;
+
         private long numTotalResults;
         private Event event;
 
         public Preprocess() {
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public Preprocess setUserId(String userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public boolean isOwnerOrAdmin() {
+            return isOwnerOrAdmin;
+        }
+
+        public Preprocess setOwnerOrAdmin(boolean ownerOrAdmin) {
+            isOwnerOrAdmin = ownerOrAdmin;
+            return this;
         }
 
         public Query getQuery() {
