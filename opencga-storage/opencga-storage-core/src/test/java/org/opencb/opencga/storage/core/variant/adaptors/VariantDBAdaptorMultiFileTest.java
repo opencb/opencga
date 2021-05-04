@@ -122,7 +122,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     @Test
     public void testIncludeStudies() throws Exception {
         query = new Query()
-                .append(VariantQueryParam.INCLUDE_STUDY.key(), study1);
+                .append(VariantQueryParam.INCLUDE_STUDY.key(), study1).append(INCLUDE_SAMPLE.key(), ALL);
         this.queryResult = query(query, options);
         assertEquals(dbAdaptor.count().first().intValue(), this.queryResult.getNumResults());
         assertThat(this.queryResult, everyResult(allOf(withStudy(study2, nullValue()), withStudy("S_3", nullValue()), withStudy("S_4", nullValue()))));
@@ -166,7 +166,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testIncludeSampleIdFileIdx() throws Exception {
-        for (Variant variant : query(new Query(INCLUDE_SAMPLE_ID.key(), true), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
+        for (Variant variant : query(new Query(INCLUDE_SAMPLE_ID.key(), true).append(INCLUDE_SAMPLE.key(), ALL), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
 
             for (StudyEntry study : variant.getStudies()) {
                 assertEquals(new HashSet<>(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF")), new HashSet<>(study.getSampleDataKeys()));
@@ -202,6 +202,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     @Test
     public void testIncludeSampleIdFileIdxExcludeFiles() throws Exception {
         for (Variant variant : query(new Query(INCLUDE_SAMPLE_ID.key(), true)
+                .append(INCLUDE_SAMPLE.key(), ALL)
                 .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
 
             for (StudyEntry study : variant.getStudies()) {
@@ -219,9 +220,12 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         }
     }
 
+
     @Test
     public void testExcludeSamples() throws Exception {
-        for (Variant variant : query(new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES).append(QueryOptions.LIMIT, 10)).getResults()) {
+        // JACOBO CHECK THIS
+        for (Variant variant : query(new Query(INCLUDE_FILE.key(), ALL), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES)
+                .append(QueryOptions.LIMIT, 10)).getResults()) {
             for (StudyEntry study : variant.getStudies()) {
                 assertEquals(0, study.getSamples().size());
                 assertNotEquals(0, study.getFiles().size());
@@ -232,7 +236,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     @Test
     public void testIncludeSamplesNone() throws Exception {
         for (Variant variant : query(new Query()
-                .append(INCLUDE_SAMPLE.key(), NONE), new QueryOptions(QueryOptions.LIMIT, 10)).getResults()) {
+                .append(INCLUDE_SAMPLE.key(), NONE).append(INCLUDE_FILE.key(), ALL), new QueryOptions(QueryOptions.LIMIT, 10)).getResults()) {
             for (StudyEntry study : variant.getStudies()) {
                 assertEquals(0, study.getSamples().size());
                 assertNotEquals(0, study.getFiles().size());
@@ -264,14 +268,15 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     @Test
     public void testGetByStudies() throws Exception {
         query = new Query()
-                .append(VariantQueryParam.STUDY.key(), study1);
+                .append(VariantQueryParam.STUDY.key(), study1)
+                .append(INCLUDE_SAMPLE.key(), ALL);
         queryResult = query(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1), options);
         assertThat(queryResult, everyResult(allVariants, withStudy(study1)));
 
 
-        allVariants = dbAdaptor.get(new Query(), options);
+        allVariants = dbAdaptor.get(new Query().append(INCLUDE_SAMPLE.key(), ALL), options);
         query = new Query().append(VariantQueryParam.STUDY.key(), study1 + AND + study2);
         queryResult = query(query, options);
         assertThat(queryResult, everyResult(allVariants, allOf(withStudy(study1), withStudy(study2))));
@@ -364,17 +369,17 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testSampleLimitSkip() throws Exception {
-        VariantQueryResult<Variant> result = query(new Query(SAMPLE_METADATA.key(), true), options);
+        VariantQueryResult<Variant> result = query(new Query(SAMPLE_METADATA.key(), true).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL), options);
         System.out.println("samples(ALL) = " + result.getSamples());
 
         for (int i : new int[]{1, 3, 6, 8, 10}) {
-            result = query(new Query(VariantQueryParam.SAMPLE_SKIP.key(), i).append(SAMPLE_METADATA.key(), true), options);
+            result = query(new Query(VariantQueryParam.SAMPLE_SKIP.key(), i).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL).append(SAMPLE_METADATA.key(), true), options);
 //            System.out.println("samples(SKIP=" + i + ") = " + result.getSamples());
             assertEquals(Math.max(0, 8 - i), result.getSamples().values().stream().mapToInt(List::size).sum());
             assertEquals(Math.max(0, 8 - i), result.getNumSamples().intValue());
             assertEquals(8, result.getNumTotalSamples().intValue());
 
-            result = query(new Query(VariantQueryParam.SAMPLE_LIMIT.key(), i).append(SAMPLE_METADATA.key(), true), options);
+            result = query(new Query(VariantQueryParam.SAMPLE_LIMIT.key(), i).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ALL).append(SAMPLE_METADATA.key(), true), options);
 //            System.out.println("samples(LIMIT=" + i + ") = " + result.getSamples());
             assertEquals(Math.min(8, i), result.getSamples().values().stream().mapToInt(List::size).sum());
             assertEquals(Math.min(8, i), result.getNumSamples().intValue());
@@ -469,10 +474,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testGetByFileNamesMultiStudiesAnd() {
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study1 + "," + study2)
-                .append(VariantQueryParam.FILE.key(),
-                        file12877
-                                + AND +
-                                file12882);
+                .append(VariantQueryParam.FILE.key(), file12877 + AND + file12882);
         queryResult = query(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1 + "," + study2)
@@ -683,10 +685,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testGetByFileNamesMultiStudiesOr() {
         query = new Query()
                 .append(VariantQueryParam.STUDY.key(), study1 + "," + study2)
-                .append(VariantQueryParam.FILE.key(),
-                        file12877
-                                + VariantQueryUtils.OR +
-                                file12882);
+                .append(VariantQueryParam.FILE.key(), file12877 + VariantQueryUtils.OR + file12882);
         queryResult = query(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1 + "," + study2)

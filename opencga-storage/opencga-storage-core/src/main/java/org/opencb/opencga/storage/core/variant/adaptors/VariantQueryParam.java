@@ -115,7 +115,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String INCLUDE_SAMPLE_DESCR
             = "List of samples to be included in the result. "
-            + ACCEPTS_ALL_NONE;
+            + ACCEPTS_ALL_NONE + " If undefined, automatically includes samples used for filtering. If none, no sample is included.";
     public static final VariantQueryParam INCLUDE_SAMPLE = new VariantQueryParam("includeSample", TEXT_ARRAY, INCLUDE_SAMPLE_DESCR);
 
     public static final String INCLUDE_SAMPLE_ID_DESCR
@@ -167,7 +167,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String INCLUDE_FILE_DESCR
             = "List of files to be returned. "
-            + ACCEPTS_ALL_NONE;
+            + ACCEPTS_ALL_NONE + " If undefined, automatically includes files used for filtering. If none, no file is included.";
     public static final VariantQueryParam INCLUDE_FILE = new VariantQueryParam("includeFile", TEXT_ARRAY, INCLUDE_FILE_DESCR);
 
     public static final String COHORT_DESCR

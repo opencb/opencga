@@ -20,11 +20,26 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.IS;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 
 public class VariantQueryProjectionParser {
 
     private final VariantStorageMetadataManager metadataManager;
+
+    public enum IncludeStatus {
+        /**
+         * Return all elements.
+         */
+        ALL,
+        /**
+         * Return none elements. Default value if undefined.
+         */
+        NONE,
+        /**
+         * Return a subset of elements.
+         */
+        SOME
+    }
 
     public VariantQueryProjectionParser(VariantStorageMetadataManager metadataManager) {
         this.metadataManager = metadataManager;
@@ -52,7 +67,7 @@ public class VariantQueryProjectionParser {
             studies.get(studyId).setStudyMetadata(sm);
         }
 
-        Map<Integer, List<Integer>> sampleIdsMap = getIncludeSamples(query, options, includeStudies, metadataManager);
+        Map<Integer, List<Integer>> sampleIdsMap = getIncludeSampleIds(query, options, includeStudies, metadataManager);
         for (VariantQueryProjection.StudyVariantQueryProjection study : studies.values()) {
             study.setSamples(sampleIdsMap.get(study.getId()));
         }
@@ -180,11 +195,10 @@ public class VariantQueryProjectionParser {
             studyIds = metadataManager.getStudyIds();
             if (studyIds.size() > 1) {
                 Map<Integer, List<Integer>> map = null;
-                if (isIncludeSamplesDefined(query, fields)) {
-                    map = getIncludeSamples(query, options, studyIds, metadataManager);
-                } else if (isIncludeFilesDefined(query, fields)) {
-                    map = getIncludeFiles(query, studyIds, fields,
-                            metadataManager, null);
+                if (isIncludeSomeSamples(query, fields)) {
+                    map = getIncludeSampleIds(query, options, studyIds, metadataManager);
+                } else if (getIncludeFileStatus(query, fields) == IncludeStatus.SOME) {
+                    map = getIncludeFiles(query, studyIds, fields, metadataManager, Collections.emptyMap());
                 }
                 if (map != null) {
                     List<Integer> studyIdsFromSubFields = new ArrayList<>();
@@ -231,15 +245,28 @@ public class VariantQueryProjectionParser {
         return studies;
     }
 
-    public static boolean isIncludeFilesDefined(Query query, Set<VariantField> fields) {
-        if (getIncludeFilesList(query, fields) != null) {
-            return true;
+
+    /**
+     * Get include file status.
+     *
+     * @param query     Input variant query
+     * @param fields    Variant fields to return
+     * @return          If the result should include any file
+     */
+    public static IncludeStatus getIncludeFileStatus(Query query, Set<VariantField> fields) {
+        IncludeStatus includeFilePartialStatus = getIncludeFilePartialStatus(query, fields);
+        if (includeFilePartialStatus != null) {
+            return includeFilePartialStatus;
         }
-        return VariantQueryUtils.isValidParam(query, SAMPLE, true)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR, false)
-                || VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO, false)
-                || VariantQueryUtils.isValidParam(query, INCLUDE_SAMPLE, false)
-                || VariantQueryUtils.isValidParam(query, GENOTYPE, false);
+
+        // Undefined include file status. Check sample partial status
+        IncludeStatus includeSamplePartialStatus = getIncludeSamplePartialStatus(query, fields);
+        if (includeSamplePartialStatus != null) {
+            return includeSamplePartialStatus;
+        }
+
+        // Default NONE
+        return IncludeStatus.NONE;
     }
 
     /**
@@ -266,7 +293,7 @@ public class VariantQueryProjectionParser {
         }
         List<String> includeSamplesList = includeSamples == null ? getIncludeSamplesList(query) : null;
         List<String> includeFilesList = getIncludeFilesList(query, fields);
-        boolean returnAllFiles = VariantQueryUtils.ALL.equals(query.getString(INCLUDE_FILE.key()));
+        IncludeStatus includeFileStatus = getIncludeFileStatus(query, fields);
 
         Map<Integer, List<Integer>> files = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -275,38 +302,45 @@ public class VariantQueryProjectionParser {
                 continue;
             }
 
-            List<Integer> fileIds;
-            if (includeFilesList != null) {
-                fileIds = new ArrayList<>();
-                for (String file : includeFilesList) {
-                    Integer fileId = metadataManager.getFileId(studyId, file);
-                    if (fileId != null) {
-                        if (metadataManager.isFileIndexed(studyId, fileId)) {
-                            fileIds.add(fileId);
+            final List<Integer> fileIds;
+            switch (includeFileStatus) {
+                case NONE:
+                    fileIds = new ArrayList<>();
+                    break;
+                case ALL:
+                    fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
+                    break;
+                case SOME:
+                    if (includeFilesList != null) {
+                        fileIds = new ArrayList<>();
+                        for (String file : includeFilesList) {
+                            Integer fileId = metadataManager.getFileId(studyId, file);
+                            if (fileId != null) {
+                                if (metadataManager.isFileIndexed(studyId, fileId)) {
+                                    fileIds.add(fileId);
+                                }
+                            }
                         }
-                    }
-                }
-            } else if (returnAllFiles) {
-                fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
-            } else if (includeSamples != null) {
-                List<Integer> sampleIds = includeSamples.get(studyId);
-                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
-                fileIds = new ArrayList<>(fileSet);
-            } else if (includeSamplesList != null && !includeSamplesList.isEmpty()) {
-                List<Integer> sampleIds = new ArrayList<>();
-                for (String sample : includeSamplesList) {
-                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                    if (sampleId == null) {
+                    } else if (includeSamples != null) {
+                        List<Integer> sampleIds = includeSamples.get(studyId);
+                        Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
+                        fileIds = new ArrayList<>(fileSet);
+                    } else {
+                        List<Integer> sampleIds = new ArrayList<>();
+                        for (String sample : includeSamplesList) {
+                            Integer sampleId = metadataManager.getSampleId(studyId, sample);
+                            if (sampleId == null) {
 //                        throw VariantQueryException.sampleNotFound(sample, sm.getName());
-                        break;
+                                break;
+                            }
+                            sampleIds.add(sampleId);
+                        }
+                        Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
+                        fileIds = new ArrayList<>(fileSet);
                     }
-                    sampleIds.add(sampleId);
-                }
-                Set<Integer> fileSet = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
-                fileIds = new ArrayList<>(fileSet);
-            } else {
-                // Return all files
-                fileIds = new ArrayList<>(metadataManager.getIndexedFiles(studyId));
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown IncludeStats='" + includeFileStatus + "'");
             }
             files.put(studyId, fileIds);
         }
@@ -374,32 +408,116 @@ public class VariantQueryProjectionParser {
         }
     }
 
-    public static boolean isIncludeSamplesDefined(Query query, Set<VariantField> fields) {
-        if (getIncludeSamplesList(query, fields) != null) {
-            return true;
+
+
+    /**
+     * Get include sample status.
+     *
+     * @param query     Input variant query
+     * @param fields    Variant fields to return
+     * @return          Include status
+     */
+    public static IncludeStatus getIncludeSampleStatus(Query query, Set<VariantField> fields) {
+        IncludeStatus includeSamplePartialStatus = getIncludeSamplePartialStatus(query, fields);
+        if (includeSamplePartialStatus != null) {
+            return includeSamplePartialStatus;
         }
-        return VariantQueryUtils.isValidParam(query, FILE, true) || VariantQueryUtils.isValidParam(query, INCLUDE_FILE, true);
+
+        // Undefined include sample status
+        IncludeStatus includeFilePartialStatus = getIncludeFilePartialStatus(query, fields);
+        if (includeFilePartialStatus != null) {
+            return includeFilePartialStatus;
+        }
+
+        // Default NONE
+        return IncludeStatus.NONE;
     }
 
-    public static Map<Integer, List<Integer>> getIncludeSamples(Query query, QueryOptions options,
-                                                                VariantStorageMetadataManager variantStorageMetadataManager) {
+    /**
+     * Include any set of samples, (some or all).
+     *
+     * @param query     Input variant query
+     * @param fields    Variant fields to return
+     * @return          If the result should include any sample
+     */
+    public static boolean isIncludeAnySample(Query query, Set<VariantField> fields) {
+        IncludeStatus includeSampleStatus = getIncludeSampleStatus(query, fields);
+        return includeSampleStatus == IncludeStatus.SOME || includeSampleStatus.equals(IncludeStatus.ALL);
+    }
+
+    /**
+     * Include any set of samples, from one to all files.
+     *
+     * @param query     Input variant query
+     * @param fields    Variant fields to return
+     * @return          If the result should include any sample
+     */
+    public static boolean isIncludeAllSamples(Query query, Set<VariantField> fields) {
+        return getIncludeSampleStatus(query, fields).equals(IncludeStatus.ALL);
+    }
+
+    /**
+     * Include any but not all samples.
+     * @param query     Input variant query
+     * @param fields    Variant fields to return
+     * @return          If the result should include any sample
+     */
+    public static boolean isIncludeSomeSamples(Query query, Set<VariantField> fields) {
+        return getIncludeSampleStatus(query, fields).equals(IncludeStatus.SOME);
+    }
+
+    /**
+     * Do not include any sample.
+     *
+     * @param query     Input variant query
+     * @param fields    Variant fields to return
+     * @return          If the result should NOT include any sample
+     */
+    public static boolean isIncludeNoSamples(Query query, Set<VariantField> fields) {
+        return getIncludeSampleStatus(query, fields).equals(IncludeStatus.NONE);
+    }
+
+    public static boolean isIncludeSamplesDefined(Query query, Set<VariantField> fields) {
+        return getIncludeSamplePartialStatus(query, fields) != null || getIncludeFilePartialStatus(query, fields) != null;
+    }
+
+    public static Map<String, List<String>> getIncludeSampleNames(Query query, QueryOptions options,
+                                                                  VariantStorageMetadataManager metadataManager) {
+        if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
+            Map<Integer, List<Integer>> includeSamples = getIncludeSampleIds(query, options, metadataManager);
+            Map<String, List<String>> sampleMetadata = new HashMap<>(includeSamples.size());
+
+            for (Map.Entry<Integer, List<Integer>> entry : includeSamples.entrySet()) {
+                Integer studyId = entry.getKey();
+                List<Integer> sampleIds = entry.getValue();
+                String studyName = metadataManager.getStudyName(studyId);
+                ArrayList<String> sampleNames = new ArrayList<>(sampleIds.size());
+                for (Integer sampleId : sampleIds) {
+                    sampleNames.add(metadataManager.getSampleName(studyId, sampleId));
+                }
+                sampleMetadata.put(studyName, sampleNames);
+            }
+
+            return sampleMetadata;
+        } else {
+            return Collections.emptyMap();
+        }
+    }
+
+    public static Map<Integer, List<Integer>> getIncludeSampleIds(Query query, QueryOptions options,
+                                                                  VariantStorageMetadataManager variantStorageMetadataManager) {
         List<Integer> includeStudies = getIncludeStudies(query, options, variantStorageMetadataManager);
-        return getIncludeSamples(query, options, includeStudies, variantStorageMetadataManager);
+        return getIncludeSampleIds(query, options, includeStudies, variantStorageMetadataManager);
     }
 
-    public static Map<Integer, List<Integer>> getIncludeSamples(
+    private static Map<Integer, List<Integer>> getIncludeSampleIds(
             Query query, QueryOptions options, Collection<Integer> studyIds,
             VariantStorageMetadataManager metadataManager) {
 
         List<String> includeFilesList = getIncludeFilesList(query);
         List<String> includeSamplesList = getIncludeSamplesList(query, options);
-        boolean includeAllSamples = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(VariantQueryUtils.ALL);
-        boolean includeNoneSamples = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key()).equals(VariantQueryUtils.NONE);
-        if (!includeNoneSamples) {
-            if (includeSamplesList == null && CollectionUtils.isEmpty(includeFilesList)) {
-                includeAllSamples = true;
-            }
-        }
+        Set<VariantField> includeFields = VariantField.getIncludeFields(options);
+        IncludeStatus includeSampleStatus = getIncludeSampleStatus(query, includeFields);
 
         Map<Integer, List<Integer>> samples = new LinkedHashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
@@ -409,9 +527,9 @@ public class VariantQueryProjectionParser {
             }
 
             List<Integer> sampleIds;
-            if (includeNoneSamples) {
+            if (includeSampleStatus.equals(IncludeStatus.NONE)) {
                 sampleIds = Collections.emptyList();
-            } else if (includeAllSamples) {
+            } else if (includeSampleStatus.equals(IncludeStatus.ALL)) {
                 sampleIds = metadataManager.getIndexedSamples(sm.getId());
             } else if (includeSamplesList == null && CollectionUtils.isNotEmpty(includeFilesList)) {
                 // Include from files
@@ -462,10 +580,24 @@ public class VariantQueryProjectionParser {
         return samples;
     }
 
+    /**
+     * Plain unvalidated list of samples to include in the response.
+     *
+     * @param query   Variant query
+     * @param options Variant query options
+     * @return List of samples to include. Null if undefined
+     */
     public static List<String> getIncludeSamplesList(Query query, QueryOptions options) {
         return getIncludeSamplesList(query, VariantField.getIncludeFields(options));
     }
 
+    /**
+     * Plain unvalidated list of samples to include in the response.
+     *
+     * @param query  Variant query
+     * @param fields Fields
+     * @return List of samples to include. Null if undefined or all
+     */
     public static List<String> getIncludeSamplesList(Query query, Set<VariantField> fields) {
         List<String> samples;
         if (!fields.contains(VariantField.STUDIES_SAMPLES)) {
@@ -490,9 +622,9 @@ public class VariantQueryProjectionParser {
         List<String> samples;
         if (VariantQueryUtils.isValidParam(query, INCLUDE_SAMPLE)) {
             String samplesString = query.getString(VariantQueryParam.INCLUDE_SAMPLE.key());
-            if (samplesString.equals(VariantQueryUtils.ALL)) {
-                samples = null; // Undefined. All by default
-            } else if (samplesString.equals(VariantQueryUtils.NONE)) {
+            if (isAll(samplesString)) {
+                samples = null; // Undefined or all
+            } else if (isNone(samplesString)) {
                 samples = Collections.emptyList();
             } else {
                 samples = query.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
@@ -554,4 +686,62 @@ public class VariantQueryProjectionParser {
         }
         return samples;
     }
+
+
+    /**
+     * Get the include status for SAMPLE. Don't check any file fields.
+     * @param query  Variant input query.
+     * @param fields Fields to include
+     * @return       Partial sample status. Null if undefined.
+     */
+    private static IncludeStatus getIncludeSamplePartialStatus(Query query, Set<VariantField> fields) {
+        if (!fields.contains(VariantField.STUDIES_SAMPLES)) {
+            return IncludeStatus.NONE;
+        }
+        if (isAll(query, INCLUDE_SAMPLE)) {
+            // Include all samples. Explicit ALL
+            return IncludeStatus.ALL;
+        }
+        List<String> includeSamplesList = getIncludeSamplesList(query, fields);
+        if (includeSamplesList != null) {
+            // Defined list of files to include
+            if (includeSamplesList.isEmpty()) {
+                // Include no samples. Explicit NONE
+                return IncludeStatus.NONE;
+            } else {
+                // Include some samples
+                return IncludeStatus.SOME;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the include status for FILE. Don't check any sample fields.
+     * @param query  Variant input query.
+     * @param fields Fields to include
+     * @return       Partial file status. Null if undefined.
+     */
+    private static IncludeStatus getIncludeFilePartialStatus(Query query, Set<VariantField> fields) {
+        if (!fields.contains(VariantField.STUDIES_FILES)) {
+            return IncludeStatus.NONE;
+        }
+        if (isAll(query, INCLUDE_FILE)) {
+            // Include all files
+            return IncludeStatus.ALL;
+        }
+        List<String> includeFilesList = getIncludeFilesList(query, fields);
+        if (includeFilesList != null) {
+            // Defined list of files to include
+            if (includeFilesList.isEmpty()) {
+                // Include no files
+                return IncludeStatus.NONE;
+            } else {
+                // Include some files
+                return IncludeStatus.SOME;
+            }
+        }
+        return null;
+    }
+
 }

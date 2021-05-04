@@ -10,7 +10,6 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
@@ -26,9 +25,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser.CHROM_DENSITY;
 
 public class SampleIndexVariantAggregationExecutor extends VariantAggregationExecutor {
@@ -50,6 +50,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             "length",
             "titv"
     ));
+    public static final Pattern CATEGORICAL_PATTERN = Pattern.compile("^([a-zA-Z][a-zA-Z0-9_.]+)(\\[[a-zA-Z0-9\\-,:*]+])?(:\\*|:\\d+)?$");
 
 
     public SampleIndexVariantAggregationExecutor(VariantStorageMetadataManager metadataManager, SampleIndexDBAdaptor sampleIndexDBAdaptor) {
@@ -142,7 +143,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         // Reverse traverse
         for (int i = split.length - 1; i >= 0; i--) {
             String facetField = split[i];
-            Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facetField);
+            Matcher matcher = CATEGORICAL_PATTERN.matcher(facetField);
             if (!matcher.find()) {
                 throw new VariantQueryException("Malformed aggregation stats query: " + facetField);
             }

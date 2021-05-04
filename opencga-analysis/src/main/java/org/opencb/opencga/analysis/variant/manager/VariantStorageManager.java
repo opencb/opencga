@@ -168,11 +168,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                            Query query, QueryOptions queryOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
-        catalogUtils.parseQuery(query, token);
-        checkSamplesPermissions(query, queryOptions, token);
-
-        secureOperation(VariantExportTool.ID, catalogUtils.getAnyStudy(query, token), queryOptions, token, engine -> {
-            new VariantExportOperationManager(this, engine).export(outputFile, outputFormat, variantsFile, query, queryOptions, token);
+        Query finalQuery = catalogUtils.parseQuery(query, queryOptions, token);
+        checkSamplesPermissions(finalQuery, queryOptions, token);
+        String anyStudy = catalogUtils.getAnyStudy(finalQuery, token);
+        secureOperation(VariantExportTool.ID, anyStudy, queryOptions, token, engine -> {
+            new VariantExportOperationManager(this, engine).export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
             return null;
         });
     }
@@ -568,7 +568,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
         DataStore dataStore = getDataStore(study, token);
         VariantStorageEngine storageEngine = getVariantStorageEngine(dataStore);
-        catalogUtils.parseQuery(query, token);
+        query = catalogUtils.parseQuery(query, queryOptions, token);
         checkSamplesPermissions(query, queryOptions, storageEngine.getMetadataManager(), token);
         return storageEngine.iterator(query, queryOptions);
     }
@@ -790,7 +790,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     protected VariantStorageEngine getVariantStorageEngine(Query query, String token) throws CatalogException, StorageEngineException {
         String study = catalogUtils.getAnyStudy(query, token);
 
-        catalogUtils.parseQuery(query, token);
+        query = catalogUtils.parseQuery(query, token);
         DataStore dataStore = getDataStore(study, token);
         return getVariantStorageEngine(dataStore);
     }
@@ -1026,7 +1026,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String study = catalogUtils.getAnyStudy(query, token);
 
             StopWatch stopWatch = StopWatch.createStarted();
-            catalogUtils.parseQuery(query, token);
+            query = catalogUtils.parseQuery(query, queryOptions, token);
             auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
             DataStore dataStore = getDataStore(study, token);
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
@@ -1095,13 +1095,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         String userId = catalogManager.getUserManager().getUserId(token);
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (auditAction == Enums.Action.FACET) {
-            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, VariantField.getIncludeFields(null))) {
+            if (VariantQueryProjectionParser.isIncludeNoSamples(query, VariantField.all())) {
                 // General facet query. Do not check samples.
                 returnedFields = Collections.emptySet();
             }
         }
 
-        if (!returnedFields.contains(VariantField.STUDIES_SAMPLES) && !returnedFields.contains(VariantField.STUDIES_FILES)) {
+        VariantQueryProjectionParser.IncludeStatus includeSample = VariantQueryProjectionParser.getIncludeSampleStatus(query, returnedFields);
+        VariantQueryProjectionParser.IncludeStatus includeFile = VariantQueryProjectionParser.getIncludeFileStatus(query, returnedFields);
+        if (includeSample == VariantQueryProjectionParser.IncludeStatus.NONE
+                && includeFile == VariantQueryProjectionParser.IncludeStatus.NONE) {
             if (isValidParam(query, STUDY)) {
                 ParsedQuery<String> studies = VariantQueryUtils.splitValue(query, STUDY);
                 studies.getValues().replaceAll(VariantQueryUtils::removeNegation);
@@ -1114,11 +1117,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     query.put(STUDY.key(), validStudies);
                 }
             }
-            return Collections.emptyMap();
-        }
-
-        if (VariantQueryProjectionParser.isIncludeSamplesDefined(query, returnedFields)) {
-            Map<String, List<String>> samplesToReturn = VariantQueryUtils.getSamplesMetadata(query, queryOptions, mm);
+            // samplesMap = Collections.emptyMap();
+        } else if (includeSample == VariantQueryProjectionParser.IncludeStatus.SOME) {
+            Map<String, List<String>> samplesToReturn = VariantQueryProjectionParser.getIncludeSampleNames(query, queryOptions, mm);
             checkStudyPermissions(samplesToReturn.keySet(), userId, token);
 
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
@@ -1139,8 +1140,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     samplesMap.put(studyId, Collections.emptyList());
                 }
             }
-        } else {
-            logger.debug("Missing include samples! Obtaining samples to include from catalog.");
+        } else if (includeSample == VariantQueryProjectionParser.IncludeStatus.ALL) {
+            logger.debug("Include all samples. Obtaining samples to include from catalog.");
             List<String> includeStudies = VariantQueryProjectionParser.getIncludeStudies(query, queryOptions, mm)
                     .stream()
                     .map(mm::getStudyName)
