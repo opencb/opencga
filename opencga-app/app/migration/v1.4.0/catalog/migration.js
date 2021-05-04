@@ -507,7 +507,7 @@ updateStudyPermissions(studyUserMap, "SAMPLE");
 var projectUidFqnMap = {};
 
 print("\nMigrating user");
-migrateCollection("user", {"account.authentication": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
+migrateCollection("user", {}, {attributes: 0}, function(bulk, doc) {
     var changes = {};
 
     if (isNotUndefinedOrNull(doc.projects) && doc.projects.length > 0 && isUndefinedOrNull(doc.projects[0].uid)) {
