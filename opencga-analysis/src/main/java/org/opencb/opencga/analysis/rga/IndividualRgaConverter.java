@@ -208,10 +208,10 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                     String individualId = knockoutByIndividual.getId();
 
                     int numParents = 0;
-                    if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherId())) {
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getFatherSampleId())) {
                         numParents++;
                     }
-                    if (StringUtils.isNotEmpty(knockoutByIndividual.getMotherId())) {
+                    if (StringUtils.isNotEmpty(knockoutByIndividual.getMotherSampleId())) {
                         numParents++;
                     }
 
