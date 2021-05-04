@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -19,6 +20,7 @@ public class KnockoutByIndividualSummary {
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
+    private int numParents;
     private List<String> genes;
     private VariantStats variantStats;
 
@@ -46,6 +48,13 @@ public class KnockoutByIndividualSummary {
         this.disorders = disorders;
         this.genes = genes;
         this.variantStats = variantStats;
+        this.numParents = 0;
+        if (StringUtils.isNotEmpty(motherSampleId)) {
+            this.numParents++;
+        }
+        if (StringUtils.isNotEmpty(fatherSampleId)) {
+            this.numParents++;
+        }
     }
 
     @Override
@@ -62,6 +71,7 @@ public class KnockoutByIndividualSummary {
         sb.append(", disorders=").append(disorders);
         sb.append(", genes=").append(genes);
         sb.append(", variantStats=").append(variantStats);
+        sb.append(", numParents=").append(numParents);
         sb.append('}');
         return sb.toString();
     }
@@ -165,4 +175,12 @@ public class KnockoutByIndividualSummary {
         return this;
     }
 
+    public int getNumParents() {
+        return numParents;
+    }
+
+    public KnockoutByIndividualSummary setNumParents(int numParents) {
+        this.numParents = numParents;
+        return this;
+    }
 }

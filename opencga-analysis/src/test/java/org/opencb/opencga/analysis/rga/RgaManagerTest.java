@@ -232,6 +232,11 @@ public class RgaManagerTest {
         OpenCGAResult<KnockoutByIndividualSummary> result = rgaManager.individualSummary(STUDY, new Query(), QueryOptions.empty(), ownerToken);
         assertEquals(4, result.getNumResults());
         for (KnockoutByIndividualSummary individual : result.getResults()) {
+            if ("NA19685".equals(individual.getId()) || "NA19600".equals(individual.getId())) {
+                assertEquals(2, individual.getNumParents());
+            } else {
+                assertEquals(0, individual.getNumParents());
+            }
             assertNotNull(individual.getId());
             assertNotNull(individual.getVariantStats());
             assertTrue(individual.getGenes().size() > 0);
