@@ -76,6 +76,7 @@ public final class Enums {
         ALIGNMENT,
         CLINICAL,
         EXPRESSION,
+        RGA,
         FUNCTIONAL;
 
         public List<String> getFullPermissionList() {
