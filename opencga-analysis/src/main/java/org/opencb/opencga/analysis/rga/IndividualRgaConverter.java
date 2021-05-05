@@ -180,6 +180,31 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         if (knockoutByIndividual.getGenes() != null) {
             for (KnockoutByIndividual.KnockoutGene gene : knockoutByIndividual.getGenes()) {
                 for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                    // Remove isolated CH variants
+                    Set<String> chVariants = new HashSet<>();
+                    for (KnockoutVariant variant : transcript.getVariants()) {
+                        if (variant.getKnockoutType().equals(KnockoutVariant.KnockoutType.COMP_HET)) {
+                            chVariants.add(variant.getId());
+                        }
+                    }
+                    if (chVariants.size() == 1) {
+                        logger.warn("Transcript '{}' has single CH variant '{}'. Removing it...", transcript.getId(), chVariants);
+                        // Remove CH variant before processing it
+                        List<KnockoutVariant> knockoutVariantList = new ArrayList<>(transcript.getVariants().size() - 1);
+                        for (KnockoutVariant variant : transcript.getVariants()) {
+                            if (!chVariants.contains(variant.getId())) {
+                                knockoutVariantList.add(variant);
+                            }
+                        }
+                        transcript.setVariants(knockoutVariantList);
+                    }
+
+                    if (transcript.getVariants().isEmpty()) {
+                        // Process next transcript because this one doesn't have variants
+                        logger.warn("Skipping transcript '{}'. No knockoutVariants found...", transcript.getId());
+                        continue;
+                    }
+
                     List<String> compoundFilters = processFilters(transcript);
 
                     List<String> phenotypes = populatePhenotypes(knockoutByIndividual.getPhenotypes());
