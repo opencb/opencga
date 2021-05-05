@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
-public class VariantStats {
+public class KnockoutStats {
 
     private int count;
     private int numHomAlt;
@@ -8,10 +8,10 @@ public class VariantStats {
     private int numHetAlt;
     private int numDelOverlap;
 
-    public VariantStats() {
+    public KnockoutStats() {
     }
 
-    public VariantStats(int count, int numHomAlt, int numCompHet, int numHetAlt, int numDelOverlap) {
+    public KnockoutStats(int count, int numHomAlt, int numCompHet, int numHetAlt, int numDelOverlap) {
         this.count = count;
         this.numHomAlt = numHomAlt;
         this.numCompHet = numCompHet;
@@ -21,7 +21,7 @@ public class VariantStats {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantStats{");
+        final StringBuilder sb = new StringBuilder("KnockoutStats{");
         sb.append("count=").append(count);
         sb.append(", numHomAlt=").append(numHomAlt);
         sb.append(", numCompHet=").append(numCompHet);
@@ -35,7 +35,7 @@ public class VariantStats {
         return count;
     }
 
-    public VariantStats setCount(int count) {
+    public KnockoutStats setCount(int count) {
         this.count = count;
         return this;
     }
@@ -44,7 +44,7 @@ public class VariantStats {
         return numHomAlt;
     }
 
-    public VariantStats setNumHomAlt(int numHomAlt) {
+    public KnockoutStats setNumHomAlt(int numHomAlt) {
         this.numHomAlt = numHomAlt;
         return this;
     }
@@ -53,7 +53,7 @@ public class VariantStats {
         return numCompHet;
     }
 
-    public VariantStats setNumCompHet(int numCompHet) {
+    public KnockoutStats setNumCompHet(int numCompHet) {
         this.numCompHet = numCompHet;
         return this;
     }
@@ -62,7 +62,7 @@ public class VariantStats {
         return numHetAlt;
     }
 
-    public VariantStats setNumHetAlt(int numHetAlt) {
+    public KnockoutStats setNumHetAlt(int numHetAlt) {
         this.numHetAlt = numHetAlt;
         return this;
     }
@@ -71,7 +71,7 @@ public class VariantStats {
         return numDelOverlap;
     }
 
-    public VariantStats setNumDelOverlap(int numDelOverlap) {
+    public KnockoutStats setNumDelOverlap(int numDelOverlap) {
         this.numDelOverlap = numDelOverlap;
         return this;
     }

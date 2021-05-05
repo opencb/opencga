@@ -1,6 +1,5 @@
 package org.opencb.opencga.analysis.rga;
 
-import javafx.scene.paint.Stop;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrQuery;

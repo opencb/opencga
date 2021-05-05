@@ -25,7 +25,7 @@ public class KnockoutByVariantSummary {
     private List<ClinicalSignificance> clinicalSignificances;
     private List<KnockoutVariant> allelePairs;
 
-    private IndividualStats individualStats;
+    private IndividualKnockoutStats individualStats;
 
     public KnockoutByVariantSummary() {
     }
@@ -33,7 +33,7 @@ public class KnockoutByVariantSummary {
     public KnockoutByVariantSummary(String id, String dbSnp, String chromosome, int start, int end, int length, String reference,
                                     String alternate, VariantType type, List<String> genes, List<PopulationFrequency> populationFrequencies,
                                     List<SequenceOntologyTerm> sequenceOntologyTerms, List<ClinicalSignificance> clinicalSignificances,
-                                    List<KnockoutVariant> allelePairs, IndividualStats individualStats) {
+                                    List<KnockoutVariant> allelePairs, IndividualKnockoutStats individualStats) {
         this.id = id;
         this.dbSnp = dbSnp;
         this.chromosome = chromosome;
@@ -199,11 +199,11 @@ public class KnockoutByVariantSummary {
         return this;
     }
 
-    public IndividualStats getIndividualStats() {
+    public IndividualKnockoutStats getIndividualStats() {
         return individualStats;
     }
 
-    public KnockoutByVariantSummary setIndividualStats(IndividualStats individualStats) {
+    public KnockoutByVariantSummary setIndividualStats(IndividualKnockoutStats individualStats) {
         this.individualStats = individualStats;
         return this;
     }

@@ -22,7 +22,7 @@ public class KnockoutByIndividualSummary {
 
     private int numParents;
     private List<String> genes;
-    private VariantStats variantStats;
+    private VariantKnockoutStats variantStats;
 
     public KnockoutByIndividualSummary() {
     }
@@ -36,7 +36,7 @@ public class KnockoutByIndividualSummary {
 
     public KnockoutByIndividualSummary(String id, String sampleId, String motherId, String motherSampleId, String fatherId,
                                        String fatherSampleId, IndividualProperty.Sex sex, List<Phenotype> phenotypes,
-                                       List<Disorder> disorders, List<String> genes, VariantStats variantStats) {
+                                       List<Disorder> disorders, List<String> genes, VariantKnockoutStats variantStats) {
         this.id = id;
         this.sampleId = sampleId;
         this.motherId = motherId;
@@ -166,11 +166,11 @@ public class KnockoutByIndividualSummary {
         return this;
     }
 
-    public VariantStats getVariantStats() {
+    public VariantKnockoutStats getVariantStats() {
         return variantStats;
     }
 
-    public KnockoutByIndividualSummary setVariantStats(VariantStats variantStats) {
+    public KnockoutByIndividualSummary setVariantStats(VariantKnockoutStats variantStats) {
         this.variantStats = variantStats;
         return this;
     }

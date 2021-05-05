@@ -15,7 +15,6 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
-import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -218,7 +217,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                     Set<String> individualKnockoutSet = new HashSet<>();
                     List<String> variantIds = new ArrayList<>(transcript.getVariants().size());
                     List<String> knockoutTypes = new ArrayList<>(transcript.getVariants().size());
-                    List<String> variantKnockoutList = new ArrayList<>(transcript.getVariants().size());
+                    List<String> variantSummary = new ArrayList<>(transcript.getVariants().size());
                     Set<String> types = new HashSet<>();
                     Set<String> consequenceTypes = new HashSet<>();
                     Set<String> clinicalSignificances = new HashSet<>();
@@ -256,10 +255,10 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         }
 
                         Map<String, String> variantPopFreq = getPopulationFrequencies(variant);
-                        RgaUtils.CodedFeature codedFeature = new RgaUtils.CodedFeature(variant.getId(), variant.getType().name(),
-                                variant.getKnockoutType().name(), variantConsequenceTypes,
+                        RgaUtils.CodedVariant codedVariant = new RgaUtils.CodedVariant(transcript.getId(), variant.getId(),
+                                variant.getType().name(), variant.getKnockoutType().name(), variantConsequenceTypes,
                                 variantPopFreq.get(RgaUtils.THOUSAND_GENOMES_STUDY), variantPopFreq.get(RgaUtils.GNOMAD_GENOMES_STUDY));
-                        variantKnockoutList.add(codedFeature.getEncodedId());
+                        variantSummary.add(codedVariant.getEncodedId());
 
                         RgaUtils.CodedIndividual codedIndividual = new RgaUtils.CodedIndividual(individualId, variant.getType().name(),
                                 variant.getKnockoutType().name(), variantConsequenceTypes,
@@ -297,7 +296,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                             .setTypes(new ArrayList<>(types))
                             .setKnockoutTypes(knockoutTypes)
                             .setIndividualSummary(new ArrayList<>(individualKnockoutSet))
-                            .setVariantSummary(variantKnockoutList)
+                            .setVariantSummary(variantSummary)
                             .setFilters(new ArrayList<>(filters))
                             .setConsequenceTypes(new ArrayList<>(consequenceTypes))
                             .setClinicalSignificances(new ArrayList<>(clinicalSignificances))

@@ -422,6 +422,19 @@ public class RgaManagerTest {
             assertTrue(gene.getIndividualStats().getNumCompHet() > 0 || gene.getIndividualStats().getNumDelOverlap() > 0
                     || gene.getIndividualStats().getNumHetAlt() > 0 || gene.getIndividualStats().getNumHomAlt() > 0);
         }
+
+        result = rgaManager.geneSummary(STUDY, new Query(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET), QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (KnockoutByGeneSummary gene : result.getResults()) {
+            assertNotNull(gene.getId());
+            assertNotNull(gene.getVariantStats());
+            assertTrue(gene.getVariantStats().getCount() > 0);
+            assertTrue(gene.getVariantStats().getNumCompHet() > 0);
+            assertTrue(gene.getVariantStats().getNumPairedCompHet() > 0);
+            assertNotNull(gene.getIndividualStats());
+            assertTrue(gene.getIndividualStats().getCount() > 0);
+            assertTrue(gene.getIndividualStats().getNumCompHet() > 0);
+        }
     }
 
     @Test

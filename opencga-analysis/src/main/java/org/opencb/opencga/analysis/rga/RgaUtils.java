@@ -5,7 +5,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
 import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -15,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.rga.RgaDataModel.*;
 
@@ -294,7 +297,7 @@ class RgaUtils {
                         String variantSummaryId = rgaDataModel.getVariantSummary().get(i);
                         // Get the basic information from variant summary object
                         try {
-                            CodedFeature codedFeature = CodedFeature.parseEncodedId(variantSummaryId);
+                            CodedVariant codedFeature = CodedVariant.parseEncodedId(variantSummaryId);
                             Variant variant = new Variant(variantId);
 
                             knockoutVariant = new KnockoutVariant()
@@ -347,18 +350,19 @@ class RgaUtils {
     }
 
     public static class CodedIndividual extends CodedFeature {
+        //  id __ SNV __ COMP_HET __ VR_R __ A_J__numParents
         private int numParents;
 
         public CodedIndividual(String id, String type, String knockoutType, List<String> consequenceTypeList,
                                String thousandGenomesPopFreq, String gnomadPopFreq, int numParents) {
-            super(id, type, knockoutType, consequenceTypeList, thousandGenomesPopFreq, gnomadPopFreq);
+            super("", id, type, knockoutType, consequenceTypeList, thousandGenomesPopFreq, gnomadPopFreq);
             this.numParents = numParents;
         }
 
         public static CodedIndividual parseEncodedId(String encodedId) throws RgaException {
             String[] split = encodedId.split(SEPARATOR);
             if (split.length != 6) {
-                throw new RgaException("Unexpected variant string received '" + encodedId
+                throw new RgaException("Unexpected individual string received '" + encodedId
                         + "'. Expected {id}__{type}__{knockoutType}__{conseqType}__{popFreqs}__{numParents}");
             }
 
@@ -380,16 +384,45 @@ class RgaUtils {
         }
     }
 
-    public static class CodedFeature {
-        //  id __ SNV __ COMP_HET __ VR_R __ A_J
+    public static class CodedVariant extends CodedFeature {
+        //  transcriptId__id __ SNV __ COMP_HET __ VR_R __ A_J
+
+        public CodedVariant(String transcriptId, String id, String type, String knockoutType, List<String> consequenceTypeList,
+                            String thousandGenomesPopFreq, String gnomadPopFreq) {
+            super(transcriptId, id, type, knockoutType, consequenceTypeList, thousandGenomesPopFreq, gnomadPopFreq);
+        }
+
+        public static CodedVariant parseEncodedId(String encodedId) throws RgaException {
+            String[] split = encodedId.split(SEPARATOR);
+            if (split.length != 6) {
+                throw new RgaException("Unexpected variant string received '" + encodedId
+                        + "'. Expected {transcriptId}__{id}__{type}__{knockoutType}__{conseqType}__{popFreqs}");
+            }
+
+            Set<String> consequenceType = new HashSet<>(Arrays.asList(split[4].split(INNER_SEPARATOR)));
+            String[] popFreqs = split[5].split(INNER_SEPARATOR);
+
+            return new CodedVariant(split[0], split[1], split[2], split[3], new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1]);
+        }
+
+        public String getEncodedId() {
+            return getTranscriptId() + SEPARATOR + getId() + SEPARATOR + getType() + SEPARATOR + getKnockoutType() + SEPARATOR
+                    + StringUtils.join(getConsequenceType(), INNER_SEPARATOR) + SEPARATOR
+                    + StringUtils.join(getPopulationFrequencies(), INNER_SEPARATOR);
+        }
+    }
+
+    public static abstract class CodedFeature {
+        private String transcriptId;
         private String id;
         private String type;
         private String knockoutType;
         private List<String> populationFrequencies;
         private Set<String> consequenceType;
 
-        public CodedFeature(String id, String type, String knockoutType, List<String> consequenceTypeList,
+        public CodedFeature(String transcriptId, String id, String type, String knockoutType, List<String> consequenceTypeList,
                             String thousandGenomesPopFreq, String gnomadPopFreq) {
+            this.transcriptId = transcriptId;
             this.id = id;
             this.type = type;
             this.knockoutType = knockoutType;
@@ -400,22 +433,8 @@ class RgaUtils {
             this.populationFrequencies = Arrays.asList(thousandGenomesPopFreq, gnomadPopFreq);
         }
 
-        public static CodedFeature parseEncodedId(String encodedId) throws RgaException {
-            String[] split = encodedId.split(SEPARATOR);
-            if (split.length != 5) {
-                throw new RgaException("Unexpected variant string received '" + encodedId
-                        + "'. Expected {id}__{type}__{knockoutType}__{conseqType}__{popFreqs}");
-            }
-
-            Set<String> consequenceType = new HashSet<>(Arrays.asList(split[3].split(INNER_SEPARATOR)));
-            String[] popFreqs = split[4].split(INNER_SEPARATOR);
-
-            return new CodedFeature(split[0], split[1], split[2], new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1]);
-        }
-
-        public String getEncodedId() {
-            return id + SEPARATOR + type + SEPARATOR + knockoutType + SEPARATOR + StringUtils.join(consequenceType, INNER_SEPARATOR)
-                    + SEPARATOR + StringUtils.join(populationFrequencies, INNER_SEPARATOR);
+        public String getTranscriptId() {
+            return transcriptId;
         }
 
         public String getId() {
@@ -436,6 +455,133 @@ class RgaUtils {
 
         public List<String> getPopulationFrequencies() {
             return populationFrequencies;
+        }
+    }
+
+    public static class KnockoutTypeCount {
+
+        private Set<String> knockoutTypeQuery;
+        private List<Set<String>> popFreqQuery;
+        private Set<String> typeQuery;
+        private Set<String> consequenceTypeQuery;
+
+        private Set<String> ids;
+        private Map<String, Set<String>> transcriptCompHetIdsMap;
+        private Set<String> homIds;
+        private Set<String> hetIds;
+        private Set<String> delOverlapIds;
+
+        public KnockoutTypeCount(Query query) throws RgaException {
+            knockoutTypeQuery = new HashSet<>();
+            popFreqQuery = new LinkedList<>();
+            typeQuery = new HashSet<>();
+            consequenceTypeQuery = new HashSet<>();
+            ids = new HashSet<>();
+            transcriptCompHetIdsMap = new HashMap<>();
+            homIds = new HashSet<>();
+            hetIds = new HashSet<>();
+            delOverlapIds = new HashSet<>();
+
+            query = ParamUtils.defaultObject(query, Query::new);
+            knockoutTypeQuery.addAll(query.getAsStringList(RgaQueryParams.KNOCKOUT.key()));
+            typeQuery.addAll(query.getAsStringList(RgaQueryParams.TYPE.key()));
+            consequenceTypeQuery.addAll(query.getAsStringList(RgaQueryParams.CONSEQUENCE_TYPE.key())
+                    .stream()
+                    .map(VariantQueryUtils::parseConsequenceType)
+                    .map(String::valueOf)
+                    .collect(Collectors.toList()));
+            List<String> popFreqs = query.getAsStringList(RgaQueryParams.POPULATION_FREQUENCY.key(), ";");
+            if (!popFreqs.isEmpty()) {
+                Map<String, List<String>> popFreqList = RgaUtils.parsePopulationFrequencyQuery(popFreqs);
+                for (List<String> values : popFreqList.values()) {
+                    popFreqQuery.add(new HashSet<>(values));
+                }
+            }
+        }
+
+        public void processFeature(RgaUtils.CodedFeature codedFeature) {
+            if (!knockoutTypeQuery.isEmpty() && !knockoutTypeQuery.contains(codedFeature.getKnockoutType())) {
+                return;
+            }
+            if (!popFreqQuery.isEmpty()) {
+                for (Set<String> popFreq : popFreqQuery) {
+                    if (codedFeature.getPopulationFrequencies().stream().noneMatch(popFreq::contains)) {
+                        return;
+                    }
+                }
+            }
+            if (!typeQuery.isEmpty() && !typeQuery.contains(codedFeature.getType())) {
+                return;
+            }
+            if (!consequenceTypeQuery.isEmpty()
+                    && codedFeature.getConsequenceType().stream().noneMatch((ct) -> consequenceTypeQuery.contains(ct))) {
+                return;
+            }
+
+            ids.add(codedFeature.getId());
+            KnockoutVariant.KnockoutType knockoutType = KnockoutVariant.KnockoutType.valueOf(codedFeature.getKnockoutType());
+            switch (knockoutType) {
+                case HOM_ALT:
+                    homIds.add(codedFeature.getId());
+                    break;
+                case COMP_HET:
+                    if (!transcriptCompHetIdsMap.containsKey(codedFeature.getTranscriptId())) {
+                        transcriptCompHetIdsMap.put(codedFeature.getTranscriptId(), new HashSet<>());
+                    }
+                    transcriptCompHetIdsMap.get(codedFeature.getTranscriptId()).add(codedFeature.getId());
+                    break;
+                case HET_ALT:
+                    hetIds.add(codedFeature.getId());
+                    break;
+                case DELETION_OVERLAP:
+                    delOverlapIds.add(codedFeature.getId());
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + codedFeature.getKnockoutType());
+            }
+        }
+
+        public int getNumIds() {
+            return ids.size();
+        }
+
+        public int getNumCompHetIds() {
+            return (int) transcriptCompHetIdsMap.values().stream().flatMap(Set::stream).distinct().count();
+        }
+
+        public int getNumPairedCompHetIds() {
+            Set<String> chPairs = new HashSet<>();
+            for (Set<String> chSet : transcriptCompHetIdsMap.values()) {
+                if (chSet.size() > 1) {
+                    ArrayList<String> chList = new ArrayList<>(chSet);
+                    for (int i = 0; i < chList.size() - 1; i++) {
+                        for (int j = i + 1; j < chList.size(); j++) {
+                            String variant1 = chList.get(i);
+                            String variant2 = chList.get(j);
+                            if (variant2.compareTo(variant1) < 0) {
+                                // Invert positions
+                                String aux = variant1;
+                                variant1 = variant2;
+                                variant2 = aux;
+                            }
+                            chPairs.add(variant1 + "-" + variant2);
+                        }
+                    }
+                }
+            }
+            return chPairs.size();
+        }
+
+        public int getNumHomIds() {
+            return homIds.size();
+        }
+
+        public int getNumHetIds() {
+            return hetIds.size();
+        }
+
+        public int getNumDelOverlapIds() {
+            return delOverlapIds.size();
         }
     }
 
