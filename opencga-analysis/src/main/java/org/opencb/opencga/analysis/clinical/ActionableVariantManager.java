@@ -16,12 +16,13 @@
 
 package org.opencb.opencga.analysis.clinical;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,12 +36,13 @@ import java.util.stream.Collectors;
 public class ActionableVariantManager {
     // Folder where actionable variant files are located, multiple assemblies are supported, i.e.: one variant actionable file per assembly
     // File name format: actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
-    private final String ACTIONABLE_URL = "http://resources.opencb.org/opencb/opencga/analysis/commons/";
+    private final static String ACTIONABLE_URL = "http://resources.opencb.org/opencb/opencga/analysis/commons/";
+    private final static Logger logger = LoggerFactory.getLogger(ActionableVariantManager.class);
 
     // We keep a Map for each assembly with a Map of variant IDs with the phenotype list
     private static Map<String, Map<String, List<String>>> actionableVariants = null;
 
-    private Path openCgaHome;
+    private final Path openCgaHome;
 
     public ActionableVariantManager(Path openCgaHome) {
         this.openCgaHome = openCgaHome;
@@ -49,7 +51,7 @@ public class ActionableVariantManager {
     public Map<String, List<String>> getActionableVariants(String assembly) throws IOException {
         // Lazy loading
         if (actionableVariants == null) {
-            actionableVariants = loadActionableVariants();
+            actionableVariants = loadActionableVariants(openCgaHome);
         }
 
         if (actionableVariants.containsKey(assembly)) {
@@ -58,8 +60,13 @@ public class ActionableVariantManager {
         return null;
     }
 
+    public static void init(Path openCgaHome) throws IOException {
+        if (actionableVariants == null) {
+            actionableVariants = loadActionableVariants(openCgaHome);
+        }
+    }
 
-    private Map<String, Map<String, List<String>>> loadActionableVariants() throws IOException {
+    private static Map<String, Map<String, List<String>>> loadActionableVariants(Path openCgaHome) throws IOException {
         // Load actionable variants for each assembly, if present
         // First, read all actionableVariants filenames, actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
         Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
@@ -67,18 +74,20 @@ public class ActionableVariantManager {
         String[] assemblies = new String[]{"grch37", "grch38"};
         for (String assembly : assemblies) {
             File actionableFile;
+            boolean temporalFile = false;
             try {
                 String filename = "actionableVariants_" + assembly + ".txt.gz";
 
                 Path path = openCgaHome.resolve("analysis/commons/" + filename);
                 if (path.toFile().exists()) {
-                    System.out.println("loadActionableVariants from path: " + path);
+                    logger.info("loadActionableVariants from path: " + path);
                     actionableFile = path.toFile();
                 } else {
                     // Donwload 'actionable variant' file
-                    System.out.println("loadActionableVariants from URL: " + (ACTIONABLE_URL + filename) + ", (path does not exist: "
+                    logger.info("loadActionableVariants from URL: " + (ACTIONABLE_URL + filename) + ", (path does not exist: "
                             + path + ")");
                     actionableFile = URLUtils.download(new URL(ACTIONABLE_URL + filename), Paths.get("/tmp"));
+                    temporalFile = true;
                 }
             } catch (IOException e) {
                 continue;
@@ -86,10 +95,12 @@ public class ActionableVariantManager {
 
             if (actionableFile != null) {
                 actionableVariantsByAssembly.put(assembly, loadActionableVariants(actionableFile));
-            }
 
-            // Delete
-            actionableFile.delete();
+                if (temporalFile) {
+                    // Delete
+                    actionableFile.delete();
+                }
+            }
         }
 
         return actionableVariantsByAssembly;
@@ -101,14 +112,17 @@ public class ActionableVariantManager {
      * @return Map of variant IDs with a alist of phenotypes
      * @throws IOException If file is not found
      */
-    private Map<String, List<String>> loadActionableVariants(File file) throws IOException {
+    private static Map<String, List<String>> loadActionableVariants(File file) throws IOException {
 
-//        System.out.println("ActionableVariantManager: path = " + file.toString());
+//        logger.info("ActionableVariantManager: path = " + file.toString());
 
         Map<String, List<String>> actionableVariants = new HashMap<>();
 
-        if (file != null && file.exists()) {
-            BufferedReader bufferedReader = FileUtils.newBufferedReader(file.toPath());
+        if (file == null || !file.exists()) {
+            return actionableVariants;
+        }
+
+        try (BufferedReader bufferedReader = FileUtils.newBufferedReader(file.toPath())) {
             List<String> lines = bufferedReader.lines().collect(Collectors.toList());
             for (String line : lines) {
                 if (line.startsWith("#")) {
@@ -134,16 +148,16 @@ public class ActionableVariantManager {
                         actionableVariants.put(variant.toString(), phenotypes);
                     } catch (NumberFormatException e) {
                         // Skip this variant
-                        System.err.println("Skip actionable variant: " + line + "\nCause: " + e.getMessage());
+                        logger.error("Skip actionable variant: " + line + "\nCause: " + e.getMessage());
                     }
                 } else {
                     // Skip this variant
-                    System.err.println("Skip actionable variant, invalid format: " + line);
+                    logger.error("Skip actionable variant, invalid format: " + line);
                 }
             }
         }
 
-//        System.out.println("ActionableVariantManager: size = " + actionableVariants.size());
+//        logger.info("ActionableVariantManager: size = " + actionableVariants.size());
 
         return actionableVariants;
     }
