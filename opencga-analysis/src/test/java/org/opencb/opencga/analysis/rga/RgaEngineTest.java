@@ -54,7 +54,7 @@ public class RgaEngineTest {
         rgaEngine = solr.configure(storageConfiguration);
 
         collection = solr.coreName;
-        rgaEngine.create(collection);
+        rgaEngine.createMainCollection(collection);
 
         knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(1));
         knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(2));

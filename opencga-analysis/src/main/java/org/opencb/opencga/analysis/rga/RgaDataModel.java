@@ -130,6 +130,7 @@ public class RgaDataModel {
     public static final String TRANSCRIPT_ID = "transcriptId";
     public static final String TRANSCRIPT_BIOTYPE = "transcriptBiotype";
     public static final String VARIANTS = "variants";
+    public static final String DB_SNPS = "dbSnps";
     public static final String TYPES = "types";
     public static final String KNOCKOUT_TYPES = "knockoutTypes";
     public static final String FILTERS = "filters";

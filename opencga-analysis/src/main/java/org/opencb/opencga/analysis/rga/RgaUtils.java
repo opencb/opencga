@@ -385,30 +385,50 @@ class RgaUtils {
     }
 
     public static class CodedVariant extends CodedFeature {
-        //  transcriptId__id __ SNV __ COMP_HET __ VR_R __ A_J
+        //  transcriptId__id __ dbSnp __ SNV __ COMP_HET __ clinicalSignificance __ VR_R __ A_J
+        private String dbSnp;
+        private List<String> clinicalSignificances;
 
-        public CodedVariant(String transcriptId, String id, String type, String knockoutType, List<String> consequenceTypeList,
-                            String thousandGenomesPopFreq, String gnomadPopFreq) {
+        public CodedVariant(String transcriptId, String id, String dbSnp, String type, String knockoutType,
+                            List<String> clinicalSignificances, List<String> consequenceTypeList, String thousandGenomesPopFreq,
+                            String gnomadPopFreq) {
             super(transcriptId, id, type, knockoutType, consequenceTypeList, thousandGenomesPopFreq, gnomadPopFreq);
+            this.dbSnp = dbSnp;
+            this.clinicalSignificances = clinicalSignificances;
         }
 
         public static CodedVariant parseEncodedId(String encodedId) throws RgaException {
             String[] split = encodedId.split(SEPARATOR);
-            if (split.length != 6) {
+            if (split.length != 8) {
                 throw new RgaException("Unexpected variant string received '" + encodedId
-                        + "'. Expected {transcriptId}__{id}__{type}__{knockoutType}__{conseqType}__{popFreqs}");
+                        + "'. Expected {transcriptId}__{id}__{dbSnp}__{type}__{knockoutType}__{clinicalSignificances}__{conseqType}_"
+                        + "_{popFreqs}");
             }
 
-            Set<String> consequenceType = new HashSet<>(Arrays.asList(split[4].split(INNER_SEPARATOR)));
-            String[] popFreqs = split[5].split(INNER_SEPARATOR);
+            Set<String> consequenceType = new HashSet<>(Arrays.asList(split[6].split(INNER_SEPARATOR)));
+            String[] popFreqs = split[7].split(INNER_SEPARATOR);
+            List<String> clinicalSignificances = Collections.emptyList();
+            if (StringUtils.isNotEmpty(split[5])) {
+                clinicalSignificances = Arrays.asList(split[5].split(INNER_SEPARATOR));
+            }
 
-            return new CodedVariant(split[0], split[1], split[2], split[3], new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1]);
+            return new CodedVariant(split[0], split[1], split[2], split[3], split[4], clinicalSignificances,
+                    new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1]);
         }
 
         public String getEncodedId() {
-            return getTranscriptId() + SEPARATOR + getId() + SEPARATOR + getType() + SEPARATOR + getKnockoutType() + SEPARATOR
+            return getTranscriptId() + SEPARATOR + getId() + SEPARATOR + dbSnp + SEPARATOR + getType() + SEPARATOR + getKnockoutType()
+                    + SEPARATOR + StringUtils.join(clinicalSignificances, INNER_SEPARATOR) + SEPARATOR
                     + StringUtils.join(getConsequenceType(), INNER_SEPARATOR) + SEPARATOR
                     + StringUtils.join(getPopulationFrequencies(), INNER_SEPARATOR);
+        }
+
+        public String getDbSnp() {
+            return dbSnp;
+        }
+
+        public List<String> getClinicalSignificances() {
+            return clinicalSignificances;
         }
     }
 
@@ -455,6 +475,14 @@ class RgaUtils {
 
         public List<String> getPopulationFrequencies() {
             return populationFrequencies;
+        }
+
+        public String getThousandGenomesFrequency() {
+            return populationFrequencies.get(0);
+        }
+
+        public String getGnomadFrequency() {
+            return populationFrequencies.get(1);
         }
     }
 

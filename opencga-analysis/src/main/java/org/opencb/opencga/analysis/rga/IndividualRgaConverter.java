@@ -267,12 +267,14 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         }
                         consequenceTypes.addAll(variantConsequenceTypes);
 
+                        Set<String> auxClinicalSignificances = new HashSet<>();
                         if (variant.getClinicalSignificance() != null) {
                             for (ClinicalSignificance clinicalSignificance : variant.getClinicalSignificance()) {
                                 if (clinicalSignificance != null) {
-                                    clinicalSignificances.add(clinicalSignificance.name());
+                                    auxClinicalSignificances.add(clinicalSignificance.name());
                                 }
                             }
+                            clinicalSignificances.addAll(auxClinicalSignificances);
                         }
 
                         if (StringUtils.isNotEmpty(variant.getFilter())) {
@@ -281,7 +283,8 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
 
                         Map<String, String> variantPopFreq = getPopulationFrequencies(variant);
                         RgaUtils.CodedVariant codedVariant = new RgaUtils.CodedVariant(transcript.getId(), variant.getId(),
-                                variant.getType().name(), variant.getKnockoutType().name(), variantConsequenceTypes,
+                                variant.getDbSnp(), variant.getType().name(), variant.getKnockoutType().name(),
+                                new ArrayList<>(auxClinicalSignificances), variantConsequenceTypes,
                                 variantPopFreq.get(RgaUtils.THOUSAND_GENOMES_STUDY), variantPopFreq.get(RgaUtils.GNOMAD_GENOMES_STUDY));
                         variantSummary.add(codedVariant.getEncodedId());
 
