@@ -385,7 +385,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryByFamilyNotFound() throws CatalogException {
-        CatalogException e = new CatalogException("Family asdf not found");
+        CatalogException e = new CatalogException("Missing families: asdf not found");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_DISORDER.key(), "asdf"), sessionId);

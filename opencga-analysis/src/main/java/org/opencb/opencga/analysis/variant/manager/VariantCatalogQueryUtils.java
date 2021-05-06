@@ -218,9 +218,21 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
      * @throws CatalogException if there is any catalog error
      */
     public Query parseQuery(Query query, String token) throws CatalogException {
+        return parseQuery(query, null, token);
+    }
+
+    /**
+     * Transforms a high level Query to a query fully understandable by storage.
+     * @param query     High level query. Will be modified by the method.
+     * @param queryOptions   Query options. Won't be modified
+     * @param token User's session id
+     * @return          Modified input query (same instance)
+     * @throws CatalogException if there is any catalog error
+     */
+    public Query parseQuery(Query query, QueryOptions queryOptions, String token) throws CatalogException {
         if (query == null) {
             // Nothing to do!
-            return null;
+            return new Query();
         }
 
         if (isValidParam(query, SAVED_FILTER)) {
@@ -257,8 +269,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         cohortFilterValidator.processFilter(query, VariantQueryParam.MISSING_GENOTYPES, release, token, defaultStudyStr);
 
         if (release != null) {
-            // If no list of included files is specified:
-            if (VariantQueryProjectionParser.isIncludeFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
+            // If include all files:
+            if (VariantQueryProjectionParser.getIncludeFileStatus(query, VariantField.all())
+                    .equals(VariantQueryProjectionParser.IncludeStatus.ALL)) {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
@@ -272,8 +285,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 }
                 query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
             }
-            // If no list of included samples is specified:
-            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES))) {
+            // If include all samples:
+            if (VariantQueryProjectionParser.getIncludeFileStatus(query, VariantField.all())
+                    .equals(VariantQueryProjectionParser.IncludeStatus.ALL)) {
                 List<String> includeSamples = new ArrayList<>();
                 Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
                 QueryOptions sampleOptions = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
