@@ -534,13 +534,15 @@ public class DocumentToVariantAnnotationConverter
                                                                    String aaReference, String aaAlternate, String uniprotVariantId,
                                                                    String functionalDescription, List<Score> proteinSubstitutionScores,
                                                                    List<String> keywords, List<ProteinFeature> features) {
-        return buildProteinVariantAnnotation(uniprotAccession, uniprotName, uniprotAccession, aaPosition, aaReference, aaAlternate, uniprotVariantId, functionalDescription, proteinSubstitutionScores, keywords, features);
+        return buildProteinVariantAnnotation(uniprotAccession, uniprotName, uniprotAccession, aaPosition, aaReference, aaAlternate,
+                uniprotVariantId, functionalDescription, proteinSubstitutionScores, keywords, features);
     }
 
-    private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, String proteinId, int aaPosition,
-                                                                   String aaReference, String aaAlternate, String uniprotVariantId,
-                                                                   String functionalDescription, List<Score> proteinSubstitutionScores,
-                                                                   List<String> keywords, List<ProteinFeature> features) {
+    private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, String proteinId,
+                                                                   int aaPosition, String aaReference, String aaAlternate,
+                                                                   String uniprotVariantId, String functionalDescription,
+                                                                   List<Score> proteinSubstitutionScores, List<String> keywords,
+                                                                   List<ProteinFeature> features) {
         if (areAllEmpty(uniprotAccession, uniprotName, proteinId, aaPosition, aaReference, aaAlternate,
                 uniprotVariantId, proteinSubstitutionScores, keywords, features, functionalDescription)) {
             return null;
