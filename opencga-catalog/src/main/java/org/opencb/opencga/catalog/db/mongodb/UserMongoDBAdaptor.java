@@ -710,7 +710,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
     }
 
-    private String encryptPassword(String password) throws CatalogDBException {
+    public static void main(String[] args) throws CatalogDBException {
+        System.out.println(encryptPassword("admin"));
+    }
+
+    private static String encryptPassword(String password) throws CatalogDBException {
         if (StringUtils.isNotEmpty(password)) {
             if (password.matches("^[a-fA-F0-9]{40}$")) {
                 // Password already cyphered

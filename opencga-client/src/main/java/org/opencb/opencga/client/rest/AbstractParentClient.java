@@ -43,7 +43,6 @@ package org.opencb.opencga.client.rest;
  import javax.ws.rs.client.*;
  import javax.ws.rs.core.HttpHeaders;
  import javax.ws.rs.core.Response;
- import javax.ws.rs.ext.ContextResolver;
  import java.io.File;
  import java.io.FileOutputStream;
  import java.io.IOException;
