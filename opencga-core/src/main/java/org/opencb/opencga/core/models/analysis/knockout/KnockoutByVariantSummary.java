@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantType;
 
 import java.util.List;
+import java.util.Map;
 
 public class KnockoutByVariantSummary {
 
@@ -25,7 +26,8 @@ public class KnockoutByVariantSummary {
     private List<ClinicalSignificance> clinicalSignificances;
     private List<KnockoutVariant> allelePairs;
 
-    private IndividualStats individualStats;
+    private IndividualKnockoutStats individualStats;
+    private Map<String, List<String>> transcriptChPairs;
 
     public KnockoutByVariantSummary() {
     }
@@ -33,7 +35,8 @@ public class KnockoutByVariantSummary {
     public KnockoutByVariantSummary(String id, String dbSnp, String chromosome, int start, int end, int length, String reference,
                                     String alternate, VariantType type, List<String> genes, List<PopulationFrequency> populationFrequencies,
                                     List<SequenceOntologyTerm> sequenceOntologyTerms, List<ClinicalSignificance> clinicalSignificances,
-                                    List<KnockoutVariant> allelePairs, IndividualStats individualStats) {
+                                    List<KnockoutVariant> allelePairs, IndividualKnockoutStats individualStats,
+                                    Map<String, List<String>> transcriptChPairs) {
         this.id = id;
         this.dbSnp = dbSnp;
         this.chromosome = chromosome;
@@ -49,6 +52,7 @@ public class KnockoutByVariantSummary {
         this.clinicalSignificances = clinicalSignificances;
         this.allelePairs = allelePairs;
         this.individualStats = individualStats;
+        this.transcriptChPairs = transcriptChPairs;
     }
 
     @Override
@@ -69,6 +73,7 @@ public class KnockoutByVariantSummary {
         sb.append(", clinicalSignificances=").append(clinicalSignificances);
         sb.append(", allelePairs=").append(allelePairs);
         sb.append(", individualStats=").append(individualStats);
+        sb.append(", transcriptChPairs=").append(transcriptChPairs);
         sb.append('}');
         return sb.toString();
     }
@@ -199,12 +204,21 @@ public class KnockoutByVariantSummary {
         return this;
     }
 
-    public IndividualStats getIndividualStats() {
+    public IndividualKnockoutStats getIndividualStats() {
         return individualStats;
     }
 
-    public KnockoutByVariantSummary setIndividualStats(IndividualStats individualStats) {
+    public KnockoutByVariantSummary setIndividualStats(IndividualKnockoutStats individualStats) {
         this.individualStats = individualStats;
+        return this;
+    }
+
+    public Map<String, List<String>> getTranscriptChPairs() {
+        return transcriptChPairs;
+    }
+
+    public KnockoutByVariantSummary setTranscriptChPairs(Map<String, List<String>> transcriptChPairs) {
+        this.transcriptChPairs = transcriptChPairs;
         return this;
     }
 }

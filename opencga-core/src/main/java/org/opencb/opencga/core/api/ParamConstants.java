@@ -330,6 +330,11 @@ public class ParamConstants {
     public static final String GENE_PARAM = "gene";
 
     // ---------------------------------------------
+    // RGA
+    public static final String INDEX_AUXILIAR_COLLECTION_DESCRIPTION = "Index auxiliar collection to improve performance assuming RGA is completely indexed.";
+    public static final String INDEX_AUXILIAR_COLLECTION = "auxiliarIndex";
+
+    // ---------------------------------------------
     // alignment
 
     public static final String ALIGNMENT_INDEX_DESCRIPTION = "Index alignment file";

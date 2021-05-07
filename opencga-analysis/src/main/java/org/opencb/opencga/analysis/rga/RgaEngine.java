@@ -1,6 +1,5 @@
 package org.opencb.opencga.analysis.rga;
 
-import javafx.scene.paint.Stop;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -60,9 +59,17 @@ public class RgaEngine implements Closeable {
         return solrManager.isAlive(collection);
     }
 
-    public void create(String dbName) throws RgaException {
+    public void createMainCollection(String dbName) throws RgaException {
         try {
             solrManager.create(dbName, this.storageConfiguration.getRga().getConfigSet());
+        } catch (SolrException e) {
+            throw new RgaException("Error creating Solr collection '" + dbName + "'", e);
+        }
+    }
+
+    public void createAuxCollection(String dbName) throws RgaException {
+        try {
+            solrManager.create(dbName, this.storageConfiguration.getRga().getConfigSet().replace("-rga-", "-rga-aux-"));
         } catch (SolrException e) {
             throw new RgaException("Error creating Solr collection '" + dbName + "'", e);
         }
@@ -105,14 +112,14 @@ public class RgaEngine implements Closeable {
      * Insert a list of RGA models into the given Solr collection.
      *
      * @param collection Solr collection where to insert
-     * @param rgaDataModelList List of RgaDataModel to insert
+     * @param rgaModelList List of RGA models to insert
      * @throws IOException   IOException
      * @throws SolrServerException SolrServerException
      */
-    public void insert(String collection, List<RgaDataModel> rgaDataModelList) throws IOException, SolrServerException {
-        if (CollectionUtils.isNotEmpty(rgaDataModelList)) {
+    public void insert(String collection, List<?> rgaModelList) throws IOException, SolrServerException {
+        if (CollectionUtils.isNotEmpty(rgaModelList)) {
             UpdateResponse updateResponse;
-            updateResponse = solrManager.getSolrClient().addBeans(collection, rgaDataModelList);
+            updateResponse = solrManager.getSolrClient().addBeans(collection, rgaModelList);
             if (updateResponse.getStatus() == 0) {
                 solrManager.getSolrClient().commit(collection);
             }
@@ -237,7 +244,24 @@ public class RgaEngine implements Closeable {
     }
 
     /**
-     * Return faceted data from a Solr core/collection given a query.
+     * Return faceted data from the auxiliar RGA Solr core/collection given a query.
+     *
+     * @param collection   Collection name
+     * @param query        Query
+     * @param queryOptions Query options (contains the facet and facetRange options)
+     * @return List of KnockoutByIndividual objects
+     * @throws RgaException RgaException
+     * @throws IOException IOException
+     */
+    public DataResult<FacetField> auxFacetedQuery(String collection, Query query, QueryOptions queryOptions)
+            throws RgaException, IOException {
+        SolrQuery solrQuery = parser.parseAuxQuery(query);
+        return facetedQuery(collection, solrQuery, queryOptions);
+    }
+
+
+    /**
+     * Return faceted data from the main RGA Solr core/collection given a query.
      *
      * @param collection   Collection name
      * @param query        Query
@@ -249,6 +273,20 @@ public class RgaEngine implements Closeable {
     public DataResult<FacetField> facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws RgaException, IOException {
         SolrQuery solrQuery = parser.parseQuery(query);
+        return facetedQuery(collection, solrQuery, queryOptions);
+    }
+
+    /**
+     * Return faceted data from a Solr core/collection given a query.
+     *
+     * @param collection   Collection name
+     * @param solrQuery    SolrQuery object.
+     * @param queryOptions Query options (contains the facet and facetRange options)
+     * @return List of KnockoutByIndividual objects
+     * @throws RgaException RgaException
+     * @throws IOException IOException
+     */
+    private DataResult<FacetField> facetedQuery(String collection, SolrQuery solrQuery, QueryOptions queryOptions) throws IOException {
         StopWatch stopWatch = StopWatch.createStarted();
 
         if (queryOptions.containsKey(QueryOptions.FACET)

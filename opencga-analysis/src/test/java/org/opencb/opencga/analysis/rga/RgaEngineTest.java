@@ -12,17 +12,14 @@ import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.*;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -57,7 +54,7 @@ public class RgaEngineTest {
         rgaEngine = solr.configure(storageConfiguration);
 
         collection = solr.coreName;
-        rgaEngine.create(collection);
+        rgaEngine.createMainCollection(collection);
 
         knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(1));
         knockoutByIndividualList.add(RgaUtilsTest.createKnockoutByIndividual(2));

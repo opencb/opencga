@@ -40,16 +40,10 @@ public class RgaSolrExtenalResource extends ExternalResource {
 
         Path rootDir = getTmpRootDir();
 
-        String configSet = "opencga-rga-configset-" + GitRepositoryState.get().getBuildVersion();
-
-        // Copy configuration
-        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
-        getResourceUri("rga/managed-schema", "configsets/" + configSet + "/managed-schema");
-        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json");
-        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt");
-        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt");
-        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + configSet + "/synonyms.txt");
-        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt");
+        String mainConfigSet = "opencga-rga-configset-" + GitRepositoryState.get().getBuildVersion();
+        String auxConfigSet = "opencga-rga-aux-configset-" + GitRepositoryState.get().getBuildVersion();
+        copyConfigSetConfiguration(mainConfigSet, "managed-schema");
+        copyConfigSetConfiguration(auxConfigSet, "aux-managed-schema");
 
         String solrHome = rootDir.resolve("solr").toString();
 
@@ -61,7 +55,7 @@ public class RgaSolrExtenalResource extends ExternalResource {
 
             SolrManager solrManager = new SolrManager(host, "core", timeout);
             if (!solrManager.existsCore(coreName)) {
-                solrManager.createCore(coreName, configSet);
+                solrManager.createCore(coreName, mainConfigSet);
             }
 
             this.solrClient = solrManager.getSolrClient();
@@ -84,6 +78,17 @@ public class RgaSolrExtenalResource extends ExternalResource {
         } finally {
             solrClient = null;
         }
+    }
+
+    private void copyConfigSetConfiguration(String configSet, String managedSchemaFile) throws IOException {
+        // Copy configuration
+        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
+        getResourceUri("rga/" + managedSchemaFile, "configsets/" + configSet + "/managed-schema");
+        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json");
+        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt");
+        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt");
+        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + configSet + "/synonyms.txt");
+        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt");
     }
 
     public RgaEngine configure(StorageConfiguration storageConfiguration) {

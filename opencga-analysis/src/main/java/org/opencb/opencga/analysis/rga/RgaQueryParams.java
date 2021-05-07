@@ -59,6 +59,9 @@ public class RgaQueryParams implements QueryParam {
     public static final String VARIANTS_DESCR = "Filter by variant id.";
     public static final RgaQueryParams VARIANTS = new RgaQueryParams("variants", Type.TEXT_ARRAY, VARIANTS_DESCR);
 
+    public static final String DB_SNPS_DESCR = "Filter by DB_SNP id.";
+    public static final RgaQueryParams DB_SNPS = new RgaQueryParams("dbSnps", Type.TEXT_ARRAY, DB_SNPS_DESCR);
+
     public static final String KNOCKOUT_DESCR = "Filter by knockout type.";
     public static final RgaQueryParams KNOCKOUT = new RgaQueryParams("knockoutType", Type.TEXT, KNOCKOUT_DESCR);
 
