@@ -670,7 +670,7 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runRvtests(RvtestsRunParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runRvtests(RvtestsWrapperParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "variant/rvtests", null, "run", params, POST, Job.class);

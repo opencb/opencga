@@ -37,8 +37,8 @@ import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
@@ -65,9 +65,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
-import static org.opencb.opencga.core.api.ParamConstants.GATK_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.core.api.ParamConstants.OUTPUT_DIRECTORY_DESCRIPTION;
-import static org.opencb.opencga.core.api.ParamConstants.STUDY_DESCRIPTION;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
@@ -1479,9 +1477,9 @@ public class VariantCommandOptions {
 
     // RvTests
 
-    @Parameters(commandNames = RvtestsCommandOptions.RVTEST_RUN_COMMAND, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
+    @Parameters(commandNames = RvtestsCommandOptions.RVTESTS_RUN_COMMAND, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
     public class RvtestsCommandOptions {
-        public static final String RVTEST_RUN_COMMAND = RvtestsWrapperAnalysis.ID + "-run";
+        public static final String RVTESTS_RUN_COMMAND = RvtestsWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
@@ -1496,25 +1494,13 @@ public class VariantCommandOptions {
         public String study;
 
         @Parameter(names = {"--command"}, description = "Rvtests command. Valid values: rvtest or vcf2kinship.")
-        public String executable = "rvtest";
-
-        @Parameter(names = {"--vcf-file"}, description = "VCF file.")
-        public String vcfFile;
-
-        @Parameter(names = {"--pheno-file"}, description = "Phenotype file.")
-        public String phenoFile;
-
-        @Parameter(names = {"--pedigree-file"}, description = "Pedigree file.")
-        public String pedigreeFile;
-
-        @Parameter(names = {"--kinship-file"}, description = "Kinship file.")
-        public String kinshipFile;
-
-        @Parameter(names = {"--covar-file"}, description = "Covariate file.")
-        public String covarFile;
+        public String command = "rvtest";
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
+
+        @DynamicParameter(names = {"--rvtests-params"}, description = "RvTests parameters e.g.:. --rvtests-params single=famScore --rvtests-params meta=score,cov")
+        public Map<String, String> rvtestsParams = new HashMap<>();
     }
 
     // GATK

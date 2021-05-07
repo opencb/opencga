@@ -40,7 +40,6 @@ import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -67,7 +66,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTESTS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -206,7 +205,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = plink();
                 break;
 
-            case RVTEST_RUN_COMMAND:
+            case RVTESTS_RUN_COMMAND:
                 queryResponse = rvtests();
                 break;
 
@@ -758,18 +757,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 ), getParams(variantCommandOptions.plinkCommandOptions.study));
     }
 
+    // RvTests
+
     private RestResponse<Job> rvtests() throws ClientException {
-        return openCGAClient.getVariantClient().runRvtests(
-                new RvtestsRunParams(
-                        variantCommandOptions.rvtestsCommandOptions.executable,
-                        variantCommandOptions.rvtestsCommandOptions.vcfFile,
-                        variantCommandOptions.rvtestsCommandOptions.phenoFile,
-                        variantCommandOptions.rvtestsCommandOptions.pedigreeFile,
-                        variantCommandOptions.rvtestsCommandOptions.kinshipFile,
-                        variantCommandOptions.rvtestsCommandOptions.covarFile,
-                        variantCommandOptions.rvtestsCommandOptions.outdir,
-                        variantCommandOptions.rvtestsCommandOptions.basicOptions.params
-                ), getParams(variantCommandOptions.rvtestsCommandOptions.study));
+        VariantCommandOptions.RvtestsCommandOptions cliOptions = variantCommandOptions.rvtestsCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+
+        return openCGAClient.getVariantClient().runRvtests(new RvtestsWrapperParams(cliOptions.command, cliOptions.outdir,
+                        cliOptions.rvtestsParams), params);
     }
 
     private ObjectMap getParams(String study) {

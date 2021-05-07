@@ -49,8 +49,8 @@ import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -88,7 +88,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTESTS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -231,7 +231,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case PLINK_RUN_COMMAND:
                 plink();
                 break;
-            case RVTEST_RUN_COMMAND:
+            case RVTESTS_RUN_COMMAND:
                 rvtests();
                 break;
             case GATK_RUN_COMMAND:
@@ -922,31 +922,14 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void rvtests() throws Exception {
         VariantCommandOptions.RvtestsCommandOptions cliOptions = variantCommandOptions.rvtestsCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
 
-        params.put(RvtestsWrapperAnalysis.EXECUTABLE_PARAM, cliOptions.executable);
-        if (StringUtils.isNotEmpty(cliOptions.vcfFile)) {
-            params.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, cliOptions.vcfFile);
-        }
-        if (StringUtils.isNotEmpty(cliOptions.phenoFile)) {
-            params.put(RvtestsWrapperAnalysis.PHENOTYPE_FILE_PARAM, cliOptions.phenoFile);
-        }
-        if (StringUtils.isNotEmpty(cliOptions.pedigreeFile)) {
-            params.put(RvtestsWrapperAnalysis.PEDIGREE_FILE_PARAM, cliOptions.pedigreeFile);
-        }
-        if (StringUtils.isNotEmpty(cliOptions.kinshipFile)) {
-            params.put(RvtestsWrapperAnalysis.KINSHIP_FILE_PARAM, cliOptions.kinshipFile);
-        }
-        if (StringUtils.isNotEmpty(cliOptions.covarFile)) {
-            params.put(RvtestsWrapperAnalysis.COVAR_FILE_PARAM, cliOptions.covarFile);
-        }
+        ObjectMap params = new RvtestsWrapperParams(
+                cliOptions.command,
+                cliOptions.outdir,
+                cliOptions.rvtestsParams)
+                .toObjectMap(cliOptions.basicOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
-        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
-
-        rvtests.start();
+        toolRunner.execute(RvtestsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void gatk() throws Exception {

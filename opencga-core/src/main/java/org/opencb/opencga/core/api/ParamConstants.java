@@ -481,6 +481,11 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String RVTESTS_COMMANDS_SUPPORTED = "rvtest, vcf2kinship";
+    public static final String RVTESTS_COMMAND_DESCRIPTION = "Supported RvTests commands: " + RVTESTS_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "
             + "if that does not work, it will try with REST";
 
