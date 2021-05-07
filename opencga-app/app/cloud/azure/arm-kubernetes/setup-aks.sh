@@ -14,6 +14,7 @@ function printUsage() {
   echo "     --hf   --helm-file               FILE        Helm values file. Used when calling to 'setup-k8s.sh' "
   echo "     -o     --outdir                  DIRECTORY   Output directory where to write the generated manifests. Default: \$PWD"
   echo "            --opencga-conf-dir        DIRECTORY   OpenCGA configuration folder. Default: build/conf/ "
+  echo "            --keep-tmp-files           FLAG       Do not remove any temporary file generated in the outdir"
   echo "            --verbose                 FLAG        Verbose mode. Print debugging messages about the progress."
   echo "     -h     --help                    FLAG        Print this help"
   echo ""
@@ -92,6 +93,10 @@ case $key in
     k8sNamespace="$value"
     shift # past argument
     shift # past value
+    ;;
+  --keep-tmp-files)
+    setupK8sOpts="${setupK8sOpts} $key "
+    shift # past argument
     ;;
   -o | --outdir)
     requiredDirectory "$key" "$value"

@@ -20,6 +20,7 @@ function printUsage() {
   echo "     --hf   --helm-file               FILE        Helm values file. Used when calling to 'setup-k8s.sh' "
   echo "     -o     --outdir                  DIRECTORY   Output directory where to write the generated manifests. Default: \$PWD"
   echo "            --opencga-conf-dir        DIRECTORY   OpenCGA configuration folder. Default: build/conf/ "
+  echo "            --keep-tmp-files          FLAG        Do not remove any temporary file generated in the outdir"
   echo "            --verbose                 FLAG        Verbose mode. Print debugging messages about the progress."
   echo "     -h     --help                    FLAG        Print this help"
   echo ""
@@ -59,6 +60,7 @@ function requiredDirectory() {
 #spAzudeDeployParameters
 #helmDeployParameters
 #setupAksOpts
+keepTmpFiles=false
 outputDir="$(pwd)"
 
 while [[ $# -gt 0 ]]; do
@@ -98,6 +100,11 @@ while [[ $# -gt 0 ]]; do
     setupAksOpts="${setupAksOpts} $key $value "
     shift # past argument
     shift # past value
+    ;;
+  --keep-tmp-files)
+    keepTmpFiles=true
+    setupAksOpts="${setupAksOpts} $key "
+    shift # past argument
     ;;
   -o | --outdir)
     requiredDirectory "$key" "$value"
@@ -199,10 +206,13 @@ az storage container create \
   --public-access blob
 
 artifactsBlobUpdate="${outputDir}/ARTIFACTS_BLOB_UPDATE"
+# ensure folder exists and it's empty
 mkdir -p "${artifactsBlobUpdate}"/foo
 rm -rf "${artifactsBlobUpdate:?}"/*
-trap 'rm -rf "${artifactsBlobUpdate:?}"' EXIT
-
+# Delete folder at EXIT if required
+if [ "$keepTmpFiles" == "false" ]; then
+  trap 'rm -rf "${artifactsBlobUpdate:?}"' EXIT
+fi
 cp -r $(ls | grep -v "ARTIFACTS_BLOB_UPDATE\|parameters\|deployment-outputs") "${artifactsBlobUpdate}"
 
 az storage blob upload-batch \
