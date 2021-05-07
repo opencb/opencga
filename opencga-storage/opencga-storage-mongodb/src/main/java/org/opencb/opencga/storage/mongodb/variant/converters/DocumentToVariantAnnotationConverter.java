@@ -539,10 +539,10 @@ public class DocumentToVariantAnnotationConverter
     }
 
     private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, String proteinId,
-                                                                   int aaPosition,
-                                                                   String aaReference, String aaAlternate, String uniprotVariantId,
-                                                                   String functionalDescription, List<Score> proteinSubstitutionScores,
-                                                                   List<String> keywords, List<ProteinFeature> features) {
+                                                                   int aaPosition, String aaReference, String aaAlternate,
+                                                                   String uniprotVariantId, String functionalDescription,
+                                                                   List<Score> proteinSubstitutionScores, List<String> keywords,
+                                                                   List<ProteinFeature> features) {
         if (areAllEmpty(uniprotAccession, uniprotName, proteinId, aaPosition, aaReference, aaAlternate,
                 uniprotVariantId, proteinSubstitutionScores, keywords, features, functionalDescription)) {
             return null;

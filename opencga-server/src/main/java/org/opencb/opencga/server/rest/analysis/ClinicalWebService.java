@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
@@ -680,6 +681,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "dbSnps", value = RgaQueryParams.DB_SNPS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = RgaQueryParams.TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -723,6 +725,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "dbSnps", value = RgaQueryParams.DB_SNPS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = RgaQueryParams.TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -771,6 +774,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "dbSnps", value = RgaQueryParams.DB_SNPS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = RgaQueryParams.TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -814,6 +818,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "dbSnps", value = RgaQueryParams.DB_SNPS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = RgaQueryParams.TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -862,6 +867,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "dbSnps", value = RgaQueryParams.DB_SNPS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = RgaQueryParams.TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -905,6 +911,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "dbSnps", value = RgaQueryParams.DB_SNPS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = RgaQueryParams.TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -947,6 +954,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "transcriptId", value = RgaQueryParams.TRANSCRIPT_ID_DESCR, dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "transcriptBiotype", value = RgaQueryParams.TRANSCRIPT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "variants", value = RgaQueryParams.VARIANTS_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "dbSnps", value = RgaQueryParams.DB_SNPS_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "knockoutType", value = RgaQueryParams.KNOCKOUT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = RgaQueryParams.FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = RgaQueryParams.TYPE_DESCR, dataType = "string", paramType = "query"),
@@ -976,8 +984,18 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.INDEX_AUXILIAR_COLLECTION_DESCRIPTION, defaultValue = "false")
+                @QueryParam(ParamConstants.INDEX_AUXILIAR_COLLECTION) boolean indexAuxiliarColl,
             @ApiParam(value = RgaAnalysisParams.DESCRIPTION, required = true) RgaAnalysisParams params) {
-        return submitJob(RgaAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        if (indexAuxiliarColl) {
+            Map<String, Object> paramsMap = new HashMap<>();
+            if (StringUtils.isNotEmpty(study)) {
+                paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+            }
+            return submitJob(AuxiliarRgaAnalysis.ID, null, study, paramsMap, jobName, jobDescription, dependsOn, jobTags);
+        } else {
+            return submitJob(RgaAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        }
     }
 
     //-------------------------------------------------------------------------
