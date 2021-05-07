@@ -392,7 +392,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                             Arrays.asList(studyEntry.getIssues().get(0).getData().get(ModeOfInheritance.TRANSCRIPTS_LIST).split(",")));
                     String parentalOriginStr = studyEntry.getIssues().get(0).getData().get(ModeOfInheritance.PARENTAL_ORIGIN);
                     if (StringUtils.isNotEmpty(parentalOriginStr)) {
-                        parentalOrigin = KnockoutVariant.ParentalOrigin.valueOf(parentalOriginStr);
+                        parentalOrigin = KnockoutVariant.ParentalOrigin.valueOf(parentalOriginStr.toUpperCase());
                     }
                 }
                 for (ConsequenceType consequenceType : v.getAnnotation().getConsequenceTypes()) {

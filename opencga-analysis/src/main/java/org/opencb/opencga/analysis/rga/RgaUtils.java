@@ -392,13 +392,15 @@ class RgaUtils {
     public static class CodedVariant extends CodedFeature {
         //  transcriptId__id __ dbSnp __ SNV __ COMP_HET __ clinicalSignificance __ VR_R __ A_J
         private String dbSnp;
+        private String parentalOrigin;
         private List<String> clinicalSignificances;
 
-        public CodedVariant(String transcriptId, String id, String dbSnp, String type, String knockoutType,
+        public CodedVariant(String transcriptId, String id, String dbSnp, String type, String knockoutType, String parentalOrigin,
                             List<String> clinicalSignificances, List<String> consequenceTypeList, String thousandGenomesPopFreq,
                             String gnomadPopFreq) {
             super(transcriptId, id, type, knockoutType, consequenceTypeList, thousandGenomesPopFreq, gnomadPopFreq);
             this.dbSnp = dbSnp;
+            this.parentalOrigin = parentalOrigin;
             this.clinicalSignificances = clinicalSignificances;
         }
 
@@ -406,8 +408,8 @@ class RgaUtils {
             String[] split = encodedId.split(SEPARATOR);
             if (split.length != 8) {
                 throw new RgaException("Unexpected variant string received '" + encodedId
-                        + "'. Expected {transcriptId}__{id}__{dbSnp}__{type}__{knockoutType}__{clinicalSignificances}__{conseqType}_"
-                        + "_{popFreqs}");
+                        + "'. Expected {transcriptId}__{id}__{dbSnp}__{type}__{knockoutType}--{parentalOrigin}__{clinicalSignificances}"
+                        +  "__{conseqType}__{popFreqs}");
             }
 
             Set<String> consequenceType = new HashSet<>(Arrays.asList(split[6].split(INNER_SEPARATOR)));
@@ -416,14 +418,17 @@ class RgaUtils {
             if (StringUtils.isNotEmpty(split[5])) {
                 clinicalSignificances = Arrays.asList(split[5].split(INNER_SEPARATOR));
             }
+            String[] ktSplit = split[4].split(INNER_SEPARATOR);
+            String knockoutType = ktSplit[0];
+            String parentalOrigin = ktSplit[1];
 
-            return new CodedVariant(split[0], split[1], split[2], split[3], split[4], clinicalSignificances,
+            return new CodedVariant(split[0], split[1], split[2], split[3], knockoutType, parentalOrigin, clinicalSignificances,
                     new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1]);
         }
 
         public String getEncodedId() {
             return getTranscriptId() + SEPARATOR + getId() + SEPARATOR + dbSnp + SEPARATOR + getType() + SEPARATOR + getKnockoutType()
-                    + SEPARATOR + StringUtils.join(clinicalSignificances, INNER_SEPARATOR) + SEPARATOR
+                    + SEPARATOR + parentalOrigin + SEPARATOR + StringUtils.join(clinicalSignificances, INNER_SEPARATOR) + SEPARATOR
                     + StringUtils.join(getConsequenceType(), INNER_SEPARATOR) + SEPARATOR
                     + StringUtils.join(getPopulationFrequencies(), INNER_SEPARATOR);
         }

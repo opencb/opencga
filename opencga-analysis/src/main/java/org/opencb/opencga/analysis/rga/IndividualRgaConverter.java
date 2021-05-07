@@ -286,7 +286,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         Map<String, String> variantPopFreq = getPopulationFrequencies(variant);
                         RgaUtils.CodedVariant codedVariant = new RgaUtils.CodedVariant(transcript.getId(), variant.getId(),
                                 variant.getDbSnp(), variant.getType().name(), variant.getKnockoutType().name(),
-                                new ArrayList<>(auxClinicalSignificances), variantConsequenceTypes,
+                                variant.getParentalOrigin().name(), new ArrayList<>(auxClinicalSignificances), variantConsequenceTypes,
                                 variantPopFreq.get(RgaUtils.THOUSAND_GENOMES_STUDY), variantPopFreq.get(RgaUtils.GNOMAD_GENOMES_STUDY));
                         variantSummary.add(codedVariant.getEncodedId());
 

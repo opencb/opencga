@@ -339,7 +339,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                         KnockoutByGene knockoutByGene = reader.readValue(org.opencb.commons.utils.FileUtils.newBufferedReader(file.toPath()));
                         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "transcripts,annotation.expression");
                         Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
-                                .search(new Query("name", knockoutByGene.getName()), queryOptions).firstResult();
+                                .get(Collections.singletonList(knockoutByGene.getName()), queryOptions).firstResult();
                         knockoutByGene.setId(gene.getId());
                         knockoutByGene.setName(gene.getName());
                         knockoutByGene.setChromosome(gene.getChromosome());
