@@ -819,6 +819,13 @@ public class RgaManager implements AutoCloseable {
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), preprocess.getUserId(),
                 StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
+        // Check number of individuals matching query without checking their permissions
+        Future<Integer> totalIndividualsFuture = executor.submit(() -> {
+            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
+            DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
+            return ((Number) result.first().getAggregationValues().get(0)).intValue();
+        });
+
         List<String> sampleIds = preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
         preprocess.getQuery().remove(RgaQueryParams.SAMPLE_ID.key());
         List<KnockoutByIndividualSummary> knockoutByIndividualSummaryList = new ArrayList<>(sampleIds.size());
@@ -871,9 +878,16 @@ public class RgaManager implements AutoCloseable {
             }
         }
 
+        ObjectMap resultAttributes = new ObjectMap();
+        try {
+            resultAttributes.put("totalIndividuals", totalIndividualsFuture.get());
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error("Unexpected error getting total number of individuals without checking permissions: {}", e.getMessage(), e);
+        }
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByIndividualSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
                 knockoutByIndividualSummaryList.size(), knockoutByIndividualSummaryList, -1);
+        result.setAttributes(resultAttributes);
 
         if (preprocess.getQueryOptions().getBoolean(QueryOptions.COUNT)) {
             result.setNumMatches(preprocess.getNumTotalResults());

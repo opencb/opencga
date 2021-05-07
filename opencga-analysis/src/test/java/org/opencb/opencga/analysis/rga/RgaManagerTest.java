@@ -232,6 +232,8 @@ public class RgaManagerTest {
     public void testIndividualSummary() throws CatalogException, IOException, RgaException {
         OpenCGAResult<KnockoutByIndividualSummary> result = rgaManager.individualSummary(STUDY, new Query(), QueryOptions.empty(), ownerToken);
         assertEquals(4, result.getNumResults());
+        assertTrue(result.getAttributes().containsKey("totalIndividuals"));
+        assertEquals(4, result.getAttributes().getInt("totalIndividuals"));
         for (KnockoutByIndividualSummary individual : result.getResults()) {
             if ("NA19685".equals(individual.getId()) || "NA19600".equals(individual.getId())) {
                 assertEquals(2, individual.getNumParents());
