@@ -565,7 +565,6 @@ public class RgaManagerTest {
         assertEquals(60, variantIds.size());
     }
 
-
     @Test
     public void testVariantSummary() throws CatalogException, IOException, RgaException {
         OpenCGAResult<KnockoutByVariantSummary> result = rgaManager.variantSummary(STUDY, new Query(), QueryOptions.empty(), ownerToken);

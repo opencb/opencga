@@ -428,7 +428,7 @@ class RgaUtils {
 
         public String getEncodedId() {
             return getTranscriptId() + SEPARATOR + getId() + SEPARATOR + dbSnp + SEPARATOR + getType() + SEPARATOR + getKnockoutType()
-                    + SEPARATOR + parentalOrigin + SEPARATOR + StringUtils.join(clinicalSignificances, INNER_SEPARATOR) + SEPARATOR
+                    + INNER_SEPARATOR + parentalOrigin + SEPARATOR + StringUtils.join(clinicalSignificances, INNER_SEPARATOR) + SEPARATOR
                     + StringUtils.join(getConsequenceType(), INNER_SEPARATOR) + SEPARATOR
                     + StringUtils.join(getPopulationFrequencies(), INNER_SEPARATOR);
         }
