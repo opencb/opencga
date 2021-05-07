@@ -109,12 +109,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             if (CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
                 throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by any panel");
             }
-            if (StringUtils.isNotEmpty(analysisParams.getConsequenceType())) {
-                Set<String> cts = new HashSet<>(Arrays.asList(analysisParams.getConsequenceType().split(",")));
-                if (!cts.equals(VariantQueryUtils.LOF_EXTENDED_SET)) {
-                    throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by consequence type : " + cts);
-                }
-            }
+//            if (StringUtils.isNotEmpty(analysisParams.getConsequenceType())) {
+//                Set<String> cts = new HashSet<>(Arrays.asList(analysisParams.getConsequenceType().split(",")));
+//                if (!cts.equals(VariantQueryUtils.LOF_EXTENDED_SET)) {
+//                    throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by consequence type : " + cts);
+//                }
+//            }
             analysisParams.setSkipGenesFile(true);
         }
 
