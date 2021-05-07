@@ -78,6 +78,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_PROTEIN_FEATURE_DESCRIPTION_FIELD = "desc";
     public static final String CT_PROTEIN_UNIPROT_ACCESSION = "uni_a";
     public static final String CT_PROTEIN_UNIPROT_NAME = "uni_n";
+    public static final String CT_PROTEIN_ID = "p_id";
     public static final String CT_PROTEIN_UNIPROT_VARIANT_ID = "uni_var";
     public static final String CT_PROTEIN_FUNCTIONAL_DESCRIPTION = "desc";
 
@@ -280,6 +281,7 @@ public class DocumentToVariantAnnotationConverter
                     ProteinVariantAnnotation proteinVariantAnnotation = buildProteinVariantAnnotation(
                             getDefault(ct, CT_PROTEIN_UNIPROT_ACCESSION, (String) null),
                             getDefault(ct, CT_PROTEIN_UNIPROT_NAME, (String) null),
+                            getDefault(ct, CT_PROTEIN_ID, (String) null),
                             getDefault(ct, CT_AA_POSITION_FIELD, 0),
                             getDefault(ct, CT_AA_REFERENCE_FIELD, ""),
                             getDefault(ct, CT_AA_ALTERNATE_FIELD, ""),
@@ -532,11 +534,20 @@ public class DocumentToVariantAnnotationConverter
                                                                    String aaReference, String aaAlternate, String uniprotVariantId,
                                                                    String functionalDescription, List<Score> proteinSubstitutionScores,
                                                                    List<String> keywords, List<ProteinFeature> features) {
-        if (areAllEmpty(uniprotAccession, uniprotName, aaPosition, aaReference, aaAlternate,
+        return buildProteinVariantAnnotation(uniprotAccession, uniprotName, uniprotAccession, aaPosition, aaReference, aaAlternate,
+                uniprotVariantId, functionalDescription, proteinSubstitutionScores, keywords, features);
+    }
+
+    private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, String proteinId,
+                                                                   int aaPosition, String aaReference, String aaAlternate,
+                                                                   String uniprotVariantId, String functionalDescription,
+                                                                   List<Score> proteinSubstitutionScores, List<String> keywords,
+                                                                   List<ProteinFeature> features) {
+        if (areAllEmpty(uniprotAccession, uniprotName, proteinId, aaPosition, aaReference, aaAlternate,
                 uniprotVariantId, proteinSubstitutionScores, keywords, features, functionalDescription)) {
             return null;
         } else {
-            return new ProteinVariantAnnotation(uniprotAccession, uniprotName, aaPosition,
+            return new ProteinVariantAnnotation(uniprotAccession, uniprotName, proteinId, aaPosition,
                     aaReference, aaAlternate, uniprotVariantId, functionalDescription, proteinSubstitutionScores, keywords, features);
         }
     }
@@ -653,6 +664,7 @@ public class DocumentToVariantAnnotationConverter
                     putNotNull(ct, CT_AA_ALTERNATE_FIELD, proteinVariantAnnotation.getAlternate());
                     putNotNull(ct, CT_PROTEIN_UNIPROT_ACCESSION, proteinVariantAnnotation.getUniprotAccession());
                     putNotNull(ct, CT_PROTEIN_UNIPROT_NAME, proteinVariantAnnotation.getUniprotName());
+                    putNotNull(ct, CT_PROTEIN_ID, proteinVariantAnnotation.getProteinId());
                     putNotNull(ct, CT_PROTEIN_UNIPROT_VARIANT_ID, proteinVariantAnnotation.getUniprotVariantId());
                     putNotNull(ct, CT_PROTEIN_FUNCTIONAL_DESCRIPTION, proteinVariantAnnotation.getFunctionalDescription());
                     //Protein substitution region score

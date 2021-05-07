@@ -33,14 +33,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser.CHROM_DENSITY;
 
 public class SampleIndexVariantAggregationExecutor extends VariantAggregationExecutor {
 
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private VariantStorageMetadataManager metadataManager;
-    private static final Pattern CATEGORICAL_PATTERN = Pattern.compile("^([a-zA-Z][a-zA-Z0-9_.:]+)(\\[[a-zA-Z0-9,*]+])?(:\\*|:\\d+)?$");
+    private static final Pattern CATEGORICAL_PATTERN = Pattern.compile("^([a-zA-Z][a-zA-Z0-9_.:]+)(\\[[a-zA-Z0-9\\-,:*]+])?(:\\*|:\\d+)?$");
 
     public static final Set<String> VALID_FACETS = new HashSet<>(Arrays.asList(
             CHROM_DENSITY,

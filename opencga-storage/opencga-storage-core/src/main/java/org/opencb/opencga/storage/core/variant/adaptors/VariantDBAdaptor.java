@@ -180,7 +180,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @return  Map key: StudyId, value: list of sampleIds
      */
     default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        return VariantQueryProjectionParser.getIncludeSamples(query, options, getMetadataManager());
+        return VariantQueryProjectionParser.getIncludeSampleIds(query, options, getMetadataManager());
     }
 
     DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
