@@ -68,6 +68,9 @@ public class RgaDataModel {
     private String transcriptBiotype;
 
     @Field
+    private List<String> dbSnps;
+
+    @Field
     private List<String> variants;
 
     @Field
@@ -169,6 +172,7 @@ public class RgaDataModel {
         sb.append(", end=").append(end);
         sb.append(", transcriptId='").append(transcriptId).append('\'');
         sb.append(", transcriptBiotype='").append(transcriptBiotype).append('\'');
+        sb.append(", dbSnps=").append(dbSnps);
         sb.append(", variants=").append(variants);
         sb.append(", types=").append(types);
         sb.append(", knockoutTypes=").append(knockoutTypes);
@@ -362,6 +366,15 @@ public class RgaDataModel {
 
     public RgaDataModel setTranscriptBiotype(String transcriptBiotype) {
         this.transcriptBiotype = transcriptBiotype;
+        return this;
+    }
+
+    public List<String> getDbSnps() {
+        return dbSnps;
+    }
+
+    public RgaDataModel setDbSnps(List<String> dbSnps) {
+        this.dbSnps = dbSnps;
         return this;
     }
 

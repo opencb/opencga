@@ -55,6 +55,7 @@ public class RgaQueryParser {
         parseStringValue(finalQuery, CLINICAL_SIGNIFICANCE, RgaDataModel.CLINICAL_SIGNIFICANCES, filterList);
 //        parseStringValue(finalQuery, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
         parseStringValue(finalQuery, VARIANTS, RgaDataModel.VARIANTS, filterList);
+        parseStringValue(finalQuery, DB_SNPS, RgaDataModel.DB_SNPS, filterList);
         parseFilterValue(finalQuery, filterList);
 
         // Create Solr query, adding filter queries and fields to show
@@ -82,7 +83,7 @@ public class RgaQueryParser {
 
         List<String> filterList = new ArrayList<>();
         parseStringValue(finalQuery, VARIANTS, AuxiliarRgaDataModel.ID, filterList);
-        parseStringValue(finalQuery, DB_SNP, AuxiliarRgaDataModel.DB_SNP, filterList);
+        parseStringValue(finalQuery, DB_SNPS, AuxiliarRgaDataModel.DB_SNP, filterList);
         parseStringValue(finalQuery, TYPE, AuxiliarRgaDataModel.TYPE, filterList);
         parseStringValue(finalQuery, KNOCKOUT, AuxiliarRgaDataModel.KNOCKOUT_TYPES, filterList);
         parseStringValue(finalQuery, CONSEQUENCE_TYPE, AuxiliarRgaDataModel.CONSEQUENCE_TYPES, filterList);

@@ -587,6 +587,7 @@
     <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="transcriptId" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="transcriptBiotype" type="string" indexed="false" stored="true" multiValued="false"/>
+    <field name="dbSnps" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="variants" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="types" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="knockoutTypes" type="string" indexed="true" stored="true" multiValued="true"/>

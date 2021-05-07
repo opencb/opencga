@@ -278,6 +278,9 @@ class RgaUtils {
         if (rgaDataModel.getVariants() != null) {
             for (int i = 0; i < rgaDataModel.getVariants().size(); i++) {
                 String variantId = rgaDataModel.getVariants().get(i);
+                String dbSnp = CollectionUtils.isNotEmpty(rgaDataModel.getDbSnps())
+                        ? rgaDataModel.getDbSnps().get(i)
+                        : null;
 
                 if (variantIds.isEmpty() || variantIds.contains(variantId)) {
                     KnockoutVariant knockoutVariant;
@@ -302,6 +305,7 @@ class RgaUtils {
 
                             knockoutVariant = new KnockoutVariant()
                                     .setId(codedFeature.getId())
+                                    .setDbSnp(codedFeature.getDbSnp())
                                     .setKnockoutType(KnockoutVariant.KnockoutType.valueOf(codedFeature.getKnockoutType()))
                                     .setType(VariantType.valueOf(codedFeature.getType()))
                                     .setChromosome(variant.getChromosome())
@@ -316,6 +320,7 @@ class RgaUtils {
                         Variant variant = new Variant(variantId);
                         knockoutVariant = new KnockoutVariant()
                                 .setId(variantId)
+                                .setDbSnp(dbSnp)
                                 .setChromosome(variant.getChromosome())
                                 .setStart(variant.getStart())
                                 .setEnd(variant.getEnd())
@@ -487,11 +492,13 @@ class RgaUtils {
     }
 
     public static class KnockoutTypeCount {
-
-        private Set<String> knockoutTypeQuery;
-        private List<Set<String>> popFreqQuery;
+        private Set<String> variantIdQuery;
+        private Set<String> dbSnpQuery;
         private Set<String> typeQuery;
+        private Set<String> knockoutTypeQuery;
+        private Set<String> clinicalSignificanceQuery;
         private Set<String> consequenceTypeQuery;
+        private List<Set<String>> popFreqQuery;
 
         private Set<String> ids;
         private Map<String, Set<String>> transcriptCompHetIdsMap;
@@ -500,8 +507,11 @@ class RgaUtils {
         private Set<String> delOverlapIds;
 
         public KnockoutTypeCount(Query query) throws RgaException {
+            variantIdQuery = new HashSet<>();
+            dbSnpQuery = new HashSet<>();
             knockoutTypeQuery = new HashSet<>();
             popFreqQuery = new LinkedList<>();
+            clinicalSignificanceQuery = new HashSet<>();
             typeQuery = new HashSet<>();
             consequenceTypeQuery = new HashSet<>();
             ids = new HashSet<>();
@@ -511,8 +521,11 @@ class RgaUtils {
             delOverlapIds = new HashSet<>();
 
             query = ParamUtils.defaultObject(query, Query::new);
+            variantIdQuery.addAll(query.getAsStringList(RgaQueryParams.VARIANTS.key()));
+            dbSnpQuery.addAll(query.getAsStringList(RgaQueryParams.DB_SNPS.key()));
             knockoutTypeQuery.addAll(query.getAsStringList(RgaQueryParams.KNOCKOUT.key()));
             typeQuery.addAll(query.getAsStringList(RgaQueryParams.TYPE.key()));
+            clinicalSignificanceQuery.addAll(query.getAsStringList(RgaQueryParams.CLINICAL_SIGNIFICANCE.key()));
             consequenceTypeQuery.addAll(query.getAsStringList(RgaQueryParams.CONSEQUENCE_TYPE.key())
                     .stream()
                     .map(VariantQueryUtils::parseConsequenceType)
@@ -528,6 +541,22 @@ class RgaUtils {
         }
 
         public void processFeature(RgaUtils.CodedFeature codedFeature) {
+            if (codedFeature instanceof RgaUtils.CodedVariant) {
+                // Special checks for CodedVariants
+                RgaUtils.CodedVariant codedVariant = (CodedVariant) codedFeature;
+                if (!variantIdQuery.isEmpty() && !variantIdQuery.contains(codedVariant.getId())) {
+                    return;
+                }
+                if (!dbSnpQuery.isEmpty() && !dbSnpQuery.contains(codedVariant.getDbSnp())) {
+                    return;
+                }
+                if (!clinicalSignificanceQuery.isEmpty()
+                        && codedVariant.getClinicalSignificances().stream().noneMatch((cs) -> clinicalSignificanceQuery.contains(cs))) {
+                    return;
+                }
+            }
+
+            // Common filters
             if (!knockoutTypeQuery.isEmpty() && !knockoutTypeQuery.contains(codedFeature.getKnockoutType())) {
                 return;
             }

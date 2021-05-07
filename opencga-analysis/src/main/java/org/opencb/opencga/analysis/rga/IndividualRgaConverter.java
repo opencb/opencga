@@ -241,6 +241,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
 
                     Set<String> individualKnockoutSet = new HashSet<>();
                     List<String> variantIds = new ArrayList<>(transcript.getVariants().size());
+                    List<String> dbSnps = new ArrayList<>(transcript.getVariants().size());
                     List<String> knockoutTypes = new ArrayList<>(transcript.getVariants().size());
                     List<String> variantSummary = new ArrayList<>(transcript.getVariants().size());
                     Set<String> types = new HashSet<>();
@@ -252,6 +253,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                     List<KnockoutVariant> variants = transcript.getVariants();
                     for (KnockoutVariant variant : variants) {
                         variantIds.add(variant.getId());
+                        dbSnps.add(variant.getDbSnp());
                         String knockoutType = variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "";
                         knockoutTypes.add(knockoutType);
                         if (variant.getType() != null) {
@@ -320,6 +322,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                             .setEnd(gene.getEnd())
                             .setTranscriptId(transcript.getId())
                             .setTranscriptBiotype(transcript.getBiotype())
+                            .setDbSnps(dbSnps)
                             .setVariants(variantIds)
                             .setTypes(new ArrayList<>(types))
                             .setKnockoutTypes(knockoutTypes)
