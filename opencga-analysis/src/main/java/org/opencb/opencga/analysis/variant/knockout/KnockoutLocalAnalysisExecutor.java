@@ -392,7 +392,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                             Arrays.asList(studyEntry.getIssues().get(0).getData().get(ModeOfInheritance.TRANSCRIPTS_LIST).split(",")));
                     String parentalOriginStr = studyEntry.getIssues().get(0).getData().get(ModeOfInheritance.PARENTAL_ORIGIN);
                     if (StringUtils.isNotEmpty(parentalOriginStr)) {
-                        parentalOrigin = KnockoutVariant.ParentalOrigin.valueOf(parentalOriginStr);
+                        parentalOrigin = KnockoutVariant.ParentalOrigin.valueOf(parentalOriginStr.toUpperCase());
                     }
                 }
                 for (ConsequenceType consequenceType : v.getAnnotation().getConsequenceTypes()) {
@@ -404,7 +404,10 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                                             v.getAnnotation(), studyEntry.getStats(StudyEntry.DEFAULT_COHORT));
                             knockoutVariant.setParentalOrigin(parentalOrigin);
                         }
-                    }
+                    }/* else {
+                        logger.debug("Discard transcript " + consequenceType.getEnsemblTranscriptId() + " at from issueEntry "
+                                + studyEntry.getIssues());
+                    }*/
                 }
             });
             logger.info("Read " + numVariants + " COMP_HET variants from sample " + sample);

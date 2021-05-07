@@ -525,7 +525,7 @@ public class DocumentToVariantAnnotationConverter
             exonOverlapList.add(e);
         }
 
-        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, ensemblGeneId, ensemblTranscriptId, strand, biotype, null,
+        return new ConsequenceType(ensemblGeneId, geneName, ensemblGeneId, ensemblTranscriptId, ensemblTranscriptId, strand, biotype, null,
                 exonOverlapList, transcriptAnnotationFlags, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon,
                 proteinVariantAnnotation, soTerms);
     }
