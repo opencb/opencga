@@ -32,26 +32,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
-import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.GatkRunParams;
-import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
-import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.InferredSexAnalysisParams;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import org.opencb.opencga.core.models.variant.MendelianErrorAnalysisParams;
-import org.opencb.opencga.core.models.variant.MutationalSignatureAnalysisParams;
-import org.opencb.opencga.core.models.variant.PlinkRunParams;
-import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
-import org.opencb.opencga.core.models.variant.RvtestsRunParams;
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
-import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
-import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -311,7 +292,7 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runGatk(GatkRunParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runGatk(GatkWrapperParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "variant/gatk", null, "run", params, POST, Job.class);

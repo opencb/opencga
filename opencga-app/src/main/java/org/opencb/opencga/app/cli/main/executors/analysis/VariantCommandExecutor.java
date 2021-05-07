@@ -37,8 +37,10 @@ import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -730,7 +732,20 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().metadataAnnotation(getParams(cliOptions.project, null).append("annotationId", cliOptions.annotationId));
     }
 
-    // Wrappers
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    // Gatk
+
+    private RestResponse<Job> gatk() throws ClientException {
+        VariantCommandOptions.GatkCommandOptions cliOptions = variantCommandOptions.gatkCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+
+        return openCGAClient.getVariantClient().runGatk(new GatkWrapperParams(cliOptions.command, cliOptions.outdir, cliOptions.gatkParams),
+                params);
+    }
 
     private RestResponse<Job> plink() throws ClientException {
         return openCGAClient.getVariantClient().runPlink(
@@ -755,19 +770,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.rvtestsCommandOptions.outdir,
                         variantCommandOptions.rvtestsCommandOptions.basicOptions.params
                 ), getParams(variantCommandOptions.rvtestsCommandOptions.study));
-    }
-
-
-    private RestResponse<Job> gatk() throws ClientException {
-        return openCGAClient.getVariantClient().runGatk(
-                new GatkRunParams(
-                        variantCommandOptions.gatkCommandOptions.command,
-                        variantCommandOptions.gatkCommandOptions.fastaFile,
-                        variantCommandOptions.gatkCommandOptions.bamFile,
-                        variantCommandOptions.gatkCommandOptions.vcfFilename,
-                        variantCommandOptions.gatkCommandOptions.outdir,
-                        variantCommandOptions.gatkCommandOptions.basicOptions.params
-                ), getParams(variantCommandOptions.gatkCommandOptions.study));
     }
 
     private ObjectMap getParams(String study) {

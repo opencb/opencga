@@ -36,9 +36,9 @@ import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
@@ -65,6 +65,9 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.core.api.ParamConstants.GATK_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.core.api.ParamConstants.OUTPUT_DIRECTORY_DESCRIPTION;
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
@@ -1407,6 +1410,43 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
+
+    @Parameters(commandNames = JulieRunCommandOptions.JULIE_RUN_COMMAND, commandDescription = JulieRunCommandOptions.DESCRIPTION)
+    public class JulieRunCommandOptions extends GenericJulieRunCommandOptions {
+        public static final String JULIE_RUN_COMMAND = JulieTool.ID + "-run";
+        public static final String DESCRIPTION = JulieTool.DESCRIPTION;
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+    }
+
+    public static class GenericJulieRunCommandOptions {
+        @Parameter(names = {"--project"}, description = PROJECT_DESC)
+        public String project;
+
+        @Parameter(names = {"--cohort"}, description = "List of cohorts from multiple studies with {study}:{cohort}")
+        public String cohort;
+
+        @Parameter(names = {"--region"}, description = "Region to process")
+        public String region;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite all population frequencies.")
+        public boolean overwrite;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    // Plink
+
     @Parameters(commandNames = PlinkCommandOptions.PLINK_RUN_COMMAND, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)
     public class PlinkCommandOptions {
         public static final String PLINK_RUN_COMMAND = PlinkWrapperAnalysis.ID + "-run";
@@ -1436,6 +1476,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
+
+    // RvTests
 
     @Parameters(commandNames = RvtestsCommandOptions.RVTEST_RUN_COMMAND, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
     public class RvtestsCommandOptions {
@@ -1475,7 +1517,9 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = GatkCommandOptions.GATK_RUN_COMMAND, commandDescription = GatkWrapperAnalysis.DESCRIPTION)
+    // GATK
+
+    @Parameters(commandNames = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.ID, commandDescription = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.DESCRIPTION)
     public class GatkCommandOptions {
         public static final String GATK_RUN_COMMAND = GatkWrapperAnalysis.ID + "-run";
 
@@ -1488,53 +1532,16 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--study"}, description = "Study.")
+        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
         public String study;
 
-        @Parameter(names = {"--command"}, description = "Gatk command. Currently, the only command supported is 'HaplotypeCaller'")
-        public String command = "HaplotypeCaller";
+        @Parameter(names = {"--command"}, description = GATK_COMMAND_DESCRIPTION)
+        public String command;
 
-        @Parameter(names = {"--fasta-file"}, description = "FASTA file for reference genome")
-        public String fastaFile;
-
-        @Parameter(names = {"--bam-file"}, description = "BAM file for input alignments.")
-        public String bamFile;
-
-        @Parameter(names = {"--vcf-filename"}, description = "VCF filename.")
-        public String vcfFilename;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
-    }
 
-
-    @Parameters(commandNames = JulieRunCommandOptions.JULIE_RUN_COMMAND, commandDescription = JulieRunCommandOptions.DESCRIPTION)
-    public class JulieRunCommandOptions extends GenericJulieRunCommandOptions {
-        public static final String JULIE_RUN_COMMAND = JulieTool.ID + "-run";
-        public static final String DESCRIPTION = JulieTool.DESCRIPTION;
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
-
-    }
-
-    public static class GenericJulieRunCommandOptions {
-        @Parameter(names = {"--project"}, description = PROJECT_DESC)
-        public String project;
-
-        @Parameter(names = {"--cohort"}, description = "List of cohorts from multiple studies with {study}:{cohort}")
-        public String cohort;
-
-        @Parameter(names = {"--region"}, description = "Region to process")
-        public String region;
-
-        @Parameter(names = {"--overwrite"}, description = "Overwrite all population frequencies.")
-        public boolean overwrite;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
-        public String outdir;
+        @DynamicParameter(names = {"--gatk-params"}, description = "Gatk parameters e.g.:. --gatk-params I=test.bam")
+        public Map<String, String> gatkParams = new HashMap<>();
     }
 }

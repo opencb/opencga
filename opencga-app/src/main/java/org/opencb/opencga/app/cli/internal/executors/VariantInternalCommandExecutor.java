@@ -48,9 +48,9 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -951,19 +951,13 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void gatk() throws Exception {
         VariantCommandOptions.GatkCommandOptions cliOptions = variantCommandOptions.gatkCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
 
-        GatkWrapperAnalysis gatk = new GatkWrapperAnalysis();
-        gatk.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, cliOptions.basicOptions.token);
+        ObjectMap params = new GatkWrapperParams(
+                cliOptions.command,
+                cliOptions.outdir,
+                cliOptions.gatkParams)
+                .toObjectMap(cliOptions.basicOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        gatk.setStudy(cliOptions.study);
-        gatk.setCommand(cliOptions.command);
-        gatk.setFastaFile(cliOptions.fastaFile);
-        gatk.setBamFile(cliOptions.bamFile);
-        gatk.setVcfFilename(cliOptions.vcfFilename);
-
-        gatk.start();
+        toolRunner.execute(GatkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 }

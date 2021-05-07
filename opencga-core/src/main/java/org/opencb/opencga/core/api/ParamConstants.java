@@ -476,6 +476,11 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String GATK_COMMANDS_SUPPORTED = "HaplotypeCaller";
+    public static final String GATK_COMMAND_DESCRIPTION = "Supported Gatk commands: " + GATK_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "
             + "if that does not work, it will try with REST";
 
