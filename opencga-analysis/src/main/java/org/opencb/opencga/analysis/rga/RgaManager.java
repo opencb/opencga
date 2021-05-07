@@ -1293,8 +1293,16 @@ public class RgaManager implements AutoCloseable {
         boolean isCH = false;
         Set<KnockoutVariant> currentVariantSet = new HashSet<>();
         Set<KnockoutVariant> otherVariantSet = new HashSet<>();
+
+        // Generate this new query object so if user is filtering by any id, we still get all the possible CH variant pairs
+        Query knockoutTypeQuery = new Query(query);
+        knockoutTypeQuery.remove(RgaQueryParams.VARIANTS.key());
+        knockoutTypeQuery.remove(RgaQueryParams.DB_SNPS.key());
+        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(knockoutTypeQuery);
+
         for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
             CodedVariant codedVariant = CodedVariant.parseEncodedId(bucket.getValue());
+            knockoutTypeCount.processFeature(codedVariant);
             KnockoutVariant auxKnockoutVariant = convertToKnockoutVariant(new Variant(codedVariant.getId()));
             auxKnockoutVariant.setKnockoutType(KnockoutVariant.KnockoutType.valueOf(codedVariant.getKnockoutType()));
 
@@ -1322,6 +1330,7 @@ public class RgaManager implements AutoCloseable {
             allelePairList.addAll(currentVariantSet);
             allelePairList.addAll(otherVariantSet);
             knockoutByVariantSummary.setAllelePairs(allelePairList);
+            knockoutByVariantSummary.setTranscriptChPairs(knockoutTypeCount.getTranscriptCompHetIdsMap());
         } else {
             knockoutByVariantSummary.setAllelePairs(new ArrayList<>(currentVariantSet));
         }

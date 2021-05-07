@@ -640,6 +640,16 @@ class RgaUtils {
         public int getNumDelOverlapIds() {
             return delOverlapIds.size();
         }
+
+        public Map<String, List<String>> getTranscriptCompHetIdsMap() {
+            Map<String, List<String>> compHetMap = new HashMap<>();
+            for (Map.Entry<String, Set<String>> entry : transcriptCompHetIdsMap.entrySet()) {
+                if (entry.getValue().size() > 1) {
+                    compHetMap.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+                }
+            }
+            return compHetMap;
+        }
     }
 
 }

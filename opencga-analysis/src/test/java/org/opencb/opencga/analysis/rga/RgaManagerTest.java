@@ -575,6 +575,22 @@ public class RgaManagerTest {
             assertNotNull(variant.getDbSnp());
             assertFalse(variant.getGenes().isEmpty());
         }
+
+        result = rgaManager.variantSummary(STUDY, new Query(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(4, result.getNumResults());
+        for (KnockoutByVariantSummary variant : result.getResults()) {
+            assertFalse(variant.getTranscriptChPairs().isEmpty());
+            for (List<String> value : variant.getTranscriptChPairs().values()) {
+                assertTrue(value.size() >= 2);
+            }
+            assertTrue(variant.getAllelePairs().size() >= 2);
+
+            assertNotNull(variant.getId());
+            assertNotNull(variant.getDbSnp());
+            assertFalse(variant.getGenes().isEmpty());
+        }
+
     }
 
 }
