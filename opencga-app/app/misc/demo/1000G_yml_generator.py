@@ -19,6 +19,13 @@ _VARIABLE_FIELDS = ['Relationship', 'Siblings', 'Second Order', 'Third Order', '
 
 FNAME_TEMPLATE = 'ALL.chr{}.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz'
 
+SUPERPOPULATIONS = {
+    'EAS' : ['CHB' ,'JPT' ,'CHS' ,'CDX' ,'KHV'],
+    'EUR' : ['CEU', 'TSI', 'GBR', 'IBS'],
+    'AFR' : ['YRI' ,'LWK' ,'GWD' ,'MSL' ,'ESN' ,'ASW' ,'ACB'],
+    'AMR' : ['MXL', 'PUR', 'CLM', 'PEL'],
+    'SAS' : ['GIH', 'PJL', 'BEB', 'STU', 'ITU']
+}
 
 def to_camel_case(text):
     components = text.lower().replace('_', ' ').split(' ')
@@ -49,11 +56,9 @@ def create_individuals(ind_info):
         text.append('{}- id: {}'.format(' '*2, ind['Individual ID']))
         text.append('{}name: {}'.format(' '*4, ind['Individual ID']))
         if ind['Paternal ID'] != '0':
-            text.append('{}father:'.format(' '*4))
-            text.append('{}id: {}'.format(' '*6, ind['Paternal ID']))
+            text.append('{}father: {}'.format(' '*4, ind['Paternal ID']))
         if ind['Maternal ID'] != '0':
-            text.append('{}mother:'.format(' '*4))
-            text.append('{}id: {}'.format(' '*6, ind['Maternal ID']))
+            text.append('{}mother: {}'.format(' '*4, ind['Maternal ID']))
         text.append('{}sex: {}'.format(' '*4, _SEX[ind['Gender']]))
         text.append('{}karyotypicSex: {}'.format(' '*4, _KAR_SEX[ind['Gender']]))
         text.append('{}population:'.format(' '*4))
@@ -105,11 +110,32 @@ def create_families(ind_info):
     return '\n'.join(text)
 
 
-def create_files():
+def create_cohorts(ind_info):
+    cohorts = {}
+    for ind in ind_info:
+        cohorts.setdefault(ind['Population'], []).append(ind['Individual ID'])
+
+    for sup in SUPERPOPULATIONS:
+        sup_coh = []
+        for coh in SUPERPOPULATIONS[sup]:
+            sup_coh.extend(cohorts[coh])
+        cohorts[sup] = sup_coh
+
+    text = []
+    text.append('cohorts:')
+    for cohort in cohorts:
+        text.append('{}- id: {}'.format(' '*2, cohort))
+        text.append('{}samples:'.format(' '*4))
+        for sample in cohorts[cohort]:
+            text.append('{}- {}'.format(' '*6, sample))
+
+    return '\n'.join(text)
+
+def create_files(filename_pattern):
     text = []
     text.append('files:')
     for chrom in list(range(1, 23)) + ['X']:
-        text.append('{}- name: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
+        text.append('{}- name: {}'.format(' '*2, filename_pattern.format(chrom)))
         text.append('{}path: {}'.format(' '*4, 'data'))
     return '\n'.join(text)
 
@@ -133,6 +159,7 @@ def _setup_argparse():
 
     parser.add_argument('ped_file', help='Pedigree file path')
     parser.add_argument('outfile', help='Output file path')
+    parser.add_argument('-f', '--filename-pattern', help='Filename pattern', default=FNAME_TEMPLATE)
     args = parser.parse_args()
     return args
 
@@ -143,6 +170,7 @@ def main():
 
     ped_fhand = open(args.ped_file, 'r')
     yml_fhand = open(args.outfile, 'w')
+    filename_pattern = args.filename_pattern
 
     header = ped_fhand.readline().strip().split('\t')
     ind_info = [{k: v for k, v in zip(header, line.strip().split('\t'))} for line in ped_fhand]
@@ -152,10 +180,19 @@ def main():
     yml_fhand.write('id: 1000G\n')
     yml_fhand.write('name: 1000 Genomes phase 3\n')
     yml_fhand.write('description: The 1000 Genomes Project\n')
+    yml_fhand.write('\n')
+    yml_fhand.write('variantEngineConfiguration:\n')
+    yml_fhand.write('  options:\n')
+    yml_fhand.write('    expected_files_number: 24\n')
+    yml_fhand.write('    expected_samples_number: 2500\n')
+    yml_fhand.write('    storage.hadoop.variant.table.preSplit.numSplits: 500\n')
+    yml_fhand.write('\n')
+
     yml_fhand.write(create_variable_sets(header) + '\n')
     yml_fhand.write(create_individuals(ind_info) + '\n')
     yml_fhand.write(create_families(ind_info) + '\n')
-    yml_fhand.write(create_files() + '\n')
+    yml_fhand.write(create_cohorts(ind_info) + '\n')
+    yml_fhand.write(create_files(filename_pattern) + '\n')
     yml_fhand.write(create_attributes() + '\n')
 
     ped_fhand.close()

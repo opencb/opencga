@@ -445,10 +445,12 @@ public class TemplateManager {
             openCGAClient.setThrowExceptionOnError(true);
         }
         for (FamilyCreateParams family : families) {
-//            params.put("members", family.getMembers().stream().map(i->i.getId()).collect(Collectors.toList()));
-//            family.setMembers(null);
             if (!existing.contains(family.getId())) {
+                List<org.opencb.opencga.core.models.family.IndividualCreateParams> members = family.getMembers();
+                params.put("members", members.stream().map(i -> i.getId()).collect(Collectors.toList()));
+                family.setMembers(null);
                 openCGAClient.getFamilyClient().create(family, params);
+                family.setMembers(members);
             }
         }
     }
