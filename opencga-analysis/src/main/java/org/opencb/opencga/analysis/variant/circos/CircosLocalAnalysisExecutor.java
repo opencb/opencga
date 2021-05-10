@@ -49,8 +49,8 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_INPUT_PATH;
-import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH;
+import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_INPUT_PATH;
+import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_OUTPUT_PATH;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 @ToolExecutor(id="opencga-local", tool = CircosAnalysis.ID,
