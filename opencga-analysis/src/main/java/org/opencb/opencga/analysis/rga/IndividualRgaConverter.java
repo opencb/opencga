@@ -253,7 +253,9 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                     List<KnockoutVariant> variants = transcript.getVariants();
                     for (KnockoutVariant variant : variants) {
                         variantIds.add(variant.getId());
-                        dbSnps.add(variant.getDbSnp());
+                        if (StringUtils.isNotEmpty(variant.getDbSnp())) {
+                            dbSnps.add(variant.getDbSnp());
+                        }
                         String knockoutType = variant.getKnockoutType() != null ? variant.getKnockoutType().name() : "";
                         knockoutTypes.add(knockoutType);
                         if (variant.getType() != null) {
