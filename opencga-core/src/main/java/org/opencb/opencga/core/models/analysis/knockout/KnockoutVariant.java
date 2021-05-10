@@ -45,6 +45,7 @@ public class KnockoutVariant {
     private String qual;
     private VariantStats stats;
     private KnockoutType knockoutType;
+    private ParentalOrigin parentalOrigin = ParentalOrigin.UNKNOWN;
     private List<PopulationFrequency> populationFrequencies;
     private List<SequenceOntologyTerm> sequenceOntologyTerms;
     private List<ClinicalSignificance> clinicalSignificance;
@@ -54,6 +55,12 @@ public class KnockoutVariant {
         COMP_HET,
         HET_ALT,
         DELETION_OVERLAP
+    }
+    public enum ParentalOrigin {
+        PATERNAL,
+        MATERNAL,
+        BOTH,
+        UNKNOWN
     }
 
     public KnockoutVariant() {
@@ -319,6 +326,15 @@ public class KnockoutVariant {
 
     public KnockoutVariant setKnockoutType(KnockoutType knockoutType) {
         this.knockoutType = knockoutType;
+        return this;
+    }
+
+    public ParentalOrigin getParentalOrigin() {
+        return parentalOrigin;
+    }
+
+    public KnockoutVariant setParentalOrigin(ParentalOrigin parentalOrigin) {
+        this.parentalOrigin = parentalOrigin;
         return this;
     }
 

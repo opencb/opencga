@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
+import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
@@ -33,6 +34,7 @@ public class ClinicalCommandOptions {
     public ZettaCommandOptions zettaCommandOptions;
     public CancerTieringCommandOptions cancerTieringCommandOptions;
     public RgaSecondaryIndexCommandOptions rgaSecondaryIndexCommandOptions;
+    public RgaAuxiliarSecondaryIndexCommandOptions rgaAuxiliarSecondaryIndexCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -52,6 +54,7 @@ public class ClinicalCommandOptions {
         this.zettaCommandOptions = new ZettaCommandOptions();
         this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
         this.rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
+        this.rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
     }
 
     @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
@@ -264,6 +267,21 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--" + RgaAnalysisParams.FILE}, description = "Json file containing the KnockoutByIndividual information", required = true, arity = 1)
         public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription = AuxiliarRgaAnalysis.DESCRIPTION)
+    public class RgaAuxiliarSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        public static final String RGA_AUX_INDEX_RUN_COMMAND = AuxiliarRgaAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
         public String outdir;

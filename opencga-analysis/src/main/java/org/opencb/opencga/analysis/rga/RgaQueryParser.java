@@ -26,7 +26,7 @@ public class RgaQueryParser {
     protected static Logger logger = LoggerFactory.getLogger(RgaQueryParser.class);
 
     /**
-     * Create a SolrQuery object from Query and QueryOptions.
+     * Create a SolrQuery object from Query and QueryOptions for the main RGA collection.
      *
      * @param query         Query
      * @return              SolrQuery
@@ -55,7 +55,52 @@ public class RgaQueryParser {
         parseStringValue(finalQuery, CLINICAL_SIGNIFICANCE, RgaDataModel.CLINICAL_SIGNIFICANCES, filterList);
 //        parseStringValue(finalQuery, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
         parseStringValue(finalQuery, VARIANTS, RgaDataModel.VARIANTS, filterList);
+        parseStringValue(finalQuery, DB_SNPS, RgaDataModel.DB_SNPS, filterList);
         parseFilterValue(finalQuery, filterList);
+
+        // Create Solr query, adding filter queries and fields to show
+        solrQuery.setQuery("*:*");
+        filterList.forEach(solrQuery::addFilterQuery);
+
+        logger.debug("----------------------");
+        logger.debug("query     : " + printQuery(finalQuery));
+        logger.debug("solrQuery : " + solrQuery);
+        return solrQuery;
+    }
+
+    /**
+     * Create a SolrQuery object from Query and QueryOptions for the auxliar RGA collection.
+     *
+     * @param query         Query
+     * @return              SolrQuery
+     * @throws RgaException RgaException.
+     */
+    public SolrQuery parseAuxQuery(Query query) throws RgaException {
+        SolrQuery solrQuery = new SolrQuery();
+
+        Query finalQuery = new Query(query);
+        fixQuery(finalQuery);
+
+        List<String> filterList = new ArrayList<>();
+        parseStringValue(finalQuery, VARIANTS, AuxiliarRgaDataModel.ID, filterList);
+        parseStringValue(finalQuery, DB_SNPS, AuxiliarRgaDataModel.DB_SNP, filterList);
+        parseStringValue(finalQuery, TYPE, AuxiliarRgaDataModel.TYPE, filterList);
+        parseStringValue(finalQuery, KNOCKOUT, AuxiliarRgaDataModel.KNOCKOUT_TYPES, filterList);
+        parseStringValue(finalQuery, CONSEQUENCE_TYPE, AuxiliarRgaDataModel.CONSEQUENCE_TYPES, filterList);
+        parseStringValue(finalQuery, CLINICAL_SIGNIFICANCE, AuxiliarRgaDataModel.CLINICAL_SIGNIFICANCES, filterList);
+        parseStringValue(finalQuery, GENE_ID, AuxiliarRgaDataModel.GENE_IDS, filterList);
+        parseStringValue(finalQuery, GENE_NAME, AuxiliarRgaDataModel.GENE_NAMES, filterList);
+        parseStringValue(finalQuery, TRANSCRIPT_ID, AuxiliarRgaDataModel.TRANSCRIPT_IDS, filterList);
+
+        List<String> popFreqValues = query.getAsStringList(POPULATION_FREQUENCY.key(), ";");
+        if (!popFreqValues.isEmpty()) {
+            Map<String, List<String>> encodedPopFreqs = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
+
+            for (Map.Entry<String, List<String>> entry : encodedPopFreqs.entrySet()) {
+                parseStringValue(entry.getValue(),
+                        AuxiliarRgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
+            }
+        }
 
         // Create Solr query, adding filter queries and fields to show
         solrQuery.setQuery("*:*");

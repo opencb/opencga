@@ -9,6 +9,7 @@ rest:
   host: "${OPENCGA.CLIENT.REST.HOST}"
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
+  timeout: 90000
   query:
     batchSize: 200
     limit: 2000

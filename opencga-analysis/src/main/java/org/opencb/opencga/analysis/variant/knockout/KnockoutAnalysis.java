@@ -109,12 +109,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             if (CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
                 throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by any panel");
             }
-            if (StringUtils.isNotEmpty(analysisParams.getConsequenceType())) {
-                Set<String> cts = new HashSet<>(Arrays.asList(analysisParams.getConsequenceType().split(",")));
-                if (!cts.equals(VariantQueryUtils.LOF_EXTENDED_SET)) {
-                    throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by consequence type : " + cts);
-                }
-            }
+//            if (StringUtils.isNotEmpty(analysisParams.getConsequenceType())) {
+//                Set<String> cts = new HashSet<>(Arrays.asList(analysisParams.getConsequenceType().split(",")));
+//                if (!cts.equals(VariantQueryUtils.LOF_EXTENDED_SET)) {
+//                    throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by consequence type : " + cts);
+//                }
+//            }
             analysisParams.setSkipGenesFile(true);
         }
 
@@ -340,6 +340,8 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "transcripts,annotation.expression");
                         Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
                                 .search(new Query("name", knockoutByGene.getName()), queryOptions).firstResult();
+//                        Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
+//                                .get(Collections.singletonList(knockoutByGene.getName()), queryOptions).firstResult();
                         knockoutByGene.setId(gene.getId());
                         knockoutByGene.setName(gene.getName());
                         knockoutByGene.setChromosome(gene.getChromosome());

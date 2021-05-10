@@ -1,5 +1,8 @@
 package org.opencb.opencga.core.models.analysis.knockout;
 
+import java.util.Map;
+import java.util.Set;
+
 public class KnockoutByGeneSummary {
 
     private String id;
@@ -10,14 +13,14 @@ public class KnockoutByGeneSummary {
     private String strand;
     private String biotype;
 
-    private IndividualStats individualStats;
-    private VariantStats variantStats;
+    private IndividualKnockoutStats individualStats;
+    private VariantKnockoutStats variantStats;
 
     public KnockoutByGeneSummary() {
     }
 
     public KnockoutByGeneSummary(String id, String name, String chromosome, int start, int end, String strand, String biotype,
-                                 IndividualStats individualStats, VariantStats variantStats) {
+                                 IndividualKnockoutStats individualStats, VariantKnockoutStats variantStats) {
         this.id = id;
         this.name = name;
         this.chromosome = chromosome;
@@ -108,20 +111,20 @@ public class KnockoutByGeneSummary {
         return this;
     }
 
-    public IndividualStats getIndividualStats() {
+    public IndividualKnockoutStats getIndividualStats() {
         return individualStats;
     }
 
-    public KnockoutByGeneSummary setIndividualStats(IndividualStats individualStats) {
+    public KnockoutByGeneSummary setIndividualStats(IndividualKnockoutStats individualStats) {
         this.individualStats = individualStats;
         return this;
     }
 
-    public VariantStats getVariantStats() {
+    public VariantKnockoutStats getVariantStats() {
         return variantStats;
     }
 
-    public KnockoutByGeneSummary setVariantStats(VariantStats variantStats) {
+    public KnockoutByGeneSummary setVariantStats(VariantKnockoutStats variantStats) {
         this.variantStats = variantStats;
         return this;
     }

@@ -81,6 +81,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>rga/managed-schema</include>
+                    <include>rga/aux-managed-schema</include>
                 </includes>
             </resource>
         </resources>

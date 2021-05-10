@@ -40,6 +40,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariableSet;
 
+import javax.ws.rs.ext.ContextResolver;
+
 public class JacksonUtils {
 
     private static ObjectMapper defaultObjectMapper;
@@ -126,4 +128,19 @@ public class JacksonUtils {
     public static ObjectMapper getUpdateObjectMapper() {
         return updateObjectMapper;
     }
+
+    public static class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
+
+        final ObjectMapper mapper;
+
+        public ObjectMapperProvider() {
+            mapper = JacksonUtils.getDefaultNonNullObjectMapper();
+        }
+
+        @Override
+        public ObjectMapper getContext(Class<?> type) {
+            return mapper;
+        }
+    }
+
 }

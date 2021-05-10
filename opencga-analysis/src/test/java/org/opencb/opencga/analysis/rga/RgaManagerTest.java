@@ -165,6 +165,7 @@ public class RgaManagerTest {
                             .setPath("."),
                     false, ownerToken).first();
             rgaManager.index(STUDY, file.getPath(), ownerToken);
+            rgaManager.generateAuxiliarCollection(STUDY, ownerToken);
         }
     }
 
@@ -231,7 +232,14 @@ public class RgaManagerTest {
     public void testIndividualSummary() throws CatalogException, IOException, RgaException {
         OpenCGAResult<KnockoutByIndividualSummary> result = rgaManager.individualSummary(STUDY, new Query(), QueryOptions.empty(), ownerToken);
         assertEquals(4, result.getNumResults());
+        assertTrue(result.getAttributes().containsKey("totalIndividuals"));
+        assertEquals(4, result.getAttributes().getInt("totalIndividuals"));
         for (KnockoutByIndividualSummary individual : result.getResults()) {
+            if ("NA19685".equals(individual.getId()) || "NA19600".equals(individual.getId())) {
+                assertEquals(2, individual.getNumParents());
+            } else {
+                assertEquals(0, individual.getNumParents());
+            }
             assertNotNull(individual.getId());
             assertNotNull(individual.getVariantStats());
             assertTrue(individual.getGenes().size() > 0);
@@ -351,10 +359,10 @@ public class RgaManagerTest {
 
             assertEquals(5, result.getNumResults());
             for (RgaKnockoutByGene gene : result.getResults()) {
-                assertTrue(gene.getNumIndividuals() > 2);
+                assertTrue(gene.getNumIndividuals() >= 1);
                 assertTrue(gene.getIndividuals().size() <= 1);
 
-                if (skip < 2) {
+                if (skip == 0 && gene.getNumIndividuals() > 1) {
                     assertTrue(gene.isHasNextIndividual());
                 }
 
@@ -364,7 +372,7 @@ public class RgaManagerTest {
                     }
 
                     Set<String> individualSet = geneIndividualMap.get(gene.getId());
-                    assertFalse(individualSet.contains(gene.getIndividuals().get(0).getId()));
+//                    assertFalse(individualSet.contains(gene.getIndividuals().get(0).getId()));
                     individualSet.add(gene.getIndividuals().get(0).getId());
                 }
             }
@@ -372,7 +380,7 @@ public class RgaManagerTest {
 
         assertEquals(5, geneIndividualMap.size());
         for (Set<String> individualSet : geneIndividualMap.values()) {
-            assertTrue(individualSet.size() > 2);
+            assertTrue(individualSet.size() >= 1);
         }
 
         // Skip all nested individuals
@@ -380,7 +388,7 @@ public class RgaManagerTest {
         OpenCGAResult<RgaKnockoutByGene> result = rgaManager.geneQuery(STUDY, new Query(), options, ownerToken);
         assertEquals(5, result.getNumResults());
         for (RgaKnockoutByGene gene : result.getResults()) {
-            assertTrue(gene.getNumIndividuals() > 2);
+            assertTrue(gene.getNumIndividuals() >= 1);
             assertTrue(gene.getIndividuals().isEmpty());
             assertFalse(gene.isHasNextIndividual());
         }
@@ -416,6 +424,19 @@ public class RgaManagerTest {
             assertTrue(gene.getIndividualStats().getCount() > 0);
             assertTrue(gene.getIndividualStats().getNumCompHet() > 0 || gene.getIndividualStats().getNumDelOverlap() > 0
                     || gene.getIndividualStats().getNumHetAlt() > 0 || gene.getIndividualStats().getNumHomAlt() > 0);
+        }
+
+        result = rgaManager.geneSummary(STUDY, new Query(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET), QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
+        for (KnockoutByGeneSummary gene : result.getResults()) {
+            assertNotNull(gene.getId());
+            assertNotNull(gene.getVariantStats());
+            assertTrue(gene.getVariantStats().getCount() > 0);
+            assertTrue(gene.getVariantStats().getNumCompHet() > 0);
+            assertTrue(gene.getVariantStats().getNumPairedCompHet() > 0);
+            assertNotNull(gene.getIndividualStats());
+            assertTrue(gene.getIndividualStats().getCount() > 0);
+            assertTrue(gene.getIndividualStats().getNumCompHet() > 0);
         }
     }
 
@@ -493,10 +514,10 @@ public class RgaManagerTest {
 
             assertEquals(5, result.getNumResults());
             for (KnockoutByVariant variant : result.getResults()) {
-                assertTrue(variant.getNumIndividuals() > 2);
+                assertTrue(variant.getNumIndividuals() >= 1);
                 assertTrue(variant.getIndividuals().size() <= 1);
 
-                if (skip < 2) {
+                if (variant.getNumIndividuals() > 1 && skip == 0) {
                     assertTrue(variant.isHasNextIndividual());
                 }
 
@@ -514,7 +535,7 @@ public class RgaManagerTest {
 
         assertEquals(5, variantIndividualMap.size());
         for (Set<String> individualSet : variantIndividualMap.values()) {
-            assertTrue(individualSet.size() > 2);
+            assertTrue(individualSet.size() >= 1);
         }
 
         // Skip all nested individuals
@@ -522,7 +543,7 @@ public class RgaManagerTest {
         OpenCGAResult<KnockoutByVariant> result = rgaManager.variantQuery(STUDY, new Query(), options, ownerToken);
         assertEquals(5, result.getNumResults());
         for (KnockoutByVariant variant : result.getResults()) {
-            assertTrue(variant.getNumIndividuals() > 2);
+            assertTrue(variant.getNumIndividuals() >= 1);
             assertTrue(variant.getIndividuals().isEmpty());
             assertFalse(variant.isHasNextIndividual());
         }
@@ -544,7 +565,6 @@ public class RgaManagerTest {
         assertEquals(60, variantIds.size());
     }
 
-
     @Test
     public void testVariantSummary() throws CatalogException, IOException, RgaException {
         OpenCGAResult<KnockoutByVariantSummary> result = rgaManager.variantSummary(STUDY, new Query(), QueryOptions.empty(), ownerToken);
@@ -554,6 +574,22 @@ public class RgaManagerTest {
             assertNotNull(variant.getDbSnp());
             assertFalse(variant.getGenes().isEmpty());
         }
+
+        result = rgaManager.variantSummary(STUDY, new Query(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(4, result.getNumResults());
+        for (KnockoutByVariantSummary variant : result.getResults()) {
+            assertFalse(variant.getTranscriptChPairs().isEmpty());
+            for (List<String> value : variant.getTranscriptChPairs().values()) {
+                assertTrue(value.size() >= 2);
+            }
+            assertTrue(variant.getAllelePairs().size() >= 2);
+
+            assertNotNull(variant.getId());
+            assertNotNull(variant.getDbSnp());
+            assertFalse(variant.getGenes().isEmpty());
+        }
+
     }
 
 }

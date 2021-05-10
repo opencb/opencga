@@ -24,6 +24,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions.RGA_AUX_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
@@ -91,6 +93,10 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 rgaIndex();
                 break;
 
+            case RGA_AUX_INDEX_RUN_COMMAND:
+                auxRgaIndex();
+                break;
+
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -107,6 +113,14 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
+    private void auxRgaIndex() throws ToolException {
+        ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions options = clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions;
+        Path outDir = Paths.get(options.outdir);
+        ObjectMap params = new ObjectMap()
+                .appendAll(options.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, options.study);
+        toolRunner.execute(AuxiliarRgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
+    }
 
     private void tiering() throws Exception {
         ClinicalCommandOptions.TieringCommandOptions cliOptions = clinicalCommandOptions.tieringCommandOptions;

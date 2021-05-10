@@ -100,8 +100,8 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
                                         new SampleEntry(
                                                 trio.getChild(),
                                                 null,
-                                                Collections.singletonList(String.valueOf(code)))));
-
+                                                Collections.singletonList(String.valueOf(code))),
+                                        Collections.singletonMap("meCode", String.valueOf(code))));
                     }
                 }
             }
