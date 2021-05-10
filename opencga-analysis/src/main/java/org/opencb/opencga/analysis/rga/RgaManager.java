@@ -299,9 +299,10 @@ public class RgaManager implements AutoCloseable {
 
     }
 
-    private AuxiliarRgaDataModel getAuxiliarRgaDataModel(String mainCollection, String variantId) throws RgaException {
+    private AuxiliarRgaDataModel getAuxiliarRgaDataModel(String mainCollection, String variantId) throws RgaException, IOException {
         Query query = new Query(RgaQueryParams.VARIANTS.key(), variantId);
-        RgaIterator rgaIterator = rgaEngine.variantQuery(mainCollection, query, QueryOptions.empty());
+        StopWatch stopWatch = StopWatch.createStarted();
+
         String dbSnp = "";
         String type = "";
         Set<String> knockoutTypes = new HashSet<>();
@@ -312,31 +313,55 @@ public class RgaManager implements AutoCloseable {
         Set<String> geneNames = new HashSet<>();
         Set<String> transcripts = new HashSet<>();
 
-        while (rgaIterator.hasNext()) {
-            RgaDataModel rgaDataModel = rgaIterator.next();
-            for (String variantSummaryId : rgaDataModel.getVariantSummary()) {
-                CodedVariant codedVariant = CodedVariant.parseEncodedId(variantSummaryId);
-                if (codedVariant.getId().equals(variantId)) {
-                    knockoutTypes.add(codedVariant.getKnockoutType());
-                    consequenceTypes.addAll(codedVariant.getConsequenceType());
-                    if (populationFrequencyMap.isEmpty()) {
-                        dbSnp = codedVariant.getDbSnp();
-                        type = codedVariant.getType();
+        // 3. Get allele pairs and CT from Variant summary
+        QueryOptions knockoutTypeFacet = new QueryOptions()
+                .append(QueryOptions.LIMIT, -1)
+                .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
+        DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(mainCollection, query, knockoutTypeFacet);
 
-                        String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
-                        String thousandGenomeKey = pfKey + RgaUtils.THOUSAND_GENOMES_STUDY;
-                        String gnomadGenomeKey = pfKey + RgaUtils.GNOMAD_GENOMES_STUDY;
+        for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
+            CodedVariant codedVariant = CodedVariant.parseEncodedId(bucket.getValue());
+            if (variantId.equals(codedVariant.getId())) {
+                knockoutTypes.add(codedVariant.getKnockoutType());
+                consequenceTypes.addAll(codedVariant.getConsequenceType());
+                clinicalSignificances.addAll(codedVariant.getClinicalSignificances());
+                clinicalSignificances.add(codedVariant.getTranscriptId());
 
-                        populationFrequencyMap.put(thousandGenomeKey, codedVariant.getThousandGenomesFrequency());
-                        populationFrequencyMap.put(gnomadGenomeKey, codedVariant.getGnomadFrequency());
-                    }
-                    clinicalSignificances.addAll(codedVariant.getClinicalSignificances());
-                    geneIds.add(rgaDataModel.getGeneId());
-                    geneNames.add(rgaDataModel.getGeneName());
-                    transcripts.add(rgaDataModel.getTranscriptId());
+                if (populationFrequencyMap.isEmpty()) {
+                    dbSnp = codedVariant.getDbSnp();
+                    type = codedVariant.getType();
+
+                    String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
+                    String thousandGenomeKey = pfKey + RgaUtils.THOUSAND_GENOMES_STUDY;
+                    String gnomadGenomeKey = pfKey + RgaUtils.GNOMAD_GENOMES_STUDY;
+
+                    populationFrequencyMap.put(thousandGenomeKey, codedVariant.getThousandGenomesFrequency());
+                    populationFrequencyMap.put(gnomadGenomeKey, codedVariant.getGnomadFrequency());
                 }
             }
         }
+
+        knockoutTypeFacet = new QueryOptions()
+                .append(QueryOptions.LIMIT, -1)
+                .append(QueryOptions.FACET, RgaDataModel.GENE_ID);
+        facetFieldDataResult = rgaEngine.facetedQuery(mainCollection, query, knockoutTypeFacet);
+        geneIds.addAll(facetFieldDataResult.first().getBuckets()
+                .stream()
+                .map(FacetField.Bucket::getValue)
+                .map(String::valueOf)
+                .collect(Collectors.toSet()));
+
+        knockoutTypeFacet = new QueryOptions()
+                .append(QueryOptions.LIMIT, -1)
+                .append(QueryOptions.FACET, RgaDataModel.GENE_NAME);
+        facetFieldDataResult = rgaEngine.facetedQuery(mainCollection, query, knockoutTypeFacet);
+        geneNames.addAll(facetFieldDataResult.first().getBuckets()
+                .stream()
+                .map(FacetField.Bucket::getValue)
+                .map(String::valueOf)
+                .collect(Collectors.toSet()));
+
+        logger.info("Processing variant '{}' took {} milliseconds", variantId, stopWatch.getTime(TimeUnit.MILLISECONDS));
 
         return new AuxiliarRgaDataModel(variantId, dbSnp, type, new ArrayList<>(knockoutTypes),
                 new ArrayList<>(consequenceTypes), populationFrequencyMap, new ArrayList<>(clinicalSignificances),
