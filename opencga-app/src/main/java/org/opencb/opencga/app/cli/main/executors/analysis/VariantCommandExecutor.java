@@ -747,14 +747,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> plink() throws ClientException {
-        return openCGAClient.getVariantClient().runPlink(
-                new PlinkRunParams(
-                        variantCommandOptions.plinkCommandOptions.tpedFile,
-                        variantCommandOptions.plinkCommandOptions.tfamFile,
-                        variantCommandOptions.plinkCommandOptions.covarFile,
-                        variantCommandOptions.plinkCommandOptions.outdir,
-                        variantCommandOptions.plinkCommandOptions.basicOptions.params
-                ), getParams(variantCommandOptions.plinkCommandOptions.study));
+        VariantCommandOptions.PlinkCommandOptions cliOptions = variantCommandOptions.plinkCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+
+        return openCGAClient.getVariantClient().runPlink(new PlinkWrapperParams(cliOptions.outdir, cliOptions.plinkParams), params);
     }
 
     // RvTests

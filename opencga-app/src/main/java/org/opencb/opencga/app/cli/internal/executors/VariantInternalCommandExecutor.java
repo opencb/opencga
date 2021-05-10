@@ -48,8 +48,8 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -900,24 +900,13 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void plink() throws Exception {
         VariantCommandOptions.PlinkCommandOptions cliOptions = variantCommandOptions.plinkCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
 
-        if (StringUtils.isNotEmpty(cliOptions.tpedFile)) {
-            params.put(PlinkWrapperAnalysis.TPED_FILE_PARAM, cliOptions.tpedFile);
-        }
-        if (StringUtils.isNotEmpty(cliOptions.tfamFile)) {
-            params.put(PlinkWrapperAnalysis.TFAM_FILE_PARAM, cliOptions.tfamFile);
-        }
-        if (StringUtils.isNotEmpty(cliOptions.covarFile)) {
-            params.put(PlinkWrapperAnalysis.COVAR_FILE_PARAM, cliOptions.covarFile);
-        }
+        ObjectMap params = new PlinkWrapperParams(
+                cliOptions.outdir,
+                cliOptions.plinkParams)
+                .toObjectMap(cliOptions.basicOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
-        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
-
-        plink.start();
+        toolRunner.execute(PlinkWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void rvtests() throws Exception {

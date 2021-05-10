@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -358,7 +358,8 @@ public class IndividualQcUtils {
         // Variant pruning using PLINK in docker
         String plinkParams = "plink --tfile /data/output/" + basename + " --indep 50 5 2 --out /data/output/" + basename;
         try {
-            DockerUtils.run(PlinkWrapperAnalysis.PLINK_DOCKER_IMAGE, null, outputBinding, plinkParams, null);
+            PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
+            DockerUtils.run(plinkExecutor.getDockerImageName(), null, outputBinding, plinkParams, null);
         } catch (IOException e) {
             throw new ToolException(e);
         }

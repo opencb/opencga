@@ -36,8 +36,8 @@ import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
@@ -1462,17 +1462,12 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
 
-        @Parameter(names = {"--tped-file"}, description = "Transpose PED file (.tped) containing SNP and genotype information.")
-        public String tpedFile;
-
-        @Parameter(names = {"--tfam-file"}, description = "Transpose FAM file (.tfam) containing individual and family information.")
-        public String tfamFile;
-
-        @Parameter(names = {"--covar-file"}, description = "Covariate file.")
-        public String covarFile;
-
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
+
+        @DynamicParameter(names = {"--plink-params"}, description = "Plink parameters e.g.:. --plink-params tfile=test --plink-params "
+                + " assoc=true")
+        public Map<String, String> plinkParams = new HashMap<>();
     }
 
     // RvTests

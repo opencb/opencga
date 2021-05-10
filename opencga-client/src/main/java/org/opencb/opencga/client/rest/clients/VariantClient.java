@@ -523,7 +523,7 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> runPlink(PlinkRunParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runPlink(PlinkWrapperParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis", null, "variant/plink", null, "run", params, POST, Job.class);
