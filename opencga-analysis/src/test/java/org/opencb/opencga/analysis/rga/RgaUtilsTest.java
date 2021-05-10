@@ -65,9 +65,12 @@ public class RgaUtilsTest {
 
         List<KnockoutVariant> knockoutVariantList = new ArrayList<>(2);
         List<PopulationFrequency> populationFrequencyList = new ArrayList<>(3);
-        populationFrequencyList.add(new PopulationFrequency(RgaUtils.GNOMAD_GENOMES_STUDY, "ALL", "", "", 1f, 0.3f, 1f, 0.4f, 0.2f));
-        populationFrequencyList.add(new PopulationFrequency(RgaUtils.THOUSAND_GENOMES_STUDY, "ALL", "", "", 1f, 0.04f, 1f, 0.04f, 0.02f));
-        populationFrequencyList.add(new PopulationFrequency("otherStudy", "ALL", "", "", 1f, 0.04f, 1f, 0.004f, 0.2f));
+        populationFrequencyList.add(new PopulationFrequency(RgaUtils.GNOMAD_GENOMES_STUDY, "ALL", "", "", 1f, 0.3f, null, null,
+                1f, 0.4f, 0.2f, null, null, null));
+        populationFrequencyList.add(new PopulationFrequency(RgaUtils.THOUSAND_GENOMES_STUDY, "ALL", "", "", 1f, 0.04f, null, null,
+                1f, 0.04f, 0.02f, null, null, null));
+        populationFrequencyList.add(new PopulationFrequency("otherStudy", "ALL", "", "", 1f, 0.04f, null, null,
+                1f, 0.004f, 0.2f, null, null, null));
 
         List<SequenceOntologyTerm> sequenceOntologyTermList = new ArrayList<>(3);
         sequenceOntologyTermList.add(new SequenceOntologyTerm("SO:0002019", "start_retained_variant"));
@@ -83,9 +86,12 @@ public class RgaUtilsTest {
         knockoutVariantList.add(knockoutVariant);
 
         populationFrequencyList = new ArrayList<>(3);
-        populationFrequencyList.add(new PopulationFrequency(RgaUtils.GNOMAD_GENOMES_STUDY, "ALL", "", "", 1f, 0.2f, 1f, 0.04f, 0.02f));
-        populationFrequencyList.add(new PopulationFrequency(RgaUtils.THOUSAND_GENOMES_STUDY, "ALL", "", "", 1f, 0.01f, 1f, 0.01f, 0.01f));
-        populationFrequencyList.add(new PopulationFrequency("otherStudy", "ALL", "", "", 1f, 0.04f, 1f, 0.004f, 0.2f));
+        populationFrequencyList.add(new PopulationFrequency(RgaUtils.GNOMAD_GENOMES_STUDY, "ALL", "", "", 1f, 0.2f, null, null,
+                1f, 0.04f, 0.02f, null, null, null));
+        populationFrequencyList.add(new PopulationFrequency(RgaUtils.THOUSAND_GENOMES_STUDY, "ALL", "", "", 1f, 0.01f, null, null,
+                1f, 0.01f, 0.01f, null, null, null));
+        populationFrequencyList.add(new PopulationFrequency("otherStudy", "ALL", "", "", 1f, 0.04f, null, null,
+                1f, 0.004f, 0.2f, null, null, null));
 
         knockoutVariant = new KnockoutVariant("chr1:" + (count + 1) + ":A:C", "rs4321", "Genotype", 2, "NOT_PASS", "1", null,
                 KnockoutVariant.KnockoutType.COMP_HET, sequenceOntologyTermList, populationFrequencyList, clinicalSignificance)

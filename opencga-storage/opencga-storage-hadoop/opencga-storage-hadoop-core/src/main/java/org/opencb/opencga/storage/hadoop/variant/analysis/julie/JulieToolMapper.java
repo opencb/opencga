@@ -76,8 +76,8 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
                             studyIdMap.get(studyId),
                             cohortIdMap.get(studyId).get(cohortId),
                             variant.getReference(), variant.getAlternate(),
-                            variantStats.getRefAlleleFreq(), variantStats.getAltAlleleFreq(), null, null, null));
-
+                            variantStats.getRefAlleleFreq(), variantStats.getAltAlleleFreq(),
+                            null, null, null, null, null, null, null, null));
                 })
                 .walk();
 

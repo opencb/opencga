@@ -341,7 +341,8 @@ public class DocumentToVariantAnnotationConverter
         addScore(object, conservedRegionScores, GERP, CONSERVED_REGION_GERP_FIELD);
         va.setConservation(conservedRegionScores);
 
-        //Population frequencies
+        // Population frequencies
+        // FIXME we need to populate the allele and genotype counts
         List<PopulationFrequency> populationFrequencies = new LinkedList<>();
         if (object.containsKey(POPULATION_FREQUENCIES_FIELD)) {
             List<Document> list = (List) object.get(POPULATION_FREQUENCIES_FIELD);
@@ -353,9 +354,11 @@ public class DocumentToVariantAnnotationConverter
                         alternate,
                         getDefault(dbObject, POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, -1.0F),
                         getDefault(dbObject, POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, -1.0F),
+                        null, null,
                         getDefault(dbObject, POPULATION_FREQUENCY_REF_HOM_GT_FIELD, -1.0F),
                         getDefault(dbObject, POPULATION_FREQUENCY_HET_GT_FIELD, -1.0F),
-                        getDefault(dbObject, POPULATION_FREQUENCY_ALT_HOM_GT_FIELD, -1.0F)
+                        getDefault(dbObject, POPULATION_FREQUENCY_ALT_HOM_GT_FIELD, -1.0F),
+                        null, null, null
                 ));
             }
         }
