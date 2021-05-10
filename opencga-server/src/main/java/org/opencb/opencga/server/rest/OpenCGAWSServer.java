@@ -281,13 +281,15 @@ public class OpenCGAWSServer {
 
         ComponentBuilder triggeringPolicy = configurationBuilder.newComponent("Policies")
                 .addComponent(configurationBuilder.newComponent("SizeBasedTriggeringPolicy").addAttribute("size", "100MB"));
-        ComponentBuilder rolloverStrategy = configurationBuilder.newComponent("DirectWriteRolloverStrategy")
-                .addAttribute("maxFiles", 10);
+        ComponentBuilder rolloverStrategy = configurationBuilder.newComponent("DefaultRolloverStrategy")
+                .addAttribute("fileIndex", "max")
+                .addAttribute("max", 10);
 
         String logFile = logPath.resolve("server.log").toString();
 
         AppenderComponentBuilder appender = configurationBuilder.newAppender("rolling", "RollingFile")
                 .addAttribute("filePattern", logFile + ".%i")
+                .addAttribute("fileName", logFile)
                 .addAttribute("append", true)
                 .addComponent(triggeringPolicy)
                 .addComponent(rolloverStrategy)
