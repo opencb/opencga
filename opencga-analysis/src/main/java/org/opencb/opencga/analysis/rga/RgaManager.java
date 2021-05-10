@@ -325,7 +325,7 @@ public class RgaManager implements AutoCloseable {
                 knockoutTypes.add(codedVariant.getKnockoutType());
                 consequenceTypes.addAll(codedVariant.getConsequenceType());
                 clinicalSignificances.addAll(codedVariant.getClinicalSignificances());
-                clinicalSignificances.add(codedVariant.getTranscriptId());
+                transcripts.add(codedVariant.getTranscriptId());
 
                 if (populationFrequencyMap.isEmpty()) {
                     dbSnp = codedVariant.getDbSnp();
