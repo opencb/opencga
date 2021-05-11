@@ -442,6 +442,9 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--files"}, description = "Files that need to be processed. Use \"" + ParamConstants.ALL + "\" to process all files from the study", required = true, variableArity = true)
         public List<String> files;
+
+        @Parameter(names = {"--batch-size"}, description = "Samples update batch size")
+        public Integer batchSize;
     }
 
     @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")

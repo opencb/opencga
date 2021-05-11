@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -33,6 +34,15 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     protected final PostLinkToolParams postLinkParams = new PostLinkToolParams();
 
     @Override
+    protected void check() throws Exception {
+        super.check();
+        // Add default batch size
+        if (postLinkParams.getBatchSize() == null || postLinkParams.getBatchSize() <= 0) {
+            postLinkParams.setBatchSize(1000);
+        }
+    }
+
+    @Override
     protected void run() throws Exception {
         // Obtain an iterator to get all the files that were link and not associated to any of its samples
         Query fileQuery = new Query(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.MISSING_SAMPLES);
@@ -45,10 +55,11 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
         options.put(QueryOptions.COUNT, true);
 
         List<String> files = null;
-        if (CollectionUtils.isNotEmpty(postLinkParams.getFiles())) {
-            files = new LinkedList<>(postLinkParams.getFiles());
-        } else {
+        if (CollectionUtils.isEmpty(postLinkParams.getFiles())
+                || postLinkParams.getFiles().size() == 1 && postLinkParams.getFiles().get(0).equals(ParamConstants.ALL)) {
             logger.info("Processing all files with internal status = '" + FileStatus.MISSING_SAMPLES + "'");
+        } else {
+            files = new LinkedList<>(postLinkParams.getFiles());
         }
 
         int numPendingFiles = -1;
@@ -88,16 +99,36 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                     if (CollectionUtils.isNotEmpty(file.getInternal().getMissingSamples().getNonExisting())) {
                         logger.info("Create {} missing samples", file.getInternal().getMissingSamples().getNonExisting().size());
                         for (String sampleId : file.getInternal().getMissingSamples().getNonExisting()) {
-                            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
-                            OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(study, sampleQuery,
-                                    SampleManager.INCLUDE_SAMPLE_IDS, token);
+                            if (!sampleExists(sampleId)) {
+                                try {
+                                    // Sample still doesn't exist, so we create it
+                                    OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().create(study, new Sample().setId(sampleId),
+                                            QueryOptions.empty(), token);
+                                    if (sampleResult.getNumResults() != 1) {
+                                        throw new CatalogException("Could not create sample '" + sampleId + "'");
+                                    }
+                                } catch (CatalogException e) {
+                                    try {
+                                        if (sampleExists(sampleId)) {
+                                            // If sample was successfully created, but still got an exception.
+                                            // Ignore exception
 
-                            if (sampleResult.getNumResults() != 1) {
-                                // Sample still doesn't exist, so we create it
-                                sampleResult = catalogManager.getSampleManager().create(study, new Sample().setId(sampleId),
-                                        QueryOptions.empty(), token);
-                                if (sampleResult.getNumResults() != 1) {
-                                    throw new CatalogException("Could not create sample '" + sampleId + "'");
+                                            // Log INFO without stack trace
+                                            logger.info("Caught exception creating sample \"" + sampleId + "\","
+                                                    + " but sample was actually created. Ignoring " + e.toString());
+
+                                            // Log DEBUG with full stack trace
+                                            logger.debug("Ignored exception", e);
+                                        } else {
+                                            // Sample could not be created.
+                                            // Throw exception
+                                            throw e;
+                                        }
+                                    } catch (Exception e1) {
+                                        // Something went wrong. Throw original exception, and add this new as suppressed
+                                        e.addSuppressed(e1);
+                                        throw e;
+                                    }
                                 }
                             }
 
@@ -111,7 +142,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                     }
 
                     // Create sample batches
-                    int batchSize = 1000;
+                    int batchSize = postLinkParams.getBatchSize();
                     List<List<String>> sampleListList = new ArrayList<>((sampleList.size() / batchSize) + 1);
                     // Create batches
                     List<String> currentList = null;
@@ -159,5 +190,13 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 }
             }
         }
+    }
+
+    private boolean sampleExists(String sampleId) throws CatalogException {
+        Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
+        OpenCGAResult<Sample> sampleResult = catalogManager.getSampleManager().search(study, sampleQuery,
+                SampleManager.INCLUDE_SAMPLE_IDS, token);
+
+        return sampleResult.getNumResults() == 1;
     }
 }

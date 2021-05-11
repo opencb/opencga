@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.FacetField;
@@ -407,10 +406,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = getCommonParams(commandOptions.study, filesCommandOptions.commonCommandOptions.params);
         addJobParams(commandOptions.jobOptions, params);
 
-        if (CollectionUtils.size(commandOptions.files) == 1 && commandOptions.files.get(0).equals(ParamConstants.ALL)) {
-            commandOptions.files = Collections.emptyList();
-        }
-        PostLinkToolParams data = new PostLinkToolParams(commandOptions.files);
+        PostLinkToolParams data = new PostLinkToolParams(commandOptions.files, commandOptions.batchSize);
 
         return openCGAClient.getFileClient().runPostlink(data, params);
     }
