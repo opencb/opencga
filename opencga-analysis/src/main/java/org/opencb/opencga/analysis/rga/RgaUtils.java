@@ -278,9 +278,6 @@ class RgaUtils {
         if (rgaDataModel.getVariants() != null) {
             for (int i = 0; i < rgaDataModel.getVariants().size(); i++) {
                 String variantId = rgaDataModel.getVariants().get(i);
-                String dbSnp = CollectionUtils.isNotEmpty(rgaDataModel.getDbSnps())
-                        ? rgaDataModel.getDbSnps().get(i)
-                        : null;
 
                 if (variantIds.isEmpty() || variantIds.contains(variantId)) {
                     KnockoutVariant knockoutVariant;
@@ -320,7 +317,6 @@ class RgaUtils {
                         Variant variant = new Variant(variantId);
                         knockoutVariant = new KnockoutVariant()
                                 .setId(variantId)
-                                .setDbSnp(dbSnp)
                                 .setChromosome(variant.getChromosome())
                                 .setStart(variant.getStart())
                                 .setEnd(variant.getEnd())

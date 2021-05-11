@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.rga;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
@@ -14,8 +15,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant.KnockoutType.*;
 import static org.opencb.opencga.analysis.rga.RgaQueryParams.*;
+import static org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant.KnockoutType.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.printQuery;
 
 public class RgaQueryParser {
@@ -80,6 +81,10 @@ public class RgaQueryParser {
 
         Query finalQuery = new Query(query);
         fixQuery(finalQuery);
+        if (finalQuery.containsKey(CONSEQUENCE_TYPE.key())) {
+            List<String> ctValues = getEncodedConsequenceTypes(finalQuery.getAsStringList(CONSEQUENCE_TYPE.key()));
+            finalQuery.put(CONSEQUENCE_TYPE.key(), ctValues);
+        }
 
         List<String> filterList = new ArrayList<>();
         parseStringValue(finalQuery, VARIANTS, AuxiliarRgaDataModel.ID, filterList);
@@ -231,21 +236,24 @@ public class RgaQueryParser {
         filterValues = RgaUtils.parseFilterQuery(filterValues);
 
         // CT
-        List<String> ctValues;
-        if (!ctList.isEmpty()) {
-            ctValues = new ArrayList<>(ctList.size());
-            for (String ctValue : ctList) {
-                String encodedValue = String.valueOf(VariantQueryUtils.parseConsequenceType(ctValue));
-                ctValues.add(encodedValue);
-            }
-        } else {
-            ctValues = Collections.emptyList();
-        }
+        List<String> ctValues = getEncodedConsequenceTypes(ctList);
 
         // Pop. freq
         Map<String, List<String>> popFreqQueryList = RgaUtils.parsePopulationFrequencyQuery(popFreqList);
 
         buildComplexQuery(koValues, filterValues, ctValues, popFreqQueryList, filterList);
+    }
+
+    private List<String> getEncodedConsequenceTypes(List<String> originalCtList) {
+        if (CollectionUtils.isEmpty(originalCtList)) {
+            return Collections.emptyList();
+        }
+        List<String> ctValues = new ArrayList<>(originalCtList.size());
+        for (String ctValue : originalCtList) {
+            String encodedValue = String.valueOf(VariantQueryUtils.parseConsequenceType(ctValue));
+            ctValues.add(encodedValue);
+        }
+        return ctValues;
     }
 
     private void buildComplexQuery(List<String> koValues, List<String> filterValues, List<String> ctValues,

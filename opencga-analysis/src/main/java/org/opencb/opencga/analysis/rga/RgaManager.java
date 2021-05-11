@@ -822,10 +822,11 @@ public class RgaManager implements AutoCloseable {
 
     public OpenCGAResult<KnockoutByIndividualSummary> individualSummary(String studyStr, Query query, QueryOptions options, String token)
             throws RgaException, CatalogException, IOException {
+        StopWatch stopWatch = StopWatch.createStarted();
+
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String collection = getMainCollectionName(study.getFqn());
 
-        StopWatch stopWatch = StopWatch.createStarted();
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
         Preprocess preprocess;
@@ -926,6 +927,7 @@ public class RgaManager implements AutoCloseable {
 
     public OpenCGAResult<KnockoutByGeneSummary> geneSummary(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
+        StopWatch stopWatch = StopWatch.createStarted();
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getMainCollectionName(study.getFqn());
@@ -940,8 +942,6 @@ public class RgaManager implements AutoCloseable {
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
                 StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
         QueryOptions queryOptions = setDefaultLimit(options);
@@ -949,9 +949,9 @@ public class RgaManager implements AutoCloseable {
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         // Get numTotalResults in a future
-        Future<Integer> numTotalResults = null;
+        Future<Integer> numMatchesFuture = null;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
-            numTotalResults = executor.submit(() -> {
+            numMatchesFuture = executor.submit(() -> {
                 QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.GENE_ID + ")");
                 try {
                     DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
@@ -991,24 +991,24 @@ public class RgaManager implements AutoCloseable {
             throw new RgaException(e.getMessage(), e);
         }
 
-        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
-        OpenCGAResult<KnockoutByGeneSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
-                knockoutByGeneSummaryList.size(), knockoutByGeneSummaryList, -1);
-
+        int numMatches = -1;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
             try {
-                assert numTotalResults != null;
-                result.setNumMatches(numTotalResults.get());
+                assert numMatchesFuture != null;
+                numMatches = numMatchesFuture.get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RgaException(e.getMessage(), e);
             }
         }
 
-        return result;
+        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+        return new OpenCGAResult<>(time, Collections.emptyList(), knockoutByGeneSummaryList.size(), knockoutByGeneSummaryList, numMatches);
     }
 
     public OpenCGAResult<KnockoutByVariantSummary> variantSummary(String studyStr, Query query, QueryOptions options, String token)
             throws CatalogException, IOException, RgaException {
+        StopWatch stopWatch = StopWatch.createStarted();
+
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getMainCollectionName(study.getFqn());
@@ -1023,17 +1023,15 @@ public class RgaManager implements AutoCloseable {
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
                 StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
         QueryOptions queryOptions = setDefaultLimit(options);
 
         Query auxQuery = query != null ? new Query(query) : new Query();
 
-        Future<Integer> numTotalResults = null;
+        Future<Integer> numMatchesFuture = null;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
-            numTotalResults = executor.submit(() -> {
+            numMatchesFuture = executor.submit(() -> {
                 QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.VARIANTS + ")");
                 try {
                     DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
@@ -1107,22 +1105,21 @@ public class RgaManager implements AutoCloseable {
         }
 
         List<KnockoutByVariantSummary> knockoutByVariantSummaryList = new ArrayList<>(variantSummaryMap.values());
-
-        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
-        logger.info("Variant summary: {} milliseconds", time);
-        OpenCGAResult<KnockoutByVariantSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
-                knockoutByVariantSummaryList.size(), knockoutByVariantSummaryList, -1);
-
+        int numMatches = -1;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
             try {
-                assert numTotalResults != null;
-                result.setNumMatches(numTotalResults.get());
+                assert numMatchesFuture != null;
+                numMatches = numMatchesFuture.get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RgaException(e.getMessage(), e);
             }
         }
 
-        return result;
+        int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
+        logger.info("Variant summary: {} milliseconds", time);
+
+        return new OpenCGAResult<>(time, Collections.emptyList(), knockoutByVariantSummaryList.size(), knockoutByVariantSummaryList,
+                numMatches);
     }
 
     public OpenCGAResult<FacetField> aggregationStats(String studyStr, Query query, QueryOptions options, String fields, String token)

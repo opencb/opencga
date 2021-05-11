@@ -590,6 +590,18 @@ public class RgaManagerTest {
             assertFalse(variant.getGenes().isEmpty());
         }
 
+        result = rgaManager.variantSummary(STUDY, new Query(RgaQueryParams.CONSEQUENCE_TYPE.key(), "stop_gained"), QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        for (KnockoutByVariantSummary variant : result.getResults()) {
+            assertNull(variant.getTranscriptChPairs());
+            assertEquals(1, variant.getAllelePairs().size());
+
+            assertNotNull(variant.getId());
+            assertFalse(variant.getGenes().isEmpty());
+            assertEquals("stop_gained", variant.getSequenceOntologyTerms().get(0).getName());
+        }
+
+
     }
 
 }
