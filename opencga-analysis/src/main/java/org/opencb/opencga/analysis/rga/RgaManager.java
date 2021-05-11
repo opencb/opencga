@@ -557,25 +557,10 @@ public class RgaManager implements AutoCloseable {
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
-        // Get numTotalResults in a future
-        Future<Integer> numTotalResults = null;
-        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
-            numTotalResults = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.GENE_ID + ")");
-                try {
-                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
-                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return -1;
-            });
-        }
-
-        List<String> geneIds;
+        ResourceIds resourceIds;
         try {
-            geneIds = getIds(collection, auxCollection, RgaQueryParams.GENE_ID.key(), auxQuery, queryOptions);
-            auxQuery.put(RgaQueryParams.GENE_ID.key(), geneIds);
+            resourceIds = getIds(collection, auxCollection, RgaQueryParams.GENE_ID.key(), auxQuery, queryOptions, executor);
+            auxQuery.put(RgaQueryParams.GENE_ID.key(), resourceIds.getIds());
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
                 return OpenCGAResult.empty(RgaKnockoutByGene.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -646,7 +631,7 @@ public class RgaManager implements AutoCloseable {
 
         knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
         try {
-            knockoutResult.setNumMatches(numTotalResults != null ? numTotalResults.get() : -1);
+            knockoutResult.setNumMatches(resourceIds.getNumMatchesFuture() != null ? resourceIds.getNumMatchesFuture().get() : -1);
         } catch (InterruptedException | ExecutionException e) {
             knockoutResult.setNumMatches(-1);
         }
@@ -693,24 +678,10 @@ public class RgaManager implements AutoCloseable {
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
-        Future<Integer> numTotalResults = null;
-        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
-            numTotalResults = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.VARIANTS + ")");
-                try {
-                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
-                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
-                } catch (Exception e) {
-                    logger.error("Could not obtain the count: {}", e.getMessage(), e);
-                }
-                return -1;
-            });
-        }
-
-        List<String> variantIds;
+        ResourceIds resourceIds;
         try {
-            variantIds = getIds(collection, auxCollection, RgaQueryParams.VARIANTS.key(), auxQuery, queryOptions);
-            auxQuery.put(RgaDataModel.VARIANTS, variantIds);
+            resourceIds = getIds(collection, auxCollection, RgaQueryParams.VARIANTS.key(), auxQuery, queryOptions, executor);
+            auxQuery.put(RgaDataModel.VARIANTS, resourceIds.getIds());
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
                 return OpenCGAResult.empty(KnockoutByVariant.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -798,7 +769,7 @@ public class RgaManager implements AutoCloseable {
         OpenCGAResult<KnockoutByVariant> knockoutResult = new OpenCGAResult<>(time, Collections.emptyList(), knockoutResultList.size(),
                 knockoutResultList, -1);
         try {
-            knockoutResult.setNumMatches(numTotalResults != null ? numTotalResults.get() : -1);
+            knockoutResult.setNumMatches(resourceIds.getNumMatchesFuture() != null ? resourceIds.getNumMatchesFuture().get() : -1);
         } catch (InterruptedException | ExecutionException e) {
             knockoutResult.setNumMatches(-1);
         }
@@ -952,24 +923,9 @@ public class RgaManager implements AutoCloseable {
 
         Query auxQuery = query != null ? new Query(query) : new Query();
 
-        // Get numTotalResults in a future
-        Future<Integer> numMatchesFuture = null;
-        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
-            numMatchesFuture = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.GENE_ID + ")");
-                try {
-                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
-                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return -1;
-            });
-        }
-
-        List<String> geneIds;
+        ResourceIds resourceIds;
         try {
-            geneIds = getIds(collection, auxCollection, RgaQueryParams.GENE_ID.key(), auxQuery, queryOptions);
+            resourceIds = getIds(collection, auxCollection, RgaQueryParams.GENE_ID.key(), auxQuery, queryOptions, executor);
             auxQuery.remove(RgaQueryParams.GENE_ID.key());
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
@@ -978,12 +934,12 @@ public class RgaManager implements AutoCloseable {
             throw e;
         }
 
-        List<Future<KnockoutByGeneSummary>> geneSummaryFutureList = new ArrayList<>(geneIds.size());
-        for (String geneId : geneIds) {
+        List<Future<KnockoutByGeneSummary>> geneSummaryFutureList = new ArrayList<>(resourceIds.getIds().size());
+        for (String geneId : resourceIds.getIds()) {
             geneSummaryFutureList.add(executor.submit(() -> calculateGeneSummary(collection, auxQuery, geneId)));
         }
 
-        List<KnockoutByGeneSummary> knockoutByGeneSummaryList = new ArrayList<>(geneIds.size());
+        List<KnockoutByGeneSummary> knockoutByGeneSummaryList = new ArrayList<>(resourceIds.getIds().size());
         try {
             for (Future<KnockoutByGeneSummary> summaryFuture : geneSummaryFutureList) {
                 knockoutByGeneSummaryList.add(summaryFuture.get());
@@ -998,8 +954,8 @@ public class RgaManager implements AutoCloseable {
         int numMatches = -1;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
             try {
-                assert numMatchesFuture != null;
-                numMatches = numMatchesFuture.get();
+                assert resourceIds.getNumMatchesFuture() != null;
+                numMatches = resourceIds.getNumMatchesFuture().get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RgaException(e.getMessage(), e);
             }
@@ -1033,24 +989,10 @@ public class RgaManager implements AutoCloseable {
 
         Query auxQuery = query != null ? new Query(query) : new Query();
 
-        Future<Integer> numMatchesFuture = null;
-        if (queryOptions.getBoolean(QueryOptions.COUNT)) {
-            numMatchesFuture = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.VARIANTS + ")");
-                try {
-                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
-                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
-                } catch (Exception e) {
-                    logger.error("Could not obtain the count: {}", e.getMessage(), e);
-                }
-                return -1;
-            });
-        }
-
-        List<String> variantIds;
+        ResourceIds resourceIds;
         try {
-            variantIds = getIds(collection, auxCollection, RgaQueryParams.VARIANTS.key(), auxQuery, queryOptions);
-            auxQuery.put(RgaDataModel.VARIANTS, variantIds);
+            resourceIds = getIds(collection, auxCollection, RgaQueryParams.VARIANTS.key(), auxQuery, queryOptions, executor);
+            auxQuery.put(RgaDataModel.VARIANTS, resourceIds.getIds());
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
                 return OpenCGAResult.empty(KnockoutByVariantSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -1062,8 +1004,8 @@ public class RgaManager implements AutoCloseable {
                 () -> variantStorageQuery(study.getFqn(), Collections.emptyList(), auxQuery, QueryOptions.empty(), token)
         );
 
-        List<Future<KnockoutByVariantSummary>> variantSummaryList = new ArrayList<>(variantIds.size());
-        for (String variantId : variantIds) {
+        List<Future<KnockoutByVariantSummary>> variantSummaryList = new ArrayList<>(resourceIds.getIds().size());
+        for (String variantId : resourceIds.getIds()) {
             variantSummaryList.add(executor.submit(() -> calculatePartialSolrVariantSummary(collection, auxQuery, variantId)));
         }
 
@@ -1112,8 +1054,8 @@ public class RgaManager implements AutoCloseable {
         int numMatches = -1;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
             try {
-                assert numMatchesFuture != null;
-                numMatches = numMatchesFuture.get();
+                assert resourceIds.getNumMatchesFuture() != null;
+                numMatches = resourceIds.getNumMatchesFuture().get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RgaException(e.getMessage(), e);
             }
@@ -1156,42 +1098,55 @@ public class RgaManager implements AutoCloseable {
      * @throws RgaException RgaException.
      * @throws IOException IOException.
      */
-    private List<String> getIds(String mainCollection, String auxCollection, String facetField, Query query, QueryOptions options)
-            throws RgaException, IOException {
+    private ResourceIds getIds(String mainCollection, String auxCollection, String facetField, Query query, QueryOptions options,
+                               ExecutorService executor) throws RgaException, IOException {
         String auxiliarId = AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.get(facetField);
-        List<String> ids = query.getAsStringList(facetField);
-        // If the user is querying by variant id, we don't need to do a facet first
-        if (ids.isEmpty()) {
-            Query mainCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), true);
-            Query auxCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), false);
+        List<String> ids;
+        Future<Integer> numMatchesFuture = null;
 
-            if (!mainCollQuery.isEmpty()) {
-                // Perform a facet in the main collection because the user is filtering by other fields not present in the auxiliar coll
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, facetField);
-                facetOptions.putIfNotNull(QueryOptions.LIMIT, -1);
+        Query mainCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), true);
+        Query auxCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), false);
 
-                DataResult<FacetField> result = rgaEngine.facetedQuery(mainCollection, query, facetOptions);
-                if (result.getNumResults() == 0) {
-                    throw RgaException.noResultsMatching();
-                }
+        if (!mainCollQuery.isEmpty()) {
+            // Perform a facet in the main collection because the user is filtering by other fields not present in the auxiliar coll
+            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, facetField);
+            facetOptions.putIfNotNull(QueryOptions.LIMIT, -1);
 
-                ids = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
-                auxCollQuery.put(facetField, ids);
-            }
-
-            // Perform a facet to get the different variant ids matching the user query and using the skip and limit values
-            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, auxiliarId);
-            facetOptions.putIfNotNull(QueryOptions.LIMIT, options.get(QueryOptions.LIMIT));
-            facetOptions.putIfNotNull(QueryOptions.SKIP, options.get(QueryOptions.SKIP));
-
-            DataResult<FacetField> result = rgaEngine.auxFacetedQuery(auxCollection, auxCollQuery, facetOptions);
+            DataResult<FacetField> result = rgaEngine.facetedQuery(mainCollection, query, facetOptions);
             if (result.getNumResults() == 0) {
                 throw RgaException.noResultsMatching();
             }
+
             ids = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+            auxCollQuery.put(facetField, ids);
         }
 
-        return ids;
+        // Get number of matches
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            numMatchesFuture = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + auxiliarId + ")");
+                try {
+                    DataResult<FacetField> result = rgaEngine.auxFacetedQuery(auxCollection, auxCollQuery, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                } catch (Exception e) {
+                    logger.error("Could not obtain the count: {}", e.getMessage(), e);
+                }
+                return -1;
+            });
+        }
+
+        // Perform a facet to get the different variant ids matching the user query and using the skip and limit values
+        QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, auxiliarId);
+        facetOptions.putIfNotNull(QueryOptions.LIMIT, options.get(QueryOptions.LIMIT));
+        facetOptions.putIfNotNull(QueryOptions.SKIP, options.get(QueryOptions.SKIP));
+
+        DataResult<FacetField> result = rgaEngine.auxFacetedQuery(auxCollection, auxCollQuery, facetOptions);
+        if (result.getNumResults() == 0) {
+            throw RgaException.noResultsMatching();
+        }
+        ids = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+
+        return new ResourceIds(ids, numMatchesFuture);
     }
 
     /**
@@ -1263,13 +1218,15 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.FACET, RgaDataModel.CLINICAL_SIGNIFICANCES);
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(collection, auxQuery, knockoutTypeFacet);
-        knockoutByVariantSummary.setClinicalSignificances(facetFieldDataResult.first()
-                .getBuckets()
-                .stream()
-                .map(FacetField.Bucket::getValue)
-                .map(ClinicalSignificance::valueOf)
-                .collect(Collectors.toList())
-        );
+        if (facetFieldDataResult.getNumResults() > 0 && facetFieldDataResult.first().getBuckets() != null) {
+            knockoutByVariantSummary.setClinicalSignificances(facetFieldDataResult.first()
+                    .getBuckets()
+                    .stream()
+                    .map(FacetField.Bucket::getValue)
+                    .map(ClinicalSignificance::valueOf)
+                    .collect(Collectors.toList())
+            );
+        }
 
         // 2. Get individual knockout type counts
         QueryOptions geneFacet = new QueryOptions()
@@ -1670,6 +1627,38 @@ public class RgaManager implements AutoCloseable {
             return false;
         }
         return true;
+    }
+
+    private class ResourceIds {
+        private List<String> ids;
+        private Future<Integer> numMatchesFuture;
+
+        public ResourceIds(List<String> ids) {
+            this.ids = ids;
+        }
+
+        public ResourceIds(List<String> ids, Future<Integer> numMatchesFuture) {
+            this.ids = ids;
+            this.numMatchesFuture = numMatchesFuture;
+        }
+
+        public List<String> getIds() {
+            return ids;
+        }
+
+        public ResourceIds setIds(List<String> ids) {
+            this.ids = ids;
+            return this;
+        }
+
+        public Future<Integer> getNumMatchesFuture() {
+            return numMatchesFuture;
+        }
+
+        public ResourceIds setNumMatchesFuture(Future<Integer> numMatchesFuture) {
+            this.numMatchesFuture = numMatchesFuture;
+            return this;
+        }
     }
 
     private class Preprocess {

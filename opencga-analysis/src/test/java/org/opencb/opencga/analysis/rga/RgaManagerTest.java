@@ -575,8 +575,9 @@ public class RgaManagerTest {
 
     @Test
     public void testVariantSummary() throws CatalogException, IOException, RgaException {
-        OpenCGAResult<KnockoutByVariantSummary> result = rgaManager.variantSummary(STUDY, new Query(), QueryOptions.empty(), ownerToken);
+        OpenCGAResult<KnockoutByVariantSummary> result = rgaManager.variantSummary(STUDY, new Query(), new QueryOptions(QueryOptions.COUNT, true), ownerToken);
         assertEquals(10, result.getNumResults());
+        assertTrue(result.getNumMatches() > 0);
         for (KnockoutByVariantSummary variant : result.getResults()) {
             assertNotNull(variant.getId());
             assertNotNull(variant.getDbSnp());
@@ -584,8 +585,9 @@ public class RgaManagerTest {
         }
 
         result = rgaManager.variantSummary(STUDY, new Query(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET),
-                QueryOptions.empty(), ownerToken);
+                new QueryOptions(QueryOptions.COUNT, true), ownerToken);
         assertEquals(4, result.getNumResults());
+        assertTrue(result.getNumMatches() > 0);
         for (KnockoutByVariantSummary variant : result.getResults()) {
             assertFalse(variant.getTranscriptChPairs().isEmpty());
             for (List<String> value : variant.getTranscriptChPairs().values()) {
