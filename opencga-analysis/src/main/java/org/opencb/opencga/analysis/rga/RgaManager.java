@@ -863,25 +863,29 @@ public class RgaManager implements AutoCloseable {
         }
 
         Set<String> parentSampleIds = new HashSet<>();
-        try {
-            for (Future<KnockoutByIndividualSummary> summaryFuture : futureList) {
-                KnockoutByIndividualSummary knockoutByIndividualSummary = summaryFuture.get();
-                if (!preprocess.isOwnerOrAdmin()) {
-                    if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getFatherSampleId())) {
-                        parentSampleIds.add(knockoutByIndividualSummary.getFatherSampleId());
-                    }
-                    if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getMotherSampleId())) {
-                        parentSampleIds.add(knockoutByIndividualSummary.getMotherSampleId());
-                    }
+        for (Future<KnockoutByIndividualSummary> summaryFuture : futureList) {
+            KnockoutByIndividualSummary knockoutByIndividualSummary;
+            try {
+                knockoutByIndividualSummary = summaryFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                if (RgaException.NO_RESULTS_FOUND.equals(e.getCause().getMessage())) {
+                    continue;
                 }
+                throw new RgaException(e.getMessage(), e);
+            }
+            if (!preprocess.isOwnerOrAdmin()) {
+                if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getFatherSampleId())) {
+                    parentSampleIds.add(knockoutByIndividualSummary.getFatherSampleId());
+                }
+                if (StringUtils.isNotEmpty(knockoutByIndividualSummary.getMotherSampleId())) {
+                    parentSampleIds.add(knockoutByIndividualSummary.getMotherSampleId());
+                }
+            }
+            knockoutByIndividualSummaryList.add(knockoutByIndividualSummary);
+        }
 
-                knockoutByIndividualSummaryList.add(knockoutByIndividualSummary);
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            if (RgaException.NO_RESULTS_FOUND.equals(e.getCause().getMessage())) {
-                return OpenCGAResult.empty(KnockoutByIndividualSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
-            }
-            throw new RgaException(e.getMessage(), e);
+        if (knockoutByIndividualSummaryList.isEmpty()) {
+            return OpenCGAResult.empty(KnockoutByIndividualSummary.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
         }
 
         if (!parentSampleIds.isEmpty()) {

@@ -226,6 +226,11 @@ public class RgaManagerTest {
             sampleIds.add(result.first().getSampleId());
         }
         assertEquals(4, sampleIds.size());
+
+        OpenCGAResult<KnockoutByIndividual> result = rgaManager.individualQuery(STUDY,
+                new Query(RgaQueryParams.INDIVIDUAL_ID.key(), "NA19685,NA19600").append(RgaQueryParams.SEX.key(), "MALE"),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
     }
 
     @Test
@@ -308,6 +313,9 @@ public class RgaManagerTest {
             }
         }
         assertTrue(compHetFound);
+
+        result = rgaManager.individualSummary(STUDY, new Query(RgaQueryParams.INDIVIDUAL_ID.key(), "NA19685,NA19600").append(RgaQueryParams.SEX.key(), "MALE"), QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
     }
 
     @Test
