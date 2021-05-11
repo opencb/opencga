@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.FacetField;
@@ -119,6 +120,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "link-run":
                 queryResponse = linkRun();
+                break;
+            case "post-link-run":
+                queryResponse = postLinkRun();
                 break;
             case "unlink":
                 queryResponse = unlink();
@@ -395,6 +399,20 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 commandOptions.parents);
 
         return openCGAClient.getFileClient().runLink(data, params);
+    }
+
+    private RestResponse<Job> postLinkRun() throws ClientException {
+        FileCommandOptions.PostLinkRunCommandOptions commandOptions = filesCommandOptions.postLinkRunCommandOptions;
+
+        ObjectMap params = getCommonParams(commandOptions.study, filesCommandOptions.commonCommandOptions.params);
+        addJobParams(commandOptions.jobOptions, params);
+
+        if (CollectionUtils.size(commandOptions.files) == 1 && commandOptions.files.get(0).equals(ParamConstants.ALL)) {
+            commandOptions.files = Collections.emptyList();
+        }
+        PostLinkToolParams data = new PostLinkToolParams(commandOptions.files);
+
+        return openCGAClient.getFileClient().runPostlink(data, params);
     }
 
 //    private RestResponse relink() throws CatalogException, IOException {

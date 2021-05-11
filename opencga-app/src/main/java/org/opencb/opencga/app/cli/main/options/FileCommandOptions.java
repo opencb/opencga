@@ -53,6 +53,7 @@ public class FileCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public LinkCommandOptions linkCommandOptions;
     public LinkRunCommandOptions linkRunCommandOptions;
+    public PostLinkRunCommandOptions postLinkRunCommandOptions;
 //    public RelinkCommandOptions relinkCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
@@ -96,6 +97,7 @@ public class FileCommandOptions {
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
         this.linkRunCommandOptions = new LinkRunCommandOptions();
+        this.postLinkRunCommandOptions = new PostLinkRunCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
@@ -427,6 +429,19 @@ public class FileCommandOptions {
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
         public boolean parents;
+    }
+
+    @Parameters(commandNames = {"post-link-run"}, commandDescription = "Post link operation. Associate non-registered samples for files with high volumes of samples.")
+    public class PostLinkRunCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = new GeneralCliOptions.JobOptions();
+
+        @Parameter(names = {"--files"}, description = "Files that need to be processed. Use \"" + ParamConstants.ALL + "\" to process all files from the study", required = true, variableArity = true)
+        public List<String> files;
     }
 
     @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")
