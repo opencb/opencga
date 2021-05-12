@@ -90,7 +90,7 @@ public class FileCommandExecutor extends InternalCommandExecutor {
 
         // Prepare analysis parameters and config
         ObjectMap params = new PostLinkToolParams(
-                options.files)
+                options.files, options.batchSize)
                 .toObjectMap(options.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, options.studyId);
 
