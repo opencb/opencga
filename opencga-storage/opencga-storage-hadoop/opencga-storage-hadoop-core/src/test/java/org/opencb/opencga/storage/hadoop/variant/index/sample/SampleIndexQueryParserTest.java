@@ -453,13 +453,26 @@ public class SampleIndexQueryParserTest {
         indexQuery = parse(query);
         assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertFalse(isValidParam(query, GENOTYPE));
+
+        query = new Query(GENOTYPE.key(), "fam2_child:0/1;fam2_father:0/1;fam2_mother:0/1,0/0");
+        indexQuery = parse(query);
+        assertEquals(Collections.singleton("fam2_child"), indexQuery.getSamplesMap().keySet());
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertEquals(1, indexQuery.getMotherFilterMap().size());
+        assertEquals(true, indexQuery.getMotherFilter("fam2_child")[GenotypeCodec.HOM_REF_UNPHASED]);
+        assertEquals(true, indexQuery.getMotherFilter("fam2_child")[GenotypeCodec.HET_REF_UNPHASED]);
+        // Family2 members are from different files. Can't exclude genotype filter
+        assertTrue(isValidParam(query, GENOTYPE));
 
         query = new Query(GENOTYPE.key(), "fam1_child:0/1;fam1_father:0/1;fam1_mother:0/1,0/0");
         indexQuery = parse(query);
         assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertEquals(1, indexQuery.getMotherFilterMap().size());
         assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HOM_REF_UNPHASED]);
         assertEquals(true, indexQuery.getMotherFilter("fam1_child")[GenotypeCodec.HET_REF_UNPHASED]);
+        assertFalse(isValidParam(query, GENOTYPE));
 
         // Can not use family query with OR operator
         query = new Query(SAMPLE.key(), "fam1_child,fam1_father,fam1_mother");
@@ -484,14 +497,16 @@ public class SampleIndexQueryParserTest {
         indexQuery = parse(query);
         assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
-        assertFalse(query.containsKey(FILTER.key()));
+        assertFalse(isValidParam(query, FILTER));
+        assertFalse(isValidParam(query, GENOTYPE));
 
         // Samples from family2 are not in the same file, so we can not remove the FILTER parameter
         query = new Query(SAMPLE.key(), "fam2_child;fam2_father;fam2_mother").append(FILTER.key(), "PASS");
         indexQuery = parse(query);
         assertEquals(Collections.singleton("fam2_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
-        assertTrue(query.containsKey(FILTER.key()));
+        assertTrue(isValidParam(query, FILTER));
+        assertFalse(isValidParam(query, GENOTYPE));
     }
 
     @Test

@@ -171,6 +171,7 @@ public class SampleIndexQueryParser {
             // Get samples with non negated genotypes
 
             Map<Object, List<String>> map = new HashMap<>();
+            Map<String, SampleMetadata> allSamples = new HashMap<>();
             queryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
             // Extract parents from each sample
@@ -181,6 +182,7 @@ public class SampleIndexQueryParser {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
 
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                allSamples.put(sampleMetadata.getName(), sampleMetadata);
 
                 List<String> gts = GenotypeClass.filter(entry.getValue(), allGenotypes);
                 if (gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
@@ -247,7 +249,10 @@ public class SampleIndexQueryParser {
                             Integer fatherId = metadataManager.getSampleId(studyId, father);
                             boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
                                     .equals(metadataManager.getLoadSplitData(studyId, fatherId));
-                            boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies);
+                            List<Integer> fatherFiles = allSamples.get(father).getFiles();
+                            List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
+                            boolean parentInSeparatedFile = fatherFiles.size() == sampleFiles.size() && fatherFiles.containsAll(sampleFiles);
+                            boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
                                 partialGtIndex = true;
                             }
@@ -257,7 +262,10 @@ public class SampleIndexQueryParser {
                             Integer motherId = metadataManager.getSampleId(studyId, mother);
                             boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
                                     .equals(metadataManager.getLoadSplitData(studyId, motherId));
-                            boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies);
+                            List<Integer> motherFiles = allSamples.get(mother).getFiles();
+                            List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
+                            boolean parentInSeparatedFile = motherFiles.size() == sampleFiles.size() && motherFiles.containsAll(sampleFiles);
+                            boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
                                 partialGtIndex = true;
                             }
@@ -524,7 +532,7 @@ public class SampleIndexQueryParser {
         return childrenSet;
     }
 
-    protected static boolean[] buildParentGtFilter(List<String> parentGts, boolean includeDiscrepancies) {
+    protected static boolean[] buildParentGtFilter(List<String> parentGts, boolean includeDiscrepancies, boolean parentInSeparatedFile) {
         boolean[] filter = new boolean[GenotypeCodec.NUM_CODES]; // all false by default
         for (String gt : parentGts) {
             filter[GenotypeCodec.encode(gt)] = true;
@@ -533,8 +541,11 @@ public class SampleIndexQueryParser {
             filter[GenotypeCodec.DISCREPANCY_SIMPLE] = true;
             filter[GenotypeCodec.DISCREPANCY_ANY] = true;
         }
-        if (filter[GenotypeCodec.MISSING_HOM] || filter[GenotypeCodec.HOM_REF_UNPHASED] || filter[GenotypeCodec.HOM_REF_PHASED]) {
-            filter[GenotypeCodec.UNKNOWN] = true;
+        if (!parentInSeparatedFile) {
+            // If parents were in separated files, missing and hom_ref might be registered as "unknown"
+            if (filter[GenotypeCodec.MISSING_HOM] || filter[GenotypeCodec.HOM_REF_UNPHASED] || filter[GenotypeCodec.HOM_REF_PHASED]) {
+                filter[GenotypeCodec.UNKNOWN] = true;
+            }
         }
         return filter;
     }
