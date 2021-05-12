@@ -251,7 +251,8 @@ public class SampleIndexQueryParser {
                                     .equals(metadataManager.getLoadSplitData(studyId, fatherId));
                             List<Integer> fatherFiles = allSamples.get(father).getFiles();
                             List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
-                            boolean parentInSeparatedFile = fatherFiles.size() == sampleFiles.size() && fatherFiles.containsAll(sampleFiles);
+                            boolean parentInSeparatedFile =
+                                    fatherFiles.size() == sampleFiles.size() && fatherFiles.containsAll(sampleFiles);
                             boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
                                 partialGtIndex = true;
@@ -264,7 +265,8 @@ public class SampleIndexQueryParser {
                                     .equals(metadataManager.getLoadSplitData(studyId, motherId));
                             List<Integer> motherFiles = allSamples.get(mother).getFiles();
                             List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
-                            boolean parentInSeparatedFile = motherFiles.size() == sampleFiles.size() && motherFiles.containsAll(sampleFiles);
+                            boolean parentInSeparatedFile =
+                                    motherFiles.size() == sampleFiles.size() && motherFiles.containsAll(sampleFiles);
                             boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
                                 partialGtIndex = true;
