@@ -21,7 +21,9 @@ import org.apache.commons.collections4.MapUtils;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.variant.PlinkWrapperParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -35,7 +37,9 @@ public class PlinkWrapperAnalysis extends OpenCgaToolScopeStudy {
     public static final String DESCRIPTION = "Plink is a whole genome association analysis toolset, designed to perform"
             + " a range of basic, large-scale analyses.";
 
-    public final static Set<String> FILE_PARAM_NAMES = new HashSet<>(Arrays.asList("file", "tfile", "bfile", "pheno", "within", "cov"));
+    public final static Set<String> FILE_PARAM_NAMES = new HashSet<>(Arrays.asList("ped", "map", "tped", "tfam", "bed", "bim", "fam", "vcf",
+            "bcf", "lgen", "reference", "gen", "bgen", "sample", "23file", "read-freq", "pheno", "covar", "within", "loop-assoc", "set",
+            "subset"));
 
     @ToolParams
     protected final PlinkWrapperParams analysisParams = new PlinkWrapperParams();
@@ -43,31 +47,44 @@ public class PlinkWrapperAnalysis extends OpenCgaToolScopeStudy {
     protected void check() throws Exception {
         super.check();
 
-        // Get files from catalog
-        FileManager fileManager = catalogManager.getFileManager();
         if (MapUtils.isNotEmpty(analysisParams.getPlinkParams())) {
+
+            // Check prefix parameters
+            if (analysisParams.getPlinkParams().containsKey("file")) {
+                // Prefix for the .ped and .map files
+                throw new ToolException("Plink --file parameter not supported. Please, use --ped and --map parameters instead of --file.");
+            }
+            if (analysisParams.getPlinkParams().containsKey("tfile")) {
+                // Prefix for the .tped and .tfam files
+                throw new ToolException("Plink --tfile parameter not supported. Please, use --tped and --tfam parameters instead of"
+                        + " --tfile.");
+            }
+            if (analysisParams.getPlinkParams().containsKey("bfile")) {
+                // Prefix for the .bed, .bim and .fam files
+                throw new ToolException("Plink --bfile parameter not supported. Please, use --bed, --bim and --fam parameters instead of"
+                        + " --bfile.");
+            }
+            if (analysisParams.getPlinkParams().containsKey("lfile")) {
+                // Prefix for the .lgen file
+                throw new ToolException("Plink --lfile parameter not supported. Please, use --lgen parameter instead of --lfile.");
+            }
+            if (analysisParams.getPlinkParams().containsKey("data")) {
+                // Prefix for the .gen, .bgen and .sample files
+                throw new ToolException("Plink --data parameter not supported. Please, use --gen, --bgen and --sample parameters instead"
+                        + " of --data.");
+            }
+
+            // Get files from catalog
+            FileManager fileManager = catalogManager.getFileManager();
             Map<String, String> updatedMap = new HashMap<>();
             for (Map.Entry<String, String> entry : analysisParams.getPlinkParams().entrySet()) {
                 if (FILE_PARAM_NAMES.contains(entry.getKey())) {
-                    switch (entry.getKey()) {
-                        case "file":
-                        case "tfile":
-                            // Check .ped and .map files, (throw an exception if one of them does not exist)
-                            AnalysisUtils.getCatalogFile(entry.getValue() + ".ped", study, fileManager, token);
-                            AnalysisUtils.getCatalogFile(entry.getValue() + ".map", study, fileManager, token);
-                            break;
-                        case "bfile":
-                            // Check .bed, .fam and .map files, (throw an exception if one of them does not exist)
-                            AnalysisUtils.getCatalogFile(entry.getValue() + ".bed", study, fileManager, token);
-                            AnalysisUtils.getCatalogFile(entry.getValue() + ".fam", study, fileManager, token);
-                            AnalysisUtils.getCatalogFile(entry.getValue() + ".map", study, fileManager, token);
-                            break;
-                        default:
-                            updatedMap.put(entry.getKey(), AnalysisUtils.getCatalogFile(entry.getValue(), study, fileManager, token)
-                                    .getUri().getPath());
-                    }
+                    updatedMap.put(entry.getKey(), AnalysisUtils.getCatalogFile(entry.getValue(), study, fileManager, token)
+                            .getUri().getPath());
                 }
             }
+
+            // Finally update Plink parameters
             if (MapUtils.isNotEmpty(updatedMap)) {
                 analysisParams.getPlinkParams().putAll(updatedMap);
             }
