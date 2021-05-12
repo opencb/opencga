@@ -611,7 +611,16 @@ public class RgaManagerTest {
             assertEquals("stop_gained", variant.getSequenceOntologyTerms().get(0).getName());
         }
 
+        Query query = new Query()
+                .append(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET)
+                .append(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<0.001;");
+        result = rgaManager.variantSummary(STUDY, query, QueryOptions.empty(), ownerToken);
+        assertEquals(0, result.getNumResults());
 
+        query = new Query()
+                .append(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET)
+                .append(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<=0.0001;" + RgaUtils.GNOMAD_GENOMES_STUDY + ">0.05;");
+        result = rgaManager.variantSummary(STUDY, query, QueryOptions.empty(), ownerToken);
+        assertEquals(2, result.getNumResults());
     }
-
 }

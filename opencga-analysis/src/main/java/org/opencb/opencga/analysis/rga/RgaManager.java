@@ -55,8 +55,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.analysis.rga.RgaUtils.convertToKnockoutVariant;
-import static org.opencb.opencga.analysis.rga.RgaUtils.decode;
+import static org.opencb.opencga.analysis.rga.RgaUtils.*;
 import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
 
 public class RgaManager implements AutoCloseable {
@@ -312,6 +311,11 @@ public class RgaManager implements AutoCloseable {
         Set<String> geneIds = new HashSet<>();
         Set<String> geneNames = new HashSet<>();
         Set<String> transcripts = new HashSet<>();
+        Set<String> compoundFilters = new HashSet<>();
+
+        String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
+        String thousandGenomeKey = pfKey + RgaUtils.THOUSAND_GENOMES_STUDY;
+        String gnomadGenomeKey = pfKey + RgaUtils.GNOMAD_GENOMES_STUDY;
 
         // 3. Get allele pairs and CT from Variant summary
         QueryOptions knockoutTypeFacet = new QueryOptions()
@@ -319,6 +323,7 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(mainCollection, query, knockoutTypeFacet);
 
+        List<List<List<String>>> compHetVariantPairs = new LinkedList<>();
         for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
             CodedVariant codedVariant = CodedVariant.parseEncodedId(bucket.getValue());
             if (variantId.equals(codedVariant.getId())) {
@@ -331,13 +336,31 @@ public class RgaManager implements AutoCloseable {
                     dbSnp = codedVariant.getDbSnp();
                     type = codedVariant.getType();
 
-                    String pfKey = RgaDataModel.POPULATION_FREQUENCIES.replace("*", "");
-                    String thousandGenomeKey = pfKey + RgaUtils.THOUSAND_GENOMES_STUDY;
-                    String gnomadGenomeKey = pfKey + RgaUtils.GNOMAD_GENOMES_STUDY;
-
                     populationFrequencyMap.put(thousandGenomeKey, codedVariant.getThousandGenomesFrequency());
                     populationFrequencyMap.put(gnomadGenomeKey, codedVariant.getGnomadFrequency());
                 }
+            } else if (KnockoutVariant.KnockoutType.COMP_HET.name().equals(codedVariant.getKnockoutType())) {
+                // TODO: Assuming filter is PASS. We need to check that properly
+                compHetVariantPairs.add(Arrays.asList(
+                        Collections.singletonList(codedVariant.getKnockoutType()),
+                        Collections.singletonList(RgaUtils.encode(PASS)), // TODO: CHANGE !!!!! Take filter from codedVariant object
+                        new ArrayList<>(codedVariant.getConsequenceType()),
+                        codedVariant.getPopulationFrequencies()));
+            }
+        }
+        // Process all COMP_HET combinations
+        if (knockoutTypes.contains(KnockoutVariant.KnockoutType.COMP_HET.name())) {
+            // TODO: Assuming filter is PASS. We need to check that properly
+            List<List<String>> currentVariantCompHetValues = Arrays.asList(
+                    Collections.singletonList(KnockoutVariant.KnockoutType.COMP_HET.name()),
+                    Collections.singletonList(RgaUtils.encode(PASS)), // TODO: CHANGE !!!!! Take filter from codedVariant object
+                    new ArrayList<>(consequenceTypes),
+                    Arrays.asList(populationFrequencyMap.get(thousandGenomeKey), populationFrequencyMap.get(gnomadGenomeKey)));
+
+            // Generate combinations with current variant
+            for (List<List<String>> otherCompoundHetVariant : compHetVariantPairs) {
+                compoundFilters.addAll(RgaUtils.generateCompoundHeterozygousCombinations(
+                        Arrays.asList(currentVariantCompHetValues, otherCompoundHetVariant)));
             }
         }
 
@@ -365,7 +388,7 @@ public class RgaManager implements AutoCloseable {
 
         return new AuxiliarRgaDataModel(variantId, dbSnp, type, new ArrayList<>(knockoutTypes),
                 new ArrayList<>(consequenceTypes), populationFrequencyMap, new ArrayList<>(clinicalSignificances),
-                new ArrayList<>(geneIds), new ArrayList<>(geneNames), new ArrayList<>(transcripts));
+                new ArrayList<>(geneIds), new ArrayList<>(geneNames), new ArrayList<>(transcripts), new ArrayList<>(compoundFilters));
     }
 
     public OpenCGAResult<Long> updateRgaInternalIndexStatus(String studyStr, List<String> sampleIds, RgaIndex.Status status,

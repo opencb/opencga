@@ -57,7 +57,7 @@ public class RgaQueryParser {
 //        parseStringValue(finalQuery, TRANSCRIPT_BIOTYPE, RgaDataModel.TRANSCRIPT_BIOTYPE, filterList);
         parseStringValue(finalQuery, VARIANTS, RgaDataModel.VARIANTS, filterList);
         parseStringValue(finalQuery, DB_SNPS, RgaDataModel.DB_SNPS, filterList);
-        parseFilterValue(finalQuery, filterList);
+        parseMainCollCompoundFilters(finalQuery, filterList);
 
         // Create Solr query, adding filter queries and fields to show
         solrQuery.setQuery("*:*");
@@ -81,31 +81,16 @@ public class RgaQueryParser {
 
         Query finalQuery = new Query(query);
         fixQuery(finalQuery);
-        if (finalQuery.containsKey(CONSEQUENCE_TYPE.key())) {
-            List<String> ctValues = getEncodedConsequenceTypes(finalQuery.getAsStringList(CONSEQUENCE_TYPE.key()));
-            finalQuery.put(CONSEQUENCE_TYPE.key(), ctValues);
-        }
 
         List<String> filterList = new ArrayList<>();
         parseStringValue(finalQuery, VARIANTS, AuxiliarRgaDataModel.ID, filterList);
         parseStringValue(finalQuery, DB_SNPS, AuxiliarRgaDataModel.DB_SNP, filterList);
         parseStringValue(finalQuery, TYPE, AuxiliarRgaDataModel.TYPE, filterList);
-        parseStringValue(finalQuery, KNOCKOUT, AuxiliarRgaDataModel.KNOCKOUT_TYPES, filterList);
-        parseStringValue(finalQuery, CONSEQUENCE_TYPE, AuxiliarRgaDataModel.CONSEQUENCE_TYPES, filterList);
         parseStringValue(finalQuery, CLINICAL_SIGNIFICANCE, AuxiliarRgaDataModel.CLINICAL_SIGNIFICANCES, filterList);
         parseStringValue(finalQuery, GENE_ID, AuxiliarRgaDataModel.GENE_IDS, filterList);
         parseStringValue(finalQuery, GENE_NAME, AuxiliarRgaDataModel.GENE_NAMES, filterList);
         parseStringValue(finalQuery, TRANSCRIPT_ID, AuxiliarRgaDataModel.TRANSCRIPT_IDS, filterList);
-
-        List<String> popFreqValues = query.getAsStringList(POPULATION_FREQUENCY.key(), ";");
-        if (!popFreqValues.isEmpty()) {
-            Map<String, List<String>> encodedPopFreqs = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
-
-            for (Map.Entry<String, List<String>> entry : encodedPopFreqs.entrySet()) {
-                parseStringValue(entry.getValue(),
-                        AuxiliarRgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
-            }
-        }
+        parseAuxCollCompoundFilters(finalQuery, filterList);
 
         // Create Solr query, adding filter queries and fields to show
         solrQuery.setQuery("*:*");
@@ -115,6 +100,74 @@ public class RgaQueryParser {
         logger.debug("query     : " + printQuery(finalQuery));
         logger.debug("solrQuery : " + solrQuery);
         return solrQuery;
+    }
+
+    private void parseMainCollCompoundFilters(Query query, List<String> filterList) throws RgaException {
+        List<String> knockoutValues = query.getAsStringList(KNOCKOUT.key());
+        String filterValue = query.getString(FILTER.key());
+        List<String> ctValues = query.getAsStringList(CONSEQUENCE_TYPE.key());
+        List<String> popFreqValues = query.getAsStringList(POPULATION_FREQUENCY.key(), ";");
+
+        int count = 0;
+        count += knockoutValues.isEmpty() ? 0 : 1;
+        count += StringUtils.isEmpty(filterValue) ? 0 : 1;
+        count += ctValues.isEmpty() ? 0 : 1;
+        count += popFreqValues.isEmpty() ? 0 : 1;
+
+        if (count == 1) {
+            // Simple filter
+            parseStringValue(query, KNOCKOUT, RgaDataModel.KNOCKOUT_TYPES, filterList);
+            parseStringValue(query, FILTER, RgaDataModel.FILTERS, filterList);
+            parseStringValue(query, CONSEQUENCE_TYPE, RgaDataModel.CONSEQUENCE_TYPES, filterList);
+
+            if (!popFreqValues.isEmpty()) {
+                Map<String, List<String>> encodedPopFreqs = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
+
+                for (Map.Entry<String, List<String>> entry : encodedPopFreqs.entrySet()) {
+                    parseStringValue(entry.getValue(), RgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
+                }
+            }
+        } else {
+            parseCompoundFilters(knockoutValues, filterValue, ctValues, popFreqValues, filterList);
+        }
+    }
+
+    private void parseAuxCollCompoundFilters(Query query, List<String> filterList) throws RgaException {
+        List<String> knockoutValues = query.getAsStringList(KNOCKOUT.key());
+//        String filterValue = query.getString(FILTER.key());
+        List<String> ctValues = query.getAsStringList(CONSEQUENCE_TYPE.key());
+        List<String> popFreqValues = query.getAsStringList(POPULATION_FREQUENCY.key(), ";");
+
+        int count = 0;
+        count += knockoutValues.isEmpty() ? 0 : 1;
+//        count += StringUtils.isEmpty(filterValue) ? 0 : 1;
+        count += ctValues.isEmpty() ? 0 : 1;
+        count += popFreqValues.isEmpty() ? 0 : 1;
+
+        // In this case, we may need to use both filters if users are filtering by COMP_HET and another ko type + (ct | pf)
+        boolean simpleFilter = !knockoutValues.contains(COMP_HET.name()) || count == 1;
+        boolean complexFilter = knockoutValues.contains(COMP_HET.name()) && count > 1;
+
+        if (simpleFilter) {
+            // Simple filters
+            if (!ctValues.isEmpty()) {
+                List<String> encodedCtValues = getEncodedConsequenceTypes(ctValues);
+                query.put(CONSEQUENCE_TYPE.key(), encodedCtValues);
+            }
+
+            parseStringValue(query, KNOCKOUT, AuxiliarRgaDataModel.KNOCKOUT_TYPES, filterList);
+            parseStringValue(query, CONSEQUENCE_TYPE, AuxiliarRgaDataModel.CONSEQUENCE_TYPES, filterList);
+            if (!popFreqValues.isEmpty()) {
+                Map<String, List<String>> encodedPopFreqs = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
+                for (Map.Entry<String, List<String>> entry : encodedPopFreqs.entrySet()) {
+                    parseStringValue(entry.getValue(),
+                            AuxiliarRgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
+                }
+            }
+        }
+        if (complexFilter) {
+            parseCompoundFilters(knockoutValues, "", ctValues, popFreqValues, filterList);
+        }
     }
 
     private void fixQuery(Query query) {
@@ -146,39 +199,14 @@ public class RgaQueryParser {
         }
     }
 
-    private void parseFilterValue(Query query, List<String> filterList) throws RgaException {
-        List<String> knockoutValues = query.getAsStringList(KNOCKOUT.key());
-        String filterValue = query.getString(FILTER.key());
-        List<String> ctValues = query.getAsStringList(CONSEQUENCE_TYPE.key());
-        List<String> popFreqValues = query.getAsStringList(POPULATION_FREQUENCY.key(), ";");
-
-        int count = 0;
-        count += knockoutValues.isEmpty() ? 0 : 1;
-        count += StringUtils.isEmpty(filterValue) ? 0 : 1;
-        count += ctValues.isEmpty() ? 0 : 1;
-        count += popFreqValues.isEmpty() ? 0 : 1;
-
-        if (count == 1) {
-            // Simple filter
-            parseStringValue(query, KNOCKOUT, RgaDataModel.KNOCKOUT_TYPES, filterList);
-            parseStringValue(query, FILTER, RgaDataModel.FILTERS, filterList);
-            parseStringValue(query, CONSEQUENCE_TYPE, RgaDataModel.CONSEQUENCE_TYPES, filterList);
-
-            if (!popFreqValues.isEmpty()) {
-                Map<String, List<String>> encodedPopFreqs = RgaUtils.parsePopulationFrequencyQuery(popFreqValues);
-
-                for (Map.Entry<String, List<String>> entry : encodedPopFreqs.entrySet()) {
-                    parseStringValue(entry.getValue(), RgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
-                }
-            }
-        } else if (count > 1) {
-            if (knockoutValues.size() == 1 && KnockoutVariant.KnockoutType.COMP_HET.name().equals(knockoutValues.get(0).toUpperCase())) {
-                // COMP_HET complex filter
-                buildCompHetComplexQueryFilter(filterList, filterValue, ctValues, popFreqValues);
-            } else {
-                // Complex filter
-                buildComplexQueryFilter(filterList, knockoutValues, filterValue, ctValues, popFreqValues);
-            }
+    private void parseCompoundFilters(List<String> knockoutValues, String filterValue, List<String> ctValues, List<String> popFreqValues,
+                                      List<String> filterList) throws RgaException {
+        if (knockoutValues.size() == 1 && KnockoutVariant.KnockoutType.COMP_HET.name().equals(knockoutValues.get(0).toUpperCase())) {
+            // COMP_HET complex filter
+            buildCompHetComplexQueryFilter(filterList, filterValue, ctValues, popFreqValues);
+        } else {
+            // Complex filter
+            buildComplexQueryFilter(filterList, knockoutValues, filterValue, ctValues, popFreqValues);
         }
     }
 
@@ -270,18 +298,36 @@ public class RgaQueryParser {
         } else if (!ctValues.isEmpty() && !popFreqQueryList.isEmpty()) {
             // KT + FILTER + CT + POP_FREQ
             List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-            for (List<String> tmpPopFreqList  : popFreqQueryList.values()) {
-                List<String> orQueryList = new LinkedList<>();
-                for (String popFreq : tmpPopFreqList) {
+            if (popFreqQueryList.size() == 2) {
+                ArrayList<String> popFreqKeys = new ArrayList<>(popFreqQueryList.keySet());
+                List<List<String>> sortedPopFreqs = RgaUtils.generateSortedCombinations(popFreqQueryList.get(popFreqKeys.get(0)),
+                        popFreqQueryList.get(popFreqKeys.get(1)));
+                for (List<String> sortedPopFreq : sortedPopFreqs) {
+                    List<String> orQueryList = new LinkedList<>();
                     for (String koValue : koValues) {
                         for (String filterVal : filterValues) {
                             for (String ctValue : ctValues) {
-                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
+                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + sortedPopFreq.get(0)
+                                        + SEPARATOR + sortedPopFreq.get(1));
                             }
                         }
                     }
+                    parseStringValue(orQueryList, "", andQueryList, "||");
                 }
-                parseStringValue(orQueryList, "", andQueryList, "||");
+            } else {
+                for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
+                    List<String> orQueryList = new LinkedList<>();
+                    for (String popFreq : tmpPopFreqList) {
+                        for (String koValue : koValues) {
+                            for (String filterVal : filterValues) {
+                                for (String ctValue : ctValues) {
+                                    orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + ctValue + SEPARATOR + popFreq);
+                                }
+                            }
+                        }
+                    }
+                    parseStringValue(orQueryList, "", andQueryList, "||");
+                }
             }
             parseStringValue(andQueryList, RgaDataModel.COMPOUND_FILTERS, filterList, "&&");
         } else if (!ctValues.isEmpty()) {
@@ -298,16 +344,33 @@ public class RgaQueryParser {
         } else { // POP_FREQ not empty
             // KT + FILTER + POP_FREQ
             List<String> andQueryList = new ArrayList<>(popFreqQueryList.size());
-            for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
+            if (popFreqQueryList.size() == 2) {
+                ArrayList<String> popFreqKeys = new ArrayList<>(popFreqQueryList.keySet());
+                List<List<String>> sortedPopFreqs = RgaUtils.generateSortedCombinations(popFreqQueryList.get(popFreqKeys.get(0)),
+                        popFreqQueryList.get(popFreqKeys.get(1)));
                 List<String> orQueryList = new LinkedList<>();
-                for (String popFreq : tmpPopFreqList) {
+                for (List<String> sortedPopFreq : sortedPopFreqs) {
                     for (String koValue : koValues) {
                         for (String filterVal : filterValues) {
-                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
+                            orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + sortedPopFreq.get(0) + SEPARATOR
+                                    + sortedPopFreq.get(1));
+
                         }
                     }
                 }
                 parseStringValue(orQueryList, "", andQueryList, "||");
+            } else {
+                for (List<String> tmpPopFreqList : popFreqQueryList.values()) {
+                    List<String> orQueryList = new LinkedList<>();
+                    for (String popFreq : tmpPopFreqList) {
+                        for (String koValue : koValues) {
+                            for (String filterVal : filterValues) {
+                                orQueryList.add(koValue + SEPARATOR + filterVal + SEPARATOR + popFreq);
+                            }
+                        }
+                    }
+                    parseStringValue(orQueryList, "", andQueryList, "||");
+                }
             }
             parseStringValue(andQueryList, RgaDataModel.COMPOUND_FILTERS, filterList, "&&");
         }

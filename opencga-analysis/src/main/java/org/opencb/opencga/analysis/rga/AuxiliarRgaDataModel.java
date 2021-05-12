@@ -36,6 +36,9 @@ public class AuxiliarRgaDataModel {
     @Field
     private List<String> transcriptIds;
 
+    @Field
+    private List<String> compoundFilters;
+
     public static final String ID = "id";
     public static final String DB_SNP = "dbSnp";
     public static final String TYPE = "type";
@@ -46,6 +49,7 @@ public class AuxiliarRgaDataModel {
     public static final String GENE_IDS = "geneIds";
     public static final String GENE_NAMES = "geneNames";
     public static final String TRANSCRIPT_IDS = "transcriptIds";
+    public static final String COMPOUND_FILTERS = "compoundFilters";
 
     public static final Map<String, String> MAIN_TO_AUXILIAR_DATA_MODEL_MAP;
 
@@ -57,6 +61,7 @@ public class AuxiliarRgaDataModel {
         MAIN_TO_AUXILIAR_DATA_MODEL_MAP.put(RgaQueryParams.KNOCKOUT.key(), KNOCKOUT_TYPES);
         MAIN_TO_AUXILIAR_DATA_MODEL_MAP.put(RgaQueryParams.CONSEQUENCE_TYPE.key(), CONSEQUENCE_TYPES);
         MAIN_TO_AUXILIAR_DATA_MODEL_MAP.put(RgaQueryParams.CLINICAL_SIGNIFICANCE.key(), CLINICAL_SIGNIFICANCES);
+        MAIN_TO_AUXILIAR_DATA_MODEL_MAP.put(RgaQueryParams.POPULATION_FREQUENCY.key(), POPULATION_FREQUENCIES);
         MAIN_TO_AUXILIAR_DATA_MODEL_MAP.put(RgaQueryParams.GENE_ID.key(), GENE_IDS);
         MAIN_TO_AUXILIAR_DATA_MODEL_MAP.put(RgaQueryParams.GENE_NAME.key(), GENE_NAMES);
         MAIN_TO_AUXILIAR_DATA_MODEL_MAP.put(RgaQueryParams.TRANSCRIPT_ID.key(), TRANSCRIPT_IDS);
@@ -67,7 +72,7 @@ public class AuxiliarRgaDataModel {
 
     public AuxiliarRgaDataModel(String id, String dbSnp, String type, List<String> knockoutTypes, List<String> consequenceTypes,
                                 Map<String, String> populationFrequencies, List<String> clinicalSignificances, List<String> geneIds,
-                                List<String> geneNames, List<String> transcriptIds) {
+                                List<String> geneNames, List<String> transcriptIds, List<String> compoundFilters) {
         this.id = id;
         this.dbSnp = dbSnp;
         this.type = type;
@@ -78,6 +83,7 @@ public class AuxiliarRgaDataModel {
         this.geneIds = geneIds;
         this.geneNames = geneNames;
         this.transcriptIds = transcriptIds;
+        this.compoundFilters = compoundFilters;
     }
 
     @Override
@@ -93,6 +99,7 @@ public class AuxiliarRgaDataModel {
         sb.append(", geneIds=").append(geneIds);
         sb.append(", geneNames=").append(geneNames);
         sb.append(", transcriptIds=").append(transcriptIds);
+        sb.append(", compoundFilters=").append(compoundFilters);
         sb.append('}');
         return sb.toString();
     }
@@ -184,6 +191,15 @@ public class AuxiliarRgaDataModel {
 
     public AuxiliarRgaDataModel setTranscriptIds(List<String> transcriptIds) {
         this.transcriptIds = transcriptIds;
+        return this;
+    }
+
+    public List<String> getCompoundFilters() {
+        return compoundFilters;
+    }
+
+    public AuxiliarRgaDataModel setCompoundFilters(List<String> compoundFilters) {
+        this.compoundFilters = compoundFilters;
         return this;
     }
 }

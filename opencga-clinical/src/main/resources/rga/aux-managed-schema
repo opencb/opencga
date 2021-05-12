@@ -576,6 +576,7 @@
     <field name="geneIds" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="geneNames" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="transcriptIds" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="compoundFilters" type="string" indexed="true" stored="true" multiValued="true"/>
 
     <dynamicField name="populationFrequencies_*" type="string" indexed="true" stored="true" multiValued="false"/>
 
