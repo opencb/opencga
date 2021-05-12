@@ -85,7 +85,7 @@ public final class VariantQueryParam implements QueryParam {
             + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
             + "When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position"
             + " e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... "
-            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
+            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS "
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . "
             + "3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted."
             + "Accepted segregation modes: "
@@ -101,7 +101,7 @@ public final class VariantQueryParam implements QueryParam {
             + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
             + "When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position"
             + " e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... "
-            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
+            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS "
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. "
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);

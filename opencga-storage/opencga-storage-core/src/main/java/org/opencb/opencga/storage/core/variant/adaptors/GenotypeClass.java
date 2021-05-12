@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -399,6 +400,49 @@ public enum GenotypeClass implements Predicate<String> {
             }
         }
         return genotypeClass;
+    }
+
+    public static List<String> expandMultiAllelicGenotype(String genotypeStr, List<String> loadedGenotypes) {
+        List<String> genotypes = new ArrayList<>(5);
+        if (from(genotypeStr) != null) {
+            // Discard GenotypeClass
+            return genotypes;
+        }
+        if (genotypeStr.equals(NA_GT_VALUE)) {
+            // Discard special genotypes
+            return genotypes;
+        }
+        Genotype genotype;
+        try {
+            genotype = new Genotype(genotypeStr);
+        } catch (RuntimeException e) {
+            throw new VariantQueryException("Malformed genotype '" + genotypeStr + "'", e);
+        }
+        int[] allelesIdx = genotype.getAllelesIdx();
+        boolean hasSecAlt = false;
+        for (int i = 0; i < allelesIdx.length; i++) {
+            if (allelesIdx[i] > 1) {
+                allelesIdx[i] = 2;
+                hasSecAlt = true;
+            }
+        }
+        if (hasSecAlt) {
+            List<String> phasedGenotypes = getPhasedGenotypes(genotype);
+            phasedGenotypes.add(genotype.toString());
+            for (String phasedGenotype : phasedGenotypes) {
+                String regex = phasedGenotype
+                        .replace(".", "\\.")
+                        .replace("|", "\\|")
+                        .replace("2", "([2-9]|[0-9][0-9])"); // Replace allele "2" with "any number >= 2")
+                Pattern pattern = Pattern.compile(regex);
+                for (String loadedGenotype : loadedGenotypes) {
+                    if (pattern.matcher(loadedGenotype).matches()) {
+                        genotypes.add(loadedGenotype);
+                    }
+                }
+            }
+        }
+        return genotypes;
     }
 
     private static Genotype parseGenotype(String gt) {

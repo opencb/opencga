@@ -14,13 +14,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class GenotypeClassTest {
 
-    private final List<String> loadedGenotypes = Arrays.asList(
-            "0/0", "0",
-            "0/1", "1/1",
-            "0|1", "1|0", "1|1",
-            "./.", ".|.", ".",
-            "1/2", "1|2", "./0", ".|0", "0|.", "0/.", "./1", "1/.");
-
     @Test
     public void testGenotypes() throws Exception {
         List<String> gts = Arrays.asList("0/0", "0", "0/1", "1/1", "./.", ".", "1/2", "0/2", "2/2", "2/3", "./0", "0/.", "./1", "1/.", "2/.");
@@ -37,6 +30,12 @@ public class GenotypeClassTest {
 
     @Test
     public void testPhasedGenotypes() throws Exception {
+        List<String> loadedGenotypes = Arrays.asList(
+                "0/0", "0",
+                "0/1", "1/1",
+                "0|1", "1|0", "1|1",
+                "./.", ".|.", ".",
+                "1/2", "1|2", "./0", ".|0", "0|.", "0/.", "./1", "1/.");
         assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("0/1"), loadedGenotypes));
         assertEquals(Arrays.asList("!0/1", "!0|1", "!1|0"), GenotypeClass.filter(Arrays.asList("!0/1"), loadedGenotypes));
         assertEquals(Arrays.asList("0/1", "0|1", "1|0"), GenotypeClass.filter(Arrays.asList("1/0"), loadedGenotypes));
@@ -45,5 +44,17 @@ public class GenotypeClassTest {
         assertEquals(Arrays.asList("1|0"), GenotypeClass.filter(Arrays.asList("1|0"), loadedGenotypes));
         assertEquals(Arrays.asList("0"), GenotypeClass.filter(Arrays.asList("0"), loadedGenotypes));
         assertEquals(Arrays.asList("1"), GenotypeClass.filter(Arrays.asList("1"), loadedGenotypes));
+    }
+
+
+    @Test
+    public void testMultiAllelicGenotypes() throws Exception {
+        List<String> gts = Arrays.asList("0/0", "0", "0/1", "1/1", "./.", ".", "1/2", "1/3", "1|3", "2|1", "0/2", "2/2", "3/3", "2/3",
+                "2/4", "./0", "0/.", "./1", "1/.", "2/.");
+        assertEquals(Arrays.asList("1|3", "2|1", "1/2", "1/3"), GenotypeClass.expandMultiAllelicGenotype("1/4", gts));
+
+        assertEquals(Arrays.asList("2/2", "3/3", "2/3", "2/4"), GenotypeClass.expandMultiAllelicGenotype("2/2", gts));
+//        assertEquals(Arrays.asList("2/2", "3/3"), GenotypeClass.expandMultiAllelicGenotype("2/2", gts));
+//        assertEquals(Arrays.asList("2/3", "2/4"), GenotypeClass.expandMultiAllelicGenotype("2/3", gts));
     }
 }
