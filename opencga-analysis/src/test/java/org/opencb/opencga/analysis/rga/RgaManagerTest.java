@@ -234,6 +234,37 @@ public class RgaManagerTest {
     }
 
     @Test
+    public void testIndividualQuery() throws CatalogException, IOException, RgaException {
+        OpenCGAResult<KnockoutByIndividual> result = rgaManager.individualQuery(STUDY,
+                new Query(RgaQueryParams.INDIVIDUAL_ID.key(), "NA19685,NA19600").append(RgaQueryParams.SEX.key(), "MALE"),
+                QueryOptions.empty(), ownerToken);
+        assertEquals(1, result.getNumResults());
+        for (KnockoutByIndividual.KnockoutGene gene : result.first().getGenes()) {
+            for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                for (KnockoutVariant variant : transcript.getVariants()) {
+                    assertNull(variant.getQual());
+                    assertNull(variant.getGenotype());
+                    assertNull(variant.getFilter());
+                }
+            }
+        }
+
+        result = rgaManager.individualQuery(STUDY, new Query()
+                        .append(RgaQueryParams.INDIVIDUAL_ID.key(), "NA19685,NA19600")
+                        .append(RgaQueryParams.VARIANTS.key(), "12:56335107:A:G"),
+                QueryOptions.empty(), ownerToken);
+        for (KnockoutByIndividual.KnockoutGene gene : result.first().getGenes()) {
+            for (KnockoutTranscript transcript : gene.getTranscripts()) {
+                for (KnockoutVariant variant : transcript.getVariants()) {
+                    assertNotNull(variant.getQual());
+                    assertNotNull(variant.getGenotype());
+                    assertNotNull(variant.getFilter());
+                }
+            }
+        }
+    }
+
+    @Test
     public void testIndividualSummary() throws CatalogException, IOException, RgaException {
         OpenCGAResult<KnockoutByIndividualSummary> result = rgaManager.individualSummary(STUDY, new Query(), QueryOptions.empty(), ownerToken);
         assertEquals(4, result.getNumResults());
