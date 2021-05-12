@@ -15,6 +15,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutTranscript;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutVariant;
+import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -77,12 +78,16 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
     public IndividualRgaConverter() {
     }
 
-    public List<KnockoutByIndividual> convertToDataModelType(RgaIterator rgaIterator) {
+    public List<KnockoutByIndividual> convertToDataModelType(RgaIterator rgaIterator, VariantDBIterator variantDBIterator) {
         // In this list, we will store the keys of result in the order they have been processed so order is kept
         List<String> knockoutByIndividualOrder = new LinkedList<>();
         Map<String, KnockoutByIndividual> result = new HashMap<>();
 
-        Map<String, Variant> variantMap = Collections.emptyMap();
+        Map<String, Variant> variantMap = new HashMap<>();
+        while (variantDBIterator.hasNext()) {
+            Variant variant = variantDBIterator.next();
+            variantMap.put(variant.getId(), variant);
+        }
 
         while (rgaIterator.hasNext()) {
             RgaDataModel rgaDataModel = rgaIterator.next();

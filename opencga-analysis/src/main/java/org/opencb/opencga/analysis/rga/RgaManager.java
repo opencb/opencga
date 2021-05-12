@@ -485,9 +485,19 @@ public class RgaManager implements AutoCloseable {
             throw e;
         }
 
+        VariantDBIterator variantDBIterator = VariantDBIterator.EMPTY_ITERATOR;
+        if (query.containsKey(RgaQueryParams.VARIANTS.key())) {
+            try {
+                variantDBIterator = variantStorageQuery(studyStr, preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key()),
+                        preprocess.getQuery(), QueryOptions.empty(), token);
+            } catch (StorageEngineException e) {
+                throw new RgaException("Could not fetch variant information: " + e.getMessage(), e);
+            }
+        }
+
         RgaIterator rgaIterator = rgaEngine.individualQuery(collection, preprocess.getQuery(), QueryOptions.empty());
 
-        List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(rgaIterator);
+        List<KnockoutByIndividual> knockoutByIndividuals = individualRgaConverter.convertToDataModelType(rgaIterator, variantDBIterator);
 
         if (!preprocess.isOwnerOrAdmin) {
             // Extract all parent sample ids
@@ -1580,7 +1590,7 @@ public class RgaManager implements AutoCloseable {
                 sampleIds = authorisedSamples.subList(skip, to);
             }
         }
-        preprocessResult.getQuery().put("sampleId", sampleIds);
+        preprocessResult.getQuery().put(RgaQueryParams.SAMPLE_ID.key(), sampleIds);
 
         return preprocessResult;
     }
