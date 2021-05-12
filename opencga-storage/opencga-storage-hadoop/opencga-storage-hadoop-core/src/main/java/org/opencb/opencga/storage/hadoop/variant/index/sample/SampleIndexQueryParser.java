@@ -252,7 +252,7 @@ public class SampleIndexQueryParser {
                             List<Integer> fatherFiles = allSamples.get(father).getFiles();
                             List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
                             boolean parentInSeparatedFile =
-                                    fatherFiles.size() == sampleFiles.size() && fatherFiles.containsAll(sampleFiles);
+                                    fatherFiles.size() != sampleFiles.size() || !fatherFiles.containsAll(sampleFiles);
                             boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
                                 partialGtIndex = true;
@@ -265,8 +265,8 @@ public class SampleIndexQueryParser {
                                     .equals(metadataManager.getLoadSplitData(studyId, motherId));
                             List<Integer> motherFiles = allSamples.get(mother).getFiles();
                             List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
-                            boolean parentInSeparatedFile = 
-                                    motherFiles.size() == sampleFiles.size() && motherFiles.containsAll(sampleFiles);
+                            boolean parentInSeparatedFile =
+                                    motherFiles.size() != sampleFiles.size() || !motherFiles.containsAll(sampleFiles);
                             boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
                                 partialGtIndex = true;
@@ -541,7 +541,7 @@ public class SampleIndexQueryParser {
             filter[GenotypeCodec.DISCREPANCY_SIMPLE] = true;
             filter[GenotypeCodec.DISCREPANCY_ANY] = true;
         }
-        if (!parentInSeparatedFile) {
+        if (parentInSeparatedFile) {
             // If parents were in separated files, missing and hom_ref might be registered as "unknown"
             if (filter[GenotypeCodec.MISSING_HOM] || filter[GenotypeCodec.HOM_REF_UNPHASED] || filter[GenotypeCodec.HOM_REF_PHASED]) {
                 filter[GenotypeCodec.UNKNOWN] = true;
