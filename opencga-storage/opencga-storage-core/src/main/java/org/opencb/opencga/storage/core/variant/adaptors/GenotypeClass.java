@@ -34,22 +34,23 @@ public enum GenotypeClass implements Predicate<String> {
     /**
      * Homozygous alternate.
      * <p>
-     * 1, 1/1, 1|1, 2/2, 3/3, 1/1/1, ...
+     * 1, 1/1, 1|1, 1/1/1, ...
      */
     HOM_ALT(str -> {
+        if (str.equals("1/1") || str.equals("1|1")) {
+            return true;
+        }
         Genotype gt = parseGenotype(str);
         if (gt == null) {
             // Skip invalid genotypes
             return false;
         }
         int[] alleles = gt.getAllelesIdx();
-        int firstAllele = alleles[0];
-        if (firstAllele <= 0) {
-            // Discard if first allele is reference or missing
-            return false;
+        if (alleles.length == 2) {
+            return alleles[0] == 1 && alleles[1] == 1;
         }
-        for (int i = 1; i < alleles.length; i++) {
-            if (alleles[i] != firstAllele) {
+        for (int allele : alleles) {
+            if (allele != 1) {
                 return false;
             }
         }
@@ -59,7 +60,7 @@ public enum GenotypeClass implements Predicate<String> {
     /**
      * Heterozygous.
      * <p>
-     * 0/1, 1/2, 0/2, 2/4, 0|1, 1|0, 0/0/1, ...
+     * 0/1, 1/2, 0|1, 1|0, ./1, 0/1/2, ...
      */
     HET(str -> {
         if (str.equals("0/1")) {
@@ -71,14 +72,17 @@ public enum GenotypeClass implements Predicate<String> {
             return false;
         }
         int[] alleles = gt.getAllelesIdx();
-        int firstAllele = alleles[0];
-        if (firstAllele < 0 || gt.isHaploid()) {
-            // Discard if first allele is missing, or if haploid
+        if (alleles.length == 2) {
+            return alleles[0] != alleles[1] && (alleles[0] == 1 || alleles[1] == 1);
+        }
+        if (gt.isHaploid()) {
+            // Discard if haploid
             return false;
         }
+        int firstAllele = alleles[0];
         for (int i = 1; i < alleles.length; i++) {
             int allele = alleles[i];
-            if (allele == firstAllele || allele < 0) {
+            if (allele == firstAllele) {
                 return false;
             }
         }
@@ -88,7 +92,7 @@ public enum GenotypeClass implements Predicate<String> {
     /**
      * Heterozygous Reference.
      * <p>
-     * 0/1, 0/2, 0/3, 0|1, ...
+     * 0/1, 0|1, 1|0, ...
      */
     HET_REF(str -> {
         if (str.equals("0/1")) {
@@ -99,24 +103,32 @@ public enum GenotypeClass implements Predicate<String> {
             // Skip invalid genotypes
             return false;
         }
+        int[] alleles = gt.getAllelesIdx();
+        if (alleles.length == 2) {
+            return alleles[0] == 0 && alleles[1] == 1 || alleles[0] == 1 && alleles[1] == 0;
+        }
         if (gt.isHaploid()) {
             // Discard if haploid
             return false;
         }
         boolean hasReference = false;
         boolean hasAlternate = false;
+        boolean hasMissing = false;
+        boolean hasOtherAlternate = false;
 
-        for (int allele : gt.getAllelesIdx()) {
+        for (int allele : alleles) {
             hasReference |= allele == 0;
-            hasAlternate |= allele > 0; // Discard ref and missing
+            hasAlternate |= allele == 1; // Discard ref and missing
+            hasMissing |= allele < 0;
+            hasOtherAlternate |= allele > 1;
         }
-        return hasReference && hasAlternate;
+        return hasReference && hasAlternate && !hasMissing && !hasOtherAlternate;
     }),
 
     /**
      * Heterozygous Alternate.
      * <p>
-     * 1/2, 1/3, 2/4, 2|1, ...
+     * 1/2, 1/3, 1/4, 2|1, ...
      */
     HET_ALT(str -> {
         Genotype gt = parseGenotype(str);
@@ -125,18 +137,58 @@ public enum GenotypeClass implements Predicate<String> {
             return false;
         }
         int[] alleles = gt.getAllelesIdx();
-        int firstAllele = alleles[0];
-        if (firstAllele <= 0 || gt.isHaploid()) {
-            // Discard if first allele is reference or missing, or if haploid
+        if (alleles.length == 2) {
+            return alleles[0] == 1 && alleles[1] > 1 || alleles[0] > 1 && alleles[1] == 1;
+        }
+        if (gt.isHaploid()) {
+            // Discard if haploid
             return false;
         }
-        for (int i = 1; i < alleles.length; i++) {
-            int allele = alleles[i];
-            if (allele == firstAllele || allele <= 0) {
-                return false;
-            }
+        boolean hasReference = false;
+        boolean hasAlternate = false;
+        boolean hasMissing = false;
+        boolean hasOtherAlternate = false;
+
+        for (int allele : alleles) {
+            hasReference |= allele == 0;
+            hasAlternate |= allele == 1;
+            hasMissing |= allele < 0;
+            hasOtherAlternate |= allele > 1;
         }
-        return true;
+        return hasAlternate && hasOtherAlternate && !hasReference && !hasMissing;
+    }),
+
+    /**
+     * Heterozygous Missing.
+     * <p>
+     * 1/., ./1, ...
+     */
+    HET_MISS(str -> {
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
+        int[] alleles = gt.getAllelesIdx();
+        if (alleles.length == 2) {
+            return alleles[0] == 1 && alleles[1] < 0 || alleles[0] < 0 && alleles[1] == 1;
+        }
+        if (gt.isHaploid()) {
+            // Discard if haploid
+            return false;
+        }
+        boolean hasReference = false;
+        boolean hasAlternate = false;
+        boolean hasMissing = false;
+        boolean hasOtherAlternate = false;
+
+        for (int allele : alleles) {
+            hasReference |= allele == 0;
+            hasAlternate |= allele == 1;
+            hasMissing |= allele < 0;
+            hasOtherAlternate |= allele > 1;
+        }
+        return hasAlternate && hasMissing && !hasReference && !hasOtherAlternate;
     }),
 
     /**
@@ -158,6 +210,27 @@ public enum GenotypeClass implements Predicate<String> {
         return true;
     }),
 
+    /**
+     * Genotypes containing reference and secondary alternates only.
+     * <p>
+     * 0/2, 2/3, ./2, 2/2, ...
+     */
+    SEC_ALT(str -> {
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
+        boolean hasSecondaryAlternate = false;
+        for (int allele : gt.getAllelesIdx()) {
+            if (allele == 1) {
+                return false;
+            } else if (allele > 1) {
+                hasSecondaryAlternate = true;
+            }
+        }
+        return hasSecondaryAlternate;
+    }),
 
     /**
      * Contains the main alternate.
