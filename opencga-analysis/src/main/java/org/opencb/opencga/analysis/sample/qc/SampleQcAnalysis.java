@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.CircosPlot;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
@@ -25,9 +26,9 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -35,9 +36,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
@@ -45,9 +47,11 @@ import org.opencb.opencga.core.tools.variant.SampleQcAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor.CONTEXT_FILENAME;
 import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
@@ -56,12 +60,12 @@ import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermission
 public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats and gene coverage"
-        + " stats; and for somatic samples, mutational signature";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats and Circos plot; and "
+        + " for somatic samples, mutational signature.";
 
     public  static final String VARIANT_STATS_STEP = "variant-stats";
-    public  static final String GENE_COVERAGE_STEP = "gene-coverage-stats";
-    public  static final String MUTATIONAL_SIGNATUR_STEP = "mutational-signature";
+    public  static final String CIRCOS_PLOT_STEP = "circos-plot";
+    public  static final String MUTATIONAL_SIGNATURE_STEP = "mutational-signature";
 
     private String studyId;
     private String sampleId;
@@ -70,13 +74,14 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
     private Query variantStatsQuery;
     private String signatureId;
     private Query signatureQuery;
-    private List<String> genesForCoverageStats;
+//    private Query circosQuery;
+//    private List<String> signatureQuery;
 
     private Sample sample;
-    private File catalogBamFile;
     private SampleVariantQualityControlMetrics variantQcMetrics;
     private Job variantStatsJob = null;
     private Job signatureJob = null;
+    private Job circosJob = null;
 
     @Override
     protected void check() throws Exception {
@@ -106,17 +111,11 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         if (sample == null) {
             throw new ToolException("Sample '" + sampleId + "' not found.");
         }
-
-        try {
-            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), studyId, catalogManager.getFileManager(), getToken());
-        } catch (ToolException e) {
-            throw new ToolException(e);
-        }
     }
 
     @Override
     protected List<String> getSteps() {
-        return Arrays.asList(VARIANT_STATS_STEP, GENE_COVERAGE_STEP, MUTATIONAL_SIGNATUR_STEP);
+        return Arrays.asList(VARIANT_STATS_STEP, CIRCOS_PLOT_STEP, MUTATIONAL_SIGNATURE_STEP);
     }
 
     @Override
@@ -134,6 +133,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                     } else if (dependsOnJob.getId().startsWith(MutationalSignatureAnalysis.ID)) {
                         signatureJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token)
                                 .first();
+                    } else if (dependsOnJob.getId().startsWith(CircosAnalysis.ID)) {
+                        circosJob = catalogManager.getJobManager().get(studyId, dependsOnJob.getId(), QueryOptions.empty(), token).first();
                     }
                 }
             }
@@ -142,7 +143,6 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Get sample quality control metrics to update
-//        alignmentQcMetrics = getSampleAlignmentQualityControlMetrics();
         variantQcMetrics = sample.getQualityControl().getVariantMetrics();
 
         SampleQcAnalysisExecutor executor = getToolExecutor(SampleQcAnalysisExecutor.class);
@@ -150,24 +150,25 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         // Set up executor
         executor.setStudyId(studyId)
                 .setSample(sample)
-                .setCatalogBamFile(catalogBamFile)
                 .setVariantStatsId(variantStatsId)
                 .setVariantStatsDecription(variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
                 .setSignatureId(signatureId)
-                .setSignatureQuery(signatureQuery)
-                .setGenesForCoverageStats(genesForCoverageStats)
-//                .setAlignmentQcMetrics(alignmentQcMetrics)
-        ;
+                .setSignatureQuery(signatureQuery);
 
         // Step by step
         step(VARIANT_STATS_STEP, () -> runVariantStats());
-        step(GENE_COVERAGE_STEP, () -> executor.setQcType(SampleQcAnalysisExecutor.QcType.GENE_COVERAGE_STATS).execute());
-        step(MUTATIONAL_SIGNATUR_STEP, () -> runSignature());
+        step(CIRCOS_PLOT_STEP, () -> runCircosPlot());
+        step(MUTATIONAL_SIGNATURE_STEP, () -> runSignature());
 
         // Finally, update sample quality control metrics
-//        alignmentQcMetrics = executor.getAlignmentQcMetrics();
-//        updateSampleQualityControlMetrics(alignmentQcMetrics);
+        try {
+            sample.getQualityControl().setVariantMetrics(variantQcMetrics);
+            catalogManager.getSampleManager().update(studyId, getSampleId(),
+                    new SampleUpdateParams().setQualityControl(sample.getQualityControl()), QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException(e);
+        }
     }
 
     private void runVariantStats() throws ToolException {
@@ -256,106 +257,30 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-
-//    private void runFastQc() throws ToolException {
-//        if (fastQcJob == null) {
-//            addWarning("Skipping FastQc analysis");
-//            return;
-//        }
-//
-//        if (CollectionUtils.isNotEmpty(fastQcJob.getOutput())) {
-//            FastQc fastQc = null;
-//
-//            // First, look for fastqc_data.txt to parse it
-//            for (File file: fastQcJob.getOutput()) {
-//                if (file.getName().equals("fastqc_data.txt")) {
-//                    try {
-//                        fastQc = FastQcParser.parse(Paths.get(file.getUri().getPath()).toFile());
-//                    } catch (IOException e) {
-//                        throw new ToolException(e);
-//                    }
-//                }
-//            }
-//
-//            // Second, add images to the FastQc object
-//            if (fastQc != null) {
-//                for (File file : fastQcJob.getOutput()) {
-//                    switch (file.getName()) {
-//                        case "adapter_content.png": {
-//                            fastQc.getAdapterContent().setFile(file.getId());
-//                            break;
-//                        }
-//                        case "per_base_n_content.png": {
-//                            fastQc.getPerBaseNContent().setFile(file.getId());
-//                            break;
-//                        }
-//                        case "per_base_sequence_content.png": {
-//                            fastQc.getPerBaseSeqContent().setFile(file.getId());
-//                            break;
-//                        }
-//                        case "per_sequence_quality.png": {
-//                            fastQc.getPerSeqQualityScore().setFile(file.getId());
-//                            break;
-//                        }
-//                        case "duplication_levels.png": {
-//                            fastQc.getSeqDuplicationLevel().setFile(file.getId());
-//                            break;
-//                        }
-//                        case "per_base_quality.png": {
-//                            fastQc.getPerBaseSeqQuality().setFile(file.getId());
-//                            break;
-//                        }
-//                        case "per_sequence_gc_content.png": {
-//                            fastQc.getPerSeqGcContent().setFile(file.getId());
-//                            break;
-//                        }
-//                        case "sequence_length_distribution.png": {
-//                            fastQc.getSeqLengthDistribution().setFile(file.getId());
-//                            break;
-//                        }
-//                    }
-//                }
-//
-//                alignmentQcMetrics.setFastQc(fastQc);
-//            }
-//        }
-//    }
-
-    private SampleAlignmentQualityControlMetrics getSampleAlignmentQualityControlMetrics() {
-        String bamFileId = (catalogBamFile == null) ? "" : catalogBamFile.getId();
-
-        if (sample.getQualityControl() == null) {
-            sample.setQualityControl(new SampleQualityControl());
+    private void runCircosPlot() throws ToolException {
+        if (circosJob == null) {
+            addWarning("Skipping Circos plot");
         } else {
-            for (SampleAlignmentQualityControlMetrics prevMetrics : sample.getQualityControl().getAlignmentMetrics()) {
-                if (prevMetrics.getBamFileId().equals(bamFileId)) {
-                    return prevMetrics;
-                }
-            }
-        }
-        return new SampleAlignmentQualityControlMetrics().setBamFileId(bamFileId);
-    }
 
-    private void updateSampleQualityControlMetrics(SampleAlignmentQualityControlMetrics alignmentQcMetrics) throws ToolException {
-        SampleQualityControl qualityControl = sample.getQualityControl();
-        if (sample.getQualityControl() == null) {
-            qualityControl = new SampleQualityControl();
-        } else {
-            int index = 0;
-            for (SampleAlignmentQualityControlMetrics prevMetrics : qualityControl.getAlignmentMetrics()) {
-                if (prevMetrics.getBamFileId().equals(alignmentQcMetrics.getBamFileId())) {
-                    qualityControl.getAlignmentMetrics().remove(index);
-                    break;
+            try {
+                List<Path> paths = Files.list(Paths.get(circosJob.getOutDir().getUri().getPath())).collect(Collectors.toList());
+                for (Path path : paths) {
+                    if (path.getFileName().endsWith(CircosAnalysis.SUFFIX_FILENAME)) {
+                        int index = path.toFile().getAbsolutePath().indexOf("JOBS/");
+                        String relativeFilePath = (index == -1
+                                ? path.toFile().getName()
+                                : path.toFile().getAbsolutePath().substring(index));
+                        CircosPlot circosPlot = new CircosPlot(circosJob.getId(), null, relativeFilePath);
+                        if (variantQcMetrics.getCircosPlots() == null) {
+                            variantQcMetrics.setCircosPlots(new ArrayList<>());
+                        }
+                        variantQcMetrics.getCircosPlots().add(circosPlot);
+                        break;
+                    }
                 }
-                index++;
+            } catch (IOException e) {
+                throw new ToolException(e);
             }
-        }
-
-        try {
-            catalogManager.getSampleManager().update(studyId, getSampleId(), new SampleUpdateParams().setQualityControl(qualityControl),
-                    QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new ToolException(e);
         }
     }
 
@@ -415,15 +340,6 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     public SampleQcAnalysis setSignatureQuery(Query signatureQuery) {
         this.signatureQuery = signatureQuery;
-        return this;
-    }
-
-    public List<String> getGenesForCoverageStats() {
-        return genesForCoverageStats;
-    }
-
-    public SampleQcAnalysis setGenesForCoverageStats(List<String> genesForCoverageStats) {
-        this.genesForCoverageStats = genesForCoverageStats;
         return this;
     }
 }

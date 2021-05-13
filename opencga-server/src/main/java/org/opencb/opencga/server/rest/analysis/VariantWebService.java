@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -1134,12 +1135,10 @@ public class VariantWebService extends AnalysisWebService {
             List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
 
             Sample sample;
-            org.opencb.opencga.core.models.file.File catalogBamFile;
             sample = IndividualQcUtils.getValidSampleById(study, params.getSample(), catalogManager, token);
             if (sample == null) {
                 throw new ToolException("Sample '" + params.getSample() + "' not found.");
             }
-            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
 
             // Check variant stats
             if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
@@ -1226,6 +1225,15 @@ public class VariantWebService extends AnalysisWebService {
                         null, null, null, null);
                 Job signatureJob = jobResult.first();
                 dependsOnList.add(signatureJob.getId());
+            }
+
+            // Run circos if necessary
+            if (MapUtils.isNotEmpty(params.getCircosQuery()) && CollectionUtils.isNotEmpty(params.getCircosTracks())) {
+                CircosAnalysisParams circosAnalysisParams = new CircosAnalysisParams(sample.getId(), "MEDIUM", params.getCircosQuery(),
+                        params.getCircosTracks(), params.getOutdir());
+                DataResult<Job> jobResult = submitJobRaw(CircosAnalysis.ID, null, study, circosAnalysisParams, null, null, null, null);
+                Job circosJob = jobResult.first();
+                dependsOnList.add(circosJob.getId());
             }
 
             return submitJobRaw(SampleQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);

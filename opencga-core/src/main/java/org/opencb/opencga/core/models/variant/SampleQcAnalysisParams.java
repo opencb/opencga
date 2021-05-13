@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.variant;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
+import java.util.Map;
 
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample QC analysis params";
@@ -28,7 +29,8 @@ public class SampleQcAnalysisParams extends ToolParams {
     private AnnotationVariantQueryParams variantStatsQuery;
     private String signatureId;
     private SampleQcSignatureQueryParams signatureQuery;
-    private List<String> genesForCoverageStats;
+    private Map<String, String> circosQuery;
+    private List<CircosTrack> circosTracks;
 
     private String outdir;
 
@@ -37,14 +39,16 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
                                   AnnotationVariantQueryParams variantStatsQuery, String signatureId,
-                                  SampleQcSignatureQueryParams signatureQuery, List<String> genesForCoverageStats, String outdir) {
+                                  SampleQcSignatureQueryParams signatureQuery, Map<String, String> circosQuery,
+                                  List<CircosTrack> circosTracks, String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
         this.signatureId = signatureId;
         this.signatureQuery = signatureQuery;
-        this.genesForCoverageStats = genesForCoverageStats;
+        this.circosQuery = circosQuery;
+        this.circosTracks = circosTracks;
         this.outdir = outdir;
     }
 
@@ -53,11 +57,12 @@ public class SampleQcAnalysisParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
-        sb.append(", variantStatsDecription='").append(variantStatsDescription).append('\'');
+        sb.append(", variantStatsDescription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
         sb.append(", signatureId='").append(signatureId).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
-        sb.append(", genesForCoverageStats=").append(genesForCoverageStats);
+        sb.append(", circosQuery=").append(circosQuery);
+        sb.append(", circosTracks=").append(circosTracks);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -117,12 +122,21 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public List<String> getGenesForCoverageStats() {
-        return genesForCoverageStats;
+    public Map<String, String> getCircosQuery() {
+        return circosQuery;
     }
 
-    public SampleQcAnalysisParams setGenesForCoverageStats(List<String> genesForCoverageStats) {
-        this.genesForCoverageStats = genesForCoverageStats;
+    public SampleQcAnalysisParams setCircosQuery(Map<String, String> circosQuery) {
+        this.circosQuery = circosQuery;
+        return this;
+    }
+
+    public List<CircosTrack> getCircosTracks() {
+        return circosTracks;
+    }
+
+    public SampleQcAnalysisParams setCircosTracks(List<CircosTrack> circosTracks) {
+        this.circosTracks = circosTracks;
         return this;
     }
 

@@ -417,10 +417,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         // Build signature query from cli options
         SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);
 
-        // Build list of genes from cli options
-        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
-                ? new ArrayList<>()
-                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
+//        // Build list of genes from cli options
+//        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
+//                ? new ArrayList<>()
+//                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
 
         return openCGAClient.getVariantClient().runSampleQc(
                 new SampleQcAnalysisParams(
@@ -430,7 +430,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantStatsQuery,
                         variantCommandOptions.sampleQcCommandOptions.signatureId,
                         signatureQuery,
-                        genesForCoverageStats,
+                        //genesForCoverageStats,
+                        null,
+                        null,
                         variantCommandOptions.sampleQcCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.sampleQcCommandOptions.study)

@@ -1401,8 +1401,8 @@ public class VariantCommandOptions {
         @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
         public Map<String, String> signatureQuery = new HashMap<>();
 
-        @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
-        public String genesForCoverageStats;
+//        @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
+//        public String genesForCoverageStats;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

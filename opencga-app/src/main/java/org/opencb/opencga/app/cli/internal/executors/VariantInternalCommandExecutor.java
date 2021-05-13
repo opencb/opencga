@@ -876,10 +876,10 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         Query signatureQuery = new Query();
         signatureQuery.putAll(cliOptions.signatureQuery);
 
-        // Build list of genes from cli options
-        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
-                ? new ArrayList<>()
-                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
+//        // Build list of genes from cli options
+//        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
+//                ? new ArrayList<>()
+//                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
 
         SampleQcAnalysis sampleQcAnalysis = new SampleQcAnalysis();
         sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
@@ -890,8 +890,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setVariantStatsDecription(cliOptions.variantStatsDecription)
                 .setVariantStatsQuery(variantStatsQuery)
                 .setSignatureId(cliOptions.signatureId)
-                .setSignatureQuery(signatureQuery)
-                .setGenesForCoverageStats(genesForCoverageStats);
+                .setSignatureQuery(signatureQuery);
+//                .setGenesForCoverageStats(genesForCoverageStats);
 
         sampleQcAnalysis.start();
     }
