@@ -588,7 +588,7 @@ public class RgaManager implements AutoCloseable {
         Future<Integer> numMatchesFuture = null;
         if (options.getBoolean(QueryOptions.COUNT)) {
             numMatchesFuture = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaQueryParams.GENE_ID + ")");
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaQueryParams.GENE_ID.key() + ")");
                 try {
                     DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
                     return ((Number) result.first().getAggregationValues().get(0)).intValue();
@@ -964,7 +964,7 @@ public class RgaManager implements AutoCloseable {
         Future<Integer> numMatchesFuture = null;
         if (options.getBoolean(QueryOptions.COUNT)) {
             numMatchesFuture = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaQueryParams.GENE_ID + ")");
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaQueryParams.GENE_ID.key() + ")");
                 try {
                     DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
                     return ((Number) result.first().getAggregationValues().get(0)).intValue();
