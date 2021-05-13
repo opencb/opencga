@@ -45,7 +45,7 @@ This is the main data model, it stores the most basic and important information.
         <p><b>Unique</b> Sample ID in the study, this can be repeated across different
           studies. This is a mandatory parameter in the creation and cannot be changed
           at the moment.</p>
-        <p><em>Constraints: Required, Create</em>
+        <p><em>Constraints: Required, Create, Immutable</em>
         </p>
       </td>
     </tr>
