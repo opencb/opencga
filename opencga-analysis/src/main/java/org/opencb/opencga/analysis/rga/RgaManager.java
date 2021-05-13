@@ -13,9 +13,7 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.analysis.rga.RgaUtils.CodedIndividual;
-import org.opencb.opencga.analysis.rga.RgaUtils.CodedVariant;
-import org.opencb.opencga.analysis.rga.RgaUtils.KnockoutTypeCount;
+import org.opencb.opencga.analysis.rga.RgaUtils.*;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -571,12 +569,8 @@ public class RgaManager implements AutoCloseable {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getMainCollectionName(study.getFqn());
-        String auxCollection = getAuxCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
-        }
-        if (!rgaEngine.isAlive(auxCollection)) {
-            throw new RgaException("Missing auxiliar RGA collection for study '" + study.getFqn() + "'");
         }
 
         StopWatch stopWatch = new StopWatch();
@@ -590,10 +584,25 @@ public class RgaManager implements AutoCloseable {
         Boolean isOwnerOrAdmin = catalogManager.getAuthorizationManager().isOwnerOrAdmin(study.getUid(), userId);
         Query auxQuery = query != null ? new Query(query) : new Query();
 
-        ResourceIds resourceIds;
+        // Get number of matches
+        Future<Integer> numMatchesFuture = null;
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            numMatchesFuture = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaQueryParams.GENE_ID + ")");
+                try {
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                } catch (Exception e) {
+                    logger.error("Could not obtain the count: {}", e.getMessage(), e);
+                }
+                return -1;
+            });
+        }
+
+        List<String> geneIds;
         try {
-            resourceIds = getIds(collection, auxCollection, RgaQueryParams.GENE_ID.key(), auxQuery, queryOptions, executor);
-            auxQuery.put(RgaQueryParams.GENE_ID.key(), resourceIds.getIds());
+            geneIds = getGeneIds(collection, auxQuery, queryOptions);
+            auxQuery.put(RgaQueryParams.GENE_ID.key(), geneIds);
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
                 return OpenCGAResult.empty(RgaKnockoutByGene.class, (int) stopWatch.getTime(TimeUnit.MILLISECONDS));
@@ -664,7 +673,7 @@ public class RgaManager implements AutoCloseable {
 
         knockoutResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
         try {
-            knockoutResult.setNumMatches(resourceIds.getNumMatchesFuture() != null ? resourceIds.getNumMatchesFuture().get() : -1);
+            knockoutResult.setNumMatches(numMatchesFuture != null ? numMatchesFuture.get() : -1);
         } catch (InterruptedException | ExecutionException e) {
             knockoutResult.setNumMatches(-1);
         }
@@ -713,7 +722,7 @@ public class RgaManager implements AutoCloseable {
 
         ResourceIds resourceIds;
         try {
-            resourceIds = getIds(collection, auxCollection, RgaQueryParams.VARIANTS.key(), auxQuery, queryOptions, executor);
+            resourceIds = getVariantIds(collection, auxCollection, auxQuery, queryOptions, executor);
             auxQuery.put(RgaDataModel.VARIANTS, resourceIds.getIds());
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
@@ -939,12 +948,8 @@ public class RgaManager implements AutoCloseable {
         Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
         String userId = catalogManager.getUserManager().getUserId(token);
         String collection = getMainCollectionName(study.getFqn());
-        String auxCollection = getAuxCollectionName(study.getFqn());
         if (!rgaEngine.isAlive(collection)) {
             throw new RgaException("Missing RGA indexes for study '" + study.getFqn() + "' or solr server not alive");
-        }
-        if (!rgaEngine.isAlive(auxCollection)) {
-            throw new RgaException("Missing auxiliar RGA collection for study '" + study.getFqn() + "'");
         }
 
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), userId,
@@ -953,12 +958,26 @@ public class RgaManager implements AutoCloseable {
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
         QueryOptions queryOptions = setDefaultLimit(options);
-
         Query auxQuery = query != null ? new Query(query) : new Query();
 
-        ResourceIds resourceIds;
+        // Get number of matches
+        Future<Integer> numMatchesFuture = null;
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            numMatchesFuture = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaQueryParams.GENE_ID + ")");
+                try {
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, auxQuery, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                } catch (Exception e) {
+                    logger.error("Could not obtain the count: {}", e.getMessage(), e);
+                }
+                return -1;
+            });
+        }
+
+        List<String> geneIds;
         try {
-            resourceIds = getIds(collection, auxCollection, RgaQueryParams.GENE_ID.key(), auxQuery, queryOptions, executor);
+            geneIds = getGeneIds(collection, auxQuery, queryOptions);
             auxQuery.remove(RgaQueryParams.GENE_ID.key());
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
@@ -967,12 +986,12 @@ public class RgaManager implements AutoCloseable {
             throw e;
         }
 
-        List<Future<KnockoutByGeneSummary>> geneSummaryFutureList = new ArrayList<>(resourceIds.getIds().size());
-        for (String geneId : resourceIds.getIds()) {
+        List<Future<KnockoutByGeneSummary>> geneSummaryFutureList = new ArrayList<>(geneIds.size());
+        for (String geneId : geneIds) {
             geneSummaryFutureList.add(executor.submit(() -> calculateGeneSummary(collection, auxQuery, geneId)));
         }
 
-        List<KnockoutByGeneSummary> knockoutByGeneSummaryList = new ArrayList<>(resourceIds.getIds().size());
+        List<KnockoutByGeneSummary> knockoutByGeneSummaryList = new ArrayList<>(geneIds.size());
         try {
             for (Future<KnockoutByGeneSummary> summaryFuture : geneSummaryFutureList) {
                 knockoutByGeneSummaryList.add(summaryFuture.get());
@@ -987,8 +1006,8 @@ public class RgaManager implements AutoCloseable {
         int numMatches = -1;
         if (queryOptions.getBoolean(QueryOptions.COUNT)) {
             try {
-                assert resourceIds.getNumMatchesFuture() != null;
-                numMatches = resourceIds.getNumMatchesFuture().get();
+                assert numMatchesFuture != null;
+                numMatches = numMatchesFuture.get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RgaException(e.getMessage(), e);
             }
@@ -1024,7 +1043,7 @@ public class RgaManager implements AutoCloseable {
 
         ResourceIds resourceIds;
         try {
-            resourceIds = getIds(collection, auxCollection, RgaQueryParams.VARIANTS.key(), auxQuery, queryOptions, executor);
+            resourceIds = getVariantIds(collection, auxCollection, auxQuery, queryOptions, executor);
             auxQuery.put(RgaDataModel.VARIANTS, resourceIds.getIds());
         } catch (RgaException e) {
             if (RgaException.NO_RESULTS_FOUND.equals(e.getMessage())) {
@@ -1120,20 +1139,42 @@ public class RgaManager implements AutoCloseable {
     }
 
     /***
-     * Fetch a list of ids (facetField) considering the limit/skip, using the auxiliary collection to improve performance.
+     * Fetch a list of gene ids considering the limit/skip.
      *
-     * @param mainCollection Main RGA collection name.
-     * @param auxCollection Auxiliary RGA collection name.
-     * @param facetField Field from where ids will be retrieved.
+     * @param collection Main RGA collection name.
      * @param query User query object.
      * @param options User query options object.
      * @return the list of expected ids.
      * @throws RgaException RgaException.
      * @throws IOException IOException.
      */
-    private ResourceIds getIds(String mainCollection, String auxCollection, String facetField, Query query, QueryOptions options,
-                               ExecutorService executor) throws RgaException, IOException {
-        String auxiliarId = AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.get(facetField);
+    private List<String> getGeneIds(String collection, Query query, QueryOptions options) throws RgaException, IOException {
+        QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaQueryParams.GENE_ID.key());
+        facetOptions.putIfNotNull(QueryOptions.LIMIT, -1);
+        facetOptions.putIfNotNull(QueryOptions.LIMIT, options.get(QueryOptions.LIMIT));
+        facetOptions.putIfNotNull(QueryOptions.SKIP, options.get(QueryOptions.SKIP));
+
+        DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
+        if (result.getNumResults() == 0) {
+            throw RgaException.noResultsMatching();
+        }
+
+        return result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
+    }
+
+    /***
+     * Fetch a list of ids (facetField) considering the limit/skip, using the auxiliary collection to improve performance.
+     *
+     * @param mainCollection Main RGA collection name.
+     * @param auxCollection Auxiliary RGA collection name.
+     * @param query User query object.
+     * @param options User query options object.
+     * @return the list of expected ids.
+     * @throws RgaException RgaException.
+     * @throws IOException IOException.
+     */
+    private ResourceIds getVariantIds(String mainCollection, String auxCollection, Query query, QueryOptions options,
+                                      ExecutorService executor) throws RgaException, IOException {
         List<String> ids;
         Future<Integer> numMatchesFuture = null;
 
@@ -1142,7 +1183,7 @@ public class RgaManager implements AutoCloseable {
 
         if (!mainCollQuery.isEmpty()) {
             // Perform a facet in the main collection because the user is filtering by other fields not present in the auxiliar coll
-            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, facetField);
+            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS);
             facetOptions.putIfNotNull(QueryOptions.LIMIT, -1);
 
             DataResult<FacetField> result = rgaEngine.facetedQuery(mainCollection, query, facetOptions);
@@ -1151,13 +1192,13 @@ public class RgaManager implements AutoCloseable {
             }
 
             ids = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
-            auxCollQuery.put(facetField, ids);
+            auxCollQuery.put(RgaDataModel.VARIANTS, ids);
         }
 
         // Get number of matches
         if (options.getBoolean(QueryOptions.COUNT)) {
             numMatchesFuture = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + auxiliarId + ")");
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + AuxiliarRgaDataModel.ID + ")");
                 try {
                     DataResult<FacetField> result = rgaEngine.auxFacetedQuery(auxCollection, auxCollQuery, facetOptions);
                     return ((Number) result.first().getAggregationValues().get(0)).intValue();
@@ -1169,7 +1210,7 @@ public class RgaManager implements AutoCloseable {
         }
 
         // Perform a facet to get the different variant ids matching the user query and using the skip and limit values
-        QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, auxiliarId);
+        QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, AuxiliarRgaDataModel.ID);
         facetOptions.putIfNotNull(QueryOptions.LIMIT, options.get(QueryOptions.LIMIT));
         facetOptions.putIfNotNull(QueryOptions.SKIP, options.get(QueryOptions.SKIP));
 
