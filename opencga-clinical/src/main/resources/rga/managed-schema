@@ -597,6 +597,7 @@
     <field name="clinicalSignificances" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="individualSummary" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="compoundFilters" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="chPairs" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="phenotypeJson" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="disorderJson" type="string" indexed="false" stored="true" multiValued="true"/>
 

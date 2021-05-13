@@ -321,7 +321,6 @@ public class RgaManager implements AutoCloseable {
                 .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY);
         DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(mainCollection, query, knockoutTypeFacet);
 
-        List<List<List<String>>> compHetVariantPairs = new LinkedList<>();
         for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
             CodedVariant codedVariant = CodedVariant.parseEncodedId(bucket.getValue());
             if (variantId.equals(codedVariant.getId())) {
@@ -337,17 +336,38 @@ public class RgaManager implements AutoCloseable {
                     populationFrequencyMap.put(thousandGenomeKey, codedVariant.getThousandGenomesFrequency());
                     populationFrequencyMap.put(gnomadGenomeKey, codedVariant.getGnomadFrequency());
                 }
-            } else if (KnockoutVariant.KnockoutType.COMP_HET.name().equals(codedVariant.getKnockoutType())) {
-                // TODO: Assuming filter is PASS. We need to check that properly
-                compHetVariantPairs.add(Arrays.asList(
-                        Collections.singletonList(codedVariant.getKnockoutType()),
-                        Collections.singletonList(RgaUtils.encode(PASS)), // TODO: CHANGE !!!!! Take filter from codedVariant object
-                        new ArrayList<>(codedVariant.getConsequenceType()),
-                        codedVariant.getPopulationFrequencies()));
             }
         }
+
         // Process all COMP_HET combinations
         if (knockoutTypes.contains(KnockoutVariant.KnockoutType.COMP_HET.name())) {
+            QueryOptions chPairFacet = new QueryOptions()
+                    .append(QueryOptions.LIMIT, -1)
+                    .append(QueryOptions.FACET, RgaDataModel.CH_PAIRS);
+            facetFieldDataResult = rgaEngine.facetedQuery(mainCollection, query, chPairFacet);
+
+            List<List<List<String>>> chVariantList = new LinkedList<>();
+            for (FacetField.Bucket bucket : facetFieldDataResult.first().getBuckets()) {
+                CodedChPairVariants codedChVariants = CodedChPairVariants.parseEncodedId(bucket.getValue());
+                CodedVariant codedVariant = null;
+                if (variantId.equals(codedChVariants.getMaternalCodedVariant().getId())) {
+                    // Consider paternal variant
+                    codedVariant = codedChVariants.getPaternalCodedVariant();
+                } else if (variantId.equals(codedChVariants.getPaternalCodedVariant().getId())) {
+                    // Consider maternal variant
+                    codedVariant = codedChVariants.getMaternalCodedVariant();
+                }
+
+                if (codedVariant != null) {
+                    // TODO: Assuming filter is PASS. We need to check that properly
+                    chVariantList.add(Arrays.asList(
+                            Collections.singletonList(codedVariant.getKnockoutType()),
+                            Collections.singletonList(RgaUtils.encode(PASS)), // TODO: CHANGE !!!!! Take filter from codedVariant object
+                            new ArrayList<>(codedVariant.getConsequenceType()),
+                            codedVariant.getPopulationFrequencies()));
+                }
+            }
+
             // TODO: Assuming filter is PASS. We need to check that properly
             List<List<String>> currentVariantCompHetValues = Arrays.asList(
                     Collections.singletonList(KnockoutVariant.KnockoutType.COMP_HET.name()),
@@ -356,10 +376,8 @@ public class RgaManager implements AutoCloseable {
                     Arrays.asList(populationFrequencyMap.get(thousandGenomeKey), populationFrequencyMap.get(gnomadGenomeKey)));
 
             // Generate combinations with current variant
-            for (List<List<String>> otherCompoundHetVariant : compHetVariantPairs) {
-                compoundFilters.addAll(RgaUtils.generateCompoundHeterozygousCombinations(
-                        Arrays.asList(currentVariantCompHetValues, otherCompoundHetVariant)));
-            }
+            compoundFilters.addAll(RgaUtils.generateCompoundHeterozygousCombinations(Collections.singletonList(currentVariantCompHetValues),
+                    chVariantList));
         }
 
         knockoutTypeFacet = new QueryOptions()
@@ -1038,7 +1056,6 @@ public class RgaManager implements AutoCloseable {
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
         QueryOptions queryOptions = setDefaultLimit(options);
-
         Query auxQuery = query != null ? new Query(query) : new Query();
 
         ResourceIds resourceIds;
