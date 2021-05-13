@@ -464,7 +464,7 @@ public class ProjectManager extends AbstractManager {
             }
 
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ID.key())) {
-                ParamUtils.checkAlias(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
+                ParamUtils.checkIdentifier(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
             }
 
             OpenCGAResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());

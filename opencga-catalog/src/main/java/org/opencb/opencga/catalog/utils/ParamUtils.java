@@ -123,16 +123,16 @@ public class ParamUtils {
 
     public static void checkAlias(String alias, String name) throws CatalogParameterException {
         if (alias == null || alias.isEmpty()) {
-            throw new CatalogParameterException("Missing id.");
+            throw new CatalogParameterException("Missing " + name);
         }
         if (!alias.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
-            throw new CatalogParameterException("Invalid id for '" + name + "'. Alias needs to start by any character "
+            throw new CatalogParameterException("Invalid " + name + ". It needs to start by any character "
                     + "or number and might contain single '-', '_', '.', symbols followed by any character or number.");
         }
     }
 
     public static void checkIdentifier(String identifier, String name) throws CatalogParameterException {
-        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z][A-Za-z0-9-_.]*[A-Za-z0-9]$")) {
             throw new CatalogParameterException("Error in identifier: Invalid identifier format for '" + name + "'.");
         }
     }

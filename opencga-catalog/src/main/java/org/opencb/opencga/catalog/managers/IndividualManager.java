@@ -204,7 +204,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     void validateNewIndividual(Study study, Individual individual, List<String> samples, String userId, boolean linkParents)
             throws CatalogException {
-        ParamUtils.checkAlias(individual.getId(), "id");
+        ParamUtils.checkIdentifier(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
         individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
@@ -1315,7 +1315,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), "id");
+            ParamUtils.checkIdentifier(updateParams.getId(), "id");
 
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)

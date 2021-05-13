@@ -251,7 +251,7 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
             ParamUtils.checkObj(job, "Job");
-            ParamUtils.checkAlias(job.getId(), "job id");
+            ParamUtils.checkIdentifier(job.getId(), "job id");
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));

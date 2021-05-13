@@ -246,7 +246,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysis.getId(), "ClinicalAnalysisId");
 
-        ParamUtils.checkAlias(interpretation.getId(), "id");
+        ParamUtils.checkIdentifier(interpretation.getId(), "id");
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
@@ -926,7 +926,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
+            ParamUtils.checkIdentifier(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
                     InterpretationDBAdaptor.QueryParams.ID.key());
         }
 

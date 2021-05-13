@@ -175,6 +175,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 throw new CatalogParameterException("Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
+            ParamUtils.checkIdentifier(cohortParams.getId(), "id");
+
             if (CollectionUtils.isNotEmpty(cohortParams.getSamples())) {
                 List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), cohortParams.getSamples(),
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();

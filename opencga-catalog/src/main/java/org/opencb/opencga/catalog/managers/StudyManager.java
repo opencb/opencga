@@ -254,7 +254,7 @@ public class StudyManager extends AbstractManager {
                                        Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkAlias(id, "id");
+        ParamUtils.checkIdentifier(id, "id");
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Project project = catalogManager.getProjectManager().resolveId(projectStr, userId);
@@ -596,7 +596,7 @@ public class StudyManager extends AbstractManager {
             authorizationManager.checkCanEditStudy(study.getUid(), userId);
 
             if (StringUtils.isNotEmpty(parameters.getAlias())) {
-                ParamUtils.checkAlias(parameters.getAlias(), "alias");
+                ParamUtils.checkIdentifier(parameters.getAlias(), "alias");
             }
 
             ObjectMap update;

@@ -238,7 +238,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
-            ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
+            ParamUtils.checkIdentifier(clinicalAnalysis.getId(), "id");
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
 
@@ -1155,7 +1155,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
         if (StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), "id");
+            ParamUtils.checkIdentifier(updateParams.getId(), "id");
         }
         if (StringUtils.isNotEmpty(updateParams.getDueDate()) && TimeUtils.toDate(updateParams.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");

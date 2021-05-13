@@ -151,7 +151,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
-        ParamUtils.checkAlias(sample.getId(), "id");
+        ParamUtils.checkIdentifier(sample.getId(), "id");
 
         // Check the id is not in use
         Query query = new Query()
@@ -1032,7 +1032,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), SampleDBAdaptor.QueryParams.ID.key());
+            ParamUtils.checkIdentifier(updateParams.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getIndividualId())) {

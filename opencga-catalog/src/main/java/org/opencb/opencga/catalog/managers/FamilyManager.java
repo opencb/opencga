@@ -203,7 +203,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
             ParamUtils.checkObj(family, "family");
-            ParamUtils.checkAlias(family.getId(), "id");
+            ParamUtils.checkIdentifier(family.getId(), "id");
             family.setName(ParamUtils.defaultObject(family.getName(), family.getId()));
             family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
             family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
@@ -912,7 +912,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
+            ParamUtils.checkIdentifier(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
         }
 
         boolean updateRoles = options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
