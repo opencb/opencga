@@ -88,7 +88,8 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>processing</b>
         </p>
-        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>&lt;em&gt;&lt;/em&gt;</p>
+        <p><a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>
+        </p>
       </td>
       <td style="text-align:left">An object describing how to sample was processed.</td>
     </tr>
@@ -96,7 +97,8 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>collection</b>
         </p>
-        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplecollection"><em>SampleCollection</em></a>&lt;em&gt;&lt;/em&gt;</p>
+        <p><a href="sample.md#samplecollection"><em>SampleCollection</em></a>
+        </p>
       </td>
       <td style="text-align:left">An object describing how the sample was collected.</td>
     </tr>
@@ -122,7 +124,8 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>qualityControl</b>
         </p>
-        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a>&lt;em&gt;&lt;/em&gt;</p>
+        <p><a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a>
+        </p>
       </td>
       <td style="text-align:left"></td>
     </tr>
@@ -184,7 +187,8 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>status</b>
         </p>
-        <p>&lt;em&gt;&lt;/em&gt;<a href="./#status"><em>CustomStatus</em></a>&lt;em&gt;&lt;/em&gt;</p>
+        <p><a href="./#status"><em>CustomStatus</em></a>
+        </p>
       </td>
       <td style="text-align:left"></td>
     </tr>
@@ -211,7 +215,7 @@ This is the main data model, it stores the most basic and important information.
 
 ### SampleProcessing
 
-This object describes how the sample was processed in the lab.
+This object describes how the sample was processed in the laboratory or clinical set where it was collected.
 
 <table>
   <thead>
@@ -259,7 +263,8 @@ This object describes how the sample was processed in the lab.
     </tr>
     <tr>
       <td style="text-align:left">
-        <p>quantity</p>
+        <p><b>quantity</b>
+        </p>
         <p><em>String</em>
         </p>
       </td>
@@ -267,7 +272,8 @@ This object describes how the sample was processed in the lab.
     </tr>
     <tr>
       <td style="text-align:left">
-        <p>date</p>
+        <p><b>date</b>
+        </p>
         <p><em>String</em>
         </p>
       </td>
