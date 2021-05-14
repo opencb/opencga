@@ -210,8 +210,6 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                         continue;
                     }
 
-                    List<String> compoundFilters = processFilters(transcript);
-
                     List<String> phenotypes = populatePhenotypes(knockoutByIndividual.getPhenotypes());
                     List<String> disorders = populateDisorders(knockoutByIndividual.getDisorders());
                     List<String> phenotypeJson;
@@ -252,7 +250,17 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                     Set<String> types = new HashSet<>();
                     Set<String> consequenceTypes = new HashSet<>();
                     Set<String> clinicalSignificances = new HashSet<>();
+                    Set<String> compoundFilters = new HashSet<>();
+                    Set<String> chPairs = new HashSet<>();
                     Set<String> filters = new HashSet<>();
+
+                    // List to build CH compound filters
+                    List<List<List<String>>> maternalChVariants = new LinkedList<>();
+                    List<List<List<String>>> paternalChVariants = new LinkedList<>();
+
+                    // List to build CH pair string
+                    List<RgaUtils.CodedVariant> maternalCodedVariants = new LinkedList<>();
+                    List<RgaUtils.CodedVariant> paternalCodedVariants = new LinkedList<>();
 
                     Map<String, List<String>> popFreqs = getPopulationFrequencies(transcript);
                     List<KnockoutVariant> variants = transcript.getVariants();
@@ -302,6 +310,31 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                                 variantPopFreq.get(RgaUtils.THOUSAND_GENOMES_STUDY), variantPopFreq.get(RgaUtils.GNOMAD_GENOMES_STUDY),
                                 numParents);
                         individualKnockoutSet.add(codedIndividual.getEncodedId());
+
+                        List<List<String>> independentTerms = processFilters(variant, compoundFilters);
+                        if (variant.getKnockoutType() == KnockoutVariant.KnockoutType.COMP_HET) {
+                            if (variant.getParentalOrigin() == KnockoutVariant.ParentalOrigin.PATERNAL) {
+                                paternalChVariants.add(independentTerms);
+                                paternalCodedVariants.add(codedVariant);
+                            } else {
+                                maternalChVariants.add(independentTerms);
+                                maternalCodedVariants.add(codedVariant);
+                            }
+                        }
+                    }
+
+                    if (!paternalChVariants.isEmpty() && !maternalChVariants.isEmpty()) {
+                        // CH Pairs
+                        for (RgaUtils.CodedVariant paternalChVariant : paternalCodedVariants) {
+                            for (RgaUtils.CodedVariant maternalChVariant : maternalCodedVariants) {
+                                RgaUtils.CodedChPairVariants codedChPairVariants =
+                                        new RgaUtils.CodedChPairVariants(maternalChVariant, paternalChVariant);
+                                chPairs.add(codedChPairVariants.getEncodedId());
+                            }
+                        }
+
+                        // Compound filters
+                        compoundFilters.addAll(RgaUtils.generateCompoundHeterozygousCombinations(maternalChVariants, paternalChVariants));
                     }
 
                     String sex = knockoutByIndividual.getSex() != null
@@ -339,7 +372,8 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                             .setConsequenceTypes(new ArrayList<>(consequenceTypes))
                             .setClinicalSignificances(new ArrayList<>(clinicalSignificances))
                             .setPopulationFrequencies(popFreqs)
-                            .setCompoundFilters(compoundFilters)
+                            .setCompoundFilters(new ArrayList<>(compoundFilters))
+                            .setChPairs(new ArrayList<>(chPairs))
                             .setPhenotypeJson(phenotypeJson)
                             .setDisorderJson(disorderJson);
                     result.add(model);
@@ -468,74 +502,60 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         return RgaUtils.encode(population.toUpperCase() + RgaUtils.SEPARATOR + populationFrequencyKey);
     }
 
-    private List<String> processFilters(KnockoutTranscript transcript) throws RgaException {
-        Set<String> results = new HashSet<>();
+    private List<List<String>> processFilters(KnockoutVariant variant, Set<String> results) throws RgaException {
+        List<List<String>> independentTerms = new LinkedList<>();
 
-        List<List<List<String>>> compoundHeterozygousVariantList = new LinkedList<>();
-        for (KnockoutVariant variant : transcript.getVariants()) {
-            List<List<String>> independentTerms = new LinkedList<>();
-
-            // KO - Knockout types
-            if (variant.getKnockoutType() != null) {
-                independentTerms.add(Collections.singletonList(RgaUtils.encode(variant.getKnockoutType().name())));
+        // KO - Knockout types
+        if (variant.getKnockoutType() != null) {
+            independentTerms.add(Collections.singletonList(RgaUtils.encode(variant.getKnockoutType().name())));
+        }
+        // F - Filters
+        if (StringUtils.isNotEmpty(variant.getFilter())) {
+            if (variant.getFilter().equalsIgnoreCase(RgaUtils.PASS)) {
+                independentTerms.add(Collections.singletonList(RgaUtils.encode(RgaUtils.PASS)));
+            } else {
+                independentTerms.add(Collections.singletonList(RgaUtils.encode(RgaUtils.NOT_PASS)));
             }
-            // F - Filters
-            if (StringUtils.isNotEmpty(variant.getFilter())) {
-                if (variant.getFilter().equalsIgnoreCase(RgaUtils.PASS)) {
-                    independentTerms.add(Collections.singletonList(RgaUtils.encode(RgaUtils.PASS)));
-                } else {
-                    independentTerms.add(Collections.singletonList(RgaUtils.encode(RgaUtils.NOT_PASS)));
-                }
+        }
+        // CT - Consequence types
+        if (variant.getSequenceOntologyTerms() != null) {
+            List<String> ct = new ArrayList<>(variant.getSequenceOntologyTerms().size());
+            for (SequenceOntologyTerm sequenceOntologyTerm : variant.getSequenceOntologyTerms()) {
+                ct.add(RgaUtils.encode(sequenceOntologyTerm.getName()));
             }
-            // CT - Consequence types
-            if (variant.getSequenceOntologyTerms() != null) {
-                List<String> ct = new ArrayList<>(variant.getSequenceOntologyTerms().size());
-                for (SequenceOntologyTerm sequenceOntologyTerm : variant.getSequenceOntologyTerms()) {
-                    ct.add(RgaUtils.encode(sequenceOntologyTerm.getName()));
-                }
-                independentTerms.add(ct);
-            }
-            // PF - Population frequencies
-            List<String> pf = new LinkedList<>();
-            boolean gnomad = false;
-            boolean thousandG = false;
-            if (variant.getPopulationFrequencies() != null) {
-                for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
-                    if (populationFrequency.getPopulation().equals("ALL")) {
-                        if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
-                            String populationFrequencyKey = RgaUtils.getPopulationFrequencyKey(populationFrequency.getAltAlleleFreq());
-                            pf.add(RgaUtils.encode(RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR
-                                    + populationFrequencyKey));
-                            thousandG = true;
-                        } else if (RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
-                            String populationFrequencyKey = RgaUtils.getPopulationFrequencyKey(populationFrequency.getAltAlleleFreq());
-                            pf.add(RgaUtils.encode(RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR
-                                    + populationFrequencyKey));
-                            gnomad = true;
-                        }
+            independentTerms.add(ct);
+        }
+        // PF - Population frequencies
+        List<String> pf = new LinkedList<>();
+        boolean gnomad = false;
+        boolean thousandG = false;
+        if (variant.getPopulationFrequencies() != null) {
+            for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
+                if (populationFrequency.getPopulation().equals("ALL")) {
+                    if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                        String populationFrequencyKey = RgaUtils.getPopulationFrequencyKey(populationFrequency.getAltAlleleFreq());
+                        pf.add(RgaUtils.encode(RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR
+                                + populationFrequencyKey));
+                        thousandG = true;
+                    } else if (RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                        String populationFrequencyKey = RgaUtils.getPopulationFrequencyKey(populationFrequency.getAltAlleleFreq());
+                        pf.add(RgaUtils.encode(RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR
+                                + populationFrequencyKey));
+                        gnomad = true;
                     }
                 }
             }
-            if (!thousandG) {
-                pf.add(RgaUtils.encode(RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0f));
-            }
-            if (!gnomad) {
-                pf.add(RgaUtils.encode(RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0f));
-            }
-            independentTerms.add(pf);
-
-            if (variant.getKnockoutType() == KnockoutVariant.KnockoutType.COMP_HET) {
-                compoundHeterozygousVariantList.add(independentTerms);
-            }
-
-            results.addAll(RgaUtils.generateCombinations(independentTerms));
         }
-
-        if (!compoundHeterozygousVariantList.isEmpty()) {
-            results.addAll(RgaUtils.generateCompoundHeterozygousCombinations(compoundHeterozygousVariantList));
+        if (!thousandG) {
+            pf.add(RgaUtils.encode(RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0f));
         }
+        if (!gnomad) {
+            pf.add(RgaUtils.encode(RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR + 0f));
+        }
+        independentTerms.add(pf);
 
-        return new ArrayList<>(results);
+        results.addAll(RgaUtils.generateCombinations(independentTerms));
+        return independentTerms;
     }
 
     private List<String> populatePhenotypes(List<Phenotype> phenotypes) {

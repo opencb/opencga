@@ -107,6 +107,9 @@ public class RgaDataModel {
     private List<String> compoundFilters;
 
     @Field
+    private List<String> chPairs;
+
+    @Field
     private List<String> phenotypeJson;
 
     @Field
@@ -143,6 +146,7 @@ public class RgaDataModel {
     public static final String VARIANT_SUMMARY = "variantSummary";
     public static final String INDIVIDUAL_SUMMARY = "individualSummary";
     public static final String COMPOUND_FILTERS = "compoundFilters";
+    public static final String CH_PAIRS = "chPairs";
     public static final String PHENOTYPE_JSON = "phenotypeJson";
     public static final String DISORDER_JSON = "disorderJson";
 
@@ -183,6 +187,7 @@ public class RgaDataModel {
         sb.append(", populationFrequencies=").append(populationFrequencies);
         sb.append(", individualSummary=").append(individualSummary);
         sb.append(", compoundFilters=").append(compoundFilters);
+        sb.append(", chPairs=").append(chPairs);
         sb.append(", phenotypeJson=").append(phenotypeJson);
         sb.append(", disorderJson=").append(disorderJson);
         sb.append('}');
@@ -465,6 +470,15 @@ public class RgaDataModel {
 
     public RgaDataModel setCompoundFilters(List<String> compoundFilters) {
         this.compoundFilters = compoundFilters;
+        return this;
+    }
+
+    public List<String> getChPairs() {
+        return chPairs;
+    }
+
+    public RgaDataModel setChPairs(List<String> chPairs) {
+        this.chPairs = chPairs;
         return this;
     }
 

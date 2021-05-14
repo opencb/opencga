@@ -264,20 +264,34 @@ class RgaUtils {
         }
     }
 
-    public static Set<String> generateCompoundHeterozygousCombinations(List<List<List<String>>> compoundHeterozygousVariantList)
-            throws RgaException {
-        if (compoundHeterozygousVariantList.size() < 2) {
+    public static Set<String> generateCompoundHeterozygousCombinations(List<List<List<String>>> maternalChVariantList,
+                                                                       List<List<List<String>>> paternalChVariantList) throws RgaException {
+        if (maternalChVariantList.isEmpty() || paternalChVariantList.isEmpty()) {
             return Collections.emptySet();
         }
         Set<String> result = new HashSet<>();
-        for (int i = 0; i < compoundHeterozygousVariantList.size() - 1; i++) {
-            for (int j = i + 1; j < compoundHeterozygousVariantList.size(); j++) {
-                result.addAll(generateCompoundHeterozygousPairCombination(compoundHeterozygousVariantList.get(i),
-                        compoundHeterozygousVariantList.get(j)));
+        for (List<List<String>> maternalVariant : maternalChVariantList) {
+            for (List<List<String>> paternalVariant : paternalChVariantList) {
+                result.addAll(generateCompoundHeterozygousPairCombination(maternalVariant, paternalVariant));
             }
         }
         return result;
     }
+
+//    public static Set<String> generateCompoundHeterozygousCombinations(List<List<List<String>>> compoundHeterozygousVariantList)
+//            throws RgaException {
+//        if (compoundHeterozygousVariantList.size() < 2) {
+//            return Collections.emptySet();
+//        }
+//        Set<String> result = new HashSet<>();
+//        for (int i = 0; i < compoundHeterozygousVariantList.size() - 1; i++) {
+//            for (int j = i + 1; j < compoundHeterozygousVariantList.size(); j++) {
+//                result.addAll(generateCompoundHeterozygousPairCombination(compoundHeterozygousVariantList.get(i),
+//                        compoundHeterozygousVariantList.get(j)));
+//            }
+//        }
+//        return result;
+//    }
 
     public static Set<String> generateCompoundHeterozygousPairCombination(List<List<String>> variant1, List<List<String>> variant2)
             throws RgaException {
@@ -638,6 +652,10 @@ class RgaUtils {
             return dbSnp;
         }
 
+        public String getParentalOrigin() {
+            return parentalOrigin;
+        }
+
         public List<String> getClinicalSignificances() {
             return clinicalSignificances;
         }
@@ -695,6 +713,64 @@ class RgaUtils {
         public String getGnomadFrequency() {
             return populationFrequencies.get(1);
         }
+    }
+
+    public static class CodedChPairVariants {
+        private final static String VARIANT_SEPARATOR;
+
+        static {
+            VARIANT_SEPARATOR = "--_--";
+        }
+
+        private CodedVariant maternalCodedVariant;
+        private CodedVariant paternalCodedVariant;
+
+        public CodedChPairVariants(CodedVariant maternalCodedVariant, CodedVariant paternalCodedVariant) {
+            this.maternalCodedVariant = maternalCodedVariant;
+            this.paternalCodedVariant = paternalCodedVariant;
+        }
+
+        public static CodedChPairVariants parseEncodedId(String encodedId) throws RgaException {
+            String[] split = encodedId.split(VARIANT_SEPARATOR);
+            if (split.length != 2) {
+                throw new RgaException("Unexpected CH variant string received '" + encodedId
+                        + "'. Expected {variant1}" + VARIANT_SEPARATOR + "{variant2}");
+            }
+
+            return new CodedChPairVariants(decodeEncodedVariantId(split[0]), decodeEncodedVariantId(split[1]));
+        }
+
+        public String getEncodedId() {
+            return getEncodedVariant(maternalCodedVariant) + VARIANT_SEPARATOR + getEncodedVariant(paternalCodedVariant);
+        }
+
+        public CodedVariant getMaternalCodedVariant() {
+            return maternalCodedVariant;
+        }
+
+        public CodedVariant getPaternalCodedVariant() {
+            return paternalCodedVariant;
+        }
+
+        private static String getEncodedVariant(CodedVariant codedVariant) {
+            return codedVariant.getId() + SEPARATOR + codedVariant.getParentalOrigin() + SEPARATOR
+                    + StringUtils.join(codedVariant.getConsequenceType(), INNER_SEPARATOR) + SEPARATOR
+                    + StringUtils.join(codedVariant.getPopulationFrequencies(), INNER_SEPARATOR);
+        }
+
+        private static CodedVariant decodeEncodedVariantId(String encodedVariant) throws RgaException {
+            String[] split = encodedVariant.split(SEPARATOR);
+            if (split.length != 4) {
+                throw new RgaException("Unexpected encoded variant '" + encodedVariant + "'. "
+                        + "Expected {id}__{parentalOrigin}__{conseqType}__{popFreqs}");
+            }
+            Set<String> consequenceType = new HashSet<>(Arrays.asList(split[2].split(INNER_SEPARATOR)));
+            String[] popFreqs = split[3].split(INNER_SEPARATOR);
+
+            return new CodedVariant("", split[0], "", "", KnockoutVariant.KnockoutType.COMP_HET.name(), split[1], Collections.emptyList(),
+                    new ArrayList<>(consequenceType), popFreqs[0], popFreqs[1]);
+        }
+
     }
 
     public static class KnockoutTypeCount {
