@@ -108,7 +108,7 @@ public class SampleCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             Document sampleDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
-                studyUid = sampleDocument.getLong(PRIVATE_STUDY_UID);
+                studyUid = ((Number) sampleDocument.get(PRIVATE_STUDY_UID)).longValue();
             }
 
             sampleListBuffer.add(sampleDocument);
@@ -117,7 +117,7 @@ public class SampleCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             // Extract the sample uids
             if (!options.getBoolean(NATIVE_QUERY) && options.getBoolean(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM)) {
                 // Extract the sample uid
-                sampleUidMap.put(sampleDocument.getLong(SampleDBAdaptor.QueryParams.UID.key()), sampleDocument);
+                sampleUidMap.put(((Number) sampleDocument.get(SampleDBAdaptor.QueryParams.UID.key())).longValue(), sampleDocument);
             }
         }
 
@@ -144,7 +144,7 @@ public class SampleCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
                 if (samples != null) {
                     individual.remove(IndividualMongoDBAdaptor.QueryParams.SAMPLES.key());
                     samples.forEach(s -> {
-                        long uid = s.getLong(SampleDBAdaptor.QueryParams.UID.key());
+                        long uid = ((Number) s.get(SampleDBAdaptor.QueryParams.UID.key())).longValue();
 
                         Document sample = sampleUidMap.get(uid);
                         if (sample != null) { // If the sample exists

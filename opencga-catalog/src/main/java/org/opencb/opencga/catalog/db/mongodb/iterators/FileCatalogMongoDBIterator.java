@@ -108,20 +108,21 @@ public class FileCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterat
             Document fileDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
-                studyUid = fileDocument.getLong(PRIVATE_STUDY_UID);
+                studyUid = ((Number) fileDocument.get(PRIVATE_STUDY_UID)).longValue();
             }
 
             fileListBuffer.add(fileDocument);
             counter++;
 
-            String fileUid = String.valueOf(fileDocument.getLong(FileDBAdaptor.QueryParams.UID.key()));
+            String fileUid = String.valueOf(fileDocument.get(FileDBAdaptor.QueryParams.UID.key()));
             // Extract all the related files
             Object relatedFiles = fileDocument.get(FileDBAdaptor.QueryParams.RELATED_FILES.key());
             if (relatedFiles != null && !options.getBoolean(NATIVE_QUERY)) {
                 List<Document> relatedFileList  = (List<Document>) relatedFiles;
                 if (!relatedFileList.isEmpty()) {
                     for (Document relatedFile : relatedFileList) {
-                        long relatedFileUid = ((Document) relatedFile.get("file")).getLong(FileDBAdaptor.QueryParams.UID.key());
+                        long relatedFileUid = ((Number) ((Document) relatedFile.get("file")).get(FileDBAdaptor.QueryParams.UID.key()))
+                                .longValue();
                         relatedFileSet.add(relatedFileUid);
                         relatedFileMap.put(fileUid + "-" + relatedFileUid, relatedFile.getString("relation"));
                     }
@@ -151,12 +152,12 @@ public class FileCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterat
             // Map each file uid to the file entry
             Map<Long, Document> fileMap = new HashMap<>(fileList.size());
             fileList.forEach(file->
-                    fileMap.put(file.getLong(FileDBAdaptor.QueryParams.UID.key()), file)
+                    fileMap.put(((Number) file.get(FileDBAdaptor.QueryParams.UID.key())).longValue(), file)
             );
 
             // Add the files obtained to the corresponding related files
             fileListBuffer.forEach(fileDocument -> {
-                String fileId = String.valueOf(fileDocument.getLong(FileDBAdaptor.QueryParams.UID.key()));
+                String fileId = String.valueOf(fileDocument.get(FileDBAdaptor.QueryParams.UID.key()));
 
                 List<Document> tmpFileList = new ArrayList<>();
 
@@ -165,7 +166,8 @@ public class FileCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterat
                     List<Document> relatedFileList = (List<Document>) relatedFiles;
                     if (!relatedFileList.isEmpty()) {
                         relatedFileList.forEach(f -> {
-                            long relatedFileUid = ((Document) f.get("file")).getLong(FileDBAdaptor.QueryParams.UID.key());
+                            long relatedFileUid = ((Number) ((Document) f.get("file")).get(FileDBAdaptor.QueryParams.UID.key()))
+                                    .longValue();
                             String auxFileId = fileId + "-" + relatedFileUid;
                             String relation = relatedFileMap.get(auxFileId);
                             tmpFileList.add(new Document()

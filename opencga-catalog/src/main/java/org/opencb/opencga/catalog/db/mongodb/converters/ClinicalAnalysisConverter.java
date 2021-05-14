@@ -63,7 +63,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
             document.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
                     new Document()
                             .append(InterpretationDBAdaptor.QueryParams.UID.key(),
-                                    getLongValue(interpretation, InterpretationDBAdaptor.QueryParams.UID.key()))
+                                    ((Number) interpretation.get(InterpretationDBAdaptor.QueryParams.UID.key())).longValue())
                             .append(InterpretationDBAdaptor.QueryParams.VERSION.key(),
                                     interpretation.getInteger(InterpretationDBAdaptor.QueryParams.VERSION.key())));
         }
@@ -76,7 +76,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
             for (int i = 0; i < interpretationList.size(); i++) {
                 newInterpretationList.add(new Document()
                         .append(InterpretationDBAdaptor.QueryParams.UID.key(),
-                                getLongValue(interpretationList.get(i), InterpretationDBAdaptor.QueryParams.UID.key()))
+                                ((Number) interpretationList.get(i).get(InterpretationDBAdaptor.QueryParams.UID.key())).longValue())
                         .append(InterpretationDBAdaptor.QueryParams.VERSION.key(),
                                 interpretationList.get(i).getInteger(InterpretationDBAdaptor.QueryParams.VERSION.key())));
             }
@@ -94,7 +94,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         // We make sure we don't store duplicates
         Map<Long, Sample> sampleMap = new HashMap<>();
         for (Document sample : samples) {
-            long uid = getLongValue(sample, SampleDBAdaptor.QueryParams.UID.key());
+            long uid = ((Number) sample.get(SampleDBAdaptor.QueryParams.UID.key())).longValue();
             if (uid > 0) {
                 Sample tmpSample = new Sample()
                         .setUid(uid)
@@ -120,7 +120,8 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateSamplesToUpdate(proband);
 
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), new Document()
-                .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(proband, IndividualDBAdaptor.QueryParams.UID.key()))
+                .append(IndividualDBAdaptor.QueryParams.UID.key(),
+                        ((Number) proband.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue())
                 .append(IndividualDBAdaptor.QueryParams.ID.key(), proband.getString(IndividualDBAdaptor.QueryParams.ID.key()))
                 .append(IndividualDBAdaptor.QueryParams.VERSION.key(),
                         proband.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()))
@@ -140,7 +141,8 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
 
         document.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(),
                 members.stream().map(entry -> new Document()
-                        .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(entry, IndividualDBAdaptor.QueryParams.UID.key()))
+                        .append(IndividualDBAdaptor.QueryParams.UID.key(),
+                                ((Number) entry.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue())
                         .append(IndividualDBAdaptor.QueryParams.ID.key(), entry.getString(IndividualDBAdaptor.QueryParams.ID.key()))
                         .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), entry.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
                 )
@@ -156,7 +158,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateFamilyMembersToUpdate(family);
 
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Document()
-                .append(FamilyDBAdaptor.QueryParams.UID.key(), getLongValue(family, FamilyDBAdaptor.QueryParams.UID.key()))
+                .append(FamilyDBAdaptor.QueryParams.UID.key(), ((Number) family.get(FamilyDBAdaptor.QueryParams.UID.key())).longValue())
                 .append(FamilyDBAdaptor.QueryParams.ID.key(), family.get(FamilyDBAdaptor.QueryParams.ID.key()))
                 .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.getInteger(FamilyDBAdaptor.QueryParams.VERSION.key()))
                 .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()))
