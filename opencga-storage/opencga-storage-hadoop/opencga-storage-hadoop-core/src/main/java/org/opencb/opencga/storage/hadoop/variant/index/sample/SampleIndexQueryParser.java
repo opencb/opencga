@@ -236,6 +236,7 @@ public class SampleIndexQueryParser {
                     // Discard samples with negated genotypes
                     negatedGenotypesSamples.add(sampleName);
                     partialIndex = true;
+                    logger.info("Set partialGtIndex to true. Prev value: {}", partialGtIndex);
                     partialGtIndex = true;
                 } else {
                     samplesMap.put(sampleName, entry.getValue());
@@ -252,11 +253,16 @@ public class SampleIndexQueryParser {
                             List<Integer> fatherFiles = allSamples.get(father).getFiles();
                             List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
                             boolean parentInSeparatedFile =
-                                    fatherFiles.size() == sampleFiles.size() && fatherFiles.containsAll(sampleFiles);
+                                    fatherFiles.size() != sampleFiles.size() || !fatherFiles.containsAll(sampleFiles);
                             boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
+                                logger.debug("FATHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
                                 partialGtIndex = true;
                             }
+//                            logger.info("Father={}, includeDiscrepancies={}, fatherFiles={}, sampleFiles={}, "
+//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
+//                                    father, includeDiscrepancies, fatherFiles, sampleFiles,
+//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
                             fatherFilterMap.put(sampleName, filter);
                         }
                         if (mother != null) {
@@ -266,19 +272,25 @@ public class SampleIndexQueryParser {
                             List<Integer> motherFiles = allSamples.get(mother).getFiles();
                             List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
                             boolean parentInSeparatedFile =
-                                    motherFiles.size() == sampleFiles.size() && motherFiles.containsAll(sampleFiles);
+                                    motherFiles.size() != sampleFiles.size() || !motherFiles.containsAll(sampleFiles);
                             boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
+                                logger.debug("MOTHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
                                 partialGtIndex = true;
                             }
+//                            logger.info("Mother={}, includeDiscrepancies={}, motherFiles={}, sampleFiles={}, "
+//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
+//                                    mother, includeDiscrepancies, motherFiles, sampleFiles,
+//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
                             motherFilterMap.put(sampleName, filter);
                         }
                     }
                 }
-                // If not all genotypes are valid, query is not covered
-                if (!negatedSamples.isEmpty()) {
-                    partialGtIndex = true;
-                }
+            }
+            // If not all genotypes are valid, query is not covered
+            if (!negatedSamples.isEmpty()) {
+                logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
+                partialGtIndex = true;
             }
 
             for (String negatedSample : negatedSamples) {
@@ -543,7 +555,7 @@ public class SampleIndexQueryParser {
             filter[GenotypeCodec.DISCREPANCY_SIMPLE] = true;
             filter[GenotypeCodec.DISCREPANCY_ANY] = true;
         }
-        if (!parentInSeparatedFile) {
+        if (parentInSeparatedFile) {
             // If parents were in separated files, missing and hom_ref might be registered as "unknown"
             if (filter[GenotypeCodec.MISSING_HOM] || filter[GenotypeCodec.HOM_REF_UNPHASED] || filter[GenotypeCodec.HOM_REF_PHASED]) {
                 filter[GenotypeCodec.UNKNOWN] = true;
