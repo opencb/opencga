@@ -81,10 +81,8 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     protected String buildCommand(String executable, String... args) {
-        int passwordIdx = Arrays.binarySearch(args, MR_EXECUTOR_SSH_PASSWORD.key());
-        if (passwordIdx > 0 && args.length > passwordIdx) {
-            args[passwordIdx + 1] = "_redacted_";
-        }
+        redactSecureString(args, MR_EXECUTOR_SSH_PASSWORD.key());
+        redactSecureString(args, "token");
         String argsString = Commandline.toString(args);
         String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
         String commandLine = getBinPath(HADOOP_SSH_BIN);
