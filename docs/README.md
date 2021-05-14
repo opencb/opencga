@@ -1,3 +1,7 @@
+---
+description: Welcome to OpenCGA!
+---
+
 # Home
 
 {% hint style="warning" %}
