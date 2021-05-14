@@ -550,7 +550,7 @@ class RgaUtils {
                                                     KnockoutVariant.KnockoutType knockoutType) {
         StudyEntry studyEntry = CollectionUtils.isNotEmpty(variant.getStudies()) ? variant.getStudies().get(0) : null;
 
-        FileEntry fileEntry = studyEntry != null && CollectionUtils.isNotEmpty(studyEntry.getFiles())
+        FileEntry fileEntry = studyEntry != null && CollectionUtils.isNotEmpty(studyEntry.getFiles()) && sampleEntry != null
                 ? studyEntry.getFiles().get(sampleEntry.getFileIndex())
                 : null;
         VariantAnnotation variantAnnotation = variant.getAnnotation();
