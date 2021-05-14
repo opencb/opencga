@@ -489,7 +489,7 @@ class RgaUtils {
                         }
 
                         // Convert just once
-                        knockoutVariant = convertToKnockoutVariant(variant, sampleEntry, knockoutType);
+                        knockoutVariant = convertToKnockoutVariant(variant, rgaDataModel.getTranscriptId(), sampleEntry, knockoutType);
                     } else if (CollectionUtils.isNotEmpty(rgaDataModel.getVariantSummary())) {
                         String variantSummaryId = rgaDataModel.getVariantSummary().get(i);
                         // Get the basic information from variant summary object
@@ -528,21 +528,29 @@ class RgaUtils {
     }
 
     static KnockoutVariant convertToKnockoutVariant(Variant variant) {
-        return convertToKnockoutVariant(variant, null, null);
+        return convertToKnockoutVariant(variant, null, null, null);
     }
 
     // Default converter
-    static KnockoutVariant convertToKnockoutVariant(Variant variant, SampleEntry sampleEntry, KnockoutVariant.KnockoutType knockoutType) {
+    static KnockoutVariant convertToKnockoutVariant(Variant variant, String transcriptId, SampleEntry sampleEntry,
+                                                    KnockoutVariant.KnockoutType knockoutType) {
         StudyEntry studyEntry = CollectionUtils.isNotEmpty(variant.getStudies()) ? variant.getStudies().get(0) : null;
-        // TODO: Check fileentry
+
         FileEntry fileEntry = studyEntry != null && CollectionUtils.isNotEmpty(studyEntry.getFiles())
-                ? studyEntry.getFiles().get(0)
+                ? studyEntry.getFiles().get(sampleEntry.getFileIndex())
                 : null;
         VariantAnnotation variantAnnotation = variant.getAnnotation();
-        // TODO: Check consequence type
-        ConsequenceType consequenceType = variantAnnotation != null && CollectionUtils.isNotEmpty(variantAnnotation.getConsequenceTypes())
-                ? variantAnnotation.getConsequenceTypes().get(0)
-                : null;
+
+        ConsequenceType consequenceType = null;
+        if (variantAnnotation != null && StringUtils.isNotEmpty(transcriptId)
+                && CollectionUtils.isNotEmpty(variantAnnotation.getConsequenceTypes())) {
+            for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
+                if (transcriptId.equals(ct.getEnsemblTranscriptId())) {
+                    consequenceType = ct;
+                    break;
+                }
+            }
+        }
 
         return new KnockoutVariant(variant, studyEntry, fileEntry, sampleEntry, variantAnnotation, consequenceType, knockoutType);
     }
