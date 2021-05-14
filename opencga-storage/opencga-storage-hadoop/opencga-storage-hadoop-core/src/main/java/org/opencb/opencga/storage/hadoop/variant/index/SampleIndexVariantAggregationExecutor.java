@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregatio
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -67,7 +68,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
 
             // Check if the query is fully covered
             Query filteredQuery = new Query(query);
-            sampleIndexDBAdaptor.parseSampleIndexQuery(filteredQuery);
+            SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(filteredQuery);
             Set<VariantQueryParam> params = VariantQueryUtils.validParams(filteredQuery, true);
             params.remove(VariantQueryParam.STUDY);
 
@@ -80,16 +81,12 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                 return false;
             }
 
-            SampleIndexSchema schema = null;
+            SampleIndexSchema schema = sampleIndexQuery.getSchema();
             for (String fieldFacedMulti : facet.split(FACET_SEPARATOR)) {
                 for (String fieldFaced : fieldFacedMulti.split(NESTED_FACET_SEPARATOR)) {
                     String key = fieldFaced.split("\\[")[0];
                     // Must contain all keys
                     if (!VALID_FACETS.contains(key)) {
-                        if (schema == null) {
-                            StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
-                            schema = sampleIndexDBAdaptor.getSchema(defaultStudy.getId());
-                        }
                         if (key.equalsIgnoreCase("depth") || key.equalsIgnoreCase("coverage")) {
                             key = "dp";
                         }
