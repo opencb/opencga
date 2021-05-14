@@ -110,7 +110,7 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             Document cohortDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
-                studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
+                studyUid = ((Number) cohortDocument.get(PRIVATE_STUDY_UID)).longValue();
             }
 
             cohortListBuffer.add(cohortDocument);
@@ -124,7 +124,7 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
                     if (sampleList.size() > 100) {
                         fetchSampleIdsOnly = true;
                     }
-                    sampleList.forEach(sample -> sampleSet.add(sample.getLong(SampleDBAdaptor.QueryParams.UID.key())));
+                    sampleList.forEach(sample -> sampleSet.add(((Number) sample.get(SampleDBAdaptor.QueryParams.UID.key())).longValue()));
                 }
             }
         }
@@ -153,7 +153,7 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             // Map each sample uid - version to the sample entry
             Map<Long, Document> sampleMap = new HashMap<>(sampleList.size());
             sampleList.forEach(sample ->
-                    sampleMap.put(sample.getLong(SampleDBAdaptor.QueryParams.UID.key()), sample)
+                    sampleMap.put(((Number) sample.get(SampleDBAdaptor.QueryParams.UID.key())).longValue(), sample)
             );
 
             // Add the samples obtained to the corresponding cohorts
@@ -162,7 +162,7 @@ public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
                 List<Document> samples = (List<Document>) cohortDocument.get(CohortDBAdaptor.QueryParams.SAMPLES.key());
 
                 samples.forEach(sample -> {
-                    long uid = sample.getLong(SampleDBAdaptor.QueryParams.UID.key());
+                    long uid = ((Number) sample.get(SampleDBAdaptor.QueryParams.UID.key())).longValue();
 
                     // If the samples has been returned... (it might have not been fetched due to permissions issues)
                     if (sampleMap.containsKey(uid)) {
