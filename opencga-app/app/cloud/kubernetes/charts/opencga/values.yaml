@@ -17,7 +17,7 @@ mongodb:
   # https://docs.mongodb.com/kubernetes-operator/stable/tutorial/resize-pv-storage/
   deploy:
     enabled: false
-    name: "rs0"
+    name: "opencga-mongodb-rs0"
     version: "4.2.6"
     replicas: 3
 
@@ -99,6 +99,11 @@ opencga:
 #  secretName: {{ include "opencga.fullname" . }}-secret
   admin:
     password: "FILL_ME"
+  images:
+    base:
+      sha256: ""
+    init:
+      sha256: ""
 
 # https://docs.microsoft.com/en-gb/azure/aks/azure-files-volume
 azureStorageAccount:
@@ -127,7 +132,7 @@ rest:
   replicaCount: 3
 
   image:
-    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}{{ if .Values.opencga.images.base.sha256 }}@sha256:{{ .Values.opencga.images.base.sha256 }}{{ end }}"
     pullPolicy: IfNotPresent
 
   imagePullSecrets: []
@@ -135,9 +140,6 @@ rest:
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name:
 
   podSecurityContext:
     runAsNonRoot: true
@@ -202,7 +204,7 @@ master:
   replicaCount: 1
 
   image:
-    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}{{ if .Values.opencga.images.base.sha256 }}@sha256:{{ .Values.opencga.images.base.sha256 }}{{ end }}"
     pullPolicy: IfNotPresent
 
   imagePullSecrets: []
@@ -211,9 +213,6 @@ master:
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name:
 
   podSecurityContext:
     runAsNonRoot: true
@@ -251,7 +250,7 @@ master:
 init:
   name: init
   image:
-    repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}{{ if .Values.opencga.images.init.sha256 }}@sha256:{{ .Values.opencga.images.init.sha256 }}{{ end }}"
     pullPolicy: IfNotPresent
 
   configuration:
