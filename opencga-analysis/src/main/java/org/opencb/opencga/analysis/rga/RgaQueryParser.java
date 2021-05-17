@@ -127,7 +127,7 @@ public class RgaQueryParser {
                     parseStringValue(entry.getValue(), RgaDataModel.POPULATION_FREQUENCIES.replace("*", entry.getKey()), filterList, "||");
                 }
             }
-        } else {
+        } else if (count > 1) {
             parseCompoundFilters(knockoutValues, filterValue, ctValues, popFreqValues, filterList);
         }
     }

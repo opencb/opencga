@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.rga;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -244,21 +245,31 @@ public class RgaEngine implements Closeable {
     }
 
     /**
-     * Return faceted data from the auxiliar RGA Solr core/collection given a query.
+     * Performs a facet query from the auxiliar collection by joining other queries that need to run over the main collection.
      *
-     * @param collection   Collection name
-     * @param query        Query
-     * @param queryOptions Query options (contains the facet and facetRange options)
-     * @return List of KnockoutByIndividual objects
-     * @throws RgaException RgaException
-     * @throws IOException IOException
+     * @param collection Auxiliar collection id.
+     * @param externalCollection Main collection id.
+     * @param query Auxiliar collection query.
+     * @param externalQuery Main collection query.
+     * @param queryOptions QueryOptions (facet).
+     * @return A DataResult<FacetField>
+     * @throws RgaException RgaException.
+     * @throws IOException IOException.
      */
-    public DataResult<FacetField> auxFacetedQuery(String collection, Query query, QueryOptions queryOptions)
-            throws RgaException, IOException {
-        SolrQuery solrQuery = parser.parseAuxQuery(query);
-        return facetedQuery(collection, solrQuery, queryOptions);
-    }
+    public DataResult<FacetField> joinFacetQuery(String collection, String externalCollection, Query query, Query externalQuery,
+                                            QueryOptions queryOptions) throws RgaException, IOException {
+        SolrQuery mainSolrQuery = parser.parseAuxQuery(query);
+        SolrQuery externalSolrQuery = parser.parseQuery(externalQuery);
 
+        if (externalSolrQuery.getFilterQueries() != null && externalSolrQuery.getFilterQueries().length > 0) {
+            String externalQueryStr = StringUtils.join(externalSolrQuery.getFilterQueries(), " AND ");
+            mainSolrQuery.set("v1", externalQueryStr);
+            mainSolrQuery.addFilterQuery("{!join from=" + RgaDataModel.VARIANTS + " to=" + AuxiliarRgaDataModel.ID
+                    + " fromIndex=" + externalCollection + " v=$v1}");
+        }
+
+        return facetedQuery(collection, mainSolrQuery, queryOptions);
+    }
 
     /**
      * Return faceted data from the main RGA Solr core/collection given a query.

@@ -13,7 +13,6 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.analysis.rga.RgaUtils.*;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -1198,26 +1197,15 @@ public class RgaManager implements AutoCloseable {
         Query mainCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), true);
         Query auxCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), false);
 
-        if (!mainCollQuery.isEmpty()) {
-            // Perform a facet in the main collection because the user is filtering by other fields not present in the auxiliar coll
-            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, RgaDataModel.VARIANTS);
-            facetOptions.putIfNotNull(QueryOptions.LIMIT, -1);
-
-            DataResult<FacetField> result = rgaEngine.facetedQuery(mainCollection, query, facetOptions);
-            if (result.getNumResults() == 0) {
-                throw RgaException.noResultsMatching();
-            }
-
-            ids = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
-            auxCollQuery.put(RgaDataModel.VARIANTS, ids);
-        }
+        // Make a join with the main collection to get all the data we need !!
 
         // Get number of matches
         if (options.getBoolean(QueryOptions.COUNT)) {
             numMatchesFuture = executor.submit(() -> {
                 QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + AuxiliarRgaDataModel.ID + ")");
                 try {
-                    DataResult<FacetField> result = rgaEngine.auxFacetedQuery(auxCollection, auxCollQuery, facetOptions);
+                    DataResult<FacetField> result = rgaEngine.joinFacetQuery(auxCollection, mainCollection, auxCollQuery, mainCollQuery,
+                            facetOptions);
                     return ((Number) result.first().getAggregationValues().get(0)).intValue();
                 } catch (Exception e) {
                     logger.error("Could not obtain the count: {}", e.getMessage(), e);
@@ -1231,7 +1219,7 @@ public class RgaManager implements AutoCloseable {
         facetOptions.putIfNotNull(QueryOptions.LIMIT, options.get(QueryOptions.LIMIT));
         facetOptions.putIfNotNull(QueryOptions.SKIP, options.get(QueryOptions.SKIP));
 
-        DataResult<FacetField> result = rgaEngine.auxFacetedQuery(auxCollection, auxCollQuery, facetOptions);
+        DataResult<FacetField> result = rgaEngine.joinFacetQuery(auxCollection, mainCollection, auxCollQuery, mainCollQuery, facetOptions);
         if (result.getNumResults() == 0) {
             throw RgaException.noResultsMatching();
         }
