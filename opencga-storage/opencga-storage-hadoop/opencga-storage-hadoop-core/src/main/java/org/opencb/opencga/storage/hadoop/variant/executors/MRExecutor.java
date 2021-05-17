@@ -116,5 +116,11 @@ public abstract class MRExecutor {
         return env;
     }
 
+    protected static void redactSecureString(String[] args, String key) {
+        int passwordIdx = Arrays.binarySearch(args, key);
+        if (passwordIdx > 0 && args.length > passwordIdx) {
+            args[passwordIdx + 1] = "_redacted_";
+        }
+    }
 
 }

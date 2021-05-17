@@ -381,7 +381,7 @@ public enum GenotypeClass implements Predicate<String> {
             }
             return phasedGts;
         } else {
-            return Collections.emptyList();
+            return new ArrayList<>();
         }
     }
 

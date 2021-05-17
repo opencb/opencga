@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.exec.Command;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD;
+
 /**
  * Created on 18/01/16 .
  *
@@ -28,12 +30,18 @@ public class SystemMRExecutor extends MRExecutor {
 
     @Override
     public int run(String executable, String[] args) {
-        return run(executable + " " + Commandline.toString(args));
+        return run(buildCommandLine(executable, args));
     }
 
     public int run(String commandLine) {
         Command command = new Command(commandLine, getEnv());
         command.run();
         return command.getExitValue();
+    }
+
+    private String buildCommandLine(String executable, String[] args) {
+        redactSecureString(args, MR_EXECUTOR_SSH_PASSWORD.key());
+        redactSecureString(args, "token");
+        return executable + " " + Commandline.toString(args);
     }
 }
