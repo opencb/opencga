@@ -424,6 +424,14 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
+
+        @Parameter(names = {"--index"}, hidden = true, description = "UNUSED. Index functionality moved to operations variant-stats-index", arity = 0)
+        @Deprecated
+        public void setIndex(Boolean index) {
+            if (index != null && index) {
+                throw new ParameterException("Deprecated param --index . Index functionality has been moved to 'operations variant-stats-index'");
+            }
+        }
     }
 
     @Parameters(commandNames = {GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
