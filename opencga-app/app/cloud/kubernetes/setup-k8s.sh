@@ -258,10 +258,12 @@ function deployOpenCGA() {
   fi
 
   helm upgrade "${NAME}" "${OPENCGA_CHART}" \
+    --set "kubeContext=${K8S_CONTEXT}" \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
   if [ $DRY_RUN == "false" ]; then
     helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+    helm get notes "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-notes-${DATE}.md"
   fi
 }
 
