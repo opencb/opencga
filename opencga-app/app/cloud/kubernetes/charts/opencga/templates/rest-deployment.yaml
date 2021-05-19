@@ -61,16 +61,17 @@ spec:
           resources:
             {{- toYaml .Values.rest.resources | nindent 12 }}
           volumeMounts:
-          - name : conf
-            mountPath: /opt/opencga/conf
-          - name : sessions
-            mountPath: /opt/opencga/sessions
-          - name : variants
-            mountPath: /opt/opencga/variants
-          - name: analysisconf
-            mountPath: /opt/opencga/analysis
-          - name: opencgascratch
-            mountPath: /tmp/opencga_scratch
+            - name : conf
+              mountPath: /opt/opencga/conf
+            - name : sessions
+              mountPath: /opt/opencga/sessions
+            - name : variants
+              mountPath: /opt/opencga/variants
+            - name: analysisconf
+              mountPath: /opt/opencga/analysis
+            - name: opencgascratch
+              mountPath: /tmp/opencga_scratch
+            {{ include "additionalVolumeMounts" . | nindent 12 }}
         - name: dind-daemon
           image: docker:dind-rootless
           securityContext:
@@ -100,6 +101,7 @@ spec:
               mountPath: /opt/opencga/analysis
             - name: opencgascratch
               mountPath: /tmp/opencga_scratch
+            {{ include "additionalVolumeMounts" . | nindent 12 }}
       volumes:
       - name: conf
         persistentVolumeClaim:
@@ -117,6 +119,7 @@ spec:
         emptyDir: {}
       - name: opencgascratch
         emptyDir: {}
+      {{- include "additionalVolumes" . | nindent 6 -}}
       {{- with .Values.rest.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

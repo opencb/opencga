@@ -140,14 +140,15 @@ spec:
           resources:
             {{- toYaml .Values.master.resources | nindent 12 }}
           volumeMounts:
-          - name : conf
-            mountPath: /opt/opencga/conf
-          - name : sessions
-            mountPath: /opt/opencga/sessions
-          - name : variants
-            mountPath: /opt/opencga/variants
-          - name : analysisconf
-            mountPath: /opt/opencga/analysis
+            - name : conf
+              mountPath: /opt/opencga/conf
+            - name : sessions
+              mountPath: /opt/opencga/sessions
+            - name : variants
+              mountPath: /opt/opencga/variants
+            - name : analysisconf
+              mountPath: /opt/opencga/analysis
+            {{ include "additionalVolumeMounts" . | nindent 12 }}
       volumes:
       - name: conf
         persistentVolumeClaim:
@@ -164,6 +165,7 @@ spec:
       - name: default-conf
         configMap:
           name: {{ include "opencga.defaultConf.name" . }}
+      {{ include "additionalVolumes" . | nindent 6 }}
     {{- with .Values.master.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

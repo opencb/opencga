@@ -114,6 +114,24 @@ pvc-{{ include "opencga.fullname" . }}-analysisconf
 {{- end -}}
 
 
+{{- define "additionalVolumes" -}}
+{{- if .Values.volumes -}}
+{{- range .Values.volumes }}
+- name: {{ .name }}
+  {{- .source | toYaml | nindent 2 -}}
+{{- end }}
+{{- end -}}
+{{- end -}}
+
+
+{{- define "additionalVolumeMounts" -}}
+{{- if .Values.volumes -}}
+{{- range .Values.volumes }}
+- name: {{ .name }}
+  mountPath: {{ .mountPath }}
+{{- end }}
+{{- end -}}
+{{- end -}}
 
 
 
