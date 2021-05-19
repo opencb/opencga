@@ -37,9 +37,11 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1299,7 +1301,10 @@ public class RgaManager implements AutoCloseable {
             excludeList.add(VariantField.STUDIES_FILES);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, excludeList);
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.EXCLUDE, excludeList)
+                .append(VariantSearchManager.USE_SEARCH_INDEX, VariantStorageEngine.UseSearchIndex.NO);
+
         return variantStorageManager.iterator(variantQuery, queryOptions, token);
     }
 
