@@ -374,9 +374,27 @@ public class RgaManager implements AutoCloseable {
                     new ArrayList<>(consequenceTypes),
                     Arrays.asList(populationFrequencyMap.get(thousandGenomeKey), populationFrequencyMap.get(gnomadGenomeKey)));
 
-            // Generate combinations with current variant
+            // Generate CH combinations with current variant
             compoundFilters.addAll(RgaUtils.generateCompoundHeterozygousCombinations(Collections.singletonList(currentVariantCompHetValues),
                     chVariantList));
+        }
+
+        // Process all possible compound filters that are not CH
+        Set<String> knockoutTypesNoCompHet = new HashSet<>(knockoutTypes);
+        knockoutTypesNoCompHet.remove(KnockoutVariant.KnockoutType.COMP_HET.name());
+        if (!knockoutTypesNoCompHet.isEmpty()) {
+            List<String> knockoutList = new ArrayList<>(knockoutTypesNoCompHet.size());
+            for (String knockout : knockoutTypesNoCompHet) {
+                knockoutList.add(RgaUtils.encode(knockout));
+            }
+
+            // TODO: Assuming filter is PASS. We need to check that properly
+            List<List<String>> independentTerms = Arrays.asList(
+                    knockoutList,
+                    Collections.singletonList(RgaUtils.encode(PASS)), // TODO: CHANGE !!!!! Take filter from codedVariant object
+                    new ArrayList<>(consequenceTypes),
+                    Arrays.asList(populationFrequencyMap.get(thousandGenomeKey), populationFrequencyMap.get(gnomadGenomeKey)));
+            compoundFilters.addAll(RgaUtils.generateCombinations(independentTerms));
         }
 
         knockoutTypeFacet = new QueryOptions()
@@ -1577,8 +1595,8 @@ public class RgaManager implements AutoCloseable {
             sampleIds = search.getResults().stream().map(Sample::getId).collect(Collectors.toList());
             preprocessResult.setNumTotalResults(search.getNumMatches());
         } else {
-            if (!preprocessResult.getQuery().containsKey("sampleId")
-                    && !preprocessResult.getQuery().containsKey("individualId")) {
+            if (!preprocessResult.getQuery().containsKey(RgaQueryParams.SAMPLE_ID.key())
+                    && !preprocessResult.getQuery().containsKey(RgaQueryParams.INDIVIDUAL_ID.key())) {
                 // 1st. we perform a facet to get the different sample ids matching the user query
                 DataResult<FacetField> result = rgaEngine.facetedQuery(collection, preprocessResult.getQuery(),
                         new QueryOptions(QueryOptions.FACET, RgaDataModel.SAMPLE_ID).append(QueryOptions.LIMIT, -1));
@@ -1586,7 +1604,7 @@ public class RgaManager implements AutoCloseable {
                     throw RgaException.noResultsMatching();
                 }
                 List<String> samples = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
-                preprocessResult.getQuery().put("sampleId", samples);
+                preprocessResult.getQuery().put(RgaQueryParams.SAMPLE_ID.key(), samples);
             }
 
             // From the list of sample ids the user wants to retrieve data from, we filter those for which the user has permissions
@@ -1597,7 +1615,7 @@ public class RgaManager implements AutoCloseable {
             }
 
             List<String> authorisedSamples = new LinkedList<>();
-            if (!isOwnerOrAdmin || !preprocessResult.getQuery().containsKey("sampleId")) {
+            if (!isOwnerOrAdmin || !preprocessResult.getQuery().containsKey(RgaQueryParams.SAMPLE_ID.key())) {
                 int maxSkip = 10000;
                 if (skip > maxSkip) {
                     throw new RgaException("Cannot paginate further than " + maxSkip + " individuals. Please, narrow down your query.");
@@ -1609,12 +1627,12 @@ public class RgaManager implements AutoCloseable {
 
                 String sampleQueryField;
                 List<String> values;
-                if (preprocessResult.getQuery().containsKey("individualId")) {
+                if (preprocessResult.getQuery().containsKey(RgaQueryParams.INDIVIDUAL_ID.key())) {
                     sampleQueryField = SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key();
-                    values = preprocessResult.getQuery().getAsStringList("individualId");
+                    values = preprocessResult.getQuery().getAsStringList(RgaQueryParams.INDIVIDUAL_ID.key());
                 } else {
                     sampleQueryField = SampleDBAdaptor.QueryParams.ID.key();
-                    values = preprocessResult.getQuery().getAsStringList("sampleId");
+                    values = preprocessResult.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
                 }
 
                 if (count && values.size() > maxSkip) {
@@ -1646,7 +1664,7 @@ public class RgaManager implements AutoCloseable {
                     }
                 }
             } else {
-                authorisedSamples = preprocessResult.getQuery().getAsStringList("sampleId");
+                authorisedSamples = preprocessResult.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
                 preprocessResult.setNumTotalResults(authorisedSamples.size());
             }
 
@@ -1658,6 +1676,9 @@ public class RgaManager implements AutoCloseable {
                 int to = Math.min(authorisedSamples.size(), skip + limit);
                 sampleIds = authorisedSamples.subList(skip, to);
             }
+        }
+        if (sampleIds.isEmpty()) {
+            throw RgaException.noResultsMatching();
         }
         preprocessResult.getQuery().put(RgaQueryParams.SAMPLE_ID.key(), sampleIds);
 
