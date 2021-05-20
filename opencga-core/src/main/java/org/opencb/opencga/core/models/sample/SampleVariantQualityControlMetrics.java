@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.biodata.models.clinical.qc.CircosPlot;
+import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
 
@@ -11,7 +11,7 @@ public class SampleVariantQualityControlMetrics {
 
     private List<SampleQcVariantStats> variantStats;
     private List<Signature> signatures;
-    private List<CircosPlot> circosPlots;
+    private List<GenomePlot> genomePlots;
     private List<String> vcfFileIds;
 
     public SampleVariantQualityControlMetrics() {
@@ -22,15 +22,15 @@ public class SampleVariantQualityControlMetrics {
                                               List<String> vcfFileIds) {
         this.variantStats = variantStats;
         this.signatures = signatures;
-        this.circosPlots = new ArrayList<>();
+        this.genomePlots = new ArrayList<>();
         this.vcfFileIds = vcfFileIds;
     }
 
     public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              List<CircosPlot> circosPlots, List<String> vcfFileIds) {
+                                              List<GenomePlot> genomePlots, List<String> vcfFileIds) {
         this.variantStats = variantStats;
         this.signatures = signatures;
-        this.circosPlots = circosPlots;
+        this.genomePlots = genomePlots;
         this.vcfFileIds = vcfFileIds;
     }
 
@@ -39,7 +39,7 @@ public class SampleVariantQualityControlMetrics {
         final StringBuilder sb = new StringBuilder("SampleVariantQualityControlMetrics{");
         sb.append("variantStats=").append(variantStats);
         sb.append(", signatures=").append(signatures);
-        sb.append(", circosPlots=").append(circosPlots);
+        sb.append(", genomePlots=").append(genomePlots);
         sb.append(", vcfFileIds=").append(vcfFileIds);
         sb.append('}');
         return sb.toString();
@@ -63,12 +63,12 @@ public class SampleVariantQualityControlMetrics {
         return this;
     }
 
-    public List<CircosPlot> getCircosPlots() {
-        return circosPlots;
+    public List<GenomePlot> getGenomePlots() {
+        return genomePlots;
     }
 
-    public SampleVariantQualityControlMetrics setCircosPlots(List<CircosPlot> circosPlots) {
-        this.circosPlots = circosPlots;
+    public SampleVariantQualityControlMetrics setGenomePlots(List<GenomePlot> genomePlots) {
+        this.genomePlots = genomePlots;
         return this;
     }
 

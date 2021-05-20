@@ -16,37 +16,47 @@
 
 package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
-public abstract class CircosAnalysisExecutor extends OpenCgaToolExecutor {
+import java.io.File;
+
+public abstract class GenomePlotAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String study;
-    private CircosAnalysisParams circosParams;
+    private File configFile;
 
-    public CircosAnalysisExecutor() {
+    public GenomePlotAnalysisExecutor() {
     }
 
-    public CircosAnalysisExecutor(String study, CircosAnalysisParams circosParams) {
+    public GenomePlotAnalysisExecutor(String study, File configFile) {
         this.study = study;
-        this.circosParams = circosParams;
+        this.configFile = configFile;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("GenomePlotAnalysisExecutor{");
+        sb.append("study='").append(study).append('\'');
+        sb.append(", configFile=").append(configFile);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getStudy() {
         return study;
     }
 
-    public CircosAnalysisExecutor setStudy(String study) {
+    public GenomePlotAnalysisExecutor setStudy(String study) {
         this.study = study;
         return this;
     }
 
-    public CircosAnalysisParams getCircosParams() {
-        return circosParams;
+    public File getConfigFile() {
+        return configFile;
     }
 
-    public CircosAnalysisExecutor setCircosParams(CircosAnalysisParams params) {
-        this.circosParams = params;
+    public GenomePlotAnalysisExecutor setConfigFile(File configFile) {
+        this.configFile = configFile;
         return this;
     }
 }

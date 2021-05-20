@@ -1403,14 +1403,14 @@ public class VariantCommandOptions {
         @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
         public Map<String, String> variantStatsQuery = new HashMap<>();
 
-        @Parameter(names = {"--signature-id"}, description = "Signature ID.")
-        public String signatureId;
+//        @Parameter(names = {"--signature-id"}, description = "Signature ID.")
+//        public String signatureId;
+//
+//        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+//        public Map<String, String> signatureQuery = new HashMap<>();
 
-        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
-        public Map<String, String> signatureQuery = new HashMap<>();
-
-        @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
-        public String genesForCoverageStats;
+        @Parameter(names = {"--gpcf", "--genome-plot-config-file"}, description = "Genome plot configuration file in JSON format.")
+        public String genomePlotConfigFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
