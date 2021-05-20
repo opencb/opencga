@@ -180,7 +180,7 @@ rest:
       - ""              # Accept access by IP .Testing purposes only.
     # Accepts /opencga and /opencga/....
     paths:
-    - /opencga(/|$)
+    - /opencga/
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:
