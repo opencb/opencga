@@ -12,26 +12,22 @@ public class SampleVariantQualityControlMetrics {
     private List<SampleQcVariantStats> variantStats;
     private List<Signature> signatures;
     private List<GenomePlot> genomePlots;
-    private List<String> vcfFileIds;
 
     public SampleVariantQualityControlMetrics() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              List<String> vcfFileIds) {
+    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures) {
         this.variantStats = variantStats;
         this.signatures = signatures;
         this.genomePlots = new ArrayList<>();
-        this.vcfFileIds = vcfFileIds;
     }
 
     public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              List<GenomePlot> genomePlots, List<String> vcfFileIds) {
+                                              List<GenomePlot> genomePlots) {
         this.variantStats = variantStats;
         this.signatures = signatures;
         this.genomePlots = genomePlots;
-        this.vcfFileIds = vcfFileIds;
     }
 
     @Override
@@ -40,7 +36,6 @@ public class SampleVariantQualityControlMetrics {
         sb.append("variantStats=").append(variantStats);
         sb.append(", signatures=").append(signatures);
         sb.append(", genomePlots=").append(genomePlots);
-        sb.append(", vcfFileIds=").append(vcfFileIds);
         sb.append('}');
         return sb.toString();
     }
@@ -69,15 +64,6 @@ public class SampleVariantQualityControlMetrics {
 
     public SampleVariantQualityControlMetrics setGenomePlots(List<GenomePlot> genomePlots) {
         this.genomePlots = genomePlots;
-        return this;
-    }
-
-    public List<String> getVcfFileIds() {
-        return vcfFileIds;
-    }
-
-    public SampleVariantQualityControlMetrics setVcfFileIds(List<String> vcfFileIds) {
-        this.vcfFileIds = vcfFileIds;
         return this;
     }
 }
