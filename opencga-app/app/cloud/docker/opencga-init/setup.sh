@@ -5,17 +5,23 @@ echo "------------ OpenCGA INIT ------------"
 
 set -x
 
+PERSISTENT_CONF=/opt/volume/conf/
+DEFAULT_CONF=/opt/opencga/default-conf/
+OPENCGA_CONF=/opt/opencga/conf/
+
 if find /opt/opencga/libs/opencga-storage-hadoop-deps-* &> /dev/null ; then
-    /opt/opencga/init/setup-hadoop.sh
+    /opt/opencga/init/setup-hadoop.sh ${OPENCGA_CONF}/hadoop
+    cp -r -v ${OPENCGA_CONF}/hadoop/* ${PERSISTENT_CONF}/hadoop/
 fi
 
-FILE=/opt/volume/conf/configuration.yml
+
+FILE="${PERSISTENT_CONF}/configuration.yml"
 if [ -f "$FILE" ] && [ "${OVERWRITE_CONFIGURATION:-false}" == "false" ]; then
     echo "$FILE already exists"
-    cp -r /opt/volume/conf/* /opt/opencga/conf/
+    cp -r -v "${PERSISTENT_CONF}/"* "${OPENCGA_CONF}"
 else
-    echo "Copying default configs"
-    cp -r -L -v /opt/opencga/default-conf/*  /opt/opencga/conf/
+    echo "Copying default configs (if any)"
+    cp -r -L -v "${DEFAULT_CONF}"/* "${OPENCGA_CONF}"
 
     echo "Initialising configs"
     # Override Yaml configs
@@ -23,13 +29,11 @@ else
 
     # Copies the config files from our local directory into a
     # persistent volume to be shared by the other containers.
-    echo "Initialising volume"
-    echo "Copying final configs"
-    #mkdir -p /opt/volume/conf /opt/volume/variants
-    cp -r /opt/opencga/conf/* /opt/volume/conf
+    echo "Copy final configs to persistent config volume"
+    cp -r -v "${OPENCGA_CONF}"/* "${PERSISTENT_CONF}"
 
     echo "Copying final analysis folder"
-    cp -r /opt/opencga/analysis/* /opt/volume/analysis
+    cp -r -v /opt/opencga/analysis/* /opt/volume/analysis
 fi
 
 
