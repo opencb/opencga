@@ -18,37 +18,25 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.List;
-import java.util.Map;
-
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample QC analysis params";
     private String sample;
     private String variantStatsId;
     private String variantStatsDescription;
     private AnnotationVariantQueryParams variantStatsQuery;
-    private String signatureId;
-    private SampleQcSignatureQueryParams signatureQuery;
-    private Map<String, String> circosQuery;
-    private List<CircosTrack> circosTracks;
-
+    private String genomePlotConfigFile;
     private String outdir;
 
     public SampleQcAnalysisParams() {
     }
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
-                                  AnnotationVariantQueryParams variantStatsQuery, String signatureId,
-                                  SampleQcSignatureQueryParams signatureQuery, Map<String, String> circosQuery,
-                                  List<CircosTrack> circosTracks, String outdir) {
+                                  AnnotationVariantQueryParams variantStatsQuery, String genomePlotConfigFile, String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
-        this.signatureId = signatureId;
-        this.signatureQuery = signatureQuery;
-        this.circosQuery = circosQuery;
-        this.circosTracks = circosTracks;
+        this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
     }
 
@@ -59,10 +47,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
         sb.append(", variantStatsDescription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
-        sb.append(", signatureId='").append(signatureId).append('\'');
-        sb.append(", signatureQuery=").append(signatureQuery);
-        sb.append(", circosQuery=").append(circosQuery);
-        sb.append(", circosTracks=").append(circosTracks);
+        sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -104,39 +89,12 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getSignatureId() {
-        return signatureId;
+    public String getGenomePlotConfigFile() {
+        return genomePlotConfigFile;
     }
 
-    public SampleQcAnalysisParams setSignatureId(String signatureId) {
-        this.signatureId = signatureId;
-        return this;
-    }
-
-    public SampleQcSignatureQueryParams getSignatureQuery() {
-        return signatureQuery;
-    }
-
-    public SampleQcAnalysisParams setSignatureQuery(SampleQcSignatureQueryParams signatureQuery) {
-        this.signatureQuery = signatureQuery;
-        return this;
-    }
-
-    public Map<String, String> getCircosQuery() {
-        return circosQuery;
-    }
-
-    public SampleQcAnalysisParams setCircosQuery(Map<String, String> circosQuery) {
-        this.circosQuery = circosQuery;
-        return this;
-    }
-
-    public List<CircosTrack> getCircosTracks() {
-        return circosTracks;
-    }
-
-    public SampleQcAnalysisParams setCircosTracks(List<CircosTrack> circosTracks) {
-        this.circosTracks = circosTracks;
+    public SampleQcAnalysisParams setGenomePlotConfigFile(String genomePlotConfigFile) {
+        this.genomePlotConfigFile = genomePlotConfigFile;
         return this;
     }
 

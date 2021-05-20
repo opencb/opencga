@@ -62,6 +62,7 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -74,7 +75,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
@@ -865,35 +869,23 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void sampleQc() throws Exception {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
 
         // Build variant query from cli options
-        Query variantStatsQuery = new Query();
-        variantStatsQuery.putAll(cliOptions.variantStatsQuery);
+        AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
+                cliOptions.variantStatsQuery);
 
-        // Build signature query from cli options
-        Query signatureQuery = new Query();
-        signatureQuery.putAll(cliOptions.signatureQuery);
+        ObjectMap params = new SampleQcAnalysisParams(
+                cliOptions.sample,
+                cliOptions.variantStatsId,
+                cliOptions.variantStatsDecription,
+                variantStatsQuery,
+//                cliOptions.signatureId,
+//                signatureQuery,
+                cliOptions.genomePlotConfigFile,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-//        // Build list of genes from cli options
-//        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
-//                ? new ArrayList<>()
-//                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
-
-        SampleQcAnalysis sampleQcAnalysis = new SampleQcAnalysis();
-        sampleQcAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
-        sampleQcAnalysis.setStudyId(cliOptions.study)
-                .setSampleId(cliOptions.sample)
-                .setVariantStatsId(cliOptions.variantStatsId)
-                .setVariantStatsDecription(cliOptions.variantStatsDecription)
-                .setVariantStatsQuery(variantStatsQuery)
-                .setSignatureId(cliOptions.signatureId)
-                .setSignatureQuery(signatureQuery);
-//                .setGenesForCoverageStats(genesForCoverageStats);
-
-        sampleQcAnalysis.start();
+        toolRunner.execute(SampleQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // Wrappers

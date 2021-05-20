@@ -18,13 +18,11 @@ package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -37,8 +35,7 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
-import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -1129,115 +1126,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
 
-        return run(() -> {
-            final String OPENCGA_ALL = "ALL";
-
-            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
-
-            Sample sample;
-            sample = IndividualQcUtils.getValidSampleById(study, params.getSample(), catalogManager, token);
-            if (sample == null) {
-                throw new ToolException("Sample '" + params.getSample() + "' not found.");
-            }
-
-            // Check variant stats
-            if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                        + " variant stats ID");
-            }
-
-            if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null
-                    && !params.getVariantStatsQuery().toParams().isEmpty()) {
-                throw new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
-                        + " empty");
-            }
-            if (StringUtils.isNotEmpty(params.getVariantStatsId())
-                    && (params.getVariantStatsQuery() == null || params.getVariantStatsQuery().toParams().isEmpty())) {
-                throw new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
-                        + " can not be empty");
-            }
-            if (StringUtils.isEmpty(params.getVariantStatsId())) {
-                params.setVariantStatsId(OPENCGA_ALL);
-            }
-
-            boolean runVariantStats = true;
-            if (sample.getQualityControl() != null) {
-                if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getVariantStats())
-                        && OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                    runVariantStats = false;
-                } else {
-                    for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariantMetrics().getVariantStats()) {
-                        if (variantStats.getId().equals(params.getVariantStatsId())) {
-                            throw new ToolException("Invalid parameters: variant stats ID '" + params.getVariantStatsId()
-                                    + "' is already used");
-                        }
-                    }
-                }
-            }
-
-            // Check mutational signature
-            boolean runSignature = true;
-            if (!sample.isSomatic()) {
-                runSignature = false;
-            } else {
-                if (OPENCGA_ALL.equals(params.getSignatureId())) {
-                    throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                            + " signature ID");
-                }
-
-                if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
-                        && !params.getSignatureQuery().toParams().isEmpty()) {
-                    throw new ToolException("Invalid parameters: if signature ID is empty, signature query must be null");
-                }
-                if (StringUtils.isNotEmpty(params.getSignatureId())
-                        && (params.getSignatureQuery() == null || params.getSignatureQuery().toParams().isEmpty())) {
-                    throw new ToolException("Invalid parameters: if you provide a signature ID, signature query"
-                            + " can not be null");
-                }
-
-                if (sample.getQualityControl() != null) {
-                    if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getSignatures())) {
-                        runSignature = false;
-                    }
-                }
-            }
-
-            // Run variant stats if necessary
-            if (runVariantStats) {
-                SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
-                        Collections.singletonList(params.getSample()),
-                        null,
-                        params.getOutdir(), true, false, params.getVariantStatsId(), params.getVariantStatsDescription(), null,
-                        params.getVariantStatsQuery()
-                );
-
-                DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,
-                        sampleVariantStatsParams, null, null, null, null);
-                Job sampleStatsJob = jobResult.first();
-                dependsOnList.add(sampleStatsJob.getId());
-            }
-
-            // Run signature if necessary
-            if (runSignature) {
-                MutationalSignatureAnalysisParams mutationalSignatureParams =
-                        new MutationalSignatureAnalysisParams(params.getSample(), params.getOutdir());
-                DataResult<Job> jobResult = submitJobRaw(MutationalSignatureAnalysis.ID, null, study, mutationalSignatureParams,
-                        null, null, null, null);
-                Job signatureJob = jobResult.first();
-                dependsOnList.add(signatureJob.getId());
-            }
-
-            // Run circos if necessary
-            if (MapUtils.isNotEmpty(params.getCircosQuery()) && CollectionUtils.isNotEmpty(params.getCircosTracks())) {
-                CircosAnalysisParams circosAnalysisParams = new CircosAnalysisParams(sample.getId(), "MEDIUM", params.getCircosQuery(),
-                        params.getCircosTracks(), params.getOutdir());
-                DataResult<Job> jobResult = submitJobRaw(CircosAnalysis.ID, null, study, circosAnalysisParams, null, null, null, null);
-                Job circosJob = jobResult.first();
-                dependsOnList.add(circosJob.getId());
-            }
-
-            return submitJobRaw(SampleQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
-        });
+        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1321,61 +1210,54 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/circos/run")
-    @ApiOperation(value = CircosAnalysis.DESCRIPTION, response = String.class)
-    public Response circos(
+    @Path("/genomePlot/run")
+    @ApiOperation(value = GenomePlotAnalysis.DESCRIPTION, response = String.class)
+    public Response genomePlot(
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = CircosAnalysisParams.DESCRIPTION, required = true) CircosAnalysisParams params) {
+            @ApiParam(value = GenomePlotAnalysisParams.DESCRIPTION, required = true) GenomePlotAnalysisParams params) {
         File outDir = null;
         try {
-            if (StringUtils.isEmpty(params.getTitle())) {
-                params.setTitle("UNTITLED");
-            }
-
             // Create temporal directory
-            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "circos-" + System.nanoTime()).toFile();
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "plot-" + System.nanoTime()).toFile();
             outDir.mkdir();
             if (!outDir.exists()) {
-                return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
+                return createErrorResponse(new Exception("Error creating temporal directory for genome plot analysis"));
             }
 
-            // Create and set up Circos executor
-            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params, variantManager);
-
-            ObjectMap executorParams = new ObjectMap();
-            executorParams.put("opencgaHome", opencgaHome);
-            executorParams.put("token", token);
-            executor.setUp(null, executorParams, outDir.toPath());
-
-            // Run Circos executor
             StopWatch watch = StopWatch.createStarted();
-            executor.run();
+
+            GenomePlotAnalysis genomePlotAnalysis = new GenomePlotAnalysis();
+            genomePlotAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir.toPath(), null,
+                    token);
+            genomePlotAnalysis.setStudy(study)
+                    .setGenomePlotParams(params)
+                    .start();
 
             // Check results by reading the output file
-            File imgFile = outDir.toPath().resolve(params.getTitle() + CircosAnalysis.SUFFIX_FILENAME).toFile();
-            if (imgFile.exists()) {
-                FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
-                byte[] bytes = new byte[(int) imgFile.length()];
-                fileInputStreamReader.read(bytes);
+            for (File imgfile : outDir.toPath().toFile().listFiles()) {
+                if (imgfile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
+                    FileInputStream fileInputStreamReader = new FileInputStream(imgfile);
+                    byte[] bytes = new byte[(int) imgfile.length()];
+                    fileInputStreamReader.read(bytes);
 
-                String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
+                    String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
 
-                watch.stop();
-                OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                        Collections.singletonList(img), 1);
+                    watch.stop();
+                    OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                            Collections.singletonList(img), 1);
 
-                //System.out.println(result.toString());
-                return createOkResponse(result);
-            } else {
-                return createErrorResponse(new Exception("Error plotting Circos graph"));
+                    //System.out.println(result.toString());
+                    return createOkResponse(result);
+                }
             }
+            return createErrorResponse(new Exception("Error plotting Genome graph"));
         } catch (ToolException | IOException e) {
             return createErrorResponse(e);
         } finally {
             if (outDir != null) {
                 // Delete temporal directory
                 try {
-                    if (outDir.exists() && !params.getTitle().startsWith("no.delete.")) {
+                    if (outDir.exists()) {
                         FileUtils.deleteDirectory(outDir);
                     }
                 } catch (IOException e) {
