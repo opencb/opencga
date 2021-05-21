@@ -51,8 +51,11 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
     public static final String OUTPUT = "output-table";
 
     private static final String TRIOS_LIST = "FamilyIndexDriver.trios_list";
+    // Samples where at least one parent is not in its file
+    private static final String SAMPLES_WITH_UNKNOWN_PARENT_GENOTYPES = "FamilyIndexDriver.samples_with_unknown_parent_genotypes";
     private static final int MISSING_SAMPLE = -1;
     private List<Integer> sampleIds;
+    private List<Integer> samplesWithUnknownParentGenotypes;
     private boolean partial;
     private String region;
     private String sampleIndexTableName;
@@ -87,6 +90,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         String triosStr = getParam(TRIOS);
 
         sampleIds = new LinkedList<>();
+        samplesWithUnknownParentGenotypes = new LinkedList<>();
         if (StringUtils.isNotEmpty(triosStr)) {
             String[] trios = triosStr.split(";");
             List<Integer> trioList = new ArrayList<>(3);
@@ -129,12 +133,12 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
             for (Integer sample : cohortMetadata.getSamples()) {
                 SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(getStudyId(), sample);
                 if (sampleMetadata.getFather() == null) {
-                    sampleIds.add(-1);
+                    sampleIds.add(MISSING_SAMPLE);
                 } else {
                     sampleIds.add(sampleMetadata.getFather());
                 }
                 if (sampleMetadata.getMother() == null) {
-                    sampleIds.add(-1);
+                    sampleIds.add(MISSING_SAMPLE);
                 } else {
                     sampleIds.add(sampleMetadata.getMother());
                 }
@@ -151,6 +155,41 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         if (sampleIds.size() % 3 != 0) {
             throw new IllegalArgumentException("Wrong number of samples in trios!");
         }
+        sampleIds = new ArrayList<>(sampleIds);
+        for (int i = 0; i < sampleIds.size(); i += 3) {
+            Integer father = sampleIds.get(i);
+            Integer mother = sampleIds.get(i + 1);
+            Integer child = sampleIds.get(i + 2);
+
+            boolean parentsInSeparatedFile = false;
+            SampleMetadata childMetadata = getMetadataManager().getSampleMetadata(getStudyId(), child);
+            List<Integer> childFiles = childMetadata.getFiles();
+            SampleMetadata fatherMetadata = null;
+            if (father != MISSING_SAMPLE) {
+                fatherMetadata = getMetadataManager().getSampleMetadata(getStudyId(), father);
+                List<Integer> fatherFiles = fatherMetadata.getFiles();
+                if (fatherFiles.size() != childFiles.size() || !fatherFiles.containsAll(childFiles)) {
+                    parentsInSeparatedFile = true;
+                }
+            }
+            SampleMetadata motherMetadata = null;
+            if (mother != MISSING_SAMPLE) {
+                motherMetadata = getMetadataManager().getSampleMetadata(getStudyId(), mother);
+                List<Integer> motherFiles = motherMetadata.getFiles();
+                if (motherFiles.size() != childFiles.size() || !motherFiles.containsAll(childFiles)) {
+                    parentsInSeparatedFile = true;
+                }
+            }
+            if (parentsInSeparatedFile) {
+                samplesWithUnknownParentGenotypes.add(child);
+                if (samplesWithUnknownParentGenotypes.size() < 20) {
+                    LOGGER.info(" - Trio from multiple files: sample: " + childMetadata.getName()
+                            + ", father: " + (fatherMetadata == null ? "none" : fatherMetadata.getName())
+                            + ", mother: " + (motherMetadata == null ? "none" : motherMetadata.getName()));
+                }
+            }
+        }
+        LOGGER.info("Found {} trios where some parent was loaded from a different file", samplesWithUnknownParentGenotypes.size());
 
         region = getParam(VariantQueryParam.REGION.key(), "");
 
@@ -169,7 +208,10 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         LOGGER.info("Calculate Mendelian Errors for " + (sampleIds.size() / 3) + " trios");
 
 
-        job.getConfiguration().set(TRIOS_LIST, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
+        job.getConfiguration().set(TRIOS_LIST,
+                sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
+        job.getConfiguration().set(SAMPLES_WITH_UNKNOWN_PARENT_GENOTYPES,
+                samplesWithUnknownParentGenotypes.stream().map(Objects::toString).collect(Collectors.joining(",")));
 
         for (Integer sampleId : sampleIds) {
             if (sampleId != MISSING_SAMPLE) {
@@ -229,29 +271,32 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         private Map<Integer, Map<String, Integer>> genotypeCount = new HashMap<>();
         private Map<Integer, FamilyIndexPutBuilder> familyIndexBuilder = new HashMap<>();
         private List<List<Integer>> trios;
-        private byte[] family;
+        private List<Boolean> triosWithUnknownGenotypes;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             new GenomeHelper(context.getConfiguration());
-            family = GenomeHelper.COLUMN_FAMILY_BYTES;
 
             int[] sampleIds = context.getConfiguration().getInts(TRIOS_LIST);
+            Set<Integer> samplesWithUnknownParentGenotypes =
+                    Arrays.stream(context.getConfiguration().getInts(SAMPLES_WITH_UNKNOWN_PARENT_GENOTYPES))
+                            .boxed()
+                            .collect(Collectors.toSet());
             trios = new ArrayList<>(sampleIds.length / 3);
+            triosWithUnknownGenotypes = new ArrayList<>(sampleIds.length / 3);
 
             for (int i = 0; i < sampleIds.length; i += 3) {
+                int father = sampleIds[i];
+                int mother = sampleIds[i + 1];
+                int child = sampleIds[i + 2];
+                triosWithUnknownGenotypes.add(samplesWithUnknownParentGenotypes.contains(child));
                 trios.add(Arrays.asList(
-                        sampleIds[i],
-                        sampleIds[i + 1],
-                        sampleIds[i + 2]));
-            }
-
-            for (List<Integer> trio : trios) {
-                Integer child = trio.get(2);
+                        father,
+                        mother,
+                        child));
                 familyIndexBuilder.put(child, new FamilyIndexPutBuilder(child));
                 genotypeCount.put(child, new HashMap<>());
             }
-
         }
 
         @Override
@@ -270,7 +315,8 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 }
             }).walk();
 
-            for (List<Integer> trio : trios) {
+            for (int i = 0, triosSize = trios.size(); i < triosSize; i++) {
+                List<Integer> trio = trios.get(i);
                 Integer father = trio.get(0);
                 Integer mother = trio.get(1);
                 Integer child = trio.get(2);
@@ -280,9 +326,28 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 Set<String> motherDiscrepancies = discrepanciesGtMap.get(mother);
                 Set<String> childDiscrepancies = discrepanciesGtMap.get(child);
 
+                String defaultGenotype = triosWithUnknownGenotypes.get(i) ? null : "0/0";
                 if (fatherDiscrepancies == null && motherDiscrepancies == null && childDiscrepancies == null) {
-                    String fatherGtStr = father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, "0/0");
-                    String motherGtStr = mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, "0/0");
+                    String fatherGtStr;
+                    if (father == MISSING_SAMPLE) {
+                        fatherGtStr = null;
+                    } else {
+                        fatherGtStr = gtMap.get(father);
+                        if (fatherGtStr == null) {
+                            context.getCounter(COUNTER_GROUP_NAME, "missing_father_gt").increment(1);
+                            fatherGtStr = defaultGenotype;
+                        }
+                    }
+                    String motherGtStr;
+                    if (mother == MISSING_SAMPLE) {
+                        motherGtStr = null;
+                    } else {
+                        motherGtStr = gtMap.get(mother);
+                        if (motherGtStr == null) {
+                            context.getCounter(COUNTER_GROUP_NAME, "missing_mother_gt").increment(1);
+                            motherGtStr = defaultGenotype;
+                        }
+                    }
                     String childGtStr = gtMap.getOrDefault(child, "0/0");
                     builder.addParents(childGtStr, fatherGtStr, motherGtStr);
                     int idx = genotypeCount.get(child).merge(childGtStr, 1, Integer::sum) - 1;
@@ -290,10 +355,12 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                     computeMendelianError(variant, father, mother, fatherGtStr, motherGtStr, childGtStr, context, builder, idx);
                 } else {
                     if (fatherDiscrepancies == null) {
-                        fatherDiscrepancies = Collections.singleton(father == MISSING_SAMPLE ? null : gtMap.getOrDefault(father, "0/0"));
+                        fatherDiscrepancies = Collections.singleton(father == MISSING_SAMPLE ? null
+                                : gtMap.getOrDefault(father, defaultGenotype));
                     }
                     if (motherDiscrepancies == null) {
-                        motherDiscrepancies = Collections.singleton(mother == MISSING_SAMPLE ? null : gtMap.getOrDefault(mother, "0/0"));
+                        motherDiscrepancies = Collections.singleton(mother == MISSING_SAMPLE ? null
+                                : gtMap.getOrDefault(mother, defaultGenotype));
                     }
                     if (childDiscrepancies == null) {
                         childDiscrepancies = Collections.singleton(gtMap.getOrDefault(child, "0/0"));
