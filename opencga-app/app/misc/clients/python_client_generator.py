@@ -29,6 +29,11 @@ class PythonClientGenerator(RestClientGenerator):
         return re.sub(r'(?<!^)(?=[A-Z])', '_', text).lower()
 
     @staticmethod
+    def to_camel_case(text):
+        components = text.split('_')
+        return components[0] + ''.join(x.title() for x in components[1:])
+
+    @staticmethod
     def format_line(line, max_length=79):
         new_lines = []
         new_line = []
@@ -113,7 +118,7 @@ class PythonClientGenerator(RestClientGenerator):
         method_args = ', '.join(method_args)
 
         # Method body
-        method_body = ['{i}options[\'{r}\'] = {r}'.format(i=' ' * 8, r=required_parameter)
+        method_body = ['{}options[\'{}\'] = {}'.format(' ' * 8, self.to_camel_case(required_parameter), required_parameter)
                        for required_parameter in mandatory_query_params if required_parameter != 'data']
 
         # Call arguments
