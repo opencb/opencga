@@ -127,6 +127,18 @@ blobfuse:
 nameOverride: ""
 fullnameOverride: ""
 
+# Mount additional volumes into rest and master.
+# User responsability:
+#  - Ensure that the new volumes are defined in the cluster
+#  - Add the new volumes to the configuration.yaml so they are present in the k8s jobs
+#volumes:
+#  - name: volume_name
+#    mountPath: /data/my_volume
+#    # Source field contains the volume type details. Could be persistentVolumeClaim, azureDisk, azureFile, configMap, ...
+#    source:
+#      persistentVolumeClaim:
+#        claimName: "myVolumeClaim"
+
 rest:
   name: rest
   replicaCount: 3
@@ -168,7 +180,7 @@ rest:
       - ""              # Accept access by IP .Testing purposes only.
     # Accepts /opencga and /opencga/....
     paths:
-    - /opencga(/|$)
+    - /opencga/
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:

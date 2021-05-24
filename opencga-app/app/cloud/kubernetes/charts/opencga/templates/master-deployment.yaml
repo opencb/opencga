@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.master.name }}
+        confMd5: {{ .Values.confMd5 | default "NA" | quote }}
         {{- include "opencga.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.master.imagePullSecrets }}
@@ -87,6 +88,8 @@ spec:
           value: {{ .Values.analysis.execution.options.k8s.masterNode }}
         - name: "INIT_K8S_NAMESPACE"
           value: {{ .Release.Namespace }}
+        - name: "INIT_K8S_IMAGE_NAME"
+          value: {{ tpl .Values.master.image.repository . | quote }}
         - name: "INIT_K8S_VOLUMES_PVC_CONF"
           value: {{ include "pvcConf" . | quote }}
         - name: "INIT_K8S_VOLUMES_PVC_SESSIONS"
@@ -138,14 +141,15 @@ spec:
           resources:
             {{- toYaml .Values.master.resources | nindent 12 }}
           volumeMounts:
-          - name : conf
-            mountPath: /opt/opencga/conf
-          - name : sessions
-            mountPath: /opt/opencga/sessions
-          - name : variants
-            mountPath: /opt/opencga/variants
-          - name : analysisconf
-            mountPath: /opt/opencga/analysis
+            - name : conf
+              mountPath: /opt/opencga/conf
+            - name : sessions
+              mountPath: /opt/opencga/sessions
+            - name : variants
+              mountPath: /opt/opencga/variants
+            - name : analysisconf
+              mountPath: /opt/opencga/analysis
+            {{ include "additionalVolumeMounts" . | nindent 12 }}
       volumes:
       - name: conf
         persistentVolumeClaim:
@@ -162,6 +166,7 @@ spec:
       - name: default-conf
         configMap:
           name: {{ include "opencga.defaultConf.name" . }}
+      {{ include "additionalVolumes" . | nindent 6 }}
     {{- with .Values.master.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

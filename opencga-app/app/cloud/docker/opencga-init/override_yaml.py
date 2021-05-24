@@ -29,6 +29,7 @@ parser.add_argument("--batch-endpoint", required=False)
 parser.add_argument("--batch-pool-id", required=False)
 parser.add_argument("--k8s-master-node", required=False)
 parser.add_argument("--k8s-namespace", required=False, default="default")
+parser.add_argument("--k8s-image-name", required=False)
 parser.add_argument("--k8s-volumes-pvc-conf", required=False)
 parser.add_argument("--k8s-volumes-pvc-sessions", required=False)
 parser.add_argument("--k8s-volumes-pvc-variants", required=False)
@@ -164,6 +165,10 @@ if args.analysis_execution_mode == "AZURE":
 elif args.analysis_execution_mode == "k8s":
     config["analysis"]["execution"]["options"]["k8s.masterUrl"] = args.k8s_master_node
     config["analysis"]["execution"]["options"]["k8s.namespace"] = args.k8s_namespace
+
+    if args.k8s_image_name:
+        config["analysis"]["execution"]["options"]["k8s.imageName"] = args.k8s_image_name
+
     config["analysis"]["execution"]["options"]["k8s.volumes"][0]["name"] = "conf"
     config["analysis"]["execution"]["options"]["k8s.volumes"][0]["persistentVolumeClaim"]["claimName"] = args.k8s_volumes_pvc_conf
     config["analysis"]["execution"]["options"]["k8s.volumes"][1]["name"] = "sessions"

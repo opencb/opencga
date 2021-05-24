@@ -143,6 +143,13 @@ OUTPUT_DIR=$(realpath "${OUTPUT_DIR}")
 if [ -n "${OPENCGA_CONF_DIR}" ]; then
   requiredDirectory "--opencga-conf-dir" "${OPENCGA_CONF_DIR}"
   OPENCGA_CONF_DIR=$(realpath "${OPENCGA_CONF_DIR}")
+  CONF_DIR_FILTER="-not -iname '*.xml' -a -not -iname '*.yml' -a -not -iname '*.yaml' -a -not -iname '*.sh'"
+  CONF_FILES=$(eval find "$OPENCGA_CONF_DIR" ${CONF_DIR_FILTER} | wc -l)
+  if [ "$CONF_FILES" -gt 1 ]; then
+    echo "Unexpected files in opencga configuration directory:"
+    eval find "$OPENCGA_CONF_DIR" ${CONF_DIR_FILTER}
+    exit 1
+  fi
 else
   OPENCGA_CONF_DIR=$(realpath "$(dirname "$0")/../../conf")
 fi
@@ -185,7 +192,7 @@ function deployNginx() {
   NAME="opencga-nginx${NAME_SUFFIX}"
   echo "# Deploy NGINX ${NAME}"
   helm upgrade ${NAME} ingress-nginx/ingress-nginx \
-    --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}"  \
+    --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}" \
     -f charts/nginx/values.yaml \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --timeout 10m ${HELM_OPTS}
@@ -241,8 +248,11 @@ function deployMongodbOperator() {
 
 function deployOpenCGA() {
   DATE=$(date "+%Y%m%d%H%M%S")
+  CONF_MD5=
   if [[ -n "$OPENCGA_CONF_DIR" ]]; then
+    find "$OPENCGA_CONF_DIR" -iname "*.xml" -o -iname "*.yml" -o -iname "*.yaml" -o -iname "*.sh"
     NAME="opencga${NAME_SUFFIX}"
+    CONF_MD5=$(find "$OPENCGA_CONF_DIR" -type f -exec md5sum {} \; | sort -k 2 | md5sum | cut -d " " -f 1 )
     echo "# Deploy OpenCGA ${NAME}"
     OPENCGA_CHART="${OUTPUT_DIR:?}/${NAME}_${DATE}_tmp/"
     if [ $KEEP_TMP_FILES == "false" ]; then
@@ -254,14 +264,18 @@ function deployOpenCGA() {
     cp -r charts/opencga/* "${OPENCGA_CHART:?}"
     cp "${OPENCGA_CONF_DIR:?}"/* "$OPENCGA_CHART"/conf
   else
+    CONF_MD5="NA"
     OPENCGA_CHART=charts/opencga/
   fi
 
   helm upgrade "${NAME}" "${OPENCGA_CHART}" \
+    --set "kubeContext=${K8S_CONTEXT}" \
+    --set "confMd5=${CONF_MD5}" \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
   if [ $DRY_RUN == "false" ]; then
     helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+    helm get notes "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-notes-${DATE}.md"
   fi
 }
 
