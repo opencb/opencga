@@ -669,22 +669,22 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Sample> addAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
-                                               String token) throws CatalogException {
+                                                  String token) throws CatalogException {
         return addAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSet), options, token);
     }
 
     public OpenCGAResult<Sample> addAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
-                                                QueryOptions options, String token) throws CatalogException {
+                                                   QueryOptions options, String token) throws CatalogException {
         return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
     public OpenCGAResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
-                                                  String token) throws CatalogException {
+                                                     String token) throws CatalogException {
         return removeAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSetId), options, token);
     }
 
     public OpenCGAResult<Sample> removeAnnotationSets(String studyStr, String sampleStr, List<String> annotationSetIdList,
-                                                   QueryOptions options, String token) throws CatalogException {
+                                                      QueryOptions options, String token) throws CatalogException {
         List<AnnotationSet> annotationSetList = annotationSetIdList
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
@@ -707,13 +707,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Sample> removeAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
-                                                QueryOptions options, String token) throws CatalogException {
+                                                   QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.REMOVE, options, token);
     }
 
     public OpenCGAResult<Sample> resetAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
-                                               QueryOptions options, String token) throws CatalogException {
+                                                  QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }

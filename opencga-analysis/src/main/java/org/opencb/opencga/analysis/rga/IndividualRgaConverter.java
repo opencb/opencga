@@ -422,10 +422,10 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
             if (variant.getPopulationFrequencies() != null) {
                 for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
                     if (populationFrequency.getPopulation().equals("ALL")) {
-                        if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                        if (RgaUtils.THOUSAND_GENOMES_STUDY.equalsIgnoreCase(populationFrequency.getStudy())) {
                             popFreqs.get(thousandGenomeKey).add(populationFrequency.getAltAlleleFreq());
                             thousandG = true;
-                        } else if (RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                        } else if (RgaUtils.GNOMAD_GENOMES_STUDY.equalsIgnoreCase(populationFrequency.getStudy())) {
                             popFreqs.get(gnomadGenomeKey).add(populationFrequency.getAltAlleleFreq());
                             gnomad = true;
                         }
@@ -473,11 +473,11 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         if (variant.getPopulationFrequencies() != null) {
             for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
                 if (populationFrequency.getPopulation().equals("ALL")) {
-                    if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                    if (RgaUtils.THOUSAND_GENOMES_STUDY.equalsIgnoreCase(populationFrequency.getStudy())) {
                         String encodedPopFrequency = getEncodedPopFrequency(RgaUtils.THOUSAND_GENOMES_STUDY,
                                 populationFrequency.getAltAlleleFreq());
                         variantFreqMap.put(RgaUtils.THOUSAND_GENOMES_STUDY, encodedPopFrequency);
-                    } else if (RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                    } else if (RgaUtils.GNOMAD_GENOMES_STUDY.equalsIgnoreCase(populationFrequency.getStudy())) {
                         String encodedPopFrequency = getEncodedPopFrequency(RgaUtils.GNOMAD_GENOMES_STUDY,
                                 populationFrequency.getAltAlleleFreq());
                         variantFreqMap.put(RgaUtils.GNOMAD_GENOMES_STUDY, encodedPopFrequency);
@@ -532,12 +532,12 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
         if (variant.getPopulationFrequencies() != null) {
             for (PopulationFrequency populationFrequency : variant.getPopulationFrequencies()) {
                 if (populationFrequency.getPopulation().equals("ALL")) {
-                    if (RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                    if (RgaUtils.THOUSAND_GENOMES_STUDY.equalsIgnoreCase(populationFrequency.getStudy())) {
                         String populationFrequencyKey = RgaUtils.getPopulationFrequencyKey(populationFrequency.getAltAlleleFreq());
                         pf.add(RgaUtils.encode(RgaUtils.THOUSAND_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR
                                 + populationFrequencyKey));
                         thousandG = true;
-                    } else if (RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase().equals(populationFrequency.getStudy().toUpperCase())) {
+                    } else if (RgaUtils.GNOMAD_GENOMES_STUDY.equalsIgnoreCase(populationFrequency.getStudy())) {
                         String populationFrequencyKey = RgaUtils.getPopulationFrequencyKey(populationFrequency.getAltAlleleFreq());
                         pf.add(RgaUtils.encode(RgaUtils.GNOMAD_GENOMES_STUDY.toUpperCase() + RgaUtils.SEPARATOR
                                 + populationFrequencyKey));

@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections4.map.HashedMap;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;

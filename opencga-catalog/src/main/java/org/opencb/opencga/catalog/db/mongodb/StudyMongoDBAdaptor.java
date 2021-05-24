@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
@@ -192,7 +191,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Cohort> cohorts = study.getCohorts();
         study.setCohorts(Collections.emptyList());
 
-        List<Panel> panels = study.getPanels();
+        List<org.opencb.opencga.core.models.panel.Panel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
         List<Family> families = study.getFamilies();
@@ -230,7 +229,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
         }
 
-        for (Panel panel : panels) {
+        for (org.opencb.opencga.core.models.panel.Panel panel : panels) {
             dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
         }
 

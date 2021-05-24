@@ -38,7 +38,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -591,9 +590,9 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
         if (query.containsKey(PANEL.key())) {
             List<String> panelsIds = query.getAsStringList(PANEL.key());
-            OpenCGAResult<Panel> panelQueryResult = clinicalInterpretationManager.getCatalogManager().getPanelManager().get(studyId,
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelQueryResult = clinicalInterpretationManager.getCatalogManager().getPanelManager().get(studyId,
                     panelsIds, QueryOptions.empty(), sessionId);
-            for (Panel panel : panelQueryResult.getResults()) {
+            for (org.opencb.opencga.core.models.panel.Panel panel : panelQueryResult.getResults()) {
                 panels.add(panel);
             }
         }

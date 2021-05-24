@@ -19,4 +19,10 @@ if (versionNeedsUpdate(20100, 1)) {
             }
         });
     }, "Check group consistency #1735");
+
+    runUpdate(function () {
+        migrateCollection("clinical", {"$or":[{panels:{"$exists":false}}, {panels: null}]}, {panels: 1}, function(bulk, doc) {
+            bulk.find({"_id": doc._id}).updateOne({"$set": {"panels": []}});
+        });
+    }, "Initialise panels array in Clinical Analysis #1759");
 }

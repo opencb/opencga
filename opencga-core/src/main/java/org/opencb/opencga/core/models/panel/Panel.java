@@ -111,6 +111,11 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
         return sb.toString();
     }
 
+    public Panel setId(String id) {
+        super.setId(id);
+        return this;
+    }
+
     public String getUuid() {
         return uuid;
     }

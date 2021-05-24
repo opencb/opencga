@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -469,7 +468,7 @@ public class TemplateManager {
                             new ObjectMap(params).append(QueryOptions.INCLUDE, "name,id"))
                     .allResults()
                     .stream()
-                    .map(Panel::getId)
+                    .map(org.opencb.opencga.core.models.panel.Panel::getId)
                     .collect(Collectors.toSet());
             openCGAClient.setThrowExceptionOnError(true);
         }

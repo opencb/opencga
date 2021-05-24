@@ -32,7 +32,6 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -56,7 +55,6 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
@@ -271,7 +269,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (isValidParam(query, PANEL)) {
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
-                Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
+                org.opencb.opencga.core.models.panel.Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
                 for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
                     if (!genePanelMap.containsKey(genePanel.getName())) {
                         genePanelMap.put(genePanel.getName(), new HashSet<>());
@@ -751,7 +749,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             throws ToolException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(diseasePanelIds)) {
-            OpenCGAResult<Panel> queryResults;
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> queryResults;
             try {
                 queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
                         sessionId);
@@ -763,7 +761,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                 throw new ToolException("The number of disease panels retrieved doesn't match the number of disease panels queried");
             }
 
-            for (Panel panel : queryResults.getResults()) {
+            for (org.opencb.opencga.core.models.panel.Panel panel : queryResults.getResults()) {
                 diseasePanels.add(panel);
             }
         }
