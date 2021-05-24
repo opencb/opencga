@@ -414,24 +414,20 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
 
-        // Build signature query from cli options
-        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);
-
-        // Build list of genes from cli options
-        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
-                ? new ArrayList<>()
-                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
+//        // Build signature query from cli options
+//        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);
 
         return openCGAClient.getVariantClient().runSampleQc(
                 new SampleQcAnalysisParams(
-                        variantCommandOptions.sampleQcCommandOptions.sample,
-                        variantCommandOptions.sampleQcCommandOptions.variantStatsId,
-                        variantCommandOptions.sampleQcCommandOptions.variantStatsDecription,
+                        cliOptions.sample,
+                        cliOptions.variantStatsId,
+                        cliOptions.variantStatsDecription,
                         variantStatsQuery,
-                        variantCommandOptions.sampleQcCommandOptions.signatureId,
-                        signatureQuery,
-                        genesForCoverageStats,
-                        variantCommandOptions.sampleQcCommandOptions.outdir
+//                        cliOptions.signatureId,
+//                        signatureQuery,
+                        cliOptions.genomePlotDescr,
+                        cliOptions.genomePlotConfigFile,
+                        cliOptions.outdir
                 ),
                 getParams(variantCommandOptions.sampleQcCommandOptions.study)
         );
@@ -762,7 +758,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
 
         return openCGAClient.getVariantClient().runRvtests(new RvtestsWrapperParams(cliOptions.command, cliOptions.outdir,
-                        cliOptions.rvtestsParams), params);
+                cliOptions.rvtestsParams), params);
     }
 
     private ObjectMap getParams(String study) {

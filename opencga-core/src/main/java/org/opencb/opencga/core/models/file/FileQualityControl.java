@@ -4,42 +4,42 @@ import org.opencb.opencga.core.models.alignment.AlignmentQualityControl;
 import org.opencb.opencga.core.models.alignment.CoverageQualityControl;
 
 public class FileQualityControl {
-    private AlignmentQualityControl alignmentQualityControl;
-    private CoverageQualityControl coverageQualityControl;
+    private AlignmentQualityControl alignment;
+    private CoverageQualityControl coverage;
 
     public FileQualityControl() {
         this(new AlignmentQualityControl(), new CoverageQualityControl());
     }
 
-    public FileQualityControl(AlignmentQualityControl alignmentQualityControl, CoverageQualityControl coverageQualityControl) {
-        this.alignmentQualityControl = alignmentQualityControl;
-        this.coverageQualityControl = coverageQualityControl;
+    public FileQualityControl(AlignmentQualityControl alignment, CoverageQualityControl coverage) {
+        this.alignment = alignment;
+        this.coverage = coverage;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileQualityControl{");
-        sb.append("alignmentQualityControl=").append(alignmentQualityControl);
-        sb.append(", coverageQualityControl=").append(coverageQualityControl);
+        sb.append("alignment=").append(alignment);
+        sb.append(", coverage=").append(coverage);
         sb.append('}');
         return sb.toString();
     }
 
-    public AlignmentQualityControl getAlignmentQualityControl() {
-        return alignmentQualityControl;
+    public AlignmentQualityControl getAlignment() {
+        return alignment;
     }
 
-    public FileQualityControl setAlignmentQualityControl(AlignmentQualityControl alignmentQualityControl) {
-        this.alignmentQualityControl = alignmentQualityControl;
+    public FileQualityControl setAlignment(AlignmentQualityControl alignment) {
+        this.alignment = alignment;
         return this;
     }
 
-    public CoverageQualityControl getCoverageQualityControl() {
-        return coverageQualityControl;
+    public CoverageQualityControl getCoverage() {
+        return coverage;
     }
 
-    public FileQualityControl setCoverageQualityControl(CoverageQualityControl coverageQualityControl) {
-        this.coverageQualityControl = coverageQualityControl;
+    public FileQualityControl setCoverage(CoverageQualityControl coverage) {
+        this.coverage = coverage;
         return this;
     }
 }

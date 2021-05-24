@@ -17,34 +17,30 @@
 package org.opencb.opencga.core.tools.variant;
 
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-
-import java.util.List;
 
 public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
 
-    public enum QcType {
-        FLAG_STATS, HS_METRICS, GENE_COVERAGE_STATS
-    }
+//    public enum QcType {
+//        FLAG_STATS, HS_METRICS, GENE_COVERAGE_STATS
+//    }
 
     protected String studyId;
     protected Sample sample;
-    protected File catalogBamFile;
-    protected String dictFile;
-    protected String baitFile;
+//    protected File catalogBamFile;
+//    protected String dictFile;
+//    protected String baitFile;
     protected String variantStatsId;
     protected String variantStatsDecription;
     protected Query variantStatsQuery;
     protected String signatureId;
     protected Query signatureQuery;
-    protected List<String> genesForCoverageStats;
+//    protected List<String> genesForCoverageStats;
 
-    protected QcType qcType;
+//    protected QcType qcType;
 
-    protected SampleAlignmentQualityControlMetrics alignmentQcMetrics;
+//    protected SampleAlignmentQualityControlMetrics alignmentQcMetrics;
 
     public SampleQcAnalysisExecutor() {
     }
@@ -67,32 +63,32 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public File getCatalogBamFile() {
-        return catalogBamFile;
-    }
-
-    public SampleQcAnalysisExecutor setCatalogBamFile(File catalogBamFile) {
-        this.catalogBamFile = catalogBamFile;
-        return this;
-    }
-
-    public String getDictFile() {
-        return dictFile;
-    }
-
-    public SampleQcAnalysisExecutor setDictFile(String dictFile) {
-        this.dictFile = dictFile;
-        return this;
-    }
-
-    public String getBaitFile() {
-        return baitFile;
-    }
-
-    public SampleQcAnalysisExecutor setBaitFile(String baitFile) {
-        this.baitFile = baitFile;
-        return this;
-    }
+//    public File getCatalogBamFile() {
+//        return catalogBamFile;
+//    }
+//
+//    public SampleQcAnalysisExecutor setCatalogBamFile(File catalogBamFile) {
+//        this.catalogBamFile = catalogBamFile;
+//        return this;
+//    }
+//
+//    public String getDictFile() {
+//        return dictFile;
+//    }
+//
+//    public SampleQcAnalysisExecutor setDictFile(String dictFile) {
+//        this.dictFile = dictFile;
+//        return this;
+//    }
+//
+//    public String getBaitFile() {
+//        return baitFile;
+//    }
+//
+//    public SampleQcAnalysisExecutor setBaitFile(String baitFile) {
+//        this.baitFile = baitFile;
+//        return this;
+//    }
 
     public String getVariantStatsId() {
         return variantStatsId;
@@ -139,30 +135,30 @@ public abstract class SampleQcAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public List<String> getGenesForCoverageStats() {
-        return genesForCoverageStats;
-    }
+//    public List<String> getGenesForCoverageStats() {
+//        return genesForCoverageStats;
+//    }
+//
+//    public SampleQcAnalysisExecutor setGenesForCoverageStats(List<String> genesForCoverageStats) {
+//        this.genesForCoverageStats = genesForCoverageStats;
+//        return this;
+//    }
 
-    public SampleQcAnalysisExecutor setGenesForCoverageStats(List<String> genesForCoverageStats) {
-        this.genesForCoverageStats = genesForCoverageStats;
-        return this;
-    }
+//    public QcType getQcType() {
+//        return qcType;
+//    }
+//
+//    public SampleQcAnalysisExecutor setQcType(QcType qcType) {
+//        this.qcType = qcType;
+//        return this;
+//    }
 
-    public QcType getQcType() {
-        return qcType;
-    }
-
-    public SampleQcAnalysisExecutor setQcType(QcType qcType) {
-        this.qcType = qcType;
-        return this;
-    }
-
-    public SampleAlignmentQualityControlMetrics getAlignmentQcMetrics() {
-        return alignmentQcMetrics;
-    }
-
-    public SampleQcAnalysisExecutor setAlignmentQcMetrics(SampleAlignmentQualityControlMetrics alignmentQcMetrics) {
-        this.alignmentQcMetrics = alignmentQcMetrics;
-        return this;
-    }
+//    public SampleAlignmentQualityControlMetrics getAlignmentQcMetrics() {
+//        return alignmentQcMetrics;
+//    }
+//
+//    public SampleQcAnalysisExecutor setAlignmentQcMetrics(SampleAlignmentQualityControlMetrics alignmentQcMetrics) {
+//        this.alignmentQcMetrics = alignmentQcMetrics;
+//        return this;
+//    }
 }
