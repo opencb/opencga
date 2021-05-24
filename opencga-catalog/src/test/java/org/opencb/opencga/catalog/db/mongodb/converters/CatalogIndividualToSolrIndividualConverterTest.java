@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -26,7 +25,6 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.time.LocalDate;

@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
-import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.util.List;

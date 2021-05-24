@@ -38,7 +38,6 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -132,7 +131,7 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
 
-        Panel panel = new Panel("MyPanel", "MyPanel", 1);
+        org.opencb.opencga.core.models.panel.Panel panel = new org.opencb.opencga.core.models.panel.Panel("MyPanel", "MyPanel", 1);
         panel.setGenes(
                 Arrays.asList(
                         new GenePanel().setName("BRCA2"),
