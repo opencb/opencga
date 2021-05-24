@@ -24,6 +24,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String variantStatsId;
     private String variantStatsDescription;
     private AnnotationVariantQueryParams variantStatsQuery;
+    private String genomePlotDescription;
     private String genomePlotConfigFile;
     private String outdir;
 
@@ -31,11 +32,13 @@ public class SampleQcAnalysisParams extends ToolParams {
     }
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
-                                  AnnotationVariantQueryParams variantStatsQuery, String genomePlotConfigFile, String outdir) {
+                                  AnnotationVariantQueryParams variantStatsQuery, String genomePlotDescription, String genomePlotConfigFile,
+                                  String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
+        this.genomePlotDescription = genomePlotDescription;
         this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
     }
@@ -47,6 +50,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
         sb.append(", variantStatsDescription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
+        sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
         sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -86,6 +90,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setVariantStatsQuery(AnnotationVariantQueryParams variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getGenomePlotDescription() {
+        return genomePlotDescription;
+    }
+
+    public SampleQcAnalysisParams setGenomePlotDescription(String genomePlotDescription) {
+        this.genomePlotDescription = genomePlotDescription;
         return this;
     }
 

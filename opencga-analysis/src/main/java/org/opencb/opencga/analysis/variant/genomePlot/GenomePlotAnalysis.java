@@ -17,12 +17,20 @@
 package org.opencb.opencga.analysis.variant.genomePlot;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.qc.GenomePlot;
+import org.opencb.biodata.models.clinical.qc.GenomePlotConfig;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.variant.GenomePlotAnalysisParams;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.GenomePlotAnalysisExecutor;
@@ -70,6 +78,39 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                     .setStudy(study)
                     .setConfigFile(configFile)
                     .execute();
+
+
+            // Update quality control for the catalog sample
+            if (StringUtils.isNotEmpty(genomePlotParams.getSample())) {
+                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), genomePlotParams.getSample(),
+                        QueryOptions.empty(), getToken());
+                Sample sample = sampleResult.first();
+                if (sample != null) {
+                    GenomePlot genomePlot = null;
+                    // Parse configuration file
+                    GenomePlotConfig plotConfig = JacksonUtils.getDefaultObjectMapper().readerFor(GenomePlotConfig.class)
+                            .readValue(configFile);
+                    // Get image file
+                    for (java.io.File imgFile : getOutDir().toFile().listFiles()) {
+                        if (imgFile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
+                            int index = imgFile.getAbsolutePath().indexOf("JOBS/");
+                            String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
+                            genomePlot = new GenomePlot("", getGenomePlotParams().getDescription(), plotConfig, relativeFilePath);
+                            break;
+                        }
+                    }
+                    if (genomePlot !=  null) {
+                        SampleQualityControl qc = sampleResult.first().getQualityControl();
+                        if (qc == null) {
+                            qc = new SampleQualityControl();
+                        }
+                        qc.getVariantMetrics().getGenomePlots().add(genomePlot);
+
+                        catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+                                QueryOptions.empty(), getToken());
+                    }
+                }
+            }
         });
     }
 

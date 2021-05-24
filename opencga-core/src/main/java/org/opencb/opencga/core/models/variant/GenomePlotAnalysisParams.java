@@ -22,14 +22,18 @@ public class GenomePlotAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Genome plot analysis params to customize the plot. The configuration file includes the title, "
             + " the plot density (i.e., the number of points to display), the general query and the list of tracks. Currently, the supported "
             + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
-    private String configFile;
 
+    private String sample;
+    private String description;
+    private String configFile;
     private String outdir;
 
     public GenomePlotAnalysisParams() {
     }
 
-    public GenomePlotAnalysisParams(String configFile, String outdir) {
+    public GenomePlotAnalysisParams(String sample, String description, String configFile, String outdir) {
+        this.sample = sample;
+        this.description = description;
         this.configFile = configFile;
         this.outdir = outdir;
     }
@@ -37,10 +41,30 @@ public class GenomePlotAnalysisParams extends ToolParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("GenomePlotAnalysisParams{");
-        sb.append("configFile='").append(configFile).append('\'');
+        sb.append("sample='").append(sample).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", configFile='").append(configFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getSample() {
+        return sample;
+    }
+
+    public GenomePlotAnalysisParams setSample(String sample) {
+        this.sample = sample;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public GenomePlotAnalysisParams setDescription(String description) {
+        this.description = description;
+        return this;
     }
 
     public String getConfigFile() {

@@ -1409,6 +1409,9 @@ public class VariantCommandOptions {
 //        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
 //        public Map<String, String> signatureQuery = new HashMap<>();
 
+        @Parameter(names = {"--gpd", "--genome-plot-description"}, description = "Genome plot description.")
+        public String genomePlotDescr;
+
         @Parameter(names = {"--gpcf", "--genome-plot-config-file"}, description = "Genome plot configuration file in JSON format.")
         public String genomePlotConfigFile;
 

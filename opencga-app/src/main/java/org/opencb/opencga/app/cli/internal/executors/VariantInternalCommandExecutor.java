@@ -881,6 +881,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantStatsQuery,
 //                cliOptions.signatureId,
 //                signatureQuery,
+                cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);

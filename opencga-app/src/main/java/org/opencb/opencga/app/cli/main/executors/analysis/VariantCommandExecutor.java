@@ -425,6 +425,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantStatsQuery,
 //                        cliOptions.signatureId,
 //                        signatureQuery,
+                        cliOptions.genomePlotDescr,
                         cliOptions.genomePlotConfigFile,
                         cliOptions.outdir
                 ),

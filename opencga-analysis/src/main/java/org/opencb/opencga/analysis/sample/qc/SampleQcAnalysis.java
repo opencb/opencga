@@ -181,7 +181,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
                 if (runGenomePlot) {
                     // Run genome plot
-                    params = new GenomePlotAnalysisParams(analysisParams.getGenomePlotConfigFile(), null)
+                    params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGenomePlotDescription(),
+                            analysisParams.getGenomePlotConfigFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     genomePlotJobResult = catalogManager.getJobManager()

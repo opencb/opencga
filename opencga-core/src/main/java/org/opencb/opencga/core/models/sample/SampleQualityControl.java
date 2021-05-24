@@ -29,7 +29,7 @@ public class SampleQualityControl implements Serializable {
     private SampleVariantQualityControlMetrics variantMetrics;
 
     public SampleQualityControl() {
-        this(new ArrayList<>(), new ArrayList<>(), null);
+        this(new ArrayList<>(), new ArrayList<>(), new SampleVariantQualityControlMetrics());
     }
 
     public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variantMetrics) {
