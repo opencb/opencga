@@ -1391,7 +1391,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         Map<String, Individual> membersMap = new HashMap<>();       // individualName|individualId: Individual
         Map<String, List<Individual>> parentsMap = new HashMap<>(); // motherName||F---fatherName||M: List<children>
-        Set<Individual> noParentsSet = new HashSet<>();             // Set with individuals without parents
+        Set<String> noParentsSet = new HashSet<>();             // Set with individuals without parents
 
         // 1. Fill in the objects initialised above
         for (Individual individual : family.getMembers()) {
@@ -1425,7 +1425,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 }
             }
             if (parentsKey == null) {
-                noParentsSet.add(individual);
+                noParentsSet.add(individual.getId());
             } else {
                 if (!parentsMap.containsKey(parentsKey)) {
                     parentsMap.put(parentsKey, new ArrayList<>());
@@ -1456,7 +1456,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     membersMap.get(name).setSex(sex);
 
                     // We attempt to remove the individual from the noParentsSet
-                    noParentsSet.remove(membersMap.get(name));
+                    noParentsSet.remove(membersMap.get(name).getId());
                 }
             }
         }
@@ -1465,8 +1465,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         if (noParentsSet.size() > 0) {
 //            throw new CatalogException("Some members that are not related to any other have been found: "
 //                    + noParentsSet.stream().map(Individual::getName).collect(Collectors.joining(", ")));
-            logger.warn("Some members that are not related to any other have been found: {}",
-                    noParentsSet.stream().map(Individual::getId).collect(Collectors.joining(", ")));
+            logger.warn("Some members that are not related to any other have been found: {}", StringUtils.join(noParentsSet, ", "));
         }
     }
 
@@ -1576,10 +1575,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         Set<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
 
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
         Map<String, Map<String, Family.FamiliarRelationship>> roles = new HashMap<>();
         for (Individual member : family.getMembers()) {
-            List<Individual> individualList = catalogManager.getIndividualManager().calculateRelationship(study, member, 2, options, user);
+            List<Individual> individualList = catalogManager.getIndividualManager().calculateRelationship(study, member, 2, user);
             Map<String, Family.FamiliarRelationship> memberRelation = new HashMap<>();
             for (Individual individual : individualList) {
                 if (individualIds.contains(individual.getId())) {
