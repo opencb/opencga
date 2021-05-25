@@ -173,10 +173,10 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Document adminDocument = getMongoDBDocument(configuration.getAdmin(), "Admin");
         metadataObject.put("admin", adminDocument);
         metadataObject.put("_fullVersion", new Document()
-                .append("version", 20001)
+                .append("version", 20003)
                 .append("release", 1)
-                .append("lastJsUpdate", 4)
-                .append("lastJavaUpdate", 0)
+                .append("lastJsUpdate", 0)
+                .append("lastJavaUpdate", 1)
         );
 
         metaCollection.insert(metadataObject, null);
