@@ -517,7 +517,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         individualList, individualList.size());
             }
 
-            individualList.addAll(calculateRelationship(study, proband, degree, queryOptions, userId));
+            individualList.addAll(calculateRelationship(study, proband, degree, userId));
 
             auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -579,8 +579,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    List<Individual> calculateRelationship(Study study, Individual proband, int maxDegree, QueryOptions options, String userId)
+    List<Individual> calculateRelationship(Study study, Individual proband, int maxDegree, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        QueryOptions options = fixOptionsForRelatives(new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()));
+
         List<Individual> individualList = new LinkedList<>();
         individualList.add(proband);
 
@@ -648,11 +650,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Update set of already obtained individuals
         Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
         for (Individual child : children) {
-            // TODO: Change relations !!
-            relationMap.put(Family.FamiliarRelationship.SON, Family.FamiliarRelationship.BROTHER);
-            relationMap.put(Family.FamiliarRelationship.DAUGHTER, Family.FamiliarRelationship.SISTER);
-            relationMap.put(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                    Family.FamiliarRelationship.FULL_SIBLING);
+            relationMap.put(Family.FamiliarRelationship.SON, Family.FamiliarRelationship.GRANDSON);
+            relationMap.put(Family.FamiliarRelationship.DAUGHTER, Family.FamiliarRelationship.GRANDDAUGHTER);
+            relationMap.put(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, Family.FamiliarRelationship.GRANDCHILD);
 
             relativeMap = lookForChildren(study, child, skipIndividuals, options, userId);
             addDegreeRelatives(relativeMap, relationMap, 2, individualList);
