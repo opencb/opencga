@@ -26,7 +26,10 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -38,7 +41,6 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -85,7 +87,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexCompoundHetero
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianErrorQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
@@ -336,78 +338,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        trios = new LinkedList<>(trios);
-        DataResult<List<String>> dr = new DataResult<>();
-        dr.setResults(trios);
-        dr.setEvents(new LinkedList<>());
-
-        boolean overwrite = options.getBoolean(FamilyIndexDriver.OVERWRITE);
-        if (trios.isEmpty()) {
-            throw new StorageEngineException("Undefined family trios");
-        }
-        int studyId = getMetadataManager().getStudyId(study);
-        Iterator<List<String>> iterator = trios.iterator();
-        while (iterator.hasNext()) {
-            List<Integer> trioIds = new ArrayList<>(3);
-            List<String> trio = iterator.next();
-            for (String sample : trio) {
-                Integer sampleId;
-                if (sample.equals("-")) {
-                    sampleId = -1;
-                } else {
-                    sampleId = getMetadataManager().getSampleId(studyId, sample);
-                    if (sampleId == null) {
-                        throw new IllegalArgumentException("Sample '" + sample + "' not found.");
-                    }
-                }
-                trioIds.add(sampleId);
-            }
-            if (trioIds.size() != 3) {
-                throw new IllegalArgumentException("Found trio with " + trioIds.size() + " members, instead of 3: " + trioIds);
-            }
-            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, trioIds.get(2));
-            if (!overwrite && sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
-                String msg = "Skip sample " + sampleMetadata.getName() + ". Already precomputed!";
-                logger.info(msg);
-                dr.getEvents().add(new Event(Event.Type.INFO, msg));
-                iterator.remove();
-            } else {
-                Integer fatherId = trioIds.get(0);
-                boolean fatherDefined = fatherId != -1;
-                Integer motherId = trioIds.get(1);
-                boolean motherDefined = motherId != -1;
-                if (fatherDefined && !fatherId.equals(sampleMetadata.getFather())
-                        || motherDefined && !motherId.equals(sampleMetadata.getMother())) {
-                    getMetadataManager().updateSampleMetadata(studyId, sampleMetadata.getId(), s -> {
-                        if (fatherDefined) {
-                            sampleMetadata.setFather(fatherId);
-                        }
-                        if (motherDefined) {
-                            sampleMetadata.setMother(motherId);
-                        }
-                        return sampleMetadata;
-                    });
-                }
-            }
-        }
-        if (trios.isEmpty()) {
-            logger.info("Nothing to do!");
-            return dr;
-        }
-        if (trios.size() < 500) {
-            options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
-        } else {
-            CohortMetadata cohortMetadata = getMetadataManager().registerTemporaryCohort(study, "pendingFamilyIndexSamples",
-                    trios.stream().map(t -> t.get(2)).collect(Collectors.toList()));
-
-            options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
-            options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
-        }
-
-        getMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(getArchiveTableName(studyId), getVariantTableName(),
-                studyId, null, options), options,
-                "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
-        return dr;
+        return new FamilyIndexLoader(getSampleIndexDBAdaptor(), getDBAdaptor(), getMRExecutor())
+                .load(study, trios, options);
     }
 
 
