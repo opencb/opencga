@@ -160,6 +160,22 @@ public class VariantClient extends AbstractParentClient {
     }
 
     /**
+     * Generate a Circos plot for a given sample.
+     * @param data Circos analysis params to customize the plot. These parameters include the title,  the plot density (i.e., the number of
+     *     points to display), the general query and the list of tracks. Currently, the supported track types are: COPY-NUMBER, INDEL,
+     *     REARRANGEMENT and SNV. In addition, each track can contain a specific query.
+     * @param params Map containing any of the following optional parameters.
+     *       study: study.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<String> runCircos(CircosAnalysisParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis", null, "variant/circos", null, "run", params, POST, String.class);
+    }
+
+    /**
      * Delete cohort variant stats from a cohort.
      * @param params Map containing any of the following optional parameters.
      *       study: study.

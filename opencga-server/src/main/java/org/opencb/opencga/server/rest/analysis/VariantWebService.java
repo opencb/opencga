@@ -35,6 +35,8 @@ import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
+import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
@@ -1258,6 +1260,71 @@ public class VariantWebService extends AnalysisWebService {
                 // Delete temporal directory
                 try {
                     if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
+        }
+    }
+
+    @POST
+    @Path("/circos/run")
+    @ApiOperation(value = CircosAnalysis.DESCRIPTION, response = String.class)
+    public Response circos(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = CircosAnalysisParams.DESCRIPTION, required = true) CircosAnalysisParams params) {
+        File outDir = null;
+        try {
+            if (StringUtils.isEmpty(params.getTitle())) {
+                params.setTitle("UNTITLED");
+            }
+
+            // Create temporal directory
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "circos-" + System.nanoTime()).toFile();
+            outDir.mkdir();
+            if (!outDir.exists()) {
+                return createErrorResponse(new Exception("Error creating temporal directory for Circos analysis"));
+            }
+
+            // Create and set up Circos executor
+            CircosLocalAnalysisExecutor executor = new CircosLocalAnalysisExecutor(study, params, variantManager);
+
+            ObjectMap executorParams = new ObjectMap();
+            executorParams.put("opencgaHome", opencgaHome);
+            executorParams.put("token", token);
+            executor.setUp(null, executorParams, outDir.toPath());
+
+            // Run Circos executor
+            StopWatch watch = StopWatch.createStarted();
+            executor.run();
+
+            // Check results by reading the output file
+            File imgFile = outDir.toPath().resolve(params.getTitle() + CircosAnalysis.SUFFIX_FILENAME).toFile();
+            if (imgFile.exists()) {
+                FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
+                byte[] bytes = new byte[(int) imgFile.length()];
+                fileInputStreamReader.read(bytes);
+
+                String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
+
+                watch.stop();
+                OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                        Collections.singletonList(img), 1);
+
+                //System.out.println(result.toString());
+                return createOkResponse(result);
+            } else {
+                return createErrorResponse(new Exception("Error plotting Circos graph"));
+            }
+        } catch (ToolException | IOException e) {
+            return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists() && !params.getTitle().startsWith("no.delete.")) {
                         FileUtils.deleteDirectory(outDir);
                     }
                 } catch (IOException e) {
