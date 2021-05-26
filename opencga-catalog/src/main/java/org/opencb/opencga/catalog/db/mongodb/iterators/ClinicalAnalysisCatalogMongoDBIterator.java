@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -23,10 +24,7 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -46,9 +44,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private FamilyDBAdaptor familyDBAdaptor;
     private IndividualDBAdaptor individualDBAdaptor;
     private InterpretationDBAdaptor interpretationDBAdaptor;
+    private PanelDBAdaptor panelDBAdaptor;
     private QueryOptions familyQueryOptions;
     private QueryOptions individualQueryOptions;
     private QueryOptions interpretationQueryOptions;
+    private QueryOptions panelQueryOptions;
 
     private QueryOptions options;
 
@@ -80,9 +80,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
+        this.panelDBAdaptor = dbAdaptorFactory.getCatalogPanelDBAdaptor();
         this.interpretationQueryOptions = createInnerQueryOptions(INTERPRETATION.key(), false);
         this.familyQueryOptions = createInnerQueryOptions(FAMILY.key(), false);
         this.individualQueryOptions = createInnerQueryOptions(PROBAND.key(), false);
+        this.panelQueryOptions = createInnerQueryOptions(PANELS.key(), false);
 
         this.clinicalAnalysisListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
@@ -118,6 +120,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         Set<String> interpretationSet = new HashSet<>();
         Set<String> familySet = new HashSet<>();
         Set<String> individualSet = new HashSet<>();
+        Set<String> panelSet = new HashSet<>();
 
         // Get next BUFFER_SIZE documents
         int counter = 0;
@@ -134,6 +137,16 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             if (!options.getBoolean(NATIVE_QUERY)) {
                 extractFamilyInfo((Document) clinicalDocument.get(FAMILY.key()), familySet);
                 extractIndividualInfo((Document) clinicalDocument.get(PROBAND.key()), individualSet);
+
+                // Extract the panels
+                List<Document> panels = clinicalDocument.getList(PANELS.key(), Document.class);
+                if (CollectionUtils.isNotEmpty(panels)) {
+                    for (Document panel : panels) {
+                        if (panel != null && panel.get(UID, Number.class).longValue() > 0) {
+                            panelSet.add(panel.get(UID) + UID_VERSION_SEP + panel.get(VERSION));
+                        }
+                    }
+                }
 
                 // Extract the interpretations
                 Document interpretationDoc = (Document) clinicalDocument.get(INTERPRETATION.key());
@@ -153,11 +166,13 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         Map<String, Document> interpretationMap = fetchInterpretations(interpretationSet);
         Map<String, Document> familyMap = fetchFamilies(familySet);
         Map<String, Document> individualMap = fetchIndividuals(individualSet);
+        Map<String, Document> panelMap = fetchPanels(panelSet);
 
         if (!interpretationMap.isEmpty() || !familyMap.isEmpty() || !individualMap.isEmpty()) {
             // Fill data in clinical analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
                 fillInterpretationData(clinicalAnalysis, interpretationMap);
+                fillPanels(clinicalAnalysis, panelMap);
                 clinicalAnalysis.put(FAMILY.key(), fillFamilyData((Document) clinicalAnalysis.get(FAMILY.key()), familyMap));
                 clinicalAnalysis.put(PROBAND.key(), fillIndividualData((Document) clinicalAnalysis.get(PROBAND.key()), individualMap));
             });
@@ -259,6 +274,24 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         clinicalAnalysis.put(SECONDARY_INTERPRETATIONS.key(), secondaryInterpretations);
     }
 
+    private void fillPanels(Document clinicalAnalysis, Map<String, Document> panelMap) {
+        if (panelMap.isEmpty()) {
+            return;
+        }
+
+        List<Document> sourcePanels = clinicalAnalysis.getList(PANELS.key(), Document.class);
+        if (sourcePanels != null) {
+            List<Document> targetPanels = new ArrayList<>(sourcePanels.size());
+            for (Document panel : sourcePanels) {
+                String panelKey = panel.get(UID) + UID_VERSION_SEP + panel.get(VERSION);
+                if (panelMap.containsKey(panelKey)) {
+                    targetPanels.add(panelMap.get(panelKey));
+                }
+            }
+            clinicalAnalysis.put(PANELS.key(), targetPanels);
+        }
+    }
+
     private Map<String, Document> fetchFamilies(Set<String> familySet) {
         Map<String, Document> familyMap = new HashMap<>();
 
@@ -349,6 +382,54 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             logger.warn("Could not obtain the individuals associated to the clinical analyses: {}", e.getMessage(), e);
         }
         return individualList;
+    }
+
+    private Map<String, Document> fetchPanels(Set<String> panelSet) {
+        Map<String, Document> panelMap = new HashMap<>();
+
+        if (panelSet.isEmpty()) {
+            return panelMap;
+        }
+
+        // Extract list of uids and versions
+        List<Long> panelUids = new ArrayList<>(panelSet.size());
+        List<Integer> panelUidVersions = new ArrayList<>(panelSet.size());
+        for (String panelId : panelSet) {
+            String[] split = panelId.split(UID_VERSION_SEP);
+            panelUids.add(Long.parseLong(split[0]));
+            panelUidVersions.add(Integer.parseInt(split[1]));
+        }
+
+        // Fill panels with version
+        List<Document> panelList = queryPanels(panelUids, panelUidVersions);
+        panelList.forEach(panel
+                -> panelMap.put(panel.get(UID) + UID_VERSION_SEP + panel.get(VERSION), panel));
+
+        return panelMap;
+    }
+
+    private List<Document> queryPanels(List<Long> panelUids, List<Integer> panelUidVersions) {
+        List<Document> panelList = new LinkedList<>();
+
+        if (panelUids.isEmpty()) {
+            return panelList;
+        }
+
+        // Build query object
+        Query query = new Query(PanelDBAdaptor.QueryParams.UID.key(), panelUids)
+                .append(PanelDBAdaptor.QueryParams.VERSION.key(), panelUidVersions);
+
+        try {
+            if (user != null) {
+                query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+                panelList = panelDBAdaptor.nativeGet(studyUid, query, panelQueryOptions, user).getResults();
+            } else {
+                panelList = panelDBAdaptor.nativeGet(query, panelQueryOptions).getResults();
+            }
+        } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+            logger.warn("Could not obtain the panels associated to the clinical analyses: {}", e.getMessage(), e);
+        }
+        return panelList;
     }
 
     private Map<String, Document> fetchInterpretations(Set<String> interpretationSet) {

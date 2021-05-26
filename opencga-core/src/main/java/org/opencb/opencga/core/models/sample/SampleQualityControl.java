@@ -24,41 +24,36 @@ import java.util.List;
 
 public class SampleQualityControl implements Serializable {
 
-    private List<String> fileIds;
+    private List<String> files;
     private List<ClinicalComment> comments;
-    private List<SampleAlignmentQualityControlMetrics> alignmentMetrics;
     private SampleVariantQualityControlMetrics variantMetrics;
 
     public SampleQualityControl() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), null);
+        this(new ArrayList<>(), new ArrayList<>(), new SampleVariantQualityControlMetrics());
     }
 
-    public SampleQualityControl(List<String> fileIds, List<ClinicalComment> comments,
-                                List<SampleAlignmentQualityControlMetrics> alignmentMetrics,
-                                SampleVariantQualityControlMetrics variantMetrics) {
-        this.fileIds = fileIds;
+    public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variantMetrics) {
+        this.files = files;
         this.comments = comments;
-        this.alignmentMetrics = alignmentMetrics;
         this.variantMetrics = variantMetrics;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
-        sb.append("fileIds=").append(fileIds);
+        sb.append("files=").append(files);
         sb.append(", comments=").append(comments);
-        sb.append(", alignmentMetrics=").append(alignmentMetrics);
         sb.append(", variantMetrics=").append(variantMetrics);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<String> getFileIds() {
-        return fileIds;
+    public List<String> getFiles() {
+        return files;
     }
 
-    public SampleQualityControl setFileIds(List<String> fileIds) {
-        this.fileIds = fileIds;
+    public SampleQualityControl setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 
@@ -68,15 +63,6 @@ public class SampleQualityControl implements Serializable {
 
     public SampleQualityControl setComments(List<ClinicalComment> comments) {
         this.comments = comments;
-        return this;
-    }
-
-    public List<SampleAlignmentQualityControlMetrics> getAlignmentMetrics() {
-        return alignmentMetrics;
-    }
-
-    public SampleQualityControl setAlignmentMetrics(List<SampleAlignmentQualityControlMetrics> alignmentMetrics) {
-        this.alignmentMetrics = alignmentMetrics;
         return this;
     }
 

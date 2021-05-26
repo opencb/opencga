@@ -33,7 +33,6 @@ import org.opencb.opencga.core.models.file.FileMixin;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualMixin;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelMixin;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -72,7 +71,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Individual.class, IndividualMixin.class);
         objectMapper.addMixIn(Family.class, FamilyMixin.class);
         objectMapper.addMixIn(File.class, FileMixin.class);
-        objectMapper.addMixIn(Panel.class, PanelMixin.class);
+        objectMapper.addMixIn(org.opencb.opencga.core.models.panel.Panel.class, PanelMixin.class);
         objectMapper.addMixIn(Project.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Study.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Sample.class, PrivateUidMixin.class);
@@ -98,7 +97,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Family.class, PrivateUidMixin.class);
         objectMapper.addMixIn(File.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(Panel.class, PanelMixin.class);
+        objectMapper.addMixIn(org.opencb.opencga.core.models.panel.Panel.class, PanelMixin.class);
         objectMapper.addMixIn(Project.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Study.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Sample.class, PrivateUidMixin.class);

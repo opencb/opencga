@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -38,6 +37,7 @@ import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -1128,108 +1128,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
 
-        return run(() -> {
-            final String OPENCGA_ALL = "ALL";
-
-            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
-
-            Sample sample;
-            org.opencb.opencga.core.models.file.File catalogBamFile;
-            sample = IndividualQcUtils.getValidSampleById(study, params.getSample(), catalogManager, token);
-            if (sample == null) {
-                throw new ToolException("Sample '" + params.getSample() + "' not found.");
-            }
-            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
-
-            // Check variant stats
-            if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                        + " variant stats ID");
-            }
-
-            if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null
-                    && !params.getVariantStatsQuery().toParams().isEmpty()) {
-                throw new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
-                        + " empty");
-            }
-            if (StringUtils.isNotEmpty(params.getVariantStatsId())
-                    && (params.getVariantStatsQuery() == null || params.getVariantStatsQuery().toParams().isEmpty())) {
-                throw new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
-                        + " can not be empty");
-            }
-            if (StringUtils.isEmpty(params.getVariantStatsId())) {
-                params.setVariantStatsId(OPENCGA_ALL);
-            }
-
-            boolean runVariantStats = true;
-            if (sample.getQualityControl() != null) {
-                if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getVariantStats())
-                        && OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                    runVariantStats = false;
-                } else {
-                    for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariantMetrics().getVariantStats()) {
-                        if (variantStats.getId().equals(params.getVariantStatsId())) {
-                            throw new ToolException("Invalid parameters: variant stats ID '" + params.getVariantStatsId()
-                                    + "' is already used");
-                        }
-                    }
-                }
-            }
-
-            // Check mutational signature
-            boolean runSignature = true;
-            if (!sample.isSomatic()) {
-                runSignature = false;
-            } else {
-                if (OPENCGA_ALL.equals(params.getSignatureId())) {
-                    throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                            + " signature ID");
-                }
-
-                if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
-                        && !params.getSignatureQuery().toParams().isEmpty()) {
-                    throw new ToolException("Invalid parameters: if signature ID is empty, signature query must be null");
-                }
-                if (StringUtils.isNotEmpty(params.getSignatureId())
-                        && (params.getSignatureQuery() == null || params.getSignatureQuery().toParams().isEmpty())) {
-                    throw new ToolException("Invalid parameters: if you provide a signature ID, signature query"
-                            + " can not be null");
-                }
-
-                if (sample.getQualityControl() != null) {
-                    if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getSignatures())) {
-                        runSignature = false;
-                    }
-                }
-            }
-
-            // Run variant stats if necessary
-            if (runVariantStats) {
-                SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
-                        Collections.singletonList(params.getSample()),
-                        null,
-                        params.getOutdir(), true, false, params.getVariantStatsId(), params.getVariantStatsDescription(), null,
-                        params.getVariantStatsQuery()
-                );
-
-                DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,
-                        sampleVariantStatsParams, null, null, null, null);
-                Job sampleStatsJob = jobResult.first();
-                dependsOnList.add(sampleStatsJob.getId());
-            }
-
-            // Run signature if necessary
-            if (runSignature) {
-                MutationalSignatureAnalysisParams mutationalSignatureParams =
-                        new MutationalSignatureAnalysisParams(params.getSample(), params.getOutdir());
-                DataResult<Job> jobResult = submitJobRaw(MutationalSignatureAnalysis.ID, null, study, mutationalSignatureParams,
-                        null, null, null, null);
-                Job signatureJob = jobResult.first();
-                dependsOnList.add(signatureJob.getId());
-            }
-
-            return submitJobRaw(SampleQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
-        });
+        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1310,6 +1209,64 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
         return run(() -> new KnockoutAnalysisResultReader(catalogManager)
                 .readKnockoutByIndividualFromJob(study, job, limit, (int) skip, p -> true, token));
+    }
+
+    @POST
+    @Path("/genomePlot/run")
+    @ApiOperation(value = GenomePlotAnalysis.DESCRIPTION, response = String.class)
+    public Response genomePlot(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = GenomePlotAnalysisParams.DESCRIPTION, required = true) GenomePlotAnalysisParams params) {
+        File outDir = null;
+        try {
+            // Create temporal directory
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "plot-" + System.nanoTime()).toFile();
+            outDir.mkdir();
+            if (!outDir.exists()) {
+                return createErrorResponse(new Exception("Error creating temporal directory for genome plot analysis"));
+            }
+
+            StopWatch watch = StopWatch.createStarted();
+
+            GenomePlotAnalysis genomePlotAnalysis = new GenomePlotAnalysis();
+            genomePlotAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir.toPath(), null,
+                    token);
+            genomePlotAnalysis.setStudy(study)
+                    .setGenomePlotParams(params)
+                    .start();
+
+            // Check results by reading the output file
+            for (File imgfile : outDir.toPath().toFile().listFiles()) {
+                if (imgfile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
+                    FileInputStream fileInputStreamReader = new FileInputStream(imgfile);
+                    byte[] bytes = new byte[(int) imgfile.length()];
+                    fileInputStreamReader.read(bytes);
+
+                    String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
+
+                    watch.stop();
+                    OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                            Collections.singletonList(img), 1);
+
+                    //System.out.println(result.toString());
+                    return createOkResponse(result);
+                }
+            }
+            return createErrorResponse(new Exception("Error plotting Genome graph"));
+        } catch (ToolException | IOException e) {
+            return createErrorResponse(e);
+        } finally {
+            if (outDir != null) {
+                // Delete temporal directory
+                try {
+                    if (outDir.exists()) {
+                        FileUtils.deleteDirectory(outDir);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Error cleaning scratch directory " + outDir, e);
+                }
+            }
+        }
     }
 
     @POST

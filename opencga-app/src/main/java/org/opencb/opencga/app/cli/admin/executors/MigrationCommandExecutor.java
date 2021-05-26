@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -19,7 +20,9 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -55,10 +58,7 @@ import static org.opencb.opencga.core.api.ParamConstants.*;
 public class MigrationCommandExecutor extends AdminCommandExecutor {
 
     private final MigrationCommandOptions migrationCommandOptions;
-
-    private int version;
-    private int release;
-    private int lastUpdate;
+    private OpencgaVersion opencgaVersion;
 
     public MigrationCommandExecutor(MigrationCommandOptions migrationCommandOptions) {
         super(migrationCommandOptions.getCommonOptions());
@@ -83,6 +83,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 break;
             case "v2.0.1":
                 v2_0_1();
+                break;
+            case "v2.0.3":
+                v2_0_3();
                 break;
             default:
                 logger.error("Subcommand '{}' not valid", subCommandString);
@@ -455,34 +458,97 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         }
     }
 
+    private void v2_0_3() throws CatalogException {
+        MigrationCommandOptions.MigrateV2_0_3CommandOptions options = migrationCommandOptions.getMigrateV203CommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
+        MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
+
+        OpencgaVersion opencgaVersion = null;
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            // Check admin password
+            String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+            adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
+
+            if (!needsMigration(metaCollection, 20003, 1)) {
+                logger.info("DB already migrated to v2.0.3. Nothing to migrate");
+                return;
+            }
+            opencgaVersion = new OpencgaVersion(20003, 1, this.opencgaVersion.getLastJavaUpdate(), this.opencgaVersion.getLastJsUpdate());
+
+            logger.info("Starting Catalog migration for 2.0.3");
+            if (needsUpdate(1)) {
+                // Add automatically roles to all the family members
+                QueryOptions familyUpdateOptions = new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
+                for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            logger.info("Updating family roles from study {}", study.getFqn());
+                            catalogManager.getFamilyManager().update(study.getFqn(), new Query(), null, familyUpdateOptions, adminToken);
+                        }
+                    }
+                }
+
+                opencgaVersion.incrementLastJavaUpdate();
+            }
+        } catch (CatalogException e) {
+            logger.error("Error migration to v2.0.3: {}", e.getMessage(), e);
+        } finally {
+            if (opencgaVersion != null) {
+                updateOpencgaVersion(metaCollection, opencgaVersion);
+            }
+        }
+    }
 
     private boolean needsMigration(MongoDBCollection metaCollection, int version, int release) {
         fetchUpdateVersionVariables(metaCollection);
-        return (this.version < version || (this.version == version && this.release <= release));
+        logger.info("Current version: {}", this.opencgaVersion.getVersion());
+        logger.info("Current release: {}", this.opencgaVersion.getRelease());
+        logger.info("Expected version: {}", version);
+        logger.info("Expected release: {}", release);
+        boolean needsMigration = this.opencgaVersion.getVersion() < version
+                || (this.opencgaVersion.getVersion() == version && this.opencgaVersion.getRelease() <= release);
+        if (needsMigration && this.opencgaVersion.getVersion() < version) {
+            // Reset counters
+            this.opencgaVersion.setLastJavaUpdate(0);
+            this.opencgaVersion.setLastJsUpdate(0);
+        }
+        return needsMigration;
     }
 
     private void fetchUpdateVersionVariables(MongoDBCollection metaCollection) {
         // Obtain the latest changes made to the DB
         Document metaDocument = metaCollection.find(new Document(), QueryOptions.empty()).first();
         Object fullVersion = metaDocument.get("_fullVersion");
+        int version = 20000;
+        int release = 4;
+        int lastUpdate = 0;
+        int lastJsUpdate = 0;
         if (fullVersion != null) {
-            this.version = ((Document) fullVersion).getInteger("version");
-            this.release = ((Document) fullVersion).getInteger("release");
-            this.lastUpdate = ((Document) fullVersion).getInteger("lastJavaUpdate");
-        } else {
-            this.version = 20000;
-            this.release = 4;
-            this.lastUpdate = 0;
+            version = ((Number) ((Document) fullVersion).get("version")).intValue();
+            release = ((Number) ((Document) fullVersion).get("release")).intValue();
+            lastUpdate = ((Number) ((Document) fullVersion).get("lastJavaUpdate")).intValue();
+            lastJsUpdate = ((Number) ((Document) fullVersion).get("lastJsUpdate")).intValue();
         }
+
+        this.opencgaVersion = new OpencgaVersion(version, release, lastUpdate, lastJsUpdate);
     }
 
     private boolean needsUpdate(int update) {
-        return this.lastUpdate < update;
+        return this.opencgaVersion.getLastJavaUpdate() < update;
     }
 
+    @Deprecated
     private void updateLastUpdate(MongoDBCollection metaCollection, int update) {
         metaCollection.update(new Document(), new Document("$set", new Document("_fullVersion.lastJavaUpdate", update)),
                 QueryOptions.empty());
+    }
+
+    private void updateOpencgaVersion(MongoDBCollection metaCollection, OpencgaVersion opencgaVersion) throws CatalogDBException {
+        logger.info("Updating migration metadata with: {}", opencgaVersion.toString());
+        Document versionDoc = MongoDBUtils.getMongoDBDocument(opencgaVersion, "OpencgaVersion");
+        metaCollection.update(new Document(), new Document("$set", new Document("_fullVersion", versionDoc)), QueryOptions.empty());
     }
 
     private void runMigration(CatalogManager catalogManager, String scriptFolder, String scriptFileName)
@@ -533,6 +599,69 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             logger.info("Finished Javascript catalog migration");
         } else {
             throw new CatalogException("Error with Javascript catalog migrating!");
+        }
+    }
+
+    public static class OpencgaVersion {
+        private int version;
+        private int release;
+        private int lastJavaUpdate;
+        private int lastJsUpdate;
+
+        public OpencgaVersion() {
+        }
+
+        public OpencgaVersion(int version, int release, int lastJavaUpdate, int lastJsUpdate) {
+            this.version = version;
+            this.release = release;
+            this.lastJavaUpdate = lastJavaUpdate;
+            this.lastJsUpdate = lastJsUpdate;
+        }
+
+        public OpencgaVersion(OpencgaVersion opencgaVersion) {
+            this(opencgaVersion.getVersion(), opencgaVersion.getRelease(), opencgaVersion.getLastJavaUpdate(),
+                    opencgaVersion.getLastJsUpdate());
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("OpencgaVersion{");
+            sb.append("version=").append(version);
+            sb.append(", release=").append(release);
+            sb.append(", lastJavaUpdate=").append(lastJavaUpdate);
+            sb.append(", lastJsUpdate=").append(lastJsUpdate);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public int getVersion() {
+            return version;
+        }
+
+        public int getRelease() {
+            return release;
+        }
+
+        public int getLastJavaUpdate() {
+            return lastJavaUpdate;
+        }
+
+        public OpencgaVersion setLastJavaUpdate(int lastJavaUpdate) {
+            this.lastJavaUpdate = lastJavaUpdate;
+            return this;
+        }
+
+        public void incrementLastJavaUpdate() {
+            this.lastJavaUpdate++;
+        }
+
+        public int getLastJsUpdate() {
+            return lastJsUpdate;
+        }
+
+        public OpencgaVersion setLastJsUpdate(int lastJsUpdate) {
+            this.lastJsUpdate = lastJsUpdate;
+            return this;
         }
     }
 

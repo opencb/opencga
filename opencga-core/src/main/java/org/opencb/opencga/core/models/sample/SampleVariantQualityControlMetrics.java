@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.biodata.models.clinical.qc.CircosPlot;
+import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
 
@@ -11,27 +11,23 @@ public class SampleVariantQualityControlMetrics {
 
     private List<SampleQcVariantStats> variantStats;
     private List<Signature> signatures;
-    private List<CircosPlot> circosPlots;
-    private List<String> vcfFileIds;
+    private List<GenomePlot> genomePlots;
 
     public SampleVariantQualityControlMetrics() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+    }
+
+    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures) {
+        this.variantStats = variantStats;
+        this.signatures = signatures;
+        this.genomePlots = new ArrayList<>();
     }
 
     public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              List<String> vcfFileIds) {
+                                              List<GenomePlot> genomePlots) {
         this.variantStats = variantStats;
         this.signatures = signatures;
-        this.circosPlots = new ArrayList<>();
-        this.vcfFileIds = vcfFileIds;
-    }
-
-    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              List<CircosPlot> circosPlots, List<String> vcfFileIds) {
-        this.variantStats = variantStats;
-        this.signatures = signatures;
-        this.circosPlots = circosPlots;
-        this.vcfFileIds = vcfFileIds;
+        this.genomePlots = genomePlots;
     }
 
     @Override
@@ -39,8 +35,7 @@ public class SampleVariantQualityControlMetrics {
         final StringBuilder sb = new StringBuilder("SampleVariantQualityControlMetrics{");
         sb.append("variantStats=").append(variantStats);
         sb.append(", signatures=").append(signatures);
-        sb.append(", circosPlots=").append(circosPlots);
-        sb.append(", vcfFileIds=").append(vcfFileIds);
+        sb.append(", genomePlots=").append(genomePlots);
         sb.append('}');
         return sb.toString();
     }
@@ -63,21 +58,12 @@ public class SampleVariantQualityControlMetrics {
         return this;
     }
 
-    public List<CircosPlot> getCircosPlots() {
-        return circosPlots;
+    public List<GenomePlot> getGenomePlots() {
+        return genomePlots;
     }
 
-    public SampleVariantQualityControlMetrics setCircosPlots(List<CircosPlot> circosPlots) {
-        this.circosPlots = circosPlots;
-        return this;
-    }
-
-    public List<String> getVcfFileIds() {
-        return vcfFileIds;
-    }
-
-    public SampleVariantQualityControlMetrics setVcfFileIds(List<String> vcfFileIds) {
-        this.vcfFileIds = vcfFileIds;
+    public SampleVariantQualityControlMetrics setGenomePlots(List<GenomePlot> genomePlots) {
+        this.genomePlots = genomePlots;
         return this;
     }
 }

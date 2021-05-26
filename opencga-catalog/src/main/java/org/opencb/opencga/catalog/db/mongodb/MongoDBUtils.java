@@ -53,7 +53,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
 /**
  * Created by imedina on 21/11/14.
  */
-class MongoDBUtils {
+public class MongoDBUtils {
 
     // Special queryOptions keys
     public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream()
@@ -158,7 +158,7 @@ class MongoDBUtils {
         return dbObject;
     }
 
-    static Document getMongoDBDocument(Object object, String objectName) throws CatalogDBException {
+    public static Document getMongoDBDocument(Object object, String objectName) throws CatalogDBException {
         Document document;
         String jsonString = null;
         try {

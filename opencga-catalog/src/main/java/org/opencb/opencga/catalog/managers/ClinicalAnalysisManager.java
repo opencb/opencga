@@ -29,7 +29,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -42,6 +41,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
@@ -51,6 +51,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -261,6 +262,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setAudit(ParamUtils.defaultObject(clinicalAnalysis.getAudit(), Collections.emptyList()));
             clinicalAnalysis.setQualityControl(ParamUtils.defaultObject(clinicalAnalysis.getQualityControl(),
                     ClinicalAnalysisQualityControl::new));
+            clinicalAnalysis.setPanels(ParamUtils.defaultObject(clinicalAnalysis.getPanels(), Collections.emptyList()));
 
             clinicalAnalysis.getQualityControl().setUser(userId);
             clinicalAnalysis.getQualityControl().setDate(TimeUtils.getDate());
@@ -274,6 +276,19 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     comment.setDate(TimeUtils.getTimeMillis(calendar.getTime()));
                     calendar.add(Calendar.MILLISECOND, 1);
                 }
+            }
+
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getPanels())) {
+                // Get panels
+                Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
+                Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
+                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                        panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+                if (panelResult.getNumResults() < panelIds.size()) {
+                    throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
+                }
+
+                clinicalAnalysis.setPanels(panelResult.getResults());
             }
 
             // Analyst
@@ -1140,7 +1155,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
-        ObjectMap parameters = new ObjectMap();
+        ObjectMap parameters;
         if (updateParams != null) {
             try {
                 parameters = updateParams.getUpdateMap();
@@ -1228,6 +1243,18 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
+        }
+
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
+            // Get panels
+            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), updateParams.getPanels());
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                    panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+            if (panelResult.getNumResults() < updateParams.getPanels().size()) {
+                throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
+            }
+
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
         }
 
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key())) {

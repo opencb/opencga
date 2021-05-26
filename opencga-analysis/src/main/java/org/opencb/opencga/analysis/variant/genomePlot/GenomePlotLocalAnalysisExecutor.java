@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant.circos;
+package org.opencb.opencga.analysis.variant.genomePlot;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.clinical.qc.GenomePlotConfig;
+import org.opencb.biodata.models.clinical.qc.GenomePlotTrack;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
@@ -31,13 +33,11 @@ import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
-import org.opencb.opencga.core.models.variant.CircosTrack;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
-import org.opencb.opencga.core.tools.variant.CircosAnalysisExecutor;
+import org.opencb.opencga.core.tools.variant.GenomePlotAnalysisExecutor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.slf4j.Logger;
@@ -46,19 +46,23 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_INPUT_PATH;
 import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_OUTPUT_PATH;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
-@ToolExecutor(id="opencga-local", tool = CircosAnalysis.ID,
+@ToolExecutor(id="opencga-local", tool = GenomePlotAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
-public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
+public class GenomePlotLocalAnalysisExecutor extends GenomePlotAnalysisExecutor implements StorageToolExecutor {
 
     public final static String R_DOCKER_IMAGE = "opencb/opencga-r:" + GitRepositoryState.get().getBuildVersion();
-    private VariantStorageManager storageManager;
+
+    private GenomePlotConfig plotConfig;
 
     private File snvsFile;
     private File rearrsFile;
@@ -69,34 +73,19 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
     private boolean plotIndels = false;
     private boolean plotRearrangements = false;
 
-    private Map<String, String> errors;
+    private ConcurrentHashMap<String, Exception> errors;
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
-
-    public CircosLocalAnalysisExecutor() {
-        super();
-    }
-
-    public CircosLocalAnalysisExecutor(String study, CircosAnalysisParams params, VariantStorageManager storageManager) {
-        super(study, params);
-        this.storageManager = storageManager;
-    }
-
-    @Override
-    public VariantStorageManager getVariantStorageManager() throws ToolExecutorException {
-        if (storageManager == null) {
-            storageManager = StorageToolExecutor.super.getVariantStorageManager();
-        }
-        return storageManager;
-    }
 
     @Override
     public void run() throws ToolException, IOException {
 
+        plotConfig = JacksonUtils.getDefaultObjectMapper().readerFor(GenomePlotConfig.class).readValue(getConfigFile());
+
         // Create query
         Query query = new Query();
-        if (MapUtils.isNotEmpty(getCircosParams().getQuery())) {
-            query.putAll(getCircosParams().getQuery());
+        if (MapUtils.isNotEmpty(plotConfig.getGeneralQuery())) {
+            query.putAll(plotConfig.getGeneralQuery());
         }
         query.put(STUDY.key(), getStudy());
 
@@ -105,7 +94,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
         ExecutorService threadPool = Executors.newFixedThreadPool(4);
 
-        errors = new HashMap<>();
+        errors = new ConcurrentHashMap<>();
         List<Future<Boolean>> futureList = new ArrayList<>(4);
         futureList.add(threadPool.submit(getNamedThread("SNV", () -> snvQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("COPY_NUMBER", () -> copyNumberQuery(query, storageManager))));
@@ -129,7 +118,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         if (MapUtils.isEmpty(errors)) {
             // Execute R script
             // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
-            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/genome-plot";
+            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
@@ -143,7 +132,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     + " " + DOCKER_OUTPUT_PATH + "/" + indelsFile.getName()
                     + " " + DOCKER_OUTPUT_PATH + "/" + cnvsFile.getName()
                     + " " + DOCKER_OUTPUT_PATH + "/" + rearrsFile.getName()
-                    + " " + getCircosParams().getTitle();
+                    + " " + plotConfig.getTitle();
 
             StopWatch stopWatch = StopWatch.createStarted();
             String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
@@ -151,10 +140,16 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             logger.info("Execution time: " + TimeUtils.durationToString(stopWatch));
         } else {
             StringBuilder msg = new StringBuilder();
-            for (Map.Entry<String, String> error : errors.entrySet()) {
-                msg.append("Error on track ").append(error.getKey()).append(": ").append(error.getValue()).append(". ");
+            for (Map.Entry<String, Exception> error : errors.entrySet()) {
+                msg.append("Error on track ").append(error.getKey()).append(": ").append(error.getValue().getMessage()).append(". ");
             }
-            throw new ToolException(msg.toString());
+            ToolException exception = new ToolException(msg.toString());
+            if (errors.size() == 1) {
+                exception.initCause(errors.values().iterator().next());
+            } else {
+                errors.values().forEach(exception::addSuppressed);
+            }
+            throw exception;
         }
     }
 
@@ -175,14 +170,9 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             pwOut = new PrintWriter(getOutDir().resolve("snvs.discarded").toFile());
 
-            CircosTrack snvTrack = getCircosParams().getCircosTrackByType("SNV");
-            if (snvTrack == null) {
-                throw new ToolException("Missing SNV track");
-            }
-
             int threshold;
 
-            switch (getCircosParams().getDensity()) {
+            switch (plotConfig.getDensity()) {
                 case "HIGH":
                     threshold = Integer.MAX_VALUE;
                     break;
@@ -195,10 +185,12 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     break;
             }
 
-            Map<String, String> trackQuery = checkTrackQuery(snvTrack);
-
+            GenomePlotTrack track = plotConfig.getTrack("SNV");
             Query snvQuery = new Query(query);
-            snvQuery.putAll(trackQuery);
+            if (track != null && MapUtils.isNotEmpty(track.getQuery())) {
+                snvQuery.putAll(track.getQuery());
+            }
+            snvQuery.put("type", "SNV");
 
             QueryOptions queryOptions = new QueryOptions()
                     .append(QueryOptions.INCLUDE, "id")
@@ -230,7 +222,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch(Exception e) {
-            errors.put("SNV", e.getMessage());
+            errors.put("SNV", e);
             return false;
         } finally {
             if (pw != null) {
@@ -261,14 +253,14 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             pwOut = new PrintWriter(getOutDir().resolve("cnvs.discarded").toFile());
 
-            CircosTrack copyNumberTrack = getCircosParams().getCircosTrackByType("COPY-NUMBER");
-            if (copyNumberTrack != null) {
+
+            GenomePlotTrack track = plotConfig.getTrack("COPY-NUMBER");
+            if (track != null) {
                 plotCopynumber = true;
 
-                Map<String, String> trackQuery = checkTrackQuery(copyNumberTrack);
-
                 Query copyNumberQuery = new Query(query);
-                copyNumberQuery.putAll(trackQuery);
+                copyNumberQuery.putAll(track.getQuery());
+                copyNumberQuery.put("type", "CNV");
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,studies");
 
@@ -307,7 +299,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch (Exception e) {
-            errors.put("COPY-NUMBER", e.getMessage());
+            errors.put("COPY-NUMBER", e);
             return false;
         } finally {
             if (pw != null) {
@@ -337,14 +329,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             pwOut = new PrintWriter(getOutDir().resolve("indels.discarded").toFile());
 
-            CircosTrack indelTrack = getCircosParams().getCircosTrackByType("INDEL");
-            if (indelTrack != null) {
+            GenomePlotTrack track = plotConfig.getTrack("INDEL");
+            if (track != null) {
                 plotIndels = true;
 
-                Map<String, String> trackQuery = checkTrackQuery(indelTrack);
-
                 Query indelQuery = new Query(query);
-                indelQuery.putAll(trackQuery);
+                indelQuery.putAll(track.getQuery());
+                indelQuery.put("type", "INSERTION,DELETION,INDEL");
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
 
@@ -362,34 +353,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     } else {
                         pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
                     }
-                    /*
-                    switch (v.getType()) {
-                        case INSERTION: {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tI\tNone");
-                            break;
-                        }
-                        case DELETION: {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tD\tNone");
-                            break;
-                        }
-                        case INDEL: {
-                            pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tDI\tNone");
-                            break;
-                        }
-                        default: {
-                            // Sanity check
-                            pwOut.println(v.toString() + "\tInvalid type " + v.getType() + ". Valid values: " + VariantType.INSERTION
-                                    + ", " + DELETION + ", " + VariantType.INDEL);
-                            break;
-                        }
-                    }
-                    */
                 }
             }
         } catch(Exception e){
-            errors.put("INDEL", e.getMessage());
+            errors.put("INDEL", e);
             return false;
-//            throw new ToolExecutorException(e);
         } finally {
             if (pw != null) {
                 pw.close();
@@ -418,14 +386,13 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
 
             pwOut = new PrintWriter(getOutDir().resolve("rearrs.discarded").toFile());
 
-            CircosTrack rearrangementTrack = getCircosParams().getCircosTrackByType("REARRANGEMENT");
-            if (rearrangementTrack != null) {
+            GenomePlotTrack track = plotConfig.getTrack("REARRANGEMENT");
+            if (track != null) {
                 plotRearrangements = true;
 
-                Map<String, String> trackQuery = checkTrackQuery(rearrangementTrack);
-
                 Query rearrangementQuery = new Query(query);
-                rearrangementQuery.putAll(trackQuery);
+                rearrangementQuery.putAll(track.getQuery());
+                rearrangementQuery.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,TANDEM_DUPLICATION,BREAKEND");
 
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,sv,studies");
 
@@ -468,7 +435,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 }
             }
         } catch (Exception e) {
-            errors.put("REARRANGEMENT", e.getMessage());
+            errors.put("REARRANGEMENT", e);
             return false;
         } finally {
             if (pw != null) {
@@ -487,27 +454,5 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             Thread.currentThread().setName(parentThreadName + "-" + name);
             return c.call();
         };
-    }
-
-    private Map<String, String> checkTrackQuery(CircosTrack track) throws ToolException {
-        Map<String, String> query = new HashMap<>();
-
-        if (MapUtils.isNotEmpty(track.getQuery())) {
-            query = track.getQuery();
-        }
-
-        if ("COPY-NUMBER".equals(track.getType())) {
-            query.put("type", "CNV");
-        } else if ("INDEL".equals(track.getType())) {
-            query.put("type", "INSERTION,DELETION,INDEL");
-        } else if ("REARRANGEMENT".equals(track.getType())) {
-            query.put("type", "DELETION,TRANSLOCATION,INVERSION,DUPLICATION,TANDEM_DUPLICATION,BREAKEND");
-        } else if ("SNV".equals(track.getType())) {
-            query.put("type", "SNV");
-        } else {
-            throw new ToolException("Unknown Circos track type: '" + track.getType() + "'");
-        }
-
-        return query;
     }
 }

@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -139,6 +138,126 @@ public class FamilyManagerTest extends GenericTest {
 
         assertTrue("Mother id not associated to any children", motherIdUpdated);
         assertTrue("Father id not associated to any children", fatherIdUpdated);
+    }
+
+    @Test
+    public void createComplexFamily() throws CatalogException {
+        Individual paternalGrandfather = new Individual().setId("p_grandfather");
+        Individual paternalGrandmother = new Individual().setId("p_grandmother");
+        Individual maternalGrandfather = new Individual().setId("m_grandfather");
+        Individual maternalGrandmother = new Individual().setId("m_grandmother");
+        Individual father = new Individual().setId("father").setFather(paternalGrandfather).setMother(paternalGrandmother);
+        Individual mother = new Individual().setId("mother").setMother(maternalGrandmother).setFather(maternalGrandfather);
+        Individual proband = new Individual().setId("proband").setFather(father).setMother(mother);
+        Individual brother = new Individual().setId("brother").setFather(father).setMother(mother).setSex(IndividualProperty.Sex.MALE);
+        Individual sister = new Individual().setId("sister").setFather(father).setMother(mother).setSex(IndividualProperty.Sex.FEMALE);
+        Individual sibling = new Individual().setId("sibling").setFather(father).setMother(mother);
+
+        catalogManager.getFamilyManager().create(STUDY, new Family().setId("family").setMembers(
+                Arrays.asList(paternalGrandfather, paternalGrandmother, maternalGrandfather, maternalGrandmother, mother, father, proband,
+                        brother, sister, sibling)), QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Family> family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
+        Map<String, Map<String, Family.FamiliarRelationship>> roles = family.first().getRoles();
+        assertEquals(10, family.first().getMembers().size());
+
+        Map<String, Family.FamiliarRelationship> pGrandfather = roles.get("p_grandfather");
+        assertEquals(5, pGrandfather.size());
+        assertEquals(Family.FamiliarRelationship.SON, pGrandfather.get("father"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandfather.get("proband"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandfather.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.GRANDSON, pGrandfather.get("brother"));
+        assertEquals(Family.FamiliarRelationship.GRANDDAUGHTER, pGrandfather.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> pGrandmother = roles.get("p_grandmother");
+        assertEquals(5, pGrandmother.size());
+        assertEquals(Family.FamiliarRelationship.SON, pGrandmother.get("father"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandmother.get("proband"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, pGrandmother.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.GRANDSON, pGrandmother.get("brother"));
+        assertEquals(Family.FamiliarRelationship.GRANDDAUGHTER, pGrandmother.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> mGrandfather = roles.get("m_grandfather");
+        assertEquals(5, mGrandfather.size());
+        assertEquals(Family.FamiliarRelationship.DAUGHTER, mGrandfather.get("mother"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandfather.get("proband"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandfather.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.GRANDSON, mGrandfather.get("brother"));
+        assertEquals(Family.FamiliarRelationship.GRANDDAUGHTER, mGrandfather.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> mGrandmother = roles.get("m_grandmother");
+        assertEquals(5, mGrandmother.size());
+        assertEquals(Family.FamiliarRelationship.DAUGHTER, mGrandmother.get("mother"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandmother.get("proband"));
+        assertEquals(Family.FamiliarRelationship.GRANDCHILD, mGrandmother.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.GRANDSON, mGrandmother.get("brother"));
+        assertEquals(Family.FamiliarRelationship.GRANDDAUGHTER, mGrandmother.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> motherMap = roles.get("mother");
+        assertEquals(6, motherMap.size());
+        assertEquals(Family.FamiliarRelationship.MOTHER, motherMap.get("m_grandmother"));
+        assertEquals(Family.FamiliarRelationship.FATHER, motherMap.get("m_grandfather"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, motherMap.get("proband"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, motherMap.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.SON, motherMap.get("brother"));
+        assertEquals(Family.FamiliarRelationship.DAUGHTER, motherMap.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> fatherMap = roles.get("father");
+        assertEquals(6, fatherMap.size());
+        assertEquals(Family.FamiliarRelationship.MOTHER, fatherMap.get("p_grandmother"));
+        assertEquals(Family.FamiliarRelationship.FATHER, fatherMap.get("p_grandfather"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, fatherMap.get("proband"));
+        assertEquals(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, fatherMap.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.SON, fatherMap.get("brother"));
+        assertEquals(Family.FamiliarRelationship.DAUGHTER, fatherMap.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> probandMap = roles.get("proband");
+        assertEquals(9, probandMap.size());
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDMOTHER, probandMap.get("m_grandmother"));
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDFATHER, probandMap.get("m_grandfather"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDMOTHER, probandMap.get("p_grandmother"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDFATHER, probandMap.get("p_grandfather"));
+        assertEquals(Family.FamiliarRelationship.MOTHER, probandMap.get("mother"));
+        assertEquals(Family.FamiliarRelationship.FATHER, probandMap.get("father"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, probandMap.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.BROTHER, probandMap.get("brother"));
+        assertEquals(Family.FamiliarRelationship.SISTER, probandMap.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> siblingMap = roles.get("sibling");
+        assertEquals(9, siblingMap.size());
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDMOTHER, siblingMap.get("m_grandmother"));
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDFATHER, siblingMap.get("m_grandfather"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDMOTHER, siblingMap.get("p_grandmother"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDFATHER, siblingMap.get("p_grandfather"));
+        assertEquals(Family.FamiliarRelationship.MOTHER, siblingMap.get("mother"));
+        assertEquals(Family.FamiliarRelationship.FATHER, siblingMap.get("father"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, siblingMap.get("proband"));
+        assertEquals(Family.FamiliarRelationship.BROTHER, siblingMap.get("brother"));
+        assertEquals(Family.FamiliarRelationship.SISTER, siblingMap.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> brotherMap = roles.get("brother");
+        assertEquals(9, brotherMap.size());
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDMOTHER, brotherMap.get("m_grandmother"));
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDFATHER, brotherMap.get("m_grandfather"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDMOTHER, brotherMap.get("p_grandmother"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDFATHER, brotherMap.get("p_grandfather"));
+        assertEquals(Family.FamiliarRelationship.MOTHER, brotherMap.get("mother"));
+        assertEquals(Family.FamiliarRelationship.FATHER, brotherMap.get("father"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, brotherMap.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, brotherMap.get("proband"));
+        assertEquals(Family.FamiliarRelationship.SISTER, brotherMap.get("sister"));
+
+        Map<String, Family.FamiliarRelationship> sisterMap = roles.get("sister");
+        assertEquals(9, sisterMap.size());
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDMOTHER, sisterMap.get("m_grandmother"));
+        assertEquals(Family.FamiliarRelationship.MATERNAL_GRANDFATHER, sisterMap.get("m_grandfather"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDMOTHER, sisterMap.get("p_grandmother"));
+        assertEquals(Family.FamiliarRelationship.PATERNAL_GRANDFATHER, sisterMap.get("p_grandfather"));
+        assertEquals(Family.FamiliarRelationship.MOTHER, sisterMap.get("mother"));
+        assertEquals(Family.FamiliarRelationship.FATHER, sisterMap.get("father"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, sisterMap.get("sibling"));
+        assertEquals(Family.FamiliarRelationship.BROTHER, sisterMap.get("brother"));
+        assertEquals(Family.FamiliarRelationship.FULL_SIBLING, sisterMap.get("proband"));
+
     }
 
     @Test

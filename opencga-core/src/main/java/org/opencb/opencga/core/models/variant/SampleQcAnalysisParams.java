@@ -18,33 +18,28 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.List;
-
 public class SampleQcAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Sample QC analysis params";
     private String sample;
     private String variantStatsId;
     private String variantStatsDescription;
     private AnnotationVariantQueryParams variantStatsQuery;
-    private String signatureId;
-    private SampleQcSignatureQueryParams signatureQuery;
-    private List<String> genesForCoverageStats;
-
+    private String genomePlotDescription;
+    private String genomePlotConfigFile;
     private String outdir;
 
     public SampleQcAnalysisParams() {
     }
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
-                                  AnnotationVariantQueryParams variantStatsQuery, String signatureId,
-                                  SampleQcSignatureQueryParams signatureQuery, List<String> genesForCoverageStats, String outdir) {
+                                  AnnotationVariantQueryParams variantStatsQuery, String genomePlotDescription, String genomePlotConfigFile,
+                                  String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
-        this.signatureId = signatureId;
-        this.signatureQuery = signatureQuery;
-        this.genesForCoverageStats = genesForCoverageStats;
+        this.genomePlotDescription = genomePlotDescription;
+        this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
     }
 
@@ -53,11 +48,10 @@ public class SampleQcAnalysisParams extends ToolParams {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
-        sb.append(", variantStatsDecription='").append(variantStatsDescription).append('\'');
+        sb.append(", variantStatsDescription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
-        sb.append(", signatureId='").append(signatureId).append('\'');
-        sb.append(", signatureQuery=").append(signatureQuery);
-        sb.append(", genesForCoverageStats=").append(genesForCoverageStats);
+        sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
+        sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -99,30 +93,21 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getSignatureId() {
-        return signatureId;
+    public String getGenomePlotDescription() {
+        return genomePlotDescription;
     }
 
-    public SampleQcAnalysisParams setSignatureId(String signatureId) {
-        this.signatureId = signatureId;
+    public SampleQcAnalysisParams setGenomePlotDescription(String genomePlotDescription) {
+        this.genomePlotDescription = genomePlotDescription;
         return this;
     }
 
-    public SampleQcSignatureQueryParams getSignatureQuery() {
-        return signatureQuery;
+    public String getGenomePlotConfigFile() {
+        return genomePlotConfigFile;
     }
 
-    public SampleQcAnalysisParams setSignatureQuery(SampleQcSignatureQueryParams signatureQuery) {
-        this.signatureQuery = signatureQuery;
-        return this;
-    }
-
-    public List<String> getGenesForCoverageStats() {
-        return genesForCoverageStats;
-    }
-
-    public SampleQcAnalysisParams setGenesForCoverageStats(List<String> genesForCoverageStats) {
-        this.genesForCoverageStats = genesForCoverageStats;
+    public SampleQcAnalysisParams setGenomePlotConfigFile(String genomePlotConfigFile) {
+        this.genomePlotConfigFile = genomePlotConfigFile;
         return this;
     }
 
