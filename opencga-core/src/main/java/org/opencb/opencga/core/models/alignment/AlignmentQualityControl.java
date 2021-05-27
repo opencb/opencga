@@ -8,6 +8,7 @@ import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 import java.io.Serializable;
 
 public class AlignmentQualityControl implements Serializable {
+
     private FastQcMetrics fastQcMetrics;
     private SamtoolsStats samtoolsStats;
     private SamtoolsFlagstats samtoolsFlagStats;
