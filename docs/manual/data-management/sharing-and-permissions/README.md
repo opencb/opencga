@@ -29,7 +29,16 @@ Apart from _admins,_ there is also an special group called _members_. Any user w
 * The _admin_ users might want to predefined some permissions any _member_ of a study will have. In such a case, _admin_ users will just add new users to that group and those users will automatically be granted the permissions the group has.
 * If an _admin_ user wants to completely revoke any permission to one user, by removing that user from the _members_ group, OpenCGA will automatically search for any permissions set for that user in any entity and remove it.
 
+## Decision Algorithm 
+
+The next schema provides a visual explanation of the algorithm implemented in Catalog for providing a user access to the data in the context of a study. 
+
 ![Decision Algorithm for granting permissions ](../../../.gitbook/assets/image%20%282%29.png)
 
 
+
+There are two circumstances under which the algorithm behaves as follows:
+
+* If the user and any of the groups where the user belongs to have permissions defined for one entry, the permissions that will be actually used will be the user's.
+* In case the user belongs to more than one group and those groups are assigned different permissions for one concrete entry, the effective permissions that will be used will be the union of the permissions found in all those groups.
 

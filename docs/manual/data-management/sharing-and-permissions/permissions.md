@@ -6,6 +6,18 @@ Remember that you can always check the Catalog code that implements OpenCGA's AC
 
 Here you will find the list of permissions that can be granted to a **member** \(user or group\) in OpenCGA. Thanks to the **ACLs** system, permissions can be assigned to almost any entry level \(except for _User_ and _Project\)._
 
+## How it works
+
+A list of the basic permissions and their explanations can be found in the list below:
+
+* VIEW_: Give permission to access in read-only mode to the entry \(study, file, sample...\). WRITE: Give permission to create and update that kind of entries within the study. This do not include permissions to modify annotation and/or annotation sets. Those actions will need additional permissions._
+* _DELETE:_ Give permission to delete that kind of entries. 
+* ANNOTATIONS: In Sample, Individual, Family and Cohort we have three additional permissions to deal with annotations.
+
+ Files deserve a special treatment as they not only exist in the database, but also physically in the file system. The special permissions added for files are the following:
+
+_VIEW\_FILE\_HEADER_: Give permission to retrieve just the header of a file. DOWNLOAD\_FILES or _DOWNLOAD_: Give permission to download the whole file.
+
 {% tabs %}
 {% tab title="SAMPLES" %}
 * **VIEW\_SAMPLES**
@@ -55,34 +67,35 @@ Here you will find the list of permissions that can be granted to a **member** \
 * **WRITE\_FAMILY\_ANNOTATIONS** _\(implies:VIEW\_FAMILIES, VIEW\_FAMILY\_ANNOTATIONS\)_
 * **DELETE\_FAMILY\_ANNOTATIONS** _\(implies: VIEW\_FAMILIES, VIEW\_FAMILY\_ANNOTATIONS, WRITE\_FAMILY\_ANNOTATIONS\)_
 {% endtab %}
+
+{% tab title="COHORTS" %}
+* **VIEW\_COHORTS**
+* **WRITE\_COHORTS** _\(implies: VIEW\_COHORTS\)_
+* **DELETE\_COHORTS** _\(implies: VIEW\_COHORTS, WRITE\_COHORTS\)_
+* **VIEW\_COHORT\_ANNOTATIONS** _\(implies: VIEW\_COHORTS\)_
+*  **WRITE\_COHORT\_ANNOTATIONS** _\(implies: VIEW\_COHORTS, VIEW\_COHORT\_ANNOTATIONS\)_
+* **DELETE\_COHORT\_ANNOTATIONS** _\(implies: VIEW\_COHORTS, VIEW\_COHORT\_ANNOTATIONS, WRITE\_COHORT\_ANNOTATIONS\)_
+{% endtab %}
+
+{% tab title="PANELS" %}
+* **VIEW\_PANELS**
+* **WRITE\_PANELS** _\(implies: VIEW\_PANELS\)_
+* **DELETE\_PANELS** _\(implies: VIEW\_PANELS, WRITE\_PANELS\)_
+{% endtab %}
+
+{% tab title="CLINICAL" %}
+* **VIEW\_CLINICAL\_ANALYSIS**
+* **WRITE\_CLINICAL\_ANALYSIS** _\(implies: VIEW\_CLINICAL\_ANALYSIS\)_
+* **DELETE\_CLINICAL\_ANALYSIS** _\(implies: VIEW\_CLINICAL\_ANALYSIS, WRITE\_CLINICAL\_ANALYSIS\)_
+{% endtab %}
 {% endtabs %}
 
-```text
+## Templates <a id="SharingandPermissions-Specialcases"></a>
 
+OpenCGA Catalog implements  two sets of predefined roles to assign some generic Study permissions to users/groups:        
 
-COHORTS
-    VIEW_COHORTS(Collections.emptyList(), CohortAclEntry.CohortPermissions.VIEW.name(), COHORT),
-    WRITE_COHORTS(Collections.singletonList(VIEW_COHORTS), CohortAclEntry.CohortPermissions.WRITE.name(), COHORT),
-    DELETE_COHORTS(Arrays.asList(VIEW_COHORTS, WRITE_COHORTS), CohortAclEntry.CohortPermissions.DELETE.name(), COHORT),
-    VIEW_COHORT_ANNOTATIONS(Collections.singletonList(VIEW_COHORTS), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), COHORT),
-    WRITE_COHORT_ANNOTATIONS(Arrays.asList(VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS),
-            CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS.name(), COHORT),
-    DELETE_COHORT_ANNOTATIONS(Arrays.asList(VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, WRITE_COHORT_ANNOTATIONS),
-            CohortAclEntry.CohortPermissions.DELETE_ANNOTATIONS.name(), COHORT),
-
-DISEASE PANELS
-    VIEW_PANELS(Collections.emptyList(), PanelAclEntry.PanelPermissions.VIEW.name(), DISEASE_PANEL),
-    WRITE_PANELS(Collections.singletonList(VIEW_PANELS), PanelAclEntry.PanelPermissions.WRITE.name(), DISEASE_PANEL),
-    DELETE_PANELS(Arrays.asList(VIEW_PANELS, WRITE_PANELS), PanelAclEntry.PanelPermissions.DELETE.name(), DISEASE_PANEL),
-
-CLINICAL ANALYSIS
-    VIEW_CLINICAL_ANALYSIS(Collections.emptyList(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(),
-            CLINICAL_ANALYSIS),
-    WRITE_CLINICAL_ANALYSIS(Collections.singletonList(VIEW_CLINICAL_ANALYSIS),
-            ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE.name(), CLINICAL_ANALYSIS),
-    DELETE_CLINICAL_ANALYSIS(Arrays.asList(VIEW_CLINICAL_ANALYSIS, WRITE_CLINICAL_ANALYSIS),
-            ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS);
-```
+* **analyst**: The member \(user or group\) will be given full READ and WRITE \(not DELETE\) permissions for all the entries related to the study. These users will be able to view and do modifications on all the data that is related to the study. 
+* **view\_only**: The member \(user or group\) will be given full READ permissions.
 
 ## Special cases <a id="SharingandPermissions-Specialcases"></a>
 
@@ -90,15 +103,11 @@ Permissions can be given to any concrete entity \(file, sample, cohort...\) to d
 
 ### Files <a id="SharingandPermissions-Files"></a>
 
-File entry might be of type file or folder. Permissions assigned in folders are propagated to all the children \(files and folders\) recursively.
-
- All permissions that might have had files and folders under the folder being given permissions will be modified according to the action being performed in the parent folder. In other words, if we are setting new permissions for the folder, any possible permissions the files and folders under the parent folder might have had will be completely replaced by the parent folder's permissions. However, if the action being performed is just adding a new permission to the parent folder, children files and folders will keep their old permissions plus the new one\(s\) added to the parent folder.
+File entry might be of type file or folder \(directory\). Permissions assigned in folders are propagated to all the children \(files and folders\) recursively.
 
 ### Individuals/Samples <a id="SharingandPermissions-Individuals/Samples"></a>
 
-Individuals are really strong related with samples. So every time permissions are given to an individual, the same permissions can be applied to all the related samples if the user sets the 'propagate' field to True, and vice-versa.
-
-## Use cases <a id="SharingandPermissions-Usecases"></a>
+Individuals are really strongly related with samples. So every time permissions are given to an individual, the same permissions can be applied to all the related samples if the user sets the 'propagate' field to True, and vice-versa.
 
 ### Give public access to non-existing users <a id="SharingandPermissions-Givepublicaccesstonon-existingusers"></a>
 
