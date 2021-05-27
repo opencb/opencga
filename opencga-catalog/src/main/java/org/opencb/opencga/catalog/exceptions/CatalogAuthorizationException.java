@@ -49,7 +49,7 @@ public class CatalogAuthorizationException extends CatalogException {
     }
 
     public static CatalogAuthorizationException adminOnlySupportedOperation() {
-        return new CatalogAuthorizationException("Operation only support for 'admin' user");
+        return new CatalogAuthorizationException("Operation only supported for 'admin' user");
     }
 
     @Deprecated

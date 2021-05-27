@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
+import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
@@ -77,6 +78,8 @@ public class CatalogManager implements AutoCloseable {
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
 
+    private MigrationManager migrationManager;
+
     private Configuration configuration;
 
     public CatalogManager(Configuration configuration) throws CatalogException {
@@ -100,6 +103,7 @@ public class CatalogManager implements AutoCloseable {
         this.initializeAdmin(configuration);
         authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, configuration);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
+        migrationManager = new MigrationManager(this, catalogDBAdaptorFactory.getMigrationDBAdaptor());
 
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
