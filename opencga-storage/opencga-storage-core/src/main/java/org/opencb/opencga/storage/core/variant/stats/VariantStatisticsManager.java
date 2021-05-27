@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
+import org.apache.solr.common.StringUtils;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -23,9 +24,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -33,7 +34,9 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -281,8 +284,18 @@ public abstract class VariantStatisticsManager {
         return options.getString(STATS_DEFAULT_GENOTYPE.key(), STATS_DEFAULT_GENOTYPE.defaultValue());
     }
 
-    public static Properties getAggregationMappingProperties(QueryOptions options) {
-        return options.get(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), Properties.class, null);
+    public static Properties getAggregationMappingProperties(QueryOptions options) throws IOException {
+        Properties properties = options.get(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), Properties.class, null);
+        if (properties == null) {
+            String path = options.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
+            if (!StringUtils.isEmpty(path)) {
+                properties = new Properties();
+                try (InputStream is = new FileInputStream(path)) {
+                    properties.load(is);
+                }
+            }
+        }
+        return properties;
     }
 
     protected static Aggregation getAggregation(StudyMetadata studyMetadata, ObjectMap options) {

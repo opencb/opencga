@@ -84,6 +84,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             Arrays.asList("NA19660", "NA19661", "NA19685"),
             Arrays.asList("NA19660", "NA19661", "NA19600")
     );
+    private static List<List<String>> triosPlatinum = Arrays.asList(
+            Arrays.asList("NA12877", "-", "NA12878")
+    );
 
     @Before
     public void before() throws Exception {
@@ -128,6 +131,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         runETL(engine, getPlatinumFile(1), outputUri, params, true, true, true);
 
         this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
+        engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }
@@ -208,6 +212,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         dbAdaptor.getVariantTable(),
                         studyId,
                         Collections.emptySet(), options), options);
+            } else if (study.equals(STUDY_NAME_3)) {
+                options.put(FamilyIndexDriver.TRIOS, triosPlatinum.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
+                options.put(FamilyIndexDriver.OVERWRITE, true);
+                new TestMRExecutor().run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
+                        dbAdaptor.getArchiveTableName(studyId),
+                        dbAdaptor.getVariantTable(),
+                        studyId,
+                        Collections.emptySet(), options), options);
             }
 
             Connection c = dbAdaptor.getHBaseManager().getConnection();
@@ -276,6 +288,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 new Query()
                         .append(STUDY.key(), STUDY_NAME_2)
                         .append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0"));
+
+        testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME_3)
+                .append(GENOTYPE.key(), "NA12878:0/1;NA12877:0/0,0|0"));
     }
 
     @Test
@@ -423,9 +438,15 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("biotypeMask        = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getBiotypeMask()));
         System.out.println("ctMask             = " + IndexUtils.shortToString(indexQuery.getAnnotationIndexQuery().getConsequenceTypeMask()));
         System.out.println("clinicalMask       = " + IndexUtils.byteToString(indexQuery.getAnnotationIndexQuery().getClinicalMask()));
-//        for (String sample : indexQuery.getSamplesMap().keySet()) {
+        for (String sample : indexQuery.getSamplesMap().keySet()) {
+            if (indexQuery.forSample(sample).hasFatherFilter()) {
+                System.out.println("FatherFilter       = " + IndexUtils.parentFilterToString(indexQuery.forSample(sample).getFatherFilter()));
+            }
+            if (indexQuery.forSample(sample).hasMotherFilter()) {
+                System.out.println("MotherFilter       = " + IndexUtils.parentFilterToString(indexQuery.forSample(sample).getMotherFilter()));
+            }
 //            System.out.println("fileIndex("+sample+") = " + IndexUtils.maskToString(indexQuery.getFileIndexMask(sample), indexQuery.getFileIndex(sample)));
-//        }
+        }
         System.out.println("Query SampleIndex             = " + onlyIndex);
         System.out.println("Query DBAdaptor               = " + onlyDBAdaptor);
         System.out.println("Query SampleIndex+DBAdaptor   = " + indexAndDBAdaptor);
@@ -585,6 +606,16 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         for (String study : studies) {
             for (String sample : sampleNames.get(study)) {
                 DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null);
+                System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
+            }
+        }
+    }
+
+    @Test
+    public void testSampleVariantStatsFail() throws Exception {
+        for (String study : studies) {
+            for (String sample : sampleNames.get(study)) {
+                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "synonymous_variant"));
                 System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
             }
         }

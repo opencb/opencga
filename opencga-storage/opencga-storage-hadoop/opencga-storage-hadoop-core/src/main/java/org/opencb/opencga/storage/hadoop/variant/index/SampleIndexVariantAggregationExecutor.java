@@ -10,12 +10,13 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
@@ -24,6 +25,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
@@ -48,6 +50,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             "length",
             "titv"
     ));
+    public static final Pattern CATEGORICAL_PATTERN = Pattern.compile("^([a-zA-Z][a-zA-Z0-9_.]+)(\\[[a-zA-Z0-9\\-,:*]+])?(:\\*|:\\d+)?$");
 
 
     public SampleIndexVariantAggregationExecutor(VariantStorageMetadataManager metadataManager, SampleIndexDBAdaptor sampleIndexDBAdaptor) {
@@ -56,8 +59,23 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     }
 
     @Override
-    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet) throws Exception {
+    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet, List<String> reason) throws Exception {
         if (SampleIndexQueryParser.validSampleIndexQuery(query)) {
+            // Check if the query is fully covered
+            Query filteredQuery = new Query(query);
+            sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(filteredQuery);
+            Set<VariantQueryParam> params = VariantQueryUtils.validParams(filteredQuery, true);
+            params.remove(VariantQueryParam.STUDY);
+
+            if (!params.isEmpty()) {
+                // Query filters not covered
+                for (VariantQueryParam param : params) {
+                    reason.add("Can't use " + getClass().getSimpleName() + " filtering by \""
+                            + param.key() + " : " + filteredQuery.getString(param.key()) + "\"");
+                }
+                return false;
+            }
+
             for (String fieldFacedMulti : facet.split(FACET_SEPARATOR)) {
                 for (String fieldFaced : fieldFacedMulti.split(NESTED_FACET_SEPARATOR)) {
                     String key = fieldFaced.split("\\[")[0];
@@ -125,7 +143,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         // Reverse traverse
         for (int i = split.length - 1; i >= 0; i--) {
             String facetField = split[i];
-            Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facetField);
+            Matcher matcher = CATEGORICAL_PATTERN.matcher(facetField);
             if (!matcher.find()) {
                 throw new VariantQueryException("Malformed aggregation stats query: " + facetField);
             }

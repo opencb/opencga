@@ -78,6 +78,8 @@ public enum VariantField {
     ANNOTATION_DRUGS(ANNOTATION, "annotation.drugs"),
     ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes");
 
+    private static final Set<VariantField> ALL_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(values())));
+
     /**
      * Known additional attributes defined by OpenCGA.
      *
@@ -191,39 +193,69 @@ public enum VariantField {
 
         List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
         if (includeList != null && !includeList.isEmpty()) {
-            includeFields = new HashSet<>();
-            for (String include : includeList) {
-                VariantField field = get(include);
-                if (field == null) {
-                    throw VariantQueryException.unknownVariantField(QueryOptions.INCLUDE, include);
-//                    continue;
-                }
-                if (field.getParent() != null) {
-                    includeFields.add(field.getParent());
-                }
-                includeFields.add(field);
-                includeFields.addAll(field.getChildren());
-            }
-
+            includeFields = parseInclude(includeList);
         } else {
             List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            includeFields = new HashSet<>(Arrays.asList(values()));
             if (excludeList != null && !excludeList.isEmpty()) {
-                for (String exclude : excludeList) {
-                    VariantField field = get(exclude);
-                    if (field == null) {
-                        throw VariantQueryException.unknownVariantField(QueryOptions.EXCLUDE, exclude);
-//                        continue;
-                    }
-                    includeFields.remove(field);
-                    includeFields.removeAll(field.getChildren());
+                includeFields = parseExclude(excludeList);
+            } else {
+                includeFields = new HashSet<>(Arrays.asList(values()));
+                if (options.getBoolean(SUMMARY, false)) {
+                    includeFields.removeAll(SUMMARY_EXCLUDED_FIELDS);
                 }
-            } else if (options.getBoolean(SUMMARY, false)) {
-                includeFields.removeAll(SUMMARY_EXCLUDED_FIELDS);
             }
         }
 
         return includeFields;
+    }
+
+    public static Set<VariantField> parseInclude(String... includeList) {
+        return parseInclude(Arrays.asList(includeList));
+    }
+
+    public static Set<VariantField> parseInclude(List<String> includeList) {
+        Set<VariantField> includeFields = new HashSet<>();
+        if (includeList == null) {
+            return includeFields;
+        }
+        for (String include : includeList) {
+            VariantField field = get(include);
+            if (field == null) {
+                throw VariantQueryException.unknownVariantField(QueryOptions.INCLUDE, include);
+//                    continue;
+            }
+            if (field.getParent() != null) {
+                includeFields.add(field.getParent());
+            }
+            includeFields.add(field);
+            includeFields.addAll(field.getChildren());
+        }
+        return includeFields;
+    }
+
+    public static Set<VariantField> parseExclude(String... includeList) {
+        return parseExclude(Arrays.asList(includeList));
+    }
+
+    public static Set<VariantField> parseExclude(List<String> excludeList) {
+        Set<VariantField> includeFields = new HashSet<>(Arrays.asList(values()));
+        if (excludeList == null) {
+            return includeFields;
+        }
+        for (String exclude : excludeList) {
+            VariantField field = get(exclude);
+            if (field == null) {
+                throw VariantQueryException.unknownVariantField(QueryOptions.EXCLUDE, exclude);
+//                        continue;
+            }
+            includeFields.remove(field);
+            includeFields.removeAll(field.getChildren());
+        }
+        return includeFields;
+    }
+
+    public static Set<VariantField> all() {
+        return ALL_FIELDS;
     }
 
     /**

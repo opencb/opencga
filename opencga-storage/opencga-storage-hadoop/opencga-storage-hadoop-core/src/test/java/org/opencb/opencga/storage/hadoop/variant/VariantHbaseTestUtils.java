@@ -38,6 +38,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.utils.CompressionUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -416,7 +417,9 @@ public class VariantHbaseTestUtils {
 
     private static void printVcf(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
         try (OutputStream os = new FileOutputStream(outDir.resolve("variant." + studyMetadata.getName() + ".vcf").toFile())) {
-            Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getName()).append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
+            Query query = new Query(VariantQueryParam.STUDY.key(), studyMetadata.getName())
+                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL)
+                    .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), ".");
             QueryOptions queryOptions = new QueryOptions();
             DataWriter<Variant> writer = new VariantWriterFactory(dbAdaptor).newDataWriter(VariantWriterFactory.VariantOutputFormat.VCF, os, query, queryOptions);
             writer.open();

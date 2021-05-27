@@ -370,16 +370,24 @@ public final class VariantQueryUtils {
         return value != null && (value.isEmpty() || value.size() == 1 && isNone(value.get(0)));
     }
 
-    private static boolean isNone(String value) {
-        return value.equals(NONE);
+    public static boolean isNone(Query q, QueryParam queryParam) {
+        return isNone(q.getString(queryParam.key()));
+    }
+
+    public static boolean isNone(String value) {
+        return NONE.equals(value);
     }
 
     public static boolean isAllOrNull(List<String> value) {
         return value == null || value.size() == 1 && isAll(value.get(0));
     }
 
+    public static boolean isAll(Query q, QueryParam queryParam) {
+        return isAll(q.getString(queryParam.key()));
+    }
+
     public static boolean isAll(String s) {
-        return s.equals(ALL);
+        return ALL.equals(s);
     }
 
     /**
@@ -499,29 +507,6 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
-                                                               VariantStorageMetadataManager metadataManager) {
-        if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
-            Map<Integer, List<Integer>> includeSamples = VariantQueryProjectionParser.getIncludeSamples(query, options, metadataManager);
-            Map<String, List<String>> sampleMetadata = new HashMap<>(includeSamples.size());
-
-            for (Map.Entry<Integer, List<Integer>> entry : includeSamples.entrySet()) {
-                Integer studyId = entry.getKey();
-                List<Integer> sampleIds = entry.getValue();
-                String studyName = metadataManager.getStudyName(studyId);
-                ArrayList<String> sampleNames = new ArrayList<>(sampleIds.size());
-                for (Integer sampleId : sampleIds) {
-                    sampleNames.add(metadataManager.getSampleName(studyId, sampleId));
-                }
-                sampleMetadata.put(studyName, sampleNames);
-            }
-
-            return sampleMetadata;
-        } else {
-            return Collections.emptyMap();
-        }
-    }
-
     public static <T> VariantQueryResult<T> addSamplesMetadataIfRequested(DataResult<T> result, Query query, QueryOptions options,
                                                                           VariantStorageMetadataManager variantStorageMetadataManager) {
         return addSamplesMetadataIfRequested(new VariantQueryResult<>(result, null), query, options, variantStorageMetadataManager);
@@ -532,7 +517,8 @@ public final class VariantQueryUtils {
         if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
             int numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key(), -1);
             int numSamples = query.getInt(NUM_SAMPLES.key(), -1);
-            Map<String, List<String>> samplesMetadata = getSamplesMetadata(query, options, variantStorageMetadataManager);
+            Map<String, List<String>> samplesMetadata = VariantQueryProjectionParser
+                    .getIncludeSampleNames(query, options, variantStorageMetadataManager);
             if (numTotalSamples < 0 && numSamples < 0) {
                 numTotalSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
                 VariantQueryProjectionParser.skipAndLimitSamples(query, samplesMetadata);

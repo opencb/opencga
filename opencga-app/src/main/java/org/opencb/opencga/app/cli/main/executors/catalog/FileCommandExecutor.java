@@ -120,6 +120,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "link-run":
                 queryResponse = linkRun();
                 break;
+            case "post-link-run":
+                queryResponse = postLinkRun();
+                break;
             case "unlink":
                 queryResponse = unlink();
                 break;
@@ -395,6 +398,17 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 commandOptions.parents);
 
         return openCGAClient.getFileClient().runLink(data, params);
+    }
+
+    private RestResponse<Job> postLinkRun() throws ClientException {
+        FileCommandOptions.PostLinkRunCommandOptions commandOptions = filesCommandOptions.postLinkRunCommandOptions;
+
+        ObjectMap params = getCommonParams(commandOptions.study, filesCommandOptions.commonCommandOptions.params);
+        addJobParams(commandOptions.jobOptions, params);
+
+        PostLinkToolParams data = new PostLinkToolParams(commandOptions.files, commandOptions.batchSize);
+
+        return openCGAClient.getFileClient().runPostlink(data, params);
     }
 
 //    private RestResponse relink() throws CatalogException, IOException {

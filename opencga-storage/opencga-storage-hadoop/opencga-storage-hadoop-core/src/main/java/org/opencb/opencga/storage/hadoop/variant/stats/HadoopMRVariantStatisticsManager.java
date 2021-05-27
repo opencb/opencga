@@ -70,7 +70,7 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
                     dbAdaptor.getTableNameGenerator().getArchiveTableName(sm.getId()),
                     dbAdaptor.getTableNameGenerator().getVariantTableName(),
                     sm.getId(), Collections.emptyList(), options);
-            mrExecutor.run(VariantStatsDriver.class, args, options, "Calculate stats of cohorts " + cohorts);
+            mrExecutor.run(VariantStatsDriver.class, args, "Calculate stats of cohorts " + cohorts);
         } catch (Exception e) {
             error = true;
             throw e;

@@ -20,6 +20,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +37,8 @@ public class SampleVariantStatsAggregationQuery {
             .namingPattern("sample-variant-stats-pool-%s")
             .build());
     private final VariantStorageEngine engine;
+
+    private Logger logger = LoggerFactory.getLogger(SampleVariantStatsAggregationQuery.class);
 
     public SampleVariantStatsAggregationQuery(VariantStorageEngine engine) {
         this.engine = engine;
@@ -58,6 +62,12 @@ public class SampleVariantStatsAggregationQuery {
 
         query.put(STUDY.key(), studyStr);
         query.remove(SAMPLE.key());
+
+        // Test if there is any valid VariantAggregationExecutor
+        // If no, fast fail
+        engine.getVariantAggregationExecutor(new Query(query)
+                .append(SAMPLE.key(), sample), new QueryOptions(QueryOptions.FACET, "chromosome"));
+
         Future<DataResult<FacetField>> submit = THREAD_POOL.submit(() -> {
             DataResult<FacetField> result = engine.facet(
                     new Query(query)
@@ -69,12 +79,17 @@ public class SampleVariantStatsAggregationQuery {
         Future<DataResult<FacetField>> submitME = THREAD_POOL.submit(() -> {
             SampleMetadata sampleMetadata = engine.getMetadataManager().getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
-                DataResult<FacetField> result = engine.facet(
-                        new Query(query)
-                                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sample),
-                        new QueryOptions(QueryOptions.FACET,
-                                "chromosome>>mendelianError"));
-                return result;
+                try {
+                    return engine.facet(
+                            new Query(query)
+                                    .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sample),
+                            new QueryOptions(QueryOptions.FACET,
+                                    "chromosome>>mendelianError"));
+                } catch (Exception e) {
+                    logger.warn("Could not get mendelian error stats: " + e.toString());
+                    logger.debug("Could not get mendelian error stats", e);
+                    return null;
+                }
             } else {
                 return null;
             }

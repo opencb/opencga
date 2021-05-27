@@ -600,6 +600,19 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 //        logger.info("Filters = " + scan.getFilter());
 //        logger.info("Batch = " + scan.getBatch());
         logger.info("Caching = " + scan.getCaching());
+        printQuery(query);
+
+//        try {
+//            System.out.println("scan = " + scan.toJSON() + " " + rowKeyToString(scan.getStartRow()) + " -> + "
+// + rowKeyToString(scan.getStopRow()));
+//        } catch (IOException e) {
+//            throw VariantQueryException.internalException(e);
+//        }
+
+        return scan;
+    }
+
+    protected static void printQuery(SingleSampleIndexQuery query) {
         logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), query.getAnnotationIndex()));
         if (query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK) {
             logger.info("BiotypeIndex    = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getBiotypeMask()));
@@ -640,15 +653,6 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (query.hasMotherFilter()) {
             logger.info("MotherFilter       = " + IndexUtils.parentFilterToString(query.getMotherFilter()));
         }
-
-//        try {
-//            System.out.println("scan = " + scan.toJSON() + " " + rowKeyToString(scan.getStartRow()) + " -> + "
-// + rowKeyToString(scan.getStopRow()));
-//        } catch (IOException e) {
-//            throw VariantQueryException.internalException(e);
-//        }
-
-        return scan;
     }
 
     private int toSampleId(int studyId, String sample) {

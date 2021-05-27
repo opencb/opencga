@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
@@ -26,7 +25,6 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.EXCLUDE_GENOTYPES;
@@ -657,39 +655,8 @@ public class VariantQueryParser {
             if (negated) {
                 genotypeStr = removeNegation(genotypeStr);
             }
-            if (GenotypeClass.from(genotypeStr) != null) {
-                // Discard GenotypeClass
-                continue;
-            }
-            if (genotypeStr.equals(GenotypeClass.NA_GT_VALUE)) {
-                // Discard special genotypes
-                continue;
-            }
-            Genotype genotype;
-            try {
-                genotype = new Genotype(genotypeStr);
-            } catch (RuntimeException e) {
-                throw new VariantQueryException("Malformed genotype '" + genotypeStr + "'", e);
-            }
-            int[] allelesIdx = genotype.getAllelesIdx();
-            boolean multiallelic = false;
-            for (int i = 0; i < allelesIdx.length; i++) {
-                if (allelesIdx[i] > 1) {
-                    allelesIdx[i] = 2;
-                    multiallelic = true;
-                }
-            }
-            if (multiallelic) {
-                String regex = genotype.toString()
-                        .replace(".", "\\.")
-                        .replace("|", "\\|")
-                        .replace("2", "([2-9]|[0-9][0-9])"); // Replace allele "2" with "any number >= 2")
-                Pattern pattern = Pattern.compile(regex);
-                for (String loadedGenotype : loadedGenotypes) {
-                    if (pattern.matcher(loadedGenotype).matches()) {
-                        genotypes.add((negated ? NOT : "") + loadedGenotype);
-                    }
-                }
+            for (String multiAllelicGenotype : GenotypeClass.expandMultiAllelicGenotype(genotypeStr, loadedGenotypes)) {
+                genotypes.add((negated ? NOT : "") + multiAllelicGenotype);
             }
         }
         genotypes = GenotypeClass.filter(genotypes, loadedGenotypes);
