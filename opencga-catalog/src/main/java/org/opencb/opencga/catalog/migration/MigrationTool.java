@@ -1,10 +1,12 @@
 package org.opencb.opencga.catalog.migration;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 
 public abstract class MigrationTool {
 
     protected CatalogManager catalogManager;
+    protected ObjectMap params;
 
     public MigrationTool() {
     }
@@ -13,8 +15,9 @@ public abstract class MigrationTool {
         return "";
     }
 
-    public final void setup(CatalogManager catalogManager) {
+    public final void setup(CatalogManager catalogManager, ObjectMap params) {
         this.catalogManager = catalogManager;
+        this.params = params;
     }
 
     public final void execute() throws MigrationException {

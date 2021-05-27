@@ -4,7 +4,7 @@ public @interface Migration {
 
     String id();
 
-    String description() default "";
+    String description();
 
     /**
      * @return OpenCGA Version
@@ -15,7 +15,7 @@ public @interface Migration {
 
     MigrationLanguage language() default MigrationLanguage.JAVA;
 
-    String[] requires() default {};
+    int rank();
 
     int patch() default 1;
 

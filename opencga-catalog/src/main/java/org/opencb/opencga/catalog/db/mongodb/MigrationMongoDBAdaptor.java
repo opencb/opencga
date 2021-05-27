@@ -1,7 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.model.Filters;
-import org.apache.commons.lang.NotImplementedException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -34,11 +33,19 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
     }
 
     @Override
-    public void insert(MigrationRun migrationRun) throws CatalogDBException {
+    public void upsert(MigrationRun migrationRun) throws CatalogDBException {
         Document migrationDocument = migrationConverter.convertToStorageType(migrationRun);
-        DataResult insert = migrationCollection.insert(migrationDocument, QueryOptions.empty());
-        if (insert.getNumInserted() == 0) {
-            throw new CatalogDBException("Could not insert MigrationRun");
+        if (get(migrationRun.getId()).getNumResults() == 0) {
+            DataResult insert = migrationCollection.insert(migrationDocument, QueryOptions.empty());
+            if (insert.getNumInserted() == 0) {
+                throw new CatalogDBException("Could not insert MigrationRun");
+            }
+        } else {
+            Bson bsonQuery = parseQuery(new Query(QueryParams.ID.key(), migrationRun.getId()));
+            DataResult update = migrationCollection.update(bsonQuery, migrationDocument, QueryOptions.empty());
+            if (update.getNumUpdated() == 0) {
+                throw new CatalogDBException("Could not update MigrationRun");
+            }
         }
     }
 
@@ -52,16 +59,6 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
     public OpenCGAResult<MigrationRun> get(List<String> migrationRunIds) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), migrationRunIds);
         return get(query);
-    }
-
-    @Override
-    public void update(String migrationRunId, MigrationRun migrationRun) throws CatalogDBException {
-        throw new NotImplementedException("TO DO");
-    }
-
-    @Override
-    public void delete(String migrationRunId) throws CatalogDBException {
-        throw new NotImplementedException("TO DO");
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {

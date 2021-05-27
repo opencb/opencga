@@ -63,18 +63,16 @@ public interface MigrationDBAdaptor {
         }
     }
 
-    void insert(MigrationRun migrationRun) throws CatalogDBException;
+    void upsert(MigrationRun migrationRun) throws CatalogDBException;
 
     OpenCGAResult<MigrationRun> get(Query query) throws CatalogDBException;
 
     OpenCGAResult<MigrationRun> get(List<String> migrationRunIds) throws CatalogDBException;
 
-    default OpenCGAResult<MigrationRun> get(String migrationRunId) throws CatalogDBException{
+    default OpenCGAResult<MigrationRun> get(String migrationRunId) throws CatalogDBException {
         return get(Collections.singletonList(migrationRunId));
     }
 
-    void update(String migrationRunId, MigrationRun migrationRun) throws CatalogDBException;
-
-    void delete(String migrationRunId) throws CatalogDBException;
+//    void delete(String migrationRunId) throws CatalogDBException;
 
 }
