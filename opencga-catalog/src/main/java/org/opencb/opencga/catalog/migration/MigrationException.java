@@ -1,6 +1,8 @@
 package org.opencb.opencga.catalog.migration;
 
-public class MigrationException extends Exception {
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+
+public class MigrationException extends CatalogException {
 
     public MigrationException(String message) {
         super(message);

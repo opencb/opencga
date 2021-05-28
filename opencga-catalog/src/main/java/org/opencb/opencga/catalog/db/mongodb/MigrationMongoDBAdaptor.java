@@ -37,12 +37,12 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
         Document migrationDocument = migrationConverter.convertToStorageType(migrationRun);
         if (get(migrationRun.getId()).getNumResults() == 0) {
             DataResult insert = migrationCollection.insert(migrationDocument, QueryOptions.empty());
-            if (insert.getNumInserted() == 0) {
+            if (insert.getNumUpdated() == 0) {
                 throw new CatalogDBException("Could not insert MigrationRun");
             }
         } else {
             Bson bsonQuery = parseQuery(new Query(QueryParams.ID.key(), migrationRun.getId()));
-            DataResult update = migrationCollection.update(bsonQuery, migrationDocument, QueryOptions.empty());
+            DataResult update = migrationCollection.update(bsonQuery, new Document("$set", migrationDocument), QueryOptions.empty());
             if (update.getNumUpdated() == 0) {
                 throw new CatalogDBException("Could not update MigrationRun");
             }

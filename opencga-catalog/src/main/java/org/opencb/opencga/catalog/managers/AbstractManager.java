@@ -67,7 +67,7 @@ public abstract class AbstractManager {
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
     protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
-    protected static final String OPENCGA = "opencga";
+    public static final String OPENCGA = "opencga";
     public static final String ANONYMOUS = "*";
 
     public static final int BATCH_OPERATION_SIZE = 100;

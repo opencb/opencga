@@ -5,40 +5,55 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
+import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class MigrationManager {
 
-    private CatalogManager catalogManager;
-    private MigrationDBAdaptor migrationDBAdaptor;
+    private final CatalogManager catalogManager;
+    private final Configuration configuration;
+    private final MigrationDBAdaptor migrationDBAdaptor;
+
     private final Logger logger;
 
-    public MigrationManager(CatalogManager catalogManager, MigrationDBAdaptor migrationDBAdaptor) {
+    public MigrationManager(CatalogManager catalogManager, MigrationDBAdaptor migrationDBAdaptor, Configuration configuration) {
         this.catalogManager = catalogManager;
+        this.configuration = configuration;
         this.migrationDBAdaptor = migrationDBAdaptor;
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
 
-    public void runMigration(String version, Set<Migration.MigrationDomain> domainsFilter,
-                             Set<Migration.MigrationLanguage> languageFilter, String token) throws CatalogException, MigrationException {
-        runMigration(version, domainsFilter, languageFilter, new ObjectMap(), token);
+    public void runMigration(String version, String appHome, String token) throws CatalogException {
+        runMigration(version, Collections.emptySet(), Collections.emptySet(), appHome, new ObjectMap(), token);
     }
 
     public void runMigration(String version, Set<Migration.MigrationDomain> domainsFilter,
-                             Set<Migration.MigrationLanguage> languageFilter, ObjectMap params, String token)
-            throws MigrationException, CatalogException {
+                             Set<Migration.MigrationLanguage> languageFilter, String appHome, String token)
+            throws CatalogException {
+        runMigration(version, domainsFilter, languageFilter, appHome, new ObjectMap(), token);
+    }
+
+    public void runMigration(String version, Set<Migration.MigrationDomain> domainsFilter,
+                             Set<Migration.MigrationLanguage> languageFilter, String appHome, ObjectMap params, String token)
+            throws CatalogException {
         validateAdmin(token);
+
+        // Extend token life
+        token = catalogManager.getUserManager().getNonExpiringToken(AbstractManager.OPENCGA, token);
 
         // 1. Fetch required migrations sorted by rank
         List<Class<? extends MigrationTool>> runnableMigrations = getRunnableMigrations(version, domainsFilter, languageFilter);
@@ -46,24 +61,35 @@ public class MigrationManager {
         // 2. Get pending migrations
         List<Class<? extends MigrationTool>> pendingMigrations = getPendingMigrations(version);
 
+        if (runnableMigrations.isEmpty() && pendingMigrations.isEmpty()) {
+            logger.info("Nothing to run. OpenCGA is up to date");
+            return;
+        }
+
         // 2.1. Check that all pending migrations can be run automatically
         for (Class<? extends MigrationTool> migration : pendingMigrations) {
             Migration annotation = getMigrationAnnotation(migration);
             if (annotation.manual()) {
                 throw new MigrationException("Missing previous migration '" + annotation.id() + "' from version '" + annotation.version()
-                        + "' requiring manual interaction");
+                        + "'. Please, run this migration manually using the CLI.");
             }
         }
 
         // 3. Execute pending migrations
         for (Class<? extends MigrationTool> migration : pendingMigrations) {
-            run(migration, new ObjectMap());
+            run(migration, appHome, new ObjectMap(), token);
         }
 
         // 4. Execute target migration
         for (Class<? extends MigrationTool> migration : runnableMigrations) {
-            run(migration, params);
+            run(migration, appHome, params, token);
         }
+    }
+
+    public List<Class<? extends MigrationTool>> getPendingMigrations(String version, String token)
+            throws CatalogException, MigrationException {
+        validateAdmin(token);
+        return getPendingMigrations(version);
     }
 
     private List<Class<? extends MigrationTool>> getPendingMigrations(String version) throws MigrationException {
@@ -71,7 +97,7 @@ public class MigrationManager {
         List<Class<? extends MigrationTool>> migrations = getAllSortedAvailableMigrations();
 
         // 2.2. Find position of first migration with version "version"
-        int pos = 0;
+        int pos = -1;
         for (int i = 0; i < migrations.size(); i++) {
             Class<? extends MigrationTool> migration = migrations.get(i);
             Migration annotation = getMigrationAnnotation(migration);
@@ -84,29 +110,16 @@ public class MigrationManager {
                 break;
             }
         }
-        if (pos == 0) {
+        if (pos == -1) {
             throw new MigrationException("Could not find migration for version '" + version + "'");
+        } else if (pos == 0) {
+            return Collections.emptyList();
         }
         // Exclude newer migrations
         migrations = migrations.subList(0, pos);
 
-        // 2.3. Remove migrations already run from list
-        List<String> migrationIdList = migrations.stream().map(m -> getMigrationAnnotation(m).id()).collect(Collectors.toList());
-        OpenCGAResult<MigrationRun> migrationResult = null;
-        try {
-            migrationResult = migrationDBAdaptor.get(migrationIdList);
-        } catch (CatalogDBException e) {
-            throw new MigrationException(e.getMessage(), e);
-        }
-        Map<String, MigrationRun> migrationResultMap = new HashMap<>(); // id: patch
-        migrationResult.getResults().stream().map(m -> migrationResultMap.put(m.getId(), m));
-
-        // Remove migrations if they have been run successfully with the proper patch
-        migrations.removeIf(m -> {
-            Migration annotation = getMigrationAnnotation(m);
-            return annotation.patch() <= migrationResultMap.get(annotation.id()).getPatch()
-                    && migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.DONE;
-        });
+        // Exclude successfully executed migrations
+        filterOutExecutedMigrations(migrations);
         return migrations;
     }
 
@@ -121,11 +134,27 @@ public class MigrationManager {
                         new SubTypesScanner(),
                         new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Migration.class.getName()))
                 )
+                .addUrls(getUrls())
                 .filterInputsBy(input -> input != null && input.endsWith(".class"))
         );
 
         return reflections.getSubTypesOf(MigrationTool.class);
     }
+
+    private static Collection<URL> getUrls() {
+        // TODO: What if there are third party libraries that implement Tools?
+        //  Currently they must contain "opencga" in the jar name.
+        //  e.g.  acme-rockets-opencga-5.4.0.jar
+        Collection<URL> urls = new LinkedList<>();
+        for (URL url : ClasspathHelper.forClassLoader()) {
+            String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
+                urls.add(url);
+            }
+        }
+        return urls;
+    }
+
 
     private List<Class<? extends MigrationTool>> getAllSortedAvailableMigrations() {
         List<Class<? extends MigrationTool>> migrations = new ArrayList<>(getAvailableMigrations());
@@ -144,8 +173,8 @@ public class MigrationManager {
         Migration m1Annotation = getMigrationAnnotation(m1);
         Migration m2Annotation = getMigrationAnnotation(m2);
 
-        String[] m1VersionSplit = m1Annotation.version().split(".");
-        String[] m2VersionSplit = m2Annotation.version().split(".");
+        String[] m1VersionSplit = m1Annotation.version().split("\\.");
+        String[] m2VersionSplit = m2Annotation.version().split("\\.");
 
         // 1. Check version
         // Check first version number
@@ -205,7 +234,7 @@ public class MigrationManager {
 
 
     private List<Class<? extends MigrationTool>> getRunnableMigrations(String version, Set<Migration.MigrationDomain> domainFilter,
-                                                             Set<Migration.MigrationLanguage> languageFilter) {
+                                                             Set<Migration.MigrationLanguage> languageFilter) throws MigrationException {
 
         if (domainFilter == null || domainFilter.isEmpty()) {
             domainFilter = EnumSet.allOf(Migration.MigrationDomain.class);
@@ -232,10 +261,13 @@ public class MigrationManager {
             filteredMigrations.add(migration);
         }
 
+        filteredMigrations.sort(this::compareTo);
+        filterOutExecutedMigrations(filteredMigrations);
         return filteredMigrations;
     }
 
-    private void run(Class<? extends MigrationTool> runnableMigration, ObjectMap params) throws MigrationException {
+    private void run(Class<? extends MigrationTool> runnableMigration, String appHome, ObjectMap params, String token)
+            throws MigrationException {
         Migration annotation = getMigrationAnnotation(runnableMigration);
 
         MigrationTool migrationTool;
@@ -245,8 +277,9 @@ public class MigrationManager {
             throw new MigrationException("Can't instantiate class " + runnableMigration + " from migration '" + annotation.id() + "'", e);
         }
 
-        migrationTool.setup(catalogManager, params);
+        migrationTool.setup(configuration, catalogManager, appHome, params, token);
 
+        System.out.println();
         logger.info("Executing migration '{}' for version '{}': {}", annotation.id(), annotation.version(), annotation.description());
         MigrationRun migrationRun = new MigrationRun(annotation.id(), annotation.description(), annotation.version(), TimeUtils.getDate(),
                 annotation.patch());
@@ -262,9 +295,34 @@ public class MigrationManager {
             try {
                 migrationDBAdaptor.upsert(migrationRun);
             } catch (CatalogDBException e) {
-                throw new MigrationException("Could not register migration in OpenCGA");
+                throw new MigrationException("Could not register migration in OpenCGA", e);
             }
         }
+    }
+
+    private void filterOutExecutedMigrations(List<Class<? extends MigrationTool>> migrations) throws MigrationException {
+        // Remove migrations successfully executed from list
+        List<String> migrationIdList = migrations.stream().map(m -> getMigrationAnnotation(m).id()).collect(Collectors.toList());
+        OpenCGAResult<MigrationRun> migrationResult;
+        try {
+            migrationResult = migrationDBAdaptor.get(migrationIdList);
+        } catch (CatalogDBException e) {
+            throw new MigrationException(e.getMessage(), e);
+        }
+        Map<String, MigrationRun> migrationResultMap = new HashMap<>(); // id: patch
+        for (MigrationRun result : migrationResult.getResults()) {
+            migrationResultMap.put(result.getId(), result);
+        }
+
+        // Remove migrations if they have been run successfully with the proper patch
+        migrations.removeIf(m -> {
+            Migration annotation = getMigrationAnnotation(m);
+            if (!migrationResultMap.containsKey(annotation.id())) {
+                return false;
+            }
+            return annotation.patch() <= migrationResultMap.get(annotation.id()).getPatch()
+                    && migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.DONE;
+        });
     }
 
     private Migration getMigrationAnnotation(Class<? extends MigrationTool> migration) {

@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -25,6 +24,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.migration.MigrationException;
+import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -86,6 +87,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 break;
             case "v2.0.3":
                 v2_0_3();
+                break;
+            case "v2.1.0":
+                v2_1_0();
                 break;
             default:
                 logger.error("Subcommand '{}' not valid", subCommandString);
@@ -500,6 +504,20 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
         }
     }
+
+    private void v2_1_0() throws CatalogException {
+        MigrationCommandOptions.MigrateV2_1_0CommandOptions options = migrationCommandOptions.getMigrateV210CommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+            MigrationManager migrationManager = catalogManager.getMigrationManager();
+            migrationManager.runMigration("2.1.0", appHome, token);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+    }
+
 
     private boolean needsMigration(MongoDBCollection metaCollection, int version, int release) {
         fetchUpdateVersionVariables(metaCollection);
