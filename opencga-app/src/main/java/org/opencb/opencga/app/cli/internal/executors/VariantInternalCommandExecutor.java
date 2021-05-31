@@ -782,15 +782,21 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void mutationalSignature() throws Exception {
         VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
 
-        MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
-        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
-        mutationalSignatureAnalysis.setStudy(cliOptions.study)
-                .setSampleName(cliOptions.sample)
-                .start();
+        // Build signature query from cli options
+        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class,
+                variantCommandOptions.mutationalSignatureCommandOptions.signatureQuery);
+
+        ObjectMap params = new MutationalSignatureAnalysisParams(
+                cliOptions.sample,
+                cliOptions.signatureId,
+                cliOptions.signatureDescription,
+                signatureQuery,
+                cliOptions.fitting,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(MutationalSignatureAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void mendelianError() throws Exception {
@@ -874,13 +880,18 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
 
+        // Build signature query from cli options
+        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class,
+                variantCommandOptions.mutationalSignatureCommandOptions.signatureQuery);
+
         ObjectMap params = new SampleQcAnalysisParams(
                 cliOptions.sample,
                 cliOptions.variantStatsId,
                 cliOptions.variantStatsDecription,
                 variantStatsQuery,
-//                cliOptions.signatureId,
-//                signatureQuery,
+                cliOptions.signatureId,
+                cliOptions.signatureDescription,
+                signatureQuery,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
                 cliOptions.outdir)

@@ -46,7 +46,6 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -61,7 +60,6 @@ import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -80,8 +78,8 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -930,6 +928,10 @@ public class VariantWebService extends AnalysisWebService {
                 return createErrorResponse(new Exception("Missing sample name"));
             }
 
+            if (!query.containsKey(STUDY.key())) {
+                return createErrorResponse(new Exception("Missing study name"));
+            }
+
             // Create temporal directory
             outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + System.nanoTime()).toFile();
             outDir.mkdir();
@@ -937,24 +939,27 @@ public class VariantWebService extends AnalysisWebService {
                 return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
             }
 
-            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
-            executor.setOpenCgaHome(opencgaHome);
+            MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
+            params.setSample(query.getString(SAMPLE.key()))
+                    .setQuery(ToolParams.fromParams(SampleQcSignatureQueryParams.class, query))
+                    .setFitting(fitting);
 
-            ObjectMap executorParams = new ObjectMap();
-            executorParams.put("opencgaHome", opencgaHome);
-            executorParams.put("token", token);
-            executorParams.put("fitting", fitting);
-            executor.setUp(null, executorParams, outDir.toPath());
-            executor.setStudy(query.getString(STUDY.key()));
-            executor.setSampleName(query.getString(SAMPLE.key()));
+            MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
+            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir.toPath(), null,
+                    token);
+            mutationalSignatureAnalysis.setStudy(query.getString(STUDY.key()));
+            mutationalSignatureAnalysis.setSignatureParams(params);
 
             StopWatch watch = StopWatch.createStarted();
-            MutationalSignature signatureResult = executor.query(query, queryOptions);
+            mutationalSignatureAnalysis.start();
             watch.stop();
+
+            MutationalSignature mutationalSignature = mutationalSignatureAnalysis.parse(outDir.toPath());
+
             OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                    Collections.singletonList(signatureResult), 1);
+                    Collections.singletonList(mutationalSignature), 1);
             return createOkResponse(result);
-        } catch (CatalogException | ToolException | IOException | StorageEngineException e) {
+        } catch (ToolException | IOException e) {
             return createErrorResponse(e);
         } finally {
             if (outDir != null) {
