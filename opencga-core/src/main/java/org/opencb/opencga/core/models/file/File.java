@@ -86,7 +86,8 @@ public class File extends Annotable {
                 long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
                 false, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
-                Collections.emptyList(), null, Collections.emptyMap(), new CustomStatus(), internal, Collections.emptyMap());
+                Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new CustomStatus(), internal,
+                Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
