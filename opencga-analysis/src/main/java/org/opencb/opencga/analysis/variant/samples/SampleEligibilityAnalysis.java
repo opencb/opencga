@@ -643,6 +643,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             Variant next = iterator.next();
             for (SampleEntry sampleEntry : next.getStudies().get(0).getSamples()) {
                 String genotype = sampleEntry.getData().get(0);
+                // What about genotype NA ?
                 if (GenotypeClass.MAIN_ALT.test(genotype) && genotypeFilter.test(genotype)) {
                     samples.add(sampleEntry.getData().get(1));
                 }
@@ -766,10 +767,8 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                     skip += numSamples;
 
                     for (SampleEntry sampleEntry : studyEntry.getSamples()) {
-                        if (GenotypeClass.MAIN_ALT.test(sampleEntry.getData().get(0))) {
-                            String sampleId = sampleEntry.getSampleId();
-                            thisVariantSamples.add(sampleId);
-                        }
+                        String sampleId = sampleEntry.getSampleId();
+                        thisVariantSamples.add(sampleId);
                     }
                 } while (numSamples == limit);
 

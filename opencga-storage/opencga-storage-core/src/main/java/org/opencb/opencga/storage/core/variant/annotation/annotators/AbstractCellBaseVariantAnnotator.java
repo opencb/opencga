@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
@@ -168,7 +169,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
             for (CellBaseDataResult<VariantAnnotation> queryResult : queryResults) {
                 // If the QueryResult is empty, assume that the variant was skipped
                 // Check that the skipped variant matches with the expected variant
-                if (queryResult.getResults().isEmpty()) {
+                if (CollectionUtils.isEmpty(queryResult.getResults())) {
                     Variant variant = iterator.next();
                     if (variantSerializer.apply(variant).equals(queryResult.getId())
                             || variant.toString().equals(queryResult.getId())
@@ -185,37 +186,38 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                             logger.warn("Skip annotation for variant " + variant);
                         }
                     }
-                }
-                for (VariantAnnotation variantAnnotation : queryResult.getResults()) {
-                    Variant variant = iterator.next();
-                    String annotationAlternate = variantAnnotation.getAlternate();
-                    if (annotationAlternate.equals(VariantBuilder.DUP_ALT)
-                            && variant.getAlternate().equals(VariantBuilder.DUP_TANDEM_ALT)) {
-                        // Annotator might remove the ":TANDEM". Put it back
-                        annotationAlternate = VariantBuilder.DUP_TANDEM_ALT;
-                    }
-                    if (!variant.getChromosome().equals(variantAnnotation.getChromosome())
-                            || !variant.getStart().equals(variantAnnotation.getStart())
-                            || !variant.getReference().equals(variantAnnotation.getReference())
-                            || !variant.getAlternate().equals(annotationAlternate)) {
-                        throw unexpectedVariantOrderException(variant, variantAnnotation.getChromosome() + ':'
-                                + variantAnnotation.getStart() + ':'
-                                + variantAnnotation.getReference() + ':'
-                                + variantAnnotation.getAlternate());
-                    }
-                    if (variant.isSV() || variant.getSv() != null) {
-                        // Variant annotation class does not have information about Structural Variations.
-                        // Store the original Variant.toString as an additional attribute.
-                        AdditionalAttribute additionalAttribute =
-                                new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), variant.toString()));
-                        if (variantAnnotation.getAdditionalAttributes() == null) {
-                            variantAnnotation
-                                    .setAdditionalAttributes(Collections.singletonMap(GROUP_NAME.key(), additionalAttribute));
-                        } else {
-                            variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
+                } else {
+                    for (VariantAnnotation variantAnnotation : queryResult.getResults()) {
+                        Variant variant = iterator.next();
+                        String annotationAlternate = variantAnnotation.getAlternate();
+                        if (annotationAlternate.equals(VariantBuilder.DUP_ALT)
+                                && variant.getAlternate().equals(VariantBuilder.DUP_TANDEM_ALT)) {
+                            // Annotator might remove the ":TANDEM". Put it back
+                            annotationAlternate = VariantBuilder.DUP_TANDEM_ALT;
                         }
+                        if (!variant.getChromosome().equals(variantAnnotation.getChromosome())
+                                || !variant.getStart().equals(variantAnnotation.getStart())
+                                || !variant.getReference().equals(variantAnnotation.getReference())
+                                || !variant.getAlternate().equals(annotationAlternate)) {
+                            throw unexpectedVariantOrderException(variant, variantAnnotation.getChromosome() + ':'
+                                    + variantAnnotation.getStart() + ':'
+                                    + variantAnnotation.getReference() + ':'
+                                    + variantAnnotation.getAlternate());
+                        }
+                        if (variant.isSV() || variant.getSv() != null) {
+                            // Variant annotation class does not have information about Structural Variations.
+                            // Store the original Variant.toString as an additional attribute.
+                            AdditionalAttribute additionalAttribute =
+                                    new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), variant.toString()));
+                            if (variantAnnotation.getAdditionalAttributes() == null) {
+                                variantAnnotation
+                                        .setAdditionalAttributes(Collections.singletonMap(GROUP_NAME.key(), additionalAttribute));
+                            } else {
+                                variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
+                            }
+                        }
+                        variantAnnotationList.add(variantAnnotation);
                     }
-                    variantAnnotationList.add(variantAnnotation);
                 }
             }
         }

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CoverageQualityControl implements Serializable {
+
     private List<GeneCoverageStats> geneCoverageStats;
 
     public CoverageQualityControl() {
