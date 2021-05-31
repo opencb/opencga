@@ -37,5 +37,5 @@ var fileQC = {
         "geneCoverageStats": []
     }
 };
-db.file.update({"qualityControl": {"$exists": false}}, {"$set": {"qualityControl": fileQC}},
-    "$unset": {"variant": "", "alignment": "", "coverage": ""});
+db.file.update({"qualityControl": {"$exists": false}}, {"$set": {"qualityControl": fileQC},
+    "$unset": {"variant": "", "alignment": "", "coverage": ""}});
