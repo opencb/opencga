@@ -4,7 +4,7 @@ description: Welcome to OpenCGA!
 
 # Home
 
-{% hint style="warning" %}
+{% hint style="info" %}
 Development version 2.1.0-alpha
 {% endhint %}
 
