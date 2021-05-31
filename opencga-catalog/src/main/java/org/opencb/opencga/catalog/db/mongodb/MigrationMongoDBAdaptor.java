@@ -41,7 +41,10 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
                 throw new CatalogDBException("Could not insert MigrationRun");
             }
         } else {
-            Bson bsonQuery = parseQuery(new Query(QueryParams.ID.key(), migrationRun.getId()));
+            Query query = new Query()
+                    .append(QueryParams.ID.key(), migrationRun.getId())
+                    .append(QueryParams.VERSION.key(), migrationRun.getVersion());
+            Bson bsonQuery = parseQuery(query);
             DataResult update = migrationCollection.update(bsonQuery, new Document("$set", migrationDocument), QueryOptions.empty());
             if (update.getNumUpdated() == 0) {
                 throw new CatalogDBException("Could not update MigrationRun");
@@ -77,7 +80,9 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
             try {
                 switch (queryParam) {
                     case ID:
-                    case DATE:
+                    case VERSION:
+                    case START:
+                    case END:
                     case PATCH:
                     case STATUS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);

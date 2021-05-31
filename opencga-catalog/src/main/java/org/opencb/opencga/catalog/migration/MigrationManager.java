@@ -55,11 +55,15 @@ public class MigrationManager {
         // Extend token life
         token = catalogManager.getUserManager().getNonExpiringToken(AbstractManager.OPENCGA, token);
 
+        // 0. Fetch all migrations
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+
         // 1. Fetch required migrations sorted by rank
-        List<Class<? extends MigrationTool>> runnableMigrations = getRunnableMigrations(version, domainsFilter, languageFilter);
+        List<Class<? extends MigrationTool>> runnableMigrations = filterRunnableMigrations(version, domainsFilter, languageFilter,
+                availableMigrations);
 
         // 2. Get pending migrations
-        List<Class<? extends MigrationTool>> pendingMigrations = getPendingMigrations(version);
+        List<Class<? extends MigrationTool>> pendingMigrations = filterPendingMigrations(version, availableMigrations);
 
         if (runnableMigrations.isEmpty() && pendingMigrations.isEmpty()) {
             logger.info("Nothing to run. OpenCGA is up to date");
@@ -86,15 +90,19 @@ public class MigrationManager {
         }
     }
 
-    public List<Class<? extends MigrationTool>> getPendingMigrations(String version, String token)
-            throws CatalogException, MigrationException {
+    public List<Class<? extends MigrationTool>> getPendingMigrations(String version, String token) throws CatalogException {
         validateAdmin(token);
-        return getPendingMigrations(version);
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+        return filterPendingMigrations(version, availableMigrations);
     }
 
-    private List<Class<? extends MigrationTool>> getPendingMigrations(String version) throws MigrationException {
-        // 2.1. Get all available migrations sorted to check if previous migrations have been run
-        List<Class<? extends MigrationTool>> migrations = getAllSortedAvailableMigrations();
+    private List<Class<? extends MigrationTool>> filterPendingMigrations(String version,
+                                                                         Set<Class<? extends MigrationTool>> availableMigrations)
+            throws MigrationException {
+
+        // 2.1. Sort all available migrations to check if previous migrations have been run
+        List<Class<? extends MigrationTool>> migrations = new ArrayList<>(availableMigrations);
+        migrations.sort(this::compareTo);
 
         // 2.2. Find position of first migration with version "version"
         int pos = -1;
@@ -138,7 +146,32 @@ public class MigrationManager {
                 .filterInputsBy(input -> input != null && input.endsWith(".class"))
         );
 
-        return reflections.getSubTypesOf(MigrationTool.class);
+        Set<Class<? extends MigrationTool>> migrations = reflections.getSubTypesOf(MigrationTool.class);
+
+        // Validate unique ids and rank
+        Map<String, Set<String>> versionIdMap = new HashMap<>();
+        Map<String, Set<Integer>> versionRankMap = new HashMap<>();
+
+        for (Class<? extends MigrationTool> migration : migrations) {
+            Migration annotation = getMigrationAnnotation(migration);
+
+            if (!versionIdMap.containsKey(annotation.version())) {
+                versionIdMap.put(annotation.version(), new HashSet<>());
+                versionRankMap.put(annotation.version(), new HashSet<>());
+            }
+            if (versionIdMap.get(annotation.version()).contains(annotation.id())) {
+                throw new IllegalStateException("Found duplicated migration id '" + annotation.id() + "' in version "
+                        + annotation.version());
+            }
+            if (versionRankMap.get(annotation.version()).contains(annotation.rank())) {
+                throw new IllegalStateException("Found duplicated migration rank " + annotation.rank() + " in version "
+                        + annotation.version());
+            }
+            versionIdMap.get(annotation.version()).add(annotation.id());
+            versionRankMap.get(annotation.version()).add(annotation.rank());
+        }
+
+        return migrations;
     }
 
     private static Collection<URL> getUrls() {
@@ -153,13 +186,6 @@ public class MigrationManager {
             }
         }
         return urls;
-    }
-
-
-    private List<Class<? extends MigrationTool>> getAllSortedAvailableMigrations() {
-        List<Class<? extends MigrationTool>> migrations = new ArrayList<>(getAvailableMigrations());
-        migrations.sort(this::compareTo);
-        return migrations;
     }
 
     /**
@@ -222,8 +248,10 @@ public class MigrationManager {
     }
 
 
-    private List<Class<? extends MigrationTool>> getRunnableMigrations(String version, Set<Migration.MigrationDomain> domainFilter,
-                                                             Set<Migration.MigrationLanguage> languageFilter) throws MigrationException {
+    private List<Class<? extends MigrationTool>> filterRunnableMigrations(String version, Set<Migration.MigrationDomain> domainFilter,
+                                                                          Set<Migration.MigrationLanguage> languageFilter,
+                                                                          Set<Class<? extends MigrationTool>> allMigrations)
+            throws MigrationException {
 
         if (domainFilter == null || domainFilter.isEmpty()) {
             domainFilter = EnumSet.allOf(Migration.MigrationDomain.class);
@@ -232,7 +260,6 @@ public class MigrationManager {
             languageFilter = EnumSet.allOf(Migration.MigrationLanguage.class);
         }
 
-        Set<Class<? extends MigrationTool>> allMigrations = getAvailableMigrations();
         List<Class<? extends MigrationTool>> filteredMigrations = new LinkedList<>();
 
         for (Class<? extends MigrationTool> migration : allMigrations) {
