@@ -1241,8 +1241,20 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "Sample name.")
+        @Parameter(names = {"--sample"}, description = "Sample name.", required = true)
         public String sample;
+
+        @Parameter(names = {"--si", "--signature-id"}, description = "Signature ID.")
+        public String signatureId;
+
+        @Parameter(names = {"--sd", "--signature-description"}, description = "Signature description.")
+        public String signatureDescription;
+
+        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+        public Map<String, String> signatureQuery = new HashMap<>();
+
+        @Parameter(names = {"--fitting"}, description = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour.")
+        public boolean fitting;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
@@ -1394,20 +1406,23 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
 
-        @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID.")
+        @Parameter(names = {"--vsi", "--variant-stats-id"}, description = "Variant stats ID.")
         public String variantStatsId;
 
-        @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description.")
+        @Parameter(names = {"--vsd", "--variant-stats-description"}, description = "Variant stats description.")
         public String variantStatsDecription;
 
         @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
         public Map<String, String> variantStatsQuery = new HashMap<>();
 
-//        @Parameter(names = {"--signature-id"}, description = "Signature ID.")
-//        public String signatureId;
-//
-//        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
-//        public Map<String, String> signatureQuery = new HashMap<>();
+        @Parameter(names = {"--si", "--signature-id"}, description = "Signature ID.")
+        public String signatureId;
+
+        @Parameter(names = {"--sd", "--signature-description"}, description = "Signature description.")
+        public String signatureDescription;
+
+        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+        public Map<String, String> signatureQuery = new HashMap<>();
 
         @Parameter(names = {"--gpd", "--genome-plot-description"}, description = "Genome plot description.")
         public String genomePlotDescr;

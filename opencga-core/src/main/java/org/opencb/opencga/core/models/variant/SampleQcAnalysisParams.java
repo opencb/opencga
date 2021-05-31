@@ -24,6 +24,9 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String variantStatsId;
     private String variantStatsDescription;
     private AnnotationVariantQueryParams variantStatsQuery;
+    private String mutationalSignatureId;
+    private String mutationalSignatureDescription;
+    private SampleQcSignatureQueryParams mutationalSignatureQuery;
     private String genomePlotDescription;
     private String genomePlotConfigFile;
     private String outdir;
@@ -32,12 +35,16 @@ public class SampleQcAnalysisParams extends ToolParams {
     }
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
-                                  AnnotationVariantQueryParams variantStatsQuery, String genomePlotDescription, String genomePlotConfigFile,
-                                  String outdir) {
+                                  AnnotationVariantQueryParams variantStatsQuery, String mutationalSignatureId,
+                                  String mutationalSignatureDescription, SampleQcSignatureQueryParams mutationalSignatureQuery,
+                                  String genomePlotDescription, String genomePlotConfigFile, String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
+        this.mutationalSignatureId = mutationalSignatureId;
+        this.mutationalSignatureDescription = mutationalSignatureDescription;
+        this.mutationalSignatureQuery = mutationalSignatureQuery;
         this.genomePlotDescription = genomePlotDescription;
         this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
@@ -50,6 +57,9 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
         sb.append(", variantStatsDescription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
+        sb.append(", mutationalSignatureId='").append(mutationalSignatureId).append('\'');
+        sb.append(", mutationalSignatureDescription='").append(mutationalSignatureDescription).append('\'');
+        sb.append(", mutationalSignatureQuery=").append(mutationalSignatureQuery);
         sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
         sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
@@ -90,6 +100,33 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setVariantStatsQuery(AnnotationVariantQueryParams variantStatsQuery) {
         this.variantStatsQuery = variantStatsQuery;
+        return this;
+    }
+
+    public String getMutationalSignatureId() {
+        return mutationalSignatureId;
+    }
+
+    public SampleQcAnalysisParams setMutationalSignatureId(String mutationalSignatureId) {
+        this.mutationalSignatureId = mutationalSignatureId;
+        return this;
+    }
+
+    public String getMutationalSignatureDescription() {
+        return mutationalSignatureDescription;
+    }
+
+    public SampleQcAnalysisParams setMutationalSignatureDescription(String mutationalSignatureDescription) {
+        this.mutationalSignatureDescription = mutationalSignatureDescription;
+        return this;
+    }
+
+    public SampleQcSignatureQueryParams getMutationalSignatureQuery() {
+        return mutationalSignatureQuery;
+    }
+
+    public SampleQcAnalysisParams setMutationalSignatureQuery(SampleQcSignatureQueryParams mutationalSignatureQuery) {
+        this.mutationalSignatureQuery = mutationalSignatureQuery;
         return this;
     }
 
