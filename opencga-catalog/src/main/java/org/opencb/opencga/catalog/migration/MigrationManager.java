@@ -163,7 +163,7 @@ public class MigrationManager {
     }
 
     /**
-     * Sort MigrationTools by version -> domain -> language -> rank.
+     * Sort MigrationTools by version -> rank.
      *
      * @param m1 MigrationTool 1.
      * @param m2 MigrationTool 2.
@@ -208,18 +208,6 @@ public class MigrationManager {
             } else if (Integer.parseInt(m1VersionSplit[1]) < Integer.parseInt(m2VersionSplit[1])) {
                 return -1;
             }
-        }
-
-        // Domain
-        int compare = m1Annotation.domain().compareTo(m2Annotation.domain());
-        if (compare != 0) {
-            return compare;
-        }
-
-        // Language
-        compare = m1Annotation.language().compareTo(m2Annotation.language());
-        if (compare != 0) {
-            return compare;
         }
 
         // Rank
