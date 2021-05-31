@@ -8,7 +8,7 @@ The system enables to define a list of permissions at a member level, being a me
 
 ## Users in OpenCGA
 
-Any study has intrinsically defined three different member levels
+Any study has intrinsically defined three different membership levels:
 
 ### Owner <a id="SharingandPermissions-Owner"></a>
 
@@ -29,7 +29,7 @@ Apart from _admins,_ there is also an special group called _members_. Any user w
 * The _admin_ users might want to predefined some permissions any _member_ of a study will have. In such a case, _admin_ users will just add new users to that group and those users will automatically be granted the permissions the group has.
 * If an _admin_ user wants to completely revoke any permission to one user, by removing that user from the _members_ group, OpenCGA will automatically search for any permissions set for that user in any entity and remove it.
 
-## Decision Algorithm 
+### Decision Algorithm 
 
 The next schema provides a visual explanation of the algorithm implemented in Catalog for deciding whether the user has or not access to the data in the context of a study. 
 
