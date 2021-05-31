@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-@Migration(id="2.1.0-CATALOG-JS-1", description = "Create index for sample RGA status #1693", version = "2.1.0",
+@Migration(id="build_rga_indexes", description = "Create index for sample RGA status #1693", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVASCRIPT, rank = 1)
 public class Migration1 extends MigrationTool {
 

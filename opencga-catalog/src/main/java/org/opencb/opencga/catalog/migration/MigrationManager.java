@@ -217,7 +217,8 @@ public class MigrationManager {
             return -1;
         }
 
-        return 0;
+        throw new IllegalStateException("Found migration '" + m1Annotation.id() + "' and '" + m2Annotation.id() + "' with same rank "
+                + m1Annotation.rank() + " for same version " + m1Annotation.version());
     }
 
 

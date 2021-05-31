@@ -9,7 +9,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 
-@Migration(id="2.0.3-CATALOG-JAVA-1", description = "Recalculate roles from Family #1763", version = "2.0.3", rank = 1)
+@Migration(id="recalculate_roles", description = "Recalculate roles from Family #1763", version = "2.0.3", rank = 1)
 public class Migration1 extends MigrationTool {
 
     @Override

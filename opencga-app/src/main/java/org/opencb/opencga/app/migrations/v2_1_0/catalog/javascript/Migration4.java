@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-@Migration(id="2.1.0-CATALOG-JS-4", description = "Update QC fields from Sample and File #1730", version = "2.1.0",
+@Migration(id="update_qc_file_sample_fields", description = "Update QC fields from Sample and File #1730", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVASCRIPT, rank = 4)
 public class Migration4 extends MigrationTool {
 
