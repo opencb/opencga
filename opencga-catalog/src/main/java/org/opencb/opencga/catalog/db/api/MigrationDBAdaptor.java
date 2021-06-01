@@ -18,7 +18,9 @@ public interface MigrationDBAdaptor {
 
     enum QueryParams implements QueryParam {
         ID("id", STRING, ""),
-        DATE("date", QueryParam.Type.DATE, ""),
+        VERSION("version", STRING, ""),
+        START("date", QueryParam.Type.DATE, ""),
+        END("date", QueryParam.Type.DATE, ""),
         PATCH("patch", INTEGER, ""),
         STATUS("status", STRING, "");
 
