@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
@@ -73,8 +72,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Missing study");
         }
 
-        if (StringUtils.isEmpty(signatureParams.getSample())) {
-            throw new ToolException("Missing sample");
+        if (signatureParams.getQuery() == null) {
+            throw new ToolException("Missing signature query");
         }
 
         assembly = ResourceUtils.getAssembly(catalogManager, study, token);
@@ -121,24 +120,29 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setFitting(signatureParams.isFitting())
                     .execute();
 
-
             // Update quality control for the catalog sample
-            if (params.containsKey(QC_UPDATE_KEYNAME)) {
+            if (signatureParams.getQuery() != null && signatureParams.getQuery().containsKey(QC_UPDATE_KEYNAME)) {
+                // Remove quality control update key
+                signatureParams.getQuery().remove(QC_UPDATE_KEYNAME);
+
                 OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), signatureParams.getSample(),
                         QueryOptions.empty(), getToken());
                 Sample sample = sampleResult.first();
                 if (sample != null) {
-                    Signature signature = null;
                     // Get genome context file
-                    for (java.io.File imgFile : getOutDir().toFile().listFiles()) {
-                        if (imgFile.getName().equals(GENOME_CONTEXT_FILENAME)) {
-                            Signature.GenomeContextCount[] genomeContextCounts = parseGenomeContextFile(imgFile);
-                            signature = new Signature(signatureParams.getId(), signatureParams.getDescription(),
-                                    (ObjectMap) signatureParams.getQuery().toParams(), "SNV", genomeContextCounts, Collections.emptyList());
-                            break;
+                    File contextFile = getOutDir().resolve(GENOME_CONTEXT_FILENAME).toFile();
+                    if (contextFile.exists()) {
+                        Signature.GenomeContextCount[] genomeContextCounts = parseGenomeContextFile(contextFile);
+                        Signature signature = new Signature(signatureParams.getId(), signatureParams.getDescription(),
+                                signatureParams.getQuery(), "SNV", genomeContextCounts, null);
+
+                        File imgFile = getOutDir().resolve("signature_summary.png").toFile();
+                        if (imgFile.exists()) {
+                            int index = imgFile.getAbsolutePath().indexOf("JOBS/");
+                            String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
+                            signature.setFiles(Collections.singletonList(relativeFilePath));
                         }
-                    }
-                    if (signature !=  null) {
+
                         SampleQualityControl qc = sampleResult.first().getQualityControl();
                         if (qc == null) {
                             qc = new SampleQualityControl();
@@ -147,6 +151,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
                         catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                                 QueryOptions.empty(), getToken());
+                    } else {
+                        throw new ToolException("It could not find the genome context file after running mutational signature");
                     }
                 }
             }
@@ -179,9 +185,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 String[] fields = lines.get(i).split("\t");
                 sigCounts[i-1] = new Signature.GenomeContextCount(fields[2], Math.round(Float.parseFloat((fields[3]))));
             }
-            result.setSignature(new Signature(signatureParams.getId(), signatureParams.getDescription(),
-                    signatureParams.getQuery() == null ? null : (ObjectMap) signatureParams.getQuery().toParams(), "SNV", sigCounts,
-                    Collections.emptyList()));
+            result.setSignature(new Signature(signatureParams.getId(), signatureParams.getDescription(), signatureParams.getQuery(), "SNV",
+                    sigCounts, Collections.emptyList()));
         }
 
         // Signatures coefficients

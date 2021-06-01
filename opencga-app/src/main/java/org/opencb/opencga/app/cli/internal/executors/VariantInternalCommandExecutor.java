@@ -783,15 +783,11 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void mutationalSignature() throws Exception {
         VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
 
-        // Build signature query from cli options
-        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class,
-                variantCommandOptions.mutationalSignatureCommandOptions.signatureQuery);
-
         ObjectMap params = new MutationalSignatureAnalysisParams(
                 cliOptions.sample,
-                cliOptions.signatureId,
-                cliOptions.signatureDescription,
-                signatureQuery,
+                cliOptions.id,
+                cliOptions.description,
+                new ObjectMap(cliOptions.query),
                 cliOptions.fitting,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
@@ -880,10 +876,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
 
-        // Build signature query from cli options
-        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class,
-                variantCommandOptions.mutationalSignatureCommandOptions.signatureQuery);
-
         ObjectMap params = new SampleQcAnalysisParams(
                 cliOptions.sample,
                 cliOptions.variantStatsId,
@@ -891,7 +883,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 variantStatsQuery,
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
-                signatureQuery,
+                new ObjectMap(cliOptions.signatureQuery),
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
                 cliOptions.outdir)

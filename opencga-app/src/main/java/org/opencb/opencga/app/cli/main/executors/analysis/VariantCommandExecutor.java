@@ -339,15 +339,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<Job> mutationalSignature() throws ClientException {
         // Build signature query from cli options
-        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class,
-                variantCommandOptions.mutationalSignatureCommandOptions.signatureQuery);
 
         return openCGAClient.getVariantClient().runMutationalSignature(
                 new MutationalSignatureAnalysisParams(
                         variantCommandOptions.mutationalSignatureCommandOptions.sample,
-                        variantCommandOptions.mutationalSignatureCommandOptions.signatureId,
-                        variantCommandOptions.mutationalSignatureCommandOptions.signatureDescription,
-                        signatureQuery,
+                        variantCommandOptions.mutationalSignatureCommandOptions.id,
+                        variantCommandOptions.mutationalSignatureCommandOptions.description,
+                        new ObjectMap(variantCommandOptions.mutationalSignatureCommandOptions.query),
                         variantCommandOptions.mutationalSignatureCommandOptions.fitting,
                         variantCommandOptions.mutationalSignatureCommandOptions.outdir
                 ),
@@ -422,9 +420,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
 
-        // Build signature query from cli options
-        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);
-
         return openCGAClient.getVariantClient().runSampleQc(
                 new SampleQcAnalysisParams(
                         cliOptions.sample,
@@ -433,7 +428,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantStatsQuery,
                         cliOptions.signatureId,
                         cliOptions.signatureDescription,
-                        signatureQuery,
+                        new ObjectMap(cliOptions.signatureQuery),
                         cliOptions.genomePlotDescr,
                         cliOptions.genomePlotConfigFile,
                         cliOptions.outdir

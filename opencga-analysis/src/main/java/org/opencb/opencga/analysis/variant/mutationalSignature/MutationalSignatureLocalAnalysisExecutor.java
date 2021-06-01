@@ -68,7 +68,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         // Get first variant to check where the genome context is stored
         Query query = new Query();
         if (getQuery() != null) {
-            query.putAll(getQuery().toParams());
+            query.putAll(getQuery());
         }
         query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
@@ -98,7 +98,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         // Get variant iterator
         Query query = new Query();
         if (getQuery() != null) {
-            query.putAll(getQuery().toParams());
+            query.putAll(getQuery());
         }
         query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 
@@ -175,7 +175,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             // Get variant iterator
             Query query = new Query();
             if (getQuery() != null) {
-                query.putAll(getQuery().toParams());
+                query.putAll(getQuery());
             }
             query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
 

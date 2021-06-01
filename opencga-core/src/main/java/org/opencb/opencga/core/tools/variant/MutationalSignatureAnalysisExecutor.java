@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.variant.SampleQcSignatureQueryParams;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.io.File;
@@ -38,7 +38,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     private String sample;
     private String queryId;
     private String queryDescription;
-    private SampleQcSignatureQueryParams query;
+    private ObjectMap query;
     private boolean fitting;
 
 //    private String sampleName;
@@ -288,11 +288,11 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
-    public SampleQcSignatureQueryParams getQuery() {
+    public ObjectMap getQuery() {
         return query;
     }
 
-    public MutationalSignatureAnalysisExecutor setQuery(SampleQcSignatureQueryParams query) {
+    public MutationalSignatureAnalysisExecutor setQuery(ObjectMap query) {
         this.query = query;
         return this;
     }

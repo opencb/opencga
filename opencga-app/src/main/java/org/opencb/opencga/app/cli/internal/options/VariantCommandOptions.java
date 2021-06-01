@@ -1244,14 +1244,14 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample name.", required = true)
         public String sample;
 
-        @Parameter(names = {"--si", "--signature-id"}, description = "Signature ID.")
-        public String signatureId;
+        @Parameter(names = {"--id"}, description = "Signature ID.")
+        public String id;
 
-        @Parameter(names = {"--sd", "--signature-description"}, description = "Signature description.")
-        public String signatureDescription;
+        @Parameter(names = {"--description"}, description = "Signature description.")
+        public String description;
 
-        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
-        public Map<String, String> signatureQuery = new HashMap<>();
+        @DynamicParameter(names = {"-q", "--query"}, description = "Signature query, e.g.:. -q type=\"SNV\" -q ct=\"missense_variant\"")
+        public Map<String, String> query = new HashMap<>();
 
         @Parameter(names = {"--fitting"}, description = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour.")
         public boolean fitting;

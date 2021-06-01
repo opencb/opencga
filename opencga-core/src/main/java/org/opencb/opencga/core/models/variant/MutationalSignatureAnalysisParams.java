@@ -25,7 +25,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     private String sample;
     private String id;
     private String description;
-    private SampleQcSignatureQueryParams query;
+    private ObjectMap query;
     private boolean fitting;
 
     private String outdir;
@@ -33,7 +33,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String sample, String id, String description, SampleQcSignatureQueryParams query,
+    public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query,
                                              boolean fitting, String outdir) {
         this.sample = sample;
         this.id = id;
@@ -83,11 +83,11 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         return this;
     }
 
-    public SampleQcSignatureQueryParams getQuery() {
+    public ObjectMap getQuery() {
         return query;
     }
 
-    public MutationalSignatureAnalysisParams setQuery(SampleQcSignatureQueryParams query) {
+    public MutationalSignatureAnalysisParams setQuery(ObjectMap query) {
         this.query = query;
         return this;
     }

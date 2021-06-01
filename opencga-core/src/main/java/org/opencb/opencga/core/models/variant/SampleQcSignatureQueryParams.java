@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class SampleQcSignatureQueryParams extends ToolParams {
@@ -16,31 +17,17 @@ public class SampleQcSignatureQueryParams extends ToolParams {
     public SampleQcSignatureQueryParams() {
     }
 
-    public SampleQcSignatureQueryParams(String sample, String ct, String biotype, String filter, String qual, String region, String gene,
-                                        String panel) {
-        this.sample = sample;
-        this.ct = ct;
-        this.biotype = biotype;
-        this.filter = filter;
-        this.qual = qual;
-        this.region = region;
-        this.gene = gene;
-        this.panel = panel;
+    public SampleQcSignatureQueryParams(Query query) {
+        appendQuery(query);
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("SampleQcSignatureQueryParams{");
-        sb.append("sample='").append(sample).append('\'');
-        sb.append(", ct='").append(ct).append('\'');
-        sb.append(", biotype='").append(biotype).append('\'');
-        sb.append(", filter='").append(filter).append('\'');
-        sb.append(", qual='").append(qual).append('\'');
-        sb.append(", region='").append(region).append('\'');
-        sb.append(", gene='").append(gene).append('\'');
-        sb.append(", panel='").append(panel).append('\'');
-        sb.append('}');
-        return sb.toString();
+    public SampleQcSignatureQueryParams appendQuery(Query query) {
+        updateParams(query);
+        return this;
+    }
+
+    public Query toQuery() {
+        return new Query(toObjectMap());
     }
 
     public String getSample() {

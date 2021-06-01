@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class SampleQcAnalysisParams extends ToolParams {
@@ -24,9 +25,9 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String variantStatsId;
     private String variantStatsDescription;
     private AnnotationVariantQueryParams variantStatsQuery;
-    private String mutationalSignatureId;
-    private String mutationalSignatureDescription;
-    private SampleQcSignatureQueryParams mutationalSignatureQuery;
+    private String signatureId;
+    private String signatureDescription;
+    private ObjectMap signatureQuery;
     private String genomePlotDescription;
     private String genomePlotConfigFile;
     private String outdir;
@@ -35,16 +36,16 @@ public class SampleQcAnalysisParams extends ToolParams {
     }
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
-                                  AnnotationVariantQueryParams variantStatsQuery, String mutationalSignatureId,
-                                  String mutationalSignatureDescription, SampleQcSignatureQueryParams mutationalSignatureQuery,
-                                  String genomePlotDescription, String genomePlotConfigFile, String outdir) {
+                                  AnnotationVariantQueryParams variantStatsQuery, String signatureId, String signatureDescription,
+                                  ObjectMap signatureQuery, String genomePlotDescription, String genomePlotConfigFile,
+                                  String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
-        this.mutationalSignatureId = mutationalSignatureId;
-        this.mutationalSignatureDescription = mutationalSignatureDescription;
-        this.mutationalSignatureQuery = mutationalSignatureQuery;
+        this.signatureId = signatureId;
+        this.signatureDescription = signatureDescription;
+        this.signatureQuery = signatureQuery;
         this.genomePlotDescription = genomePlotDescription;
         this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
@@ -57,9 +58,9 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
         sb.append(", variantStatsDescription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
-        sb.append(", mutationalSignatureId='").append(mutationalSignatureId).append('\'');
-        sb.append(", mutationalSignatureDescription='").append(mutationalSignatureDescription).append('\'');
-        sb.append(", mutationalSignatureQuery=").append(mutationalSignatureQuery);
+        sb.append(", signatureId='").append(signatureId).append('\'');
+        sb.append(", signatureDescription='").append(signatureDescription).append('\'');
+        sb.append(", signatureQuery=").append(signatureQuery);
         sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
         sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
@@ -103,30 +104,30 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public String getMutationalSignatureId() {
-        return mutationalSignatureId;
+    public String getSignatureId() {
+        return signatureId;
     }
 
-    public SampleQcAnalysisParams setMutationalSignatureId(String mutationalSignatureId) {
-        this.mutationalSignatureId = mutationalSignatureId;
+    public SampleQcAnalysisParams setSignatureId(String signatureId) {
+        this.signatureId = signatureId;
         return this;
     }
 
-    public String getMutationalSignatureDescription() {
-        return mutationalSignatureDescription;
+    public String getSignatureDescription() {
+        return signatureDescription;
     }
 
-    public SampleQcAnalysisParams setMutationalSignatureDescription(String mutationalSignatureDescription) {
-        this.mutationalSignatureDescription = mutationalSignatureDescription;
+    public SampleQcAnalysisParams setSignatureDescription(String signatureDescription) {
+        this.signatureDescription = signatureDescription;
         return this;
     }
 
-    public SampleQcSignatureQueryParams getMutationalSignatureQuery() {
-        return mutationalSignatureQuery;
+    public ObjectMap getSignatureQuery() {
+        return signatureQuery;
     }
 
-    public SampleQcAnalysisParams setMutationalSignatureQuery(SampleQcSignatureQueryParams mutationalSignatureQuery) {
-        this.mutationalSignatureQuery = mutationalSignatureQuery;
+    public SampleQcAnalysisParams setSignatureQuery(ObjectMap signatureQuery) {
+        this.signatureQuery = signatureQuery;
         return this;
     }
 

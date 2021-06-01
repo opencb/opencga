@@ -941,7 +941,7 @@ public class VariantWebService extends AnalysisWebService {
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
             params.setSample(query.getString(SAMPLE.key()))
-                    .setQuery(ToolParams.fromParams(SampleQcSignatureQueryParams.class, query))
+                    .setQuery(query)
                     .setFitting(fitting);
 
             MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
