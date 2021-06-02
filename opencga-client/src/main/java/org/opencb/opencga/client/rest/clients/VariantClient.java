@@ -153,10 +153,10 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<String> runGenomePlot(GenomePlotAnalysisParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runGenomePlot(GenomePlotAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "variant/genomePlot", null, "run", params, POST, String.class);
+        return execute("analysis", null, "variant/genomePlot", null, "run", params, POST, Job.class);
     }
 
     /**

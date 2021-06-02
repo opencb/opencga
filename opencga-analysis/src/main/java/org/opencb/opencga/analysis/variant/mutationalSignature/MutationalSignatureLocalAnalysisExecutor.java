@@ -271,7 +271,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                     + ", key = " + key + ", k = " + k + ", sequence = " + sequence + ", seq = " + seq);
         }
     }
-    
+
     private String executeRScript() throws IOException, ToolExecutorException {
         // Download signature profiles
         File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir(),

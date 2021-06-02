@@ -1217,60 +1217,17 @@ public class VariantWebService extends AnalysisWebService {
 
     @POST
     @Path("/genomePlot/run")
-    @ApiOperation(value = GenomePlotAnalysis.DESCRIPTION, response = String.class)
-    public Response genomePlot(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+    @ApiOperation(value = GenomePlotAnalysis.DESCRIPTION, response = Job.class)
+    public Response genomePlotRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = GenomePlotAnalysisParams.DESCRIPTION, required = true) GenomePlotAnalysisParams params) {
-        File outDir = null;
-        try {
-            // Create temporal directory
-            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "plot-" + System.nanoTime()).toFile();
-            outDir.mkdir();
-            if (!outDir.exists()) {
-                return createErrorResponse(new Exception("Error creating temporal directory for genome plot analysis"));
-            }
-
-            StopWatch watch = StopWatch.createStarted();
-
-            GenomePlotAnalysis genomePlotAnalysis = new GenomePlotAnalysis();
-            genomePlotAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir.toPath(), null,
-                    token);
-            genomePlotAnalysis.setStudy(study)
-                    .setGenomePlotParams(params)
-                    .start();
-
-            // Check results by reading the output file
-            for (File imgfile : outDir.toPath().toFile().listFiles()) {
-                if (imgfile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
-                    FileInputStream fileInputStreamReader = new FileInputStream(imgfile);
-                    byte[] bytes = new byte[(int) imgfile.length()];
-                    fileInputStreamReader.read(bytes);
-
-                    String img = new String(Base64.getEncoder().encode(bytes), StandardCharsets.UTF_8);
-
-                    watch.stop();
-                    OpenCGAResult<String> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                            Collections.singletonList(img), 1);
-
-                    //System.out.println(result.toString());
-                    return createOkResponse(result);
-                }
-            }
-            return createErrorResponse(new Exception("Error plotting Genome graph"));
-        } catch (ToolException | IOException e) {
-            return createErrorResponse(e);
-        } finally {
-            if (outDir != null) {
-                // Delete temporal directory
-                try {
-                    if (outDir.exists()) {
-                        FileUtils.deleteDirectory(outDir);
-                    }
-                } catch (IOException e) {
-                    logger.warn("Error cleaning scratch directory " + outDir, e);
-                }
-            }
-        }
+        // To be sure: do not update quality control sample
+        params.setSample(null);
+        return submitJob(GenomePlotAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

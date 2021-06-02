@@ -59,6 +59,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
@@ -175,6 +176,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 queryResponse = mutationalSignature();
+                break;
+
+            case GENOME_PLOT_RUN_COMMAND:
+                queryResponse = genomePlot();
                 break;
 
             case MENDELIAN_ERROR_RUN_COMMAND:
@@ -338,8 +343,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //    }
 
     private RestResponse<Job> mutationalSignature() throws ClientException {
-        // Build signature query from cli options
-
         return openCGAClient.getVariantClient().runMutationalSignature(
                 new MutationalSignatureAnalysisParams(
                         variantCommandOptions.mutationalSignatureCommandOptions.sample,
@@ -350,6 +353,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.mutationalSignatureCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.mutationalSignatureCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> genomePlot() throws ClientException {
+        return openCGAClient.getVariantClient().runGenomePlot(
+                new GenomePlotAnalysisParams(
+                        null,
+                        variantCommandOptions.genomePlotCommandOptions.id,
+                        variantCommandOptions.genomePlotCommandOptions.description,
+                        variantCommandOptions.genomePlotCommandOptions.configFile,
+                        variantCommandOptions.genomePlotCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.genomePlotCommandOptions.study)
         );
     }
 
@@ -429,6 +445,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.signatureId,
                         cliOptions.signatureDescription,
                         new ObjectMap(cliOptions.signatureQuery),
+                        cliOptions.genomePlotId,
                         cliOptions.genomePlotDescr,
                         cliOptions.genomePlotConfigFile,
                         cliOptions.outdir

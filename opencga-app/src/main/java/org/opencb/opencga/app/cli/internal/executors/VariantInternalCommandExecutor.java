@@ -33,6 +33,7 @@ import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -84,6 +85,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
@@ -213,6 +215,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 mutationalSignature();
+                break;
+            case GENOME_PLOT_RUN_COMMAND:
+                genomePlot();
                 break;
             case MENDELIAN_ERROR_RUN_COMMAND:
                 mendelianError();
@@ -795,6 +800,20 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(MutationalSignatureAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
+    private void genomePlot() throws Exception {
+        VariantCommandOptions.GenomePlotInternalCommandOptions cliOptions = variantCommandOptions.genomePlotInternalCommandOptions;
+
+        ObjectMap params = new GenomePlotAnalysisParams(
+                cliOptions.sample,
+                cliOptions.id,
+                cliOptions.description,
+                cliOptions.configFile,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(GenomePlotAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
     private void mendelianError() throws Exception {
         VariantCommandOptions.MendelianErrorCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
         ObjectMap params = new ObjectMap();
@@ -884,6 +903,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
                 new ObjectMap(cliOptions.signatureQuery),
+                cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,
                 cliOptions.outdir)

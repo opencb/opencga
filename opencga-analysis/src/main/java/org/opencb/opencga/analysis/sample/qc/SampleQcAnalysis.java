@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.commons.datastore.core.Event;
@@ -127,9 +128,9 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check mutational signature
-//        if (!sample.isSomatic()) {
-//            runSignature = false;
-//        }
+        if (MapUtils.isEmpty(analysisParams.getSignatureQuery())) {
+            runSignature = false;
+        }
 
         // Check genome plot
         if (StringUtils.isEmpty(analysisParams.getGenomePlotConfigFile())) {
@@ -184,8 +185,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
                 if (runGenomePlot) {
                     // Run genome plot
-                    params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGenomePlotDescription(),
-                            analysisParams.getGenomePlotConfigFile(), null)
+                    params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGenomePlotId(),
+                            analysisParams.getGenomePlotDescription(), analysisParams.getGenomePlotConfigFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     genomePlotJobResult = catalogManager.getJobManager()

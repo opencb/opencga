@@ -28,6 +28,7 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String signatureId;
     private String signatureDescription;
     private ObjectMap signatureQuery;
+    private String genomePlotId;
     private String genomePlotDescription;
     private String genomePlotConfigFile;
     private String outdir;
@@ -37,7 +38,7 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
                                   AnnotationVariantQueryParams variantStatsQuery, String signatureId, String signatureDescription,
-                                  ObjectMap signatureQuery, String genomePlotDescription, String genomePlotConfigFile,
+                                  ObjectMap signatureQuery, String genomePlotId, String genomePlotDescription, String genomePlotConfigFile,
                                   String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
@@ -46,6 +47,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.signatureId = signatureId;
         this.signatureDescription = signatureDescription;
         this.signatureQuery = signatureQuery;
+        this.genomePlotId = genomePlotId;
         this.genomePlotDescription = genomePlotDescription;
         this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
@@ -61,6 +63,7 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", signatureId='").append(signatureId).append('\'');
         sb.append(", signatureDescription='").append(signatureDescription).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
+        sb.append(", genomePlotId='").append(genomePlotId).append('\'');
         sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
         sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
@@ -128,6 +131,15 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSignatureQuery(ObjectMap signatureQuery) {
         this.signatureQuery = signatureQuery;
+        return this;
+    }
+
+    public String getGenomePlotId() {
+        return genomePlotId;
+    }
+
+    public SampleQcAnalysisParams setGenomePlotId(String genomePlotId) {
+        this.genomePlotId = genomePlotId;
         return this;
     }
 

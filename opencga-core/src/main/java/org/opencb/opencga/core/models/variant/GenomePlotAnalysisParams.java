@@ -24,6 +24,7 @@ public class GenomePlotAnalysisParams extends ToolParams {
             + "track types are: COPY-NUMBER, INDEL, REARRANGEMENT and SNV. In addition, each track can contain a specific query";
 
     private String sample;
+    private String id;
     private String description;
     private String configFile;
     private String outdir;
@@ -31,8 +32,9 @@ public class GenomePlotAnalysisParams extends ToolParams {
     public GenomePlotAnalysisParams() {
     }
 
-    public GenomePlotAnalysisParams(String sample, String description, String configFile, String outdir) {
+    public GenomePlotAnalysisParams(String sample, String id, String description, String configFile, String outdir) {
         this.sample = sample;
+        this.id = id;
         this.description = description;
         this.configFile = configFile;
         this.outdir = outdir;
@@ -42,6 +44,7 @@ public class GenomePlotAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("GenomePlotAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
+        sb.append(", id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", configFile='").append(configFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
@@ -55,6 +58,15 @@ public class GenomePlotAnalysisParams extends ToolParams {
 
     public GenomePlotAnalysisParams setSample(String sample) {
         this.sample = sample;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public GenomePlotAnalysisParams setId(String id) {
+        this.id = id;
         return this;
     }
 

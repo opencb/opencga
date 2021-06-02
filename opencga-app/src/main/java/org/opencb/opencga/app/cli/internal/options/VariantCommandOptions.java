@@ -22,6 +22,7 @@ import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -123,6 +124,8 @@ public class VariantCommandOptions {
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
     public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
+    public final GenomePlotCommandOptions genomePlotCommandOptions;
+    public final GenomePlotInternalCommandOptions genomePlotInternalCommandOptions;
     public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
     public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
@@ -188,6 +191,8 @@ public class VariantCommandOptions {
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
+        this.genomePlotCommandOptions = new GenomePlotCommandOptions();
+        this.genomePlotInternalCommandOptions = new GenomePlotInternalCommandOptions();
         this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
         this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
@@ -1260,6 +1265,61 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
+    @Parameters(commandNames = GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND, commandDescription = GenomePlotAnalysis.DESCRIPTION)
+    public class GenomePlotCommandOptions {
+        public static final String GENOME_PLOT_RUN_COMMAND = GenomePlotAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--id"}, description = "Genome plot ID.")
+        public String id;
+
+        @Parameter(names = {"--description"}, description = "Genome plot description.")
+        public String description;
+
+        @Parameter(names = {"--config-file"}, description = "Genome plot configuration file in JSON format.", required = true)
+        public String configFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GenomePlotInternalCommandOptions.GENOME_PLOT_RUN_COMMAND, commandDescription = GenomePlotAnalysis.DESCRIPTION)
+    public class GenomePlotInternalCommandOptions {
+        public static final String GENOME_PLOT_RUN_COMMAND = GenomePlotAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        public String sample;
+
+        @Parameter(names = {"--id"}, description = "Genome plot ID.")
+        public String id;
+
+        @Parameter(names = {"--description"}, description = "Genome plot description.")
+        public String description;
+
+        @Parameter(names = {"--config-file"}, description = "Genome plot configuration file in JSON format.", required = true)
+        public String configFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
     @Parameters(commandNames = MendelianErrorCommandOptions.MENDELIAN_ERROR_RUN_COMMAND, commandDescription = MendelianErrorAnalysis.DESCRIPTION)
     public class MendelianErrorCommandOptions {
         public static final String MENDELIAN_ERROR_RUN_COMMAND = MendelianErrorAnalysis.ID + "-run";
@@ -1423,6 +1483,9 @@ public class VariantCommandOptions {
 
         @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
         public Map<String, String> signatureQuery = new HashMap<>();
+
+        @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID.")
+        public String genomePlotId;
 
         @Parameter(names = {"--gpd", "--genome-plot-description"}, description = "Genome plot description.")
         public String genomePlotDescr;
