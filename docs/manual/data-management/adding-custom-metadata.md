@@ -14,7 +14,7 @@ A [_Variable Set_](https://github.com/opencb/opencga/blob/develop/opencga-core/s
 * **description:** String containing a description of the _Variable Set_ defined.
 * **variables:** List containing all the different _Variables_ that will form the _Variable Set._ Explained in detail below.
 
-\* _Annotable_: We consider an entry to be _Annotable_ if the entry can have _Annotation Sets._ At this stage, only [_File_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/File.java)_,_ [_Sample_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Sample.java)_,_ [_Individual_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Individual.java)_,_ [_Cohort_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Cohort.java) and [_Family_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Family.java) __are _Annotable._
+**Annotable**: We consider an entry to be _Annotable_ if the entry can have _Annotation Sets._ At this stage, only [_File_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/File.java)_,_ [_Sample_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Sample.java)_,_ [_Individual_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Individual.java)_,_ [_Cohort_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Cohort.java) and [_Family_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/Family.java) __are _Annotable._
 
 {% hint style="warning" %}
 Confidential: Explained in Sharing and Permissions section !
@@ -33,15 +33,12 @@ A _Variable Set_ is composed of a set of [_Variables_](https://github.com/opencb
 * **rank:** Integer containing the order in which the annotations will be shown \(only for web purposes\).
 * **dependsOn:** String containing the _Variable_ the current _Variable_ would depend on. Let's say we have defined two different _Variables_ in a _Variable Set_ called _country_ and _city._ We can decide that we could only give a value to _city_ once the _country_ have been filled in, so _city_ would depend on _country._
 * **description:** String containing a description for the _Variable._
-* **variableSet:** List of _Variables_ that would only be used if the _Variable_ being modelled is of type _Object._ Every _Variable_ from the list will have the fields explained in this list. __
-
-\* _Categorical_: A _Categorical_ variable can be understood as an Enum object where the possible values that can be assigned are already known. Example of some categorical  _Variables_ are: _month,_ that can only contain values from January to December, _gender,_ that could only contain values from MALE, FEMALE, UNKNOWN; etc.
+* **variableSet:** List of _Variables_ that would only be used if the _Variable_ being modelled is of type _Object._ Every _Variable_ from the list will have the fields explained in this list.
+* **Categorical**: A _Categorical_ variable can be understood as an _Enum_ object where the possible values that can be assigned are already known. Example of some categorical  _Variables_ are: _month,_ that can only contain values from January to December, _gender,_ that could only contain values from MALE, FEMALE, UNKNOWN; etc.
 
 #### Examples
 
 We are going to create two different _Variable Sets_, remember that the Variable Sets are defined at _study_ level. The first one will be used to properly identify every single _Individual_ created in OpenCGA. 
-
-The other one will be used to store some additional metadata from the _Samples_ extracted from the _Individuals._ 
 
 ```text
 {
@@ -82,6 +79,8 @@ The other one will be used to store some additional metadata from the _Samples_ 
 }
 ```
 
+The next one will be used to store some additional metadata from the _Samples_ extracted from the _Individuals._ 
+
 ```text
 {
   "unique": true,
@@ -89,20 +88,7 @@ The other one will be used to store some additional metadata from the _Samples_ 
   "id": "sample_metadata",
   "description": "Sample origin",
   "variables": [
-    {
-      "id": "tissue",
-      "name": "Tissue",
-      "category": "string",
-      "type": "TEXT",
-      "required": false,
-      "multiValue": false,
-      "allowedValues": [],
-      "rank": 1,
-      "dependsOn": "",
-      "description": "Sample tissue",
-      "attributes": {}
-    },
-    {
+{
       "id": "cell_line",
       "name": "Cell line",
       "category": "string",
@@ -115,6 +101,19 @@ The other one will be used to store some additional metadata from the _Samples_ 
       "description": "Sample cell line",
       "attributes": {}
     },
+      {
+      "id": "cell_type",
+      "name": "Cell type",
+      "category": "string",
+      "type": "TEXT",
+      "required": false,
+      "multiValue": false,
+      "allowedValues": [],
+      "rank": 3,
+      "dependsOn": "",
+      "description": "Sample cell type",
+      "attributes": {}
+    }
 }
 ```
 
@@ -124,7 +123,7 @@ An [_Annotation Set_](https://github.com/opencb/opencga/blob/develop/opencga-cor
 
 * **id:** Unique name to identify the annotation set created.
 * **variableSetId:**Unique value identifying the _Variable Set_ the _Annotation Set_ is using to define the _Annotations._
-* **annotations:** List of _Annotations_ or, in other words, values assigned for each _Variable_ defined in the _Variable Set_ corresponding to the _variableSetId._ 
+* **annotations:** List of _Annotations_ or, in other words, values assigned for each _Variable_ defined in the _Variable Set_ corresponding to the _variableSetId._
 
 The _Annotations_ are just key-value objects where each key need to match any of the _Variable names_ defined in the _Variable Set,_ and the values will correspond to the actual _Annotation_ of the _Variable._
 
