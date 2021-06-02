@@ -22,7 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.qc.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -78,7 +78,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -901,7 +900,7 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/mutationalSignature/query")
-    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.", response = MutationalSignature.class)
+    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.", response = Signature.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
@@ -954,10 +953,10 @@ public class VariantWebService extends AnalysisWebService {
             mutationalSignatureAnalysis.start();
             watch.stop();
 
-            MutationalSignature mutationalSignature = mutationalSignatureAnalysis.parse(outDir.toPath());
+            Signature signature = mutationalSignatureAnalysis.parse(outDir.toPath());
 
-            OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                    Collections.singletonList(mutationalSignature), 1);
+            OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                    Collections.singletonList(signature), 1);
             return createOkResponse(result);
         } catch (ToolException | IOException e) {
             return createErrorResponse(e);

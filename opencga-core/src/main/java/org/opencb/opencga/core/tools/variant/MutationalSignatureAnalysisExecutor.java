@@ -41,58 +41,8 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     private ObjectMap query;
     private boolean fitting;
 
-//    private String sampleName;
-//    private Path refGenomePath;
-//    private Path mutationalSignaturePath;
-//    private Path openCgaHome;
-
     public MutationalSignatureAnalysisExecutor() {
     }
-
-//    public String getStudy() {
-//        return study;
-//    }
-//
-//    public MutationalSignatureAnalysisExecutor setStudy(String study) {
-//        this.study = study;
-//        return this;
-//    }
-//
-//    public String getSampleName() {
-//        return sampleName;
-//    }
-//
-//    public MutationalSignatureAnalysisExecutor setSampleName(String sampleName) {
-//        this.sampleName = sampleName;
-//        return this;
-//    }
-//
-//    public Path getRefGenomePath() {
-//        return refGenomePath;
-//    }
-//
-//    public MutationalSignatureAnalysisExecutor setRefGenomePath(Path refGenomePath) {
-//        this.refGenomePath = refGenomePath;
-//        return this;
-//    }
-//
-//    public Path getMutationalSignaturePath() {
-//        return mutationalSignaturePath;
-//    }
-//
-//    public MutationalSignatureAnalysisExecutor setMutationalSignaturePath(Path mutationalSignaturePath) {
-//        this.mutationalSignaturePath = mutationalSignaturePath;
-//        return this;
-//    }
-//
-//    public Path getOpenCgaHome() {
-//        return openCgaHome;
-//    }
-//
-//    public MutationalSignatureAnalysisExecutor setOpenCgaHome(Path openCgaHome) {
-//        this.openCgaHome = openCgaHome;
-//        return this;
-//    }
 
     public static String getContextIndexFilename(String sampleName) {
         return "OPENCGA_" + sampleName + "_genome_context.csv";
@@ -192,56 +142,6 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
         return sum;
     }
-
-//    private MutationalSignature parse(Path dir) throws IOException {
-//        MutationalSignature result = new MutationalSignature();
-//
-//        // Context counts
-//        File contextFile = dir.resolve("context.txt").toFile();
-//        if (contextFile.exists()) {
-//            List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
-//            Signature.SignatureCount[] sigCounts = new Signature.SignatureCount[lines.size() - 1];
-//            for (int i = 1; i < lines.size(); i++) {
-//                String[] fields = lines.get(i).split("\t");
-//                sigCounts[i-1] = new Signature.SignatureCount(fields[2], Math.round(Float.parseFloat((fields[3]))));
-//            }
-//            result.setSignature(new Signature("SNV", sigCounts));
-//        }
-//
-//        // Signatures coefficients
-//        File coeffsFile = dir.resolve("signature_coefficients.json").toFile();
-//        if (coeffsFile.exists()) {
-//            SignatureFitting fitting = new SignatureFitting()
-//                    .setMethod("GEL")
-//                    .setSignatureSource("Cosmic")
-//                    .setSignatureVersion("2.0");
-//
-//            Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
-//            Map coefficients = (Map) content.get("coefficients");
-//            SignatureFitting.Score[] scores = new SignatureFitting.Score[coefficients.size()];
-//            int i = 0;
-//            for (Object key : coefficients.keySet()) {
-//                Number coeff = (Number) coefficients.get(key);
-//                scores[i++] = new SignatureFitting.Score((String) key, coeff.doubleValue());
-//            }
-//            fitting.setScores(scores);
-//            fitting.setCoeff((Double) content.get("rss"));
-//
-//            // Signature summary image
-//            File imgFile = dir.resolve("signature_summary.png").toFile();
-//            if (imgFile.exists()) {
-//                FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
-//                byte[] bytes = new byte[(int) imgFile.length()];
-//                fileInputStreamReader.read(bytes);
-//
-//                fitting.setImage(new String(Base64.getEncoder().encode(bytes), "UTF-8"));
-//            }
-//
-//            result.setFitting(fitting);
-//        }
-//
-//        return result;
-//    }
 
     public String getStudy() {
         return study;
