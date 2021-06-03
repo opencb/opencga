@@ -13,9 +13,9 @@ context <- args[1]
 signatures <- args[2]
 outdir <- args[3]
 
-context
-signatures
-outdir
+print(paste("Genome context file: ", context))
+print(paste("Mutational signatures file: ", signatures))
+print(paste("Output directory: ", outdir))
 
 
 # Getting absolute counts for each SNV trinucleotide context
@@ -29,7 +29,9 @@ dataTable <- dataTable / sum(dataTable)
 # Getting signature probabilities reference table
 #signatureTable <- read.table(args[2], sep = "\t", header = TRUE)
 signatureTable <- read.table(signatures, sep = "\t", header = TRUE)
-signatureTable <- as.matrix(signatureTable[1:96,4:33])
+header <- scan(args[2], nlines = 1, what = character())
+tags <- header[2:length(header)];
+signatureTable <- as.matrix(signatureTable[1:96,2:length(header)])
 
 # Applying non-negative least squares (NNLS)
 coefficients <- nnls(signatureTable, dataTable)
@@ -83,7 +85,7 @@ RSS <- round(RSS, digits = 4)
 coefficients <- coefficients$x / sum(coefficients$x) * 100
 
 # Creating signature names
-tags <- paste("Signature", 1:30, sep = " ")
+#tags <- paste("Signature", 1:30, sep = " ")
 
 # Writing coefficients and RSS to JSON file
 dfCoeff <- as.data.frame(t(data.frame(coefficients)))

@@ -173,7 +173,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                     // Be sure to update sample quality control
                     analysisParams.getSignatureQuery().put(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, "true");
                     params = new MutationalSignatureAnalysisParams(analysisParams.getSample(), analysisParams.getSignatureId(),
-                            analysisParams.getSignatureDescription(), analysisParams.getSignatureQuery(), true, null)
+                            analysisParams.getSignatureDescription(), analysisParams.getSignatureQuery(),
+                            analysisParams.getSignatureRelease(), true, null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     signatureJobResult = catalogManager.getJobManager()
