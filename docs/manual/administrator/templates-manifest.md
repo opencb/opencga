@@ -44,6 +44,12 @@ You can load data for the entities using **TAB separated .txt files**. There are
 * The order of the columns is not relevant.
 
 ```text
+samples.txt
+#id     individualId    somatic
+s1      NA001           true
+s2      NA001           true
+s3      NA002           true
+
 individuals.txt:
 #id         name        sex         status.name    
 NA001       uk1         female      READY           
@@ -54,6 +60,12 @@ individuals.phenotypes.txt
 #Individualid    id            name                  source
 NA001            HP:0002664    Neoplasm              HPO
 NA001            HP:0002664    Lung Adenocarcinoma   HPO
+
+individuals.samples.txt
+#IndividualId   id
+NA001           s1
+NA001           s2
+NA002           s3
 
 ```
 
