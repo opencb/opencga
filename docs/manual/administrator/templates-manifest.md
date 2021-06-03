@@ -50,6 +50,7 @@ s1      NA001           true
 s2      NA001           true
 s3      NA002           true
 
+
 individuals.txt:
 #id         name        sex         status.name    
 NA001       uk1         female      READY           
@@ -60,6 +61,7 @@ individuals.phenotypes.txt
 #Individualid    id            name                  source
 NA001            HP:0002664    Neoplasm              HPO
 NA001            HP:0002664    Lung Adenocarcinoma   HPO
+
 
 individuals.samples.txt
 #IndividualId   id

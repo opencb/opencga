@@ -44,10 +44,7 @@ import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.sample.SampleAclParams;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -1542,7 +1539,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        IndividualUpdateParams updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(sample2.getId(), sample3.getId()));
+        IndividualUpdateParams updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(
+                new SampleReferenceParam().setId(sample2.getId()), new SampleReferenceParam().setId(sample3.getId())));
         OpenCGAResult<Individual> update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 
@@ -1561,7 +1559,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        updateParams = new IndividualUpdateParams().setSamples(Collections.singletonList(sample2.getId()));
+        updateParams = new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sample2.getId())));
         update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 
@@ -1574,7 +1572,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(sample.getId(), sample2.getId()));
+        updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(
+                new SampleReferenceParam().setId(sample.getId()), new SampleReferenceParam().setId(sample2.getId())));
         update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 
