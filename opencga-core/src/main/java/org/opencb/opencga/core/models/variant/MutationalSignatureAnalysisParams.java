@@ -26,6 +26,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     private String id;
     private String description;
     private ObjectMap query;
+    private String release;
     private boolean fitting;
 
     private String outdir;
@@ -33,12 +34,13 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
     public MutationalSignatureAnalysisParams() {
     }
 
-    public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query,
+    public MutationalSignatureAnalysisParams(String sample, String id, String description, ObjectMap query, String release,
                                              boolean fitting, String outdir) {
         this.sample = sample;
         this.id = id;
         this.description = description;
         this.query = query;
+        this.release = release;
         this.fitting = fitting;
         this.outdir = outdir;
     }
@@ -50,6 +52,7 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
         sb.append(", id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", query=").append(query);
+        sb.append(", release='").append(release).append('\'');
         sb.append(", fitting=").append(fitting);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
@@ -89,6 +92,15 @@ public class MutationalSignatureAnalysisParams extends ToolParams {
 
     public MutationalSignatureAnalysisParams setQuery(ObjectMap query) {
         this.query = query;
+        return this;
+    }
+
+    public String getRelease() {
+        return release;
+    }
+
+    public MutationalSignatureAnalysisParams setRelease(String release) {
+        this.release = release;
         return this;
     }
 

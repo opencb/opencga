@@ -50,7 +50,6 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "mutational-signature";
     public static final String DESCRIPTION = "Run mutational signature analysis for a given sample.";
 
-    public final static String SIGNATURES_FILENAME = "signatures_probabilities_v2.txt";
     public final static String GENOME_CONTEXT_FILENAME = "genome_context.txt";
     public final static String SIGNATURE_COEFFS_FILENAME = "signature_coefficients.json";
     public final static String SIGNATURE_FITTING_FILENAME = "signature_summary.png";
@@ -116,6 +115,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setQueryId(signatureParams.getId())
                     .setQueryDescription(signatureParams.getDescription())
                     .setQuery(signatureParams.getQuery())
+                    .setRelease(signatureParams.getRelease())
                     .setFitting(signatureParams.isFitting())
                     .execute();
 
@@ -164,7 +164,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             SignatureFitting fitting = new SignatureFitting()
                     .setMethod("GEL")
                     .setSignatureSource("Cosmic")
-                    .setSignatureVersion("2.0");
+                    .setSignatureVersion(signatureParams.getRelease());
 
             Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
             Map coefficients = (Map) content.get("coefficients");

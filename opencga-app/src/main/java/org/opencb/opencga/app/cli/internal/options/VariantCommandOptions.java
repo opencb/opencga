@@ -1258,6 +1258,9 @@ public class VariantCommandOptions {
         @DynamicParameter(names = {"-q", "--query"}, description = "Signature query, e.g.:. -q type=\"SNV\" -q ct=\"missense_variant\"")
         public Map<String, String> query = new HashMap<>();
 
+        @Parameter(names = {"--release"}, description = "Release of COSMIC mutational signatures. Valid values: 2, 3, 3.1 and 3.2.")
+        public String release = "2";
+
         @Parameter(names = {"--fitting"}, description = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour.")
         public boolean fitting;
 
@@ -1483,6 +1486,10 @@ public class VariantCommandOptions {
 
         @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
         public Map<String, String> signatureQuery = new HashMap<>();
+
+        @Parameter(names = {"--signature-release"}, description = "Release of COSMIC mutational signatures. Valid values: 2, 3, 3.1 and 3.2.")
+        public String signatureRelease = "2";
+
 
         @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID.")
         public String genomePlotId;

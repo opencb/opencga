@@ -47,7 +47,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.GENOME_CONTEXT_FILENAME;
-import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.SIGNATURES_FILENAME;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
@@ -274,7 +273,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     private String executeRScript() throws IOException, ToolExecutorException {
         // Download signature profiles
-        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir(),
+        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, getMutationalSignatureFilename(), getOutDir(),
                 opencgaHome);
         if (signatureFile == null) {
             throw new ToolExecutorException("Error downloading mutational signatures file from " + ResourceUtils.URL);
@@ -286,7 +285,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
                 "/data/output");
         String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/" + GENOME_CONTEXT_FILENAME + " "
-                + "/data/output/" + SIGNATURES_FILENAME + " /data/output ";
+                + "/data/output/" + getMutationalSignatureFilename() + " /data/output ";
 
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
         logger.info("Docker command line: " + cmdline);

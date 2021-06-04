@@ -343,12 +343,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //    }
 
     private RestResponse<Job> mutationalSignature() throws ClientException {
+        // Check signature release
+        checkSignatureRelease(variantCommandOptions.mutationalSignatureCommandOptions.release);
+
         return openCGAClient.getVariantClient().runMutationalSignature(
                 new MutationalSignatureAnalysisParams(
                         variantCommandOptions.mutationalSignatureCommandOptions.sample,
                         variantCommandOptions.mutationalSignatureCommandOptions.id,
                         variantCommandOptions.mutationalSignatureCommandOptions.description,
                         new ObjectMap(variantCommandOptions.mutationalSignatureCommandOptions.query),
+                        variantCommandOptions.mutationalSignatureCommandOptions.release,
                         variantCommandOptions.mutationalSignatureCommandOptions.fitting,
                         variantCommandOptions.mutationalSignatureCommandOptions.outdir
                 ),
@@ -432,6 +436,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> sampleQc() throws ClientException {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
+        // Check signature release
+        checkSignatureRelease(cliOptions.signatureRelease);
+
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
@@ -445,6 +452,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.signatureId,
                         cliOptions.signatureDescription,
                         new ObjectMap(cliOptions.signatureQuery),
+                        cliOptions.signatureRelease,
                         cliOptions.genomePlotId,
                         cliOptions.genomePlotDescr,
                         cliOptions.genomePlotConfigFile,

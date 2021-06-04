@@ -788,11 +788,15 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void mutationalSignature() throws Exception {
         VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
 
+        // Check signature release
+        checkSignatureRelease(cliOptions.release);
+
         ObjectMap params = new MutationalSignatureAnalysisParams(
                 cliOptions.sample,
                 cliOptions.id,
                 cliOptions.description,
                 new ObjectMap(cliOptions.query),
+                cliOptions.release,
                 cliOptions.fitting,
                 cliOptions.outdir)
                 .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
@@ -891,6 +895,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void sampleQc() throws Exception {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
+        // Check signature release
+        checkSignatureRelease(cliOptions.signatureRelease);
+
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
@@ -903,6 +910,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.signatureId,
                 cliOptions.signatureDescription,
                 new ObjectMap(cliOptions.signatureQuery),
+                cliOptions.signatureRelease,
                 cliOptions.genomePlotId,
                 cliOptions.genomePlotDescr,
                 cliOptions.genomePlotConfigFile,

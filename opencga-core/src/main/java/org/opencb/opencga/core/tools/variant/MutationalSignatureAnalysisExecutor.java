@@ -39,6 +39,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
     private String queryId;
     private String queryDescription;
     private ObjectMap query;
+    private String release;
     private boolean fitting;
 
     public MutationalSignatureAnalysisExecutor() {
@@ -46,6 +47,10 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     public static String getContextIndexFilename(String sampleName) {
         return "OPENCGA_" + sampleName + "_genome_context.csv";
+    }
+
+    protected String getMutationalSignatureFilename() {
+        return "COSMIC_v" + release + "_SBS_" + assembly + ".txt";
     }
 
     protected static Map<String, Map<String, Double>> initFreqMap() {
@@ -194,6 +199,15 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     public MutationalSignatureAnalysisExecutor setQuery(ObjectMap query) {
         this.query = query;
+        return this;
+    }
+
+    public String getRelease() {
+        return release;
+    }
+
+    public MutationalSignatureAnalysisExecutor setRelease(String release) {
+        this.release = release;
         return this;
     }
 
