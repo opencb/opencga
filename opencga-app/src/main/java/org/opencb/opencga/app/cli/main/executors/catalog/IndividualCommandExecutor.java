@@ -35,6 +35,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.File;
@@ -187,7 +188,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 .setMother(commandOptions.motherId)
                 .setDateOfBirth(commandOptions.dateOfBirth)
                 .setSex(commandOptions.sex)
-                .setSamples(commandOptions.samples)
+                .setSamples(commandOptions.samples != null
+                        ? commandOptions.samples.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())
+                        : null)
                 .setEthnicity(commandOptions.ethnicity)
                 .setKaryotypicSex(commandOptions.karyotypicSex)
                 .setLifeStatus(commandOptions.lifeStatus)

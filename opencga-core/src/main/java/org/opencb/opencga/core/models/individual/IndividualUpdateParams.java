@@ -24,6 +24,7 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class IndividualUpdateParams {
     private IndividualProperty.KaryotypicSex karyotypicSex;
     private IndividualProperty.LifeStatus lifeStatus;
     private IndividualProperty.AffectationStatus affectationStatus;
-    private List<String> samples;
+    private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
@@ -61,7 +62,7 @@ public class IndividualUpdateParams {
                                   Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
-                                  List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
+                                  List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                   List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
                                   Map<String, Object> attributes) {
         this.id = id;
@@ -246,11 +247,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public List<String> getSamples() {
+    public List<SampleReferenceParam> getSamples() {
         return samples;
     }
 
-    public IndividualUpdateParams setSamples(List<String> samples) {
+    public IndividualUpdateParams setSamples(List<SampleReferenceParam> samples) {
         this.samples = samples;
         return this;
     }

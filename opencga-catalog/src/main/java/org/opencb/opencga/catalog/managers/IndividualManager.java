@@ -17,12 +17,12 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
@@ -45,6 +46,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -1333,11 +1335,20 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                 }
             }
         }
-        if (updateParams != null && ListUtils.isNotEmpty(updateParams.getSamples())) {
+        if (updateParams != null && CollectionUtils.isNotEmpty(updateParams.getSamples())) {
             // Check those samples can be used
-            List<String> sampleStringList = updateParams.getSamples();
-            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(studyUid, sampleStringList,
-                    SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
+            List<String> idList = new ArrayList<>(updateParams.getSamples().size());
+            for (SampleReferenceParam sample : updateParams.getSamples()) {
+                if (StringUtils.isNotEmpty(sample.getId())) {
+                    idList.add(sample.getId());
+                } else if (StringUtils.isNotEmpty(sample.getUuid())) {
+                    idList.add(sample.getUuid());
+                } else {
+                    throw new CatalogException("Missing id or uuid in 'samples'");
+                }
+            }
+            List<Sample> sampleList = catalogManager.getSampleManager().internalGet(studyUid, idList, SampleManager.INCLUDE_SAMPLE_IDS,
+                    userId, false).getResults();
 
             // Check those samples are not in use by other individuals
             checkSamplesNotInUseInOtherIndividual(sampleList.stream().map(Sample::getUid).collect(Collectors.toSet()), studyUid,
