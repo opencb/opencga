@@ -48,6 +48,7 @@
 
 * [Login](manual/login.md)
 * [Data Management](manual/data-management/README.md)
+  * [Data Ingestion Process](manual/data-management/data-ingestion-process.md)
   * [Projects and Studies](manual/data-management/projects-and-studies.md)
   * [Working with Files](manual/data-management/working-with-files.md)
   * [Sharing and Permissions](manual/data-management/sharing-and-permissions/README.md)
