@@ -206,7 +206,11 @@ $ ./opencga.sh variant stats-run --study <study>
                                  --update-stats
 ```
 
-#### **Aggregated VCFs \[TODO\]**
+#### **Aggregated VCFs** 
+
+{% hint style="danger" %}
+**This section is a draft.**
+{% endhint %}
 
 In case of having computed stats codified in the INFO column of a VCF using standard or non-standard keys, these values can be converted into `VariantStats` models, and be used for filtering.
 
