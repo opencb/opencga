@@ -90,6 +90,11 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         VariantAnnotation annotation = annotationRef.get();
         if (annotation == null) {
             annotation = new VariantAnnotation();
+            annotation.setChromosome(variant.getChromosome());
+            annotation.setStart(variant.getStart());
+            annotation.setEnd(variant.getEnd());
+            annotation.setReference(variant.getReference());
+            annotation.setAlternate(variant.getAlternate());
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "empty_annotation").increment(1);
         }
 
