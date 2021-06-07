@@ -18,15 +18,19 @@ package org.opencb.opencga.core.models.individual;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -100,6 +104,17 @@ public class IndividualUpdateParams {
         }
 
         return params;
+    }
+
+    @JsonIgnore
+    public Individual toIndividual() {
+        return new Individual(id, name,
+                StringUtils.isNotEmpty(father) ? new Individual().setId(father) : null,
+                StringUtils.isNotEmpty(mother) ? new Individual().setId(mother) : null,
+                location, qualityControl, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, TimeUtils.getTime(), lifeStatus,
+                phenotypes, disorders,
+                samples != null ? samples.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()) : null,
+                parentalConsanguinity, annotationSets, status.toCustomStatus(), new IndividualInternal(), attributes);
     }
 
     @Override

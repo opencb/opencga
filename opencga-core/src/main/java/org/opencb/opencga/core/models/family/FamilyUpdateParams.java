@@ -21,11 +21,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.individual.Individual;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -75,6 +79,13 @@ public class FamilyUpdateParams {
         }
 
         return params;
+    }
+
+    public Family toFamily() {
+        return new Family(id, name, phenotypes, disorders,
+                members != null ? members.stream().map(m -> new Individual().setId(m)).collect(Collectors.toList()) : null,
+                TimeUtils.getTime(), description, members != null ? members.size() : 0, 1, 1, annotationSets, status.toCustomStatus(),
+                new FamilyInternal(), Collections.emptyMap(), attributes);
     }
 
     @Override

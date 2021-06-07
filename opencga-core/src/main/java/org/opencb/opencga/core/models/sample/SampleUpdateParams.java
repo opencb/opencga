@@ -20,9 +20,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -75,6 +77,13 @@ public class SampleUpdateParams {
         }
 
         return params;
+    }
+
+    @JsonIgnore
+    public Sample toSample() {
+        return new Sample(id, "", processing, collection, qualityControl, 1, 1, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                somatic, phenotypes, individualId, Collections.emptyList(), status.toCustomStatus(), new SampleInternal(), annotationSets,
+                attributes);
     }
 
     @Override
