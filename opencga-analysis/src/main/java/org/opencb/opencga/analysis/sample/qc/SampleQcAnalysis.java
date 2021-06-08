@@ -55,8 +55,8 @@ import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermission
 public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats and genome plot; and "
-            + " for somatic samples, mutational signature.";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats, and if the sample " +
+            "is somatic, mutational signature and genome plot are calculated.";
 
     @ToolParams
     protected final SampleQcAnalysisParams analysisParams = new SampleQcAnalysisParams();
@@ -132,17 +132,28 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
             runSignature = false;
         }
 
+        if (runSignature && !sample.isSomatic()) {
+            addWarning("Skipping mutational signature: sample '" + sample.getId() + "' is not somatic.");
+            runSignature = false;
+        }
+
         // Check genome plot
         if (StringUtils.isEmpty(analysisParams.getGenomePlotConfigFile())) {
             runGenomePlot = false;
         } else {
-            File genomePlotConfFile = AnalysisUtils.getCatalogFile(analysisParams.getGenomePlotConfigFile(), getStudy(),
-                    catalogManager.getFileManager(), getToken());
-            genomePlotConfigPath = Paths.get(genomePlotConfFile.getUri().getPath());
-            if (!genomePlotConfigPath.toFile().exists()) {
-                throw new ToolException("Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")");
+            if (runGenomePlot && !sample.isSomatic()) {
+                addWarning("Skipping genome plot: sample '" + sample.getId() + "' is not somatic.");
+                runGenomePlot = false;
+            } else {
+                File genomePlotConfFile = AnalysisUtils.getCatalogFile(analysisParams.getGenomePlotConfigFile(), getStudy(),
+                        catalogManager.getFileManager(), getToken());
+                genomePlotConfigPath = Paths.get(genomePlotConfFile.getUri().getPath());
+                if (!genomePlotConfigPath.toFile().exists()) {
+                    throw new ToolException("Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")");
+                }
             }
         }
+
     }
 
     @Override

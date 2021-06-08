@@ -1478,20 +1478,20 @@ public class VariantCommandOptions {
         @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
         public Map<String, String> variantStatsQuery = new HashMap<>();
 
-        @Parameter(names = {"--si", "--signature-id"}, description = "Signature ID.")
+        @Parameter(names = {"--si", "--signature-id"}, description = "Mutational signature ID (mutational signature is calculated for somatic samples only).")
         public String signatureId;
 
-        @Parameter(names = {"--sd", "--signature-description"}, description = "Signature description.")
+        @Parameter(names = {"--sd", "--signature-description"}, description = "Mutational signature description.")
         public String signatureDescription;
 
-        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Mutational signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
         public Map<String, String> signatureQuery = new HashMap<>();
 
         @Parameter(names = {"--signature-release"}, description = "Release of COSMIC mutational signatures. Valid values: 2, 3, 3.1 and 3.2.")
         public String signatureRelease = "2";
 
 
-        @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID.")
+        @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID (genome plot is calculated for somatic samples only).")
         public String genomePlotId;
 
         @Parameter(names = {"--gpd", "--genome-plot-description"}, description = "Genome plot description.")

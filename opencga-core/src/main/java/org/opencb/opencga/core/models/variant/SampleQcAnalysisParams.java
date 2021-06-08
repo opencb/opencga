@@ -20,7 +20,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class SampleQcAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Sample QC analysis params";
+    public static final String DESCRIPTION = "Sample QC analysis params. Mutational signature and genome plot are calculated for somatic"
+    + " samples only";
     private String sample;
     private String variantStatsId;
     private String variantStatsDescription;
