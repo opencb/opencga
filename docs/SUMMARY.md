@@ -38,7 +38,8 @@
     * [Python](using-opencga/client-libraries/python.md)
     * [R](using-opencga/client-libraries/r.md)
     * [JavaScript](using-opencga/client-libraries/javascript.md)
-  * [Command Line](using-opencga/command-line.md)
+  * [Command Line](using-opencga/command-line/README.md)
+    * [Files](using-opencga/command-line/files.md)
   * [Public Demo](using-opencga/public-demo.md)
 * [Case Studies](case-studies/README.md)
   * [Genomics England Research](case-studies/genomics-england-research.md)
@@ -48,6 +49,7 @@
 
 * [Login](manual/login.md)
 * [Data Management](manual/data-management/README.md)
+  * [Data Ingestion Process](manual/data-management/data-ingestion-process.md)
   * [Projects and Studies](manual/data-management/projects-and-studies.md)
   * [Working with Files](manual/data-management/working-with-files.md)
   * [Sharing and Permissions](manual/data-management/sharing-and-permissions/README.md)

@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.StorageToolExecutor;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -48,7 +47,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.GENOME_CONTEXT_FILENAME;
-import static org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis.SIGNATURES_FILENAME;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
@@ -253,192 +251,45 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-//        VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
-//
-//
-//        Map<String, Map<String, Double>> countMap = initFreqMap();
-//
-//        while (iterator.hasNext()) {
-//            Variant variant = iterator.next();
-//
-//
-//
-//
-//
-//
-//            PrintWriter pw = new PrintWriter(indexFile);
-//
-//            try {
-//                // Compute signature profile: contextual frequencies of each type of base substitution
-//
-//                Query query = new Query()
-//                        .append(VariantQueryParam.STUDY.key(), getStudy())
-//                        .append(VariantQueryParam.SAMPLE.key(), getSampleName())
-//                        .append(VariantQueryParam.TYPE.key(), VariantType.SNV);
-//
-//                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id");
-//
-//                // Get variant iterator
-//                VariantDBIterator iterator = getVariantIterator(query, queryOptions);
-//
-//                // Read mutation context from reference genome (.gz, .gz.fai and .gz.gzi files)
-//                String base = getRefGenomePath().toAbsolutePath().toString();
-//                BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(getRefGenomePath(),
-//                        new FastaSequenceIndex(new File(base + ".fai")), GZIIndex.loadIndex(Paths.get(base + ".gzi")));
-//
-//                Map<String, Map<String, Double>> countMap = initFreqMap();
-//
-//                while (iterator.hasNext()) {
-//                    Variant variant = iterator.next();
-//
-//                    // Accessing to the context sequence and write it into the context index file
-//                    ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
-//                            variant.getEnd() + 1);
-//                    String sequence = new String(refSeq.getBases());
-//
-//                    // Write context index
-//                    pw.println(variant.toString() + "\t" + sequence);
-//
-//                    // Update count map
-//                    updateCountMap(variant, sequence, countMap);
-//                }
-//
-//                // Write context counts
-//                writeCountMap(countMap, getOutDir().resolve(CONTEXT_FILENAME).toFile());
-//
-//                // Close context index file
-//                pw.close();
-//
-//                // Execute R script in docker
-//                executeRScript();
-//            } catch (Exception e) {
-//                throw new ToolExecutorException(e);
-//            }
-//
-//            // Check output files
-//            if (!new File(getOutDir() + "/signature_summary.png").exists()
-//                    || !new File(getOutDir() + "/signature_coefficients.json").exists()) {
-//                String msg = "Something wrong executing mutational signature.";
-//                throw new ToolException(msg);
-//            }
-//        }
-//
-//        public MutationalSignature query(Query query, QueryOptions queryOptions)
-//            throws CatalogException, ToolException, StorageEngineException, IOException {
-//
-//            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir(),
-//                    getOpenCgaHome());
-//            if (signatureFile == null) {
-//                throw new ToolException("Error downloading mutational signatures file from " + ResourceUtils.URL);
-//            }
-//            setMutationalSignaturePath(signatureFile.toPath());
-//
-//            // Get context index filename
-//            String name = getContextIndexFilename(getSampleName());
-//            Query fileQuery = new Query("name", name);
-//            QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
-//            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getVariantStorageManager().getCatalogManager()
-//                    .getFileManager().search(getStudy(), fileQuery, fileQueryOptions, getToken());
-//
-//            if (CollectionUtils.isEmpty(fileResult.getResults())) {
-//                throw new ToolException("Missing mutational signature context index file for sample " + getSampleName() + " in catalog");
-//            }
-//
-//            File indexFile = null;
-//            long maxSize = 0;
-//            for (org.opencb.opencga.core.models.file.File file : fileResult.getResults()) {
-//                File auxFile = new File(file.getUri().getPath());
-//                if (auxFile.exists() && auxFile.length() > maxSize) {
-//                    maxSize = auxFile.length();
-//                    indexFile = auxFile;
-//                }
-//            }
-//            if (indexFile == null) {
-//                throw new ToolException("Missing mutational signature context index file for sample " + getSampleName());
-//            }
-//
-//            // Read context index
-//            long start = System.currentTimeMillis();
-//            Map<String, String> indexMap = new HashMap<>();
-//            BufferedReader br = new BufferedReader( new FileReader(indexFile));
-//            String line;
-//            while ( (line = br.readLine()) != null ){
-//                String[] parts = line.split("\t");
-//                indexMap.put(parts[0], parts[1]);
-//            }
-//
-//            // Get variant iterator
-//            query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
-//            queryOptions.append(QueryOptions.INCLUDE, "id");
-//            VariantDBIterator iterator = getVariantIterator(query, queryOptions);
-//
-//            Map<String, Map<String, Double>> countMap = initFreqMap();
-//
-//            while (iterator.hasNext()) {
-//                Variant variant = iterator.next();
-//
-//                // Update count map
-//                updateCountMap(variant, indexMap.get(variant.toString()), countMap);
-//            }
-//
-//            // Write context counts
-//            writeCountMap(countMap, getOutDir().resolve(CONTEXT_FILENAME).toFile());
-//
-//            // Run R script
-//            if (getExecutorParams().getBoolean("fitting")) {
-//                executeRScript();
-//            }
-//
-//            return parse(getOutDir());
-//        }
+    private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Double>> countMap) {
+        String k, seq;
 
-        private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Double>> countMap) {
-            String k, seq;
+        String key = variant.getReference() + ">" + variant.getAlternate();
 
-            String key = variant.getReference() + ">" + variant.getAlternate();
-
-            if (countMap.containsKey(key)) {
-                k = key;
-                seq = sequence;
-            } else {
-                k = MutationalSignatureAnalysisExecutor.complement(key);
-                seq = MutationalSignatureAnalysisExecutor.reverseComplement(sequence);
-            }
-            if (countMap.get(k).containsKey(seq)) {
-                countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
-            } else {
-                logger.error("Something wrong happened counting mutational signature substitutions: variant = " + variant.toString()
-                        + ", key = " + key + ", k = " + k + ", sequence = " + sequence + ", seq = " + seq);
-            }
+        if (countMap.containsKey(key)) {
+            k = key;
+            seq = sequence;
+        } else {
+            k = MutationalSignatureAnalysisExecutor.complement(key);
+            seq = MutationalSignatureAnalysisExecutor.reverseComplement(sequence);
         }
-
-        private VariantDBIterator getVariantIterator(Query query, QueryOptions queryOptions) throws ToolExecutorException, CatalogException,
-                StorageEngineException {
-            VariantStorageManager storageManager = getVariantStorageManager();
-
-            // Compute signature profile: contextual frequencies of each type of base substitution
-            return storageManager.iterator(query, queryOptions, getToken());
-        }
-
-        private String executeRScript() throws IOException, ToolExecutorException {
-            // Download signature profiles
-            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir(),
-                    opencgaHome);
-            if (signatureFile == null) {
-                throw new ToolExecutorException("Error downloading mutational signatures file from " + ResourceUtils.URL);
-            }
-
-            String rScriptPath = opencgaHome + "/analysis/R/" + getToolId();
-            List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
-            inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, "/data/input"));
-            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-                    "/data/output");
-            String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/" + GENOME_CONTEXT_FILENAME + " "
-                    + "/data/output/" + SIGNATURES_FILENAME + " /data/output ";
-
-            String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
-            logger.info("Docker command line: " + cmdline);
-
-            return cmdline;
+        if (countMap.get(k).containsKey(seq)) {
+            countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
+        } else {
+            logger.error("Something wrong happened counting mutational signature substitutions: variant = " + variant.toString()
+                    + ", key = " + key + ", k = " + k + ", sequence = " + sequence + ", seq = " + seq);
         }
     }
+
+    private String executeRScript() throws IOException, ToolExecutorException {
+        // Download signature profiles
+        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, getMutationalSignatureFilename(), getOutDir(),
+                opencgaHome);
+        if (signatureFile == null) {
+            throw new ToolExecutorException("Error downloading mutational signatures file from " + ResourceUtils.URL);
+        }
+
+        String rScriptPath = opencgaHome + "/analysis/R/" + getToolId();
+        List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
+        inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, "/data/input"));
+        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
+                "/data/output");
+        String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/" + GENOME_CONTEXT_FILENAME + " "
+                + "/data/output/" + getMutationalSignatureFilename() + " /data/output ";
+
+        String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
+        logger.info("Docker command line: " + cmdline);
+
+        return cmdline;
+    }
+}

@@ -1,10 +1,10 @@
 # Templates / Manifest
 
-Since OpenCGA v2.1.x, the OpenCGA users with administration roles are offered the possibility to work with templates. Templates are a set of files with a defined specification that allow the user to perform a series of different operations, related to the ingestion of metadata in OpenCGA, e.g: define the samples, individuals,  permission groups, etc. For more information on how OpenCGA stores metadata in Catalog refer to [Catalog](../../components-1/catalog/)
+Since OpenCGA v2.1.x, the OpenCGA users with administration roles are offered the possibility to work with templates. Templates are a set of files with a defined specification that allow the user to perform a series of different operations, related to the ingestion of metadata in OpenCGA, e.g: define the samples, individuals, permission groups, etc. For more information on how OpenCGA stores metadata in Catalog refer to [Catalog](../../components-1/catalog/)
 
 Templates are defined at a study level and could be provided in different formats accordingly to the user's needs. The file format and some common use cases are illustrated in the following section.
 
-Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../../using-opencga/client-libraries/)\), command line \([Command Line](../../using-opencga/command-line.md)\) or [REST Web Service API](../../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA. 
+Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../../using-opencga/client-libraries/)\), command line \([Command Line](../../using-opencga/command-line/)\) or [REST Web Service API](../../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
 
 ## How it Works
 
@@ -26,7 +26,7 @@ NOTE: All the fields within each entity that are subjected to be manipulable by 
 
 You might want to provide a single JSON or YAML file per entity. In the case of using JSON you should write one JSON per line, if YAML is used then you can just concat them separating by '---'.
 
-The following entities are supported. 
+The following entities are supported.
 
 * For [Individual](../data-models/individual.md):  `individuals.{json|yaml}`  
 * For [Sample](../data-models/sample.md):  `samples.{json|yaml}`  
@@ -68,6 +68,5 @@ individuals.samples.txt
 NA001           s1
 NA001           s2
 NA002           s3
-
 ```
 

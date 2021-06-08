@@ -2,9 +2,9 @@
 
 ## Variables and Annotations
 
-Clinical Data in OpenCGA is managed through what we have called _Variable Sets_ and _Annotation Sets_.
+Clinical Data in OpenCGA can be enriched with custom annotations _Variable Sets_ and _Annotation Sets_.
 
-### Variables
+### Variable Set
 
 A [_Variable Set_](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/VariableSet.java) is a free modelled data model. The fields of a _Variable Set_ are explained below:
 

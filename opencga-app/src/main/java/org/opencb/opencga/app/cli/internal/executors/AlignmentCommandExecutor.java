@@ -159,10 +159,8 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 cliOptions.bamFile,
                 cliOptions.bedFile,
                 cliOptions.dictFile,
-                cliOptions.runSamtoolsStats,
-                cliOptions.runSamtoolsFlagStats,
-                cliOptions.runFastQC,
-                cliOptions.runHsMetrics,
+                cliOptions.skip,
+                cliOptions.overwrite,
                 cliOptions.outdir
         ).toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);

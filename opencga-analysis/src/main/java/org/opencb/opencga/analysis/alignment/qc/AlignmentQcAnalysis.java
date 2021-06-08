@@ -28,13 +28,13 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.ALIGNMENT_QC_DESCRIPTION;
 
@@ -47,6 +47,11 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     protected final AlignmentQcParams analysisParams = new AlignmentQcParams();
 
+    private boolean runStats = true;
+    private boolean runFlagStats = true;
+    private boolean runFastqc = true;
+    private boolean runHsmetrics = true;
+
     @Override
     protected void check() throws Exception {
         super.check();
@@ -56,12 +61,49 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         try {
-            AnalysisUtils.getCatalogFile(analysisParams.getBamFile(), study, catalogManager.getFileManager(), token);
+            File catalogFile = AnalysisUtils.getCatalogFile(analysisParams.getBamFile(), study, catalogManager.getFileManager(), token);
+            AlignmentQualityControl alignmentQc = null;
+            if (catalogFile.getQualityControl() != null) {
+                alignmentQc = catalogFile.getQualityControl().getAlignment();
+            }
+
+            // Prepare flags
+            String skip = null;
+            if (StringUtils.isNotEmpty(analysisParams.getSkip())) {
+                skip = analysisParams.getSkip().toLowerCase().replace(" ", "");
+            }
+            if (StringUtils.isNotEmpty(skip)) {
+                Set<String> skipValues = new HashSet<>(Arrays.asList(skip.split(",")));
+                if (skipValues.contains(AlignmentQcParams.STATS_SKIP_VALUE)
+                        ||
+                        (!analysisParams.isOverwrite() && alignmentQc != null && alignmentQc.getSamtoolsStats() != null)) {
+                    runStats = false;
+                }
+                if (skipValues.contains(AlignmentQcParams.FLAGSTATS_SKIP_VALUE)
+                        ||
+                        (!analysisParams.isOverwrite() && alignmentQc != null && alignmentQc.getSamtoolsFlagStats() != null)) {
+                    runFlagStats = false;
+                }
+                if (skipValues.contains(AlignmentQcParams.FASTQC_METRICS_SKIP_VALUE)
+                        ||
+                        (!analysisParams.isOverwrite() && alignmentQc != null && alignmentQc.getFastQcMetrics() != null)) {
+                    runFastqc = false;
+                }
+                if (skipValues.contains(AlignmentQcParams.HS_METRICS_SKIP_VALUE)
+                        ||
+                        (!analysisParams.isOverwrite() && alignmentQc != null && alignmentQc.getHsMetrics() != null)
+                        ||
+                        StringUtils.isEmpty(analysisParams.getBedFile())
+                        ||
+                        StringUtils.isEmpty(analysisParams.getDictFile())) {
+                    runHsmetrics = false;
+                }
+            }
         } catch (CatalogException e) {
             throw new ToolException("Error accessing to the BAM file '" + analysisParams.getBamFile() + "'", e);
         }
 
-        if (analysisParams.isRunHsMetrics()) {
+        if (runHsmetrics) {
             try {
                 AnalysisUtils.getCatalogFile(analysisParams.getBedFile(), study, catalogManager.getFileManager(), token);
             } catch (CatalogException e) {
@@ -88,7 +130,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
                 OpenCGAResult<Job> fastQcMetricsJobResult;
                 OpenCGAResult<Job> hsMetricsJobResult;
 
-                if (analysisParams.isRunSamtoolsStats()) {
+                if (runStats) {
                     // Stats
                     params = new AlignmentStatsParams(analysisParams.getBamFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, study));
@@ -100,7 +142,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
                             + AlignmentStatsAnalysis.ID + ")");
                 }
 
-                if (analysisParams.isRunSamtoolsFlagStats()) {
+                if (runFlagStats) {
                     // Flag stats
                     params = new AlignmentFlagStatsParams(analysisParams.getBamFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, study));
@@ -112,7 +154,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
                             + AlignmentFlagStatsAnalysis.ID + ")");
                 }
 
-                if (analysisParams.isRunFastQc()) {
+                if (runFastqc) {
                     // FastQC metrics
                     params = new AlignmentFastQcMetricsParams(analysisParams.getBamFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, study));
@@ -125,7 +167,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
                             + AlignmentFastQcMetricsAnalysis.ID + ")");
                 }
 
-                if (analysisParams.isRunHsMetrics()) {
+                if (runHsmetrics) {
                     // HS metrics
                     params = new AlignmentHsMetricsParams(analysisParams.getBamFile(), analysisParams.getBedFile(),
                             analysisParams.getDictFile(), null).toParams(new ObjectMap(ParamConstants.STUDY_PARAM, study));

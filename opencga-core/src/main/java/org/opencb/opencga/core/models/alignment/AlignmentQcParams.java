@@ -3,30 +3,32 @@ package org.opencb.opencga.core.models.alignment;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class AlignmentQcParams extends ToolParams {
-    public static final String DESCRIPTION = "Alignment quality control (QC) parameters. The BAM file is mandatory ever but the BED file" +
-            " and the dictionary files are only mandatory for computing hybrid-selection (HS) metrics";
+    public static String STATS_SKIP_VALUE = "stats";
+    public static String FLAGSTATS_SKIP_VALUE = "flagstats";
+    public static String FASTQC_METRICS_SKIP_VALUE = "fastqc";
+    public static String HS_METRICS_SKIP_VALUE = "hsmetrics";
+
+    public static final String DESCRIPTION = "Alignment quality control (QC) parameters. It computes: stats, flag stats, fastqc and"
+            + " hybrid-selection metrics. The BAM file is mandatory ever but the BED fileand the dictionary files are only mandatory for"
+            + " computing hybrid-selection (HS) metrics. In order to skip some metrics, use the following keywords (separated by commas): "
+            + "stats, flagstats, fastqc and hsmetrics";
 
     private String bamFile;
     private String bedFile;
     private String dictFile;
-    private boolean runSamtoolsStats;
-    private boolean runSamtoolsFlagStats;
-    private boolean runFastQc;
-    private boolean runHsMetrics;
+    private String skip;
+    private boolean overwrite;
     private String outdir;
 
     public AlignmentQcParams() {
     }
 
-    public AlignmentQcParams(String bamFile, String bedFile, String dictFile, boolean runSamtoolsStats, boolean runSamtoolsFlagStats,
-                             boolean runFastQc, boolean runHsMetrics, String outdir) {
+    public AlignmentQcParams(String bamFile, String bedFile, String dictFile, String skip, boolean overwrite, String outdir) {
         this.bamFile = bamFile;
         this.bedFile = bedFile;
         this.dictFile = dictFile;
-        this.runSamtoolsStats = runSamtoolsStats;
-        this.runSamtoolsFlagStats = runSamtoolsFlagStats;
-        this.runFastQc = runFastQc;
-        this.runHsMetrics = runHsMetrics;
+        this.skip = skip;
+        this.overwrite = overwrite;
         this.outdir = outdir;
     }
 
@@ -36,10 +38,8 @@ public class AlignmentQcParams extends ToolParams {
         sb.append("bamFile='").append(bamFile).append('\'');
         sb.append(", bedFile='").append(bedFile).append('\'');
         sb.append(", dictFile='").append(dictFile).append('\'');
-        sb.append(", runSamtoolsStats=").append(runSamtoolsStats);
-        sb.append(", runSamtoolsFlagStats=").append(runSamtoolsFlagStats);
-        sb.append(", runFastQc=").append(runFastQc);
-        sb.append(", runHsMetrics=").append(runHsMetrics);
+        sb.append(", skip='").append(skip).append('\'');
+        sb.append(", overwrite=").append(overwrite);
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -72,39 +72,21 @@ public class AlignmentQcParams extends ToolParams {
         return this;
     }
 
-    public boolean isRunSamtoolsStats() {
-        return runSamtoolsStats;
+    public String getSkip() {
+        return skip;
     }
 
-    public AlignmentQcParams setRunSamtoolsStats(boolean runSamtoolsStats) {
-        this.runSamtoolsStats = runSamtoolsStats;
+    public AlignmentQcParams setSkip(String skip) {
+        this.skip = skip;
         return this;
     }
 
-    public boolean isRunSamtoolsFlagStats() {
-        return runSamtoolsFlagStats;
+    public boolean isOverwrite() {
+        return overwrite;
     }
 
-    public AlignmentQcParams setRunSamtoolsFlagStats(boolean runSamtoolsFlagStats) {
-        this.runSamtoolsFlagStats = runSamtoolsFlagStats;
-        return this;
-    }
-
-    public boolean isRunFastQc() {
-        return runFastQc;
-    }
-
-    public AlignmentQcParams setRunFastQc(boolean runFastQc) {
-        this.runFastQc = runFastQc;
-        return this;
-    }
-
-    public boolean isRunHsMetrics() {
-        return runHsMetrics;
-    }
-
-    public AlignmentQcParams setRunHsMetrics(boolean runHsMetrics) {
-        this.runHsMetrics = runHsMetrics;
+    public AlignmentQcParams setOverwrite(boolean overwrite) {
+        this.overwrite = overwrite;
         return this;
     }
 

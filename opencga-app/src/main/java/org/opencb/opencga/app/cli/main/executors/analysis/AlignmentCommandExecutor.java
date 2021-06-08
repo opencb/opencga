@@ -337,8 +337,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         params.putAll(getJobParams());
 
         return openCGAClient.getAlignmentClient().runQc(new AlignmentQcParams(cliOptions.bamFile, cliOptions.bedFile, cliOptions.dictFile,
-                cliOptions.runSamtoolsStats, cliOptions.runSamtoolsFlagStats, cliOptions.runFastQC, cliOptions.runHsMetrics,
-                cliOptions.outdir), params);
+                cliOptions.skip, cliOptions.overwrite, cliOptions.outdir), params);
     }
 
     private RestResponse<Job> geneCoverageStatsRun() throws ClientException {

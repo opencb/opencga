@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.variant.mutationalSignature;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.qc.MutationalSignature;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.clinical.qc.SignatureFitting;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -38,11 +37,9 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +50,9 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "mutational-signature";
     public static final String DESCRIPTION = "Run mutational signature analysis for a given sample.";
 
-    public final static String SIGNATURES_FILENAME = "signatures_probabilities_v2.txt";
     public final static String GENOME_CONTEXT_FILENAME = "genome_context.txt";
+    public final static String SIGNATURE_COEFFS_FILENAME = "signature_coefficients.json";
+    public final static String SIGNATURE_FITTING_FILENAME = "signature_summary.png";
 
     public final static String QC_UPDATE_KEYNAME = "qcUpdate";
 
@@ -117,6 +115,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     .setQueryId(signatureParams.getId())
                     .setQueryDescription(signatureParams.getDescription())
                     .setQuery(signatureParams.getQuery())
+                    .setRelease(signatureParams.getRelease())
                     .setFitting(signatureParams.isFitting())
                     .execute();
 
@@ -125,59 +124,30 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 // Remove quality control update key
                 signatureParams.getQuery().remove(QC_UPDATE_KEYNAME);
 
-                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), signatureParams.getSample(),
-                        QueryOptions.empty(), getToken());
+                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), signatureParams.getSample(),                        QueryOptions.empty(), getToken());
                 Sample sample = sampleResult.first();
                 if (sample != null) {
-                    // Get genome context file
-                    File contextFile = getOutDir().resolve(GENOME_CONTEXT_FILENAME).toFile();
-                    if (contextFile.exists()) {
-                        Signature.GenomeContextCount[] genomeContextCounts = parseGenomeContextFile(contextFile);
-                        Signature signature = new Signature(signatureParams.getId(), signatureParams.getDescription(),
-                                signatureParams.getQuery(), "SNV", genomeContextCounts, null);
 
-                        File imgFile = getOutDir().resolve("signature_summary.png").toFile();
-                        if (imgFile.exists()) {
-                            int index = imgFile.getAbsolutePath().indexOf("JOBS/");
-                            String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
-                            signature.setFiles(Collections.singletonList(relativeFilePath));
-                        }
-
-                        SampleQualityControl qc = sampleResult.first().getQualityControl();
-                        if (qc == null) {
-                            qc = new SampleQualityControl();
-                        }
-                        qc.getVariantMetrics().getSignatures().add(signature);
-
-                        catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
-                                QueryOptions.empty(), getToken());
-                    } else {
-                        throw new ToolException("It could not find the genome context file after running mutational signature");
+                    Signature signature = parse(getOutDir());
+                    SampleQualityControl qc = sampleResult.first().getQualityControl();
+                    if (qc == null) {
+                        qc = new SampleQualityControl();
                     }
+                    qc.getVariantMetrics().getSignatures().add(signature);
+
+                    catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
+                            QueryOptions.empty(), getToken());
                 }
             }
         });
     }
 
-    private Signature.GenomeContextCount[] parseGenomeContextFile(File contextFile) throws IOException {
-        // Genome context counts
-        if (contextFile.exists()) {
-            List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
-            Signature.GenomeContextCount[] sigCounts = new Signature.GenomeContextCount[lines.size() - 1];
-            for (int i = 1; i < lines.size(); i++) {
-                String[] fields = lines.get(i).split("\t");
-                sigCounts[i - 1] = new Signature.GenomeContextCount(fields[2], Math.round(Float.parseFloat((fields[3]))));
-            }
-            return sigCounts;
-        }
-        return null;
-    }
-
-    public MutationalSignature parse(Path dir) throws IOException {
-        MutationalSignature result = new MutationalSignature();
+    public Signature parse(Path dir) throws IOException {
+        Signature result = new Signature(signatureParams.getId(), signatureParams.getDescription(),
+                signatureParams.getQuery(), "SNV", null, Collections.emptyList(), null);
 
         // Context counts
-        File contextFile = dir.resolve("context.txt").toFile();
+        File contextFile = dir.resolve(GENOME_CONTEXT_FILENAME).toFile();
         if (contextFile.exists()) {
             List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
             Signature.GenomeContextCount[] sigCounts = new Signature.GenomeContextCount[lines.size() - 1];
@@ -185,17 +155,16 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 String[] fields = lines.get(i).split("\t");
                 sigCounts[i-1] = new Signature.GenomeContextCount(fields[2], Math.round(Float.parseFloat((fields[3]))));
             }
-            result.setSignature(new Signature(signatureParams.getId(), signatureParams.getDescription(), signatureParams.getQuery(), "SNV",
-                    sigCounts, Collections.emptyList()));
+            result.setCounts(sigCounts);
         }
 
         // Signatures coefficients
-        File coeffsFile = dir.resolve("signature_coefficients.json").toFile();
+        File coeffsFile = dir.resolve(SIGNATURE_COEFFS_FILENAME).toFile();
         if (coeffsFile.exists()) {
             SignatureFitting fitting = new SignatureFitting()
                     .setMethod("GEL")
                     .setSignatureSource("Cosmic")
-                    .setSignatureVersion("2.0");
+                    .setSignatureVersion(signatureParams.getRelease());
 
             Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
             Map coefficients = (Map) content.get("coefficients");
@@ -209,13 +178,11 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             fitting.setCoeff((Double) content.get("rss"));
 
             // Signature summary image
-            File imgFile = dir.resolve("signature_summary.png").toFile();
+            File imgFile = dir.resolve(SIGNATURE_FITTING_FILENAME).toFile();
             if (imgFile.exists()) {
-                FileInputStream fileInputStreamReader = new FileInputStream(imgFile);
-                byte[] bytes = new byte[(int) imgFile.length()];
-                fileInputStreamReader.read(bytes);
-
-                fitting.setImage(new String(Base64.getEncoder().encode(bytes), "UTF-8"));
+                int index = imgFile.getAbsolutePath().indexOf("JOBS/");
+                String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
+                fitting.setImage(relativeFilePath);
             }
 
             result.setFitting(fitting);
