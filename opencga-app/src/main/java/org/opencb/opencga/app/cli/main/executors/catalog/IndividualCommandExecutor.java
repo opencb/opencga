@@ -184,8 +184,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         IndividualUpdateParams updateParams = new IndividualUpdateParams()
                 .setId(commandOptions.name)
                 .setName(commandOptions.name)
-                .setFather(commandOptions.fatherId)
-                .setMother(commandOptions.motherId)
+                .setFather(new IndividualReferenceParam(commandOptions.fatherId, ""))
+                .setMother(new IndividualReferenceParam(commandOptions.motherId, ""))
                 .setDateOfBirth(commandOptions.dateOfBirth)
                 .setSex(commandOptions.sex)
                 .setSamples(commandOptions.samples != null

@@ -18,7 +18,6 @@ package org.opencb.opencga.core.models.individual;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -40,8 +39,8 @@ public class IndividualUpdateParams {
     private String id;
     private String name;
 
-    private String father;
-    private String mother;
+    private IndividualReferenceParam father;
+    private IndividualReferenceParam mother;
     private Boolean parentalConsanguinity;
     private Location location;
     private IndividualProperty.Sex sex;
@@ -62,9 +61,9 @@ public class IndividualUpdateParams {
     public IndividualUpdateParams() {
     }
 
-    public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity,
-                                  Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
-                                  String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
+    public IndividualUpdateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
+                                  Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex, String ethnicity,
+                                  IndividualPopulation population, String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
                                   List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                   List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
@@ -110,8 +109,8 @@ public class IndividualUpdateParams {
     @JsonIgnore
     public Individual toIndividual() {
         return new Individual(id, name,
-                StringUtils.isNotEmpty(father) ? new Individual().setId(father) : null,
-                StringUtils.isNotEmpty(mother) ? new Individual().setId(mother) : null,
+                father != null ? new Individual().setId(father.getId()).setUuid(father.getUuid()) : null,
+                mother != null ? new Individual().setId(mother.getId()).setUuid(mother.getUuid()) : null,
                 location, qualityControl, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, TimeUtils.getTime(), lifeStatus,
                 phenotypes, disorders,
                 samples != null
@@ -166,20 +165,20 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public String getFather() {
+    public IndividualReferenceParam getFather() {
         return father;
     }
 
-    public IndividualUpdateParams setFather(String father) {
+    public IndividualUpdateParams setFather(IndividualReferenceParam father) {
         this.father = father;
         return this;
     }
 
-    public String getMother() {
+    public IndividualReferenceParam getMother() {
         return mother;
     }
 
-    public IndividualUpdateParams setMother(String mother) {
+    public IndividualUpdateParams setMother(IndividualReferenceParam mother) {
         this.mother = mother;
         return this;
     }

@@ -17,7 +17,6 @@
 package org.opencb.opencga.analysis.template;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -270,7 +269,7 @@ public class TemplateManager {
                     throw new CatalogException("Individual '" + individual.getId() + "' already exists. Do you want to resume the load?");
                 }
 
-                if (!hasParents && (StringUtils.isNotEmpty(individual.getFather()) || StringUtils.isNotEmpty(individual.getMother()))) {
+                if (!hasParents && hasParents(individual)) {
                     hasParents = true;
                 }
 
@@ -310,7 +309,7 @@ public class TemplateManager {
                     }
                     IndividualUpdateParams individual = iterator.next();
 
-                    if (StringUtils.isNotEmpty(individual.getFather()) || StringUtils.isNotEmpty(individual.getMother())) {
+                    if (hasParents(individual)) {
                         IndividualUpdateParams updateParams = new IndividualUpdateParams()
                                 .setFather(individual.getFather())
                                 .setMother(individual.getMother());
@@ -327,6 +326,13 @@ public class TemplateManager {
                 }
             }
         }
+    }
+
+    private boolean hasParents(IndividualUpdateParams individual) {
+        return (individual.getFather() != null && (StringUtils.isNotEmpty(individual.getFather().getId())
+                || StringUtils.isNotEmpty(individual.getFather().getUuid())))
+                || (individual.getMother() != null && (StringUtils.isNotEmpty(individual.getMother().getId())
+                || StringUtils.isNotEmpty(individual.getMother().getUuid())));
     }
 
 //    private void createIndividualsWithoutParents(String studyFqn, List<IndividualCreateParams> individuals) throws CatalogException {
