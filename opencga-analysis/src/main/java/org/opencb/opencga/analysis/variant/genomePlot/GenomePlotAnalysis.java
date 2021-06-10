@@ -60,7 +60,7 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
         }
 
         if (StringUtils.isEmpty(genomePlotParams.getConfigFile())) {
-            throw new ToolException("Missing Genome plot configuration file");
+            throw new ToolException("Missing genome plot configuration file");
         }
 
         File catalogFile = AnalysisUtils.getCatalogFile(genomePlotParams.getConfigFile(), getStudy(), getCatalogManager().getFileManager(),

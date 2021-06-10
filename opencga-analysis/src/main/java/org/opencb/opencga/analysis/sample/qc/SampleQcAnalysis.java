@@ -17,6 +17,7 @@
 package org.opencb.opencga.analysis.sample.qc;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.commons.datastore.core.Event;
@@ -54,8 +55,8 @@ import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermission
 public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-qc";
-    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats and genome plot; and "
-            + " for somatic samples, mutational signature.";
+    public static final String DESCRIPTION = "Run quality control (QC) for a given sample. It includes variant stats, and if the sample " +
+            "is somatic, mutational signature and genome plot are calculated.";
 
     @ToolParams
     protected final SampleQcAnalysisParams analysisParams = new SampleQcAnalysisParams();
@@ -127,21 +128,32 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check mutational signature
-//        if (!sample.isSomatic()) {
-//            runSignature = false;
-//        }
+        if (MapUtils.isEmpty(analysisParams.getSignatureQuery())) {
+            runSignature = false;
+        }
+
+        if (runSignature && !sample.isSomatic()) {
+            addWarning("Skipping mutational signature: sample '" + sample.getId() + "' is not somatic.");
+            runSignature = false;
+        }
 
         // Check genome plot
         if (StringUtils.isEmpty(analysisParams.getGenomePlotConfigFile())) {
             runGenomePlot = false;
         } else {
-            File genomePlotConfFile = AnalysisUtils.getCatalogFile(analysisParams.getGenomePlotConfigFile(), getStudy(),
-                    catalogManager.getFileManager(), getToken());
-            genomePlotConfigPath = Paths.get(genomePlotConfFile.getUri().getPath());
-            if (!genomePlotConfigPath.toFile().exists()) {
-                throw new ToolException("Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")");
+            if (runGenomePlot && !sample.isSomatic()) {
+                addWarning("Skipping genome plot: sample '" + sample.getId() + "' is not somatic.");
+                runGenomePlot = false;
+            } else {
+                File genomePlotConfFile = AnalysisUtils.getCatalogFile(analysisParams.getGenomePlotConfigFile(), getStudy(),
+                        catalogManager.getFileManager(), getToken());
+                genomePlotConfigPath = Paths.get(genomePlotConfFile.getUri().getPath());
+                if (!genomePlotConfigPath.toFile().exists()) {
+                    throw new ToolException("Invalid parameters: genome plot configuration file does not exist (" + genomePlotConfigPath + ")");
+                }
             }
         }
+
     }
 
     @Override
@@ -172,7 +184,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
                     // Be sure to update sample quality control
                     analysisParams.getSignatureQuery().put(MutationalSignatureAnalysis.QC_UPDATE_KEYNAME, "true");
                     params = new MutationalSignatureAnalysisParams(analysisParams.getSample(), analysisParams.getSignatureId(),
-                            analysisParams.getSignatureDescription(), analysisParams.getSignatureQuery(), true, null)
+                            analysisParams.getSignatureDescription(), analysisParams.getSignatureQuery(),
+                            analysisParams.getSignatureRelease(), true, null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     signatureJobResult = catalogManager.getJobManager()
@@ -184,8 +197,8 @@ public class SampleQcAnalysis extends OpenCgaToolScopeStudy {
 
                 if (runGenomePlot) {
                     // Run genome plot
-                    params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGenomePlotDescription(),
-                            analysisParams.getGenomePlotConfigFile(), null)
+                    params = new GenomePlotAnalysisParams(analysisParams.getSample(), analysisParams.getGenomePlotId(),
+                            analysisParams.getGenomePlotDescription(), analysisParams.getGenomePlotConfigFile(), null)
                             .toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudy()));
 
                     genomePlotJobResult = catalogManager.getJobManager()

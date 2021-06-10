@@ -27,6 +27,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class IndividualUpdateParams {
     private IndividualProperty.KaryotypicSex karyotypicSex;
     private IndividualProperty.LifeStatus lifeStatus;
     private IndividualProperty.AffectationStatus affectationStatus;
-    private List<String> samples;
+    private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
@@ -65,7 +66,7 @@ public class IndividualUpdateParams {
                                   Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
-                                  List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
+                                  List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                   List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
                                   Map<String, Object> attributes) {
         this.id = id;
@@ -113,7 +114,9 @@ public class IndividualUpdateParams {
                 StringUtils.isNotEmpty(mother) ? new Individual().setId(mother) : null,
                 location, qualityControl, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, TimeUtils.getTime(), lifeStatus,
                 phenotypes, disorders,
-                samples != null ? samples.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()) : null,
+                samples != null
+                        ? samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
+                        : null,
                 parentalConsanguinity, annotationSets, status.toCustomStatus(), new IndividualInternal(), attributes);
     }
 
@@ -261,11 +264,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public List<String> getSamples() {
+    public List<SampleReferenceParam> getSamples() {
         return samples;
     }
 
-    public IndividualUpdateParams setSamples(List<String> samples) {
+    public IndividualUpdateParams setSamples(List<SampleReferenceParam> samples) {
         this.samples = samples;
         return this;
     }

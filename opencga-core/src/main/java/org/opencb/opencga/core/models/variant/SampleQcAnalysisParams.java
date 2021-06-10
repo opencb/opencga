@@ -20,7 +20,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class SampleQcAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Sample QC analysis params";
+    public static final String DESCRIPTION = "Sample QC analysis params. Mutational signature and genome plot are calculated for somatic"
+    + " samples only";
     private String sample;
     private String variantStatsId;
     private String variantStatsDescription;
@@ -28,6 +29,8 @@ public class SampleQcAnalysisParams extends ToolParams {
     private String signatureId;
     private String signatureDescription;
     private ObjectMap signatureQuery;
+    private String signatureRelease;
+    private String genomePlotId;
     private String genomePlotDescription;
     private String genomePlotConfigFile;
     private String outdir;
@@ -37,8 +40,8 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
                                   AnnotationVariantQueryParams variantStatsQuery, String signatureId, String signatureDescription,
-                                  ObjectMap signatureQuery, String genomePlotDescription, String genomePlotConfigFile,
-                                  String outdir) {
+                                  ObjectMap signatureQuery, String signatureRelease, String genomePlotId, String genomePlotDescription,
+                                  String genomePlotConfigFile, String outdir) {
         this.sample = sample;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
@@ -46,6 +49,8 @@ public class SampleQcAnalysisParams extends ToolParams {
         this.signatureId = signatureId;
         this.signatureDescription = signatureDescription;
         this.signatureQuery = signatureQuery;
+        this.signatureRelease = signatureRelease;
+        this.genomePlotId = genomePlotId;
         this.genomePlotDescription = genomePlotDescription;
         this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
@@ -61,6 +66,8 @@ public class SampleQcAnalysisParams extends ToolParams {
         sb.append(", signatureId='").append(signatureId).append('\'');
         sb.append(", signatureDescription='").append(signatureDescription).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
+        sb.append(", signatureRelease=").append(signatureRelease);
+        sb.append(", genomePlotId='").append(genomePlotId).append('\'');
         sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
         sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
@@ -128,6 +135,24 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSignatureQuery(ObjectMap signatureQuery) {
         this.signatureQuery = signatureQuery;
+        return this;
+    }
+
+    public String getSignatureRelease() {
+        return signatureRelease;
+    }
+
+    public SampleQcAnalysisParams setSignatureRelease(String signatureRelease) {
+        this.signatureRelease = signatureRelease;
+        return this;
+    }
+
+    public String getGenomePlotId() {
+        return genomePlotId;
+    }
+
+    public SampleQcAnalysisParams setGenomePlotId(String genomePlotId) {
+        this.genomePlotId = genomePlotId;
         return this;
     }
 

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.client.rest.clients;
 
-import org.opencb.biodata.models.clinical.qc.MutationalSignature;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -153,10 +153,10 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<String> runGenomePlot(GenomePlotAnalysisParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> runGenomePlot(GenomePlotAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("analysis", null, "variant/genomePlot", null, "run", params, POST, String.class);
+        return execute("analysis", null, "variant/genomePlot", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -504,9 +504,9 @@ public class VariantClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<MutationalSignature> queryMutationalSignature(ObjectMap params) throws ClientException {
+    public RestResponse<Signature> queryMutationalSignature(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis", null, "variant/mutationalSignature", null, "query", params, GET, MutationalSignature.class);
+        return execute("analysis", null, "variant/mutationalSignature", null, "query", params, GET, Signature.class);
     }
 
     /**

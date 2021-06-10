@@ -15,7 +15,7 @@ public class AlignmentQualityControl implements Serializable {
     private HsMetrics hsMetrics;
 
     public AlignmentQualityControl() {
-        this(new FastQcMetrics(), new SamtoolsStats(), new SamtoolsFlagstats(), new HsMetrics());
+        this(null, null, null, null);
     }
 
     public AlignmentQualityControl(FastQcMetrics fastQcMetrics, SamtoolsStats samtoolsStats, SamtoolsFlagstats samtoolsFlagStats, HsMetrics hsMetrics) {

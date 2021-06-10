@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -654,11 +655,14 @@ public class FamilyManagerTest extends GenericTest {
 
         if (createMissingMembers) {
             catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample1")), QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample1"))),
+                    QueryOptions.empty(), sessionIdUser);
             catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample2")), QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample2"))),
+                    QueryOptions.empty(), sessionIdUser);
             catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample3")), QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample3"))),
+                    QueryOptions.empty(), sessionIdUser);
         }
 
         return familyOpenCGAResult;
