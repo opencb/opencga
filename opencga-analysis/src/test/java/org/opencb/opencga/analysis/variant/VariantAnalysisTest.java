@@ -410,7 +410,7 @@ public class VariantAnalysisTest {
             }
             for (String sample : samples) {
                 Sample sampleObj = catalogManager.getSampleManager().get(STUDY, sample, QueryOptions.empty(), token).first();
-                List<SampleQcVariantStats> variantStats = sampleObj.getQualityControl().getVariantMetrics().getVariantStats();
+                List<SampleQcVariantStats> variantStats = sampleObj.getQualityControl().getVariant().getVariantStats();
                 assertEquals(expectedStats, variantStats.size());
                 assertThat(variantStats.stream().map(SampleQcVariantStats::getId).collect(Collectors.toSet()), hasItem(indexId));
             }
