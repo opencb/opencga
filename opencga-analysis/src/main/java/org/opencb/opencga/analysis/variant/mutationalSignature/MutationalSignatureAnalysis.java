@@ -169,11 +169,10 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
             Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
             Map coefficients = (Map) content.get("coefficients");
-            SignatureFitting.Score[] scores = new SignatureFitting.Score[coefficients.size()];
-            int i = 0;
+            List<SignatureFitting.Score> scores = new ArrayList<>(coefficients.size());
             for (Object key : coefficients.keySet()) {
                 Number coeff = (Number) coefficients.get(key);
-                scores[i++] = new SignatureFitting.Score((String) key, coeff.doubleValue());
+                scores.add(new SignatureFitting.Score((String) key, coeff.doubleValue()));
             }
             fitting.setScores(scores);
             fitting.setCoeff((Double) content.get("rss"));
