@@ -28,4 +28,8 @@ public abstract class IndexFieldFilter {
     }
 
     public abstract boolean isExactFilter();
+
+    public boolean isNoOp() {
+        return false;
+    }
 }

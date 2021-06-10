@@ -1,9 +1,8 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.core.io.bit.BitOutputStream;
+import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.io.ByteArrayOutputStream;
@@ -11,11 +10,12 @@ import java.io.ByteArrayOutputStream;
 public class AnnotationIndexPutBuilder {
 
     private final ByteArrayOutputStream annotation;
-    private final ByteArrayOutputStream biotype;
-    private final ByteArrayOutputStream ct;
+    private final BitOutputStream biotype;
+    private final BitOutputStream ct;
     private final BitOutputStream ctBt;
     private final BitOutputStream popFreq;
-    private final ByteArrayOutputStream clinical;
+    private final BitOutputStream clinical;
+    private final SampleIndexSchema indexSchema = SampleIndexSchema.defaultSampleIndexSchema();
     private int numVariants;
 
     public AnnotationIndexPutBuilder() {
@@ -24,11 +24,11 @@ public class AnnotationIndexPutBuilder {
 
     public AnnotationIndexPutBuilder(int size) {
         this.annotation = new ByteArrayOutputStream(size);
-        this.biotype = new ByteArrayOutputStream(size / 4);
-        this.ct = new ByteArrayOutputStream(size / 2);
+        this.biotype = new BitOutputStream(size / 4);
+        this.ct = new BitOutputStream(size / 2);
         this.ctBt = new BitOutputStream(size / 4);
         this.popFreq = new BitOutputStream(size / 2);
-        this.clinical = new ByteArrayOutputStream(size / 5);
+        this.clinical = new BitOutputStream(size / 5);
         numVariants = 0;
     }
 
@@ -37,18 +37,17 @@ public class AnnotationIndexPutBuilder {
         annotation.write(indexEntry.getSummaryIndex());
 
         if (!indexEntry.isIntergenic()) {
-            ct.write(Bytes.toBytes(indexEntry.getCtIndex()), 0, Short.BYTES);
-            biotype.write(indexEntry.getBtIndex());
+            ct.write(indexEntry.getCtIndex(), indexSchema.getCtIndex().getBitsLength());
+            biotype.write(indexEntry.getBtIndex(), indexSchema.getBiotypeIndex().getBitsLength());
         }
-        for (byte popFreqIndex : indexEntry.getPopFreqIndex()) {
-            popFreq.write(popFreqIndex, AnnotationIndexConverter.POP_FREQ_SIZE);
-        }
-        AnnotationIndexEntry.CtBtCombination ctBtCombination = indexEntry.getCtBtCombination();
-        byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
-        for (int i = 0; i < ctBtCombination.getNumCt(); i++) {
-            ctBt.write(ctBtMatrix[i], ctBtCombination.getNumBt());
-        }
-        if (indexEntry.isClinical()) {
+        popFreq.write(indexEntry.getPopFreqIndex());
+
+        ctBt.write(indexSchema.getCtBtIndex().getField().encode(indexEntry.getCtBtCombination()));
+//        byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
+//        for (int i = 0; i < ctBtCombination.getNumCt(); i++) {
+//            ctBt.write(ctBtMatrix[i], ctBtCombination.getNumBt());
+//        }
+        if (indexEntry.hasClinical()) {
             clinical.write(indexEntry.getClinicalIndex());
         }
         return this;
@@ -65,7 +64,7 @@ public class AnnotationIndexPutBuilder {
         put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
                 IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotationIndex)));
 
-        if (ct.size() > 0) {
+        if (!ct.isEmpty()) {
             put.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt), ct.toByteArray());
             put.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt), biotype.toByteArray());
         }
@@ -73,7 +72,7 @@ public class AnnotationIndexPutBuilder {
 
         put.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt), popFreq.toByteArray());
 
-        if (clinical.size() > 0) {
+        if (clinical.getBitLength() > 0) {
             put.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt), clinical.toByteArray());
         }
         reset();

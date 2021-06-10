@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class FileIndexSchema extends IndexSchema {
+public class FileIndexSchema extends FixedSizeIndexSchema {
 
     private final List<IndexField<?>> fixedFields;
     private final List<IndexField<String>> customFields;
@@ -100,8 +100,9 @@ public class FileIndexSchema extends IndexSchema {
         return getMultiFileIndex().readAndDecode(fileIndex);
     }
 
-    public boolean isMultiFile(BitBuffer fileIndex, int bitOffset) {
-        int code = fileIndex.getIntPartial(bitOffset + getMultiFileIndex().getBitOffset(), getMultiFileIndex().getBitLength());
+    public boolean isMultiFile(BitBuffer fileIndex, int elementIndex) {
+        int code = fileIndex.getIntPartial(
+                (elementIndex * getBitsLength()) + getMultiFileIndex().getBitOffset(), getMultiFileIndex().getBitLength());
         return getMultiFileIndex().decode(code);
     }
 

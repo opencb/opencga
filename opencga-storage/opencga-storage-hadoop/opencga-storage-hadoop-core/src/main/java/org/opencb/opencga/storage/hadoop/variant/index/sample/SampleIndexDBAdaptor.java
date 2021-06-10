@@ -32,7 +32,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
@@ -625,20 +625,20 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
                 }
-                if (includeAll || query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK) {
+                if (includeAll || !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
                 }
-                if (includeAll || query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
+                if (includeAll || !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
                 }
-                if (/*includeAll ||*/ query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK
-                        && query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
+                if (/*includeAll ||*/ !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()
+                        && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
                 }
-                if (!/*includeAll ||*/ query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty()) {
+                if (/*includeAll ||*/ !query.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                 }
-                if (includeAll || query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
+                if (includeAll || !query.getAnnotationIndexQuery().getClinicalFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                 }
                 if (includeAll || !query.emptyFileIndex()) {
@@ -679,20 +679,28 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return scan;
     }
 
-    protected static void printQuery(SingleSampleIndexQuery query) {
-        logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), query.getAnnotationIndex()));
-        if (query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK) {
-            logger.info("BiotypeIndex    = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getBiotypeMask()));
+    public static void printQuery(SampleAnnotationIndexQuery annotationIndexQuery) {
+        logger.info("AnnotationIndex = " + IndexUtils.maskToString(
+                annotationIndexQuery.getAnnotationIndexMask(), annotationIndexQuery.getAnnotationIndex()));
+        if (!annotationIndexQuery.getBiotypeFilter().isNoOp()) {
+            logger.info("BiotypeIndex    = " + annotationIndexQuery.getBiotypeFilter().toString());
         }
-        if (query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
-            logger.info("CTIndex         = " + IndexUtils.shortToString(query.getAnnotationIndexQuery().getConsequenceTypeMask()));
+        if (!annotationIndexQuery.getConsequenceTypeFilter().isNoOp()) {
+            logger.info("CTIndex         = " + annotationIndexQuery.getConsequenceTypeFilter().toString());
         }
-        if (query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
-            logger.info("ClinicalIndex   = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getClinicalMask()));
+        if (!annotationIndexQuery.getCtBtFilter().isNoOp()) {
+            logger.info("CtBtIndex       = " + annotationIndexQuery.getCtBtFilter().toString());
         }
-        for (PopulationFrequencyQuery pf : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
-            logger.info("PopFreq         = " + pf);
+        if (!annotationIndexQuery.getClinicalFilter().isNoOp()) {
+            logger.info("ClinicalIndex   = " + annotationIndexQuery.getClinicalFilter());
         }
+        if (!annotationIndexQuery.getPopulationFrequencyFilter().isNoOp()) {
+            logger.info("PopFreq         = " + annotationIndexQuery.getPopulationFrequencyFilter());
+        }
+    }
+
+    public static void printQuery(SingleSampleIndexQuery query) {
+        printQuery(query.getAnnotationIndexQuery());
         for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
             for (IndexFieldFilter filter : sampleFileIndexQuery.getFilters()) {
                 logger.info("Filter       = " + filter);

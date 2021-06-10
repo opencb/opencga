@@ -14,12 +14,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.PopulationFrequencyIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.*;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.*;
 
 import static org.apache.hadoop.hbase.util.Bytes.SIZEOF_INT;
 
@@ -97,11 +96,24 @@ public final class SampleIndexSchema {
     private final SampleIndexConfiguration configuration;
     private final FileIndexSchema fileIndex;
     private final PopulationFrequencyIndexSchema popFreqIndex;
+    private final ConsequenceTypeIndexSchema ctIndex;
+    private final BiotypeIndexSchema biotypeIndex;
+    private final CtBtCombinationIndexSchema ctBtIndex;
+    private final ClinicalIndexSchema clinicalIndexSchema;
+    private final AnnotationSummaryIndexSchema annotationSummaryIndexSchema;
 
     public SampleIndexSchema(SampleIndexConfiguration configuration) {
         this.configuration = configuration;
         fileIndex = new FileIndexSchema(configuration.getFileIndexConfiguration());
+        annotationSummaryIndexSchema = new AnnotationSummaryIndexSchema();
+        ctIndex = new ConsequenceTypeIndexSchema(configuration.getAnnotationIndexConfiguration().getConsequenceType());
+        biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
+        ctBtIndex = new CtBtCombinationIndexSchema(ctIndex, biotypeIndex);
         popFreqIndex = new PopulationFrequencyIndexSchema(configuration.getPopulationRanges());
+        clinicalIndexSchema = new ClinicalIndexSchema(
+                configuration.getAnnotationIndexConfiguration().getClinicalSource(),
+                configuration.getAnnotationIndexConfiguration().getClinicalSignificance()
+        );
     }
 
     /**
@@ -118,8 +130,28 @@ public final class SampleIndexSchema {
         return configuration;
     }
 
+    public AnnotationSummaryIndexSchema getAnnotationSummaryIndexSchema() {
+        return annotationSummaryIndexSchema;
+    }
+
+    public ConsequenceTypeIndexSchema getCtIndex() {
+        return ctIndex;
+    }
+
+    public BiotypeIndexSchema getBiotypeIndex() {
+        return biotypeIndex;
+    }
+
+    public CtBtCombinationIndexSchema getCtBtIndex() {
+        return ctBtIndex;
+    }
+
     public PopulationFrequencyIndexSchema getPopFreqIndex() {
         return popFreqIndex;
+    }
+
+    public ClinicalIndexSchema getClinicalIndexSchema() {
+        return clinicalIndexSchema;
     }
 
     public FileIndexSchema getFileIndex() {
