@@ -133,7 +133,7 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
         });
 
         step(SAVE_ALIGNMENT_STATS_STEP, () -> {
-            SamtoolsStats alignmentStats = SamtoolsWrapperAnalysis.parseSamtoolsStats(statsFile.toFile(), catalogBamFile.getId());
+            SamtoolsStats alignmentStats = SamtoolsWrapperAnalysis.parseSamtoolsStats(statsFile.toFile());
 
             List<String> images = new ArrayList<>();
             for (java.io.File file : getOutDir().toFile().listFiles()) {

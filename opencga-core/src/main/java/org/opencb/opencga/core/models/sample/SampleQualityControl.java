@@ -26,16 +26,16 @@ public class SampleQualityControl implements Serializable {
 
     private List<String> files;
     private List<ClinicalComment> comments;
-    private SampleVariantQualityControlMetrics variantMetrics;
+    private SampleVariantQualityControlMetrics variant;
 
     public SampleQualityControl() {
         this(new ArrayList<>(), new ArrayList<>(), new SampleVariantQualityControlMetrics());
     }
 
-    public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variantMetrics) {
+    public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variant) {
         this.files = files;
         this.comments = comments;
-        this.variantMetrics = variantMetrics;
+        this.variant = variant;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class SampleQualityControl implements Serializable {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
         sb.append("files=").append(files);
         sb.append(", comments=").append(comments);
-        sb.append(", variantMetrics=").append(variantMetrics);
+        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
@@ -66,12 +66,12 @@ public class SampleQualityControl implements Serializable {
         return this;
     }
 
-    public SampleVariantQualityControlMetrics getVariantMetrics() {
-        return variantMetrics;
+    public SampleVariantQualityControlMetrics getVariant() {
+        return variant;
     }
 
-    public SampleQualityControl setVariantMetrics(SampleVariantQualityControlMetrics variantMetrics) {
-        this.variantMetrics = variantMetrics;
+    public SampleQualityControl setVariant(SampleVariantQualityControlMetrics variant) {
+        this.variant = variant;
         return this;
     }
 }
