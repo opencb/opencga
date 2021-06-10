@@ -25,6 +25,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
@@ -147,10 +148,10 @@ public class ClinicalAnalysisCreateParams {
 
         Individual individual = null;
         if (proband != null) {
-            individual = new Individual().setId(proband.id);
-            if (proband.samples != null) {
-                List<Sample> sampleList = proband.samples.stream()
-                        .map(sample -> new Sample().setId(sample.id))
+            individual = new Individual().setId(proband.getId());
+            if (proband.getSamples() != null) {
+                List<Sample> sampleList = proband.getSamples().stream()
+                        .map(sample -> new Sample().setId(sample.getId()))
                         .collect(Collectors.toList());
                 individual.setSamples(sampleList);
             }
@@ -158,13 +159,13 @@ public class ClinicalAnalysisCreateParams {
 
         Family f = null;
         if (family != null) {
-            f = new Family().setId(family.id);
-            if (family.members != null) {
-                List<Individual> members = new ArrayList<>(family.members.size());
-                for (ProbandParam member : family.members) {
-                    Individual auxIndividual = new Individual().setId(member.id);
-                    if (member.samples != null) {
-                        List<Sample> samples = member.samples.stream().map(s -> new Sample().setId(s.id)).collect(Collectors.toList());
+            f = new Family().setId(family.getId());
+            if (family.getMembers() != null) {
+                List<Individual> members = new ArrayList<>(family.getMembers().size());
+                for (ProbandParam member : family.getMembers()) {
+                    Individual auxIndividual = new Individual().setId(member.getId());
+                    if (member.getSamples() != null) {
+                        List<Sample> samples = member.getSamples().stream().map(s -> new Sample().setId(s.getId())).collect(Collectors.toList());
                         auxIndividual.setSamples(samples);
                     }
                     members.add(auxIndividual);
@@ -184,10 +185,10 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        List<org.opencb.opencga.core.models.panel.Panel> diseasePanelList = panels != null ? new ArrayList<>(panels.size()) : Collections.emptyList();
+        List<Panel> diseasePanelList = panels != null ? new ArrayList<>(panels.size()) : Collections.emptyList();
         if (panels != null) {
             for (String panel : panels) {
-                diseasePanelList.add(new org.opencb.opencga.core.models.panel.Panel().setId(panel));
+                diseasePanelList.add(new Panel().setId(panel));
             }
         }
 
@@ -363,132 +364,6 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams setStatus(StatusParam status) {
         this.status = status;
         return this;
-    }
-
-    private static class SampleParams {
-        private String id;
-
-        public SampleParams() {
-        }
-
-        public SampleParams(String id) {
-            this.id = id;
-        }
-
-        public static SampleParams of(Sample sample) {
-            return new SampleParams(sample.getId());
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("SampleParams{");
-            sb.append("id='").append(id).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public SampleParams setId(String id) {
-            this.id = id;
-            return this;
-        }
-    }
-
-    private static class ProbandParam {
-        private String id;
-        private List<SampleParams> samples;
-
-        public ProbandParam() {
-        }
-
-        public ProbandParam(String id, List<SampleParams> samples) {
-            this.id = id;
-            this.samples = samples;
-        }
-
-        public static ProbandParam of(Individual individual) {
-            return new ProbandParam(individual.getId(),
-                    individual.getSamples() != null
-                            ? individual.getSamples().stream().map(SampleParams::of).collect(Collectors.toList())
-                            : Collections.emptyList());
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ProbandParam{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", samples=").append(samples);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public ProbandParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<SampleParams> getSamples() {
-            return samples;
-        }
-
-        public ProbandParam setSamples(List<SampleParams> samples) {
-            this.samples = samples;
-            return this;
-        }
-    }
-
-    private static class FamilyParam {
-        private String id;
-        private List<ProbandParam> members;
-
-        public FamilyParam() {
-        }
-
-        public FamilyParam(String id, List<ProbandParam> members) {
-            this.id = id;
-            this.members = members;
-        }
-
-        public static FamilyParam of(Family family) {
-            return new FamilyParam(family.getId(),
-                    family.getMembers() != null
-                            ? family.getMembers().stream().map(ProbandParam::of).collect(Collectors.toList())
-                            : Collections.emptyList());
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("FamilyParam{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", members=").append(members);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public FamilyParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<ProbandParam> getMembers() {
-            return members;
-        }
-
-        public FamilyParam setMembers(List<ProbandParam> members) {
-            this.members = members;
-            return this;
-        }
     }
 
 }

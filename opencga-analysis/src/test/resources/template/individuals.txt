@@ -1,0 +1,5 @@
+#id	name	father	mother	parentalConsanguinity	sex
+child	Child	father	mother	false	MALE
+sister	Sister	father	mother	false	FEMALE
+father	Father			false	MALE
+mother	Mother			false	FEMALE

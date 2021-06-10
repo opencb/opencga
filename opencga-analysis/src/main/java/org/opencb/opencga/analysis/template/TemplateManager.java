@@ -180,7 +180,7 @@ public class TemplateManager {
                     .setDescription(tmplStudy.getDescription())
                     .setNotification(tmplStudy.getNotification())
                     .setAttributes(tmplStudy.getAttributes())
-                    .setStatus(tmplStudy.getStatus().toCustomStatus());
+                    .setStatus(tmplStudy.getStatus() != null ? tmplStudy.getStatus().toCustomStatus() : null);
 
             logger.info("Creating Study '{}'", tmplStudy.getId());
             OpenCGAResult<Study> result = catalogManager.getStudyManager().create(projectId, study, QueryOptions.empty(), token);
@@ -255,7 +255,7 @@ public class TemplateManager {
         boolean hasParents = false;
         // Process/Create individuals without parents
         try (TemplateEntryIterator<IndividualUpdateParams> iterator =
-                new TemplateEntryIterator<>(path, IndividualUpdateParams.class)) {
+                new TemplateEntryIterator<>(path, "individuals", IndividualUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 if (count == 0) {
@@ -302,7 +302,7 @@ public class TemplateManager {
         // Process parents
         if (hasParents) {
             try (TemplateEntryIterator<IndividualUpdateParams> iterator =
-                         new TemplateEntryIterator<>(path, IndividualUpdateParams.class)) {
+                         new TemplateEntryIterator<>(path, "individuals", IndividualUpdateParams.class)) {
                 int count = 0;
                 while (iterator.hasNext()) {
                     if (count == 0) {
@@ -406,7 +406,7 @@ public class TemplateManager {
     private void createSamples(String studyFqn, Path path) throws CatalogException {
         // Process/Create samples
         try (TemplateEntryIterator<SampleUpdateParams> iterator =
-                     new TemplateEntryIterator<>(path, SampleUpdateParams.class)) {
+                     new TemplateEntryIterator<>(path, "samples", SampleUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 if (count == 0) {
@@ -445,7 +445,7 @@ public class TemplateManager {
     private void createCohorts(String studyFqn, Path path) throws CatalogException {
         // Process/Create cohorts
         try (TemplateEntryIterator<CohortUpdateParams> iterator =
-                     new TemplateEntryIterator<>(path, CohortUpdateParams.class)) {
+                     new TemplateEntryIterator<>(path, "cohorts", CohortUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 if (count == 0) {
@@ -484,7 +484,7 @@ public class TemplateManager {
     private void createFamilies(String studyFqn, Path path) throws CatalogException {
         // Process/Create families
         try (TemplateEntryIterator<FamilyUpdateParams> iterator =
-                     new TemplateEntryIterator<>(path, FamilyUpdateParams.class)) {
+                     new TemplateEntryIterator<>(path, "families", FamilyUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 if (count == 0) {
@@ -523,7 +523,7 @@ public class TemplateManager {
     private void createPanels(String studyFqn, Path path) throws CatalogException {
         // Process/Create panels
         try (TemplateEntryIterator<PanelUpdateParams> iterator =
-                     new TemplateEntryIterator<>(path, PanelUpdateParams.class)) {
+                     new TemplateEntryIterator<>(path, "panels", PanelUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 if (count == 0) {
@@ -562,7 +562,7 @@ public class TemplateManager {
     private void createClinicalAnalyses(String studyFqn, Path path) throws CatalogException {
         // Process/Create Clinical Anlyses
         try (TemplateEntryIterator<ClinicalAnalysisUpdateParams> iterator =
-                     new TemplateEntryIterator<>(path, ClinicalAnalysisUpdateParams.class)) {
+                     new TemplateEntryIterator<>(path, "clinical", ClinicalAnalysisUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 if (count == 0) {
@@ -580,9 +580,8 @@ public class TemplateManager {
                 if (!exists) {
                     // Create Clinical Analysis
                     logger.debug("Create Clinical Analysis '{}'", clinical.getId());
-                    // TODO: What do we do in this case? We cannot use CAUpdateParams because it is missing many fields
-                    throw new NotImplementedException("Implement this case !!!");
-//                    catalogManager.getClinicalAnalysisManager().create(studyFqn, clinical.toPanel(), QueryOptions.empty(), token);
+                    catalogManager.getClinicalAnalysisManager().create(studyFqn, clinical.toClinicalAnalysis(), QueryOptions.empty(),
+                            token);
                 } else if (overwrite) {
                     String clinicalId = clinical.getId();
                     // Remove clinicalAnalysisId
@@ -603,7 +602,7 @@ public class TemplateManager {
     private void createFiles(String studyFqn, Path path) throws CatalogException {
         // Process/Create Files
         try (TemplateEntryIterator<TemplateFile> iterator =
-                     new TemplateEntryIterator<>(path, TemplateFile.class)) {
+                     new TemplateEntryIterator<>(path, "files", TemplateFile.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 if (count == 0) {

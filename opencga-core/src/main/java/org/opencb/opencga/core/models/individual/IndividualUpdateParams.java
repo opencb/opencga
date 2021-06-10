@@ -117,7 +117,8 @@ public class IndividualUpdateParams {
                 samples != null
                         ? samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
                         : null,
-                parentalConsanguinity, annotationSets, status.toCustomStatus(), new IndividualInternal(), attributes);
+                parentalConsanguinity, annotationSets, status != null ? status.toCustomStatus() : null, new IndividualInternal(),
+                attributes);
     }
 
     @Override

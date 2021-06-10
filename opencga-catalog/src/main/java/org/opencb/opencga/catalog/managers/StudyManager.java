@@ -288,6 +288,7 @@ public class StudyManager extends AbstractManager {
             // Initialise fields
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
             study.setName(ParamUtils.defaultString(study.getName(), study.getId()));
+            study.setAlias(ParamUtils.defaultString(study.getAlias(), study.getId()));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(ParamUtils.defaultObject(study.getInternal(), StudyInternal::new));
             study.getInternal().setStatus(ParamUtils.defaultObject(study.getInternal().getStatus(), Status::new));
@@ -297,6 +298,14 @@ public class StudyManager extends AbstractManager {
             study.setRelease(project.getCurrentRelease());
             study.setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
+
+            study.setClinicalAnalyses(ParamUtils.defaultObject(study.getClinicalAnalyses(), ArrayList::new));
+            study.setCohorts(ParamUtils.defaultObject(study.getCohorts(), ArrayList::new));
+            study.setFamilies(ParamUtils.defaultObject(study.getFamilies(), ArrayList::new));
+            study.setPanels(ParamUtils.defaultObject(study.getPanels(), ArrayList::new));
+            study.setSamples(ParamUtils.defaultObject(study.getSamples(), ArrayList::new));
+            study.setIndividuals(ParamUtils.defaultObject(study.getIndividuals(), ArrayList::new));
+            study.setVariableSets(ParamUtils.defaultObject(study.getVariableSets(), ArrayList::new));
 
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
