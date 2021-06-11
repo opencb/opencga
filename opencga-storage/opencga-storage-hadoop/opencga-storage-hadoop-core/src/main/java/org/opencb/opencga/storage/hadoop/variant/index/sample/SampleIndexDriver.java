@@ -69,7 +69,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexDriver.class);
     public static final String SAMPLES = "samples";
     public static final String SAMPLE_IDS = "sampleIds";
-    public static final String OUTPUT = "output";
+    public static final String OUTPUT = "output-table";
     public static final String SECONDARY_ONLY = "secondary-only";
 //    public static final String MAIN_ONLY = "main-only";
     public static final String PARTIAL_SCAN_SIZE = "partial-scan-size";

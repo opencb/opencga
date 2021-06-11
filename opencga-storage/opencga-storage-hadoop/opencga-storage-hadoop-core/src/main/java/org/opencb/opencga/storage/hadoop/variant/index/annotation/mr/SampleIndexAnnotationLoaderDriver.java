@@ -36,7 +36,7 @@ import java.util.*;
 public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexAnnotationLoaderDriver.class);
-    public static final String OUTPUT = "output";
+    public static final String OUTPUT = "output-table";
     public static final String SAMPLES = "samples";
     public static final String SAMPLE_IDS = "sampleIds";
 

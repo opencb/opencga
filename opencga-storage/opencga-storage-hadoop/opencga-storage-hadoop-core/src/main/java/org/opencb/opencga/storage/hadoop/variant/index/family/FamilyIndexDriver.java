@@ -47,7 +47,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
     public static final String TRIOS_COHORT = "triosCohort";
     public static final String TRIOS_COHORT_DELETE = "triosCohortDelete";
     public static final String OVERWRITE = "overwrite";
-    public static final String OUTPUT = "output";
+    public static final String OUTPUT = "output-table";
 
     private static final String TRIOS_LIST = "FamilyIndexDriver.trios_list";
     // Samples where at least one parent is not in its file
