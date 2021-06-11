@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.core.utils.iterators.UnionMultiKeyIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -302,6 +303,18 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             Iterator<Result> resultIterator = scanner.iterator();
             return Iterators.transform(resultIterator, converter::convert);
         });
+    }
+
+    /**
+     * Partially processed iterator. Internal usage only.
+     *
+     * @param study study
+     * @param sample sample
+     * @return SingleSampleIndexVariantDBIterator
+     */
+    public RawSingleSampleIndexVariantDBIterator rawIterator(String study, String sample) {
+        Query query = new Query(VariantQueryParam.STUDY.key(), study).append(VariantQueryParam.SAMPLE.key(), sample);
+        return rawInternalIterator(parseSampleIndexQuery(query).forSample(sample));
     }
 
     public CloseableIterator<SampleVariantIndexEntry> rawIterator(Query query) throws IOException {
@@ -631,11 +644,11 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
                 }
-                if (/*includeAll ||*/ !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()
+                if (includeAll || !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()
                         && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
                 }
-                if (/*includeAll ||*/ !query.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp()) {
+                if (includeAll || !query.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                 }
                 if (includeAll || !query.getAnnotationIndexQuery().getClinicalFilter().isNoOp()) {
@@ -644,7 +657,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
-                if (/*includeAll ||*/ query.hasFatherFilter() || query.hasMotherFilter()) {
+                if (includeAll || query.hasFatherFilter() || query.hasMotherFilter()) {
                     scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
                 }
             }

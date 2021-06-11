@@ -3,6 +3,11 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 public class AnnotationIndexEntry {
 
     private boolean hasSummaryIndex;
@@ -15,7 +20,7 @@ public class AnnotationIndexEntry {
     // should be a long? a BitBuffer?
     private int btIndex;
     private CtBtCombination ctBtCombination;
-    private BitBuffer popFreqIndexBB;
+    private BitBuffer popFreqIndex;
     private boolean hasClinical;
     private BitBuffer clinicalIndex;
 
@@ -33,7 +38,7 @@ public class AnnotationIndexEntry {
         this.ctBtCombination = ctBtCombination == null ? CtBtCombination.empty() : ctBtCombination;
         this.hasClinical = hasClinical;
         this.clinicalIndex = clinicalIndex;
-        this.popFreqIndexBB = popFreqIndex;
+        this.popFreqIndex = popFreqIndex;
     }
 
 
@@ -103,6 +108,18 @@ public class AnnotationIndexEntry {
 
         public static CtBtCombination empty() {
             return EMPTY;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("CtBtCombination{");
+            sb.append("numCt=").append(numCt);
+            sb.append(", numBt=").append(numBt);
+            sb.append(", ctBtMatrix=").append(IntStream.of(ctBtMatrix)
+                    .mapToObj(i -> IndexUtils.binaryToString(i, numBt))
+                    .collect(Collectors.joining(", ", "[", "]")));
+            sb.append('}');
+            return sb.toString();
         }
     }
 
@@ -186,11 +203,11 @@ public class AnnotationIndexEntry {
     }
 
     public BitBuffer getPopFreqIndex() {
-        return popFreqIndexBB;
+        return popFreqIndex;
     }
 
     public AnnotationIndexEntry setPopFreqIndex(BitBuffer popFreqIndexBB) {
-        this.popFreqIndexBB = popFreqIndexBB;
+        this.popFreqIndex = popFreqIndexBB;
         return this;
     }
 
@@ -220,7 +237,7 @@ public class AnnotationIndexEntry {
                 + (intergenic
                     ? ""
                     : (", ctIndex=" + IndexUtils.intToString(ctIndex) + ", btIndex=" + IndexUtils.intToString(btIndex)))
-                + ", popFreqIndex=" + popFreqIndexBB
+                + ", popFreqIndex=" + popFreqIndex
                 + '}';
     }
 }

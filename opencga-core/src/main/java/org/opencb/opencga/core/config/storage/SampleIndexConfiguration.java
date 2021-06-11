@@ -66,7 +66,26 @@ public class SampleIndexConfiguration {
                 THREEPRIME_OVERLAPPING_NCRNA,
                 "bidirectional_promoter_lncRNA"));
         biotypeConfiguration.getValuesMapping().put("other_non_pseudo_gene", Arrays.asList(
-                PROCESSED_TRANSCRIPT
+                PROCESSED_TRANSCRIPT,
+                NON_STOP_DECAY,
+                MISC_RNA,
+                RRNA,
+                MT_RRNA,
+                MT_TRNA,
+                IG_C_GENE,
+                IG_D_GENE,
+                IG_J_GENE,
+                IG_V_GENE,
+                TR_C_GENE,
+                TR_D_GENE,
+                TR_J_GENE,
+                TR_V_GENE,
+                NMD_TRANSCRIPT_VARIANT,
+                TRANSCRIBED_UNPROCESSED_PSEUDGENE,
+                AMBIGUOUS_ORF,
+                KNOWN_NCRNA,
+                RETROTRANSPOSED,
+                LRG_GENE
         ));
         biotypeConfiguration.setNullable(false);
 
@@ -76,6 +95,14 @@ public class SampleIndexConfiguration {
                 "consequenceType",
                 IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE)
                 .setValues(
+                        SPLICE_DONOR_VARIANT,
+                        TRANSCRIPT_ABLATION,
+                        TRANSCRIPT_AMPLIFICATION,
+                        INITIATOR_CODON_VARIANT,
+                        SPLICE_REGION_VARIANT,
+                        INCOMPLETE_TERMINAL_CODON_VARIANT,
+                        "utr",
+                        "mirna_tfbs",
                         MISSENSE_VARIANT,
                         FRAMESHIFT_VARIANT,
                         INFRAME_DELETION,
@@ -83,15 +110,7 @@ public class SampleIndexConfiguration {
                         START_LOST,
                         STOP_GAINED,
                         STOP_LOST,
-                        SPLICE_ACCEPTOR_VARIANT,
-                        SPLICE_DONOR_VARIANT,
-                        TRANSCRIPT_ABLATION,
-                        TRANSCRIPT_AMPLIFICATION,
-                        INITIATOR_CODON_VARIANT,
-                        SPLICE_REGION_VARIANT,
-                        INCOMPLETE_TERMINAL_CODON_VARIANT,
-                        "mirna_tfbs",
-                        "utr"
+                        SPLICE_ACCEPTOR_VARIANT
                 ).setValuesMapping(new HashMap<>());
         consequenceType.getValuesMapping().put("mirna_tfbs", Arrays.asList(
                 TF_BINDING_SITE_VARIANT,
