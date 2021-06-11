@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
@@ -91,6 +92,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         this.ts = ts;
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
     }
 
