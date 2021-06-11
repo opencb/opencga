@@ -1532,6 +1532,11 @@ public class RgaManager implements AutoCloseable {
                 knockoutTypeCount.getNumDelOverlapIds());
         knockoutByIndividualSummary.setVariantStats(variantStats);
 
+        // Use list of variants filtered matching all criteria
+        if (knockoutTypeCount.getNumIds() > 0) {
+            auxQuery.put(RgaQueryParams.VARIANTS.key(), new ArrayList<>(knockoutTypeCount.getIds()));
+        }
+
         // 3. Get gene name list
         QueryOptions geneFacet = new QueryOptions()
                 .append(QueryOptions.LIMIT, -1)

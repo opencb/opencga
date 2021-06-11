@@ -880,6 +880,10 @@ class RgaUtils {
             }
         }
 
+        public Set<String> getIds() {
+            return ids;
+        }
+
         public int getNumIds() {
             return ids.size();
         }
