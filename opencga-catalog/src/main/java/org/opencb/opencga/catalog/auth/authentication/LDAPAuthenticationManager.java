@@ -334,7 +334,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase) throws NamingException {
-        return getUserInfoFromLDAP(host, userList, userBase, "uid");
+        return getUserInfoFromLDAP(host, userList, userBase, this.uidKey);
     }
 
     private List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase, String key) throws NamingException {
