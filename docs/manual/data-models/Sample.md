@@ -1,6 +1,6 @@
-#Sample
+ #Sample
 
-##Overview
+ ##Overview
 
 Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
  This is the main data model, it stores the most basic and important information.
