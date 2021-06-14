@@ -54,6 +54,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +76,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.FILE_VARIANT_STATS_VARIABLE_SET;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -399,12 +399,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
 
-                AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, FILE_VARIANT_STATS_VARIABLE_SET);
                 catalogManager.getFileManager()
-                        .update(studyStr, vcf.getPath(), new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet)),
-                                new QueryOptions(Constants.ACTIONS,
-                                        Collections.singletonMap(ANNOTATION_SETS, ParamUtils.CompleteUpdateAction.SET)), sessionId);
-
+                        .update(studyStr, vcf.getPath(),
+                                new FileUpdateParams().setQualityControl(
+                                        new FileQualityControl().setVariant(
+                                                new VariantFileQualityControl(stats))),
+                                new QueryOptions(),
+                                sessionId);
 
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);

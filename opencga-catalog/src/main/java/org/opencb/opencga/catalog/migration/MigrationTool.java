@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.migration;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -59,7 +58,7 @@ public abstract class MigrationTool {
     protected abstract void run() throws Exception;
 
     protected final StorageConfiguration readStorageConfiguration() throws MigrationException {
-        try(FileInputStream is = new FileInputStream(appHome.resolve("conf").resolve("storage-configuration.yml").toFile())) {
+        try (FileInputStream is = new FileInputStream(appHome.resolve("conf").resolve("storage-configuration.yml").toFile())) {
             return StorageConfiguration.load(is);
         } catch (IOException e) {
             throw new MigrationException("Error reading \"storage-configuration.yml\"", e);

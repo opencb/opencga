@@ -3,10 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 
-import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class AnnotationIndexEntry {
 
