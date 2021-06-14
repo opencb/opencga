@@ -94,7 +94,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testMigration() throws MigrationException, CatalogException {
+    public void testMigration() throws Exception {
         MigrationManager migrationManager = catalogManager.getMigrationManager();
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 

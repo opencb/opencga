@@ -13,7 +13,7 @@ public class Migration1 extends MigrationTool {
 
     @Override
     protected void run() throws MigrationException {
-        Path path = Paths.get(appHome).resolve("misc/migration/v2.1.0/migration1.js");
+        Path path = appHome.resolve("misc/migration/v2.1.0/migration1.js");
         runJavascript(path);
     }
 }

@@ -967,6 +967,17 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
+    public boolean exists(DataStore dataStore) throws StorageEngineException {
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
+        return engine.getMetadataManager().exists();
+    }
+
+    public boolean exists(String study, String token) throws StorageEngineException, CatalogException {
+        String studyFqn = getStudyFqn(study, token);
+        VariantStorageEngine engine = getVariantStorageEngine(studyFqn, token);
+        return engine.getMetadataManager().studyExists(studyFqn);
+    }
+
     // Permission related methods
 
     private interface VariantReadOperation<R> {
