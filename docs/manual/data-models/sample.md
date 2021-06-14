@@ -1,4 +1,4 @@
-# Sample
+# Sample Model
 
 ## Overview
 
