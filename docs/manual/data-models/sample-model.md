@@ -88,7 +88,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>processing</b>
         </p>
-        <p><a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>
+        <p><a href="sample-model.md#sampleprocessing"><em>SampleProcessing</em></a>
         </p>
       </td>
       <td style="text-align:left">An object describing how to sample was processed.</td>
@@ -97,7 +97,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>collection</b>
         </p>
-        <p><a href="sample.md#samplecollection"><em>SampleCollection</em></a>
+        <p><a href="sample-model.md#samplecollection"><em>SampleCollection</em></a>
         </p>
       </td>
       <td style="text-align:left">An object describing how the sample was collected.</td>
@@ -124,7 +124,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>qualityControl</b>
         </p>
-        <p><a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a>
+        <p><a href="sample-model.md#samplequalitycontrol"><em>SampleQualityControl</em></a>
         </p>
       </td>
       <td style="text-align:left"></td>
