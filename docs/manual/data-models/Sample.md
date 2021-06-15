@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #Sample
 ##Overview
 Created by jacobo on 11/09/14.
@@ -21,12 +22,34 @@ Created by jacobo on 11/09/14.
 | status | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
 | internal | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
 | attributes | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+=======
+ # Sample
+
+ ## Overview
+
+Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
+ This is the main data model, it stores the most basic and important information.
+
+ ## Sample Field Attributes
+
+ There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
+
+ ### Fields subjected to Update and Create Operations
+
+ **Create Fields: `id`**
+
+ **Update Fields: `individualId, fileIds, processing, collection, somatic, annotationSets, qualityControl, description, phenotypes, status, attributes`**
+
+ ### Fields for OpenCGA Internal use \(immutable\)
+
+ **`uuid, release, version, creationDate, modificationDate, internal`**
+>>>>>>> 4c25e10cec61c07b6849be9472d4ee116bf173cb
 ### Fields for Create Operations 
 `id uuid processing collection qualityControl release version creationDate modificationDate description somatic phenotypes individualId fileIds status internal attributes `
 ### Fields for Update Operations
 `id uuid processing collection qualityControl release version creationDate modificationDate description somatic phenotypes individualId fileIds status internal attributes `
 ## Data Model
-###Sample
+### Sample
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 | Field | Tags | Description |
@@ -49,7 +72,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **internal**<br>*<a href="Sample.md#SampleInternal"><em>SampleInternal</em></a>*|  | </br></br> |
 | **attributes**<br>*Map*| | </br></br> |
 ## Related data models
-###SampleCollection
+### SampleCollection
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
 
 | Field | Tags | Description |
@@ -60,7 +83,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **method**<br>*String*| | </br></br> |
 | **date**<br>*String*| | </br></br> |
 | **attributes**<br>*Map*| | </br></br> |
-###CustomStatus
+### CustomStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
 
 | Field | Tags | Description |
@@ -68,7 +91,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **name**<br>*String*| | </br></br> |
 | **description**<br>*String*| | </br></br> |
 | **date**<br>*String*| | </br></br> |
-###SampleProcessing
+### SampleProcessing
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
 
 | Field | Tags | Description |
@@ -80,14 +103,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **quantity**<br>*String*| | </br></br> |
 | **date**<br>*String*| | </br></br> |
 | **attributes**<br>*Map*| | </br></br> |
-###SampleInternal
+### SampleInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
 | Field | Tags | Description |
 | :--- | :--- | :--- |
 | **status**<br>*<a href="SampleInternal.md#Status"><em>Status</em></a>*|  | </br></br> |
 | **rga**<br>*<a href="SampleInternal.md#RgaIndex"><em>RgaIndex</em></a>*|  | </br></br> |
-###Status
+### Status
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
 
 | Field | Tags | Description |
@@ -99,14 +122,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **READY**<br>*String*| | READY name means that the object is being used.</br></br> |
 | **DELETED**<br>*String*| | DELETED name means that the object is marked as removed, so it can be completely removed from the database with a clean action.</br></br> |
 | **STATUS_LIST**<br>*List*| | </br></br> |
-###RgaIndex
+### RgaIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
 
 | Field | Tags | Description |
 | :--- | :--- | :--- |
 | **status**<br>*<a href="RgaIndex.md#Status"><em>Status</em></a>*|  | </br></br> |
 | **date**<br>*String*| | </br></br> |
-###Status
+### Status
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex/Status.java).
 
 | Field | Tags | Description |
@@ -116,7 +139,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **INVALID_PERMISSIONS**<br>*<a href="Status.md#Status"><em>Status</em></a>*|  | </br></br> |
 | **INVALID_METADATA**<br>*<a href="Status.md#Status"><em>Status</em></a>*|  | </br></br> |
 | **INVALID**<br>*<a href="Status.md#Status"><em>Status</em></a>*|  | </br></br> |
-###SampleQualityControl
+### SampleQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
 
 | Field | Tags | Description |
@@ -124,7 +147,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **files**<br>*List*| | </br></br> |
 | **comments**<br>*List*| | </br></br> |
 | **variantMetrics**<br>*<a href="SampleQualityControl.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>*|  | </br></br> |
-###SampleVariantQualityControlMetrics
+### SampleVariantQualityControlMetrics
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
 | Field | Tags | Description |
