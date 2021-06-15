@@ -1,48 +1,51 @@
 #Sample
 ##Overview
-Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
- This is the main data model, it stores the most basic and important information.
-
- ## Sample Field Attributes
-
- There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
-
- ### Fields subjected to Update and Create Operations
-
- **Create Fields: `id`**
-
- **Update Fields: `individualId, fileIds, processing, collection, somatic, annotationSets, qualityControl, description, phenotypes, status, attributes`**
-
- ### Fields for OpenCGA Internal use \(immutable\)
-
- **`uuid, release, version, creationDate, modificationDate, internal`**
+Created by jacobo on 11/09/14.
+### Fields tags 
+| Field | unique | required | immutable| internal|
+| :--- | :--- | :--- |:--- |:--- |
+| id | ![sadd logo]: (http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png) | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| uuid | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| processing | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| collection | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| qualityControl | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| release | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| version | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| creationDate | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| modificationDate | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| description | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| somatic | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| phenotypes | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| individualId | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| fileIds | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| status | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| internal | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
+| attributes | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |[logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" | [logo]: http://docs.opencb.org/s/en_GB/7101/4f8ce896bdf903a209ab02696e335acf844f5c2c/_/images/icons/emoticons/error.png "false" |
 ### Fields for Create Operations 
-`id* processing collection qualityControl release version modificationDate description somatic phenotypes individualId fileIds status internal attributes `
+`id uuid processing collection qualityControl release version creationDate modificationDate description somatic phenotypes individualId fileIds status internal attributes `
 ### Fields for Update Operations
-`processing collection qualityControl release version modificationDate description somatic phenotypes individualId fileIds status internal attributes `
-### Fields uniques
-`uuid creationDate `
+`id uuid processing collection qualityControl release version creationDate modificationDate description somatic phenotypes individualId fileIds status internal attributes `
 ## Data Model
 ###Sample
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 | Field | Tags | Description |
 | :--- | :--- | :--- |
-| **id**<br>*String*|**`Required, Create, Immutable`** | Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and cannot be changed at the moment.</br></br> |
-| **uuid**<br>*String*|**`Internal, Unique, Immutable`** | Global unique ID in any study of any OpenCGA installation. This is created during the sample creation and cannot be changed.</br></br> |
-| **processing**<br>*<a href="Sample.md#SampleProcessing"><em>SampleProcessing</em></a>*| **`Updatable`** | An object describing how to sample was processed.</br></br> |
-| **collection**<br>*<a href="Sample.md#SampleCollection"><em>SampleCollection</em></a>*| **`Updatable`** | An object describing how the sample was collected.</br></br> |
+| **id**<br>*String*| | </br></br> |
+| **uuid**<br>*String*| | </br></br> |
+| **processing**<br>*<a href="Sample.md#SampleProcessing"><em>SampleProcessing</em></a>*|  | </br></br> |
+| **collection**<br>*<a href="Sample.md#SampleCollection"><em>SampleCollection</em></a>*|  | </br></br> |
 | **qualityControl**<br>*<a href="Sample.md#SampleQualityControl"><em>SampleQualityControl</em></a>*|  | </br></br> |
-| **release**<br>*int*|**`Updatable`** | An integer describing the current release.</br></br> |
-| **version**<br>*int*|**`Updatable`** | An integer describing the current version.</br></br> |
-| **creationDate**<br>*String*|**`Internal, Unique, Immutable`** | An string describing the creation date.</br></br> |
-| **modificationDate**<br>*String*|**`Updatable`** | An string describing the last modification date.</br></br> |
-| **description**<br>*String*|**`Updatable`** | An string to describe the properties of the sample.</br></br> |
+| **release**<br>*int*| | </br></br> |
+| **version**<br>*int*| | </br></br> |
+| **creationDate**<br>*String*| | </br></br> |
+| **modificationDate**<br>*String*| | </br></br> |
+| **description**<br>*String*| | </br></br> |
 | **somatic**<br>*boolean*| | </br></br> |
-| **phenotypes**<br>*List*|**`Updatable`** | A List with related phenotypes.</br></br> |
-| **individualId**<br>*String*|**`Updatable`** | A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not mandatory..</br></br> |
-| **fileIds**<br>*List*|**`Updatable`** | List of File ID containing this sample, eg BAM, VCF, QC images, ...</br></br> |
-| **status**<br>*<a href="Sample.md#CustomStatus"><em>CustomStatus</em></a>*| **`Updatable`** | An object describing the status of the Sample.</br></br> |
+| **phenotypes**<br>*List*| | </br></br> |
+| **individualId**<br>*String*| | </br></br> |
+| **fileIds**<br>*List*| | </br></br> |
+| **status**<br>*<a href="Sample.md#CustomStatus"><em>CustomStatus</em></a>*|  | </br></br> |
 | **internal**<br>*<a href="Sample.md#SampleInternal"><em>SampleInternal</em></a>*|  | </br></br> |
 | **attributes**<br>*Map*| | </br></br> |
 ## Related data models

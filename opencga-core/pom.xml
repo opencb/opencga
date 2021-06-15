@@ -204,10 +204,10 @@
                                 <additionalOption>
                                     org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.sample.SampleCollection
                                 </additionalOption>
-                                <!-- <additionalOption>-tableTagsClasses</additionalOption>
+                                <additionalOption>-tableTagsClasses</additionalOption>
                                  <additionalOption>
                                      org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.sample.SampleCollection
-                                 </additionalOption>-->
+                                 </additionalOption>
                                 <additionalOption>-jsondir</additionalOption>
                                 <additionalOption>${project.basedir}/src/main/resources/doc/json</additionalOption>
                             </additionalOptions>
