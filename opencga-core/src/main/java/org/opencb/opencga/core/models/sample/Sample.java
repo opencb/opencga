@@ -29,28 +29,108 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by jacobo on 11/09/14.
+ * Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
+ * This is the main data model, it stores the most basic and important information.
+ *
+ * ## Sample Field Attributes
+ *
+ * There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
+ *
+ * ### Fields subjected to Update and Create Operations
+ *
+ * **Create Fields: `id`**
+ *
+ * **Update Fields: `individualId, fileIds, processing, collection, somatic, annotationSets, qualityControl, description, phenotypes, status, attributes`**
+ *
+ * ### Fields for OpenCGA Internal use \(immutable\)
+ *
+ * **`uuid, release, version, creationDate, modificationDate, internal`**
+ * @annotable
+ *
  */
 public class Sample extends Annotable {
 
+    /**
+     * Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and cannot be changed at the moment.
+     * @apiNote Required, Create, Immutable
+     */
     private String id;
+
+    /**
+     * Global unique ID in any study of any OpenCGA installation. This is created during the sample creation and cannot be changed.
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+
+    /**
+     * An object describing how to sample was processed.
+     * @apiNote Updatable
+     */
     private SampleProcessing processing;
+
+    /**
+     * An object describing how the sample was collected.
+     * @apiNote Updatable
+     */
     private SampleCollection collection;
 
     private SampleQualityControl qualityControl;
 
+    /**
+     * An integer describing the current release.
+     * @apiNote Updatable
+     */
     private int release;
+
+    /**
+     * An integer describing the current version.
+     * @apiNote Updatable
+     */
     private int version;
+
+    /**
+     * An string describing the creation date.
+     * @apiNote Internal, Unique, Immutable
+     */
     private String creationDate;
+
+    /**
+     * An string describing the last modification date.
+     * @apiNote Updatable
+     */
     private String modificationDate;
+
+    /**
+     * An string to describe the properties of the sample.
+     * @apiNote Updatable
+     */
     private String description;
+
+
     private boolean somatic;
+
+    /**
+     * A List with related phenotypes.
+     * @apiNote Updatable
+     */
     private List<Phenotype> phenotypes;
 
+    /**
+     * A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not mandatory..
+     * @apiNote Updatable
+     */
     private String individualId;
+
+    /**
+     * List of File ID containing this sample, eg BAM, VCF, QC images, ...
+     * @apiNote Updatable
+     */
     private List<String> fileIds;
 
+    /**
+     * An object describing the status of the Sample.
+     * @apiNote Updatable
+     */
     private CustomStatus status;
 
     private SampleInternal internal;
