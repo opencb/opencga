@@ -22,10 +22,31 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
+ * finibus.
+ */
 public class SampleQualityControl implements Serializable {
-
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private List<String> files;
+    /**
+     * Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui
+     * dignissim leo, quis ullamcorper felis elit a augue.
+     *
+     * @apiNote Required
+     */
     private List<ClinicalComment> comments;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private SampleVariantQualityControlMetrics variantMetrics;
 
     public SampleQualityControl() {

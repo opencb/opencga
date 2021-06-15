@@ -18,15 +18,61 @@ package org.opencb.opencga.core.models.sample;
 
 import java.util.Map;
 
+/**
+ * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
+ * finibus.
+ */
 public class SampleProcessing {
 
+    /**
+     * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh
+     * interdum finibus.
+     *
+     * @apiNote Required, Immutable
+     */
     private String product;
+    /**
+     * Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui
+     * dignissim leo, quis ullamcorper felis elit a augue.
+     *
+     * @apiNote Required
+     */
     private String preparationMethod;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String extractionMethod;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     * @deprecated
+     */
     private String labSampleId;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String quantity;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String date;
-
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private Map<String, Object> attributes;
 
     public SampleProcessing() {

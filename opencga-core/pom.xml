@@ -15,8 +15,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -205,16 +205,16 @@
                                     org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.sample.SampleCollection
                                 </additionalOption>
                                 <additionalOption>-tableTagsClasses</additionalOption>
-                                 <additionalOption>
-                                     org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.sample.SampleCollection
-                                 </additionalOption>
+                                <additionalOption>
+                                    org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.sample.SampleCollection
+                                </additionalOption>
                                 <additionalOption>-jsondir</additionalOption>
                                 <additionalOption>${project.basedir}/src/main/resources/doc/json</additionalOption>
                             </additionalOptions>
                             <groups>
                                 <group>
                                     <title>Sample DataModel Packages</title>
-                                    <packages>org.opencb.opencga.core.models</packages>
+                                    <packages>org.opencb.opencga.core.models:org.opencb.biodata.models.clinical</packages>
                                 </group>
                             </groups>
                         </configuration>
