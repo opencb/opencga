@@ -274,13 +274,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
-                    defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            queryOptions.put(Constants.REFRESH, refresh);
-            queryOptions.remove("updateSampleVersion");
 
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
@@ -316,13 +312,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
-                    defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
         try {
-            queryOptions.put(Constants.REFRESH, refresh);
-            queryOptions.remove("updateSampleVersion");
-
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
@@ -381,14 +372,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions", defaultValue = "false")
-                @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
-            queryOptions.put(Constants.REFRESH, refresh);
 
             return createOkResponse(catalogManager.getIndividualManager().updateAnnotations(studyStr, individualStr, annotationSetId,
                     updateParams, action, queryOptions, token));

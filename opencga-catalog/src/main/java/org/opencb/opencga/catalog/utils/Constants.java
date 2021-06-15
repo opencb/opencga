@@ -65,11 +65,6 @@ public class Constants {
     public static final String INCREMENT_VERSION = "incVersion";
 
     /**
-     * Flag indicating to update the references from the document to point to their latest versions available.
-     */
-    public static final String REFRESH = "refresh";
-
-    /**
      * Numeric parameter containing the current release of the entries.
      */
     public static final String CURRENT_RELEASE = "currentRelease";
