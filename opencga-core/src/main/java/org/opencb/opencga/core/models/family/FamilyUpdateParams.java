@@ -18,8 +18,6 @@ package org.opencb.opencga.core.models.family;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
@@ -33,8 +31,6 @@ public class FamilyUpdateParams {
     private String id;
     private String name;
     private String description;
-    private List<Phenotype> phenotypes;
-    private List<Disorder> disorders;
     private List<String> members;
     private Integer expectedSize;
     private FamilyQualityControl qualityControl;
@@ -45,14 +41,12 @@ public class FamilyUpdateParams {
     public FamilyUpdateParams() {
     }
 
-    public FamilyUpdateParams(String id, String name, String description, List<Phenotype> phenotypes, List<Disorder> disorders,
-                              List<String> members, Integer expectedSize, CustomStatusParams status, FamilyQualityControl qualityControl,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public FamilyUpdateParams(String id, String name, String description, List<String> members, Integer expectedSize,
+                              CustomStatusParams status, FamilyQualityControl qualityControl, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.phenotypes = phenotypes;
-        this.disorders = disorders;
         this.members = members;
         this.expectedSize = expectedSize;
         this.status = status;
@@ -83,8 +77,6 @@ public class FamilyUpdateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", disorders=").append(disorders);
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", status=").append(status);
@@ -119,24 +111,6 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public List<Phenotype> getPhenotypes() {
-        return phenotypes;
-    }
-
-    public FamilyUpdateParams setPhenotypes(List<Phenotype> phenotypes) {
-        this.phenotypes = phenotypes;
-        return this;
-    }
-
-    public List<Disorder> getDisorders() {
-        return disorders;
-    }
-
-    public FamilyUpdateParams setDisorders(List<Disorder> disorders) {
-        this.disorders = disorders;
         return this;
     }
 
