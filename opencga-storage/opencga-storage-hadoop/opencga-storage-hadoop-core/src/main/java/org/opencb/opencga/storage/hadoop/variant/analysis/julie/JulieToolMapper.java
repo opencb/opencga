@@ -5,7 +5,8 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.protobuf.VariantProto;
+import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.converters.avro.VariantStatsToPopulationFrequencyConverter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -26,6 +27,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
     private HBaseToVariantAnnotationConverter fromHBaseConverter;
     private VariantAnnotationToHBaseConverter toHBaseConverter;
     private boolean overwrite;
+    private VariantStatsToPopulationFrequencyConverter popFreqConverter;
     private Map<Integer, String> studyIdMap;
     private Map<Integer, Map<Integer, String>> cohortIdMap;
 
@@ -35,6 +37,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         fromHBaseConverter = new HBaseToVariantAnnotationConverter();
         toHBaseConverter = new VariantAnnotationToHBaseConverter();
         overwrite = context.getConfiguration().getBoolean(JulieToolDriver.OVERWRITE, false);
+        popFreqConverter = new VariantStatsToPopulationFrequencyConverter();
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(getHelper()))) {
             studyIdMap = new HashMap<>();
@@ -64,7 +67,7 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         value.walker()
                 .onVariantAnnotation(a -> annotationRef.set(fromHBaseConverter.convert(a.toBytesWritable())))
                 .onCohortStats(column -> {
-                    VariantProto.VariantStats variantStats = column.toProto();
+                    VariantStats variantStats = column.toJava();
                     if (variantStats.getAltAlleleFreq() <= 0) {
                         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "skip_stats").increment(1);
                         // Ignore when alternate allele is 0
@@ -72,12 +75,10 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
                     }
                     int studyId = column.getStudyId();
                     int cohortId = column.getCohortId();
-                    populationFrequencies.add(new PopulationFrequency(
-                            studyIdMap.get(studyId),
-                            cohortIdMap.get(studyId).get(cohortId),
-                            variant.getReference(), variant.getAlternate(),
-                            variantStats.getRefAlleleFreq(), variantStats.getAltAlleleFreq(),
-                            null, null, null, null, null, null, null, null));
+                    populationFrequencies.add(popFreqConverter.convert(
+                            studyIdMap.get(studyId), cohortIdMap.get(studyId).get(cohortId), variantStats,
+                            variant.getReference(), variant.getAlternate()));
+
                 })
                 .walk();
 
@@ -87,16 +88,20 @@ public class JulieToolMapper extends VariantRowMapper<ImmutableBytesWritable, Pu
         }
         VariantAnnotation annotation = annotationRef.get();
         if (annotation == null) {
+            annotation = new VariantAnnotation();
+            annotation.setChromosome(variant.getChromosome());
+            annotation.setStart(variant.getStart());
+            annotation.setEnd(variant.getEnd());
+            annotation.setReference(variant.getReference());
+            annotation.setAlternate(variant.getAlternate());
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "empty_annotation").increment(1);
         }
 
         if (overwrite) {
-            if (annotation == null) {
-                return;
-            }
             annotation.setPopulationFrequencies(populationFrequencies);
         } else {
-            if (populationFrequencies.isEmpty() || annotation == null) {
+            if (populationFrequencies.isEmpty()) {
+                // Nothing to do, nothing to add
                 return;
             }
             if (annotation.getPopulationFrequencies() == null || annotation.getPopulationFrequencies().isEmpty()) {
