@@ -1257,8 +1257,8 @@ public class RgaManager implements AutoCloseable {
                         ids.add(codedVariant.getId());
                     }
                 } else if (count) {
-                    if (ids.size() + skippedIds.size() < 2000) {
-                        // Add up to 100 different ids to calculate an approximate count
+                    if (ids.size() + skippedIds.size() < 10000) {
+                        // Add up to 10000 different ids to calculate an approximate count
                         if (!ids.contains(codedVariant.getId())) {
                             skippedIds.add(codedVariant.getId());
                         }
