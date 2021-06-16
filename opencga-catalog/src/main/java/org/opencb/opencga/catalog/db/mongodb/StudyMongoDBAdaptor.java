@@ -676,7 +676,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public OpenCGAResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
         if (variableSetExists(variableSet.getId(), studyId) > 0) {
-            throw new CatalogDBException("VariableSet { name: '" + variableSet.getId() + "'} already exists.");
+            throw new CatalogDBException("VariableSet { id: '" + variableSet.getId() + "'} already exists.");
         }
 
         long variableSetId = getNewUid();
