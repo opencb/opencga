@@ -48,7 +48,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             throws VariantAnnotatorException {
         super(storageConfiguration, projectMetadata, options);
 
-        String cellbaseRest = storageConfiguration.getCellbase().getHost();
+        String cellbaseRest = storageConfiguration.getCellbase().getUrl();
         if (StringUtils.isEmpty(cellbaseRest)) {
             throw new VariantAnnotatorException("Missing defaultValue \"CellBase Hosts\"");
         }

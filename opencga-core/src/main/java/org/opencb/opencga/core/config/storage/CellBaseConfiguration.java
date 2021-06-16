@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.config.storage;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
@@ -27,11 +28,12 @@ import java.util.List;
 /**
  * Created by imedina on 04/05/15.
  */
+@JsonIgnoreProperties(allowSetters = true, value = {"host", "preferred", "hosts", "database"})
 public class CellBaseConfiguration {
     /*
      * URL to CellBase REST web services, by default official UCam installation is used
      */
-    private String host;
+    private String url;
 
     /*
      * CellBase version to be used, by default the 'v4' stable
@@ -45,43 +47,60 @@ public class CellBaseConfiguration {
         this(CELLBASE_HOST, CELLBASE_VERSION);
     }
 
-    public CellBaseConfiguration(String host, String version) {
-        this.host = host;
+    public CellBaseConfiguration(String url, String version) {
+        this.url = url;
         this.version = version;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CellBaseConfiguration{");
-        sb.append("host=").append(host);
+        sb.append("url=").append(url);
         sb.append(", version='").append(version).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getHost() {
-        return host;
+    public String getUrl() {
+        return url;
     }
 
+    public CellBaseConfiguration setUrl(String url) {
+        this.url = url;
+        return this;
+    }
+
+    @Deprecated
+    public String getHost() {
+        return url;
+    }
+
+    @Deprecated
     public CellBaseConfiguration setHost(String host) {
-        this.host = host;
+        if (host != null) {
+            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.host'. Use 'cellbase.url'");
+        }
+        url = host;
         return this;
     }
 
     @Deprecated
     public List<String> getHosts() {
-        return Collections.singletonList(host);
+        return Collections.singletonList(url);
     }
 
     @Deprecated
     public void setHosts(List<String> hosts) {
+        if (hosts != null) {
+            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.hosts'. Use 'cellbase.url'");
+        }
         if (hosts == null || hosts.isEmpty()) {
-            host = null;
+            url = null;
         } else {
             if (hosts.size() != 1) {
                 throw new IllegalArgumentException("Unsupported multiple cellbase hosts");
             }
-            host = hosts.get(0);
+            url = hosts.get(0);
         }
     }
 
@@ -89,8 +108,9 @@ public class CellBaseConfiguration {
         return version;
     }
 
-    public void setVersion(String version) {
+    public CellBaseConfiguration setVersion(String version) {
         this.version = version;
+        return this;
     }
 
     @Deprecated
@@ -122,7 +142,7 @@ public class CellBaseConfiguration {
         clientConfiguration.setVersion(this.getVersion());
         clientConfiguration.setDefaultSpecies("hsapiens");
         RestConfig rest = new RestConfig();
-        rest.setHosts(Collections.singletonList(this.getHost().replace("/webservices/rest", "")));
+        rest.setHosts(Collections.singletonList(this.getUrl().replace("/webservices/rest", "")));
         clientConfiguration.setRest(rest);
 
         return clientConfiguration;
