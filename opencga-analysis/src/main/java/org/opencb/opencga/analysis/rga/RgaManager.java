@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.rga;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -12,7 +13,6 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.analysis.rga.exceptions.RgaException;
 import org.opencb.opencga.analysis.rga.iterators.RgaIterator;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -847,6 +847,9 @@ public class RgaManager implements AutoCloseable {
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByVariant> knockoutResult = new OpenCGAResult<>(time, Collections.emptyList(), knockoutResultList.size(),
                 knockoutResultList, -1);
+        if (CollectionUtils.isNotEmpty(resourceIds.getEvents())) {
+            knockoutResult.setEvents(resourceIds.getEvents());
+        }
         try {
             knockoutResult.setNumMatches(resourceIds.getNumMatchesFuture() != null ? resourceIds.getNumMatchesFuture().get() : -1);
         } catch (InterruptedException | ExecutionException e) {
@@ -1152,8 +1155,12 @@ public class RgaManager implements AutoCloseable {
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         logger.info("Variant summary: {} milliseconds", time);
 
-        return new OpenCGAResult<>(time, Collections.emptyList(), knockoutByVariantSummaryList.size(), knockoutByVariantSummaryList,
-                numMatches);
+        OpenCGAResult<KnockoutByVariantSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
+                knockoutByVariantSummaryList.size(), knockoutByVariantSummaryList, numMatches);
+        if (CollectionUtils.isNotEmpty(resourceIds.getEvents())) {
+            result.setEvents(resourceIds.getEvents());
+        }
+        return result;
     }
 
     public OpenCGAResult<FacetField> aggregationStats(String studyStr, Query query, QueryOptions options, String fields, String token)
@@ -1211,9 +1218,72 @@ public class RgaManager implements AutoCloseable {
      */
     private ResourceIds getVariantIds(String mainCollection, String auxCollection, Query query, QueryOptions options,
                                       ExecutorService executor) throws RgaException, IOException {
-        List<String> ids;
-        Future<Integer> numMatchesFuture = null;
+        if (isQueryingByIndividualFields(query)) {
+            return getVariantIdsFromMainCollection(mainCollection, query, options, executor);
+        } else {
+            return getVariantIdsJoiningCollections(mainCollection, auxCollection, query, options, executor);
+        }
+    }
 
+    private ResourceIds getVariantIdsFromMainCollection(String mainCollection, Query query, QueryOptions options, ExecutorService executor)
+            throws RgaException, IOException {
+        boolean count = options.getBoolean(QueryOptions.COUNT);
+        int limit = options.getInt(QueryOptions.LIMIT, AbstractManager.DEFAULT_LIMIT);
+        int skip = options.getInt(QueryOptions.SKIP, 0);
+
+        QueryOptions facetOptions = new QueryOptions()
+                .append(QueryOptions.FACET, RgaDataModel.VARIANT_SUMMARY)
+                .append(QueryOptions.LIMIT, -1);
+        DataResult<FacetField> facetFieldDataResult = rgaEngine.facetedQuery(mainCollection, query, facetOptions);
+        if (facetFieldDataResult.getNumResults() == 0) {
+            throw RgaException.noResultsMatching();
+        }
+
+        List<Event> eventList = new ArrayList<>();
+
+        Future<Integer> numMatchesFuture = null;
+        KnockoutTypeCount knockoutTypeCount = new KnockoutTypeCount(query);
+        Set<String> ids = new HashSet<>();
+        Set<String> skippedIds = new HashSet<>();
+        List<FacetField.Bucket> buckets = facetFieldDataResult.first().getBuckets();
+        for (int i = 0; i < buckets.size(); i++) {
+            FacetField.Bucket bucket = buckets.get(i);
+            CodedVariant codedVariant = CodedVariant.parseEncodedId(bucket.getValue());
+            if (knockoutTypeCount.passesFilter(codedVariant)) {
+                if (skip > skippedIds.size()) {
+                    skippedIds.add(codedVariant.getId());
+                } else if (limit > ids.size()) {
+                    if (!skippedIds.contains(codedVariant.getId())) {
+                        ids.add(codedVariant.getId());
+                    }
+                } else if (count) {
+                    if (ids.size() + skippedIds.size() < 100) {
+                        // Add up to 100 different ids to calculate an approximate count
+                        if (!ids.contains(codedVariant.getId())) {
+                            skippedIds.add(codedVariant.getId());
+                        }
+                    } else {
+                        int processedIds = i;
+                        // Get approximate count and stop
+                        numMatchesFuture = executor.submit(
+                                () -> ((ids.size() + skippedIds.size()) * facetFieldDataResult.first().getBuckets().size()) / processedIds
+                        );
+                        eventList.add(new Event(Event.Type.WARNING, "numMatches value is approximated."));
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return new ResourceIds(new ArrayList<>(ids), numMatchesFuture, eventList);
+    }
+
+    private ResourceIds getVariantIdsJoiningCollections(String mainCollection, String auxCollection, Query query, QueryOptions options,
+                                                        ExecutorService executor)  throws RgaException, IOException {
+        Future<Integer> numMatchesFuture = null;
+        List<String> ids;
         Query mainCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), true);
         Query auxCollQuery = generateQuery(query, AuxiliarRgaDataModel.MAIN_TO_AUXILIAR_DATA_MODEL_MAP.keySet(), false);
 
@@ -1246,6 +1316,12 @@ public class RgaManager implements AutoCloseable {
         ids = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
         return new ResourceIds(ids, numMatchesFuture);
+    }
+
+    private boolean isQueryingByIndividualFields(Query query) {
+        return query.containsKey(RgaQueryParams.INDIVIDUAL_ID.key()) || query.containsKey(RgaQueryParams.SAMPLE_ID.key())
+                || query.containsKey(RgaQueryParams.PHENOTYPES.key()) || query.containsKey(RgaQueryParams.DISORDERS.key())
+                || query.containsKey(RgaQueryParams.SEX.key()) || query.containsKey(RgaQueryParams.NUM_PARENTS.key());
     }
 
     /**
@@ -1743,6 +1819,7 @@ public class RgaManager implements AutoCloseable {
     private class ResourceIds {
         private List<String> ids;
         private Future<Integer> numMatchesFuture;
+        private List<Event> events;
 
         public ResourceIds(List<String> ids) {
             this.ids = ids;
@@ -1751,6 +1828,12 @@ public class RgaManager implements AutoCloseable {
         public ResourceIds(List<String> ids, Future<Integer> numMatchesFuture) {
             this.ids = ids;
             this.numMatchesFuture = numMatchesFuture;
+        }
+
+        public ResourceIds(List<String> ids, Future<Integer> numMatchesFuture, List<Event> events) {
+            this.ids = ids;
+            this.numMatchesFuture = numMatchesFuture;
+            this.events = events;
         }
 
         public List<String> getIds() {
@@ -1768,6 +1851,15 @@ public class RgaManager implements AutoCloseable {
 
         public ResourceIds setNumMatchesFuture(Future<Integer> numMatchesFuture) {
             this.numMatchesFuture = numMatchesFuture;
+            return this;
+        }
+
+        public List<Event> getEvents() {
+            return events;
+        }
+
+        public ResourceIds setEvents(List<Event> events) {
+            this.events = events;
             return this;
         }
     }
