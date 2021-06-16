@@ -366,11 +366,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
             for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
-                gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
+                gFeature = new GenomicFeature(ct.getGeneId(), "GENE", ct.getTranscriptId(), ct.getGeneName(),
                         ct.getSequenceOntologyTerms(), null);
                 panelIds = null;
-                if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
-                    panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
+                if (genePanelMap.containsKey(ct.getGeneId())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneId()));
                 } else if (genePanelMap.containsKey(ct.getGeneName())) {
                     panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
                 }

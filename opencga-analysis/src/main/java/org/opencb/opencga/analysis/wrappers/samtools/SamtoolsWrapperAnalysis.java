@@ -133,7 +133,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
     }
 
 
-    public static SamtoolsStats parseSamtoolsStats(java.io.File file, String fileId) throws IOException {
+    public static SamtoolsStats parseSamtoolsStats(java.io.File file) throws IOException {
         // Create a map with the summary numbers of the statistics (samtools stats)
         Map<String, Object> map = new HashMap<>();
 
@@ -156,9 +156,6 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
 
         // Convert map to AlignmentStats
         SamtoolsStats alignmentStats = JacksonUtils.getDefaultObjectMapper().convertValue(map, SamtoolsStats.class);
-
-        // Set file ID
-        alignmentStats.setFileId(fileId);
 
         return alignmentStats;
     }

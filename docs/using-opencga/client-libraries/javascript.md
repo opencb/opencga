@@ -1,6 +1,7 @@
 # JavaScript
 
-The OpenCGA JavaScript Client is provided as part of [JSorolla](https://github.com/opencb/jsorolla).
+The OpenCGA JavaScript Client is provided as part of [JSorolla](https://github.com/opencb/jsorolla).  
+Some examples of basic usage can be found in [examples](https://github.com/opencb/jsorolla/tree/develop/src/core/clients/opencga/examples) directory.
 
 ### Example:
 
@@ -35,7 +36,9 @@ const client = new OpenCGAClient({
 })();
 ```
 
-#### Fetching the first 10 variants of the Study of interest using OpenCGA credentials
+#### Fetching the first 10 variants of the Study of interest using OpenCGA credentials.
+
+In this case an Opencga Session is created. The Opencga Study being used is the default one for the user. 
 
 ```text
 import {OpenCGAClient} from "./opencga-client.js";
@@ -54,8 +57,9 @@ const client = new OpenCGAClient({
     try {
         await client.login(USERNAME, PASSWORD)
         const session = await client.createSession();
-        const restResponse = await session.opencgaClient.variants().query({"study": SUDY, limit: 10});
-        console.log(restResponse.getResults());
+        const restResponse = await session.opencgaClient.variants().query({limit:10, study: session.study.fqn});
+        console.table(restResponse.getResults());
+
     } catch (e) {
         console.error(e)
     }

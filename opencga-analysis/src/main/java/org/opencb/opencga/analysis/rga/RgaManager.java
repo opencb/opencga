@@ -1532,6 +1532,12 @@ public class RgaManager implements AutoCloseable {
                 knockoutTypeCount.getNumDelOverlapIds());
         knockoutByIndividualSummary.setVariantStats(variantStats);
 
+        // Use list of variants filtered matching all criteria if the number of variants is lower than 50. Otherwise, variants will not be
+        // used to get the list of genes. If we don't apply this limit, the url may be too long and fail.
+        if (knockoutTypeCount.getNumIds() > 0 && knockoutTypeCount.getNumIds() < 50) {
+            auxQuery.put(RgaQueryParams.VARIANTS.key(), new ArrayList<>(knockoutTypeCount.getIds()));
+        }
+
         // 3. Get gene name list
         QueryOptions geneFacet = new QueryOptions()
                 .append(QueryOptions.LIMIT, -1)

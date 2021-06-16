@@ -25,7 +25,6 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -39,6 +38,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.*;
@@ -1471,8 +1471,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String variableSetId = "opencga_sample_variant_stats";
 
-        if (sampleUpdateParams.getQualityControl().getVariantMetrics() == null
-                || sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats().isEmpty()) {
+        if (sampleUpdateParams.getQualityControl().getVariant() == null
+                || sampleUpdateParams.getQualityControl().getVariant().getVariantStats().isEmpty()) {
             // Add REMOVE Action
             Map<String, Object> map = options.getMap(Constants.ACTIONS);
             if (map == null) {
@@ -1488,10 +1488,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
 
         List<AnnotationSet> annotationSetList = new LinkedList<>();
-        if (sampleUpdateParams.getQualityControl().getVariantMetrics() != null) {
+        if (sampleUpdateParams.getQualityControl().getVariant() != null) {
 
-            if (CollectionUtils.isNotEmpty(sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats())) {
-                for (SampleQcVariantStats variantStat : sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats()) {
+            if (CollectionUtils.isNotEmpty(sampleUpdateParams.getQualityControl().getVariant().getVariantStats())) {
+                for (SampleQcVariantStats variantStat : sampleUpdateParams.getQualityControl().getVariant().getVariantStats()) {
                     SampleVariantStats stats = variantStat.getStats();
                     if (stats != null) {
                         Map<String, Integer> indelLengthCount = new HashMap<>();
