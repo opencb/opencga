@@ -128,7 +128,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
         }
     }
 
-    protected VariantStats convert(VariantProto.VariantStats protoStats) {
+    public static VariantStats convert(VariantProto.VariantStats protoStats) {
         VariantStats stats = new VariantStats();
 
         stats.setSampleCount(protoStats.getSampleCount());

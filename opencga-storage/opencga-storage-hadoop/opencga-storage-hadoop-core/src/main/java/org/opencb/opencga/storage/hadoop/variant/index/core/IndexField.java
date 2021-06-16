@@ -65,6 +65,12 @@ public abstract class IndexField<T> {
         return decode(read(bb));
     }
 
+    public BitBuffer write(T value) {
+        BitBuffer bitBuffer = new BitBuffer(getBitLength());
+        write(value, bitBuffer);
+        return bitBuffer;
+    }
+
     public void write(T value, BitBuffer bitBuffer) {
         bitBuffer.setIntPartial(encode(value), getBitOffset(), getBitLength());
     }

@@ -3,13 +3,14 @@ package org.opencb.opencga.catalog.migration;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
@@ -18,22 +19,25 @@ public abstract class MigrationTool {
 
     protected Configuration configuration;
     protected CatalogManager catalogManager;
-    protected String appHome;
+    protected Path appHome;
     protected String token;
 
     protected ObjectMap params;
 
     protected final Logger logger;
+    private final Logger privateLogger;
 
     public MigrationTool() {
         this.logger = LoggerFactory.getLogger(this.getClass());
+        // Internal logger
+        this.privateLogger = LoggerFactory.getLogger(MigrationTool.class);
     }
 
     public final String getId() {
         return "";
     }
 
-    public final void setup(Configuration configuration, CatalogManager catalogManager, String appHome, ObjectMap params, String token) {
+    public final void setup(Configuration configuration, CatalogManager catalogManager, Path appHome, ObjectMap params, String token) {
         this.configuration = configuration;
         this.catalogManager = catalogManager;
         this.appHome = appHome;
@@ -47,11 +51,19 @@ public abstract class MigrationTool {
         } catch (MigrationException e) {
             throw e;
         } catch (Exception e) {
-            throw new MigrationException("Error running  migration '" + getId() + "'");
+            throw new MigrationException("Error running  migration '" + getId() + "'", e);
         }
     }
 
-    protected abstract void run() throws CatalogException;
+    protected abstract void run() throws Exception;
+
+    protected final StorageConfiguration readStorageConfiguration() throws MigrationException {
+        try (FileInputStream is = new FileInputStream(appHome.resolve("conf").resolve("storage-configuration.yml").toFile())) {
+            return StorageConfiguration.load(is);
+        } catch (IOException e) {
+            throw new MigrationException("Error reading \"storage-configuration.yml\"", e);
+        }
+    }
 
     protected final void runJavascript(Path file) throws MigrationException {
         String authentication = "";
@@ -88,7 +100,7 @@ public abstract class MigrationTool {
                 + StringUtils.join(configuration.getCatalog().getDatabase().getHosts(), ",") + "/"
                 + catalogManager.getCatalogDatabase() + " " + file.getFileName();
 
-        logger.info("Running Javascript cli {} from {}", catalogCli, file.getParent());
+        privateLogger.info("Running Javascript cli {} from {}", catalogCli, file.getParent());
         ProcessBuilder processBuilder = new ProcessBuilder(catalogCli.split(" "));
         processBuilder.directory(file.getParent().toFile());
         Process p;
@@ -97,7 +109,7 @@ public abstract class MigrationTool {
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             while ((line = input.readLine()) != null) {
-                logger.info(line);
+                privateLogger.info(line);
             }
             p.waitFor();
             input.close();
@@ -106,7 +118,7 @@ public abstract class MigrationTool {
         }
 
         if (p.exitValue() == 0) {
-            logger.info("Finished Javascript catalog migration");
+            privateLogger.info("Finished Javascript catalog migration");
         } else {
             throw new MigrationException("Error with Javascript catalog migrating!");
         }

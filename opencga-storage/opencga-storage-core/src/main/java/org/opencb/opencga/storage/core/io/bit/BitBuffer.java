@@ -264,6 +264,16 @@ public class BitBuffer {
     @Override
     public String toString() {
         StringBuilder msg = new StringBuilder("BitBuffer{bitOffset:" + bitOffset + ", bitLength:" + bitLength + ", [");
+        bitsToString(msg);
+        msg.append("]}");
+        return msg.toString();
+    }
+
+    public String bitsToString() {
+        return bitsToString(new StringBuilder()).toString();
+    }
+
+    private StringBuilder bitsToString(StringBuilder msg) {
         int lastBits = bitLength % Byte.SIZE;
         for (int i = 0; i < bitLength - lastBits; i += Byte.SIZE) {
             msg.append(byteToString(getByte(i))).append(", ");
@@ -271,8 +281,7 @@ public class BitBuffer {
         if (lastBits != 0) {
             msg.append(binaryToString(getBytePartial(bitLength - lastBits, lastBits), lastBits));
         }
-        msg.append("]}");
-        return msg.toString();
+        return msg;
     }
 
 
@@ -290,5 +299,13 @@ public class BitBuffer {
             str = str.substring(str.length() - i);
         }
         return StringUtils.leftPad(str, i, '0');
+    }
+
+    public int toInt() {
+        int bitLength = getBitLength();
+        if (bitLength > Integer.SIZE) {
+            throw new IllegalArgumentException("Unable to get int from BitBuffer with " + bitLength + " bits");
+        }
+        return getIntPartial(0, bitLength);
     }
 }

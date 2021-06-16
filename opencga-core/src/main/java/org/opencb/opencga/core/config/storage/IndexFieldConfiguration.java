@@ -5,8 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.beans.ConstructorProperties;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 public class IndexFieldConfiguration {
     protected final Source source;
@@ -14,6 +13,7 @@ public class IndexFieldConfiguration {
     protected Type type;
     protected double[] thresholds;
     protected String[] values;
+    protected Map<String, List<String>> valuesMapping;
     protected boolean nullable = true;
 
     public IndexFieldConfiguration(IndexFieldConfiguration other) {
@@ -87,8 +87,17 @@ public class IndexFieldConfiguration {
         return values;
     }
 
-    public IndexFieldConfiguration setValues(String[] values) {
+    public IndexFieldConfiguration setValues(String... values) {
         this.values = values;
+        return this;
+    }
+
+    public Map<String, List<String>> getValuesMapping() {
+        return valuesMapping;
+    }
+
+    public IndexFieldConfiguration setValuesMapping(Map<String, List<String>> valuesMapping) {
+        this.valuesMapping = valuesMapping;
         return this;
     }
 
@@ -103,19 +112,19 @@ public class IndexFieldConfiguration {
 
     public void validate() {
         if (key == null) {
-            throw new IllegalArgumentException("Missing field KEY in index custom field");
+            throw new IllegalArgumentException("Missing field KEY in index field");
         }
         if (source == null) {
-            throw new IllegalArgumentException("Missing field SOURCE in index custom field " + key);
+            throw new IllegalArgumentException("Missing field SOURCE in index field " + key);
         }
         if (type == null) {
-            throw new IllegalArgumentException("Missing field TYPE in index custom field " + source + ":" + key);
+            throw new IllegalArgumentException("Missing field TYPE in index field " + source + ":" + key);
         }
         switch (type) {
             case RANGE_LT:
             case RANGE_GT:
                 if (thresholds == null || thresholds.length == 0) {
-                    throw new IllegalArgumentException("Missing 'thresholds' for index custom field " + getId());
+                    throw new IllegalArgumentException("Missing 'thresholds' for index field " + getId());
                 }
                 if (!ArrayUtils.isSorted(thresholds)) {
                     throw new IllegalArgumentException("Thresholds must be sorted!");
@@ -125,15 +134,38 @@ public class IndexFieldConfiguration {
 //                            + thresholds.length + " thresholds. "
 //                            + "Must be a power of 2 minus 1. e.g. 1, 3, 7, 15...");
 //                }
+                if (values != null && values.length != 0) {
+                    throw new IllegalArgumentException("Invalid 'values' with type " + type + " in field " + getId());
+                }
+                if (valuesMapping != null && !valuesMapping.isEmpty()) {
+                    throw new IllegalArgumentException("Invalid 'valuesMapping' with type " + type + " in field " + getId());
+                }
                 break;
             case CATEGORICAL:
             case CATEGORICAL_MULTI_VALUE:
                 if (values == null || values.length == 0) {
-                    throw new IllegalArgumentException("Missing 'values' for index custom field " + getId());
+                    throw new IllegalArgumentException("Missing 'values' for index field " + getId());
+                }
+                if (valuesMapping != null) {
+                    for (String key : valuesMapping.keySet()) {
+                        if (!ArrayUtils.contains(values, key)) {
+                            throw new IllegalArgumentException("Unknown value mapping from '" + key + "'");
+                        }
+                    }
+                    Set<String> allValues = new HashSet<>();
+                    Set<String> duplicatedValues = new HashSet<>();
+                    for (List<String> strings : valuesMapping.values()) {
+                        for (String string : strings) {
+                            if (!allValues.add(string)) {
+                                duplicatedValues.add(string);
+                            }
+                        }
+                    }
+                    throw new IllegalArgumentException("Found multiple mappings for these values: " + duplicatedValues);
                 }
                 break;
             default:
-                throw new IllegalArgumentException("Unknown type " + type + " for index custom field " + getId());
+                throw new IllegalArgumentException("Unknown type " + type + " for index field " + getId());
         }
     }
 
