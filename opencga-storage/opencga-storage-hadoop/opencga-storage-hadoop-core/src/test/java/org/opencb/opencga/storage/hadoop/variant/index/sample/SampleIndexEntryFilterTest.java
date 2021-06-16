@@ -9,7 +9,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
-import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.Population;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
@@ -39,13 +39,13 @@ public class SampleIndexEntryFilterTest {
     @Before
     public void setUp() throws Exception {
         SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
-        configuration.getPopulationRanges().clear();
+        configuration.getAnnotationIndexConfiguration().getPopulationFrequency().getPopulations().clear();
         schema = new SampleIndexSchema(configuration
-                .addPopulationRange(new PopulationFrequencyRange("s1", "ALL"))
-                .addPopulationRange(new PopulationFrequencyRange("s2", "ALL"))
-                .addPopulationRange(new PopulationFrequencyRange("s3", "ALL"))
-                .addPopulationRange(new PopulationFrequencyRange("s4", "ALL"))
-                .addPopulationRange(new PopulationFrequencyRange("s5", "ALL")));
+                .addPopulation(new Population("s1", "ALL"))
+                .addPopulation(new Population("s2", "ALL"))
+                .addPopulation(new Population("s3", "ALL"))
+                .addPopulation(new Population("s4", "ALL"))
+                .addPopulation(new Population("s5", "ALL")));
     }
 
     @Test

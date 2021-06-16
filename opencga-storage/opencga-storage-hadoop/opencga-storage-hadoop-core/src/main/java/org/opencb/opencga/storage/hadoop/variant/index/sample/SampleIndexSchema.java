@@ -109,7 +109,7 @@ public final class SampleIndexSchema {
         ctIndex = new ConsequenceTypeIndexSchema(configuration.getAnnotationIndexConfiguration().getConsequenceType());
         biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
         ctBtIndex = new CtBtCombinationIndexSchema(ctIndex, biotypeIndex);
-        popFreqIndex = new PopulationFrequencyIndexSchema(configuration.getPopulationRanges());
+        popFreqIndex = new PopulationFrequencyIndexSchema(configuration.getAnnotationIndexConfiguration().getPopulationFrequency());
         clinicalIndexSchema = new ClinicalIndexSchema(
                 configuration.getAnnotationIndexConfiguration().getClinicalSource(),
                 configuration.getAnnotationIndexConfiguration().getClinicalSignificance()
