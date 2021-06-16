@@ -1257,7 +1257,7 @@ public class RgaManager implements AutoCloseable {
                         ids.add(codedVariant.getId());
                     }
                 } else if (count) {
-                    if (ids.size() + skippedIds.size() < 100) {
+                    if (ids.size() + skippedIds.size() < 2000) {
                         // Add up to 100 different ids to calculate an approximate count
                         if (!ids.contains(codedVariant.getId())) {
                             skippedIds.add(codedVariant.getId());
@@ -1275,6 +1275,10 @@ public class RgaManager implements AutoCloseable {
                     break;
                 }
             }
+        }
+        if (count && numMatchesFuture == null) {
+            // We processed all the elements, so we simply sum up the number of different ids processed
+            numMatchesFuture = executor.submit(() -> (ids.size() + skippedIds.size()));
         }
 
         return new ResourceIds(new ArrayList<>(ids), numMatchesFuture, eventList);
@@ -1608,9 +1612,9 @@ public class RgaManager implements AutoCloseable {
                 knockoutTypeCount.getNumDelOverlapIds());
         knockoutByIndividualSummary.setVariantStats(variantStats);
 
-        // Use list of variants filtered matching all criteria if the number of variants is lower than 50. Otherwise, variants will not be
+        // Use list of variants filtered matching all criteria if the number of variants is lower than 100. Otherwise, variants will not be
         // used to get the list of genes. If we don't apply this limit, the url may be too long and fail.
-        if (knockoutTypeCount.getNumIds() > 0 && knockoutTypeCount.getNumIds() < 50) {
+        if (knockoutTypeCount.getNumIds() > 0 && knockoutTypeCount.getNumIds() < 100) {
             auxQuery.put(RgaQueryParams.VARIANTS.key(), new ArrayList<>(knockoutTypeCount.getIds()));
         }
 
