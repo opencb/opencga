@@ -453,7 +453,7 @@ public class SampleIndexConfiguration {
 
 
     public static class PopulationFrequencyIndexConfiguration {
-        private static final double[] DEFAULT_THRESHOLDS = new double[]{0.001, 0.005, 0.01};
+        private static final double[] DEFAULT_THRESHOLDS = new double[]{0.0000001, 0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05};
 
         private List<Population> populations = new ArrayList<>(5);
         private double[] thresholds = DEFAULT_THRESHOLDS;
