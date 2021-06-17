@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.migration;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
@@ -317,17 +318,24 @@ public class MigrationManager {
 
         migrationTool.setup(configuration, catalogManager, appHome, params, token);
 
-        System.out.println();
+        StopWatch stopWatch = StopWatch.createStarted();
+        logger.info("----------------------------");
         logger.info("Executing migration '{}' for version '{}': {}", annotation.id(), annotation.version(), annotation.description());
+        logger.info("----------------------------");
         MigrationRun migrationRun = new MigrationRun(annotation.id(), annotation.description(), annotation.version(), TimeUtils.getDate(),
                 annotation.patch());
         try {
             migrationTool.execute();
             migrationRun.setStatus(MigrationRun.MigrationStatus.DONE);
+            logger.info("----------------------------");
+            logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
+            logger.info("----------------------------");
         } catch (MigrationException | RuntimeException e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             migrationRun.setException(e.getMessage());
+            logger.info("----------------------------");
             logger.error("Migration '{}' failed with message: {}", annotation.id(), e.getMessage(), e);
+            logger.info("----------------------------");
         } finally {
             migrationRun.setEnd(TimeUtils.getDate());
             try {

@@ -34,7 +34,7 @@ public abstract class MigrationTool {
     }
 
     public final String getId() {
-        return "";
+        return getClass().getAnnotation(Migration.class).id();
     }
 
     public final void setup(Configuration configuration, CatalogManager catalogManager, Path appHome, ObjectMap params, String token) {
@@ -51,7 +51,7 @@ public abstract class MigrationTool {
         } catch (MigrationException e) {
             throw e;
         } catch (Exception e) {
-            throw new MigrationException("Error running  migration '" + getId() + "'", e);
+            throw new MigrationException("Error running migration '" + getId() + "' : " + e.getMessage(), e);
         }
     }
 
