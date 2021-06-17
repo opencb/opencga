@@ -5,9 +5,7 @@ import org.opencb.opencga.storage.core.variant.query.OpValue;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.MaskIndexFieldFilter;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -23,10 +21,25 @@ import java.util.stream.Collectors;
 public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<List<T>> {
 
     private final int numBits;
+    private boolean withOthers;
 
-    public CategoricalMultiValuedIndexField(IndexFieldConfiguration configuration, int bitOffset, T... values) {
-        super(configuration, bitOffset, values.length, new MaskValueCodec<>(values));
-        numBits = values.length;
+    public static CategoricalMultiValuedIndexField<String> createMultiValued(IndexFieldConfiguration configuration, int bitOffset) {
+        return new CategoricalMultiValuedIndexField<>(
+                configuration,
+                bitOffset,
+                configuration.getValues(),
+                configuration.getValuesMapping());
+    }
+
+    public CategoricalMultiValuedIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values) {
+        this(configuration, bitOffset, values, null);
+    }
+
+    public CategoricalMultiValuedIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values,
+                                            Map<T, List<T>> valuesMapping) {
+        super(configuration, bitOffset, values.length, new MaskValueCodec<>(values, valuesMapping, configuration.getNullable()));
+        withOthers = configuration.getNullable();
+        numBits = values.length + (withOthers ? 1 : 0);
     }
 
     @Override
@@ -53,11 +66,42 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
      * @param <T> Value type
      */
     private static class MaskValueCodec<T> implements IndexCodec<List<T>> {
-
+        public static final int NA = 0;
         private final T[] values;
+        private final Integer otherValuePosition;
+        private final Map<T, Integer> valuesPosition;
+        private final int numBits;
+        private final int ambiguousValues;
 
-        MaskValueCodec(T[] values) {
-            this.values = values;
+        MaskValueCodec(T[] values, Map<T, List<T>> valuesMapping, boolean withOther) {
+            if (withOther) {
+                numBits = values.length + 1;
+                this.values = Arrays.copyOf(values, values.length + 1);
+                this.values[values.length] = null;
+                this.otherValuePosition = numBits;
+            } else {
+                this.values = values;
+                numBits = values.length;
+                otherValuePosition = null;
+            }
+            if (valuesMapping == null) {
+                valuesMapping = Collections.emptyMap();
+            }
+            valuesPosition = new HashMap<>();
+            int ambiguousValues = 0;
+            for (int pos = 0; pos < values.length; pos++) {
+                T value = values[pos];
+                valuesPosition.put(value, pos);
+                List<T> alias = valuesMapping.getOrDefault(value, Collections.emptyList());
+                if (alias.size() > 1 || alias.size() == 1 && alias.get(0).equals(value)) {
+                    // Is ambiguous
+                    ambiguousValues |= 1 << pos;
+                    for (T valueAlias : alias) {
+                        valuesPosition.put(valueAlias, pos);
+                    }
+                }
+            }
+            this.ambiguousValues = ambiguousValues;
             if (values.length > Integer.SIZE) {
                 throw new IllegalArgumentException("Unable to represent more than " + Integer.SIZE
                         + " values in a " + CategoricalMultiValuedIndexField.class.getSimpleName());
@@ -65,12 +109,12 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
         }
 
         @Override
-        public int encode(List<T> value) {
+        public int encode(List<T> valuesList) {
             int code = 0;
-            for (int i = 0, valuesLength = values.length; i < valuesLength; i++) {
-                T t = values[i];
-                if (t.equals(value)) {
-                    code |= 1 << i;
+            for (T value : valuesList) {
+                Integer pos = valuesPosition.getOrDefault(value, otherValuePosition);
+                if (pos != null) {
+                    code |= 1 << pos;
                 }
             }
             return code;
@@ -81,8 +125,8 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
             if (code == 0) {
                 return Collections.emptyList();
             } else {
-                List<T> decode = new ArrayList<>(values.length);
-                for (int i = 0; i < values.length; i++) {
+                List<T> decode = new ArrayList<>(numBits);
+                for (int i = 0; i < numBits; i++) {
                     if ((code & 1) == 1) {
                         decode.add(values[i]);
                     }
@@ -94,7 +138,7 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
 
         @Override
         public boolean ambiguous(int code) {
-            return code == NA;
+            return code == NA || (code & ambiguousValues) != 0;
         }
     }
 

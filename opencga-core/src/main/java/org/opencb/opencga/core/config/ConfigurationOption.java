@@ -9,4 +9,8 @@ public interface ConfigurationOption {
 //    default boolean isFinal() {
 //        return false;
 //    }
+
+//    default boolean isModifiableAfterLoading() {
+//        return false;
+//    }
 }

@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.annotation;
+package org.opencb.opencga.core.models.variant;
 
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.DrugResponseClassification;

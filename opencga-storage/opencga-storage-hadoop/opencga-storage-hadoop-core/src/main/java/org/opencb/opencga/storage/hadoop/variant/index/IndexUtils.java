@@ -37,6 +37,10 @@ public final class IndexUtils {
         return binaryToString(s, Short.SIZE);
     }
 
+    public static String intToString(int i) {
+        return binaryToString(i, Integer.SIZE);
+    }
+
     public static String binaryToString(int number, int bits) {
         String str = Integer.toBinaryString(number);
         if (str.length() > bits) {

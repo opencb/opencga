@@ -69,7 +69,7 @@ public class SampleIndexQuery {
             List<String>> samplesMap, QueryOperation queryOperation) {
         this(schema, regionGroups, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(),
-                new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
+                new SampleAnnotationIndexQuery(schema), Collections.emptySet(), false, queryOperation);
     }
 
     public SampleIndexQuery(SampleIndexSchema schema, Collection<List<Region>> regionGroups, Set<VariantType> variantTypes, String study,
@@ -187,11 +187,11 @@ public class SampleIndexQuery {
     }
 
     public byte getAnnotationIndexMask() {
-        return annotationIndexQuery.getAnnotationIndexMask();
+        return getAnnotationIndexQuery().getAnnotationIndexMask();
     }
 
     public byte getAnnotationIndex() {
-        return annotationIndexQuery.getAnnotationIndex();
+        return getAnnotationIndexQuery().getAnnotationIndex();
     }
 
     public boolean emptyAnnotationIndex() {

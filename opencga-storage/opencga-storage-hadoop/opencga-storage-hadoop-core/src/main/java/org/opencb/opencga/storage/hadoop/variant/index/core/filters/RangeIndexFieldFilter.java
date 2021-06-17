@@ -47,7 +47,7 @@ public class RangeIndexFieldFilter extends IndexFieldFilter {
                 this.maxValueExclusive = index.getMax();
                 break;
             default:
-                throw new VariantQueryException("Unknown query operator" + op);
+                throw new VariantQueryException("Unknown query operator '" + op + "'");
         }
 
         this.minCodeInclusive = (byte) index.encode(minValueInclusive);
