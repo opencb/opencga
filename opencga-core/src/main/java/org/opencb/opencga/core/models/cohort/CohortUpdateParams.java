@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class CohortUpdateParams {
     private String id;
     private Enums.CohortType type;
     private String description;
-    private List<String> samples;
+    private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
     private CustomStatusParams status;
@@ -44,7 +45,7 @@ public class CohortUpdateParams {
     public CohortUpdateParams() {
     }
 
-    public CohortUpdateParams(String id, Enums.CohortType type, String description, List<String> samples,
+    public CohortUpdateParams(String id, Enums.CohortType type, String description, List<SampleReferenceParam> samples,
                               List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.type = type;
@@ -73,7 +74,9 @@ public class CohortUpdateParams {
 
     public Cohort toCohort() {
         return new Cohort(id, type, TimeUtils.getTime(), description,
-                samples != null ? samples.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()) : null,
+                samples != null ?
+                        samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
+                        : null,
                 samples != null ? samples.size() : 0, annotationSets, 1, status.toCustomStatus(), new CohortInternal(), attributes);
     }
 
@@ -118,11 +121,11 @@ public class CohortUpdateParams {
         return this;
     }
 
-    public List<String> getSamples() {
+    public List<SampleReferenceParam> getSamples() {
         return samples;
     }
 
-    public CohortUpdateParams setSamples(List<String> samples) {
+    public CohortUpdateParams setSamples(List<SampleReferenceParam> samples) {
         this.samples = samples;
         return this;
     }

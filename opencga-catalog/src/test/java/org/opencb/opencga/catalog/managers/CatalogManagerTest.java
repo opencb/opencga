@@ -1304,7 +1304,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<Cohort> result = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(),
                 new CohortUpdateParams()
                         .setId("myModifiedCohort")
-                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId3.getId(), sampleId4.getId(), sampleId5.getId())),
+                        .setSamples(Arrays.asList(
+                                new SampleReferenceParam().setId(sampleId1.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId4.getId()),
+                                new SampleReferenceParam().setId(sampleId5.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
 
@@ -1337,7 +1342,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 ParamUtils.BasicUpdateAction.ADD.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
-                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId1.getId(), sampleId3.getId())),
+                        .setSamples(Arrays.asList(
+                                new SampleReferenceParam().setId(sampleId1.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId1.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
         myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
@@ -1348,7 +1357,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 ParamUtils.BasicUpdateAction.REMOVE.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
-                        .setSamples(Arrays.asList(sampleId3.getId(), sampleId3.getId())),
+                        .setSamples(Arrays.asList(
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
         myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();

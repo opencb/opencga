@@ -27,10 +27,7 @@ import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.sample.SampleAclParams;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -105,8 +102,12 @@ public class RgaManagerTest {
                 }
             }
 
-            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1").setSamples(file.getSampleIds().subList(0, 2)), null, null, null, ownerToken);
-            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2").setSamples(file.getSampleIds().subList(2, 4)), null, null, null, ownerToken);
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
+                    .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                    null, null, null, ownerToken);
+            catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
+                    .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                    null, null, null, ownerToken);
 
             Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
             Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
