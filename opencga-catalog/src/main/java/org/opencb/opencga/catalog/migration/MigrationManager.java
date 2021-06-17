@@ -319,23 +319,28 @@ public class MigrationManager {
         migrationTool.setup(configuration, catalogManager, appHome, params, token);
 
         StopWatch stopWatch = StopWatch.createStarted();
-        logger.info("----------------------------");
-        logger.info("Executing migration '{}' for version '{}': {}", annotation.id(), annotation.version(), annotation.description());
-        logger.info("----------------------------");
+        logger.info("------------------------------------------------------");
+        logger.info("Executing migration '{}' for version '{}'", annotation.id(), annotation.version());
+        logger.info("    {}", annotation.description());
+        logger.info("------------------------------------------------------");
         MigrationRun migrationRun = new MigrationRun(annotation.id(), annotation.description(), annotation.version(), TimeUtils.getDate(),
                 annotation.patch());
         try {
             migrationTool.execute();
             migrationRun.setStatus(MigrationRun.MigrationStatus.DONE);
-            logger.info("----------------------------");
+            logger.info("------------------------------------------------------");
             logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
-            logger.info("----------------------------");
         } catch (MigrationException | RuntimeException e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
-            migrationRun.setException(e.getMessage());
-            logger.info("----------------------------");
-            logger.error("Migration '{}' failed with message: {}", annotation.id(), e.getMessage(), e);
-            logger.info("----------------------------");
+            String message;
+            if (e instanceof MigrationException && e.getCause()!=null) {
+                message = e.getCause().getMessage();
+            } else {
+                message = e.getMessage();
+            }
+            migrationRun.setException(message);
+            logger.info("------------------------------------------------------");
+            logger.error("Migration '{}' failed with message: {}", annotation.id(), message, e);
         } finally {
             migrationRun.setEnd(TimeUtils.getDate());
             try {

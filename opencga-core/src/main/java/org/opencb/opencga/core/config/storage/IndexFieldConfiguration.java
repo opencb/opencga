@@ -118,7 +118,7 @@ public class IndexFieldConfiguration {
             throw new IllegalArgumentException("Missing field SOURCE in index field " + key);
         }
         if (type == null) {
-            throw new IllegalArgumentException("Missing field TYPE in index field " + source + ":" + key);
+            throw new IllegalArgumentException("Missing field TYPE in index field " + getId());
         }
         switch (type) {
             case RANGE_LT:
@@ -149,7 +149,7 @@ public class IndexFieldConfiguration {
                 if (valuesMapping != null) {
                     for (String key : valuesMapping.keySet()) {
                         if (!ArrayUtils.contains(values, key)) {
-                            throw new IllegalArgumentException("Unknown value mapping from '" + key + "'");
+                            throw new IllegalArgumentException("Unknown value mapping from '" + key + "' for index field " + getId());
                         }
                     }
                     Set<String> allValues = new HashSet<>();
@@ -161,7 +161,10 @@ public class IndexFieldConfiguration {
                             }
                         }
                     }
-                    throw new IllegalArgumentException("Found multiple mappings for these values: " + duplicatedValues);
+                    if (!duplicatedValues.isEmpty()) {
+                        throw new IllegalArgumentException("Found multiple mappings for field " + getId()
+                                + " for these values: " + duplicatedValues);
+                    }
                 }
                 break;
             default:
