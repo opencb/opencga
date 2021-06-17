@@ -6,10 +6,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -128,13 +128,13 @@ public class VariantAnnotatorTest {
         }
 
         @Override
-        protected List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
-            List<QueryResult<VariantAnnotation>> queryResults = super.annotateFiltered(variants);
-            for (Iterator<QueryResult<VariantAnnotation>> iterator = queryResults.iterator(); iterator.hasNext(); ) {
-                QueryResult<VariantAnnotation> queryResult = iterator.next();
-                assertEquals(1, queryResult.getResult().size());
+        protected List<CellBaseDataResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
+            List<CellBaseDataResult<VariantAnnotation>> queryResults = super.annotateFiltered(variants);
+            for (Iterator<CellBaseDataResult<VariantAnnotation>> iterator = queryResults.iterator(); iterator.hasNext(); ) {
+                CellBaseDataResult<VariantAnnotation> queryResult = iterator.next();
+                assertEquals(1, queryResult.getResults().size());
                 if (skipvariants.contains(queryResult.getId())) {
-                    queryResult.setResult(Collections.emptyList());
+                    queryResult.setResults(Collections.emptyList());
                     queryResult.setNumResults(0);
                 } else if (removevariants.contains(queryResult.getId())) {
                     iterator.remove();

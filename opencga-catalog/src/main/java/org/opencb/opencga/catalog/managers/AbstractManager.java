@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -68,7 +67,7 @@ public abstract class AbstractManager {
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
     protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
-    protected static final String OPENCGA = "opencga";
+    public static final String OPENCGA = "opencga";
     public static final String ANONYMOUS = "*";
 
     public static final int BATCH_OPERATION_SIZE = 100;

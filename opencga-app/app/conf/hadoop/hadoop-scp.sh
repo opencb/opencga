@@ -40,7 +40,7 @@ fi
 
 SSH="${SSHPASS_CMD}ssh ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}"
 
-function r() {
+function printAndRun() {
   CMD=$@
   echo " $ "$CMD 1>&2
   $CMD 1>&2
@@ -55,7 +55,7 @@ echo " * TARGET : ${USER}@${HOSTNAME}:${TARGET_FILE}" 1>&2
 set -e
 
 echo "Check if source file exists" 1>&2
-r "${SSH} test -f ${SRC_FILE}" || (echo "Soruce file does not exist!" 1>&2 && exit 1)
+printAndRun "${SSH} test -f ${SRC_FILE}" || (echo "Source file does not exist!" 1>&2 && exit 1)
 
 if [ -f ${TARGET_FILE} ]; then
   target_inode=`ls -i ${TARGET_FILE} | cut -d " " -f 1`
@@ -73,8 +73,8 @@ fi
 echo "Copy file"
 CMD="${SSHPASS_CMD} scp -r ${SSH_OPTS} ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}:${SRC_FILE} ${TARGET_FILE}"
 #CMD="${SSHPASS_CMD} rsync -avz --remove-source-files -e ssh ${HADOOP_SSH_USER}@${HADOOP_SSH_HOST}:${SRC_FILE} ${TARGET_FILE}"
-r $CMD
+printAndRun $CMD
 
 echo "Remove file from Hadoop edge node" 1>&2
-r "${SSH} rm -rf ${SRC_FILE}"
+printAndRun "${SSH} rm -rf ${SRC_FILE}"
 

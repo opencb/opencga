@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -26,7 +25,6 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.time.LocalDate;
@@ -52,7 +50,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
                 new IndividualPopulation("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
 
         individual.setUid(300)
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(new IndividualInternal(new Status("READY")))
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(IndividualInternal.init())
                 .setLifeStatus(IndividualProperty.LifeStatus.ABORTED)
                 .setSamples(Arrays.asList(new Sample().setId("1"), new Sample().setId("2"))).setParentalConsanguinity(true);
 

@@ -207,6 +207,12 @@ analysis:
         - name: analysisconf
           persistentVolumeClaim:
             claimName: "pvc-opencga-analysisconf"
+      k8s.podSecurityContext:
+        runAsNonRoot: true
+      k8s.securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        readOnlyRootFilesystem: false
 
   # List of analysis frameworks
   frameworks:

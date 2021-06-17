@@ -32,22 +32,23 @@ def login(loginRequired=False):
 
 def build():
     print("Building docker images " + str(images))
-    for image in images:
+    for i in images:
+        image = org + "/opencga-" + i
         print("*********************************************")
-        print("Building " + org + "/opencga-" + image + ":" + tag)
+        print("Building " + image + ":" + tag)
         print("*********************************************")
-        if image == "init" or image == "demo":
+        if i == "init" or i == "demo":
             command = ("docker build"
-                + " -t " + org + "/opencga-" + image + ":" + tag
-                + " -f " + build_folder + "/cloud/docker/opencga-" + image + "/Dockerfile"
+                + " -t " + image + ":" + tag
+                + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
                 + " --build-arg TAG=" + tag
                 + " --build-arg ORG=" + org
                 + " " + args.docker_build_args + " "
                 + " " + build_folder)
         else:
             command = ("docker build"
-                + " -t " + org + "/opencga-" + image + ":" + tag
-                + " -f " + build_folder + "/cloud/docker/opencga-" + image + "/Dockerfile"
+                + " -t " + image + ":" + tag
+                + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
                 + " " + args.docker_build_args + " "
                 + " " + build_folder)
         run(command)
@@ -55,6 +56,9 @@ def build():
 def tag_latest(image):
     if "hdp" in tag or "dev" in tag:
         print("Don't use tag " + tag + " as latest")
+        return
+    if server:
+        print("Don't use tag latest in server " + server)
         return
 
     latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
@@ -76,10 +80,13 @@ def tag_latest(image):
 def push():
     print("Pushing images to Docker hub")
     for i in images:
+        image = org + "/opencga-" + i
         print("*********************************************")
-        print("Pushing " + org + "/opencga-" + i + ":" + tag)
+        print("Pushing " + server + image + ":" + tag)
         print("*********************************************")
-        run("docker push " + org + "/opencga-" + i + ":" + tag)
+        if server:
+            run("docker tag " + image + ":" + tag + " " +  server + image + ":" + tag)
+        run("docker push " + server + image + ":" + tag)
         tag_latest(i)
 
 def delete():
@@ -113,7 +120,7 @@ parser.add_argument('--org', help="Docker organization", default="opencb")
 parser.add_argument('--username', help="Username to login to the docker registry (REQUIRED if deleting from DockerHub)")
 parser.add_argument('--password', help="Password to login to the docker registry (REQUIRED if deleting from DockerHub)")
 parser.add_argument('--docker-build-args', help="Additional build arguments to pass to the docker build command. Usage: --docker-build-args='ARGS' e.g: --docker-build-args='--no-cache'", default="")
-# parser.add_argument('--server', help="Docker registry server", default="docker.io")
+parser.add_argument('--server', help="Docker registry server", default="docker.io")
 
 args = parser.parse_args()
 
@@ -164,10 +171,14 @@ else:
     tag = args.tag
 
 org = args.org
+if args.server != "docker.io":
+    server = args.server + "/"
+else:
+    server = ""
 
 # get a list with all images
 if not args.images:
-    images = ["base", "init", "demo", "r"]
+    images = ["base", "init", "demo", "r", "samtools"]
 else:
     imagesUnsorted = args.images.split(",")
     images = []

@@ -21,7 +21,6 @@ import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -36,6 +35,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -60,7 +60,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.core.api.ParamConstants.AVERAGE_QUALITY;
 import static org.opencb.opencga.core.api.ParamConstants.REGION_PARAM;
 
 /**
@@ -231,11 +230,10 @@ public class InternalMainTest {
                 "-o", opencga.createTmpOutdir(studyId, "stats_all", sessionId));
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getName());
 
-        List<Sample> file1Samples = catalogManager.getSampleManager().get(studyId, file1.getSampleIds(), QueryOptions.empty(), sessionId).getResults();
-        List<Sample> file2Samples = catalogManager.getSampleManager().get(studyId, file2.getSampleIds(), QueryOptions.empty(), sessionId).getResults();
-
-        catalogManager.getCohortManager().create(studyId, "coh1", Enums.CohortType.CONTROL_SET, "", file1Samples, null, null, sessionId);
-        catalogManager.getCohortManager().create(studyId, "coh2", Enums.CohortType.CONTROL_SET, "", file2Samples, null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh1", Enums.CohortType.CONTROL_SET, "",
+                file1.getSampleIds(), null, null, null), null, null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh2", Enums.CohortType.CONTROL_SET, "",
+                file2.getSampleIds(), null, null, null), null, null, null, sessionId);
 
         execute("variant", "stats",
                 "--session-id", sessionId,
@@ -257,15 +255,17 @@ public class InternalMainTest {
 //        File file1 = opencga.createFile(studyId, "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, new Query(), new QueryOptions(), sessionId);
-        String c1 = catalogManager.getCohortManager().create(studyId, "C1", Enums.CohortType.CONTROL_SET, "", allSamples.getResults().subList(0,
-                allSamples.getResults().size() / 2), null, null, sessionId).first().getId();
-        String c2 = catalogManager.getCohortManager().create(studyId, "C2", Enums.CohortType.CONTROL_SET, "", allSamples.getResults().subList(allSamples.getResults().size()
-                / 2 + 1, allSamples.getResults().size()), null, null, sessionId).first().getId();
-        String c3 = catalogManager.getCohortManager().create(studyId, "C3", Enums.CohortType.CONTROL_SET, "", allSamples.getResults().subList(0, 1), null,
-                null, sessionId).first().getId();
+        List<String> sampleIds = allSamples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
+
+        String c1 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C1", Enums.CohortType.CONTROL_SET, "",
+                sampleIds.subList(0, allSamples.getResults().size() / 2), null, null, null), null, null, null, sessionId).first().getId();
+        String c2 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C2", Enums.CohortType.CONTROL_SET, "",
+                sampleIds.subList(sampleIds.size() / 2 + 1, allSamples.getResults().size()), null, null, null), null, null, null, sessionId).first().getId();
+        String c3 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C3", Enums.CohortType.CONTROL_SET, "",
+                sampleIds.subList(0, 1), null, null, null), null, null, null, sessionId).first().getId();
         Sample sample = catalogManager.getSampleManager().create(studyId, new Sample().setId("Sample"), null, sessionId).first();
-        String c4 = catalogManager.getCohortManager().create(studyId, "C4", Enums.CohortType.CONTROL_SET, "", Collections.singletonList(sample),
-                null, null, sessionId).first().getId();
+        String c4 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C4", Enums.CohortType.CONTROL_SET, "",
+                Collections.singletonList(sample.getId()), null, null, null), null, null, null, sessionId).first().getId();
 
         // Index file1
         execute("variant", "index",
@@ -391,31 +391,59 @@ public class InternalMainTest {
 
         // stats run
         execute("alignment", "stats-run",
-                "--session-id", sessionId,
+                "--token", sessionId,
                 "--study", studyId,
-                "--input-file", bamFile.getName(),
+                "--file", bamFile.getName(),
                 "-o", temporalDir);
 
         assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));
 
-        // stats info
-        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
-        DataResult<SamtoolsStats> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
-        assertEquals(1, statsInfo.getNumMatches());
-//        assert(statsInfo.getResults().get(0).length() > 0);
-        System.out.println(statsInfo);
+//        // stats info
+//        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+//        DataResult<SamtoolsStats> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
+//        assertEquals(1, statsInfo.getNumMatches());
+////        assert(statsInfo.getResults().get(0).length() > 0);
+//        System.out.println(statsInfo);
+//
+//        // stats query
+//        Query query = new Query();
+//        query.put(AVERAGE_QUALITY, ">55");
+//        QueryOptions queryOptions = QueryOptions.empty();
+//        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(0, resultFiles.getNumResults());
+//
+//        query.put(AVERAGE_QUALITY, ">30");
+//        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(1, resultFiles.getNumResults());
+//        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
+    }
 
-        // stats query
-        Query query = new Query();
-        query.put(AVERAGE_QUALITY, ">55");
-        QueryOptions queryOptions = QueryOptions.empty();
-        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
-        assertEquals(0, resultFiles.getNumResults());
+    @Test
+    public void testSamtoolsStats() throws CatalogException, IOException, ToolException {
+        createStudy(datastores, "s1");
 
-        query.put(AVERAGE_QUALITY, ">30");
-        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
-        assertEquals(1, resultFiles.getNumResults());
-        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
+        String filename = "HG00096.chrom20.small.bam";
+        File bamFile = opencga.createFile(studyId, filename, sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "_stats", sessionId);
+        // samtools stats
+        System.out.println("---------------   samtools stats   ---------------");
+
+        String temporalDir7 = opencga.createTmpOutdir(studyId, "_alignment7", sessionId);
+        String statsFile = temporalDir7 + "/alignment.stats";
+
+        execute("alignment", "samtools-run",
+                "--token", sessionId,
+                "--study", studyId,
+                "--command", "stats",
+                "--input-file", bamFile.getPath(),
+                "--output-filename", statsFile,
+                "--samtools-params", "F=0xB00",
+                "--samtools-params", "remove-dups=true",
+                "-o", temporalDir7);
+
+        assertEquals(2, Files.list(Paths.get(temporalDir7)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(statsFile).exists());
     }
 
     @Test

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
@@ -30,8 +31,6 @@ import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -48,6 +47,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -204,7 +204,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FAMILIES);
 
             ParamUtils.checkObj(family, "family");
-            ParamUtils.checkAlias(family.getId(), "id");
+            ParamUtils.checkIdentifier(family.getId(), "id");
             family.setName(ParamUtils.defaultObject(family.getName(), family.getId()));
             family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
             family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
@@ -883,8 +883,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         // If there is nothing to update, we fail
-        if (parameters.isEmpty() && !options.getBoolean(Constants.REFRESH, false)
-                && !options.getBoolean(Constants.INCREMENT_VERSION, false)
+        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)
                 && !options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
         }
@@ -913,39 +912,19 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
+            ParamUtils.checkIdentifier(updateParams.getId(), FamilyDBAdaptor.QueryParams.ID.key());
         }
 
         boolean updateRoles = options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
 
-        if (updateRoles || (updateParams != null && (ListUtils.isNotEmpty(updateParams.getPhenotypes())
-                || ListUtils.isNotEmpty(updateParams.getMembers()) || ListUtils.isNotEmpty(updateParams.getDisorders())))) {
+        if (updateRoles || (updateParams != null && CollectionUtils.isNotEmpty(updateParams.getMembers()))) {
             Family tmpFamily = new Family();
-            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getMembers())) {
+            if (updateParams != null && CollectionUtils.isNotEmpty(updateParams.getMembers())) {
                 // We obtain the members from catalog
                 autoCompleteFamilyMembers(study, tmpFamily, updateParams.getMembers(), userId);
             } else {
                 // We use the list of members from the stored family
                 tmpFamily.setMembers(family.getMembers());
-            }
-
-            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getPhenotypes())) {
-                tmpFamily.setPhenotypes(updateParams.getPhenotypes());
-            } else if (updateParams != null && ListUtils.isNotEmpty(updateParams.getMembers())) {
-                // Recalculate phenotypes if list of members has changed
-                tmpFamily.setPhenotypes(Collections.emptyList());
-                parameters.put(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), tmpFamily.getPhenotypes());
-            } else {
-                tmpFamily.setPhenotypes(family.getPhenotypes());
-            }
-            if (updateParams != null && ListUtils.isNotEmpty(updateParams.getDisorders())) {
-                tmpFamily.setDisorders(updateParams.getDisorders());
-            } else if (updateParams != null && ListUtils.isNotEmpty(updateParams.getMembers())) {
-                // Recalculate disorders if list of members has changed
-                tmpFamily.setDisorders(Collections.emptyList());
-                parameters.put(FamilyDBAdaptor.QueryParams.DISORDERS.key(), tmpFamily.getDisorders());
-            } else {
-                tmpFamily.setDisorders(family.getDisorders());
             }
 
             validateFamily(tmpFamily);
@@ -1472,11 +1451,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     private void validatePhenotypes(Family family) throws CatalogException {
         if (family.getPhenotypes() == null || family.getPhenotypes().isEmpty()) {
-            if (ListUtils.isNotEmpty(family.getMembers())) {
+            if (CollectionUtils.isNotEmpty(family.getMembers())) {
                 Map<String, Phenotype> phenotypeMap = new HashMap<>();
 
                 for (Individual member : family.getMembers()) {
-                    if (ListUtils.isNotEmpty(member.getPhenotypes())) {
+                    if (CollectionUtils.isNotEmpty(member.getPhenotypes())) {
                         for (Phenotype phenotype : member.getPhenotypes()) {
                             phenotypeMap.put(phenotype.getId(), phenotype);
                         }

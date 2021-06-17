@@ -64,6 +64,8 @@ public interface DBAdaptorFactory {
 
     void close();
 
+    MigrationDBAdaptor getMigrationDBAdaptor();
+
     MetaDBAdaptor getCatalogMetaDBAdaptor();
 
     UserDBAdaptor getCatalogUserDBAdaptor();

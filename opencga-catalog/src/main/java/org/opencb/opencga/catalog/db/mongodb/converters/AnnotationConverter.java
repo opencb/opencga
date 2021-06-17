@@ -797,7 +797,7 @@ public class AnnotationConverter {
 
         // We check the variable set id
         String variableSetId = Constants.VARIABLE_SET + "."
-                + document.getLong(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key());
+                + ((Number) document.get(AnnotationMongoDBAdaptor.AnnotationSetParams.VARIABLE_SET_ID.key())).longValue();
         if (projection.contains(variableSetId)) {
             return passProjectionFilter;
         }

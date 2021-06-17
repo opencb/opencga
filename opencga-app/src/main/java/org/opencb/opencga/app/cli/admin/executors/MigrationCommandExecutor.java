@@ -1,7 +1,7 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -25,12 +25,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.job.Job;
@@ -40,6 +43,7 @@ import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200MigrationToolParams;
 
 import java.io.*;
@@ -47,6 +51,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
@@ -86,6 +91,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 break;
             case "v2.0.3":
                 v2_0_3();
+                break;
+            case "v2.1.0":
+                v2_1_0();
                 break;
             default:
                 logger.error("Subcommand '{}' not valid", subCommandString);
@@ -299,7 +307,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                                 Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                                 "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
                                 false, 0, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "",
-                                study.getRelease(), Collections.emptyList(), Collections.emptyMap(), new CustomStatus(),
+                                study.getRelease(), Collections.emptyList(), null, Collections.emptyMap(), new CustomStatus(),
                                 FileInternal.initialize(), Collections.emptyMap());
                         file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         file.setTags(Collections.emptyList());
@@ -479,13 +487,44 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
             logger.info("Starting Catalog migration for 2.0.3");
             if (needsUpdate(1)) {
+                StopWatch stopWatch = new StopWatch();
                 // Add automatically roles to all the family members
                 QueryOptions familyUpdateOptions = new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
+                QueryOptions queryOptions = new QueryOptions(FamilyManager.INCLUDE_FAMILY_IDS)
+                        .append(QueryOptions.LIMIT, 1000);
                 for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
                     if (project.getStudies() != null) {
                         for (Study study : project.getStudies()) {
-                            logger.info("Updating family roles from study {}", study.getFqn());
-                            catalogManager.getFamilyManager().update(study.getFqn(), new Query(), null, familyUpdateOptions, adminToken);
+                            stopWatch.start();
+
+                            int skip = 0;
+                            boolean more = true;
+                            do {
+                                queryOptions.put(QueryOptions.SKIP, skip);
+
+                                OpenCGAResult<Family> search = catalogManager.getFamilyManager().search(study.getFqn(), new Query(),
+                                        queryOptions, adminToken);
+                                if (search.getNumResults() < 1000) {
+                                    more = false;
+                                }
+                                skip += search.getNumResults();
+
+                                for (Family family : search.getResults()) {
+                                    try {
+                                        catalogManager.getFamilyManager().update(study.getFqn(), family.getId(), null, familyUpdateOptions,
+                                                adminToken);
+                                        logger.info("Updated roles from family '{}' - '{}'", study.getFqn(), family.getId());
+                                    } catch (CatalogException e) {
+                                        continue;
+                                    }
+                                }
+
+                                logger.info("Updated {} families in study '{}' in {} seconds", skip, study.getFqn(),
+                                        stopWatch.getTime(TimeUnit.SECONDS));
+                            } while(more);
+
+                            stopWatch.stop();
+                            stopWatch.reset();
                         }
                     }
                 }
@@ -500,6 +539,20 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
         }
     }
+
+    private void v2_1_0() throws CatalogException {
+        MigrationCommandOptions.MigrateV2_1_0CommandOptions options = migrationCommandOptions.getMigrateV210CommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
+            MigrationManager migrationManager = catalogManager.getMigrationManager();
+            migrationManager.runMigration("2.1.0", appHome, token);
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+    }
+
 
     private boolean needsMigration(MongoDBCollection metaCollection, int version, int release) {
         fetchUpdateVersionVariables(metaCollection);

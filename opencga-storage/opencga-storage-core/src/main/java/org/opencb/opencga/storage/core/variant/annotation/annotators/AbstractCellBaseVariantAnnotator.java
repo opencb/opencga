@@ -16,17 +16,18 @@
 
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -120,7 +121,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     public final List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
         List<Variant> filteredVariants = filterVariants(variants);
         StopWatch stopWatch = StopWatch.createStarted();
-        List<QueryResult<VariantAnnotation>> queryResults = annotateFiltered(filteredVariants);
+        List<CellBaseDataResult<VariantAnnotation>> queryResults = annotateFiltered(filteredVariants);
         stopWatch.stop();
         if (stopWatch.getTime(TimeUnit.SECONDS) > SLOW_CELLBASE_SECONDS) {
             logger.warn("Slow annotation from CellBase."
@@ -129,7 +130,8 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         return getVariantAnnotationList(filteredVariants, queryResults);
     }
 
-    protected abstract List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException;
+    protected abstract List<CellBaseDataResult<VariantAnnotation>> annotateFiltered(List<Variant> variants)
+            throws VariantAnnotatorException;
 
     private List<Variant> filterVariants(List<Variant> variants) {
         List<Variant> nonStructuralVariants = new ArrayList<>(variants.size());
@@ -159,14 +161,15 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         return nonStructuralVariants;
     }
 
-    protected List<VariantAnnotation> getVariantAnnotationList(List<Variant> variants, List<QueryResult<VariantAnnotation>> queryResults) {
+    protected List<VariantAnnotation> getVariantAnnotationList(List<Variant> variants,
+                                                               List<CellBaseDataResult<VariantAnnotation>> queryResults) {
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(variants.size());
         Iterator<Variant> iterator = variants.iterator();
         if (queryResults != null) {
-            for (QueryResult<VariantAnnotation> queryResult : queryResults) {
+            for (CellBaseDataResult<VariantAnnotation> queryResult : queryResults) {
                 // If the QueryResult is empty, assume that the variant was skipped
                 // Check that the skipped variant matches with the expected variant
-                if (queryResult.getResult().isEmpty()) {
+                if (CollectionUtils.isEmpty(queryResult.getResults())) {
                     Variant variant = iterator.next();
                     if (variantSerializer.apply(variant).equals(queryResult.getId())
                             || variant.toString().equals(queryResult.getId())
@@ -183,37 +186,38 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
                             logger.warn("Skip annotation for variant " + variant);
                         }
                     }
-                }
-                for (VariantAnnotation variantAnnotation : queryResult.getResult()) {
-                    Variant variant = iterator.next();
-                    String annotationAlternate = variantAnnotation.getAlternate();
-                    if (annotationAlternate.equals(VariantBuilder.DUP_ALT)
-                            && variant.getAlternate().equals(VariantBuilder.DUP_TANDEM_ALT)) {
-                        // Annotator might remove the ":TANDEM". Put it back
-                        annotationAlternate = VariantBuilder.DUP_TANDEM_ALT;
-                    }
-                    if (!variant.getChromosome().equals(variantAnnotation.getChromosome())
-                            || !variant.getStart().equals(variantAnnotation.getStart())
-                            || !variant.getReference().equals(variantAnnotation.getReference())
-                            || !variant.getAlternate().equals(annotationAlternate)) {
-                        throw unexpectedVariantOrderException(variant, variantAnnotation.getChromosome() + ':'
-                                + variantAnnotation.getStart() + ':'
-                                + variantAnnotation.getReference() + ':'
-                                + variantAnnotation.getAlternate());
-                    }
-                    if (variant.isSV() || variant.getSv() != null) {
-                        // Variant annotation class does not have information about Structural Variations.
-                        // Store the original Variant.toString as an additional attribute.
-                        AdditionalAttribute additionalAttribute =
-                                new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), variant.toString()));
-                        if (variantAnnotation.getAdditionalAttributes() == null) {
-                            variantAnnotation
-                                    .setAdditionalAttributes(Collections.singletonMap(GROUP_NAME.key(), additionalAttribute));
-                        } else {
-                            variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
+                } else {
+                    for (VariantAnnotation variantAnnotation : queryResult.getResults()) {
+                        Variant variant = iterator.next();
+                        String annotationAlternate = variantAnnotation.getAlternate();
+                        if (annotationAlternate.equals(VariantBuilder.DUP_ALT)
+                                && variant.getAlternate().equals(VariantBuilder.DUP_TANDEM_ALT)) {
+                            // Annotator might remove the ":TANDEM". Put it back
+                            annotationAlternate = VariantBuilder.DUP_TANDEM_ALT;
                         }
+                        if (!variant.getChromosome().equals(variantAnnotation.getChromosome())
+                                || !variant.getStart().equals(variantAnnotation.getStart())
+                                || !variant.getReference().equals(variantAnnotation.getReference())
+                                || !variant.getAlternate().equals(annotationAlternate)) {
+                            throw unexpectedVariantOrderException(variant, variantAnnotation.getChromosome() + ':'
+                                    + variantAnnotation.getStart() + ':'
+                                    + variantAnnotation.getReference() + ':'
+                                    + variantAnnotation.getAlternate());
+                        }
+                        if (variant.isSV() || variant.getSv() != null) {
+                            // Variant annotation class does not have information about Structural Variations.
+                            // Store the original Variant.toString as an additional attribute.
+                            AdditionalAttribute additionalAttribute =
+                                    new AdditionalAttribute(Collections.singletonMap(VARIANT_ID.key(), variant.toString()));
+                            if (variantAnnotation.getAdditionalAttributes() == null) {
+                                variantAnnotation
+                                        .setAdditionalAttributes(Collections.singletonMap(GROUP_NAME.key(), additionalAttribute));
+                            } else {
+                                variantAnnotation.getAdditionalAttributes().put(GROUP_NAME.key(), additionalAttribute);
+                            }
+                        }
+                        variantAnnotationList.add(variantAnnotation);
                     }
-                    variantAnnotationList.add(variantAnnotation);
                 }
             }
         }

@@ -50,6 +50,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -316,6 +317,29 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 throw new IllegalStateException("Unknown operation " + basicOperation);
         }
 
+        // Panels
+        if (parameters.containsKey(PANELS.key())) {
+            operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.ADD);
+            String[] panelParams = {QueryParams.PANELS.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), panelParams);
+                    clinicalConverter.validatePanelsToUpdate(document.getSet());
+                    break;
+                case REMOVE:
+                    fixPanelsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPullAll(), panelParams);
+                    clinicalConverter.validatePanelsToUpdate(document.getPullAll());
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), panelParams);
+                    clinicalConverter.validatePanelsToUpdate(document.getAddToSet());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
         // Secondary interpretations
         if (parameters.containsKey(QueryParams.SECONDARY_INTERPRETATIONS.key())) {
             operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SECONDARY_INTERPRETATIONS.key(),
@@ -385,6 +409,20 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
         parameters.put(FLAGS.key(), flagParamList);
+    }
+
+    static void fixPanelsForRemoval(ObjectMap parameters) {
+        if (parameters.get(PANELS.key()) == null) {
+            return;
+        }
+
+        List<Panel> panelParamList = new LinkedList<>();
+        for (Object panel : parameters.getAsList(PANELS.key())) {
+            if (panel instanceof Panel) {
+                panelParamList.add(new Panel().setId(((Panel) panel).getId()));
+            }
+        }
+        parameters.put(PANELS.key(), panelParamList);
     }
 
     @Override

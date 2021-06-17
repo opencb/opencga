@@ -75,6 +75,11 @@ public class OpenCGAResult<T> extends DataResult<T> {
                 .setResultType(c.getCanonicalName());
     }
 
+    public static <T> OpenCGAResult<T> empty(Class<T> c, int time) {
+        return new OpenCGAResult<T>(time, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap())
+                .setResultType(c.getCanonicalName());
+    }
+
     public static <T> OpenCGAResult<T> merge(List<OpenCGAResult<T>> results) {
         OpenCGAResult<T> result = new OpenCGAResult<T>(
                 results.stream().map(OpenCGAResult::getTime).reduce(0, Integer::sum),
@@ -224,11 +229,11 @@ public class OpenCGAResult<T> extends DataResult<T> {
         return this;
     }
     
-    public FederationNode getNode() {
+    public FederationNode getFederationNode() {
         return node;
     }
 
-    public OpenCGAResult<T> setNode(FederationNode node) {
+    public OpenCGAResult<T> setFederationNode(FederationNode node) {
         this.node = node;
         return this;
     }

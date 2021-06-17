@@ -182,7 +182,6 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                 VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
                 VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
-        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
 //            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
         Aggregation aggregation = getAggregation(studyMetadata, options);
@@ -200,7 +199,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         }
 
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
-        preCalculateStats(metadataManager, studyMetadata, cohorts, overwrite, updateStats, options);
+        preCalculateStats(metadataManager, studyMetadata, cohorts, overwrite, options);
         overwrite = checkOverwrite(metadataManager, studyMetadata, cohorts, overwrite);
 
 //        VariantSourceStats variantSourceStats = new VariantSourceStats(null/*FILE_ID*/, Integer.toString(studyMetadata.getId()));
@@ -208,7 +207,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
         // reader, tasks and writer
         Query readerQuery = VariantStatisticsManager.buildInputQuery(variantDBAdaptor.getMetadataManager(),
-                studyMetadata, cohorts.keySet(), overwrite, updateStats, options);
+                studyMetadata, cohorts.keySet(), options);
         logger.info("ReaderQuery: " + readerQuery.toJson());
         QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true)
                 .append(QueryOptions.EXCLUDE, VariantField.ANNOTATION);

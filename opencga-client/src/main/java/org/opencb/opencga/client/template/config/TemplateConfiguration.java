@@ -18,8 +18,6 @@ package org.opencb.opencga.client.template.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 
 import java.io.File;
@@ -36,7 +34,7 @@ public class TemplateConfiguration {
     private String baseUrl;
     private boolean index;
     private List<StudyAclEntry> acl;
-    private List<Project> projects;
+    private List<TemplateProject> projects;
 
 
     public static TemplateConfiguration load(Path mainConfigurationPath) throws IOException {
@@ -49,17 +47,18 @@ public class TemplateConfiguration {
             // Enrich IOException with fileName
             throw new IOException("Error parsing main template configuration file '" + mainConfigurationPath + "'", e);
         }
-        Map<String, List<Study>> studies = new HashMap<>();
-        for (Project project : templateConfiguration.getProjects()) {
+        Map<String, List<TemplateStudy>> studies = new HashMap<>();
+        for (TemplateProject project : templateConfiguration.getProjects()) {
             studies.put(project.getId(), new ArrayList<>());
             if (project.getStudies() != null) {
-                for (Study study : project.getStudies()) {
+                for (TemplateStudy study : project.getStudies()) {
+                    // TODO: Support extension .yaml and .json
                     File file = mainConfigurationPath.getParent().resolve(study.getId() + ".yml").toFile();
                     // If file exists we load it and overwrite Study object.
                     // If a file with the study does not exist then Study must be defined in the main.yml file.
                     if (file.exists()) {
                         try {
-                            study = objectMapper.readValue(file, Study.class);
+                            study = objectMapper.readValue(file, TemplateStudy.class);
                         } catch (IOException e) {
                             // Enrich IOException with fileName
                             throw new IOException("Error parsing study '" + study.getId() + "' template configuration file "
@@ -72,7 +71,7 @@ public class TemplateConfiguration {
         }
 
         // Set studies read from files
-        for (Project project : templateConfiguration.getProjects()) {
+        for (TemplateProject project : templateConfiguration.getProjects()) {
             project.setStudies(studies.get(project.getId()));
         }
         return templateConfiguration;
@@ -126,11 +125,11 @@ public class TemplateConfiguration {
         this.acl = acl;
     }
 
-    public List<Project> getProjects() {
+    public List<TemplateProject> getProjects() {
         return projects;
     }
 
-    public void setProjects(List<Project> projects) {
+    public void setProjects(List<TemplateProject> projects) {
         this.projects = projects;
     }
 }

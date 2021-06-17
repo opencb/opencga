@@ -14,6 +14,8 @@ echo "SOLR_HOME=${SOLR_HOME}"
 cd ${OPENCGA_HOME}/misc/solr
 
 ${SOLR_HOME}/bin/solr zk upconfig -n opencga-variant-configset-${VERSION} -d ./opencga-variant-configset-${VERSION} -z ${ZK_HOST}
+${SOLR_HOME}/bin/solr zk upconfig -n opencga-rga-configset-${VERSION} -d ./opencga-rga-configset-${VERSION} -z ${ZK_HOST}
+${SOLR_HOME}/bin/solr zk upconfig -n opencga-rga-aux-configset-${VERSION} -d ./opencga-rga-aux-configset-${VERSION} -z ${ZK_HOST}
 ${SOLR_HOME}/bin/solr zk upconfig -n opencga-cohort-configset-${VERSION} -d ./opencga-cohort-configset-${VERSION} -z ${ZK_HOST}
 ${SOLR_HOME}/bin/solr zk upconfig -n opencga-family-configset-${VERSION} -d ./opencga-family-configset-${VERSION} -z ${ZK_HOST}
 ${SOLR_HOME}/bin/solr zk upconfig -n opencga-file-configset-${VERSION} -d ./opencga-file-configset-${VERSION} -z ${ZK_HOST}

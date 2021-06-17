@@ -16,11 +16,13 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -49,6 +51,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -66,6 +69,7 @@ import java.util.function.Function;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -572,6 +576,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
+        if (parameters.containsKey(QueryParams.INTERNAL_RGA.key())) {
+            RgaIndex rgaIndex = parameters.get(QueryParams.INTERNAL_RGA.key(), RgaIndex.class);
+            rgaIndex.setDate(TimeUtils.getTime());
+            document.getSet().put(QueryParams.INTERNAL_RGA.key(), getMongoDBDocument(rgaIndex, "rga"));
+        }
+
         if (parameters.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
             String individualId = parameters.getString(QueryParams.INDIVIDUAL_ID.key());
 
@@ -669,6 +679,30 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) {
         return unmarkPermissionRule(sampleCollection, studyId, permissionRuleId);
+    }
+
+    @Override
+    public OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException {
+        ObjectMap params;
+        try {
+            params = new ObjectMap(getDefaultObjectMapper().writeValueAsString(rgaIndex));
+        } catch (JsonProcessingException e) {
+            throw new CatalogDBException("Could not parse RgaIndex object", e);
+        }
+
+        Document rootDocument = new Document(QueryParams.INTERNAL_RGA.key(), params);
+
+        List<Bson> filters = new ArrayList<>();
+        filters.add(Filters.eq(QueryParams.STUDY_UID.key(), studyUid));
+        if (CollectionUtils.isNotEmpty(sampleUids)) {
+            filters.add(Filters.in(QueryParams.UID.key(), sampleUids));
+        }
+        Bson query = Filters.and(filters);
+
+        UpdateDocument updateDocument = new UpdateDocument().setSet(rootDocument);
+
+        DataResult<Sample> multi = sampleCollection.update(query, updateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
+        return new OpenCGAResult<>(multi);
     }
 
     @Override
@@ -1218,6 +1252,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case DESCRIPTION:
                     case INDIVIDUAL_ID:
                     case INTERNAL_STATUS_DATE:
+                    case INTERNAL_RGA_STATUS:
                     case SOMATIC:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:

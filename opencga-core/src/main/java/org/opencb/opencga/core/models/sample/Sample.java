@@ -22,7 +22,6 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.Status;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -64,7 +63,7 @@ public class Sample extends Annotable {
     public Sample(String id, String individualId, String description, int release) {
         this(id, null, new SampleProcessing("", "", "", "", "", "", new HashMap<>()), new SampleCollection("", "", "", "", "",
                 new HashMap<>()), release, 1, "", "", description, false, new LinkedList<>(), individualId, new LinkedList<>(),
-                new CustomStatus(), new SampleInternal(new Status()), new LinkedList<>(), new HashMap<>());
+                new CustomStatus(), null, new LinkedList<>(), new HashMap<>());
     }
 
     public Sample(String id, String individualId, SampleProcessing processing, SampleCollection collection, int release, int version,

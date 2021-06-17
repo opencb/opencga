@@ -29,6 +29,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -40,6 +41,7 @@ import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.*;
@@ -49,15 +51,17 @@ import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.StatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.configuration.*;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
+import org.opencb.opencga.core.models.study.configuration.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -154,6 +158,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily, boolean createDefaultInterpretation) throws CatalogException {
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setStatus(new Status().setId(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION))
                 .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
                 .setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
                 .setProband(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))));
@@ -1803,6 +1808,44 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void searchClinicalAnalysisByStatus() throws CatalogException {
+        createDummyEnvironment(true, false);
+        createDummyEnvironment(false, false);
+
+        OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.DONE),
+                new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key()), sessionIdUser);
+        assertEquals(0, search.getNumResults());
+
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.READY_FOR_INTERPRETATION),
+                new QueryOptions(), sessionIdUser);
+        assertEquals(2, search.getNumResults());
+        for (ClinicalAnalysis result : search.getResults()) {
+            assertEquals(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION, result.getStatus().getId());
+        }
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, search.first().getId(),
+                new ClinicalAnalysisUpdateParams().setStatus(new StatusParam(ClinicalAnalysisStatus.REJECTED)), QueryOptions.empty(),
+                sessionIdUser);
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.READY_FOR_INTERPRETATION),
+                new QueryOptions(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        for (ClinicalAnalysis result : search.getResults()) {
+            assertEquals(ClinicalAnalysisStatus.READY_FOR_INTERPRETATION, result.getStatus().getId());
+        }
+
+        search = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.STATUS_PARAM, ClinicalAnalysisStatus.REJECTED),
+                new QueryOptions(), sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        for (ClinicalAnalysis result : search.getResults()) {
+            assertEquals(ClinicalAnalysisStatus.REJECTED, result.getStatus().getId());
+        }
+    }
+
+    @Test
     public void deleteClinicalAnalysisTest() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
         OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY,
@@ -1942,11 +1985,84 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
                 clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
-        assertEquals("child1", clinicalAnalysisDataResult.first().getFamily().getMembers().get(0).getId());
-        assertEquals("father", clinicalAnalysisDataResult.first().getFamily().getMembers().get(1).getId());
-        assertEquals("mother", clinicalAnalysisDataResult.first().getFamily().getMembers().get(2).getId());
-        assertEquals("child2", clinicalAnalysisDataResult.first().getFamily().getMembers().get(3).getId());
-        assertEquals("child3", clinicalAnalysisDataResult.first().getFamily().getMembers().get(4).getId());
+        assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().stream().map(Individual::getId).collect(Collectors.toList())
+                .containsAll(dummyFamily.first().getMembers().stream().map(Individual::getId).collect(Collectors.toList())));
+        assertEquals(5, dummyFamily.first().getMembers().size());
+        assertEquals(5, clinicalAnalysisDataResult.first().getFamily().getMembers().size());
+    }
+
+    @Test
+    public void createClinicalAnalysisWithPanels() throws CatalogException {
+        catalogManager.getPanelManager().importFromSource(STUDY, "cancer-gene-census", "", sessionIdUser);
+        Panel panel = catalogManager.getPanelManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
+
+        DataResult<Family> dummyFamily = createDummyFamily();
+        // Leave only sample2 for child1 in family
+        for (Individual member : dummyFamily.first().getMembers()) {
+            if (member.getId().equals("child1")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            } else if (member.getId().equals("child2")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample5")));
+            } else if (member.getId().equals("child3")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample7")));
+            } else {
+                member.setSamples(null);
+            }
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setPanels(Collections.singletonList(new Panel().setId(panel.getId())))
+                .setFamily(dummyFamily.first())
+                .setProband(new Individual().setId("child1"));
+
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(1, ca.getPanels().size());
+        assertEquals(panel.getId(), ca.getPanels().get(0).getId());
+        assertEquals(panel.getName(), ca.getPanels().get(0).getName());
+        assertEquals(panel.getVersion(), ca.getPanels().get(0).getVersion());
+        assertEquals(panel.getGenes().size(), ca.getPanels().get(0).getGenes().size());
+    }
+
+    @Test
+    public void updatePanelsInClinicalAnalysis() throws CatalogException {
+        catalogManager.getPanelManager().importFromSource(STUDY, "cancer-gene-census", "", sessionIdUser);
+        Panel panel = catalogManager.getPanelManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
+
+        DataResult<Family> dummyFamily = createDummyFamily();
+        // Leave only sample2 for child1 in family
+        for (Individual member : dummyFamily.first().getMembers()) {
+            if (member.getId().equals("child1")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample2")));
+            } else if (member.getId().equals("child2")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample5")));
+            } else if (member.getId().equals("child3")) {
+                member.setSamples(Collections.singletonList(new Sample().setId("sample7")));
+            } else {
+                member.setSamples(null);
+            }
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis").setDescription("My description").setType(ClinicalAnalysis.Type.FAMILY)
+                .setDueDate("20180510100000")
+                .setFamily(dummyFamily.first())
+                .setProband(new Individual().setId("child1"));
+
+        // Create without a panel and update the panel
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser).first();
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setPanels(Collections.singletonList(panel.getId())), QueryOptions.empty(), sessionIdUser);
+
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(1, ca.getPanels().size());
+        assertEquals(panel.getId(), ca.getPanels().get(0).getId());
+        assertEquals(panel.getName(), ca.getPanels().get(0).getName());
+        assertEquals(panel.getVersion(), ca.getPanels().get(0).getVersion());
+        assertEquals(panel.getGenes().size(), ca.getPanels().get(0).getGenes().size());
     }
 
     @Test

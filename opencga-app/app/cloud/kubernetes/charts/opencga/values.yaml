@@ -2,31 +2,92 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-deploySolr: false
-deployMongo: false
+mongodb:
+  user: "FILL_ME"
+  password: "FILL_ME"
+  ssl: true
+  authenticationDatabase : "admin"
+  authenticationMechanism : "SCRAM-SHA-1"
 
-catalog:
-  database:
+  # MongoDB can either be deployed in the same Kubernetes instance, or be provided externally.
+
+  external:
     hosts: "FILL_ME"
-    user: "FILL_ME"
-    password: "FILL_ME"
+
+  # https://docs.mongodb.com/kubernetes-operator/stable/tutorial/resize-pv-storage/
+  deploy:
+    enabled: false
+    name: "opencga-mongodb-rs0"
+    version: "4.2.6"
+    replicas: 3
+
+    volume:
+      size: "128Gi"
+
+    resources:
+      limits:
+        cpu: "2"
+        memory: "10G"
+      requests:
+        cpu: "1"
+        memory: "8G"
+
+    nodeSelector:
+      agentpool: mongodb
+
+solr:
+  external:
+    hosts: "FILL_ME"
+  deploy:
+    enabled: false
+    name: "solr"
+    replicas: 2
+
+    image:
+      repository: "library/solr" # TODO: Value not supported yet
+      tag: 8.7.0
+    imagePullSecret: "" # TODO: Value not supported yet
+
+    javaMem: "-Xms1g -Xmx3g"
+    opts: "-Dsolr.autoSoftCommit.maxTime=10000"
+    GCTune: "-XX:SurvivorRatio=4 -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=8"
+
+    volume:
+      size: "512Gi"
+
+    resources:
+      limits:
+        memory: "1G"
+      requests:
+        cpu: "65m"
+        memory: "156Mi"
+
+    nodeSelector:
+      agentpool: solr
+
+    zookeeper:
+      replicas: 2
+      volume:
+        size: "5Gi"
+      resources:
+        limits:
+          memory: "1G"
+        requests:
+          cpu: "65m"
+          memory: "156Mi"
+
+      nodeSelector:
+        agentpool: solr
 
 cellbase:
-  host: "http://ws.opencb.org/cellbase/"
+  host: "https://ws.opencb.org/cellbase/"
 
 analysis:
-  index:
-    variant:
-      maxConcurrentJobs: 100
   execution:
     id: "k8s"
     options:
       k8s:
         masterNode: "FILL_ME"
-        namespace: "FILL_ME"
-
-solr:
-  hosts: "FILL_ME"
 
 hadoop:
   sshDns: "FILL_ME"
@@ -38,6 +99,11 @@ opencga:
 #  secretName: {{ include "opencga.fullname" . }}-secret
   admin:
     password: "FILL_ME"
+  images:
+    base:
+      sha256: ""
+    init:
+      sha256: ""
 
 # https://docs.microsoft.com/en-gb/azure/aks/azure-files-volume
 azureStorageAccount:
@@ -61,12 +127,24 @@ blobfuse:
 nameOverride: ""
 fullnameOverride: ""
 
+# Mount additional volumes into rest and master.
+# User responsability:
+#  - Ensure that the new volumes are defined in the cluster
+#  - Add the new volumes to the configuration.yaml so they are present in the k8s jobs
+#volumes:
+#  - name: volume_name
+#    mountPath: /data/my_volume
+#    # Source field contains the volume type details. Could be persistentVolumeClaim, azureDisk, azureFile, configMap, ...
+#    source:
+#      persistentVolumeClaim:
+#        claimName: "myVolumeClaim"
+
 rest:
   name: rest
   replicaCount: 3
 
   image:
-    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}{{ if .Values.opencga.images.base.sha256 }}@sha256:{{ .Values.opencga.images.base.sha256 }}{{ end }}"
     pullPolicy: IfNotPresent
 
   imagePullSecrets: []
@@ -74,20 +152,17 @@ rest:
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name:
 
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
     # fsGroup: 2000
 
-  securityContext: {}
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsUser: 1001
     # capabilities:
     #   drop:
     #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
 
   service:
     type: ClusterIP
@@ -100,10 +175,12 @@ rest:
       kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       # kubernetes.io/tls-acme: "true"
-    host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+    hosts:
+      - "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+      - ""              # Accept access by IP .Testing purposes only.
     # Accepts /opencga and /opencga/....
     paths:
-    - /opencga(/|$)
+    - /opencga/
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:
@@ -139,7 +216,7 @@ master:
   replicaCount: 1
 
   image:
-    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    repository: "opencb/opencga-base:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}{{ if .Values.opencga.images.base.sha256 }}@sha256:{{ .Values.opencga.images.base.sha256 }}{{ end }}"
     pullPolicy: IfNotPresent
 
   imagePullSecrets: []
@@ -148,20 +225,17 @@ master:
   serviceAccount:
     # Specifies whether a service account should be created
     create: true
-    # The name of the service account to use.
-    # If not set and create is true, a name is generated using the fullname template
-    name:
 
-  podSecurityContext: {}
+  podSecurityContext:
+    runAsNonRoot: true
     # fsGroup: 2000
 
-  securityContext: {}
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsUser: 1001
     # capabilities:
     #   drop:
     #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
 
   resources: 
     # We usually recommend not to specify default resources and to leave this as a conscious
@@ -188,19 +262,19 @@ master:
 init:
   name: init
   image:
-    repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}"
+    repository: "opencb/opencga-init:{{ .Chart.AppVersion }}-{{ .Values.hadoop.flavour }}{{ if .Values.opencga.images.init.sha256 }}@sha256:{{ .Values.opencga.images.init.sha256 }}{{ end }}"
     pullPolicy: IfNotPresent
 
-  podSecurityContext: {}
-  # fsGroup: 2000
+  configuration:
+    # Overwrite configuration from image.
+    overwrite: false
 
-  securityContext: {}
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsUser: 1001
     # capabilities:
     #   drop:
     #   - ALL
-    # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-  # runAsUser: 1000
 
   resources:
     # We usually recommend not to specify default resources and to leave this as a conscious

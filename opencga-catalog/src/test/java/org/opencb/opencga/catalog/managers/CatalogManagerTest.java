@@ -18,21 +18,16 @@ package org.opencb.opencga.catalog.managers;
 
 import com.mongodb.BasicDBObject;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -49,10 +44,7 @@ import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.sample.SampleAclParams;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.sample.*;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -108,12 +100,60 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testGetUserInfo() throws CatalogException {
         DataResult<User> user = catalogManager.getUserManager().get("user", new QueryOptions(), token);
         System.out.println("user = " + user);
-        try {
-            catalogManager.getUserManager().get("user", new QueryOptions(), sessionIdUser2);
-            fail();
-        } catch (CatalogException e) {
-            System.out.println(e);
-        }
+        OpenCGAResult<User> result = catalogManager.getUserManager().get("user2", new QueryOptions(), token);
+        assertEquals(Event.Type.ERROR, result.getEvents().get(0).getType());
+
+        catalogManager.getStudyManager().updateGroup(studyFqn, StudyManager.MEMBERS, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user2")), token);
+        result = catalogManager.getUserManager().get("user2", new QueryOptions(), token);
+        assertTrue(result.getEvents().isEmpty());
+        assertTrue(StringUtils.isNotEmpty(result.first().getEmail()));
+    }
+
+    @Test
+    public void testUserInfoProjections() throws CatalogException {
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.PROJECTS_ID.key());
+        DataResult<User> user = catalogManager.getUserManager().get("user", options, token);
+        assertNotNull(user.first().getProjects());
+        assertTrue(StringUtils.isNotEmpty(user.first().getProjects().get(0).getId()));
+        assertTrue(StringUtils.isEmpty(user.first().getProjects().get(0).getName()));
+        assertNull(user.first().getProjects().get(0).getStudies());
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.FQN.key());
+        user = catalogManager.getUserManager().get("user", options, token);
+        assertNotNull(user.first().getProjects());
+        assertEquals(2, user.first().getProjects().get(0).getStudies().size());
+        assertTrue(StringUtils.isNotEmpty(user.first().getProjects().get(0).getStudies().get(0).getFqn()));
+        assertTrue(StringUtils.isEmpty(user.first().getProjects().get(0).getStudies().get(0).getName()));
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.FQN.key());
+        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        assertEquals(0, user.first().getSharedProjects().size());
+
+        // Grant permissions to user2 to access study of user1
+        catalogManager.getStudyManager().updateGroup(studyFqn, StudyManager.MEMBERS, ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user2")), token);
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.FQN.key());
+        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        assertEquals(1, user.first().getSharedProjects().size());
+        assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
+        assertNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
+
+        options = new QueryOptions()
+                .append(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + ".studies."
+                        + StudyDBAdaptor.QueryParams.ID.key());
+        user = catalogManager.getUserManager().get("user2", options, sessionIdUser2);
+        assertEquals(1, user.first().getSharedProjects().size());
+        assertEquals(studyFqn, user.first().getSharedProjects().get(0).getStudies().get(0).getFqn());
+        assertNotNull(user.first().getSharedProjects().get(0).getStudies().get(0).getId());
     }
 
     @Test
@@ -171,8 +211,61 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     }
 
+    @Test
+    public void testUpdateUserConfig() throws CatalogException {
+        Map<String, Object> map = new HashMap<>();
+        map.put("key1", "value1");
+        map.put("key2", "value2");
+        catalogManager.getUserManager().setConfig("user", "a", map, token);
+
+        Map<String, Object> config = (Map<String, Object>) catalogManager.getUserManager().getConfig("user", "a", token).first();
+        assertEquals(2, config.size());
+        assertEquals("value1", config.get("key1"));
+        assertEquals("value2", config.get("key2"));
+
+        map = new HashMap<>();
+        map.put("key2", "value3");
+        catalogManager.getUserManager().setConfig("user", "a", map, token);
+        config = (Map<String, Object>) catalogManager.getUserManager().getConfig("user", "a", token).first();
+        assertEquals(1, config.size());
+        assertEquals("value3", config.get("key2"));
+
+        catalogManager.getUserManager().deleteConfig("user", "a", token);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not found");
+        catalogManager.getUserManager().getConfig("user", "a", token);
+    }
+
     private String getAdminToken() throws CatalogException, IOException {
         return catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+    }
+
+    @Test
+    public void getGroupsTest() throws CatalogException {
+        Group group = new Group("groupId", Arrays.asList("user2", "user3")).setSyncedFrom(new Group.Sync("ldap", "bio"));
+        catalogManager.getStudyManager().createGroup(studyFqn, group, token);
+
+        OpenCGAResult<CustomGroup> customGroups = catalogManager.getStudyManager().getCustomGroups(studyFqn, null, token);
+        assertEquals(3, customGroups.getNumResults());
+
+        for (CustomGroup customGroup : customGroups.getResults()) {
+            if (!customGroup.getUsers().isEmpty()) {
+                assertTrue(StringUtils.isNotEmpty(customGroup.getUsers().get(0).getName()));
+            }
+        }
+
+        customGroups = catalogManager.getStudyManager().getCustomGroups(studyFqn, group.getId(), token);
+        assertEquals(1, customGroups.getNumResults());
+        assertEquals(group.getId(), customGroups.first().getId());
+        assertEquals(2, customGroups.first().getUsers().size());
+        assertTrue(StringUtils.isNotEmpty(customGroups.first().getUsers().get(0).getName()));
+        assertNull(customGroups.first().getUsers().get(0).getProjects());
+        assertNull(customGroups.first().getUsers().get(0).getSharedProjects());
+
+        thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("Only owners");
+        catalogManager.getStudyManager().getCustomGroups(studyFqn, group.getId(), sessionIdUser2);
     }
 
     @Ignore
@@ -249,6 +342,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
         catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", remoteGroup, internalGroup, study, true, getAdminToken());
+    }
+
+    @Test
+    public void createEmptyGroup() throws CatalogException {
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", null, token);
+        catalogManager.getStudyManager().updateGroup("user@1000G:phase1", "group_cancer_some_thing_else", ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("test")), token);
     }
 
     @Test
@@ -1154,7 +1255,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateCohortFail() throws CatalogException {
         thrown.expect(CatalogException.class);
-        List<Sample> sampleList = Arrays.asList(new Sample().setUid(23L), new Sample().setUid(4L), new Sample().setUid(5L));
+        List<Sample> sampleList = Arrays.asList(new Sample().setId("a"), new Sample().setId("b"), new Sample().setId("c"));
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY).setSamples(sampleList),
                 null, token);
     }
@@ -1438,7 +1539,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.ADD);
         QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        IndividualUpdateParams updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(sample2.getId(), sample3.getId()));
+        IndividualUpdateParams updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(
+                new SampleReferenceParam().setId(sample2.getId()), new SampleReferenceParam().setId(sample3.getId())));
         OpenCGAResult<Individual> update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 
@@ -1457,7 +1559,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        updateParams = new IndividualUpdateParams().setSamples(Collections.singletonList(sample2.getId()));
+        updateParams = new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sample2.getId())));
         update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 
@@ -1470,7 +1572,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET);
         options = new QueryOptions(Constants.ACTIONS, actionMap);
 
-        updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(sample.getId(), sample2.getId()));
+        updateParams = new IndividualUpdateParams().setSamples(Arrays.asList(
+                new SampleReferenceParam().setId(sample.getId()), new SampleReferenceParam().setId(sample2.getId())));
         update = catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
         assertEquals(1, update.getNumUpdated());
 

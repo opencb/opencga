@@ -9,7 +9,12 @@ cellbase:
   host: "http://ws.opencb.org/cellbase/"
 
 azureStorageAccount:
-  secretName: # FILL_ME
+  enabled: true
+  createSecret: false
+  secretName: azure-files-secret
+  volumes:
+    ivaconf:
+      shareName: ivaconf
 
 iva:
   name: iva
@@ -26,10 +31,6 @@ iva:
     pullPolicy: Always
 
   imagePullSecrets: []
-
-  volumes:
-    ivaconf:
-      shareName: ivaconf
 
   serviceAccount:
     # Specifies whether a service account should be created
@@ -61,7 +62,9 @@ iva:
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/rewrite-target: /iva/$2
       # kubernetes.io/tls-acme: "true"
-    host: "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+    hosts:
+      - "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
+      - ""              # Accept access by IP .Testing purposes only.
     # Accepts / , /iva and /iva/....
     paths:
       - /iva(/|$)(.*)

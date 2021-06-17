@@ -2,9 +2,9 @@ package org.opencb.opencga.storage.core.io.managers;
 
 import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.config.IOConfiguration;
-import org.opencb.opencga.storage.core.config.IOConfiguration.IOConnectorConfiguration;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.IOConfiguration;
+import org.opencb.opencga.core.config.storage.IOConfiguration.IOConnectorConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.IOException;
 import java.io.InputStream;

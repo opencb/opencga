@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream;
 /**
  * Serialize streams of bits in a byte array.
  *
- * <code>
+ * <pre>
  *   os.write(ABC)
  *   os.write(123)
  *   os.write(xyz)
@@ -13,22 +13,33 @@ import java.io.ByteArrayOutputStream;
  *
  *   os.toByteArray() => [yz123ABC,
  *                        0004567x]
- * </code>
+ * </pre>
  *
  * @see BitInputStream
  */
 public class BitOutputStream {
 
-    private final ByteArrayOutputStream os;
+    private final ExposedByteArrayOutputStream os;
     private int buffer = 0; // only one byte buffer. Use int to avoid casts.
     private byte bufferCapacity = Byte.SIZE;
+
+    private class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
+
+        ExposedByteArrayOutputStream(int size) {
+            super(size);
+        }
+
+        byte[] getBuffer() {
+            return buf;
+        }
+    }
 
     public BitOutputStream() {
         this(100);
     }
 
-    public BitOutputStream(int size) {
-        os = new ByteArrayOutputStream(size);
+    public BitOutputStream(int bytesSize) {
+        os = new ExposedByteArrayOutputStream(bytesSize);
     }
 
     /**
@@ -53,6 +64,19 @@ public class BitOutputStream {
         }
     }
 
+    public void write(BitBuffer bitBuffer) {
+        int bitLength = bitBuffer.getBitLength();
+        int offset = 0;
+        for (int i = 0; i < bitLength / Integer.SIZE; i++) {
+            write(bitBuffer.getInt(offset), Integer.SIZE);
+            offset += Integer.SIZE;
+        }
+        int extraBitLength = bitLength % Integer.SIZE;
+        if (extraBitLength > 0) {
+            write(bitBuffer.getIntPartial(offset, extraBitLength), extraBitLength);
+        }
+    }
+
     public byte[] toByteArray() {
         if (bufferCapacity != Byte.SIZE) {
             os.write(buffer);
@@ -68,5 +92,25 @@ public class BitOutputStream {
 
     private static int mask(int i) {
         return (1 << i) - 1;
+    }
+
+    public BitBuffer toBitBuffer() {
+        int extraBitLength = 0;
+        if (bufferCapacity != Byte.SIZE) {
+            os.write(buffer);
+            extraBitLength = bufferCapacity;
+        }
+        byte[] bytes = os.toByteArray();
+        return new BitBuffer(bytes, 0, (bytes.length) * Byte.SIZE - extraBitLength);
+    }
+
+    public boolean isEmpty() {
+        return os.size() == 0 & bufferCapacity == Byte.SIZE;
+    }
+
+    public int getBitLength() {
+        int osBits = this.os.size() * Byte.SIZE;
+        int bufferBits = Byte.SIZE - bufferCapacity;
+        return osBits + bufferBits;
     }
 }

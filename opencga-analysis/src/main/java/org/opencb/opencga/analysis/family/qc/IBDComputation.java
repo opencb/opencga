@@ -20,7 +20,7 @@ import org.opencb.biodata.models.clinical.qc.RelatednessReport;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.io.*;
@@ -72,7 +72,8 @@ public class IBDComputation {
         String plinkParams = "plink --tfile /data/output/" + basename + " --genome rel-check " + readFreq + exclude + " --out /data/output/"
                 + basename;
         try {
-            DockerUtils.run(PlinkWrapperAnalysis.PLINK_DOCKER_IMAGE, null, outputBinding, plinkParams, null);
+            PlinkWrapperAnalysisExecutor plinkExecutor = new PlinkWrapperAnalysisExecutor();
+            DockerUtils.run(plinkExecutor.getDockerImageName(), null, outputBinding, plinkParams, null);
         } catch (IOException e) {
             throw new ToolException(e);
         }

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.stats.solr.converters;
 
-import org.apache.commons.collections.map.HashedMap;
+import org.apache.commons.collections4.map.HashedMap;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -106,6 +106,15 @@ public class SolrConverterUtil {
         }
     }
 
+    /**
+     * Parse internal OpenCGA ACLs.
+     *
+     * Given a List<Map<String, Object>> in the form [{member: user1, permissions: [VIEW, UPDATE]}, {member: user2, permissions: [DELETE]}],
+     * return a Map<String, Set<String>> containing {user1: [VIEW, UPDATE], user2: [DELETE]}
+     *
+     * @param internalPermissions List containing the permissions for each member.
+     * @return a map of permissions per member.
+     */
     public static Map<String, Set<String>> parseInternalOpenCGAAcls(List<Map<String, Object>> internalPermissions) {
         if (internalPermissions == null) {
             return new HashMap<>();
@@ -119,6 +128,17 @@ public class SolrConverterUtil {
         return retPermissions;
     }
 
+    /**
+     * Get effective OpenCGA VIEW permissions.
+     *
+     * Given the map of permissions in the form {user1: [VIEW, UPDATE], user2: [DELETE]} for both the study and an entity, return the
+     * effective read only permissions in the way [user1_VIEW, user2_NONE]
+     *
+     * @param studyPermissions Map of permissions.
+     * @param entityPermissions Map of permissions.
+     * @param entity Entity name.
+     * @return a flattened list of effective VIEW permissions.
+     */
     public static List<String> getEffectivePermissions(Map<String, Set<String>> studyPermissions,
                                                        Map<String, Set<String>> entityPermissions, String entity) {
         if (studyPermissions == null) {

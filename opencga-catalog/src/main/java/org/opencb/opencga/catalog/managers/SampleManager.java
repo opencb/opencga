@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -25,8 +25,6 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -40,12 +38,10 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -155,7 +151,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     void validateNewSample(Study study, Sample sample, String userId) throws CatalogException {
-        ParamUtils.checkAlias(sample.getId(), "id");
+        ParamUtils.checkIdentifier(sample.getId(), "id");
 
         // Check the id is not in use
         Query query = new Query()
@@ -189,7 +185,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
 
         sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
-        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::new));
+        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::init));
         sample.getInternal().setStatus(new Status());
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
 
@@ -582,6 +578,86 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return endResult(result, ignoreException);
     }
 
+    // TODO: This method should be private. This should only be accessible internally.
+    public OpenCGAResult<Sample> resetRgaIndexes(String studyStr, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("token", token);
+
+        OpenCGAResult<Sample> result;
+        try {
+            authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+            result = sampleDBAdaptor.setRgaIndexes(study.getUid(), new RgaIndex(RgaIndex.Status.NOT_INDEXED, TimeUtils.getTime()));
+
+            auditManager.audit(userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.RESET_RGA_INDEXES, Enums.Resource.SAMPLE, "ALL", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw new CatalogException("Could not reset all sample RGA indexes", e);
+        }
+
+        return result;
+    }
+
+    // TODO: This method should be somehow private. This should only be accessible internally.
+    public OpenCGAResult<Sample> updateRgaIndexes(String studyStr, List<String> samples, RgaIndex rgaIndex, String token)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("samples", samples)
+                .append("rgaIndex", rgaIndex)
+                .append("token", token);
+
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        InternalGetDataResult<Sample> sampleResult = null;
+
+        OpenCGAResult<Sample> result;
+        try {
+            auditManager.initAuditBatch(operationUuid);
+
+            authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+
+            ParamUtils.checkNotEmptyArray(samples, "samples");
+            ParamUtils.checkObj(rgaIndex, "RgaIndex");
+            ParamUtils.checkObj(rgaIndex.getStatus(), "RgaIndex status");
+
+            rgaIndex.setDate(TimeUtils.getTime());
+
+            sampleResult = internalGet(study.getUid(), samples, INCLUDE_SAMPLE_IDS, userId, false);
+            result = sampleDBAdaptor.setRgaIndexes(study.getUid(),
+                    sampleResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList()), rgaIndex);
+
+            for (Sample sample : sampleResult.getResults()) {
+                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_RGA_INDEX, Enums.Resource.SAMPLE, sample.getId(),
+                        sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            }
+        } catch (CatalogException e) {
+            if (sampleResult == null) {
+                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_RGA_INDEX, Enums.Resource.SAMPLE, "", "", study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            } else {
+                for (Sample sample : sampleResult.getResults()) {
+                    auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_RGA_INDEX, Enums.Resource.SAMPLE, sample.getId(),
+                            sample.getUuid(), study.getId(), study.getUuid(), auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                }
+            }
+            throw new CatalogException("Could not reset all sample RGA indexes", e);
+        } finally {
+            auditManager.finishAuditBatch(operationUuid);
+        }
+
+        return result;
+    }
+
     public OpenCGAResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
                                                      ParamUtils.BasicUpdateAction action, QueryOptions options, String token)
             throws CatalogException {
@@ -593,22 +669,22 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Sample> addAnnotationSet(String studyStr, String sampleStr, AnnotationSet annotationSet, QueryOptions options,
-                                               String token) throws CatalogException {
+                                                  String token) throws CatalogException {
         return addAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSet), options, token);
     }
 
     public OpenCGAResult<Sample> addAnnotationSets(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,
-                                                QueryOptions options, String token) throws CatalogException {
+                                                   QueryOptions options, String token) throws CatalogException {
         return updateAnnotationSet(studyStr, sampleStr, annotationSetList, ParamUtils.BasicUpdateAction.ADD, options, token);
     }
 
     public OpenCGAResult<Sample> removeAnnotationSet(String studyStr, String sampleStr, String annotationSetId, QueryOptions options,
-                                                  String token) throws CatalogException {
+                                                     String token) throws CatalogException {
         return removeAnnotationSets(studyStr, sampleStr, Collections.singletonList(annotationSetId), options, token);
     }
 
     public OpenCGAResult<Sample> removeAnnotationSets(String studyStr, String sampleStr, List<String> annotationSetIdList,
-                                                   QueryOptions options, String token) throws CatalogException {
+                                                      QueryOptions options, String token) throws CatalogException {
         List<AnnotationSet> annotationSetList = annotationSetIdList
                 .stream()
                 .map(id -> new AnnotationSet().setId(id))
@@ -631,13 +707,13 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public OpenCGAResult<Sample> removeAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
-                                                QueryOptions options, String token) throws CatalogException {
+                                                   QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("remove", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.REMOVE, options, token);
     }
 
     public OpenCGAResult<Sample> resetAnnotations(String studyStr, String sampleStr, String annotationSetId, List<String> annotations,
-                                               QueryOptions options, String token) throws CatalogException {
+                                                  QueryOptions options, String token) throws CatalogException {
         return updateAnnotations(studyStr, sampleStr, annotationSetId, new ObjectMap("reset", StringUtils.join(annotations, ",")),
                 ParamUtils.CompleteUpdateAction.RESET, options, token);
     }
@@ -956,7 +1032,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), SampleDBAdaptor.QueryParams.ID.key());
+            ParamUtils.checkIdentifier(updateParams.getId(), SampleDBAdaptor.QueryParams.ID.key());
         }
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getIndividualId())) {
@@ -1395,8 +1471,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         String variableSetId = "opencga_sample_variant_stats";
 
-        if (sampleUpdateParams.getQualityControl().getVariantMetrics() == null
-                || sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats().isEmpty()) {
+        if (sampleUpdateParams.getQualityControl().getVariant() == null
+                || sampleUpdateParams.getQualityControl().getVariant().getVariantStats().isEmpty()) {
             // Add REMOVE Action
             Map<String, Object> map = options.getMap(Constants.ACTIONS);
             if (map == null) {
@@ -1412,10 +1488,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
 
         List<AnnotationSet> annotationSetList = new LinkedList<>();
-        if (sampleUpdateParams.getQualityControl().getVariantMetrics() != null) {
+        if (sampleUpdateParams.getQualityControl().getVariant() != null) {
 
-            if (CollectionUtils.isNotEmpty(sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats())) {
-                for (SampleQcVariantStats variantStat : sampleUpdateParams.getQualityControl().getVariantMetrics().getVariantStats()) {
+            if (CollectionUtils.isNotEmpty(sampleUpdateParams.getQualityControl().getVariant().getVariantStats())) {
+                for (SampleQcVariantStats variantStat : sampleUpdateParams.getQualityControl().getVariant().getVariantStats()) {
                     SampleVariantStats stats = variantStat.getStats();
                     if (stats != null) {
                         Map<String, Integer> indelLengthCount = new HashMap<>();

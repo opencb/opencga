@@ -19,9 +19,11 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.avro.Schema;
 import org.apache.solr.common.StringUtils;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.study.Variable;
@@ -94,6 +96,22 @@ public class StudyManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCreateDuplicatedVariableSets() throws Exception {
+        Study study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+
+        // Create a new variable set changing the id
+        study.getVariableSets().get(0).setId("newId");
+        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), token);
+        Study study2 = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        assertEquals(study.getVariableSets().size() + 1, study2.getVariableSets().size());
+
+        // Replicate the first of the variable sets for creation
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("already exists");
+        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), token);
+    }
+
+    @Test
     public void internalVariableSetTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
                 null, null, null, new QueryOptions(), token).first();
@@ -143,5 +161,34 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertTrue(study.getConfiguration().getClinical().getPriorities().isEmpty());
         assertTrue(study.getConfiguration().getClinical().getFlags().isEmpty());
         assertTrue(study.getConfiguration().getClinical().getStatus().isEmpty());
+    }
+
+
+    @Test
+    public void testSetVariantEngineConfiguration() throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        System.out.println("getVariantEngineConfiguration() = "
+                + study.getInternal().getVariantEngineConfiguration());
+
+        catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k1", "v1"), token);
+        study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        System.out.println("getVariantEngineConfiguration() = "
+                + study.getInternal().getVariantEngineConfiguration());
+        assertEquals(new ObjectMap("k1", "v1"), study.getInternal().getVariantEngineConfiguration().getOptions());
+
+        catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k2", "v2"), token);
+        study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        System.out.println("getVariantEngineConfiguration() = "
+                + study.getInternal().getVariantEngineConfiguration());
+        assertEquals(new ObjectMap("k2", "v2"), study.getInternal().getVariantEngineConfiguration().getOptions());
+
+        SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
+        catalogManager.getStudyManager()
+                .setVariantEngineConfigurationSampleIndex(studyFqn, sampleIndexConfiguration, token);
+        study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        System.out.println("getVariantEngineConfiguration() = "
+                + study.getInternal().getVariantEngineConfiguration());
+        assertEquals(sampleIndexConfiguration, study.getInternal().getVariantEngineConfiguration().getSampleIndex());
+
     }
 }

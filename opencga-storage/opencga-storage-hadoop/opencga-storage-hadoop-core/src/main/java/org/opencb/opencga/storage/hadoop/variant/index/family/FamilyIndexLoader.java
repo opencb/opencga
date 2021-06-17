@@ -124,7 +124,7 @@ public class FamilyIndexLoader {
             options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
             options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
         }
-        options.put(FamilyIndexDriver.OUTPUT, tableNameGenerator.getSampleIndexTableName(studyId));
+        options.put(FamilyIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableName(studyId));
 
         mrExecutor.run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),

@@ -18,36 +18,29 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CohortManager;
-import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.*;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -65,58 +58,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         cohortManager = catalogManager.getCohortManager();
     }
 
-    private Response createCohort(String studyStr, String variableSetId, CohortCreateParams cohortParams, String variableName) {
-        try {
-            List<DataResult<Cohort>> cohorts = new LinkedList<>();
-            if (StringUtils.isNotEmpty(variableName) && ListUtils.isNotEmpty(cohortParams.getSamples())) {
-                return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
-            }
-
-            if (ListUtils.isNotEmpty(cohortParams.getSamples())) {
-                DataResult<Sample> queryResult = catalogManager.getSampleManager().get(studyStr, cohortParams.getSamples(),
-                        SampleManager.INCLUDE_SAMPLE_IDS, token);
-                List<Sample> sampleList = queryResult.getResults();
-                Cohort cohort = new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList, 0,
-                        cohortParams.getAnnotationSets(), 1,
-                        cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
-                        cohortParams.getAttributes());
-                DataResult<Cohort> cohortQueryResult = catalogManager.getCohortManager().create(studyStr, cohort, null, token);
-                cohorts.add(cohortQueryResult);
-            } else if (StringUtils.isNotEmpty(variableSetId)) {
-                VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyStr, variableSetId, null, token).first();
-                Variable variable = null;
-                for (Variable v : variableSet.getVariables()) {
-                    if (v.getId().equals(variableName)) {
-                        variable = v;
-                        break;
-                    }
-                }
-                if (variable == null) {
-                    return createErrorResponse("", "Variable " + variableName + " does not exist in variableSet " + variableSet.getId());
-                }
-                if (variable.getType() != Variable.VariableType.CATEGORICAL) {
-                    return createErrorResponse("", "Can only create cohorts by variable, when is a categorical variable");
-                }
-                for (String s : variable.getAllowedValues()) {
-                    QueryOptions samplesQOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.samples.id");
-                    Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
-                            .append("variableSetId", variableSet.getUid());
-
-                    cohorts.add(createCohort(studyStr, cohortParams.getId() + "_" + s, cohortParams.getType(), cohortParams.getDescription(),
-                            cohortParams.getAnnotationSets(), samplesQuery, samplesQOptions));
-                }
-            } else {
-                //Create empty cohort
-                Cohort cohort = new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null);
-                cohorts.add(catalogManager.getCohortManager().create(studyStr, cohort, null, token));
-            }
-            return createOkResponse(cohorts);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/create")
     @ApiOperation(value = "Create a cohort", notes = "A cohort can be created by providing a list of SampleIds, " +
@@ -131,7 +72,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "JSON containing cohort information", required = true) CohortCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new CohortCreateParams());
-            return createCohort(studyStr, variableSet, params, variableName);
+            return createOkResponse(cohortManager.create(studyStr, params, variableSet, variableName, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -256,14 +197,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    private DataResult<Cohort> createCohort(String studyStr, String cohortId, Enums.CohortType type, String cohortDescription,
-                                            List<AnnotationSet> annotationSetList, Query query, QueryOptions queryOptions)
-            throws CatalogException {
-        DataResult<Sample> queryResult = catalogManager.getSampleManager().search(studyStr, query, queryOptions, token);
-        Cohort cohort = new Cohort(cohortId, type, "", cohortDescription, queryResult.getResults(), annotationSetList, -1, null);
-        return catalogManager.getCohortManager().create(studyStr, cohort, null, token);
     }
 
     @POST

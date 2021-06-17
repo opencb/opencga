@@ -16,11 +16,9 @@
 
 package org.opencb.opencga.analysis.alignment;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.alignment.samtools.SamtoolsStats;
 import org.opencb.biodata.models.alignment.*;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
@@ -32,22 +30,24 @@ import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.models.FileInfo;
 import org.opencb.opencga.analysis.models.StudyInfo;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
+import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
+import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -65,7 +65,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
-import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
 
 /**
  * Created by pfurio on 31/10/16.
@@ -153,78 +152,60 @@ public class AlignmentStorageManager extends StorageManager {
     // STATS: run, info and query
     //-------------------------------------------------------------------------
 
-    public void statsRun(String study, String inputFile, String outdir, String token) throws ToolException {
-        ObjectMap params = new ObjectMap();
-        params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
-
-        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
-        samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
-
-        samtools.setStudy(study);
-        samtools.setCommand("stats")
-                .setInputFile(inputFile)
-                .setOutputFilename(Paths.get(inputFile).getFileName() + ".stats.txt");
-
-        samtools.start();
-    }
-
-    //-------------------------------------------------------------------------
-
-    public OpenCGAResult<SamtoolsStats> statsInfo(String study, String inputFile, String token) throws ToolException, CatalogException {
-        OpenCGAResult<File> fileResult;
-        fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
-
-        if (fileResult.getNumResults() == 1) {
-            for (AnnotationSet annotationSet : fileResult.getResults().get(0).getAnnotationSets()) {
-                if ("opencga_alignment_stats".equals(annotationSet.getId())) {
-                    StopWatch watch = StopWatch.createStarted();
-                    SamtoolsStats stats = JacksonUtils.getDefaultObjectMapper().convertValue(annotationSet.getAnnotations(),
-                            SamtoolsStats.class);
-                    watch.stop();
-                    return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(stats), 1);
-                }
-            }
-            throw new ToolException("Alignment stats not computed for " + inputFile);
-        } else {
-            throw new ToolException("Error accessing to the file: " + inputFile);
-        }
-    }
-
-    //-------------------------------------------------------------------------
-
-    public OpenCGAResult<File> statsQuery(String study, Query query, QueryOptions queryOptions, String token) throws CatalogException {
-        Query searchQuery = new Query();
-        List<String> filters = new ArrayList<>();
-        query.keySet().forEach(k -> {
-            if (statsMap.containsKey(k)) {
-                filters.add(ALIGNMENT_STATS_VARIABLE_SET + ":" + statsMap.get(k) + query.get(k));
-            }
-        });
-        searchQuery.put(Constants.ANNOTATION, StringUtils.join(filters, ";"));
-
-        return catalogManager.getFileManager().search(study, searchQuery, queryOptions, token);
-    }
+//    public void statsRun(String study, String inputFile, String outdir, String token) throws ToolException {
+//        Map<String, Object> params = new AlignmentStatsParams(inputFile, null).toParams(new ObjectMap(ParamConstants.STUDY_PARAM, study));
+//
+//        try {
+//            catalogManager.getJobManager().submit(study, AlignmentStatsAnalysis.ID, Enums.Priority.MEDIUM, params, null, "Job generated by "
+//                    + " AlignmentStorageManager/statsRun", Collections.emptyList(), Collections.emptyList(), token);
+//        } catch (CatalogException e) {
+//            throw new ToolException(e);
+//        }
+//    }
+//
+//    public void flagStatsRun(String study, String inputFile, String outdir, String token) throws ToolException {
+//        Map<String, Object> params = new AlignmentFlagStatsParams(inputFile, null).toParams(new ObjectMap(ParamConstants.STUDY_PARAM,
+//                study));
+//
+//        try {
+//            catalogManager.getJobManager().submit(study, AlignmentFlagStatsAnalysis.ID, Enums.Priority.MEDIUM, params, null,
+//                    "Job generated by AlignmentStorageManager/flagStatsRun", Collections.emptyList(), Collections.emptyList(), token);
+//        } catch (CatalogException e) {
+//            throw new ToolException(e);
+//        }
+//    }
 
     //-------------------------------------------------------------------------
     // COVERAGE: run, query and ratio
     //-------------------------------------------------------------------------
 
-    public void coverageRun(String study, String inputFile, int windowSize, boolean overwrite, String outdir, String token) throws ToolException {
-        ObjectMap params = new ObjectMap();
-        params.put("of", "bigwig");
-        params.put("bs", windowSize);
-        params.put("overwrite", overwrite);
-
-        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
-
-        deeptools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
-
-        deeptools.setStudy(study);
-        deeptools.setCommand("bamCoverage")
-                .setBamFile(inputFile);
-
-        deeptools.start();
-    }
+//    public void coverageRun(String study, String inputFile, int windowSize, boolean overwrite, String outdir, String token) throws ToolException {
+//        ObjectMap deeptoolsParams = new ObjectMap();
+//        deeptoolsParams.put("of", "bigwig");
+//        deeptoolsParams.put("bs", windowSize);
+//        deeptoolsParams.put("overwrite", overwrite);
+//
+//        ObjectMap params = new DeeptoolsWrapperParams(
+//                "bamCoverage",
+//                outdir,
+//                deeptoolsParams)
+//                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+//
+//        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+//
+//
+//
+//
+//        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
+//
+//        deeptools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), jobId, token);
+//
+//        deeptools.setStudy(study);
+////        deeptools.setCommand("bamCoverage")
+////                .setBamFile(inputFile);
+//
+//        deeptools.start();
+//    }
 
     //-------------------------------------------------------------------------
 
@@ -278,8 +259,7 @@ public class AlignmentStorageManager extends StorageManager {
             CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
                     .toClientConfiguration());
             GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-            QueryResponse<Gene> response = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty());
-            Gene gene = response.firstResult();
+            Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
             if (gene != null) {
                 List<TranscriptCoverageStats> transcriptCoverageStatsList = new ArrayList<>();
                 // Create region from gene coordinates
@@ -476,9 +456,9 @@ public class AlignmentStorageManager extends StorageManager {
         CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
                 .toClientConfiguration());
         GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-        QueryResponse<Gene> response = geneClient.get(genes, QueryOptions.empty());
-        if (CollectionUtils.isNotEmpty(response.allResults())) {
-            for (Gene gene : response.allResults()) {
+        List<Gene> response = geneClient.get(genes, QueryOptions.empty()).allResults();
+        if (CollectionUtils.isNotEmpty(response)) {
+            for (Gene gene : response) {
                 // Create region from gene coordinates
                 Region region = null;
                 if (onlyExons) {
@@ -537,8 +517,7 @@ public class AlignmentStorageManager extends StorageManager {
         CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
                 .toClientConfiguration());
         GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
-        QueryResponse<Gene> response = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty());
-        Gene gene = response.firstResult();
+        Gene gene = geneClient.get(Collections.singletonList(geneName), QueryOptions.empty()).firstResult();
         if (gene != null) {
             // Create region from gene coordinates
             if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {

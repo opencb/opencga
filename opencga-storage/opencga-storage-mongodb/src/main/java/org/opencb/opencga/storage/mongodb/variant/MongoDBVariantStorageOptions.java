@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.config.ConfigurationOption;
+import org.opencb.opencga.core.config.ConfigurationOption;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.util.Arrays;

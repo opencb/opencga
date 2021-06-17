@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;

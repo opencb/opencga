@@ -23,9 +23,6 @@ import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.CircosAnalysisExecutor;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Tool(id = CircosAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class CircosAnalysis extends OpenCgaTool {
 

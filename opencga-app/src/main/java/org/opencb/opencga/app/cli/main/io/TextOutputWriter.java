@@ -71,7 +71,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
     @Override
     public void print(RestResponse queryResponse) {
-        if (checkErrors(queryResponse)) {
+        if (checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
 
@@ -88,8 +88,13 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.print(printMetadata(queryResponse));
 
         List<DataResult> queryResultList = queryResponse.getResponses();
-        String[] split = queryResultList.get(0).getResultType().split("\\.");
-        String clazz = split[split.length - 1];
+        String clazz;
+        if (queryResultList.get(0).getResultType() == null) {
+            clazz = "";
+        } else {
+            String[] split = queryResultList.get(0).getResultType().split("\\.");
+            clazz = split[split.length - 1];
+        }
 
         switch (clazz) {
             case "User":
@@ -132,7 +137,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 System.err.println(ANSI_YELLOW + "Warning: " + clazz + " results not yet supported in text format. Using YAML format"
                         + ANSI_RESET);
                 YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
-                yamlOutputWriter.print(queryResponse);
+                yamlOutputWriter.print(queryResponse, false);
                 break;
         }
 

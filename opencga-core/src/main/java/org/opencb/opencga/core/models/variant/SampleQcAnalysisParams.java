@@ -16,39 +16,43 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.util.List;
-
 public class SampleQcAnalysisParams extends ToolParams {
-    public static final String DESCRIPTION = "Sample QC analysis params";
+    public static final String DESCRIPTION = "Sample QC analysis params. Mutational signature and genome plot are calculated for somatic"
+    + " samples only";
     private String sample;
-    private String dictFile;
-    private String baitFile;
     private String variantStatsId;
     private String variantStatsDescription;
     private AnnotationVariantQueryParams variantStatsQuery;
     private String signatureId;
-    private SampleQcSignatureQueryParams signatureQuery;
-    private List<String> genesForCoverageStats;
-
+    private String signatureDescription;
+    private ObjectMap signatureQuery;
+    private String signatureRelease;
+    private String genomePlotId;
+    private String genomePlotDescription;
+    private String genomePlotConfigFile;
     private String outdir;
 
     public SampleQcAnalysisParams() {
     }
 
-    public SampleQcAnalysisParams(String sample, String dictFile, String baitFile, String variantStatsId, String variantStatsDescription,
-                                  AnnotationVariantQueryParams variantStatsQuery, String signatureId,
-                                  SampleQcSignatureQueryParams signatureQuery, List<String> genesForCoverageStats, String outdir) {
+    public SampleQcAnalysisParams(String sample, String variantStatsId, String variantStatsDescription,
+                                  AnnotationVariantQueryParams variantStatsQuery, String signatureId, String signatureDescription,
+                                  ObjectMap signatureQuery, String signatureRelease, String genomePlotId, String genomePlotDescription,
+                                  String genomePlotConfigFile, String outdir) {
         this.sample = sample;
-        this.dictFile = dictFile;
-        this.baitFile = baitFile;
         this.variantStatsId = variantStatsId;
         this.variantStatsDescription = variantStatsDescription;
         this.variantStatsQuery = variantStatsQuery;
         this.signatureId = signatureId;
+        this.signatureDescription = signatureDescription;
         this.signatureQuery = signatureQuery;
-        this.genesForCoverageStats = genesForCoverageStats;
+        this.signatureRelease = signatureRelease;
+        this.genomePlotId = genomePlotId;
+        this.genomePlotDescription = genomePlotDescription;
+        this.genomePlotConfigFile = genomePlotConfigFile;
         this.outdir = outdir;
     }
 
@@ -56,14 +60,16 @@ public class SampleQcAnalysisParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQcAnalysisParams{");
         sb.append("sample='").append(sample).append('\'');
-        sb.append(", dictFile='").append(dictFile).append('\'');
-        sb.append(", baitFile='").append(baitFile).append('\'');
         sb.append(", variantStatsId='").append(variantStatsId).append('\'');
-        sb.append(", variantStatsDecription='").append(variantStatsDescription).append('\'');
+        sb.append(", variantStatsDescription='").append(variantStatsDescription).append('\'');
         sb.append(", variantStatsQuery=").append(variantStatsQuery);
         sb.append(", signatureId='").append(signatureId).append('\'');
+        sb.append(", signatureDescription='").append(signatureDescription).append('\'');
         sb.append(", signatureQuery=").append(signatureQuery);
-        sb.append(", genesForCoverageStats=").append(genesForCoverageStats);
+        sb.append(", signatureRelease=").append(signatureRelease);
+        sb.append(", genomePlotId='").append(genomePlotId).append('\'');
+        sb.append(", genomePlotDescription='").append(genomePlotDescription).append('\'');
+        sb.append(", genomePlotConfigFile='").append(genomePlotConfigFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append('}');
         return sb.toString();
@@ -75,24 +81,6 @@ public class SampleQcAnalysisParams extends ToolParams {
 
     public SampleQcAnalysisParams setSample(String sample) {
         this.sample = sample;
-        return this;
-    }
-
-    public String getDictFile() {
-        return dictFile;
-    }
-
-    public SampleQcAnalysisParams setDictFile(String dictFile) {
-        this.dictFile = dictFile;
-        return this;
-    }
-
-    public String getBaitFile() {
-        return baitFile;
-    }
-
-    public SampleQcAnalysisParams setBaitFile(String baitFile) {
-        this.baitFile = baitFile;
         return this;
     }
 
@@ -132,21 +120,57 @@ public class SampleQcAnalysisParams extends ToolParams {
         return this;
     }
 
-    public SampleQcSignatureQueryParams getSignatureQuery() {
+    public String getSignatureDescription() {
+        return signatureDescription;
+    }
+
+    public SampleQcAnalysisParams setSignatureDescription(String signatureDescription) {
+        this.signatureDescription = signatureDescription;
+        return this;
+    }
+
+    public ObjectMap getSignatureQuery() {
         return signatureQuery;
     }
 
-    public SampleQcAnalysisParams setSignatureQuery(SampleQcSignatureQueryParams signatureQuery) {
+    public SampleQcAnalysisParams setSignatureQuery(ObjectMap signatureQuery) {
         this.signatureQuery = signatureQuery;
         return this;
     }
 
-    public List<String> getGenesForCoverageStats() {
-        return genesForCoverageStats;
+    public String getSignatureRelease() {
+        return signatureRelease;
     }
 
-    public SampleQcAnalysisParams setGenesForCoverageStats(List<String> genesForCoverageStats) {
-        this.genesForCoverageStats = genesForCoverageStats;
+    public SampleQcAnalysisParams setSignatureRelease(String signatureRelease) {
+        this.signatureRelease = signatureRelease;
+        return this;
+    }
+
+    public String getGenomePlotId() {
+        return genomePlotId;
+    }
+
+    public SampleQcAnalysisParams setGenomePlotId(String genomePlotId) {
+        this.genomePlotId = genomePlotId;
+        return this;
+    }
+
+    public String getGenomePlotDescription() {
+        return genomePlotDescription;
+    }
+
+    public SampleQcAnalysisParams setGenomePlotDescription(String genomePlotDescription) {
+        this.genomePlotDescription = genomePlotDescription;
+        return this;
+    }
+
+    public String getGenomePlotConfigFile() {
+        return genomePlotConfigFile;
+    }
+
+    public SampleQcAnalysisParams setGenomePlotConfigFile(String genomePlotConfigFile) {
+        this.genomePlotConfigFile = genomePlotConfigFile;
         return this;
     }
 

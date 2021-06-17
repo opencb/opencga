@@ -27,8 +27,6 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -47,6 +45,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
@@ -55,6 +54,7 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.FILE_VARIANT_STATS_VARIABLE_SET;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -400,12 +399,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
 
-                AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, FILE_VARIANT_STATS_VARIABLE_SET);
                 catalogManager.getFileManager()
-                        .update(studyStr, vcf.getPath(), new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet)),
-                                new QueryOptions(Constants.ACTIONS,
-                                        Collections.singletonMap(ANNOTATION_SETS, ParamUtils.CompleteUpdateAction.SET)), sessionId);
-
+                        .update(studyStr, vcf.getPath(),
+                                new FileUpdateParams().setQualityControl(
+                                        new FileQualityControl().setVariant(
+                                                new VariantFileQualityControl(stats))),
+                                new QueryOptions(),
+                                sessionId);
 
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
@@ -500,7 +500,7 @@ public class FileManager extends AnnotationSetManager<File> {
         switch (checkPathExists(path, study.getUid())) {
             case FREE_PATH:
                 File file = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, path, description,
-                        FileInternal.initialize(), 0, null, null, jobId, null, null);
+                        FileInternal.initialize(), 0, null, null, jobId, new FileQualityControl(), null, null);
                 fileDataResult = create(studyStr, file, parents, null, options, token);
                 break;
             case DIRECTORY_EXISTS:
@@ -545,7 +545,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                       String description, long size, Map<String, Object> stats, Map<String, Object> attributes,
                                       boolean parents, String content, QueryOptions options, String token) throws CatalogException {
         File file = new File(type, format, bioformat, path, description, FileInternal.initialize(), size, Collections.emptyList(), null, "",
-                stats, attributes);
+                new FileQualityControl(), stats, attributes);
         return create(studyStr, file, parents, content, options, token);
     }
 
@@ -595,6 +595,7 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setJobId(ParamUtils.defaultString(file.getJobId(), ""));
         file.setModificationDate(file.getCreationDate());
         file.setTags(ParamUtils.defaultObject(file.getTags(), ArrayList::new));
+        file.setQualityControl(ParamUtils.defaultObject(file.getQualityControl(), FileQualityControl::new));
         file.setInternal(ParamUtils.defaultObject(file.getInternal(), FileInternal::new));
         file.getInternal().setIndex(ParamUtils.defaultObject(file.getInternal().getIndex(), FileIndex.initialize()));
         file.getInternal().setStatus(ParamUtils.defaultObject(file.getInternal().getStatus(), new FileStatus(FileStatus.READY)));
@@ -677,7 +678,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
                         new FileInternal(new FileStatus(FileStatus.READY), new FileIndex(), Collections.emptyMap(), new MissingSamples()),
-                        0, Collections.emptyList(), null, "", Collections.emptyMap(), Collections.emptyMap());
+                        0, Collections.emptyList(), null, "", new FileQualityControl(), Collections.emptyMap(), Collections.emptyMap());
                 validateNewFile(study, parentFile, sessionId, false);
                 parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, sessionId)
                         .first().getUid();
@@ -1280,6 +1281,11 @@ public class FileManager extends AnnotationSetManager<File> {
 
     void fixQueryObject(Study study, Query query, String user) throws CatalogException {
         super.fixQueryObject(query);
+
+        if (query.containsKey(ParamConstants.INTERNAL_INDEX_STATUS_PARAM)) {
+            query.put(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), query.get(ParamConstants.INTERNAL_INDEX_STATUS_PARAM));
+            query.remove(ParamConstants.INTERNAL_INDEX_STATUS_PARAM);
+        }
 
         if (query.containsKey(FileDBAdaptor.QueryParams.ID.key())) {
             if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
@@ -3099,8 +3105,8 @@ public class FileManager extends AnnotationSetManager<File> {
         // Create the folder in catalog
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, null, new FileExperiment(),
-                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(), null,
-                new CustomStatus(), FileInternal.initialize(), null);
+                Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(),
+                new FileQualityControl(), null, new CustomStatus(), FileInternal.initialize(), null);
         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
@@ -3216,12 +3222,16 @@ public class FileManager extends AnnotationSetManager<File> {
 //        boolean resync = params.getBoolean("resync", false);
 //        String checksum = params.getString(FileDBAdaptor.QueryParams.CHECKSUM.key(), "");
 
-        final List<FileRelatedFile> relatedFiles = params.getRelatedFiles();
-        if (relatedFiles != null) {
-            for (FileRelatedFile relatedFile : relatedFiles) {
-                File tmpFile = internalGet(study.getUid(), relatedFile.getFile().getId(), INCLUDE_FILE_URI_PATH, userId).first();
-                relatedFile.setFile(tmpFile);
+        final List<FileRelatedFile> relatedFiles;
+        final List<SmallRelatedFileParams> relatedFilesParams = params.getRelatedFiles();
+        if (relatedFilesParams != null) {
+            relatedFiles = new ArrayList<>(relatedFilesParams.size());
+            for (SmallRelatedFileParams relatedFileParams : relatedFilesParams) {
+                File tmpFile = internalGet(study.getUid(), relatedFileParams.getFile(), INCLUDE_FILE_URI_PATH, userId).first();
+                relatedFiles.add(new FileRelatedFile(tmpFile, relatedFileParams.getRelation()));
             }
+        } else {
+            relatedFiles = null;
         }
 
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
@@ -3299,7 +3309,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 File.Bioformat.NONE, dir, destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), params.getDescription(), true, 0, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                Collections.emptyMap(),
+                                new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(),
                                 FileInternal.initialize(), Collections.emptyMap());
                         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
@@ -3358,7 +3368,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 File.Bioformat.NONE, fileUri, destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), params.getDescription(), true, size, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                Collections.emptyMap(),
+                                new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(), internal,
                                 new HashMap<>());
                         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
@@ -3449,8 +3459,8 @@ public class FileManager extends AnnotationSetManager<File> {
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
-                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyMap(),
-                new CustomStatus(), FileInternal.initialize(), Collections.emptyMap());
+                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), new FileQualityControl(),
+                Collections.emptyMap(), new CustomStatus(), FileInternal.initialize(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 

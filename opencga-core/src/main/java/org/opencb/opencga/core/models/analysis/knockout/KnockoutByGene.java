@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.core.models.analysis.knockout;
 
+import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.GeneAnnotation;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 
 import java.util.*;
 
@@ -135,9 +138,36 @@ public class KnockoutByGene {
     public static class KnockoutIndividual {
         private String id;
         private String sampleId;
+        private String motherId;
+        private String motherSampleId;
+        private String fatherId;
+        private String fatherSampleId;
+        private IndividualProperty.Sex sex;
+        private List<Phenotype> phenotypes;
+        private List<Disorder> disorders;
         private Map<String, KnockoutTranscript> transcriptsMap = new HashMap<>(); // Internal only
 
         public KnockoutIndividual() {
+        }
+
+        public KnockoutIndividual(String id, String sampleId, String motherId, String motherSampleId, String fatherId,
+                                  String fatherSampleId, IndividualProperty.Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders) {
+            this.id = id;
+            this.sampleId = sampleId;
+            this.motherId = motherId;
+            this.motherSampleId = motherSampleId;
+            this.fatherId = fatherId;
+            this.fatherSampleId = fatherSampleId;
+            this.sex = sex;
+            this.phenotypes = phenotypes;
+            this.disorders = disorders;
+        }
+
+        public KnockoutIndividual(KnockoutByIndividual knockoutByIndividual) {
+            this(knockoutByIndividual.getId(), knockoutByIndividual.getSampleId(),
+                    knockoutByIndividual.getMotherId(), knockoutByIndividual.getMotherSampleId(), knockoutByIndividual.getFatherId(),
+                    knockoutByIndividual.getFatherSampleId(), knockoutByIndividual.getSex(), knockoutByIndividual.getPhenotypes(),
+                    knockoutByIndividual.getDisorders());
         }
 
         public String getId() {
@@ -158,6 +188,69 @@ public class KnockoutByGene {
             return this;
         }
 
+        public String getMotherId() {
+            return motherId;
+        }
+
+        public KnockoutIndividual setMotherId(String motherId) {
+            this.motherId = motherId;
+            return this;
+        }
+
+        public String getMotherSampleId() {
+            return motherSampleId;
+        }
+
+        public KnockoutIndividual setMotherSampleId(String motherSampleId) {
+            this.motherSampleId = motherSampleId;
+            return this;
+        }
+
+        public String getFatherId() {
+            return fatherId;
+        }
+
+        public KnockoutIndividual setFatherId(String fatherId) {
+            this.fatherId = fatherId;
+            return this;
+        }
+
+        public String getFatherSampleId() {
+            return fatherSampleId;
+        }
+
+        public KnockoutIndividual setFatherSampleId(String fatherSampleId) {
+            this.fatherSampleId = fatherSampleId;
+            return this;
+        }
+
+        public IndividualProperty.Sex getSex() {
+            return sex;
+        }
+
+        public KnockoutIndividual setSex(IndividualProperty.Sex sex) {
+            this.sex = sex;
+            return this;
+        }
+
+        public List<Phenotype> getPhenotypes() {
+            return phenotypes;
+        }
+
+        public KnockoutIndividual setPhenotypes(List<Phenotype> phenotypes) {
+            this.phenotypes = phenotypes;
+            return this;
+        }
+
+        public List<Disorder> getDisorders() {
+            return disorders;
+        }
+
+        public KnockoutIndividual setDisorders(List<Disorder> disorders) {
+            this.disorders = disorders;
+            return this;
+        }
+
         public KnockoutTranscript getTranscript(String transcript) {
             return transcriptsMap.computeIfAbsent(transcript, KnockoutTranscript::new);
         }
@@ -174,6 +267,13 @@ public class KnockoutByGene {
                 for (KnockoutTranscript transcript : transcripts) {
                     transcriptsMap.put(transcript.getId(), transcript);
                 }
+            }
+            return this;
+        }
+
+        public KnockoutIndividual addTranscripts(Collection<KnockoutTranscript> transcripts) {
+            for (KnockoutTranscript transcript : transcripts) {
+                transcriptsMap.put(transcript.getId(), transcript);
             }
             return this;
         }

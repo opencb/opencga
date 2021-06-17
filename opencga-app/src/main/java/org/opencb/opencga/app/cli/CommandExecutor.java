@@ -25,9 +25,10 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -300,6 +301,19 @@ public abstract class CommandExecutor {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
             Files.delete(sessionPath);
+        }
+    }
+
+    protected void checkSignatureRelease(String release) throws ClientException {
+        switch (release) {
+            case "2":
+            case "3":
+            case "3.1":
+            case "3.2":
+                break;
+            default:
+                throw new ClientException("Invalid value " + release + " for the mutational signature release. "
+                        + "Valid values are: 2, 3, 3.1 and 3.2");
         }
     }
 

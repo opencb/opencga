@@ -60,6 +60,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         USER_ID("userId", TEXT, ""),
         INTERNAL_DATASTORES("internal.datastores", TEXT_ARRAY, ""),
         INTERNAL_DATASTORES_VARIANT("internal.datastores.variant", TEXT_ARRAY, ""),
+        INTERNAL_CELLBASE("internal.cellbase", TEXT_ARRAY, ""),
         INTERNAL("internal", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -68,6 +69,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
         OWNER("owner", TEXT, ""),
 
+        STUDIES("studies", TEXT_ARRAY, ""),
         STUDY("study", TEXT, ""), // For the project/search ws
         STUDY_UID("study.uid", INTEGER_ARRAY, ""),
         STUDY_ID("study.alias", TEXT_ARRAY, ""),

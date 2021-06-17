@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -66,7 +66,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1));
         }
 
         variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
@@ -74,7 +74,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1));
         }
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
@@ -86,14 +86,14 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1));
         }
         variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
         for (String sample : SAMPLES) {
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId, mm.getSampleId(studyId, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.READY, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1));
         }
 
 
@@ -300,7 +300,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId_split, mm.getSampleId(studyId_split, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1));
         }
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
@@ -313,7 +313,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             SampleMetadata sampleMetadata = mm.getSampleMetadata(studyId_normal, mm.getSampleId(studyId_normal, sample));
             assertEquals(TaskMetadata.Status.READY, sampleMetadata.getIndexStatus());
             assertEquals(TaskMetadata.Status.NONE, sampleMetadata.getAnnotationStatus());
-            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata));
+            assertEquals(TaskMetadata.Status.NONE, SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1));
         }
 
         checkVariantsTable(studyId_split, studyId_normal, new Query(), new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_FILES));

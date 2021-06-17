@@ -1,14 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
-import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
-import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -19,11 +18,15 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtCombinationIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
+import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.NoOpIndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,22 +38,17 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.VariantFileIndexConverter.TYPE_OTHER_CODE;
 
 /**
  * Created by jacobo on 06/01/19.
  */
 public class SampleIndexQueryParser {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexQueryParser.class);
-    private final SampleIndexConfiguration configuration;
+    private final SampleIndexSchema schema;
     private final VariantStorageMetadataManager metadataManager;
 
-    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager) {
-        this(metadataManager, SampleIndexConfiguration.defaultConfiguration());
-    }
-
-    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexConfiguration configuration) {
-        this.configuration = configuration;
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexSchema schema) {
+        this.schema = schema;
         this.metadataManager = metadataManager;
     }
 
@@ -387,12 +385,14 @@ public class SampleIndexQueryParser {
             fileIndexMap.put(sample, fileIndexQuery);
         }
 
+        int sampleIndexVersion = defaultStudy.getSampleIndexConfigurationLatest().getVersion();
         boolean allSamplesAnnotated = true;
         if (negatedGenotypesSamples.isEmpty()) {
             for (String sample : samplesMap.keySet()) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                if (!SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata).equals(TaskMetadata.Status.READY)) {
+                if (!SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, sampleIndexVersion)
+                        .equals(TaskMetadata.Status.READY)) {
                     allSamplesAnnotated = false;
                     break;
                 }
@@ -445,7 +445,7 @@ public class SampleIndexQueryParser {
         }
         List<List<Region>> regionGroups = groupRegions(regions);
 
-        return new SampleIndexQuery(regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
+        return new SampleIndexQuery(schema, regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
                 fileIndexMap, annotationIndexQuery, mendelianErrorSet, onlyDeNovo, queryOperation);
     }
@@ -626,25 +626,21 @@ public class SampleIndexQueryParser {
 
     protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
                                                   Function<String, List<String>> filesFromSample) {
-        short fileIndexMask = 0;
-        List<String> files = null;
 
-        Set<Integer> typeCodes = Collections.emptySet();
+        List<String> files = null;
+        List<IndexFieldFilter> filtersList = new ArrayList<>(schema.getFileIndex().getFields().size());
 
         if (isValidParam(query, TYPE)) {
-            List<String> types = new ArrayList<>(query.getAsStringList(VariantQueryParam.TYPE.key()));
+            List<VariantType> types = query.getAsStringList(VariantQueryParam.TYPE.key())
+                    .stream()
+                    .map(t -> VariantType.valueOf(t.toUpperCase()))
+                    .collect(Collectors.toList());
             if (!types.isEmpty()) {
-                typeCodes = new HashSet<>(types.size());
-                fileIndexMask |= VariantFileIndexConverter.TYPE_MASK;
-
-                for (String type : types) {
-                    typeCodes.add(VariantFileIndexConverter.getTypeCode(VariantType.valueOf(type.toUpperCase())));
+                IndexFieldFilter typeFilter = schema.getFileIndex().getTypeIndex().buildFilter(QueryOperation.OR, types);
+                filtersList.add(typeFilter);
+                if (typeFilter.isExactFilter()) {
+                    query.remove(TYPE.key());
                 }
-            }
-            if (!typeCodes.contains(TYPE_OTHER_CODE)
-                    && !hasCopyNumberGainFilter(types)
-                    && !hasCopyNumberLossFilter(types)) {
-                query.remove(TYPE.key());
             }
         }
 
@@ -672,64 +668,39 @@ public class SampleIndexQueryParser {
                         sampleFilesFilter.add(indexOf);
                     }
                 }
-                fileIndexMask |= VariantFileIndexConverter.FILE_IDX_MASK;
+                IndexFieldFilter filePositionFilter =
+                        schema.getFileIndex().getFilePositionIndex().buildFilter(QueryOperation.OR, sampleFilesFilter);
+                filtersList.add(filePositionFilter);
             }
         }
 
-        boolean filterPass = false;
-        boolean filterPassCovered = false;
         if (isValidParam(query, FILTER)) {
-            Values<String> filterValues = splitValue(query, FILTER);
-
-            if (filterValues.size() == 1) {
-                if (filterValues.get(0).equals(VCFConstants.PASSES_FILTERS_v4)) {
-                    // PASS
-                    fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
-                    filterPass = true;
-                    filterPassCovered = true;
-                } else if (filterValues.get(0).equals(VariantQueryUtils.NOT + VCFConstants.PASSES_FILTERS_v4)) {
-                    // !PASS
-                    fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
-                    filterPassCovered = true;
-                } else if (!isNegated(filterValues.get(0))) {
-                    // Non negated filter, other than PASS
-                    filterPass = false;
-                    fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
+            IndexField<String> filterIndexField = schema.getFileIndex()
+                    .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER);
+            if (filterIndexField != null) {
+                Values<String> filterValues = splitValue(query, FILTER);
+                IndexFieldFilter indexFieldFilter = filterIndexField.buildFilter(filterValues.getOperation(), filterValues.getValues());
+                filtersList.add(indexFieldFilter);
+                if (indexFieldFilter.isExactFilter() && !partialFilesIndex) {
+                    query.remove(FILTER.key());
                 }
-            } else {
-                if (!filterValues.contains(VCFConstants.PASSES_FILTERS_v4)) {
-                    if (filterValues.getValues().stream().noneMatch(VariantQueryUtils::isNegated)) {
-                        // None negated filter, without PASS
-                        filterPass = false;
-                        fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
-                    }
-                } // else --> Mix PASS and other filters. Can not use index
             }
         }
-        if (filterPassCovered && !partialFilesIndex) {
-            query.remove(FILTER.key());
-        }
 
-        RangeQuery qualQuery = null;
         if (isValidParam(query, QUAL)) {
-            String qualValue = query.getString(QUAL.key());
-            List<String> qualValues = VariantQueryUtils.splitValues(qualValue).getValues();
-            if (qualValues.size() == 1) {
-
-                fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
-
-                OpValue<String> opValue = parseOpValue(qualValue);
-                double value = Double.parseDouble(opValue.getValue());
-                qualQuery = getRangeQuery(opValue.getOp(), value, SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
-
-                if (qualQuery.isExactQuery() && !partialFilesIndex) {
+            IndexField<String> qualIndexField = schema.getFileIndex()
+                    .getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
+            if (qualIndexField != null) {
+                OpValue<String> opValue = parseOpValue(query.getString(QUAL.key()));
+                IndexFieldFilter indexFieldFilter = qualIndexField.buildFilter(opValue);
+                filtersList.add(indexFieldFilter);
+                if (indexFieldFilter.isExactFilter() && !partialFilesIndex) {
                     query.remove(QUAL.key());
                 }
             }
         }
 
         boolean fileDataCovered = true;
-        RangeQuery dpQuery = null;
         if (isValidParam(query, FILE_DATA)) {
             //ParsedQuery<KeyValues< FileId , KeyOpValue< INFO , Value >>>
             ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = parseFileData(query);
@@ -750,42 +721,17 @@ public class SampleIndexQueryParser {
                         continue;
                     }
                     for (KeyOpValue<String, String> keyOpValue : keyValues.getValues()) {
-                        if (keyOpValue.getKey().equals(VCFConstants.DEPTH_KEY)) {
-                            String op = keyOpValue.getOp();
-                            double dpValue = Double.parseDouble(keyOpValue.getValue());
-                            dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
-                            fileIndexMask |= VariantFileIndexConverter.DP_MASK;
-                            if (!dpQuery.isExactQuery()) {
-                                fileDataCovered = false;
-                            }
-                        } else if (keyOpValue.getKey().equals(StudyEntry.FILTER)) {
-                            if (keyOpValue.getValue().equals(VCFConstants.PASSES_FILTERS_v4)) {
-                                filterPass = true;
-                                fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
-                            } else {
-                                // Only covered when filtering by PASS
-                                fileDataCovered = false;
-                                Values<String> filterValues = splitValues(keyOpValue.getValue());
-                                if (!filterValues.contains(VCFConstants.PASSES_FILTERS_v4)) {
-                                    if (filterValues.getValues().stream().noneMatch(VariantQueryUtils::isNegated)) {
-                                        // None negated filter, without PASS
-                                        filterPass = false;
-                                        fileIndexMask |= VariantFileIndexConverter.FILTER_PASS_MASK;
-                                    }
-                                } // else --> Mix PASS and other filters. Can not use index
-                            }
-                        } else if (keyOpValue.getKey().equals(StudyEntry.QUAL)) {
-                            fileIndexMask |= VariantFileIndexConverter.QUAL_MASK;
-
-                            double value = Double.parseDouble(keyOpValue.getValue());
-                            qualQuery = getRangeQuery(keyOpValue.getOp(), value,
-                                    SampleIndexConfiguration.QUAL_THRESHOLDS, 0, IndexUtils.MAX);
-                            if (!qualQuery.isExactQuery()) {
-                                fileDataCovered = false;
-                            }
-                        } else {
+                        IndexField<String> fileDataIndexField = schema.getFileIndex()
+                                .getCustomField(IndexFieldConfiguration.Source.FILE, keyOpValue.getKey());
+                        if (fileDataIndexField == null) {
                             // Unknown key
                             fileDataCovered = false;
+                        } else {
+                            IndexFieldFilter indexFieldFilter = fileDataIndexField.buildFilter(keyOpValue);
+                            filtersList.add(indexFieldFilter);
+                            if (!indexFieldFilter.isExactFilter()) {
+                                fileDataCovered = false;
+                            }
                         }
                     }
                 }
@@ -804,15 +750,13 @@ public class SampleIndexQueryParser {
 
             if (!sampleDataFilter.isEmpty() && sampleDataOp != QueryOperation.OR) {
                 for (KeyOpValue<String, String> keyOpValue : sampleDataFilter) {
-                    if (keyOpValue.getKey().equals(VCFConstants.DEPTH_KEY)) {
-                        String op = keyOpValue.getOp();
-                        double dpValue = Double.parseDouble(keyOpValue.getValue());
-                        dpQuery = getRangeQuery(op, dpValue, SampleIndexConfiguration.DP_THRESHOLDS, 0, IndexUtils.MAX);
-                        fileIndexMask |= VariantFileIndexConverter.DP_MASK;
-                        if (dpQuery.isExactQuery() && !partialFilesIndex) {
-                            if (sampleDataFilter.size() == 1) {
-                                sampleDataQuery.getValues().remove(sampleDataFilter);
-                            }
+                    IndexField<String> sampleDataIndexField = schema.getFileIndex()
+                            .getCustomField(IndexFieldConfiguration.Source.SAMPLE, keyOpValue.getKey());
+                    if (sampleDataIndexField != null) {
+                        IndexFieldFilter indexFieldFilter = sampleDataIndexField.buildFilter(keyOpValue);
+                        filtersList.add(indexFieldFilter);
+                        if (indexFieldFilter.isExactFilter() && !partialFilesIndex) {
+                            sampleDataQuery.getValues().remove(sampleDataFilter);
                         }
                     }
                 }
@@ -826,53 +770,9 @@ public class SampleIndexQueryParser {
             }
         }
 
-        // Build validFileIndex array
-        boolean[] validFileIndex1 = new boolean[1 << Byte.SIZE];
-        boolean[] validFileIndex2 = new boolean[1 << Byte.SIZE];
+        filtersList.removeIf(f -> f instanceof NoOpIndexFieldFilter);
 
-        if (fileIndexMask != IndexUtils.EMPTY_MASK) {
-            boolean hasFileIndexMask1 = IndexUtils.getByte1(fileIndexMask) != IndexUtils.EMPTY_MASK;
-            boolean hasFileIndexMask2 = IndexUtils.getByte2(fileIndexMask) != IndexUtils.EMPTY_MASK;
-            int qualMin = qualQuery == null ? 0 : qualQuery.getMinCodeInclusive();
-            int qualMax = qualQuery == null ? 1 : qualQuery.getMaxCodeExclusive();
-            int dpMin = dpQuery == null ? 0 : dpQuery.getMinCodeInclusive();
-            int dpMax = dpQuery == null ? 1 : dpQuery.getMaxCodeExclusive();
-            if (typeCodes.isEmpty()) {
-                typeCodes = Collections.singleton(0);
-            }
-            if (sampleFilesFilter.isEmpty()) {
-                sampleFilesFilter = Collections.singletonList(null);
-            }
-            for (Integer typeCode : typeCodes) {
-                for (Integer fileId : sampleFilesFilter) {
-                    for (int q = qualMin; q < qualMax; q++) {
-                        for (int dp = dpMin; dp < dpMax; dp++) {
-
-                            int validFile = 0;
-                            if (filterPass) {
-                                validFile |= VariantFileIndexConverter.FILTER_PASS_MASK;
-                            }
-
-                            if (fileId != null) {
-                                validFile |= fileId << VariantFileIndexConverter.FILE_POSITION_SHIFT;
-                            }
-                            validFile |= typeCode << VariantFileIndexConverter.TYPE_SHIFT;
-                            validFile |= q << VariantFileIndexConverter.QUAL_SHIFT;
-                            validFile |= dp << VariantFileIndexConverter.DP_SHIFT;
-
-                            if (hasFileIndexMask1) {
-                                validFileIndex1[IndexUtils.getByte1(validFile)] = true;
-                            }
-                            if (hasFileIndexMask2) {
-                                validFileIndex2[IndexUtils.getByte2(validFile)] = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return new SampleFileIndexQuery(sample, fileIndexMask, qualQuery, dpQuery, validFileIndex1, validFileIndex2);
+        return new SampleFileIndexQuery(sample, filtersList);
     }
 
     private boolean hasCopyNumberGainFilter(List<String> types) {
@@ -897,9 +797,10 @@ public class SampleIndexQueryParser {
      */
     protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
         byte annotationIndex = 0;
-        byte biotypeMask = 0;
-        short consequenceTypeMask = 0;
-        byte clinicalMask = 0;
+        IndexFieldFilter biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+        IndexFieldFilter consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
+        CtBtCombinationIndexSchema.Filter ctBtFilter = schema.getCtBtIndex().getField().noOpFilter();
+        IndexFilter clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
 
         Boolean intergenic = null;
 
@@ -923,12 +824,12 @@ public class SampleIndexQueryParser {
             soNames = soNames.stream()
                     .map(ct -> ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)))
                     .collect(Collectors.toList());
-            if (!soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)
-                    && !soNames.contains(VariantAnnotationUtils.REGULATORY_REGION_VARIANT)
-                    && !soNames.contains(VariantAnnotationUtils.TF_BINDING_SITE_VARIANT)) {
+            if (!soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)
+                    && !soNames.contains(VariantAnnotationConstants.REGULATORY_REGION_VARIANT)
+                    && !soNames.contains(VariantAnnotationConstants.TF_BINDING_SITE_VARIANT)) {
                 // All ct values but "intergenic_variant" and "regulatory_region_variant" are in genes (i.e. non-intergenic)
                 intergenic = false;
-            } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationUtils.INTERGENIC_VARIANT)) {
+            } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)) {
                 intergenic = true;
             }
             boolean ctFilterCoveredBySummary = false;
@@ -945,7 +846,7 @@ public class SampleIndexQueryParser {
                 }
             }
             if (LOF_EXTENDED_SET.containsAll(soNames)) {
-                boolean proteinCodingOnly = query.getString(ANNOT_BIOTYPE.key()).equals(VariantAnnotationUtils.PROTEIN_CODING);
+                boolean proteinCodingOnly = query.getString(ANNOT_BIOTYPE.key()).equals(VariantAnnotationConstants.PROTEIN_CODING);
                 ctFilterCoveredBySummary = soNames.size() == LOF_EXTENDED_SET.size();
                 annotationIndex |= LOF_EXTENDED_MASK;
                 // If all present, remove consequenceType filter
@@ -965,7 +866,7 @@ public class SampleIndexQueryParser {
                     annotationIndex |= LOFE_PROTEIN_CODING_MASK;
                 }
             }
-            if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationUtils.MISSENSE_VARIANT)) {
+            if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationConstants.MISSENSE_VARIANT)) {
                 ctFilterCoveredBySummary = true;
                 ctCovered = true;
                 annotationIndex |= MISSENSE_VARIANT_MASK;
@@ -984,18 +885,8 @@ public class SampleIndexQueryParser {
             boolean useCtIndexFilter = !ctFilterCoveredBySummary || (!ctBtCombinationCoveredBySummary && combination.isBiotype());
             if (useCtIndexFilter) {
                 ctCovered = completeIndex;
-                for (String soName : soNames) {
-                    short mask = getMaskFromSoName(soName);
-                    if (mask == IndexUtils.EMPTY_MASK) {
-                        // If any element is not in the index, do not use this filter
-                        consequenceTypeMask = IndexUtils.EMPTY_MASK;
-                        ctCovered = false;
-                        break;
-                    }
-                    consequenceTypeMask |= mask;
-                    // Some CT filter values are not precise, so the query is not covered.
-                    ctCovered &= !isImpreciseCtMask(mask);
-                }
+                consequenceTypeFilter = schema.getCtIndex().getField().buildFilter(new OpValue<>("=", soNames));
+                ctCovered &= consequenceTypeFilter.isExactFilter();
                 // ConsequenceType filter is covered by index
                 if (ctCovered) {
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -1025,18 +916,8 @@ public class SampleIndexQueryParser {
             boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.isConsequenceType();
             if (useBtIndexFilter) {
                 btCovered = completeIndex;
-                for (String biotype : biotypes) {
-                    byte mask = getMaskFromBiotype(biotype);
-                    if (mask == IndexUtils.EMPTY_MASK) {
-                        // If any element is not in the index, do not use this filter
-                        biotypeMask = IndexUtils.EMPTY_MASK;
-                        btCovered = false;
-                        break;
-                    }
-                    biotypeMask |= mask;
-                    // Some CT filter values are not precise, so the query is not covered.
-                    btCovered &= !isImpreciseBtMask(mask);
-                }
+                biotypeFilter = schema.getBiotypeIndex().getField().buildFilter(new OpValue<>("=", biotypes));
+                btCovered &= biotypeFilter.isExactFilter();
                 // Biotype filter is covered by index
                 if (btCovered) {
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -1044,6 +925,10 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+        }
+
+        if (!consequenceTypeFilter.isNoOp() && !biotypeFilter.isNoOp()) {
+            ctBtFilter = schema.getCtBtIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter);
         }
         if (completeIndex && btCovered && ctCovered && !isValidParam(query, GENE)
                 && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
@@ -1061,45 +946,24 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             annotationIndex |= CLINICAL_MASK;
-            boolean clinicalCovered = true;
-            for (String clinical : query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key())) {
-                switch (ClinicalSignificance.valueOf(clinical)) {
-                    case likely_benign:
-                    case benign:
-                        // These two values are covered by the same bit, so, they are not covered.
-                        clinicalCovered = false;
-                        clinicalMask |= CLINICAL_BENIGN_LIKELY_BENIGN_MASK;
-                        break;
-                    case VUS:
-                    case uncertain_significance:
-                        // These two values are synonymous
-                        clinicalMask |= CLINICAL_UNCERTAIN_SIGNIFICANCE_MASK;
-                        break;
-                    case likely_pathogenic:
-                        clinicalMask |= CLINICAL_LIKELY_PATHOGENIC_MASK;
-                        break;
-                    case pathogenic:
-                        clinicalMask |= CLINICAL_PATHOGENIC_MASK;
-                        break;
-                    default:
-                        clinicalCovered = false;
-                        break;
-                }
+            clinicalFilter = schema.getClinicalIndexSchema().buildFilter(schema.getClinicalIndexSchema().getClinicalSignificanceField()
+                    .buildFilter(new OpValue<>("=", query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key()))));
+            boolean clinicalCovered = clinicalFilter.isExactFilter();
+            if (!clinicalCovered) {
+                // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
+                clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
             }
             if (completeIndex && clinicalCovered) {
                 query.remove(ANNOT_CLINICAL_SIGNIFICANCE.key());
             }
-            if (!clinicalCovered) {
-                // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
-                clinicalMask = 0;
-            }
         }
 
-        List<PopulationFrequencyQuery> popFreqQuery = new ArrayList<>();
-        QueryOperation popFreqOp = QueryOperation.AND;
-        boolean popFreqPartial = false;
+        IndexFilter populationFrequencyFilter = schema.getPopFreqIndex().noOpFilter();
         // TODO: This will skip filters ANNOT_POPULATION_REFERENCE_FREQUENCY and ANNOT_POPULATION_MINNOR_ALLELE_FREQUENCY
         if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
+            List<IndexFieldFilter> populationFrequencyFilters = new ArrayList<>();
+            QueryOperation popFreqOp;
+            boolean popFreqPartial = false;
             ParsedQuery<String> popFreqFilter = VariantQueryUtils.splitValue(query, VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY);
             popFreqOp = popFreqFilter.getOperation();
 
@@ -1111,7 +975,7 @@ public class SampleIndexQueryParser {
                 KeyOpValue<String, String> keyOpValue = VariantQueryUtils.parseKeyOpValue(popFreq);
                 String studyPop = keyOpValue.getKey();
                 studyPops.add(studyPop);
-                double freqFilter = Double.valueOf(keyOpValue.getValue());
+                double freqFilter = Double.parseDouble(keyOpValue.getValue());
                 if (keyOpValue.getOp().equals("<") || keyOpValue.getOp().equals("<<")) {
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
                         popFreqLessThan001.add(studyPop);
@@ -1120,19 +984,12 @@ public class SampleIndexQueryParser {
 
                 boolean populationInSampleIndex = false;
                 boolean populationFilterFullyCovered = false;
-                int popFreqIdx = 0;
-                for (PopulationFrequencyRange populationRange : configuration.getPopulationRanges()) {
-                    if (populationRange.getStudyAndPopulation().equals(studyPop)) {
-                        populationInSampleIndex = true;
-                        RangeQuery rangeQuery = getRangeQuery(keyOpValue.getOp(), freqFilter, populationRange.getThresholds(),
-                                0, 1 + IndexUtils.DELTA);
-
-                        popFreqQuery.add(new PopulationFrequencyQuery(rangeQuery,
-                                popFreqIdx, populationRange.getStudy(),
-                                populationRange.getPopulation()));
-                        populationFilterFullyCovered |= rangeQuery.isExactQuery();
-                    }
-                    popFreqIdx++;
+                IndexField<Double> popFreqField = schema.getPopFreqIndex().getField(studyPop);
+                if (popFreqField != null) {
+                    populationInSampleIndex = true;
+                    IndexFieldFilter fieldFilter = popFreqField.buildFilter(new OpValue<>(keyOpValue.getOp(), freqFilter));
+                    populationFrequencyFilters.add(fieldFilter);
+                    populationFilterFullyCovered = fieldFilter.isExactFilter();
                 }
 
                 if (!populationInSampleIndex) {
@@ -1151,7 +1008,7 @@ public class SampleIndexQueryParser {
 
                     if (POP_FREQ_ANY_001_SET.size() == popFreqFilter.getValues().size()) {
                         // Do not filter using the PopFreq index, as the summary bit covers the filter
-                        popFreqQuery.clear();
+                        populationFrequencyFilters.clear();
 
                         // If the index is complete for all samples, remove the filter from main query
                         if (completeIndex) {
@@ -1161,7 +1018,7 @@ public class SampleIndexQueryParser {
                 }
                 if (popFreqPartial) {
                     // Can not use the index with partial OR queries.
-                    popFreqQuery.clear();
+                    populationFrequencyFilters.clear();
                 } else if (filtersNotCoveredByPopFreqQuery.isEmpty()) {
                     // If all filters are covered, remove filter form query.
                     if (completeIndex) {
@@ -1187,6 +1044,9 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+            if (!populationFrequencyFilters.isEmpty()) {
+                populationFrequencyFilter = schema.getPopFreqIndex().buildFilter(populationFrequencyFilters, popFreqOp);
+            }
         }
 
         byte annotationIndexMask = annotationIndex;
@@ -1199,13 +1059,12 @@ public class SampleIndexQueryParser {
 
         if (intergenic == null || intergenic) {
             // If intergenic is undefined, or true, CT and BT filters can not be used.
-            consequenceTypeMask = IndexUtils.EMPTY_MASK;
-            biotypeMask = IndexUtils.EMPTY_MASK;
+            biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+            consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
         }
 
-
-        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex}, consequenceTypeMask, biotypeMask,
-                clinicalMask, popFreqOp, popFreqQuery, popFreqPartial);
+        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex},
+                consequenceTypeFilter, biotypeFilter, ctBtFilter, clinicalFilter, populationFrequencyFilter);
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {
@@ -1213,26 +1072,26 @@ public class SampleIndexQueryParser {
                 || combination.equals(BiotypeConsquenceTypeFlagCombination.CT);
     }
 
-    protected RangeQuery getRangeQuery(String op, double value, double[] thresholds) {
-        return getRangeQuery(op, value, thresholds, Double.MIN_VALUE, Double.MAX_VALUE);
-    }
-
+    @Deprecated
     protected RangeQuery getRangeQuery(String op, double value, double[] thresholds, double min, double max) {
-        double[] range = IndexUtils.queryRange(op, value, min, max);
+        double[] range = RangeIndexFieldFilter.queryRange(op, value, min, max);
         return getRangeQuery(range, thresholds, min, max);
     }
 
+    @Deprecated
     private RangeQuery getRangeQuery(double[] range, double[] thresholds, double min, double max) {
-        byte[] rangeCode = IndexUtils.getRangeCodes(range, thresholds);
+        byte[] rangeCode = RangeIndexFieldFilter.getRangeCodes(range, thresholds);
         boolean exactQuery;
         if (rangeCode[0] == 0) {
             if (rangeCode[1] - 1 == thresholds.length) {
-                exactQuery = IndexUtils.equalsTo(range[0], min) && IndexUtils.equalsTo(range[1], max);
+                exactQuery = RangeIndexField.equalsTo(range[0], min) && RangeIndexField.equalsTo(range[1], max);
             } else {
-                exactQuery = IndexUtils.equalsTo(range[1], thresholds[rangeCode[1] - 1]) && IndexUtils.equalsTo(range[0], min);
+                exactQuery = RangeIndexField.equalsTo(range[1], thresholds[rangeCode[1] - 1])
+                        && RangeIndexField.equalsTo(range[0], min);
             }
         } else if (rangeCode[1] - 1 == thresholds.length) {
-            exactQuery = IndexUtils.equalsTo(range[0], thresholds[rangeCode[0] - 1]) && IndexUtils.equalsTo(range[1], max);
+            exactQuery = RangeIndexField.equalsTo(range[0], thresholds[rangeCode[0] - 1])
+                    && RangeIndexField.equalsTo(range[1], max);
         } else {
             exactQuery = false;
         }

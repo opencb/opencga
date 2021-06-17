@@ -32,17 +32,15 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -60,11 +58,9 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.ANNOTATION_SETS;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.UID;
 import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.CURRENT_RELEASE;
 import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.ORGANISM;
-import static org.opencb.opencga.catalog.utils.FileMetadataReader.FILE_VARIANT_STATS_VARIABLE_SET;
 
 /**
  * Created by imedina on 17/08/16.
@@ -501,19 +497,13 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
         }
 
-        try {
-            catalogManager.getStudyManager().getVariableSet(studyFqn, FILE_VARIANT_STATS_VARIABLE_SET, new QueryOptions(), token);
-        } catch (CatalogException e) {
-            // Variable set not found. Try to create
-            catalogManager.getStudyManager().createDefaultVariableSets(studyFqn, token);
-        }
-
-        AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, FILE_VARIANT_STATS_VARIABLE_SET);
         catalogManager.getFileManager()
-                .update(studyFqn, inputFile.getPath(), new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet)),
-                        new QueryOptions(Constants.ACTIONS, Collections.singletonMap(ANNOTATION_SETS.key(), ParamUtils.BasicUpdateAction.SET)),
+                .update(studyFqn, inputFile.getPath(),
+                        new FileUpdateParams().setQualityControl(
+                                new FileQualityControl().setVariant(
+                                        new VariantFileQualityControl(stats))),
+                        new QueryOptions(),
                         token);
-
     }
 
     private Cohort createDefaultCohortIfNeeded(String studyFqn, String sessionId) throws CatalogException {
@@ -541,8 +531,9 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
-        return catalogManager.getCohortManager().create(studyFqn, StudyEntry.DEFAULT_COHORT, Enums.CohortType.COLLECTION,
-                DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, sessionId).first();
+        return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
+                Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, Collections.emptyList(), null, null, null), null, null,
+                QueryOptions.empty(), sessionId).first();
     }
 
     private void updateDefaultCohortStatus(Study study, StorageEngineException exception, String sessionId) throws CatalogException {

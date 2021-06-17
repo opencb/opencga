@@ -29,6 +29,10 @@ public class IndividualInternal {
         this.status = status;
     }
 
+    public static IndividualInternal init() {
+        return new IndividualInternal(new Status(Status.READY));
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualInternal{");
@@ -45,4 +49,5 @@ public class IndividualInternal {
         this.status = status;
         return this;
     }
+
 }

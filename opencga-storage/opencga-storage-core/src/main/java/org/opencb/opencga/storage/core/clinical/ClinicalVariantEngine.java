@@ -24,7 +24,7 @@ import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Path;

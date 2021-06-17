@@ -42,7 +42,7 @@ import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -328,6 +328,9 @@ public abstract class OpenCgaTool {
     }
 
     /**
+     * Method called internally to obtain the list of steps.
+     *
+     * Will be executed after calling to the {@link #check()} method.
      * @return the tool steps
      */
     protected List<String> getSteps() {
@@ -489,6 +492,9 @@ public abstract class OpenCgaTool {
         if (StringUtils.isEmpty(executorId) && params != null) {
             executorId = params.getString(EXECUTOR_ID);
         }
+
+        System.out.println("getToolExecutor ::: " + clazz + ", " + executorId);
+        System.out.println(executorParams.toJson());
         return getToolExecutor(clazz, executorId);
     }
 

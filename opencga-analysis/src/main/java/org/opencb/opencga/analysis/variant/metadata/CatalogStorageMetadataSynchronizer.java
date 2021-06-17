@@ -20,7 +20,7 @@ package org.opencb.opencga.analysis.variant.metadata;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.mongodb.MongoServerException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;

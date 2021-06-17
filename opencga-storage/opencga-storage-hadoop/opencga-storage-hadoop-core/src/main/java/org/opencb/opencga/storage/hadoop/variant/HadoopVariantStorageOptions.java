@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.hbase.io.compress.Compression;
-import org.opencb.opencga.storage.core.config.ConfigurationOption;
+import org.opencb.opencga.core.config.ConfigurationOption;
 
 public enum HadoopVariantStorageOptions implements ConfigurationOption {
 

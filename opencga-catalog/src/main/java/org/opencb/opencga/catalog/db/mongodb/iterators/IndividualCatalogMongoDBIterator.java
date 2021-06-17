@@ -114,7 +114,7 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
             Document individualDocument = (Document) mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
-                studyUid = individualDocument.getLong(PRIVATE_STUDY_UID);
+                studyUid = ((Number) individualDocument.get(PRIVATE_STUDY_UID)).longValue();
             }
 
             individualListBuffer.add(individualDocument);
@@ -164,7 +164,8 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
                 }
 
                 for (Document individual : individualDataResult.getResults()) {
-                    List<Document> parentList = individualMap.get(individual.getLong(IndividualDBAdaptor.QueryParams.UID.key()));
+                    List<Document> parentList =
+                            individualMap.get(((Number) individual.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue());
                     for (Document parentDocument : parentList) {
                         parentDocument.put(IndividualDBAdaptor.QueryParams.ID.key(),
                                 individual.getString(IndividualDBAdaptor.QueryParams.ID.key()));
@@ -236,8 +237,8 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
 
     private void addParentToMap(Map<Long, List<Document>> individualMap, Document parent) {
         if (parent != null && parent.size() > 0) {
-            Long uid = parent.getLong("uid");
-            if (uid != null && uid > 0) {
+            long uid = ((Number) parent.get("uid")).longValue();
+            if (uid > 0) {
                 if (!individualMap.containsKey(uid)) {
                     individualMap.put(uid, new ArrayList<>());
                 }

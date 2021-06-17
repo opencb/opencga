@@ -71,12 +71,15 @@ public class SampleVariantStatsAnalysisParams extends ToolParams {
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
                                             boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize,
                                             AnnotationVariantQueryParams variantQuery) {
-        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize, new VariantQueryParams(variantQuery.toQuery()));
+        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize,
+                variantQuery == null ? null : new VariantQueryParams(variantQuery.toQuery()));
     }
 
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,
-                                            boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize, Query variantQuery) {
-        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize, new VariantQueryParams(variantQuery));
+                                            boolean indexOverwrite, String indexId, String indexDescription, Integer batchSize,
+                                            Query variantQuery) {
+        this(sample, individual, outdir, index, indexOverwrite, indexId, indexDescription, batchSize,
+                variantQuery == null ? null : new VariantQueryParams(variantQuery));
     }
 
     public SampleVariantStatsAnalysisParams(List<String> sample, List<String> individual, String outdir, boolean index,

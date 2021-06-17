@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -344,8 +344,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      */
     Long variableSetExists(long variableSetId);
 
-    default Long variableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.UID.key(), studyId);
+    default Long variableSetExists(String variableSetId, long studyId) throws CatalogDBException {
+        Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId).append(QueryParams.UID.key(), studyId);
         return count(query).getNumMatches();
     }
 
@@ -361,13 +361,13 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         }
     }
 
-    default void checkVariableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Long count = variableSetExists(variableSetName, studyId);
+    default void checkVariableSetExists(String variableSetId, long studyId) throws CatalogDBException {
+        Long count = variableSetExists(variableSetId, studyId);
         if (count <= 0) {
-            throw CatalogDBException.newInstance("VariableSet name '{}' does not exist", variableSetName);
+            throw CatalogDBException.newInstance("VariableSet id '{}' does not exist", variableSetId);
         } else if (count > 1) {
-            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet name '{}' in study '{}'", count,
-                    variableSetName, studyId);
+            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet id '{}' in study '{}'", count,
+                    variableSetId, studyId);
         }
     }
 
@@ -430,6 +430,9 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        INTERNAL_VARIANT_ENGINE_CONFIGURATION("internal.variantEngineConfiguration", Type.OBJECT, ""),
+        INTERNAL_VARIANT_ENGINE_CONFIGURATION_OPTIONS("internal.variantEngineConfiguration.options", Type.OBJECT, ""),
+        INTERNAL_VARIANT_ENGINE_CONFIGURATION_SAMPLE_INDEX("internal.variantEngineConfiguration.sampleIndex", Type.OBJECT, ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),

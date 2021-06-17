@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.tools.variant;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -34,63 +34,24 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
             "GTT", "TTA", "TTC", "TTG", "TTT"};
 
     private String study;
-    private String sampleName;
-    private Path refGenomePath;
-    private Path mutationalSignaturePath;
-    private Path openCgaHome;
+    private String assembly;
+    private String sample;
+    private String queryId;
+    private String queryDescription;
+    private ObjectMap query;
+    private String release;
+    private boolean fitting;
 
     public MutationalSignatureAnalysisExecutor() {
     }
 
-    public String getStudy() {
-        return study;
-    }
-
-    public MutationalSignatureAnalysisExecutor setStudy(String study) {
-        this.study = study;
-        return this;
-    }
-
-    public String getSampleName() {
-        return sampleName;
-    }
-
-    public MutationalSignatureAnalysisExecutor setSampleName(String sampleName) {
-        this.sampleName = sampleName;
-        return this;
-    }
-
-    public Path getRefGenomePath() {
-        return refGenomePath;
-    }
-
-    public MutationalSignatureAnalysisExecutor setRefGenomePath(Path refGenomePath) {
-        this.refGenomePath = refGenomePath;
-        return this;
-    }
-
-    public Path getMutationalSignaturePath() {
-        return mutationalSignaturePath;
-    }
-
-    public MutationalSignatureAnalysisExecutor setMutationalSignaturePath(Path mutationalSignaturePath) {
-        this.mutationalSignaturePath = mutationalSignaturePath;
-        return this;
-    }
-
-    public Path getOpenCgaHome() {
-        return openCgaHome;
-    }
-
-    public MutationalSignatureAnalysisExecutor setOpenCgaHome(Path openCgaHome) {
-        this.openCgaHome = openCgaHome;
-        return this;
-    }
-
     public static String getContextIndexFilename(String sampleName) {
-        return "OPENCGA_" + sampleName + "_mutational_signature_context.csv";
+        return "OPENCGA_" + sampleName + "_genome_context.csv";
     }
 
+    protected String getMutationalSignatureFilename() {
+        return "COSMIC_v" + release + "_SBS_" + assembly + ".txt";
+    }
 
     protected static Map<String, Map<String, Double>> initFreqMap() {
         Map<String, Map<String, Double>> map = new LinkedHashMap<>();
@@ -185,5 +146,77 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         }
 
         return sum;
+    }
+
+    public String getStudy() {
+        return study;
+    }
+
+    public MutationalSignatureAnalysisExecutor setStudy(String study) {
+        this.study = study;
+        return this;
+    }
+
+    public String getAssembly() {
+        return assembly;
+    }
+
+    public MutationalSignatureAnalysisExecutor setAssembly(String assembly) {
+        this.assembly = assembly;
+        return this;
+    }
+
+    public String getSample() {
+        return sample;
+    }
+
+    public MutationalSignatureAnalysisExecutor setSample(String sample) {
+        this.sample = sample;
+        return this;
+    }
+
+    public String getQueryId() {
+        return queryId;
+    }
+
+    public MutationalSignatureAnalysisExecutor setQueryId(String queryId) {
+        this.queryId = queryId;
+        return this;
+    }
+
+    public String getQueryDescription() {
+        return queryDescription;
+    }
+
+    public MutationalSignatureAnalysisExecutor setQueryDescription(String queryDescription) {
+        this.queryDescription = queryDescription;
+        return this;
+    }
+
+    public ObjectMap getQuery() {
+        return query;
+    }
+
+    public MutationalSignatureAnalysisExecutor setQuery(ObjectMap query) {
+        this.query = query;
+        return this;
+    }
+
+    public String getRelease() {
+        return release;
+    }
+
+    public MutationalSignatureAnalysisExecutor setRelease(String release) {
+        this.release = release;
+        return this;
+    }
+
+    public boolean isFitting() {
+        return fitting;
+    }
+
+    public MutationalSignatureAnalysisExecutor setFitting(boolean fitting) {
+        this.fitting = fitting;
+        return this;
     }
 }

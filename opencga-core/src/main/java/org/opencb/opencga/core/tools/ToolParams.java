@@ -59,6 +59,10 @@ public abstract class ToolParams {
         return map;
     }
 
+    public Map<String, Object> toParams(String key, String value) {
+        return toParams(new ObjectMap(key, value));
+    }
+
     public Map<String, Object> toParams(ObjectMap otherParams) {
         Map<String, Object> map = toParams();
         addParams(map, otherParams);

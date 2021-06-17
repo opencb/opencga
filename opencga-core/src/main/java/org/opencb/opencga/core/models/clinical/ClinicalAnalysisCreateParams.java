@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.StatusParam;
@@ -42,6 +43,9 @@ public class ClinicalAnalysisCreateParams {
 
     private ProbandParam proband;
     private FamilyParam family;
+
+    private List<String> panels;
+
     private ClinicalAnalystParam analyst;
     private EntryParam interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
@@ -61,7 +65,7 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        ClinicalAnalystParam analyst, EntryParam interpretation,
+                                        List<String> panels, ClinicalAnalystParam analyst, EntryParam interpretation,
                                         ClinicalConsentAnnotationParam consent, String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
@@ -72,6 +76,7 @@ public class ClinicalAnalysisCreateParams {
         this.files = files;
         this.proband = proband;
         this.family = family;
+        this.panels = panels;
         this.analyst = analyst;
         this.interpretation = interpretation;
         this.consent = consent;
@@ -92,6 +97,9 @@ public class ClinicalAnalysisCreateParams {
                         : null,
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
+                clinicalAnalysis.getPanels() != null
+                        ? clinicalAnalysis.getPanels().stream().map(DiseasePanel::getId).collect(Collectors.toList())
+                        : null,
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInterpretation() != null
                         ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
@@ -120,6 +128,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
+        sb.append(", panels=").append(panels);
         sb.append(", analyst=").append(analyst);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", consent=").append(consent);
@@ -175,8 +184,16 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f, false,
-                primaryInterpretation, new LinkedList<>(), consent != null ? consent.toClinicalConsentAnnotation() : null,
+        List<org.opencb.opencga.core.models.panel.Panel> diseasePanelList = panels != null ? new ArrayList<>(panels.size()) : Collections.emptyList();
+        if (panels != null) {
+            for (String panel : panels) {
+                diseasePanelList.add(new org.opencb.opencga.core.models.panel.Panel().setId(panel));
+            }
+        }
+
+        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
+                diseasePanelList, false, primaryInterpretation, new LinkedList<>(),
+                consent != null ? consent.toClinicalConsentAnnotation() : null,
                 new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()),
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null , null, null,
@@ -246,6 +263,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setFamily(FamilyParam family) {
         this.family = family;
+        return this;
+    }
+
+    public List<String> getPanels() {
+        return panels;
+    }
+
+    public ClinicalAnalysisCreateParams setPanels(List<String> panels) {
+        this.panels = panels;
         return this;
     }
 

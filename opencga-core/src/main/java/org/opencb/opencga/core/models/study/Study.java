@@ -28,7 +28,6 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
@@ -59,7 +58,7 @@ public class Study extends PrivateFields {
     private List<Family> families;
     private List<Sample> samples;
     private List<Cohort> cohorts;
-    private List<Panel> panels;
+    private List<org.opencb.opencga.core.models.panel.Panel> panels;
     private List<ClinicalAnalysis> clinicalAnalyses;
     private List<VariableSet> variableSets;
     private StudyConfiguration configuration;
@@ -85,7 +84,7 @@ public class Study extends PrivateFields {
 
     public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
                  List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
-                 List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
+                 List<Sample> samples, List<Cohort> cohorts, List<org.opencb.opencga.core.models.panel.Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
                  List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
                  CustomStatus status, StudyInternal internal, StudyConfiguration configuration, Map<String, Object> attributes) {
         this.id = id;
@@ -298,11 +297,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public List<Panel> getPanels() {
+    public List<org.opencb.opencga.core.models.panel.Panel> getPanels() {
         return panels;
     }
 
-    public Study setPanels(List<Panel> panels) {
+    public Study setPanels(List<org.opencb.opencga.core.models.panel.Panel> panels) {
         this.panels = panels;
         return this;
     }

@@ -22,6 +22,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
     private final MigrateV2_0_0CommandOptions migrateV200CommandOptions;
     private final MigrateV2_0_1CommandOptions migrateV201CommandOptions;
     private final MigrateV2_0_3CommandOptions migrateV203CommandOptions;
+    private final MigrateV2_1_0CommandOptions migrateV210CommandOptions;
     private final AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
     public MigrationCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
@@ -32,6 +33,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         this.migrateV200CommandOptions = new MigrateV2_0_0CommandOptions();
         this.migrateV201CommandOptions = new MigrateV2_0_1CommandOptions();
         this.migrateV203CommandOptions = new MigrateV2_0_3CommandOptions();
+        this.migrateV210CommandOptions = new MigrateV2_1_0CommandOptions();
     }
 
     @Parameters(commandNames = {"v1.3.0"}, commandDescription = "Migrate OpenCGA from version 1.2.x to 1.3.0")
@@ -95,6 +97,14 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
     }
 
+    @Parameters(commandNames = {"v2.1.0"}, commandDescription = "Migrate OpenCGA from version 2.0.x to 2.1.0")
+    public class MigrateV2_1_0CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+    }
+
     public enum MigrateRC {
         ALL,
         RC1,
@@ -129,6 +139,10 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
     public MigrateV2_0_3CommandOptions getMigrateV203CommandOptions() {
         return migrateV203CommandOptions;
+    }
+
+    public MigrateV2_1_0CommandOptions getMigrateV210CommandOptions() {
+        return migrateV210CommandOptions;
     }
 
     public AdminCliOptionsParser.AdminCommonCommandOptions getCommonOptions() {

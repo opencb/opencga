@@ -1,2 +1,0 @@
-# Sharing and Permissions
-

@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
@@ -40,10 +41,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserStatus;
@@ -53,6 +58,7 @@ import org.slf4j.LoggerFactory;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.UserDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -296,24 +302,169 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
     @Override
     public OpenCGAResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            query.append(QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + Status.DELETED);
-        }
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         Bson bson = parseQuery(query);
-        DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, options);
+        QueryOptions userOptions;
+        if (includeProjects(options)) {
+            userOptions = filterQueryOptions(options, Arrays.asList(ID.key(), PROJECTS_UID.key()));
+        } else {
+            userOptions = filterQueryOptions(options, Collections.singletonList(ID.key()));
+        }
+        DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
-        for (User user : userDataResult.getResults()) {
-            if (user.getProjects() != null) {
-                List<Project> projects = new ArrayList<>(user.getProjects().size());
-                for (Project project : user.getProjects()) {
-                    Query query1 = new Query(ProjectDBAdaptor.QueryParams.UID.key(), project.getUid());
-                    OpenCGAResult<Project> projectDataResult = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(query1, options);
-                    projects.add(projectDataResult.first());
+        if (includeStudies(options)) {
+            for (User user : userDataResult.getResults()) {
+                if (user.getProjects() != null) {
+                    for (Project project : user.getProjects()) {
+                        Query query1 = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
+                        QueryOptions studyOptions = extractNestedOptions(options, PROJECTS.key() + ".studies.");
+                        OpenCGAResult<Study> studyResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(query1, studyOptions);
+                        project.setStudies(studyResult.getResults());
+                    }
                 }
-                user.setProjects(projects);
             }
         }
+
+        if (includeSharedProjects(options)) {
+            QueryOptions sharedProjectOptions = extractNestedOptions(options, SHARED_PROJECTS.key());
+            sharedProjectOptions = filterQueryOptions(sharedProjectOptions, Arrays.asList(ProjectDBAdaptor.QueryParams.FQN.key(),
+                    "studies." + StudyDBAdaptor.QueryParams.FQN.key(), "studies." + StudyDBAdaptor.QueryParams.GROUPS.key()));
+            extractSharedProjects(userDataResult, sharedProjectOptions);
+        }
+
         return new OpenCGAResult<>(userDataResult);
+    }
+
+    private boolean includeProjects(QueryOptions options) {
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+
+        if (!includeList.isEmpty()) {
+            for (String includeKey : includeList) {
+                if (includeKey.startsWith(PROJECTS.key() + ".")) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (!excludeList.isEmpty()) {
+            for (String excludeKey : excludeList) {
+                if (excludeKey.equals(PROJECTS.key())) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private boolean includeSharedProjects(QueryOptions options) {
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+
+        if (!includeList.isEmpty()) {
+            for (String includeKey : includeList) {
+                if (includeKey.startsWith(SHARED_PROJECTS.key() + ".")) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (!excludeList.isEmpty()) {
+            for (String excludeKey : excludeList) {
+                if (excludeKey.equals(SHARED_PROJECTS.key())) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private boolean includeStudies(QueryOptions options) {
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+
+        if (!includeList.isEmpty()) {
+            for (String includeKey : includeList) {
+                if (includeKey.startsWith(PROJECTS.key() + ".studies.")) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (!excludeList.isEmpty()) {
+            for (String excludeKey : excludeList) {
+                if (excludeKey.equals(PROJECTS.key() + ".studies")) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private void extractSharedProjects(DataResult<User> userDataResult, QueryOptions options) throws CatalogDBException {
+        Set<String> users = userDataResult.getResults().stream().map(User::getId).collect(Collectors.toSet());
+
+        Map<String, Project> projectMap = new HashMap<>();
+        Map<String, Study> studyMap = new HashMap<>();
+        Map<String, String> studyProjectMap = new HashMap<>();
+        Map<String, List<String>> userStudyMap = new HashMap<>();
+        OpenCGAResult<Project> result = dbAdaptorFactory.getCatalogProjectDbAdaptor().get(new Query(), options);
+        for (Project project : result.getResults()) {
+            projectMap.put(project.getFqn(), project);
+            if (project.getStudies() != null) {
+                for (Study study : project.getStudies()) {
+                    studyMap.put(study.getFqn(), study);
+                    studyProjectMap.put(study.getFqn(), project.getFqn());
+
+                    String owner = study.getFqn().split("@")[0];
+
+                    if (study.getGroups() != null) {
+                        for (Group group : study.getGroups()) {
+                            if (StudyManager.MEMBERS.equals(group.getId())) {
+                                // Add all the users that should be able to see the study to the map
+                                for (String userId : group.getUserIds()) {
+                                    // Exclude owner of the project
+                                    if (!owner.equals(userId)) {
+                                        if (users.contains(userId)) {
+                                            if (!userStudyMap.containsKey(userId)) {
+                                                userStudyMap.put(userId, new ArrayList<>());
+                                            }
+                                            userStudyMap.get(userId).add(study.getFqn());
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add SharedProject information
+        for (User user : userDataResult.getResults()) {
+            if (userStudyMap.containsKey(user.getId())) {
+                Map<String, List<Study>> projectStudyMap = new HashMap<>();
+
+                for (String studyFqn : userStudyMap.get(user.getId())) {
+                    // Obtain the project fqn where the study belongs
+                    String projectFqn = studyProjectMap.get(studyFqn);
+                    if (!projectStudyMap.containsKey(projectFqn)) {
+                        projectStudyMap.put(projectFqn, new ArrayList<>());
+                    }
+                    projectStudyMap.get(projectFqn).add(studyMap.get(studyFqn));
+                }
+
+                List<Project> projectList = new ArrayList<>(projectStudyMap.size());
+                for (Map.Entry<String, List<Study>> entry : projectStudyMap.entrySet()) {
+                    Project project = new Project(projectMap.get(entry.getKey()));
+                    project.setStudies(entry.getValue());
+                    projectList.add(project);
+                }
+
+                user.setSharedProjects(projectList);
+            }
+        }
     }
 
     @Override
@@ -559,7 +710,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
     }
 
-    private String encryptPassword(String password) throws CatalogDBException {
+    public static void main(String[] args) throws CatalogDBException {
+        System.out.println(encryptPassword("admin"));
+    }
+
+    private static String encryptPassword(String password) throws CatalogDBException {
         if (StringUtils.isNotEmpty(password)) {
             if (password.matches("^[a-fA-F0-9]{40}$")) {
                 // Password already cyphered
@@ -619,6 +774,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case INTERNAL_STATUS_DATE:
                     case SIZE:
                     case QUOTA:
+                    case ACCOUNT_TYPE:
+                    case ACCOUNT_AUTHENTICATION_ID:
+                    case ACCOUNT_CREATION_DATE:
                     case PROJECTS:
                     case PROJECTS_UID:
                     case PROJECT_NAME:

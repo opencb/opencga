@@ -19,14 +19,20 @@ package org.opencb.opencga.core.response;
 public class FederationNode {
 
     private String id;
+    private String uri;
     private String commit;
     private String version;
 
     public FederationNode() {
     }
 
-    public FederationNode(String id, String commit, String version) {
+    public FederationNode(String uri, String commit, String version) {
+        this("primary", uri, commit, version);
+    }
+
+    public FederationNode(String id, String uri, String commit, String version) {
         this.id = id;
+        this.uri = uri;
         this.commit = commit;
         this.version = version;
     }
@@ -35,6 +41,7 @@ public class FederationNode {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FederationNode{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", uri='").append(uri).append('\'');
         sb.append(", commit='").append(commit).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append('}');
@@ -47,6 +54,15 @@ public class FederationNode {
 
     public FederationNode setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    public FederationNode setUri(String uri) {
+        this.uri = uri;
         return this;
     }
 

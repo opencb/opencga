@@ -17,16 +17,16 @@
 package org.opencb.opencga.analysis.clinical.tiering;
 
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.interpretation.GenomicFeature;
+import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.ClinVar;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -38,7 +38,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
@@ -51,7 +50,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.biodata.formats.variant.clinvar.v59jaxb.ReviewStatusType.*;
+import static org.opencb.biodata.formats.variant.clinvar.rcv.v64jaxb.ReviewStatusType.*;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
 
@@ -291,7 +290,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         Set<String> clinicalVariantIdSet = new HashSet<>();
         for (Variant variant : variants) {
             List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
-            List<ClinVar> clinVars = getClinVars(variant);
+            List<EvidenceEntry> clinVars = getClinVars(variant);
 
             List<DiseasePanel> varDiseasePanels = getDiseasePanels(variant, panels);
             if (CollectionUtils.isNotEmpty(varDiseasePanels)) {
@@ -362,7 +361,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
             }
 
             List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
-            List<ClinVar> clinVars = getClinVars(variant);
+            List<EvidenceEntry> clinVars = getClinVars(variant);
 
             List<DiseasePanel> varDiseasePanels = getDiseasePanels(variant, panels);
             if (CollectionUtils.isNotEmpty(varDiseasePanels)) {
@@ -455,11 +454,12 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         }
     }
 
-    private boolean isPathogenic(List<ClinVar> clinVar) {
-        for (ClinVar cv : clinVar) {
-            String clinicalSignificance = cv.getClinicalSignificance();
-            String reviewStatus = cv.getReviewStatus();
-            if (("Pathogenic".equals(clinicalSignificance) || "Likely Pathogenic".equals(clinicalSignificance))
+    private boolean isPathogenic(List<EvidenceEntry> clinVar) {
+        for (EvidenceEntry cv : clinVar) {
+            ClinicalSignificance clinicalSignificance = cv.getVariantClassification().getClinicalSignificance();
+            String reviewStatus = getReviewStatus(cv);;
+            if ((ClinicalSignificance.pathogenic.equals(clinicalSignificance)
+                    || ClinicalSignificance.likely_pathogenic.equals(clinicalSignificance))
                     && (PRACTICE_GUIDELINE.name().equals(reviewStatus)
                     || REVIEWED_BY_EXPERT_PANEL.name().equals(reviewStatus)
                     || CRITERIA_PROVIDED_MULTIPLE_SUBMITTERS_NO_CONFLICTS.name().equals(reviewStatus))) {
@@ -469,11 +469,12 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         return false;
     }
 
-    private boolean isBenign(List<ClinVar> clinVar) {
-        for (ClinVar cv : clinVar) {
-            String clinicalSignificance = cv.getClinicalSignificance();
-            String reviewStatus = cv.getReviewStatus();
-            if (("Benign".equals(clinicalSignificance) || "Likely Benign".equals(clinicalSignificance))
+    private boolean isBenign(List<EvidenceEntry> clinVar) {
+        for (EvidenceEntry cv : clinVar) {
+            ClinicalSignificance clinicalSignificance = cv.getVariantClassification().getClinicalSignificance();
+            String reviewStatus = getReviewStatus(cv);
+            if ((ClinicalSignificance.benign.equals(clinicalSignificance)
+                    || ClinicalSignificance.likely_benign.equals(clinicalSignificance))
                     && (PRACTICE_GUIDELINE.name().equals(reviewStatus)
                     || REVIEWED_BY_EXPERT_PANEL.name().equals(reviewStatus)
                     || CRITERIA_PROVIDED_MULTIPLE_SUBMITTERS_NO_CONFLICTS.name().equals(reviewStatus))) {
@@ -481,6 +482,19 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
             }
         }
         return false;
+    }
+
+    private String getReviewStatus(EvidenceEntry cv) {
+        String reviewStatus = null;
+        if (cv.getAdditionalProperties() != null) {
+            for (Property additionalProperty : cv.getAdditionalProperties()) {
+                if (additionalProperty.getName().equals("ReviewStatus_in_source_file")) {
+                    reviewStatus = additionalProperty.getValue();
+                    break;
+                }
+            }
+        }
+        return reviewStatus;
     }
 
     private boolean isLoF(DiseasePanel.GenePanel panelGene) {
@@ -574,11 +588,11 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
     }
 
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
-        if (query.containsKey(PANEL)) {
+        if (query.containsKey(PANEL.key())) {
             List<String> panelsIds = query.getAsStringList(PANEL.key());
-            OpenCGAResult<Panel> panelQueryResult = clinicalInterpretationManager.getCatalogManager().getPanelManager().get(studyId,
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelQueryResult = clinicalInterpretationManager.getCatalogManager().getPanelManager().get(studyId,
                     panelsIds, QueryOptions.empty(), sessionId);
-            for (Panel panel : panelQueryResult.getResults()) {
+            for (org.opencb.opencga.core.models.panel.Panel panel : panelQueryResult.getResults()) {
                 panels.add(panel);
             }
         }
@@ -625,11 +639,20 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         return variants;
     }
 
-    private List<ClinVar> getClinVars(Variant variant) {
+    private List<EvidenceEntry> getClinVars(Variant variant) {
         // Get ClinVar object for a given variant
-        if (variant.getAnnotation() != null && variant.getAnnotation().getVariantTraitAssociation() != null
-                && CollectionUtils.isNotEmpty(variant.getAnnotation().getVariantTraitAssociation().getClinvar())) {
-            return variant.getAnnotation().getVariantTraitAssociation().getClinvar();
+        if (variant.getAnnotation() != null && variant.getAnnotation().getTraitAssociation() != null) {
+            List<EvidenceEntry> clinvar = new LinkedList<>();
+            for (EvidenceEntry evidenceEntry : variant.getAnnotation().getTraitAssociation()) {
+                if (evidenceEntry.getSource().getName().equals("clinvar")) {
+                    clinvar.add(evidenceEntry);
+                }
+            }
+            if (clinvar.isEmpty()) {
+                return null;
+            } else {
+                return clinvar;
+            }
         }
         return null;
     }

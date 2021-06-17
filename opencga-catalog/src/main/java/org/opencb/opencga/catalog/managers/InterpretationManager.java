@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
@@ -30,8 +30,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -247,7 +246,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysis.getId(), "ClinicalAnalysisId");
 
-        ParamUtils.checkAlias(interpretation.getId(), "id");
+        ParamUtils.checkIdentifier(interpretation.getId(), "id");
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
@@ -927,7 +926,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
+            ParamUtils.checkIdentifier(parameters.getString(InterpretationDBAdaptor.QueryParams.ID.key()),
                     InterpretationDBAdaptor.QueryParams.ID.key());
         }
 

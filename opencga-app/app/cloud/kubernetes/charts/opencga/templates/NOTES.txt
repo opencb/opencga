@@ -1,21 +1,63 @@
-1. Get the application URL by running these commands:
+# OpenCGA
+
 {{- if .Values.rest.ingress.enabled }}
+REST URLs:
+{{- $paths := .Values.rest.ingress.paths -}}
 {{- range $host := .Values.rest.ingress.hosts }}
-  {{- range .paths }}
-  http{{ if $.Values.rest.ingress.tls }}s{{ end }}://{{ $host.host }}{{ . }}
+  {{- range $path := $paths }}
+  - http{{ if $.Values.rest.ingress.tls }}s{{ end }}://{{ $host | default "EXTERNAL_CLUSTER_IP" }}{{ $path | replace "(/|$)" "" }}
   {{- end }}
 {{- end }}
-{{- else if contains "NodePort" .Values.rest.service.type }}
-  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "opencga.fullname" . }})
-  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
-  echo http://$NODE_IP:$NODE_PORT
-{{- else if contains "LoadBalancer" .Values.rest.service.type }}
-     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "opencga.fullname" . }}'
-  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "opencga.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
-  echo http://$SERVICE_IP:{{ .Values.rest.service.port }}
-{{- else if contains "ClusterIP" .Values.rest.service.type }}
-  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "opencga.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
-  echo "Visit http://127.0.0.1:8080 to use your application"
-  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:80
+{{- end }}
+
+Get the application URL by running these commands:
+
+{{ if contains "NodePort" .Values.rest.service.type }}
+    export NODE_PORT=$(kubectl get --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "opencga.fullname" . }})
+    export NODE_IP=$(kubectl get nodes --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+    echo http://$NODE_IP:$NODE_PORT
+{{ else if contains "LoadBalancer" .Values.rest.service.type }}
+ NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+       You can watch the status of by running 'kubectl get --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} svc -w {{ include "opencga.fullname" . }}'
+
+    export SERVICE_IP=$(kubectl get svc --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} {{ include "opencga.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+    echo http://$SERVICE_IP:{{ .Values.rest.service.port }}
+{{ else if contains "ClusterIP" .Values.rest.service.type }}
+## Port forward
+You can either forward a specific pod port, or forward to the service.
+
+Then visit: http://localhost:8080/opencga
+
+### Service port forward
+
+    kubectl --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} port-forward "service/{{ .Values.rest.name }}" 8080:80
+
+
+### Pod port forward
+
+    export POD_NAME=$(kubectl get pods --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} -l "app={{ .Values.rest.name }},app.kubernetes.io/name={{ include "opencga.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+    kubectl --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:9090
+
+
+{{- end }}
+{{- if .Values.mongodb.deploy.enabled }}
+
+# MongoDB
+Connect to MongoDB database running these commands:
+
+    export SERVICE_NAME="service/{{ .Values.mongodb.deploy.name }}-svc"
+    kubectl --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} port-forward $SERVICE_NAME 27018:27017
+
+    mongo --host localhost --port 27018 --authenticationDatabase {{ .Values.mongodb.authenticationDatabase }} --authenticationMechanism {{ .Values.mongodb.authenticationMechanism }} --username {{ .Values.mongodb.user }} --password XXXXX
+
+{{- end }}
+{{- if .Values.solr.deploy.enabled }}
+
+# Solr
+Connect to Solr database running these commands:
+
+    export SERVICE_NAME="service/{{ .Values.solr.deploy.name }}-solrcloud-headless"
+    kubectl --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} port-forward $SERVICE_NAME 18983:8983
+
+  Visit http://127.0.0.1:18983 to access Solr GUI
 {{- end }}

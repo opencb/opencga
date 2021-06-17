@@ -105,6 +105,7 @@ public class MendelianInconsistenciesComputation {
         // Update quey to retrive mendelian error variants
         query.put(VariantCatalogQueryUtils.FAMILY.key(), familyId);
         query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(), "MendelianError");
+        query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0");
 
         // Create auxiliary map
         //   sample      chrom      error    count

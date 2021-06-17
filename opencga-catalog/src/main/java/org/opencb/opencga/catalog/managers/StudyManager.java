@@ -17,15 +17,15 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -60,6 +61,7 @@ import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -70,6 +72,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -251,7 +254,7 @@ public class StudyManager extends AbstractManager {
                                        Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkAlias(id, "id");
+        ParamUtils.checkIdentifier(id, "id");
 
         String userId = catalogManager.getUserManager().getUserId(token);
         Project project = catalogManager.getProjectManager().resolveId(projectStr, userId);
@@ -593,7 +596,7 @@ public class StudyManager extends AbstractManager {
             authorizationManager.checkCanEditStudy(study.getUid(), userId);
 
             if (StringUtils.isNotEmpty(parameters.getAlias())) {
-                ParamUtils.checkAlias(parameters.getAlias(), "alias");
+                ParamUtils.checkIdentifier(parameters.getAlias(), "alias");
             }
 
             ObjectMap update;
@@ -852,10 +855,10 @@ public class StudyManager extends AbstractManager {
                 // We remove possible duplicates
                 users = users.stream().collect(Collectors.toSet()).stream().collect(Collectors.toList());
                 userDBAdaptor.checkIds(users);
-                group.setUserIds(users);
             } else {
                 users = Collections.emptyList();
             }
+            group.setUserIds(users);
 
             // Add those users to the members group
             if (ListUtils.isNotEmpty(users)) {
@@ -899,6 +902,73 @@ public class StudyManager extends AbstractManager {
             auditManager.audit(userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(), study.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<CustomGroup> getCustomGroups(String studyId, String groupId, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("groupId", groupId)
+                .append("token", token);
+        try {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+
+            // Fix the groupId
+            if (groupId != null && !groupId.startsWith("@")) {
+                groupId = "@" + groupId;
+            }
+
+            OpenCGAResult<Group> result = studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
+
+            // Extract all users from all groups
+            Set<String> userIds = new HashSet<>();
+            for (Group group : result.getResults()) {
+                userIds.addAll(group.getUserIds());
+            }
+
+            Query userQuery = new Query(UserDBAdaptor.QueryParams.ID.key(), new ArrayList<>(userIds));
+            QueryOptions userOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(
+                    UserDBAdaptor.QueryParams.PROJECTS.key(), UserDBAdaptor.QueryParams.SHARED_PROJECTS.key()
+            ));
+            OpenCGAResult<User> userResult = userDBAdaptor.get(userQuery, userOptions);
+            Map<String, User> userMap = new HashMap<>();
+            for (User user : userResult.getResults()) {
+                userMap.put(user.getId(), user);
+            }
+
+            // Generate groups with list of full users
+            List<CustomGroup> customGroupList = new ArrayList<>(result.getNumResults());
+            for (Group group : result.getResults()) {
+                List<User> userList = new ArrayList<>(group.getUserIds().size());
+                for (String tmpUserId : group.getUserIds()) {
+                    if (userMap.containsKey(tmpUserId)) {
+                        userList.add(userMap.get(tmpUserId));
+                    }
+                }
+                customGroupList.add(new CustomGroup(group.getId(), userList, group.getSyncedFrom()));
+            }
+
+            OpenCGAResult<CustomGroup> finalResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), result.getNumResults(),
+                    customGroupList, result.getNumMatches(), result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(),
+                    result.getAttributes(), result.getFederationNode());
+
+            auditManager.audit(userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(), study.getUuid(),
+                    study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            stopWatch.stop();
+            finalResult.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
+
+            return finalResult;
         } catch (CatalogException e) {
             auditManager.audit(userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1529,6 +1599,43 @@ public class StudyManager extends AbstractManager {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.FACET, fields);
         return queryOptions;
+    }
+
+    // **************************   Protected internal methods  ******************************** //
+
+    public void setVariantEngineConfigurationOptions(String studyStr, ObjectMap options, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = get(studyStr, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                StudyDBAdaptor.QueryParams.UID.key(),
+                StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
+
+        authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        StudyVariantEngineConfiguration configuration = study.getInternal().getVariantEngineConfiguration();
+        if (configuration == null) {
+            configuration = new StudyVariantEngineConfiguration();
+        }
+        configuration.setOptions(options);
+
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key(), configuration);
+        studyDBAdaptor.update(study.getUid(), parameters, QueryOptions.empty());
+    }
+
+    public void setVariantEngineConfigurationSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = get(studyStr, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                StudyDBAdaptor.QueryParams.UID.key(),
+                StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
+
+        authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        StudyVariantEngineConfiguration configuration = study.getInternal().getVariantEngineConfiguration();
+        if (configuration == null) {
+            configuration = new StudyVariantEngineConfiguration();
+        }
+        configuration.setSampleIndex(sampleIndexConfiguration);
+
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key(), configuration);
+        studyDBAdaptor.update(study.getUid(), parameters, QueryOptions.empty());
     }
 
     // **************************   Private methods  ******************************** //

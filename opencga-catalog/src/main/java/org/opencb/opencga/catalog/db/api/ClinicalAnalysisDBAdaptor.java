@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -83,6 +83,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         FAMILY_MEMBERS_UID("family.members.uid", INTEGER_ARRAY, ""),
         FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", INTEGER_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
+        PANELS("panels", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
         COMMENTS_DATE("comments.date", TEXT, ""),
         ALERTS("alerts", TEXT_ARRAY, ""),

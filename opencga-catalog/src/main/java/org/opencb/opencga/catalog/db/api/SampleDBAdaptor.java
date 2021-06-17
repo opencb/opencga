@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -26,10 +26,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +68,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        INTERNAL_RGA("internal.rga", OBJECT, ""),
+        INTERNAL_RGA_STATUS("internal.rga.status", TEXT, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created
         SNAPSHOT("snapshot", INTEGER, ""), // Last version of sample at release = snapshot
         VERSION("version", INTEGER, ""), // Version of the sample
@@ -169,4 +173,9 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
      */
     OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
+    default OpenCGAResult<Sample> setRgaIndexes(long studyUid, RgaIndex rgaIndex) throws CatalogDBException {
+        return setRgaIndexes(studyUid, Collections.emptyList(), rgaIndex);
+    }
+
+    OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException;
 }

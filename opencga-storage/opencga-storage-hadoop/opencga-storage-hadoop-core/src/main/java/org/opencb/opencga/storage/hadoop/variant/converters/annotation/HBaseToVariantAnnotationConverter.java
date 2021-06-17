@@ -17,10 +17,10 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.annotation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
@@ -40,7 +40,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
@@ -70,7 +69,6 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     private final ObjectMapper objectMapper;
     private final byte[] columnFamily;
     private final long ts;
-    private final VariantTraitAssociationToEvidenceEntryConverter traitAssociationConverter;
     private byte[] annotationColumn = VariantPhoenixSchema.VariantColumn.FULL_ANNOTATION.bytes();
     private String annotationColumnStr = Bytes.toString(annotationColumn);
     private String defaultAnnotationId = null;
@@ -91,7 +89,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         this.ts = ts;
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
-        traitAssociationConverter = new VariantTraitAssociationToEvidenceEntryConverter();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     public HBaseToVariantAnnotationConverter setAnnotationColumn(byte[] annotationColumn, String name) {
@@ -301,10 +299,15 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
                     variantAnnotation = objectMapper.readValue(valueArray, valueOffset, valueLength,
                             VariantAnnotation.class);
                 } catch (IOException e) {
-                    byte[] destination = new byte[valueLength];
-                    System.arraycopy(valueArray, valueOffset, destination, 0, valueLength);
-                    byte[] value = CompressionUtils.decompress(destination);
-                    variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                    try {
+                        byte[] destination = new byte[valueLength];
+                        System.arraycopy(valueArray, valueOffset, destination, 0, valueLength);
+                        byte[] value = CompressionUtils.decompress(destination);
+                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                    } catch (Exception e1) {
+                        e1.addSuppressed(e);
+                        throw e1;
+                    }
                 }
             } else {
                 // Value is compressed. Decompress and parse
@@ -375,13 +378,6 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
                     evidenceEntry.setGenomicFeatures(Collections.emptyList());
                 }
             }
-        }
-
-        // If there are VariantTraitAssociation, and there are none TraitAssociations (EvidenceEntry), convert
-        if (variantAnnotation.getVariantTraitAssociation() != null
-                && CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
-            List<EvidenceEntry> evidenceEntries = traitAssociationConverter.convert(variantAnnotation.getVariantTraitAssociation());
-            variantAnnotation.setTraitAssociation(evidenceEntries);
         }
 
         AdditionalAttribute additionalAttribute = null;

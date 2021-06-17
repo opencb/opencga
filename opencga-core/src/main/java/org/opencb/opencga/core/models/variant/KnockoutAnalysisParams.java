@@ -42,14 +42,19 @@ public class KnockoutAnalysisParams extends ToolParams {
     private String filter;
     private String qual;
 
+    // Do not generate genes file
+    private boolean skipGenesFile;
 
     private String outdir;
+
+    private boolean index;
 
     public KnockoutAnalysisParams() {
     }
 
     public KnockoutAnalysisParams(List<String> sample, List<String> gene, List<String> panel, String biotype, String consequenceType,
-                                  String filter, String qual, String outdir) {
+                                  String filter, String qual, boolean skipGenesFile, String outdir,
+                                  boolean index) {
         this.sample = sample;
         this.gene = gene;
         this.panel = panel;
@@ -57,7 +62,9 @@ public class KnockoutAnalysisParams extends ToolParams {
         this.consequenceType = consequenceType;
         this.filter = filter;
         this.qual = qual;
+        this.skipGenesFile = skipGenesFile;
         this.outdir = outdir;
+        this.index = index;
     }
 
     public List<String> getSample() {
@@ -123,6 +130,15 @@ public class KnockoutAnalysisParams extends ToolParams {
         return this;
     }
 
+    public boolean isSkipGenesFile() {
+        return skipGenesFile;
+    }
+
+    public KnockoutAnalysisParams setSkipGenesFile(boolean skipGenesFile) {
+        this.skipGenesFile = skipGenesFile;
+        return this;
+    }
+
     public String getOutdir() {
         return outdir;
     }
@@ -131,4 +147,14 @@ public class KnockoutAnalysisParams extends ToolParams {
         this.outdir = outdir;
         return this;
     }
+
+    public boolean isIndex() {
+        return index;
+    }
+
+    public KnockoutAnalysisParams setIndex(boolean index) {
+        this.index = index;
+        return this;
+    }
+
 }

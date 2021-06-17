@@ -14,6 +14,9 @@ parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
 parser.add_argument("--catalog-database-ssl", required=False, default=True)
+parser.add_argument("--catalog-database-authentication-database", required=False, default="admin")
+parser.add_argument("--catalog-database-authentication-mechanism", required=False)
+parser.add_argument("--catalog-database-replica-set", required=False)
 parser.add_argument("--catalog-search-hosts", required=True)
 parser.add_argument("--catalog-search-user", required=False)
 parser.add_argument("--catalog-search-password", required=False)
@@ -26,6 +29,7 @@ parser.add_argument("--batch-endpoint", required=False)
 parser.add_argument("--batch-pool-id", required=False)
 parser.add_argument("--k8s-master-node", required=False)
 parser.add_argument("--k8s-namespace", required=False, default="default")
+parser.add_argument("--k8s-image-name", required=False)
 parser.add_argument("--k8s-volumes-pvc-conf", required=False)
 parser.add_argument("--k8s-volumes-pvc-sessions", required=False)
 parser.add_argument("--k8s-volumes-pvc-variants", required=False)
@@ -72,7 +76,7 @@ for i, clinical_host in enumerate(clinical_hosts):
 # Inject cellbase rest host, if set
 if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
     cellbase_rest_url = args.cellbase_rest_url.replace('\"', '').replace('[','').replace(']','')
-    storage_config["cellbase"]["host"] = cellbase_rest_url
+    storage_config["cellbase"]["rest"] = cellbase_rest_url
     
 # set default engine
 storage_config["variant"]["defaultEngine"] = args.variant_default_engine
@@ -124,7 +128,12 @@ config["catalog"]["database"]["user"] = args.catalog_database_user
 config["catalog"]["database"]["password"] = args.catalog_database_password
 config["catalog"]["database"]["options"]["sslEnabled"] = args.catalog_database_ssl
 config["catalog"]["database"]["options"]["sslInvalidCertificatesAllowed"] = True
-config["catalog"]["database"]["options"]["authenticationDatabase"] = "admin"
+if args.catalog_database_replica_set is not None and args.catalog_database_replica_set != "":
+    config["catalog"]["database"]["options"]["replicaSet"] = args.catalog_database_replica_set
+if args.catalog_database_authentication_database is not None:
+    config["catalog"]["database"]["options"]["authenticationDatabase"] = args.catalog_database_authentication_database
+if args.catalog_database_authentication_mechanism is not None:
+    config["catalog"]["database"]["options"]["authenticationMechanism"] = args.catalog_database_authentication_mechanism
 
 # Inject search database
 catalog_search_hosts = args.catalog_search_hosts.replace('\"','').replace('[','').replace(']','').split(",")
@@ -156,6 +165,10 @@ if args.analysis_execution_mode == "AZURE":
 elif args.analysis_execution_mode == "k8s":
     config["analysis"]["execution"]["options"]["k8s.masterUrl"] = args.k8s_master_node
     config["analysis"]["execution"]["options"]["k8s.namespace"] = args.k8s_namespace
+
+    if args.k8s_image_name:
+        config["analysis"]["execution"]["options"]["k8s.imageName"] = args.k8s_image_name
+
     config["analysis"]["execution"]["options"]["k8s.volumes"][0]["name"] = "conf"
     config["analysis"]["execution"]["options"]["k8s.volumes"][0]["persistentVolumeClaim"]["claimName"] = args.k8s_volumes_pvc_conf
     config["analysis"]["execution"]["options"]["k8s.volumes"][1]["name"] = "sessions"

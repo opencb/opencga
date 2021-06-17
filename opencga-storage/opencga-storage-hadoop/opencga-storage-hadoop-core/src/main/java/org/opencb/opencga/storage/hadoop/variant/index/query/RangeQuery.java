@@ -1,9 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 
 import java.util.Objects;
 
+@Deprecated
 public class RangeQuery {
 
     protected final double minValueInclusive;
@@ -55,8 +56,8 @@ public class RangeQuery {
             return false;
         }
         RangeQuery that = (RangeQuery) o;
-        return IndexUtils.equalsTo(that.minValueInclusive, minValueInclusive)
-                && IndexUtils.equalsTo(that.maxValueExclusive, maxValueExclusive)
+        return RangeIndexField.equalsTo(that.minValueInclusive, minValueInclusive)
+                && RangeIndexField.equalsTo(that.maxValueExclusive, maxValueExclusive)
                 && minCodeInclusive == that.minCodeInclusive
                 && maxCodeExclusive == that.maxCodeExclusive;
     }

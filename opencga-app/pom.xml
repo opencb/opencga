@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.0.4</version>
+        <version>2.1.0-rc1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -69,6 +69,12 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-test</artifactId>
+            <version>${opencga.version}</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
@@ -325,11 +331,11 @@
                                 </exec>
 
                                 <echo>Copying Acceptance testing files</echo>
-                                <exec executable="mvn">
-                                    <arg value="-f"/>
-                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>
-                                    <arg value="install"/>
-                                </exec>
+<!--                                <exec executable="mvn">-->
+<!--                                    <arg value="-f"/>-->
+<!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
+<!--                                    <arg value="install"/>-->
+<!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
@@ -413,7 +419,7 @@
                                 <exec executable="tar">
                                     <arg value="-C"/>
                                     <arg value="${build.dir}"/>
-                                    <arg value="-czvf"/>
+                                    <arg value="-czf"/>
                                     <arg value="${build.dir}/${opencga.client.dir}.tar.gz"/>
                                     <arg value="${opencga.client.dir}"/>
                                 </exec>

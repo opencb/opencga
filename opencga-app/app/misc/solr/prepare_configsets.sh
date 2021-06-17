@@ -19,7 +19,7 @@ sed -i "s/REPLACEME_OPENCGA_VERSION/${VERSION}/g" "${SOLR_DIR}/INSTALL.md"
 sed -i "s/REPLACEME_OPENCGA_VERSION/${VERSION}/g" "${SOLR_DIR}/install.sh"
 
 # Iterate over the different config sets
-for name in variant file sample individual family cohort job; do
+for name in variant rga rga-aux file sample individual family cohort job; do
   CONFIG_SET_NAME="opencga-$name-configset-$VERSION"
   CONFIG_SET_DIR="$SOLR_DIR/$CONFIG_SET_NAME"
 
@@ -30,6 +30,10 @@ for name in variant file sample individual family cohort job; do
 
   if [ $name == "variant" ]; then
     cp -v $OPENCGA_HOME/opencga-storage/opencga-storage-core/target/classes/managed-schema $CONFIG_SET_DIR/conf
+  elif [ $name == "rga" ]; then
+    cp -v $OPENCGA_HOME/opencga-clinical/target/classes/rga/managed-schema $CONFIG_SET_DIR/conf
+  elif [ $name == "rga-aux" ]; then
+    cp -v $OPENCGA_HOME/opencga-clinical/target/classes/rga/aux-managed-schema $CONFIG_SET_DIR/conf/managed-schema
   else
     cp -v $OPENCGA_HOME/opencga-catalog/target/classes/solr/$name-managed-schema $CONFIG_SET_DIR/conf/managed-schema
   fi

@@ -21,20 +21,13 @@ import org.opencb.opencga.core.models.common.Status;
 public class StudyInternal {
 
     private Status status;
+    private StudyVariantEngineConfiguration variantEngineConfiguration;
 
     public StudyInternal() {
     }
 
     public StudyInternal(Status status) {
         this.status = status;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("InternalStudy{");
-        sb.append("status=").append(status);
-        sb.append('}');
-        return sb.toString();
     }
 
     public Status getStatus() {
@@ -44,5 +37,23 @@ public class StudyInternal {
     public StudyInternal setStatus(Status status) {
         this.status = status;
         return this;
+    }
+
+    public StudyVariantEngineConfiguration getVariantEngineConfiguration() {
+        return variantEngineConfiguration;
+    }
+
+    public StudyInternal setVariantEngineConfiguration(StudyVariantEngineConfiguration variantEngineConfiguration) {
+        this.variantEngineConfiguration = variantEngineConfiguration;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("StudyInternal{");
+        sb.append("status=").append(status);
+        sb.append(", variantEngineConfiguration=").append(variantEngineConfiguration);
+        sb.append('}');
+        return sb.toString();
     }
 }

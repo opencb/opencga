@@ -228,6 +228,9 @@ public class FileCommandOptions {
         @Parameter(names = {"--size"}, description = ParamConstants.FILE_SIZE_DESCRIPTION, arity = 1)
         public String size;
 
+        @Parameter(names = {"--index-status", "--internal-index-status"}, description = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION, arity = 1)
+        public String internalIndexStatus;
+
         @Parameter(names = {"--samples"}, description = ParamConstants.SAMPLES_DESCRIPTION, arity = 1)
         public String samples;
 
@@ -456,12 +459,12 @@ public class FileCommandOptions {
         @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
 
-        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true,
+        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
                 arity = 1)
         public String fileFormat;
 
         @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
-                required = true, arity = 1)
+               arity = 1)
         public String bioformat;
 
         @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)",

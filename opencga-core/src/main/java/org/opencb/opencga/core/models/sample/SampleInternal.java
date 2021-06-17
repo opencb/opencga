@@ -16,23 +16,31 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.common.Status;
 
 public class SampleInternal {
 
     private Status status;
+    private RgaIndex rga;
 
     public SampleInternal() {
     }
 
-    public SampleInternal(Status status) {
+    public SampleInternal(Status status, RgaIndex rga) {
         this.status = status;
+        this.rga = rga;
+    }
+
+    public static SampleInternal init() {
+        return new SampleInternal(new Status(Status.READY), RgaIndex.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleInternal{");
         sb.append("status=").append(status);
+        sb.append(", rga=").append(rga);
         sb.append('}');
         return sb.toString();
     }
@@ -43,6 +51,15 @@ public class SampleInternal {
 
     public SampleInternal setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public RgaIndex getRga() {
+        return rga;
+    }
+
+    public SampleInternal setRga(RgaIndex rga) {
+        this.rga = rga;
         return this;
     }
 }

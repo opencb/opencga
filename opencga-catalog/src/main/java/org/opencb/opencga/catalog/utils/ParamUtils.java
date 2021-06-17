@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -25,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -73,6 +75,12 @@ public class ParamUtils {
         }
     }
 
+    public static void checkNotEmptyArray(List<?> obj, String name) throws CatalogParameterException {
+        if (CollectionUtils.isEmpty(obj)) {
+            throw new CatalogParameterException("Parameter '" + name + "' is null or empty.");
+        }
+    }
+
     public static void checkRegion(String regionStr, String name) throws CatalogParameterException {
         if (Pattern.matches("^([a-zA-Z0-9])+:([0-9])+-([0-9])+$", regionStr)) { //chr:start-end
             throw new CatalogParameterException("region '" + name + "' is not valid");
@@ -115,16 +123,16 @@ public class ParamUtils {
 
     public static void checkAlias(String alias, String name) throws CatalogParameterException {
         if (alias == null || alias.isEmpty()) {
-            throw new CatalogParameterException("Missing id.");
+            throw new CatalogParameterException("Missing " + name);
         }
         if (!alias.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
-            throw new CatalogParameterException("Invalid id for '" + name + "'. Alias needs to start by any character "
+            throw new CatalogParameterException("Invalid " + name + ". It needs to start by any character "
                     + "or number and might contain single '-', '_', '.', symbols followed by any character or number.");
         }
     }
 
     public static void checkIdentifier(String identifier, String name) throws CatalogParameterException {
-        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z]([-_.]?[A-Za-z0-9])*$")) {
+        if (identifier == null || identifier.isEmpty() || !identifier.matches("^[A-Za-z0-9][A-Za-z0-9-_.]*[A-Za-z0-9]$")) {
             throw new CatalogParameterException("Error in identifier: Invalid identifier format for '" + name + "'.");
         }
     }

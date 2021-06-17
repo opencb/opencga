@@ -38,11 +38,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STATS_DEFAULT_GENOTYPE;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.AND;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.NOT;
 
 /**
  * Created on 02/12/16.
@@ -60,7 +57,6 @@ public abstract class VariantStatisticsManager {
      * @param options   Other options
      *                  {@link VariantStorageOptions#STATS_AGGREGATION_MAPPING_FILE}
      *                  {@link VariantStorageOptions#STATS_OVERWRITE}
-     *                  {@link VariantStorageOptions#STATS_UPDATE}
      *                  {@link VariantStorageOptions#LOAD_THREADS}
      *                  {@link VariantStorageOptions#LOAD_BATCH_SIZE}
      *                  {@link org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam#REGION}
@@ -74,7 +70,7 @@ public abstract class VariantStatisticsManager {
 
     public void preCalculateStats(
             VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, List<String> cohorts,
-            boolean overwrite, boolean updateStats, ObjectMap options) throws StorageEngineException {
+            boolean overwrite, ObjectMap options) throws StorageEngineException {
 
         Map<String, Set<String>> cohortsWithSamples = new HashMap<>();
         for (String cohort : cohorts) {
@@ -85,15 +81,15 @@ public abstract class VariantStatisticsManager {
             }
             cohortsWithSamples.put(cohortMetadata.getName(), samples);
         }
-        preCalculateStats(metadataManager, studyMetadata, cohortsWithSamples, overwrite, updateStats, options);
+        preCalculateStats(metadataManager, studyMetadata, cohortsWithSamples, overwrite, options);
     }
 
     public void preCalculateStats(
             VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Map<String, Set<String>> cohorts,
-            boolean overwrite, boolean updateStats, ObjectMap options) throws StorageEngineException {
+            boolean overwrite, ObjectMap options) throws StorageEngineException {
 
         Collection<Integer> cohortIds = metadataManager.registerCohorts(studyMetadata.getName(), cohorts).values();
-        checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, updateStats, getAggregation(studyMetadata, options));
+        checkCohorts(metadataManager, studyMetadata, cohorts, overwrite, getAggregation(studyMetadata, options));
 
         metadataManager.updateStudyMetadata(studyMetadata.getName(), sm -> {
             for (Integer cohortId : cohortIds) {
@@ -160,7 +156,7 @@ public abstract class VariantStatisticsManager {
      */
     protected static List<Integer> checkCohorts(
             VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, Map<String, Set<String>> cohorts,
-            boolean overwrite, boolean updateStats, Aggregation aggregation) throws StorageEngineException {
+            boolean overwrite, Aggregation aggregation) throws StorageEngineException {
 
         List<Integer> cohortIdList = new ArrayList<>();
 
@@ -221,11 +217,7 @@ public abstract class VariantStatisticsManager {
 //            }
             if (cohort.isStatsReady()) {
                 if (!overwrite) {
-                    if (updateStats) {
-                        logger.debug("Cohort \"" + cohortName + "\" stats already calculated. Calculate only for missing positions");
-                    } else {
-                        throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
-                    }
+                    throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
                 }
             }
 
@@ -239,13 +231,12 @@ public abstract class VariantStatisticsManager {
     }
 
     public static Query buildInputQuery(VariantStorageMetadataManager metadataManager, StudyMetadata study,
-                                        Collection<?> cohorts, boolean overwrite, boolean updateStats,
-                                        ObjectMap options) {
-        return buildInputQuery(metadataManager, study, cohorts, overwrite, updateStats, options, getAggregation(study, options));
+                                        Collection<?> cohorts, ObjectMap options) {
+        return buildInputQuery(metadataManager, study, cohorts, options, getAggregation(study, options));
     }
 
     public static Query buildInputQuery(VariantStorageMetadataManager metadataManager, StudyMetadata study,
-                                        Collection<?> cohorts, boolean overwrite, boolean updateStats,
+                                        Collection<?> cohorts,
                                         ObjectMap options, Aggregation aggregation) {
         int studyId = study.getId();
         Query readerQuery = new Query(VariantQueryParam.STUDY.key(), studyId)
@@ -254,12 +245,12 @@ public abstract class VariantStatisticsManager {
             Object region = options.get(VariantQueryParam.REGION.key());
             readerQuery.put(VariantQueryParam.REGION.key(), region);
         }
-        if (updateStats && !overwrite) {
-            //Get all variants that not contain any of the required cohorts
-            readerQuery.append(VariantQueryParam.COHORT.key(),
-                    cohorts.stream().map((cohort) -> NOT + study.getName() + ":" + cohort).collect(Collectors
-                            .joining(AND)));
-        }
+//        if (updateStats && !overwrite) {
+//            //Get all variants that not contain any of the required cohorts
+//            readerQuery.append(VariantQueryParam.COHORT.key(),
+//                    cohorts.stream().map((cohort) -> NOT + study.getName() + ":" + cohort).collect(Collectors
+//                            .joining(AND)));
+//        }
 
         Set<Integer> sampleIds = new HashSet<>();
         for (Object cohort : cohorts) {

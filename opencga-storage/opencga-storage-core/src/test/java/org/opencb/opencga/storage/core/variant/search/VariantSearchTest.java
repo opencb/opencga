@@ -1,9 +1,9 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import htsjdk.variant.vcf.VCFHeader;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
@@ -12,7 +12,11 @@ import org.opencb.biodata.models.variant.avro.Score;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.cellbase.core.result.CellBaseDataResponse;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -321,11 +325,11 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
     private List<Variant> annotatedVariants(List<Variant> variants, String studyId) throws IOException {
         CellBaseClient cellBaseClient = new CellBaseClient(variantStorageEngine.getConfiguration().getCellbase().toClientConfiguration());
-        QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
+        CellBaseDataResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
 
         // Set annotations
         for (int i = 0; i < variants.size(); i++) {
-            variants.get(i).setAnnotation(queryResponse.getResponse().get(i).first());
+            variants.get(i).setAnnotation(queryResponse.getResponses().get(i).first());
             variants.get(i).getStudies().get(0).setStudyId(studyId);
         }
         return variants;

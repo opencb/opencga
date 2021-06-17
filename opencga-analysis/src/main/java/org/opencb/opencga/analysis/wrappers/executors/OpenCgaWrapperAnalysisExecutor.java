@@ -2,26 +2,23 @@ package org.opencb.opencga.analysis.wrappers.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class OpenCgaWrapperAnalysisExecutor {
+@Deprecated
+public abstract class OpenCgaWrapperAnalysisExecutor extends OpenCgaToolExecutor {
 
     public final String DOCKER_IMAGE_VERSION_PARAM = "DOCKER_IMAGE_VERSION";
     public final String DOCKER_INPUT_PATH = "/data/input";
@@ -31,35 +28,35 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
     public final String STDERR_FILENAME = "stderr.txt";
 
     protected String studyId;
-    protected Path outDir;
+//    protected Path outDir;
     protected Path scratchDir;
-    protected String token;
+//    protected String token;
 
     protected String sep;
     protected String shortPrefix;
     protected String longPrefix;
 
-    protected final ObjectMap params;
+//    protected final ObjectMap params;
 
     protected Map<String, URI> fileUriMap;
 
-    private CatalogManager catalogManager;
+//    private CatalogManager catalogManager;
 
-    public OpenCgaWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager,
-                                          String token) {
-        this.studyId = studyId;
-        this.params = params;
-        this.outDir = outDir;
-        this.scratchDir = scratchDir;
-        this.catalogManager = catalogManager;
-        this.token = token;
-
-        fileUriMap = new HashMap<>();
-    }
+//    public OpenCgaWrapperAnalysisExecutor(String studyId, ObjectMap params, Path outDir, Path scratchDir, CatalogManager catalogManager,
+//                                          String token) {
+//        this.studyId = studyId;
+//        this.params = params;
+//        this.outDir = outDir;
+//        this.scratchDir = scratchDir;
+//        this.catalogManager = catalogManager;
+//        this.token = token;
+//
+//        fileUriMap = new HashMap<>();
+//    }
 
     public abstract void run() throws ToolException;
 
-    protected abstract String getId();
+//    protected abstract String getId();
 
     protected abstract String getDockerImageName();
 
@@ -67,7 +64,8 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
         return new StringBuilder("docker run --log-driver=none -a stdin -a stdout -a stderr ");
     }
 
-    protected void appendMounts(List<Pair<String, String>> inputFilenames, Map<String, String> srcTargetMap, StringBuilder sb) throws ToolException {
+    protected void appendMounts(List<Pair<String, String>> inputFilenames, Map<String, String> srcTargetMap, StringBuilder sb)
+            throws ToolException, URISyntaxException {
         // Mount input dirs
         for (Pair<String, String> pair : inputFilenames) {
             updateFileMaps(pair.getValue(), sb, fileUriMap, srcTargetMap);
@@ -81,8 +79,8 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
     protected void appendCommand(String command, StringBuilder sb) {
         // Docker image and version
         sb.append(getDockerImageName());
-        if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
-            sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
+        if (getExecutorParams().containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
+            sb.append(":").append(getExecutorParams().getString(DOCKER_IMAGE_VERSION_PARAM));
         }
 
         // Append command
@@ -127,7 +125,7 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
     }
 
     protected void appendOtherParams(Set<String> skipParams, StringBuilder sb) {
-        for (String paramName : params.keySet()) {
+        for (String paramName : getExecutorParams().keySet()) {
             if (skipParams.contains(paramName)) {
                 continue;
             }
@@ -140,9 +138,9 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
                 }
                 sb.append(paramName).append(sep);
             }
-            String value = params.getString(paramName);
+            String value = getExecutorParams().getString(paramName);
             if (StringUtils.isNotEmpty(value) && !"true".equals(value)) {
-                sb.append(params.getString(paramName));
+                sb.append(getExecutorParams().getString(paramName));
             }
         }
     }
@@ -161,28 +159,36 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
         }
     }
 
-    protected void updateFileMaps(String filename, StringBuilder sb, Map<String, URI> fileUriMap, Map<String, String> srcTargetMap)
-            throws ToolException {
-        if (StringUtils.isEmpty(filename)) {
+    protected void updateFileMaps(String src, StringBuilder sb, Map<String, URI> fileUriMap, Map<String, String> srcTargetMap)
+            throws ToolException, URISyntaxException {
+        if (StringUtils.isEmpty(src)) {
             // Skip
             return;
         }
 
-        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
-        try {
-            fileResult = catalogManager.getFileManager().get(studyId, filename, QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new ToolException("Error accessing file '" + filename + "' of the study " + studyId + "'", e);
-        }
-        if (fileResult.getNumResults() <= 0) {
-            throw new ToolException("File '" + filename + "' not found in study '" + studyId + "'");
-        }
-        URI uri = fileResult.getResults().get(0).getUri();
+//        URI uri;
+        File inputfile = new File(src);
+        if (inputfile.isAbsolute() && inputfile.exists()) {
+//            uri = inputfile.toURI();
+//            filename = inputfile.getName();
+//
+//        } else {
+//            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
+//            try {
+//                fileResult = catalogManager.getFileManager().get(studyId, filename, QueryOptions.empty(), token);
+//            } catch (CatalogException e) {
+//                throw new ToolException("Error accessing file '" + filename + "' of the study " + studyId + "'", e);
+//            }
+//            if (fileResult.getNumResults() <= 0) {
+//                throw new ToolException("File '" + filename + "' not found in study '" + studyId + "'");
+//            }
+//            uri = fileResult.getResults().get(0).getUri();
+//        }
 
-        if (StringUtils.isNotEmpty(uri.toString())) {
-            fileUriMap.put(filename, uri);
+//        if (StringUtils.isNotEmpty(uri.toString())) {
+            fileUriMap.put(inputfile.getName(), new URI(src));
             if (srcTargetMap != null) {
-                String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
+                //String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
                 if (!srcTargetMap.containsKey(src)) {
                     srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
                     sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
@@ -200,9 +206,9 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
         return this;
     }
 
-    public Path getOutDir() {
-        return outDir;
-    }
+//    public Path getOutDir() {
+//        return outDir;
+//    }
 
     public Path getScratchDir() {
         return scratchDir;
@@ -213,19 +219,19 @@ public abstract class OpenCgaWrapperAnalysisExecutor {
         return this;
     }
 
-    public OpenCgaWrapperAnalysisExecutor setOutDir(Path outDir) {
-        this.outDir = outDir;
-        return this;
-    }
-
-    public CatalogManager getCatalogManager() {
-        return catalogManager;
-    }
-
-    public OpenCgaWrapperAnalysisExecutor setCatalogManager(CatalogManager catalogManager) {
-        this.catalogManager = catalogManager;
-        return this;
-    }
+//    public OpenCgaWrapperAnalysisExecutor setOutDir(Path outDir) {
+//        this.outDir = outDir;
+//        return this;
+//    }
+//
+//    public CatalogManager getCatalogManager() {
+//        return catalogManager;
+//    }
+//
+//    public OpenCgaWrapperAnalysisExecutor setCatalogManager(CatalogManager catalogManager) {
+//        this.catalogManager = catalogManager;
+//        return this;
+//    }
 
     public String getSep() {
         return sep;

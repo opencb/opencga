@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.storage.core;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
@@ -89,7 +91,7 @@ public final class StorageEngineFactory {
 
     public AlignmentStorageEngine getAlignmentStorageEngine(String dbName)
             throws StorageEngineException {
-        return getStorageEngine(Type.ALIGNMENT, null, AlignmentStorageEngine.class, alignmentStorageEngineMap, dbName);
+        return getStorageEngine(Type.ALIGNMENT, null, AlignmentStorageEngine.class, alignmentStorageEngineMap, dbName, null);
     }
 
     public VariantStorageEngine getVariantStorageEngine() throws StorageEngineException {
@@ -98,11 +100,16 @@ public final class StorageEngineFactory {
 
     public VariantStorageEngine getVariantStorageEngine(String storageEngineName, String dbName)
             throws StorageEngineException {
-        return getStorageEngine(Type.VARIANT, storageEngineName, VariantStorageEngine.class, variantStorageEngineMap, dbName);
+        return getVariantStorageEngine(storageEngineName, dbName, null);
+    }
+
+    public VariantStorageEngine getVariantStorageEngine(String storageEngineName, String dbName, String engineAlias)
+            throws StorageEngineException {
+        return getStorageEngine(Type.VARIANT, storageEngineName, VariantStorageEngine.class, variantStorageEngineMap, dbName, engineAlias);
     }
 
     private synchronized <T extends StorageEngine> T getStorageEngine(Type type, String storageEngineId, Class<T> superClass,
-                                                                      Map<String, T> storageEnginesMap, String dbName)
+                                                                      Map<String, T> storageEnginesMap, String dbName, String engineAlias)
             throws StorageEngineException {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
@@ -116,7 +123,7 @@ public final class StorageEngineFactory {
         if (dbName == null) {
             dbName = "";
         }
-        String key = buildStorageEngineKey(storageEngineId, dbName);
+        String key = buildStorageEngineKey(storageEngineId, dbName, engineAlias);
         if (!storageEnginesMap.containsKey(key)) {
             String clazz;
             switch (type) {
@@ -132,11 +139,13 @@ public final class StorageEngineFactory {
 
             try {
                 T storageEngine = Class.forName(clazz).asSubclass(superClass).newInstance();
-                storageEngine.setConfiguration(this.storageConfiguration, storageEngineId, dbName);
+                StorageConfiguration storageConfiguration = JacksonUtils.getDefaultObjectMapper()
+                        .updateValue(new StorageConfiguration(), this.storageConfiguration);
+                storageEngine.setConfiguration(storageConfiguration, storageEngineId, dbName);
 
                 storageEnginesMap.put(key, storageEngine);
                 return storageEngine;
-            } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+            } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | JsonMappingException e) {
                 throw new StorageEngineException("Error instantiating StorageEngine '" + clazz + "'", e);
             }
         } else {
@@ -144,8 +153,8 @@ public final class StorageEngineFactory {
         }
     }
 
-    private String buildStorageEngineKey(String storageEngineName, String dbName) {
-        return storageEngineName + '_' + dbName;
+    private String buildStorageEngineKey(String storageEngineName, String dbName, String alias) {
+        return storageEngineName + '_' + dbName + (StringUtils.isEmpty(alias) ? "" : ('_' + alias));
     }
 
     public String getDefaultStorageEngineId() {
@@ -157,7 +166,7 @@ public final class StorageEngineFactory {
     }
 
     public void registerVariantStorageEngine(VariantStorageEngine variantStorageEngine) {
-        String key = buildStorageEngineKey(variantStorageEngine.getStorageEngineId(), variantStorageEngine.dbName);
+        String key = buildStorageEngineKey(variantStorageEngine.getStorageEngineId(), variantStorageEngine.dbName, null);
         variantStorageEngineMap.put(key, variantStorageEngine);
     }
 
@@ -167,7 +176,7 @@ public final class StorageEngineFactory {
     }
 
     public void registerAlignmentStorageEngine(AlignmentStorageEngine alignmentStorageEngine) {
-        String key = buildStorageEngineKey(alignmentStorageEngine.getStorageEngineId(), alignmentStorageEngine.dbName);
+        String key = buildStorageEngineKey(alignmentStorageEngine.getStorageEngineId(), alignmentStorageEngine.dbName, null);
         alignmentStorageEngineMap.put(key, alignmentStorageEngine);
     }
 

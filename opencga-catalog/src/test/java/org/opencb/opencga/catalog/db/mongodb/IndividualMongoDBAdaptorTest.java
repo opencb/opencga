@@ -205,17 +205,17 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testAvoidDuplicatedSamples() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         new Status();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample1").setInternal(new SampleInternal(new Status())),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyId, "sample1");
         new Status();
-        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample2").setInternal(new SampleInternal(new Status())),
+        catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample2").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyId, "sample2");
 
         Individual individual = new Individual()
                 .setId("in2")
-                .setInternal(new IndividualInternal(new Status()))
+                .setInternal(IndividualInternal.init())
                 .setSamples(Arrays.asList(sample1, sample1, sample2));
         catalogIndividualDBAdaptor.insert(studyId, individual, Collections.emptyList(), null);
         Individual individualStored = getIndividual(studyId, "in2");
@@ -315,7 +315,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testGetStudyIdByIndividualId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual().setId("individual").setInternal(new IndividualInternal(new Status())),
+        catalogIndividualDBAdaptor.insert(studyId, new Individual().setId("individual").setInternal(IndividualInternal.init()),
                 Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "individual").getUid();
         long studyIdByIndividualId = catalogIndividualDBAdaptor.getStudyId(individualUid);

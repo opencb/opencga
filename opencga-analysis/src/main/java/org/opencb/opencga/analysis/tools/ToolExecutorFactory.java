@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.tools;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
@@ -128,9 +128,10 @@ public class ToolExecutorFactory {
         if (annotation == null) {
             return false;
         }
-        if (!annotation.tool().equals(toolId)) {
-            return false;
-        }
+        // JT commented it to allow tools to call any executor (even executors from other tools)
+//        if (!annotation.tool().equals(toolId)) {
+//            return false;
+//        }
         if (StringUtils.isNotEmpty(toolExecutorId) && !toolExecutorId.equals(annotation.id())) {
             return false;
         }

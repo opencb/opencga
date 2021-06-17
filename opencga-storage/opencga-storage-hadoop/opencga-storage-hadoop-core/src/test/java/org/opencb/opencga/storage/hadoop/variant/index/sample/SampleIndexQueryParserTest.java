@@ -1,24 +1,31 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
-import org.apache.commons.collections.CollectionUtils;
+import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.query.Values;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
+import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.RangeQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
@@ -28,13 +35,15 @@ import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import java.util.*;
 import java.util.function.Function;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.ANTISENSE;
-import static org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils.PROTEIN_CODING;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.ANTISENSE;
+import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.PROTEIN_CODING;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField.DELTA;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.groupRegions;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.validSampleIndexQuery;
 
@@ -48,19 +57,27 @@ public class SampleIndexQueryParserTest {
     private SampleIndexQueryParser sampleIndexQueryParser;
     private VariantStorageMetadataManager mm;
     private int studyId;
+    private FileIndexSchema fileIndex;
+    private double[] qualThresholds;
+    private double[] dpThresholds;
+    private SampleIndexConfiguration configuration;
 
     @Before
     public void setUp() throws Exception {
-        SampleIndexConfiguration configuration = new SampleIndexConfiguration()
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("1kG_phase3", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("GNOMAD_GENOMES", "ALL"))
+        configuration = SampleIndexConfiguration.defaultConfiguration()
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s1", "ALL"))
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s2", "ALL"))
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s3", "ALL"))
                 .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s4", "ALL"));
+
+        SampleIndexSchema schema = new SampleIndexSchema(configuration);
+        fileIndex = schema.getFileIndex();
+        qualThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).getConfiguration().getThresholds();
+        dpThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY).getConfiguration().getThresholds();
+
         DummyVariantStorageMetadataDBAdaptorFactory.clear();
         mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
-        sampleIndexQueryParser = new SampleIndexQueryParser(mm, configuration);
+        sampleIndexQueryParser = new SampleIndexQueryParser(mm, schema);
         studyId = mm.createStudy("study").getId();
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "F1", Arrays.asList("S1", "S2", "S3"))));
 
@@ -185,9 +202,9 @@ public class SampleIndexQueryParserTest {
         assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
         assertNull(q.get(TYPE.key()));
 
-        q = new Query(TYPE.key(), "INDEL,SNV,INSERTION,DELETION,CNV,BREAKEND,MNV").append(SAMPLE.key(), "S1");
+        q = new Query(TYPE.key(), "INDEL,SNV,INSERTION,DELETION,BREAKEND,MNV").append(SAMPLE.key(), "S1");
         sampleIndexQuery = parse(q);
-        assertTrue(CollectionUtils.isEmpty(sampleIndexQuery.getVariantTypes()));
+        assertThat(sampleIndexQuery.getVariantTypes(), anyOf(nullValue(), is(Collections.emptyList())));
         assertNull(q.get(TYPE.key()));
 
         q = new Query(TYPE.key(), "INDEL,SNV").append(SAMPLE.key(), "S1");
@@ -233,13 +250,17 @@ public class SampleIndexQueryParserTest {
     @Test
     public void parseFileFilterTest() {
         testFilter("PASS", true, true);
-        testFilter("!PASS", false, true);
         testFilter("LowQual", false, false);
-        testFilter("!LowQual", null, false);
         testFilter( "LowGQX,LowQual", false, false);
         testFilter( "LowGQX;LowQual", false, false);
         testFilter( "PASS,LowQual", null, false);
-        testFilter( "PASS;LowQual", null, false);
+//        testFilter( "PASS;LowQual", null, false);
+    }
+
+    @Test
+    public void parseFileFilterNegatedTest() {
+        testFilter("!PASS", false, true);
+        testFilter("!LowQual", null, false);
         testFilter("!LowGQX;!LowQual", null, false);
     }
 
@@ -247,13 +268,14 @@ public class SampleIndexQueryParserTest {
         Query query = new Query(FILTER.key(), value);
         SampleFileIndexQuery q = parseFileQuery(query, "", null);
         if (pass == null) {
-            assertEquals(EMPTY_MASK, q.getFileIndexMask());
+            assertTrue(q.isEmpty());
         } else {
-            assertEquals(VariantFileIndexConverter.FILTER_PASS_MASK, q.getFileIndexMask());
+            IndexFieldFilter filter = q.getFilters().stream().filter(f -> f.getIndex().getKey().equals(StudyEntry.FILTER)).findFirst().orElse(null);
+            assertNotNull(filter);
             if (pass) {
-                assertTrue(q.getValidFileIndex2()[getByte2(VariantFileIndexConverter.FILTER_PASS_MASK)]);
+                assertTrue(filter.test(((IndexField<String>) filter.getIndex()).encode("PASS")));
             } else {
-                assertFalse(q.getValidFileIndex2()[getByte2(VariantFileIndexConverter.FILTER_PASS_MASK)]);
+                assertFalse(filter.test(((IndexField<String>) filter.getIndex()).encode("PASS")));
             }
         }
         assertEquals(!covered, isValidParam(query, FILTER));
@@ -261,7 +283,6 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parseFileQualTest() {
-
         int qualThresholdMatches = 0;
         for (Double qual : Arrays.asList(0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0)) {
             Query query;
@@ -269,30 +290,18 @@ public class SampleIndexQueryParserTest {
 
             query = new Query(QUAL.key(), "=" + qual);
             fileQuery = parseFileQuery(query, "", null);
-            assertEquals("=" + qual, new RangeQuery(qual, qual + DELTA,
-                            IndexUtils.getRangeCode(qual, SampleIndexConfiguration.QUAL_THRESHOLDS),
-                            IndexUtils.getRangeCodeExclusive(qual + DELTA, SampleIndexConfiguration.QUAL_THRESHOLDS)),
-                    fileQuery.getQualQuery());
-            assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            checkQualFilter("=" + qual, qual, qual + DELTA, fileQuery);
             assertTrue(isValidParam(query, QUAL));
 
             query = new Query(QUAL.key(), "<=" + qual);
             fileQuery = parseFileQuery(query, "", null);
-            assertEquals("<=" + qual, new RangeQuery(Double.MIN_VALUE, qual + DELTA,
-                            (byte) 0,
-                            IndexUtils.getRangeCodeExclusive(qual + DELTA, SampleIndexConfiguration.QUAL_THRESHOLDS)),
-                    fileQuery.getQualQuery());
-            assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            checkQualFilter("<=" + qual, Double.MIN_VALUE, qual + DELTA, fileQuery);
             assertTrue(isValidParam(query, QUAL));
 
             query = new Query(QUAL.key(), "<" + qual);
             fileQuery = parseFileQuery(query, "", null);
-            assertEquals("<" + qual, new RangeQuery(Double.MIN_VALUE, qual,
-                            (byte) 0,
-                            IndexUtils.getRangeCodeExclusive(qual, SampleIndexConfiguration.QUAL_THRESHOLDS)),
-                    fileQuery.getQualQuery());
-            assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
-            if (Arrays.binarySearch(SampleIndexConfiguration.QUAL_THRESHOLDS, qual) >= 0) {
+            checkQualFilter("<" + qual, Double.MIN_VALUE, qual, fileQuery);
+            if (Arrays.binarySearch(qualThresholds, qual) >= 0) {
                 assertFalse(isValidParam(query, QUAL));
                 qualThresholdMatches++;
             } else {
@@ -301,122 +310,107 @@ public class SampleIndexQueryParserTest {
 
             query = new Query(QUAL.key(), ">=" + qual);
             fileQuery = parseFileQuery(query, "", null);
-            assertEquals(">=" + qual, new RangeQuery(qual, IndexUtils.MAX,
-                            IndexUtils.getRangeCode(qual, SampleIndexConfiguration.QUAL_THRESHOLDS),
-                            (byte) 4),
-                    fileQuery.getQualQuery());
-            assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
-            assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
-            if (qual == 0 || Arrays.binarySearch(SampleIndexConfiguration.QUAL_THRESHOLDS, qual) >= 0) {
-                assertFalse(isValidParam(query, QUAL));
+            checkQualFilter(">=" + qual, qual, RangeIndexField.MAX, fileQuery);
+            // Qual == 0 is not an special case anymore
+            if (/*qual == 0 || */Arrays.binarySearch(qualThresholds, qual) >= 0) {
+                assertFalse(">=" + qual, isValidParam(query, QUAL));
             } else {
-                assertTrue(isValidParam(query, QUAL));
+                assertTrue(">=" + qual, isValidParam(query, QUAL));
             }
 
             query = new Query(QUAL.key(), ">" + qual);
             fileQuery = parseFileQuery(query, "", null);
-            assertEquals(">" + qual, new RangeQuery(qual + DELTA, IndexUtils.MAX,
-                            IndexUtils.getRangeCode(qual + DELTA, SampleIndexConfiguration.QUAL_THRESHOLDS),
-                            (byte) 4),
-                    fileQuery.getQualQuery());
-            assertEquals(VariantFileIndexConverter.QUAL_MASK, fileQuery.getFileIndexMask());
+            checkQualFilter(">" + qual, qual + DELTA, RangeIndexField.MAX, fileQuery);
             assertTrue(isValidParam(query, QUAL));
         }
-        assertEquals(SampleIndexConfiguration.QUAL_THRESHOLDS.length, qualThresholdMatches);
+        assertEquals(qualThresholds.length, qualThresholdMatches);
+    }
+
+    protected void checkQualFilter(String message, double minValueInclusive, double maxValueExclusive, SampleFileIndexQuery fileQuery) {
+        RangeIndexFieldFilter qualQuery = (RangeIndexFieldFilter) fileQuery.getFilter(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL);
+
+        assertEquals(message, minValueInclusive, qualQuery.getMinValueInclusive(), 0);
+        assertEquals(message, maxValueExclusive, qualQuery.getMaxValueExclusive(), 0);
+        assertEquals(message, RangeIndexField.getRangeCode(minValueInclusive, qualThresholds), qualQuery.getMinCodeInclusive());
+        assertEquals(message, RangeIndexFieldFilter.getRangeCodeExclusive(maxValueExclusive, qualThresholds), qualQuery.getMaxCodeExclusive());
     }
 
     @Test
     public void parseFileDPTest() {
         SampleFileIndexQuery fileQuery;
         for (Double dp : Arrays.asList(3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 35.0)) {
-            for (Pair<String, String> pair : Arrays.asList(Pair.of(FILE_DATA.key(), "F1"), Pair.of(SAMPLE_DATA.key(), "S1"))) {
+            for (Pair<String, String> pair : Arrays.asList(/*Pair.of(FILE_DATA.key(), "F1"), */Pair.of(SAMPLE_DATA.key(), "S1"))) {
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP=" + dp), "S1", n -> Collections.singletonList("F1"));
-                assertEquals("=" + dp, new RangeQuery(dp, dp + DELTA,
-                                IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS),
-                                IndexUtils.getRangeCodeExclusive(dp + DELTA, SampleIndexConfiguration.DP_THRESHOLDS)),
-                        fileQuery.getDpQuery());
-                assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
+                checkDPFilter("=" + dp, dp, dp + DELTA, fileQuery);
 
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP<=" + dp), "S1", n -> Collections.singletonList("F1"));
-                assertEquals("<=" + dp, new RangeQuery(Double.MIN_VALUE, dp + DELTA,
-                                (byte) 0,
-                                IndexUtils.getRangeCodeExclusive(dp + DELTA, SampleIndexConfiguration.DP_THRESHOLDS)),
-                        fileQuery.getDpQuery());
-                assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
+                checkDPFilter("<=" + dp, Double.MIN_VALUE, dp + DELTA, fileQuery);
 
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP<" + dp), "S1", n -> Collections.singletonList("F1"));
-                assertEquals("<" + dp, new RangeQuery(Double.MIN_VALUE, dp,
-                                (byte) 0,
-                                IndexUtils.getRangeCodeExclusive(dp, SampleIndexConfiguration.DP_THRESHOLDS)),
-                        fileQuery.getDpQuery());
-                assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
+                checkDPFilter("<" + dp, Double.MIN_VALUE, dp, fileQuery);
 
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP>=" + dp), "S1", n -> Collections.singletonList("F1"));
-                assertEquals(">=" + dp, new RangeQuery(dp, IndexUtils.MAX,
-                                IndexUtils.getRangeCode(dp, SampleIndexConfiguration.DP_THRESHOLDS),
-                                (byte) 8),
-                        fileQuery.getDpQuery());
-                assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
+                checkDPFilter(">=" + dp, dp, RangeIndexField.MAX, fileQuery);
 
                 fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP>" + dp), "S1", n -> Collections.singletonList("F1"));
-                assertEquals(">" + dp, new RangeQuery(dp + DELTA, IndexUtils.MAX,
-                                IndexUtils.getRangeCode(dp + DELTA, SampleIndexConfiguration.DP_THRESHOLDS),
-                                (byte) 8),
-                        fileQuery.getDpQuery());
-                assertEquals(VariantFileIndexConverter.DP_MASK, fileQuery.getFileIndexMask());
+                checkDPFilter(">" + dp, dp + DELTA, RangeIndexField.MAX, fileQuery);
             }
         }
 
 
         Query query = new Query(SAMPLE_DATA.key(), "S1:DP>=15");
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
-        assertTrue(fileQuery.getDpQuery().isExactQuery());
+        assertTrue(getDPFilter(fileQuery).isExactFilter());
         assertFalse(isValidParam(query, SAMPLE_DATA));
 
         query = new Query(SAMPLE_DATA.key(), "S1:DP>=15;S2:DP>34");
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
-        assertTrue(fileQuery.getDpQuery().isExactQuery());
+        assertTrue(getDPFilter(fileQuery).isExactFilter());
         fileQuery = parseFileQuery(query, "S2", n -> Collections.singletonList("F1"));
-        assertFalse(fileQuery.getDpQuery().isExactQuery());
+        assertFalse(getDPFilter(fileQuery).isExactFilter());
         assertEquals("S2:DP>34", query.getString(SAMPLE_DATA.key()));
 
         query = new Query(SAMPLE_DATA.key(), "S1:DP>=15,S2:DP>34");
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
-        assertNull(fileQuery.getDpQuery());
+        assertNull(getDPFilter(fileQuery));
         fileQuery = parseFileQuery(query, "S2", n -> Collections.singletonList("F1"));
-        assertNull(fileQuery.getDpQuery());
+        assertNull(getDPFilter(fileQuery));
         assertEquals("S1:DP>=15,S2:DP>34", query.getString(SAMPLE_DATA.key()));
 
         query = new Query(SAMPLE_DATA.key(), "S2:DP>34;S1:DP>=15;S3:DP>16");
         fileQuery = parseFileQuery(query, "S2", n -> Collections.singletonList("F1"));
-        assertFalse(fileQuery.getDpQuery().isExactQuery());
+        assertFalse(getDPFilter(fileQuery).isExactFilter());
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
-        assertTrue(fileQuery.getDpQuery().isExactQuery());
+        assertTrue(getDPFilter(fileQuery).isExactFilter());
         assertEquals("S2:DP>34;S3:DP>16", query.getString(SAMPLE_DATA.key()));
+    }
+
+    protected void checkDPFilter(String message, double minValueInclusive, double maxValueExclusive, SampleFileIndexQuery fileQuery) {
+        RangeIndexFieldFilter qualQuery = getDPFilter(fileQuery);
+
+        assertEquals(message, minValueInclusive, qualQuery.getMinValueInclusive(), 0);
+        assertEquals(message, maxValueExclusive, qualQuery.getMaxValueExclusive(), 0);
+        assertEquals(message, RangeIndexField.getRangeCode(minValueInclusive, dpThresholds), qualQuery.getMinCodeInclusive());
+        assertEquals(message, RangeIndexFieldFilter.getRangeCodeExclusive(maxValueExclusive, dpThresholds), qualQuery.getMaxCodeExclusive());
+    }
+
+    private RangeIndexFieldFilter getDPFilter(SampleFileIndexQuery fileQuery) {
+        return (RangeIndexFieldFilter) fileQuery.getFilter(IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY);
     }
 
     @Test
     public void parseFileTest() {
         Query query = new Query(FILE.key(), "F1");
         SampleFileIndexQuery fileQuery = parseFileQuery(query, "S2", n -> Arrays.asList("F1", "F2"), true);
-        assertTrue(fileQuery.getValidFileIndex1()[0]);
-        assertEquals(1, countValidFileIndex(fileQuery));
+        assertTrue(fileQuery.getFilter(fileIndex.getFilePositionIndex().getSource(), fileIndex.getFilePositionIndex().getKey()).test(0));
+        assertFalse(fileQuery.getFilter(fileIndex.getFilePositionIndex().getSource(), fileIndex.getFilePositionIndex().getKey()).test(1));
         print(fileQuery);
 
         query = new Query(FILE.key(), "F2");
         fileQuery = parseFileQuery(query, "S2", n -> Arrays.asList("F1", "F2"), true);
-        assertTrue(fileQuery.getValidFileIndex1()[1 << VariantFileIndexConverter.FILE_POSITION_SHIFT]);
-        assertEquals(1, countValidFileIndex(fileQuery));
+        assertFalse(fileQuery.getFilter(fileIndex.getFilePositionIndex().getSource(), fileIndex.getFilePositionIndex().getKey()).test(0));
+        assertTrue(fileQuery.getFilter(fileIndex.getFilePositionIndex().getSource(), fileIndex.getFilePositionIndex().getKey()).test(1));
         print(fileQuery);
-    }
-
-    private int countValidFileIndex(SampleFileIndexQuery fileQuery) {
-        int n = 0;
-        for (boolean b : fileQuery.getValidFileIndex1())
-            if (b) n++;
-        for (boolean b : fileQuery.getValidFileIndex2())
-            if (b) n++;
-        return n;
     }
 
     @Test
@@ -446,22 +440,9 @@ public class SampleIndexQueryParserTest {
     }
 
     private void print(SampleFileIndexQuery fileQuery) {
-        System.out.println("Mask: " + IndexUtils.shortToString(fileQuery.getFileIndexMask()));
-        if (fileQuery.hasFileIndexMask1()) {
-            boolean[] validFileIndex = fileQuery.getValidFileIndex1();
-            for (int i = 0; i < validFileIndex.length; i++) {
-                if (validFileIndex[i]) {
-                    System.out.println("FileIndex1 = " + IndexUtils.maskToString((fileQuery.getFileIndexMask1()), (byte) i));
-                }
-            }
-        }
-        if (fileQuery.hasFileIndexMask2()) {
-            boolean[] validFileIndex2 = fileQuery.getValidFileIndex2();
-            for (int i = 0; i < validFileIndex2.length; i++) {
-                if (validFileIndex2[i]) {
-                    System.out.println("FileIndex2 = " + IndexUtils.maskToString((fileQuery.getFileIndexMask2()), (byte) i));
-                }
-            }
+        System.out.println("File query for sample '" + fileQuery.getSampleName() + "' with " + fileQuery.getFilters().size() + " filters");
+        for (IndexFieldFilter filter : fileQuery.getFilters()) {
+            System.out.println("Filter : " + filter);
         }
     }
 
@@ -542,7 +523,7 @@ public class SampleIndexQueryParserTest {
 
         assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
         assertEquals(1, indexQuery.getFatherFilterMap().size());
-        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getDpQuery().isExactQuery());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
         assertEquals("fam1_father:DP>15;fam1_mother:DP>15", query.getString(SAMPLE_DATA.key()));
 
     }
@@ -691,142 +672,149 @@ public class SampleIndexQueryParserTest {
         }
     }
 
-    @Test
-    public void parseConsequenceTypeMaskTest() {
-        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "synonymous_variant")).getConsequenceTypeMask());
-        assertEquals(CT_MISSENSE_VARIANT_MASK | CT_START_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,start_lost")).getConsequenceTypeMask());
-        assertEquals(CT_START_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "start_lost")).getConsequenceTypeMask());
-        assertEquals(CT_STOP_GAINED_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained")).getConsequenceTypeMask());
-        assertEquals(CT_STOP_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")).getConsequenceTypeMask());
-        assertEquals(CT_STOP_GAINED_MASK | CT_STOP_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained,stop_lost")).getConsequenceTypeMask());
-
-        assertEquals(CT_MISSENSE_VARIANT_MASK | CT_STOP_LOST_MASK | CT_UTR_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant")).getConsequenceTypeMask());
-        assertEquals(INTERGENIC_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant")).getAnnotationIndexMask());
-
-        // CT Filter covered by summary
-        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")).getConsequenceTypeMask());
-        assertEquals(((short) LOF_SET.stream().mapToInt(AnnotationIndexConverter::getMaskFromSoName).reduce((a, b) -> a | b).getAsInt()),
-                parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), LOF_SET)).getConsequenceTypeMask());
-        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), LOF_EXTENDED_SET)).getConsequenceTypeMask());
-
-    }
-
-    @Test
-    public void parseBiotypeTypeMaskTest() {
-        assertEquals(BT_OTHER_NON_PSEUDOGENE, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype")).getBiotypeMask());
-        assertEquals(BT_PROTEIN_CODING_MASK | BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getBiotypeMask());
-        assertEquals(BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "miRNA")).getBiotypeMask());
-        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA")).getBiotypeMask());
-        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lincRNA")).getBiotypeMask());
-        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA,lincRNA")).getBiotypeMask());
-        assertEquals(BT_OTHER_NON_PSEUDOGENE | BT_PROTEIN_CODING_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype,protein_coding")).getBiotypeMask());
-        assertEquals(0, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype,protein_coding,pseudogene")).getBiotypeMask());
-
-        // Ensure PROTEIN_CODING_MASK is not added to the summary
-        assertEquals(INTERGENIC_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getAnnotationIndexMask());
-        assertEquals(BT_PROTEIN_CODING_MASK | BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getBiotypeMask());
-
-        // Biotype Filter covered by summary
-        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding")).getBiotypeMask());
-    }
+//    @Test
+//    public void parseConsequenceTypeMaskTest() {
+//        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "synonymous_variant")).getConsequenceTypeMask());
+//        assertEquals(CT_MISSENSE_VARIANT_MASK | CT_START_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,start_lost")).getConsequenceTypeMask());
+//        assertEquals(CT_START_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "start_lost")).getConsequenceTypeMask());
+//        assertEquals(CT_STOP_GAINED_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained")).getConsequenceTypeMask());
+//        assertEquals(CT_STOP_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")).getConsequenceTypeMask());
+//        assertEquals(CT_STOP_GAINED_MASK | CT_STOP_LOST_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained,stop_lost")).getConsequenceTypeMask());
+//
+//        assertEquals(CT_MISSENSE_VARIANT_MASK | CT_STOP_LOST_MASK | CT_UTR_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant")).getConsequenceTypeMask());
+//        assertEquals(INTERGENIC_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant")).getAnnotationIndexMask());
+//
+//        // CT Filter covered by summary
+//        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")).getConsequenceTypeMask());
+//        assertEquals(((short) LOF_SET.stream().mapToInt(AnnotationIndexConverter::getMaskFromSoName).reduce((a, b) -> a | b).getAsInt()),
+//                parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), LOF_SET)).getConsequenceTypeMask());
+//        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_CONSEQUENCE_TYPE.key(), LOF_EXTENDED_SET)).getConsequenceTypeMask());
+//
+//    }
+//
+//    @Test
+//    public void parseBiotypeTypeMaskTest() {
+//        assertEquals(BT_OTHER_NON_PSEUDOGENE, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype")).getBiotypeMask());
+//        assertEquals(BT_PROTEIN_CODING_MASK | BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getBiotypeMask());
+//        assertEquals(BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "miRNA")).getBiotypeMask());
+//        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA")).getBiotypeMask());
+//        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lincRNA")).getBiotypeMask());
+//        assertEquals(BT_LNCRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "lncRNA,lincRNA")).getBiotypeMask());
+//        assertEquals(BT_OTHER_NON_PSEUDOGENE | BT_PROTEIN_CODING_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype,protein_coding")).getBiotypeMask());
+//        assertEquals(0, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "other_biotype,protein_coding,pseudogene")).getBiotypeMask());
+//
+//        // Ensure PROTEIN_CODING_MASK is not added to the summary
+//        assertEquals(INTERGENIC_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getAnnotationIndexMask());
+//        assertEquals(BT_PROTEIN_CODING_MASK | BT_MIRNA_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA")).getBiotypeMask());
+//
+//        // Biotype Filter covered by summary
+//        assertEquals(EMPTY_MASK, parseAnnotationIndexQuery(new Query(ANNOT_BIOTYPE.key(), "protein_coding")).getBiotypeMask());
+//    }
 
     @Test
     public void parsePopFreqQueryTest() {
-        double[] default_ranges = SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_THRESHOLDS;
+        double[] default_ranges = configuration.getAnnotationIndexConfiguration().getPopulationFrequency().get(0).getThresholds();
         for (int i = 0; i < default_ranges.length; i++) {
-            SampleAnnotationIndexQuery.PopulationFrequencyQuery q;
+            RangeIndexFieldFilter q;
             double r = default_ranges[i];
 //            System.out.println("--------------");
 //            System.out.println(r);
 
             final double d = DELTA * 10;
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r - d))).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(0, q.getMinCodeInclusive());
             assertEquals(i + 1, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + (r - d))).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(0, q.getMinCodeInclusive());
             assertEquals(i + 1, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + r)).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + r)).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(0, q.getMinCodeInclusive());
             assertEquals(i + 1, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + r)).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + r)).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(0, q.getMinCodeInclusive());
             assertEquals(i + 2, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r + d))).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r + d))).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(0, q.getMinCodeInclusive());
             assertEquals(i + 2, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + r)).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + r)).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(i + 1, q.getMinCodeInclusive());
             assertEquals(4, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + r)).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + r)).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(i + 1, q.getMinCodeInclusive());
             assertEquals(4, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r + d))).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r + d))).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(i + 1, q.getMinCodeInclusive());
             assertEquals(4, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r + d))).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r + d))).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(i + 1, q.getMinCodeInclusive());
             assertEquals(4, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r - d))).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(i, q.getMinCodeInclusive());
             assertEquals(4, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
-            q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r - d))).getPopulationFrequencyQueries().get(0);
+            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
 //            System.out.println(q);
             assertEquals(i, q.getMinCodeInclusive());
             assertEquals(4, q.getMaxCodeExclusive());
-            assertEquals(i % 4 + 1 + 1, q.getPosition());
+//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
 
         }
         SampleAnnotationIndexQuery q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s8:NONE>0.1"));
-        assertEquals(0, q.getPopulationFrequencyQueries().size());
+        assertEquals(0, q.getPopulationFrequencyFilter().getFilters().size());
 
-        q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL>0.1;s8:NONE>0.1"));
-        assertEquals(1, q.getPopulationFrequencyQueries().size());
-        assertEquals(QueryOperation.AND, q.getPopulationFrequencyQueryOperator());
-        assertEquals(true, q.isPopulationFrequencyQueryPartial());
+        Query query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL<0.01;s8:NONE<0.01");
+        q = parseAnnotationIndexQuery(query, true);
+        assertEquals(1, q.getPopulationFrequencyFilter().getFilters().size());
+        assertEquals(null, q.getPopulationFrequencyFilter().getOp());
+        assertEquals(true, q.getPopulationFrequencyFilter().isExactFilter());
+        assertEquals(false, query.isEmpty());
 
         // Partial OR queries can not be used
-        q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL>0.1,s8:NONE>0.1"));
-        assertEquals(0, q.getPopulationFrequencyQueries().size());
-        assertEquals(QueryOperation.OR, q.getPopulationFrequencyQueryOperator());
-        assertEquals(true, q.isPopulationFrequencyQueryPartial());
+        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL<0.01,s8:NONE<0.01");
+        q = parseAnnotationIndexQuery(query, true);
+        assertEquals(0, q.getPopulationFrequencyFilter().getFilters().size());
+        assertEquals(null, q.getPopulationFrequencyFilter().getOp());
+        assertEquals(false, q.getPopulationFrequencyFilter().isExactFilter());
+        assertEquals(false, query.isEmpty());
 
-        q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL>0.1,s3:ALL>0.1"));
-        assertEquals(2, q.getPopulationFrequencyQueries().size());
-        assertEquals(QueryOperation.OR, q.getPopulationFrequencyQueryOperator());
-        assertEquals(false, q.isPopulationFrequencyQueryPartial());
+        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s2:ALL<0.01,s3:ALL<0.01");
+        q = parseAnnotationIndexQuery(query, true);
+        assertEquals(2, q.getPopulationFrequencyFilter().getFilters().size());
+        assertEquals(QueryOperation.OR, q.getPopulationFrequencyFilter().getOp());
+        assertEquals(true, q.getPopulationFrequencyFilter().isExactFilter());
+        System.out.println("query.toJson() = " + query.toJson());
+        assertEquals(true, query.isEmpty());
     }
 
     @Test
@@ -920,7 +908,7 @@ public class SampleIndexQueryParserTest {
         assertFalse(query.isEmpty()); // Not all samples annotated
 
         // Use CT column
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.STOP_LOST));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.STOP_LOST));
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
@@ -928,15 +916,15 @@ public class SampleIndexQueryParserTest {
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.STOP_LOST));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.STOP_LOST));
         parseAnnotationIndexQuery(query, false);
         indexQuery = parseAnnotationIndexQuery(query, false);
-        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationUtils.MATURE_MIRNA_VARIANT));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(query.isEmpty()); // Imprecise CT value
 
     }
@@ -947,19 +935,19 @@ public class SampleIndexQueryParserTest {
         Query query;
         SampleAnnotationIndexQuery indexQuery;
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING);
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING + "," + VariantAnnotationUtils.MIRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING + "," + VariantAnnotationConstants.MIRNA);
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.PROTEIN_CODING + "," + VariantAnnotationUtils.MIRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING + "," + VariantAnnotationConstants.MIRNA);
         parseAnnotationIndexQuery(query, false);
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationUtils.LINCRNA);
+        query = new Query().append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.LINCRNA);
         parseAnnotationIndexQuery(query, true);
         assertFalse(query.isEmpty()); // Imprecise BT value
     }
@@ -974,7 +962,8 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(0, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(0, indexQuery.getPopulationFrequencyFilter().getFilters().size());
+        assertEquals(true, indexQuery.getPopulationFrequencyFilter().isNoOp());
         assertTrue(query.isEmpty());
 
         // Partial summary usage. Also use PopFreqIndex. Clear query
@@ -982,7 +971,7 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(1, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertTrue(query.isEmpty());
 
         // Partial summary usage, filter more restrictive. Also use PopFreqIndex. Clear query
@@ -990,7 +979,7 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(1, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertFalse(query.isEmpty());
 
         // Summary filter less restrictive. Do not use summary. Only use PopFreqIndex. Do not clear query
@@ -998,7 +987,7 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(1, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertFalse(query.isEmpty());
 
         // Summary index query plus a new filter. Use only popFreqIndex
@@ -1006,8 +995,8 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(QueryOperation.OR, indexQuery.getPopulationFrequencyQueryOperator());
-        assertEquals(3, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(QueryOperation.OR, indexQuery.getPopulationFrequencyFilter().getOp());
+        assertEquals(3, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertTrue(query.isEmpty());
 
         // Summary index query with AND instead of OR filter. Use both, summary and popFreqIndex
@@ -1015,8 +1004,8 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyQueryOperator());
-        assertEquals(2, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyFilter().getOp());
+        assertEquals(2, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertTrue(query.isEmpty());
 
         // Summary index query with AND instead of OR filter plus a new filter. Use both, summary and popFreqIndex. Leave eextra filter in query
@@ -1024,8 +1013,8 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyQueryOperator());
-        assertEquals(3, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyFilter().getOp());
+        assertEquals(3, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertEquals("s1:ALL<0.05", query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key()));
 
         // Summary index query with AND instead of OR filter plus a new filter. Use both, summary and popFreqIndex. Clear covered query
@@ -1033,8 +1022,8 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyQueryOperator());
-        assertEquals(3, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyFilter().getOp());
+        assertEquals(3, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertTrue(query.isEmpty());
 
         // Intersect (AND) with an extra study not in index. Don't use summary, PopFreqIndex, and leave other filters in the query
@@ -1042,9 +1031,9 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyQueryOperator());
-        assertEquals(1, indexQuery.getPopulationFrequencyQueries().size());
-        assertEquals("s1:ALL", indexQuery.getPopulationFrequencyQueries().get(0).getStudyPopulation());
+        assertEquals(null, indexQuery.getPopulationFrequencyFilter().getOp());
+        assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
+        assertEquals("s1:ALL", indexQuery.getPopulationFrequencyFilter().getFilters().get(0).getIndex().getConfiguration().getKey());
         assertEquals("OtherStudy:ALL<0.8", query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key()));
 
         // Intersect (AND) with an extra study not in index. Use summary , PopFreqIndex, and leave other filters in the query
@@ -1052,9 +1041,9 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyQueryOperator());
-        assertEquals(1, indexQuery.getPopulationFrequencyQueries().size());
-        assertEquals("GNOMAD_GENOMES:ALL", indexQuery.getPopulationFrequencyQueries().get(0).getStudyPopulation());
+        assertEquals(null, indexQuery.getPopulationFrequencyFilter().getOp());
+        assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
+        assertEquals("GNOMAD_GENOMES:ALL", indexQuery.getPopulationFrequencyFilter().getFilters().get(0).getIndex().getConfiguration().getKey());
         assertEquals("OtherStudy:ALL<0.8", query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key()));
 
         // Union (OR) with an extra study not in index. Do not use index at all
@@ -1062,8 +1051,8 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
-        assertEquals(QueryOperation.OR, indexQuery.getPopulationFrequencyQueryOperator());
-        assertEquals(0, indexQuery.getPopulationFrequencyQueries().size());
+        assertEquals(null, indexQuery.getPopulationFrequencyFilter().getOp());
+        assertEquals(0, indexQuery.getPopulationFrequencyFilter().getFilters().size());
         assertEquals("GNOMAD_GENOMES:ALL<" + POP_FREQ_THRESHOLD_001 + OR + "OtherStudy:ALL<0.8", query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key()));
     }
 
@@ -1105,8 +1094,8 @@ public class SampleIndexQueryParserTest {
                 .append(ANNOT_BIOTYPE.key(), "protein_coding");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
-        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
-        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
@@ -1117,8 +1106,8 @@ public class SampleIndexQueryParserTest {
                 .append(ANNOT_BIOTYPE.key(), "protein_coding,miRNA");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
-        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
-        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
@@ -1127,12 +1116,13 @@ public class SampleIndexQueryParserTest {
         // The combination is covered
         // The params can not be removed from the query, as the CT is filter is only an approximation
         // BT has to remain to check the combination.
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationUtils.FIVE_PRIME_UTR_VARIANT)
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.FIVE_PRIME_UTR_VARIANT)
                 .append(ANNOT_BIOTYPE.key(), "protein_coding,miRNA");
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
-        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
-        assertTrue(isImpreciseCtMask(indexQuery.getConsequenceTypeMask()));
+        SampleIndexDBAdaptor.printQuery(indexQuery);
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getConsequenceTypeFilter().isExactFilter());
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
@@ -1144,9 +1134,9 @@ public class SampleIndexQueryParserTest {
         query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
                 .append(ANNOT_BIOTYPE.key(), ANTISENSE + "," + PROTEIN_CODING);
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertNotEquals(EMPTY_MASK, indexQuery.getBiotypeMask());
-        assertNotEquals(EMPTY_MASK, indexQuery.getConsequenceTypeMask());
-        assertTrue(isImpreciseBtMask(indexQuery.getBiotypeMask()));
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getBiotypeFilter().isExactFilter());
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 

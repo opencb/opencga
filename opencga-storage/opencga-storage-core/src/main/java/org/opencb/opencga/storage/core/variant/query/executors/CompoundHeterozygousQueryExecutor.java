@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -36,17 +36,17 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
     public static final String REF = "0/0,0|0,0";
     public static final String MISSING_SAMPLE = "-";
     public static final HashSet<String> DEFAULT_BIOTYPES = new HashSet<>(Arrays.asList(
-            VariantAnnotationUtils.IG_C_GENE,
-            VariantAnnotationUtils.IG_D_GENE,
-            VariantAnnotationUtils.IG_J_GENE,
-            VariantAnnotationUtils.IG_V_GENE,
-            VariantAnnotationUtils.PROTEIN_CODING,
-            VariantAnnotationUtils.NONSENSE_MEDIATED_DECAY,
-            VariantAnnotationUtils.NON_STOP_DECAY,
-            VariantAnnotationUtils.TR_C_GENE,
-            VariantAnnotationUtils.TR_D_GENE,
-            VariantAnnotationUtils.TR_J_GENE,
-            VariantAnnotationUtils.TR_V_GENE
+            VariantAnnotationConstants.IG_C_GENE,
+            VariantAnnotationConstants.IG_D_GENE,
+            VariantAnnotationConstants.IG_J_GENE,
+            VariantAnnotationConstants.IG_V_GENE,
+            VariantAnnotationConstants.PROTEIN_CODING,
+            VariantAnnotationConstants.NONSENSE_MEDIATED_DECAY,
+            VariantAnnotationConstants.NON_STOP_DECAY,
+            VariantAnnotationConstants.TR_C_GENE,
+            VariantAnnotationConstants.TR_D_GENE,
+            VariantAnnotationConstants.TR_J_GENE,
+            VariantAnnotationConstants.TR_V_GENE
     ));
     public static final int DEFAULT_SAMPLING_SIZE = 200;
     private final VariantIterable iterable;

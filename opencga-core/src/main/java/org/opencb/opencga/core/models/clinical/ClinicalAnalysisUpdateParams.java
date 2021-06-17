@@ -36,6 +36,8 @@ public class ClinicalAnalysisUpdateParams {
 
     private List<FileReferenceParam> files;
 
+    private List<String> panels;
+
     private Boolean locked;
 //    private ProbandParam proband;
 //    private FamilyParam family
@@ -56,14 +58,16 @@ public class ClinicalAnalysisUpdateParams {
     }
 
     public ClinicalAnalysisUpdateParams(String id, String description, DisorderReferenceParam disorder, List<FileReferenceParam> files,
-                                        Boolean locked, ClinicalAnalystParam analyst, ClinicalConsentAnnotationParam consent,
-                                        String dueDate, ClinicalAnalysisQualityControlUpdateParam qualityControl,
-                                        List<ClinicalCommentParam> comments, PriorityParam priority, List<FlagValueParam> flags,
-                                        Map<String, Object> attributes, StatusParam status) {
+                                        List<String> panels, Boolean locked, ClinicalAnalystParam analyst,
+                                        ClinicalConsentAnnotationParam consent, String dueDate,
+                                        ClinicalAnalysisQualityControlUpdateParam qualityControl, List<ClinicalCommentParam> comments,
+                                        PriorityParam priority, List<FlagValueParam> flags, Map<String, Object> attributes,
+                                        StatusParam status) {
         this.id = id;
         this.description = description;
         this.disorder = disorder;
         this.files = files;
+        this.panels = panels;
         this.locked = locked;
         this.analyst = analyst;
         this.consent = consent;
@@ -88,6 +92,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", description='").append(description).append('\'');
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
+        sb.append(", panels=").append(panels);
         sb.append(", locked=").append(locked);
         sb.append(", analyst=").append(analyst);
         sb.append(", consent=").append(consent);
@@ -151,6 +156,15 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setFiles(List<FileReferenceParam> files) {
         this.files = files;
+        return this;
+    }
+
+    public List<String> getPanels() {
+        return panels;
+    }
+
+    public ClinicalAnalysisUpdateParams setPanels(List<String> panels) {
+        this.panels = panels;
         return this;
     }
 

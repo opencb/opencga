@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.study;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;

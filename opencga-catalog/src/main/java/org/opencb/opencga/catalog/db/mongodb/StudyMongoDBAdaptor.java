@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
@@ -192,7 +191,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Cohort> cohorts = study.getCohorts();
         study.setCohorts(Collections.emptyList());
 
-        List<Panel> panels = study.getPanels();
+        List<org.opencb.opencga.core.models.panel.Panel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
         List<Family> families = study.getFamilies();
@@ -230,7 +229,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
         }
 
-        for (Panel panel : panels) {
+        for (org.opencb.opencga.core.models.panel.Panel panel : panels) {
             dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
         }
 
@@ -677,7 +676,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public OpenCGAResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
         if (variableSetExists(variableSet.getId(), studyId) > 0) {
-            throw new CatalogDBException("VariableSet { name: '" + variableSet.getId() + "'} already exists.");
+            throw new CatalogDBException("VariableSet { id: '" + variableSet.getId() + "'} already exists.");
         }
 
         long variableSetId = getNewUid();
@@ -685,12 +684,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document object = getMongoDBDocument(variableSet, "VariableSet");
         object.put(PRIVATE_UID, variableSetId);
 
-        Bson bsonQuery = Filters.eq(PRIVATE_UID, studyId);
+        Bson bsonQuery = Filters.and(
+                Filters.eq(PRIVATE_UID, studyId),
+                Filters.ne(QueryParams.VARIABLE_SET_ID.key(), variableSet.getId())
+        );
         Bson update = Updates.push("variableSets", object);
         DataResult result = studyCollection.update(bsonQuery, update, null);
 
         if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException("createVariableSet: Could not create a new variable set in study " + studyId);
+            throw new CatalogDBException("CreateVariableSet: Could not create the VariableSet '" + variableSet.getId() + "'");
         }
 
         return new OpenCGAResult<>(result);
@@ -1344,8 +1346,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.CONFIGURATION_CLINICAL.key()};
+        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.CONFIGURATION_CLINICAL.key(),
+                QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
+
         if (studyParameters.containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), studyParameters);
         }

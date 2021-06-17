@@ -32,6 +32,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
@@ -222,6 +223,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(FileDBAdaptor.QueryParams.BIOFORMAT.key(), StringUtils.join(commandOptions.bioformat, ","));
         params.putIfNotNull(FileDBAdaptor.QueryParams.FORMAT.key(), StringUtils.join(commandOptions.format, ","));
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), commandOptions.internalIndexStatus);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), commandOptions.folder);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), commandOptions.modificationDate);
@@ -335,8 +337,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         FileCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
 
         ObjectMap params = new ObjectMap()
-                .append("fileFormat", commandOptions.fileFormat)
-                .append("bioformat", commandOptions.bioformat)
+                .append("fileFormat", ParamUtils.defaultString(commandOptions.fileFormat, File.Format.UNKNOWN.toString()))
+                .append("bioformat", ParamUtils.defaultString(commandOptions.bioformat, File.Bioformat.UNKNOWN.toString()))
                 .append("parents", commandOptions.parents);
 
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);

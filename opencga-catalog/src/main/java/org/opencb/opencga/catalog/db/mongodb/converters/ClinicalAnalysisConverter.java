@@ -21,6 +21,7 @@ import org.bson.Document;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateSecondaryInterpretationsToUpdate(document);
         validateFamilyToUpdate(document);
         validateProbandToUpdate(document);
+        validatePanelsToUpdate(document);
     }
 
     public void validateInterpretationToUpdate(Document document) {
@@ -63,7 +65,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
             document.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(),
                     new Document()
                             .append(InterpretationDBAdaptor.QueryParams.UID.key(),
-                                    getLongValue(interpretation, InterpretationDBAdaptor.QueryParams.UID.key()))
+                                    ((Number) interpretation.get(InterpretationDBAdaptor.QueryParams.UID.key())).longValue())
                             .append(InterpretationDBAdaptor.QueryParams.VERSION.key(),
                                     interpretation.getInteger(InterpretationDBAdaptor.QueryParams.VERSION.key())));
         }
@@ -76,7 +78,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
             for (int i = 0; i < interpretationList.size(); i++) {
                 newInterpretationList.add(new Document()
                         .append(InterpretationDBAdaptor.QueryParams.UID.key(),
-                                getLongValue(interpretationList.get(i), InterpretationDBAdaptor.QueryParams.UID.key()))
+                                ((Number) interpretationList.get(i).get(InterpretationDBAdaptor.QueryParams.UID.key())).longValue())
                         .append(InterpretationDBAdaptor.QueryParams.VERSION.key(),
                                 interpretationList.get(i).getInteger(InterpretationDBAdaptor.QueryParams.VERSION.key())));
             }
@@ -94,7 +96,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         // We make sure we don't store duplicates
         Map<Long, Sample> sampleMap = new HashMap<>();
         for (Document sample : samples) {
-            long uid = getLongValue(sample, SampleDBAdaptor.QueryParams.UID.key());
+            long uid = ((Number) sample.get(SampleDBAdaptor.QueryParams.UID.key())).longValue();
             if (uid > 0) {
                 Sample tmpSample = new Sample()
                         .setUid(uid)
@@ -111,6 +113,33 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
                         .collect(Collectors.toList()));
     }
 
+    public void validatePanelsToUpdate(Document document) {
+        List<Document> panels = (List) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key());
+        if (panels != null) {
+            // We make sure we don't store duplicates
+            Map<Long, Panel> panelMap = new HashMap<>();
+            for (Document panel : panels) {
+                long uid = panel.getInteger(PanelDBAdaptor.QueryParams.UID.key()).longValue();
+                int version = panel.getInteger(PanelDBAdaptor.QueryParams.VERSION.key());
+                if (uid > 0) {
+                    Panel tmpPanel = new Panel()
+                            .setId(panel.getString(PanelDBAdaptor.QueryParams.ID.key()))
+                            .setVersion(version);
+                    tmpPanel.setUid(uid);
+                    panelMap.put(uid, tmpPanel);
+                }
+            }
+
+            document.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
+                    panelMap.entrySet().stream()
+                            .map(entry -> new Document()
+                                    .append(PanelDBAdaptor.QueryParams.ID.key(), entry.getValue().getId())
+                                    .append(PanelDBAdaptor.QueryParams.UID.key(), entry.getValue().getUid())
+                                    .append(PanelDBAdaptor.QueryParams.VERSION.key(), entry.getValue().getVersion()))
+                            .collect(Collectors.toList()));
+        }
+    }
+
     public void validateProbandToUpdate(Document document) {
         Document proband = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
         if (proband == null) {
@@ -120,7 +149,8 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateSamplesToUpdate(proband);
 
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), new Document()
-                .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(proband, IndividualDBAdaptor.QueryParams.UID.key()))
+                .append(IndividualDBAdaptor.QueryParams.UID.key(),
+                        ((Number) proband.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue())
                 .append(IndividualDBAdaptor.QueryParams.ID.key(), proband.getString(IndividualDBAdaptor.QueryParams.ID.key()))
                 .append(IndividualDBAdaptor.QueryParams.VERSION.key(),
                         proband.getInteger(IndividualDBAdaptor.QueryParams.VERSION.key()))
@@ -140,7 +170,8 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
 
         document.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(),
                 members.stream().map(entry -> new Document()
-                        .append(IndividualDBAdaptor.QueryParams.UID.key(), getLongValue(entry, IndividualDBAdaptor.QueryParams.UID.key()))
+                        .append(IndividualDBAdaptor.QueryParams.UID.key(),
+                                ((Number) entry.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue())
                         .append(IndividualDBAdaptor.QueryParams.ID.key(), entry.getString(IndividualDBAdaptor.QueryParams.ID.key()))
                         .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), entry.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
                 )
@@ -156,7 +187,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateFamilyMembersToUpdate(family);
 
         document.put(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), new Document()
-                .append(FamilyDBAdaptor.QueryParams.UID.key(), getLongValue(family, FamilyDBAdaptor.QueryParams.UID.key()))
+                .append(FamilyDBAdaptor.QueryParams.UID.key(), ((Number) family.get(FamilyDBAdaptor.QueryParams.UID.key())).longValue())
                 .append(FamilyDBAdaptor.QueryParams.ID.key(), family.get(FamilyDBAdaptor.QueryParams.ID.key()))
                 .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.getInteger(FamilyDBAdaptor.QueryParams.VERSION.key()))
                 .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), family.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()))

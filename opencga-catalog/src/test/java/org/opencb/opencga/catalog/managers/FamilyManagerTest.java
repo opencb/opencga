@@ -37,7 +37,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -49,6 +48,7 @@ import org.opencb.opencga.core.models.individual.IndividualAclParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -655,11 +655,14 @@ public class FamilyManagerTest extends GenericTest {
 
         if (createMissingMembers) {
             catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample1")), QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample1"))),
+                    QueryOptions.empty(), sessionIdUser);
             catalogManager.getIndividualManager().update(STUDY, relFather.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample2")), QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample2"))),
+                    QueryOptions.empty(), sessionIdUser);
             catalogManager.getIndividualManager().update(STUDY, relMother.getId(),
-                    new IndividualUpdateParams().setSamples(Collections.singletonList("sample3")), QueryOptions.empty(), sessionIdUser);
+                    new IndividualUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId("sample3"))),
+                    QueryOptions.empty(), sessionIdUser);
         }
 
         return familyOpenCGAResult;
@@ -893,30 +896,6 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
-    public void updateFamilyPhenotype() throws CatalogException {
-        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
-
-        Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
-        Phenotype phenotype2 = new Phenotype("dis2", "New name", "New source");
-        Phenotype phenotype3 = new Phenotype("dis3", "New name", "New source");
-
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3));
-
-        DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getId(),
-                updateParams, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, updatedFamily.getNumUpdated());
-
-        Family family = familyManager.get(STUDY, originalFamily.first().getId(), QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(3, family.getPhenotypes().size());
-
-        // Only one id should be the same as in originalFamilyIds (father id)
-        for (Phenotype phenotype : family.getPhenotypes()) {
-            assertEquals("New name", phenotype.getName());
-            assertEquals("New source", phenotype.getSource());
-        }
-    }
-
-    @Test
     public void updateFamilyQualityControl() throws CatalogException {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
@@ -936,20 +915,6 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals("message", updatedFamily.first().getQualityControl().getComments().get(0).getMessage());
         assertEquals("tag", updatedFamily.first().getQualityControl().getComments().get(0).getTags().get(0));
         assertEquals("date", updatedFamily.first().getQualityControl().getComments().get(0).getDate());
-    }
-
-
-    @Test
-    public void updateFamilyMissingPhenotype() throws CatalogException {
-        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
-
-        Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
-
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Collections.singletonList(phenotype1));
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("not present in any member of the family");
-        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
 }

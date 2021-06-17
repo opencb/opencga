@@ -111,7 +111,7 @@ public class FamilyCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIter
             Document familyDocument = mongoCursor.next();
 
             if (user != null && studyUid <= 0) {
-                studyUid = familyDocument.getLong(PRIVATE_STUDY_UID);
+                studyUid = ((Number) familyDocument.get(PRIVATE_STUDY_UID)).longValue();
             }
 
             familyListBuffer.add(familyDocument);

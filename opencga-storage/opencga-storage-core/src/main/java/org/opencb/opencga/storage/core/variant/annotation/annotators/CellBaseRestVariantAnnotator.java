@@ -21,10 +21,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.result.CellBaseDataResponse;
+import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
@@ -48,7 +48,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             throws VariantAnnotatorException {
         super(storageConfiguration, projectMetadata, options);
 
-        String cellbaseRest = storageConfiguration.getCellbase().getHost();
+        String cellbaseRest = storageConfiguration.getCellbase().getUrl();
         if (StringUtils.isEmpty(cellbaseRest)) {
             throw new VariantAnnotatorException("Missing defaultValue \"CellBase Hosts\"");
         }
@@ -64,14 +64,14 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
     }
 
     @Override
-    protected List<QueryResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
+    protected List<CellBaseDataResult<VariantAnnotation>> annotateFiltered(List<Variant> variants) throws VariantAnnotatorException {
         if (variants.isEmpty()) {
             return Collections.emptyList();
         }
         try {
-            QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient()
+            CellBaseDataResponse<VariantAnnotation> response = cellBaseClient.getVariantClient()
                     .getAnnotationByVariantIds(variants.stream().map(variantSerializer).collect(Collectors.toList()), queryOptions, true);
-            return queryResponse.getResponse();
+            return response.getResponses();
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error fetching variants from Client");
         }
@@ -79,7 +79,8 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
 
     @Override
     public ProjectMetadata.VariantAnnotatorProgram getVariantAnnotatorProgram() throws IOException {
-        ObjectMap about = cellBaseClient.getMetaClient().about().firstResult();
+        CellBaseDataResponse<ObjectMap> response = cellBaseClient.getMetaClient().about();
+        ObjectMap about = response.firstResult();
         if (about == null) {
             throw new IOException("Error fetching CellBase program information from meta/about");
         }

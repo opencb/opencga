@@ -199,7 +199,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             attributes.put("LDAP_RDN", rdn);
             User user = new User(uid, displayName, mail, usersSearch, new Account().setType(Account.AccountType.GUEST)
                     .setAuthentication(new Account.AuthenticationOrigin(originId, false)), new UserInternal(new UserStatus()),
-                    new UserQuota(-1, -1, -1, -1), new ArrayList<>(), new HashMap<>(), new LinkedList<>(), attributes);
+                    new UserQuota(-1, -1, -1, -1), new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new LinkedList<>(), attributes);
 
             userList.add(user);
         }
@@ -334,7 +334,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase) throws NamingException {
-        return getUserInfoFromLDAP(host, userList, userBase, "uid");
+        return getUserInfoFromLDAP(host, userList, userBase, this.uidKey);
     }
 
     private List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase, String key) throws NamingException {

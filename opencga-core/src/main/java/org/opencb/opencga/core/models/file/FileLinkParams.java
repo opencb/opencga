@@ -66,16 +66,20 @@ public class FileLinkParams {
         return sb.toString();
     }
 
-    public List<FileRelatedFile> getRelatedFiles() {
-        if (ListUtils.isEmpty(relatedFiles)) {
-            return null;
-        }
-        List<FileRelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
-        for (SmallRelatedFileParams relatedFile : relatedFiles) {
-            relatedFileList.add(new FileRelatedFile(new File().setId(relatedFile.getFile()), relatedFile.getRelation()));
-        }
-        return relatedFileList;
+    public List<SmallRelatedFileParams> getRelatedFiles() {
+        return relatedFiles;
     }
+
+//    public List<FileRelatedFile> getRelatedFiles() {
+//        if (ListUtils.isEmpty(relatedFiles)) {
+//            return null;
+//        }
+//        List<FileRelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
+//        for (SmallRelatedFileParams relatedFile : relatedFiles) {
+//            relatedFileList.add(new FileRelatedFile(new File().setId(relatedFile.getFile()), relatedFile.getRelation()));
+//        }
+//        return relatedFileList;
+//    }
 
     public String getUri() {
         return uri;

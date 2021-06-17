@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;

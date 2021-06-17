@@ -18,8 +18,8 @@ package org.opencb.opencga.analysis.variant.stats;
 
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.Query;
@@ -306,22 +306,22 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             if (qualityControl == null) {
                                 qualityControl = new SampleQualityControl();
                             }
-                            if (qualityControl.getVariantMetrics() == null) {
-                                qualityControl.setVariantMetrics(new SampleVariantQualityControlMetrics());
+                            if (qualityControl.getVariant() == null) {
+                                qualityControl.setVariant(new SampleVariantQualityControlMetrics());
                             }
-                            if (CollectionUtils.isEmpty(qualityControl.getVariantMetrics().getVariantStats())) {
-                                qualityControl.getVariantMetrics().setVariantStats(Collections.singletonList(o));
+                            if (CollectionUtils.isEmpty(qualityControl.getVariant().getVariantStats())) {
+                                qualityControl.getVariant().setVariantStats(Collections.singletonList(o));
                             } else {
                                 boolean hasItem = false;
-                                for (int i = 0; i < qualityControl.getVariantMetrics().getVariantStats().size(); i++) {
-                                    if (qualityControl.getVariantMetrics().getVariantStats().get(i).getId().equals(o.getId())) {
-                                        qualityControl.getVariantMetrics().getVariantStats().set(i, o);
+                                for (int i = 0; i < qualityControl.getVariant().getVariantStats().size(); i++) {
+                                    if (qualityControl.getVariant().getVariantStats().get(i).getId().equals(o.getId())) {
+                                        qualityControl.getVariant().getVariantStats().set(i, o);
                                         hasItem = true;
                                         break;
                                     }
                                 }
                                 if (!hasItem) {
-                                    qualityControl.getVariantMetrics().getVariantStats().add(o);
+                                    qualityControl.getVariant().getVariantStats().add(o);
                                 }
                             }
                             SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qualityControl);

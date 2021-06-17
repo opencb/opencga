@@ -37,6 +37,7 @@ import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.job.Job;
@@ -58,6 +59,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyQcCommandOptions.FAMILY_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.IndividualQcCommandOptions.INDIVIDUAL_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.InferredSexCommandOptions.INFERRED_SEX_RUN_COMMAND;
@@ -65,7 +67,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTESTS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -176,6 +178,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = mutationalSignature();
                 break;
 
+            case GENOME_PLOT_RUN_COMMAND:
+                queryResponse = genomePlot();
+                break;
+
             case MENDELIAN_ERROR_RUN_COMMAND:
                 queryResponse = mendelianError();
                 break;
@@ -204,7 +210,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = plink();
                 break;
 
-            case RVTEST_RUN_COMMAND:
+            case RVTESTS_RUN_COMMAND:
                 queryResponse = rvtests();
                 break;
 
@@ -229,16 +235,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 new VariantStatsAnalysisParams(
                         variantCommandOptions.statsVariantCommandOptions.cohort,
                         variantCommandOptions.statsVariantCommandOptions.samples,
-                        variantCommandOptions.statsVariantCommandOptions.index,
+                        variantCommandOptions.statsVariantCommandOptions.region,
+                        variantCommandOptions.statsVariantCommandOptions.gene,
                         variantCommandOptions.statsVariantCommandOptions.outdir,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.fileName,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.region,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.gene,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.overwriteStats,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.updateStats,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.resume,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregated,
-                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile
+                        variantCommandOptions.statsVariantCommandOptions.fileName,
+                        variantCommandOptions.statsVariantCommandOptions.aggregated,
+                        variantCommandOptions.statsVariantCommandOptions.aggregationMappingFile
                 ), getParams(variantCommandOptions.statsVariantCommandOptions.study));
     }
 
@@ -314,7 +316,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.knockoutCommandOptions.consequenceType,
                         variantCommandOptions.knockoutCommandOptions.filter,
                         variantCommandOptions.knockoutCommandOptions.qual,
-                        variantCommandOptions.knockoutCommandOptions.outdir),
+                        variantCommandOptions.knockoutCommandOptions.skipGenesFile,
+                        variantCommandOptions.knockoutCommandOptions.outdir,
+                        variantCommandOptions.knockoutCommandOptions.index
+                ),
                 getParams(variantCommandOptions.knockoutCommandOptions.study)
         );
     }
@@ -338,12 +343,33 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //    }
 
     private RestResponse<Job> mutationalSignature() throws ClientException {
+        // Check signature release
+        checkSignatureRelease(variantCommandOptions.mutationalSignatureCommandOptions.release);
+
         return openCGAClient.getVariantClient().runMutationalSignature(
                 new MutationalSignatureAnalysisParams(
                         variantCommandOptions.mutationalSignatureCommandOptions.sample,
+                        variantCommandOptions.mutationalSignatureCommandOptions.id,
+                        variantCommandOptions.mutationalSignatureCommandOptions.description,
+                        new ObjectMap(variantCommandOptions.mutationalSignatureCommandOptions.query),
+                        variantCommandOptions.mutationalSignatureCommandOptions.release,
+                        variantCommandOptions.mutationalSignatureCommandOptions.fitting,
                         variantCommandOptions.mutationalSignatureCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.mutationalSignatureCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> genomePlot() throws ClientException {
+        return openCGAClient.getVariantClient().runGenomePlot(
+                new GenomePlotAnalysisParams(
+                        null,
+                        variantCommandOptions.genomePlotCommandOptions.id,
+                        variantCommandOptions.genomePlotCommandOptions.description,
+                        variantCommandOptions.genomePlotCommandOptions.configFile,
+                        variantCommandOptions.genomePlotCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.genomePlotCommandOptions.study)
         );
     }
 
@@ -410,30 +436,27 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> sampleQc() throws ClientException {
         VariantCommandOptions.SampleQcCommandOptions cliOptions = variantCommandOptions.sampleQcCommandOptions;
 
+        // Check signature release
+        checkSignatureRelease(cliOptions.signatureRelease);
+
         // Build variant query from cli options
         AnnotationVariantQueryParams variantStatsQuery = ToolParams.fromParams(AnnotationVariantQueryParams.class,
                 cliOptions.variantStatsQuery);
 
-        // Build signature query from cli options
-        SampleQcSignatureQueryParams signatureQuery = ToolParams.fromParams(SampleQcSignatureQueryParams.class, cliOptions.signatureQuery);
-
-        // Build list of genes from cli options
-        List<String> genesForCoverageStats = StringUtils.isEmpty(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats)
-                ? new ArrayList<>()
-                : Arrays.asList(variantCommandOptions.sampleQcCommandOptions.genesForCoverageStats.split(","));
-
         return openCGAClient.getVariantClient().runSampleQc(
                 new SampleQcAnalysisParams(
-                        variantCommandOptions.sampleQcCommandOptions.sample,
-                        variantCommandOptions.sampleQcCommandOptions.dictFile,
-                        variantCommandOptions.sampleQcCommandOptions.baitFile,
-                        variantCommandOptions.sampleQcCommandOptions.variantStatsId,
-                        variantCommandOptions.sampleQcCommandOptions.variantStatsDecription,
+                        cliOptions.sample,
+                        cliOptions.variantStatsId,
+                        cliOptions.variantStatsDecription,
                         variantStatsQuery,
-                        variantCommandOptions.sampleQcCommandOptions.signatureId,
-                        signatureQuery,
-                        genesForCoverageStats,
-                        variantCommandOptions.sampleQcCommandOptions.outdir
+                        cliOptions.signatureId,
+                        cliOptions.signatureDescription,
+                        new ObjectMap(cliOptions.signatureQuery),
+                        cliOptions.signatureRelease,
+                        cliOptions.genomePlotId,
+                        cliOptions.genomePlotDescr,
+                        cliOptions.genomePlotConfigFile,
+                        cliOptions.outdir
                 ),
                 getParams(variantCommandOptions.sampleQcCommandOptions.study)
         );
@@ -733,44 +756,38 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().metadataAnnotation(getParams(cliOptions.project, null).append("annotationId", cliOptions.annotationId));
     }
 
-    // Wrappers
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
 
-    private RestResponse<Job> plink() throws ClientException {
-        return openCGAClient.getVariantClient().runPlink(
-                new PlinkRunParams(
-                        variantCommandOptions.plinkCommandOptions.tpedFile,
-                        variantCommandOptions.plinkCommandOptions.tfamFile,
-                        variantCommandOptions.plinkCommandOptions.covarFile,
-                        variantCommandOptions.plinkCommandOptions.outdir,
-                        variantCommandOptions.plinkCommandOptions.basicOptions.params
-                ), getParams(variantCommandOptions.plinkCommandOptions.study));
-    }
-
-    private RestResponse<Job> rvtests() throws ClientException {
-        return openCGAClient.getVariantClient().runRvtests(
-                new RvtestsRunParams(
-                        variantCommandOptions.rvtestsCommandOptions.executable,
-                        variantCommandOptions.rvtestsCommandOptions.vcfFile,
-                        variantCommandOptions.rvtestsCommandOptions.phenoFile,
-                        variantCommandOptions.rvtestsCommandOptions.pedigreeFile,
-                        variantCommandOptions.rvtestsCommandOptions.kinshipFile,
-                        variantCommandOptions.rvtestsCommandOptions.covarFile,
-                        variantCommandOptions.rvtestsCommandOptions.outdir,
-                        variantCommandOptions.rvtestsCommandOptions.basicOptions.params
-                ), getParams(variantCommandOptions.rvtestsCommandOptions.study));
-    }
-
+    // Gatk
 
     private RestResponse<Job> gatk() throws ClientException {
-        return openCGAClient.getVariantClient().runGatk(
-                new GatkRunParams(
-                        variantCommandOptions.gatkCommandOptions.command,
-                        variantCommandOptions.gatkCommandOptions.fastaFile,
-                        variantCommandOptions.gatkCommandOptions.bamFile,
-                        variantCommandOptions.gatkCommandOptions.vcfFilename,
-                        variantCommandOptions.gatkCommandOptions.outdir,
-                        variantCommandOptions.gatkCommandOptions.basicOptions.params
-                ), getParams(variantCommandOptions.gatkCommandOptions.study));
+        VariantCommandOptions.GatkCommandOptions cliOptions = variantCommandOptions.gatkCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+
+        return openCGAClient.getVariantClient().runGatk(new GatkWrapperParams(cliOptions.command, cliOptions.outdir, cliOptions.gatkParams),
+                params);
+    }
+
+    private RestResponse<Job> plink() throws ClientException {
+        VariantCommandOptions.PlinkCommandOptions cliOptions = variantCommandOptions.plinkCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+
+        return openCGAClient.getVariantClient().runPlink(new PlinkWrapperParams(cliOptions.outdir, cliOptions.plinkParams), params);
+    }
+
+    // RvTests
+
+    private RestResponse<Job> rvtests() throws ClientException {
+        VariantCommandOptions.RvtestsCommandOptions cliOptions = variantCommandOptions.rvtestsCommandOptions;
+
+        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+
+        return openCGAClient.getVariantClient().runRvtests(new RvtestsWrapperParams(cliOptions.command, cliOptions.outdir,
+                cliOptions.rvtestsParams), params);
     }
 
     private ObjectMap getParams(String study) {

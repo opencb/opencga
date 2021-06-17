@@ -2,20 +2,25 @@ package org.opencb.opencga.app.cli.main.executors.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.response.RestResponse;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -41,8 +46,14 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
             case VARIANT_CONFIGURE:
                 queryResponse = variantConfigure();
                 break;
+//            case VARIANT_INDEX:
+//                queryResponse = variantIndex();
+//                break;
             case VARIANT_INDEX_LAUNCHER:
                 queryResponse = variantIndexLauncher();
+                break;
+            case VARIANT_STATS_INDEX:
+                queryResponse = variantStatsIndex();
                 break;
             case VARIANT_SECONDARY_INDEX:
                 queryResponse = variantSecondaryIndex();
@@ -65,11 +76,14 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
             case VARIANT_SCORE_DELETE:
                 queryResponse = variantScoreDelete();
                 break;
-            case VARIANT_FAMILY_GENOTYPE_INDEX:
+            case VARIANT_FAMILY_INDEX:
                 queryResponse = variantFamilyIndex();
                 break;
-            case VARIANT_SAMPLE_GENOTYPE_INDEX:
+            case VARIANT_SAMPLE_INDEX:
                 queryResponse = variantSampleIndex();
+                break;
+            case VARIANT_SAMPLE_INDEX_CONFIGURE:
+                queryResponse = variantSampleIndexConfigure();
                 break;
             case VARIANT_AGGREGATE:
                 queryResponse = variantAggregate();
@@ -113,6 +127,21 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.ignoreFailed,
                         cliOptions.maxJobs,
                         VariantIndexParams.fromParams(VariantIndexParams.class, cliOptions.indexParams)), params);
+    }
+
+    private RestResponse<Job> variantStatsIndex() throws ClientException {
+        OperationsCommandOptions.VariantStatsIndexCommandOptions cliOptions = operationsCommandOptions.variantStatsIndex;
+
+        ObjectMap params = getParams(cliOptions);
+
+        return openCGAClient.getVariantOperationClient().indexVariantStats(
+                new VariantStatsIndexParams(
+                        cliOptions.cohort,
+                        cliOptions.region,
+                        cliOptions.overwriteStats,
+                        cliOptions.resume,
+                        cliOptions.aggregated,
+                        cliOptions.aggregationMappingFile), params);
     }
 
     private RestResponse<Job> variantSecondaryIndex() throws ClientException {
@@ -207,7 +236,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = getParams(cliOptions);
 
-        return openCGAClient.getVariantOperationClient().indexFamilyGenotype(
+        return openCGAClient.getVariantOperationClient().indexVariantFamily(
                 new VariantFamilyIndexParams(
                         cliOptions.family,
                         cliOptions.overwrite,
@@ -220,13 +249,29 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = getParams(cliOptions);
 
-        return openCGAClient.getVariantOperationClient().indexSampleGenotype(
+        return openCGAClient.getVariantOperationClient().indexVariantSample(
                 new VariantSampleIndexParams(
                         cliOptions.sample,
                         cliOptions.buildIndex,
                         cliOptions.annotate,
                         cliOptions.overwrite
                 ), params);
+    }
+
+    private RestResponse<Job> variantSampleIndexConfigure() throws ClientException, IOException {
+        OperationsCommandOptions.VariantSampleIndexConfigureCommandOptions cliOptions = operationsCommandOptions.variantSampleIndexConfigure;
+
+        ObjectMap params = getParams(cliOptions);
+
+
+        Path sampleIndexFile = Paths.get(cliOptions.sampleIndex);
+        if (!sampleIndexFile.toFile().exists()) {
+            throw new IOException("File '" + sampleIndexFile + "' not found!");
+        }
+        SampleIndexConfiguration sampleIndex = JacksonUtils.getDefaultObjectMapper().readValue(sampleIndexFile.toFile(),
+                SampleIndexConfiguration.class);
+
+        return openCGAClient.getVariantOperationClient().configureSampleIndex(sampleIndex, params);
     }
 
     private RestResponse<Job> variantAggregate() throws ClientException {

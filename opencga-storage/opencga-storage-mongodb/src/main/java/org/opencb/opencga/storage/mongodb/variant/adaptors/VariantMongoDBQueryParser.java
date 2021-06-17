@@ -20,7 +20,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -31,7 +31,6 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
-import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -336,22 +335,13 @@ public class VariantMongoDBQueryParser {
             if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
                 String key = DocumentToVariantConverter.ANNOTATION_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
+                        + '.' + "variantClassification"
                         + '.' + "clinicalSignificance";
                 ParsedQuery<String> values = splitValue(query, ANNOT_CLINICAL_SIGNIFICANCE);
                 List<DBObject> list = new ArrayList<>(values.getValues().size());
                 for (String clinicalSignificance : values) {
                     ClinicalSignificance enumValue = EnumUtils.getEnum(ClinicalSignificance.class, clinicalSignificance);
-                    if (enumValue != null) {
-                        for (Map.Entry<String, ClinicalSignificance> entry : VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.entrySet()) {
-                            if (entry.getValue() == enumValue) {
-                                clinicalSignificance = entry.getKey();
-                                break;
-                            }
-                        }
-                    }
-                    list.add(new QueryBuilder().and(key).regex(Pattern.compile("^"
-                            + clinicalSignificance, Pattern.CASE_INSENSITIVE)).get());
+                    list.add(new QueryBuilder().and(key).is(enumValue.toString()).get());
                 }
                 if (QueryOperation.OR.equals(values.getOperation())) {
                     builder.or(list.toArray(new DBObject[0]));

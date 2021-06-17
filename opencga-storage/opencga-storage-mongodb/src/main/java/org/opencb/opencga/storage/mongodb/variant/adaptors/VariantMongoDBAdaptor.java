@@ -35,8 +35,8 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.*;
 import org.opencb.opencga.core.response.VariantQueryResult;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -1224,9 +1224,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
-                                + ".clinicalSignificance", 1),
-                new ObjectMap(onBackgroundSparse).append(NAME, "clinvar"));
+                                + ".variantClassification.clinicalSignificance", 1),
+                new ObjectMap(onBackgroundSparse).append(NAME, "clinical"));
 
         // Conserved region score (phastCons, phylop, gerp)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD

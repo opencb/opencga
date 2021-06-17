@@ -55,6 +55,8 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_VOLUMES = "k8s.volumes";
     public static final String K8S_NODE_SELECTOR = "k8s.nodeSelector";
     public static final String K8S_TOLERATIONS = "k8s.tolerations";
+    public static final String K8S_SECURITY_CONTEXT = "k8s.securityContext";
+    public static final String K8S_POD_SECURITY_CONTEXT = "k8s.podSecurityContext";
     public static final EnvVar DOCKER_HOST = new EnvVar("DOCKER_HOST", "tcp://localhost:2375", null);
     public static final int DEFAULT_TIMEOUT = 30000; // in ms
 
@@ -85,6 +87,8 @@ public class K8SExecutor implements BatchExecutor {
     private final List<Volume> volumes;
     private final Map<String, String> nodeSelector;
     private final List<Toleration> tolerations;
+    private final SecurityContext securityContext;
+    private final PodSecurityContext podSecurityContext;
     private final ResourceRequirements resources;
     private final Config k8sConfig;
     private final Container dockerDaemonSidecar;
@@ -115,6 +119,22 @@ public class K8SExecutor implements BatchExecutor {
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
         nodeSelector = getMap(execution, K8S_NODE_SELECTOR);
+        if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
+            securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
+        } else {
+            securityContext = new SecurityContextBuilder()
+                    .withRunAsUser(1001L)
+                    .withRunAsNonRoot(true)
+                    .withReadOnlyRootFilesystem(false)
+                    .build();
+        }
+        if (execution.getOptions().containsKey(K8S_POD_SECURITY_CONTEXT)) {
+            podSecurityContext = buildObject(execution.getOptions().get(K8S_POD_SECURITY_CONTEXT), PodSecurityContext.class);
+        } else {
+            podSecurityContext = new PodSecurityContextBuilder()
+                    .withRunAsNonRoot(true)
+                    .build();
+        }
 
         HashMap<String, Quantity> requests = new HashMap<>();
         for (Map.Entry<String, String> entry : getMap(execution, K8S_REQUESTS).entrySet()) {
@@ -129,11 +149,14 @@ public class K8SExecutor implements BatchExecutor {
                 .withRequests(requests)
                 .build();
 
-        String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind");
+        String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind-rootless");
         dockerDaemonSidecar = new ContainerBuilder()
                 .withName("dind-daemon")
                 .withImage(dindImageName)
-                .withSecurityContext(new SecurityContextBuilder().withPrivileged(true).build())
+                .withSecurityContext(new SecurityContextBuilder()
+                        .withRunAsNonRoot(true)
+                        .withRunAsUser(1000L)
+                        .withPrivileged(true).build())
                 .withEnv(new EnvVar("DOCKER_TLS_CERTDIR", "", null))
 //                .withResources(resources) // TODO: Should we add resources here?
                 .withCommand("/bin/sh", "-c")
@@ -223,6 +246,7 @@ public class K8SExecutor implements BatchExecutor {
                                                         + getCommandLine(commandLine, stdout, stderr))
                                                 .withVolumeMounts(volumeMounts)
                                                 .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
+                                                .withSecurityContext(securityContext)
                                                 .build())
                                         .withNodeSelector(nodeSelector)
                                         .withTolerations(tolerations)
@@ -230,6 +254,7 @@ public class K8SExecutor implements BatchExecutor {
                                         .addAllToVolumes(volumes)
                                         .addToVolumes(DOCKER_GRAPH_STORAGE_VOLUME)
                                         .addToVolumes(TMP_POD_VOLUME)
+                                        .withSecurityContext(podSecurityContext)
                                         .build())
                                 .build())
                         .build()
@@ -259,12 +284,12 @@ public class K8SExecutor implements BatchExecutor {
      * DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must
      * start and end with an alphanumeric character (e.g. 'example.com', regex used for validation
      * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
-     * @param jobId job Is
+     * @param jobIdInput job Is
      * @link https://github.com/kubernetes/kubernetes/blob/c560907/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go#L135
      * @return valid name
      */
-    protected static String buildJobName(String jobId) {
-        jobId = jobId.replace("_", "-");
+    protected static String buildJobName(String jobIdInput) {
+        String jobId = jobIdInput.replace("_", "-");
         int[] invalidChars = jobId
                 .chars()
                 .filter(c -> c != '-' && !StringUtils.isAlphanumeric(String.valueOf((char) c)))
@@ -272,13 +297,18 @@ public class K8SExecutor implements BatchExecutor {
         for (int invalidChar : invalidChars) {
             jobId = jobId.replace(((char) invalidChar), '-');
         }
-        String jobName = ("opencga-job-" + jobId).toLowerCase();
-        if (jobName.length() > 63) {
+        jobId = jobId.toLowerCase();
+        boolean jobIdWithInvalidChars = !jobIdInput.equals(jobId);
+
+        String jobName = ("opencga-job-" + jobId);
+        if (jobName.length() > 63 || jobIdWithInvalidChars && jobName.length() > (63 - 8)) {
             // Job Id too large. Shrink it!
             // NOTE: This shrinking MUST be predictable!
             jobName = jobName.substring(0, 27)
-                    + "-" + DigestUtils.md5Hex(jobName).substring(0, 6).toLowerCase() + "-"
+                    + "-" + DigestUtils.md5Hex(jobIdInput).substring(0, 6).toLowerCase() + "-"
                     + jobName.substring(jobName.length() - 27);
+        } else if (jobIdWithInvalidChars) {
+            jobName += "-" + DigestUtils.md5Hex(jobIdInput).substring(0, 6).toLowerCase();
         }
         return jobName;
     }

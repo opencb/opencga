@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.apache.commons.collections.map.LinkedMap;
+import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -77,6 +77,8 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         SOFTWARE_COMMIT("software.commit", TEXT, ""),
         SAMPLE_IDS("sampleIds", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
+
+        QUALITY_CONTROL("qualityControl", OBJECT, ""),
 
         JOB_ID("jobId", TEXT, ""),
 

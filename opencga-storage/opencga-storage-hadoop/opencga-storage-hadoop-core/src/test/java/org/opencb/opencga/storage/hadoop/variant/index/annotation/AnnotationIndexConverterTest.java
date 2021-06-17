@@ -6,14 +6,14 @@ import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 
@@ -26,6 +26,7 @@ public class AnnotationIndexConverterTest {
 
     private AnnotationIndexConverter converter;
     byte b;
+    private SampleIndexSchema schema;
 
     @Before
     public void setUp() throws Exception {
@@ -37,10 +38,12 @@ public class AnnotationIndexConverterTest {
                 "STUDY:POP_5",
                 "STUDY:POP_6"
         );
-        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
-                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
+        SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
+        configuration.getPopulationRanges().clear();
+        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
 
-        converter = new AnnotationIndexConverter(configuration);
+        schema = new SampleIndexSchema(configuration);
+        converter = new AnnotationIndexConverter(schema);
     }
 
 //    @After
@@ -88,7 +91,7 @@ public class AnnotationIndexConverterTest {
     @Test
     public void testCtBtCombination() {
         AnnotationIndexEntry entry = converter.convert(annot(ct("missense_variant", "pseudogene"), ct("pseudogene", "protein_coding")));
-        byte[] ctBtIndex = entry.getCtBtCombination().getCtBtMatrix();
+        int[] ctBtIndex = entry.getCtBtCombination().getCtBtMatrix();
         assertEquals(1, ctBtIndex.length);
         assertEquals(1, entry.getCtBtCombination().getNumCt());
         assertEquals(1, entry.getCtBtCombination().getNumBt());
@@ -118,6 +121,7 @@ public class AnnotationIndexConverterTest {
                 ct("stop_lost", "processed_transcript"),
                 ct("stop_gained", "pseudogene")));
         ctBtIndex = entry.getCtBtCombination().getCtBtMatrix();
+        System.out.println("entry = " + entry);
         assertEquals(4, ctBtIndex.length);
         assertEquals(4, entry.getCtBtCombination().getNumCt());
         assertEquals(2, entry.getCtBtCombination().getNumBt()); // protein_coding + processed_transcript. biotype "other" does not count
@@ -166,24 +170,35 @@ public class AnnotationIndexConverterTest {
     @Test(expected = IllegalArgumentException.class)
     public void testDuplicatedPopulations() {
         List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
-        SampleIndexConfiguration configuration = new SampleIndexConfiguration().setPopulationRanges(
-                populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).collect(Collectors.toList()));
-        new AnnotationIndexConverter(configuration);
+        SampleIndexConfiguration configuration = new SampleIndexConfiguration();
+        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
+        new AnnotationIndexConverter(new SampleIndexSchema(configuration));
     }
 
     @Test
     public void testPopFreqMulti() {
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0},
+        assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0, 0, 0, 0, 0}),
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0},
+        assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0, 0, 0, 0, 0}),
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf(K_GENOMES, "ALL", 0.3))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0, 0, 0},
+        assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0, 0, 0, 0, 0}),
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0))).getPopFreqIndex());
 
-        assertArrayEquals(new byte[]{0b11, 0b10, 0, 0, 0, 0},
+        assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0b10, 0, 0, 0, 0}),
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_2", 0.00501))).getPopFreqIndex());
-        assertArrayEquals(new byte[]{0b11, 0, 0, 0b01, 0b11, 0},
+        assertEquals(getPopFreqBitBuffer(new byte[]{0b11, 0, 0, 0b01, 0b11, 0}),
                 converter.convert(annot(pf("STUDY", "POP_1", 0.5), pf("STUDY", "POP_4", 0.001), pf("STUDY", "POP_5", 0.5))).getPopFreqIndex());
+    }
+
+    private BitBuffer getPopFreqBitBuffer(byte[] bytes) {
+        BitBuffer bitBuffer = new BitBuffer(schema.getPopFreqIndex().getBitsLength());
+        int offset = 0;
+        int bitsLength = schema.getPopFreqIndex().getFields().get(0).getBitLength();
+        for (byte b : bytes) {
+            bitBuffer.setBytePartial(b, offset, bitsLength);
+            offset += bitsLength;
+        }
+        return bitBuffer;
     }
 
     public static VariantAnnotation annot() {

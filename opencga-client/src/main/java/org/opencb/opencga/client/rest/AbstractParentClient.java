@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright 2015-2020 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,46 +16,47 @@
 
 package org.opencb.opencga.client.rest;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.glassfish.jersey.client.ClientProperties;
-import org.glassfish.jersey.media.multipart.FormDataMultiPart;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.core.response.VariantQueryResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+ import com.fasterxml.jackson.core.JsonParseException;
+ import com.fasterxml.jackson.core.JsonProcessingException;
+ import com.fasterxml.jackson.databind.DeserializationFeature;
+ import com.fasterxml.jackson.databind.ObjectMapper;
+ import com.fasterxml.jackson.databind.ObjectReader;
+ import org.apache.commons.collections4.CollectionUtils;
+ import org.apache.commons.lang3.StringUtils;
+ import org.glassfish.jersey.client.ClientProperties;
+ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+ import org.glassfish.jersey.media.multipart.MultiPartFeature;
+ import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
+ import org.opencb.commons.datastore.core.DataResult;
+ import org.opencb.commons.datastore.core.Event;
+ import org.opencb.commons.datastore.core.ObjectMap;
+ import org.opencb.commons.datastore.core.QueryOptions;
+ import org.opencb.opencga.client.config.ClientConfiguration;
+ import org.opencb.opencga.client.exceptions.ClientException;
+ import org.opencb.opencga.core.common.JacksonUtils;
+ import org.opencb.opencga.core.response.RestResponse;
+ import org.opencb.opencga.core.response.VariantQueryResult;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.*;
-import javax.ws.rs.client.*;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.util.*;
+ import javax.net.ssl.*;
+ import javax.ws.rs.client.*;
+ import javax.ws.rs.core.HttpHeaders;
+ import javax.ws.rs.core.Response;
+ import java.io.File;
+ import java.io.FileOutputStream;
+ import java.io.IOException;
+ import java.io.InputStream;
+ import java.net.URI;
+ import java.nio.channels.Channels;
+ import java.nio.channels.ReadableByteChannel;
+ import java.nio.file.Files;
+ import java.nio.file.Paths;
+ import java.security.KeyManagementException;
+ import java.security.NoSuchAlgorithmException;
+ import java.security.SecureRandom;
+ import java.security.cert.X509Certificate;
+ import java.util.*;
 
 /**
  * Created by imedina on 04/05/16.
@@ -70,7 +71,7 @@ public abstract class AbstractParentClient {
 
     protected final ObjectMapper jsonObjectMapper;
 
-    private int timeout = 10000;
+    private int timeout = 90000;
     private int batchSize = 2000;
     private int defaultLimit = 2000;
     private static final int DEFAULT_SKIP = 0;
@@ -104,6 +105,9 @@ public abstract class AbstractParentClient {
     }
 
     private Client newClient(ClientConfiguration configuration) {
+        ClientBuilder clientBuilder = ClientBuilder.newBuilder();
+        clientBuilder.register(JacksonUtils.ObjectMapperProvider.class);
+
         if (configuration.getRest().isTlsAllowInvalidCertificates()) {
             logger.debug("Using custom SSLContext to allow invalid certificates");
             try {
@@ -136,16 +140,14 @@ public abstract class AbstractParentClient {
                         return this.hostname.equals(hostname);
                     }
                 };
-                return ClientBuilder.newBuilder()
+                clientBuilder
                         .sslContext(sc)
-                        .hostnameVerifier(verifier)
-                        .build();
+                        .hostnameVerifier(verifier);
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 throw new RuntimeException(e);
             }
-        } else {
-            return ClientBuilder.newClient();
         }
+        return clientBuilder.build();
     }
 
     protected AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {

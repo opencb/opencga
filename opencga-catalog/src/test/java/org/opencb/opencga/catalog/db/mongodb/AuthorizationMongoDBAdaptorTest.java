@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -31,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleInternal;
@@ -77,7 +79,7 @@ public class AuthorizationMongoDBAdaptorTest {
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
-                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()),
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()),
                 Collections.emptyList(), QueryOptions.empty());
         s1 = getSample(studyId, "s1");
         acls = new HashMap<>();
@@ -241,7 +243,7 @@ public class AuthorizationMongoDBAdaptorTest {
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", null, null, null, 1, 1, "", false,
-                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), new SampleInternal(new Status()), Collections.emptyMap()),
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample s2 = getSample(studyId, "s2");
 

@@ -58,21 +58,7 @@ public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<Byt
             ClientProtos.MutationProto proto = ProtobufUtil.toMutation(ClientProtos.MutationProto.MutationType.PUT, put);
             context.write(new BytesWritable(put.getRow()), new BytesWritable(proto.toByteArray()));
         }
-        for (Put put : fillResult.getSamplesIndexPuts()) {
-            setSampleIndexTablePut(put);
-            ClientProtos.MutationProto proto = ProtobufUtil.toMutation(ClientProtos.MutationProto.MutationType.PUT, put);
-            context.write(new BytesWritable(put.getRow()), new BytesWritable(proto.toByteArray()));
-        }
         updateStats(context);
-    }
-
-    public static void setSampleIndexTablePut(Put put) {
-        put.setAttribute("s", new byte[]{1});
-    }
-
-    public static boolean isSampleIndexTablePut(Put put) {
-        byte[] s = put.getAttribute("s");
-        return s != null && s[0] == 1;
     }
 
     private void updateStats(Context context) {

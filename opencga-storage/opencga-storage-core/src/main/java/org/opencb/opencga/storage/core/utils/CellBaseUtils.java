@@ -22,11 +22,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.exceptions.NonStandardCompliantSampleField;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.cellbase.core.api.GeneDBAdaptor;
+import org.opencb.cellbase.core.ParamConstants;
+import org.opencb.cellbase.core.result.CellBaseDataResponse;
+import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
@@ -84,17 +84,17 @@ public class CellBaseUtils {
         try {
             long ts = System.currentTimeMillis();
             QueryOptions options = new QueryOptions(GENE_QUERY_OPTIONS); // Copy options. DO NOT REUSE QUERY OPTIONS
-            QueryResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, options);
+            CellBaseDataResponse<Gene> response = cellBaseClient.getGeneClient().get(geneStrs, options);
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
-            for (QueryResult<Gene> result : response.getResponse()) {
+            for (CellBaseDataResult<Gene> result : response.getResponses()) {
                 Gene gene = null;
                 String geneStr = result.getId();
                 // It may happen that CellBase returns more than 1 result for the same gene name.
                 // Pick the gene where the given geneStr matches with the name,id,transcript.id,transcript.name or transcript.proteinId
-                if (result.getResult().size() > 1) {
-                    for (Gene aGene : result.getResult()) {
+                if (result.getResults().size() > 1) {
+                    for (Gene aGene : result.getResults()) {
                         if (geneStr.equals(aGene.getName())
                                 || geneStr.equals(aGene.getId())
                                 || aGene.getTranscripts().stream().anyMatch(t -> geneStr.equals(t.getName()))
@@ -122,7 +122,7 @@ public class CellBaseUtils {
                     } else {
                         query.put("name", geneStr);
                     }
-                    gene = cellBaseClient.getGeneClient().search(query, options).getResponse().get(0).first();
+                    gene = cellBaseClient.getGeneClient().search(query, options).firstResult();
                 }
                 if (gene == null) {
                     if (missingGenes == null) {
@@ -152,10 +152,10 @@ public class CellBaseUtils {
         Set<String> genes = new HashSet<>();
         QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
         try {
-            List<QueryResult<Gene>> responses = cellBaseClient.getGeneClient().get(goValues, params)
-                    .getResponse();
-            for (QueryResult<Gene> response : responses) {
-                for (Gene gene : response.getResult()) {
+            List<CellBaseDataResult<Gene>> responses = cellBaseClient.getGeneClient().get(goValues, params)
+                    .getResponses();
+            for (CellBaseDataResult<Gene> response : responses) {
+                for (Gene gene : response.getResults()) {
                     genes.add(gene.getName());
                 }
             }
@@ -175,12 +175,12 @@ public class CellBaseUtils {
                 String[] split = expressionValue.split(":");
                 expressionValue = split[0];
                 Query cellbaseQuery = new Query(2)
-                        .append(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_TISSUE.key(), expressionValue)
-                        .append(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_VALUE.key(), "UP");
-                List<QueryResult<Gene>> responses = cellBaseClient.getGeneClient().search(cellbaseQuery, params)
-                        .getResponse();
-                for (QueryResult<Gene> response : responses) {
-                    for (Gene gene : response.getResult()) {
+                        .append(ParamConstants.ANNOTATION_EXPRESSION_TISSUE_PARAM, expressionValue)
+                        .append(ParamConstants.ANNOTATION_EXPRESSION_VALUE_PARAM, "UP");
+                List<CellBaseDataResult<Gene>> responses = cellBaseClient.getGeneClient().search(cellbaseQuery, params)
+                        .getResponses();
+                for (CellBaseDataResult<Gene> response : responses) {
+                    for (Gene gene : response.getResults()) {
                         genes.add(gene.getName());
                     }
                 }
@@ -201,9 +201,9 @@ public class CellBaseUtils {
 
     public List<Variant> getVariants(List<String> variantsStr) {
         List<Variant> variants = new ArrayList<>(variantsStr.size());
-        List<QueryResult<Variant>> response = null;
+        List<CellBaseDataResult<Variant>> response = null;
         try {
-            response = cellBaseClient.getVariationClient().get(variantsStr,
+            response = cellBaseClient.getVariantClient().get(variantsStr,
                     new QueryOptions(QueryOptions.INCLUDE,
                             VariantField.CHROMOSOME.fieldName() + ","
                                     + VariantField.START.fieldName() + ","
@@ -211,20 +211,20 @@ public class CellBaseUtils {
                                     + VariantField.TYPE.fieldName() + ","
                                     + VariantField.REFERENCE.fieldName() + ","
                                     + VariantField.ALTERNATE.fieldName()
-                    )).getResponse();
+                    )).getResponses();
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
         VariantNormalizer variantNormalizer = new VariantNormalizer();
-        for (QueryResult<Variant> result : response) {
-            if (result.getResult().size() == 1) {
-                Variant variant = result.getResult().get(0);
+        for (CellBaseDataResult<Variant> result : response) {
+            if (result.getResults().size() == 1) {
+                Variant variant = result.getResults().get(0);
                 try {
                     variants.add(variantNormalizer.normalize(Collections.singletonList(variant), true).get(0));
                 } catch (NonStandardCompliantSampleField e) {
                     throw VariantQueryException.internalException(e);
                 }
-            } else if (result.getResult().isEmpty()) {
+            } else if (result.getResults().isEmpty()) {
                 throw new VariantQueryException("Unknown variant '" + result.getId() + "'");
             } else {
                 throw new VariantQueryException("Not unique variant identifier '" + result.getId() + "'."

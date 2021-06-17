@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -23,6 +24,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.AbstractSampleIndexEntryFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.net.URI;
 import java.util.*;
@@ -75,14 +77,14 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
             loaded = true;
         }
-        sampleIndexQueryParser = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().getSampleIndexQueryParser();
+        sampleIndexQueryParser = new SampleIndexQueryParser(metadataManager, SampleIndexSchema.defaultSampleIndexSchema());
     }
 
     @Test
     public void testMendelianErrors() throws Exception {
         Set<String> mendelianErrorVariants = new HashSet<>();
         Set<String> deNovoVariants = new HashSet<>();
-        for (Variant variant : variantStorageEngine) {
+        for (Variant variant : variantStorageEngine.iterable(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL), new QueryOptions())) {
             Genotype fatherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(father, "GT"));
             Genotype motherGenotype = new Genotype(variant.getStudies().get(0).getSampleData(mother, "GT"));
             Genotype childGenotype = new Genotype(variant.getStudies().get(0).getSampleData(child, "GT"));
@@ -141,7 +143,9 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testParentGtCode() {
-        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query(VariantQueryParam.INCLUDE_GENOTYPE.key(), true), new QueryOptions());
+        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query()
+                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL), new QueryOptions());
 
         Query query = new Query()
                 .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"
@@ -169,7 +173,9 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testParentsGtCode() {
-        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query(VariantQueryParam.INCLUDE_GENOTYPE.key(), true), new QueryOptions());
+        VariantQueryResult<Variant> all = variantStorageEngine.get(new Query()
+                        .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
+                        .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL), new QueryOptions());
 
         Query query = new Query()
                 .append(VariantQueryParam.GENOTYPE.key(), child + ":0/1"

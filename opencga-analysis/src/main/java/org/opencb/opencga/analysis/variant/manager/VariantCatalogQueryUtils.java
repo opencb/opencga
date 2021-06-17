@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.manager;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
@@ -45,7 +45,6 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -611,7 +610,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Set<String> variants = new HashSet<>();
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
-                Panel panel = getPanel(defaultStudyStr, panelId, token);
+                org.opencb.opencga.core.models.panel.Panel panel = getPanel(defaultStudyStr, panelId, token);
                 for (GenePanel genePanel : panel.getGenes()) {
                     String gene = genePanel.getName();
                     if (StringUtils.isEmpty(gene)) {
@@ -908,8 +907,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
      * @return The panel
      * @throws CatalogException if the panel does not exist, or the user does not have permissions to see it.
      */
-    public Panel getPanel(String studyId, String panelId, String sessionId) throws CatalogException {
-        Panel panel = null;
+    public org.opencb.opencga.core.models.panel.Panel getPanel(String studyId, String panelId, String sessionId) throws CatalogException {
+        org.opencb.opencga.core.models.panel.Panel panel = null;
         if (StringUtils.isNotEmpty(studyId)) {
             try {
                 panel = catalogManager.getPanelManager().get(studyId, panelId, null, sessionId).first();
