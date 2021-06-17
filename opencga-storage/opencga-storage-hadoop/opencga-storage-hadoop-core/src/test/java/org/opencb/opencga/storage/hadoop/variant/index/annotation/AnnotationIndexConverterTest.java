@@ -39,8 +39,8 @@ public class AnnotationIndexConverterTest {
                 "STUDY:POP_6"
         );
         SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
-        configuration.getPopulationRanges().clear();
-        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
+        configuration.getAnnotationIndexConfiguration().getPopulationFrequency().getPopulations().clear();
+        populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
 
         schema = new SampleIndexSchema(configuration);
         converter = new AnnotationIndexConverter(schema);
@@ -171,7 +171,7 @@ public class AnnotationIndexConverterTest {
     public void testDuplicatedPopulations() {
         List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
         SampleIndexConfiguration configuration = new SampleIndexConfiguration();
-        populations.stream().map(SampleIndexConfiguration.PopulationFrequencyRange::new).forEach(configuration::addPopulationRange);
+        populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
         new AnnotationIndexConverter(new SampleIndexSchema(configuration));
     }
 

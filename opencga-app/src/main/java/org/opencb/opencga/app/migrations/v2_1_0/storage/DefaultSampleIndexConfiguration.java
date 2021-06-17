@@ -2,7 +2,6 @@ package org.opencb.opencga.app.migrations.v2_1_0.storage;
 
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -24,7 +23,7 @@ import java.util.Date;
 @Migration(id="default_sample_index_configuration", description = "Add a default backward compatible sample index configuration", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        patch = 1,
+        patch = 2,
         rank = 10)
 public class DefaultSampleIndexConfiguration extends MigrationTool {
 
@@ -38,7 +37,8 @@ public class DefaultSampleIndexConfiguration extends MigrationTool {
                 study.getInternal().setVariantEngineConfiguration(new StudyVariantEngineConfiguration());
             }
             if (study.getInternal().getVariantEngineConfiguration().getSampleIndex() != null) {
-                logger.info("Study {} already as a SampleIndex configuration", study.getFqn());
+                logger.info("Study {} already has a SampleIndex configuration", study.getFqn());
+                continue;
             }
             if (variantStorageManager.exists(study.getFqn(), token)) {
                 DataStore dataStore = variantStorageManager.getDataStore(study.getFqn(), token);

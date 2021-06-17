@@ -65,10 +65,10 @@ public class SampleIndexQueryParserTest {
     @Before
     public void setUp() throws Exception {
         configuration = SampleIndexConfiguration.defaultConfiguration()
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s1", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s2", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s3", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s4", "ALL"));
+                .addPopulation(new SampleIndexConfiguration.Population("s1", "ALL"))
+                .addPopulation(new SampleIndexConfiguration.Population("s2", "ALL"))
+                .addPopulation(new SampleIndexConfiguration.Population("s3", "ALL"))
+                .addPopulation(new SampleIndexConfiguration.Population("s4", "ALL"));
 
         SampleIndexSchema schema = new SampleIndexSchema(configuration);
         fileIndex = schema.getFileIndex();
@@ -713,7 +713,7 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parsePopFreqQueryTest() {
-        double[] default_ranges = configuration.getAnnotationIndexConfiguration().getPopulationFrequency().get(0).getThresholds();
+        double[] default_ranges = configuration.getAnnotationIndexConfiguration().getPopulationFrequency().getThresholds();
         for (int i = 0; i < default_ranges.length; i++) {
             RangeIndexFieldFilter q;
             double r = default_ranges[i];
