@@ -103,6 +103,21 @@ public class MigrationManager {
         return filterPendingMigrations(version, availableMigrations);
     }
 
+    public List<Migration> getMigrations(String token) throws CatalogException {
+        validateAdmin(token);
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+        List<Migration> migrations = new ArrayList<>(availableMigrations.size());
+        for (Class<? extends MigrationTool> migrationClass : availableMigrations) {
+            migrations.add(getMigrationAnnotation(migrationClass));
+        }
+        return migrations;
+    }
+
+    public OpenCGAResult<MigrationRun> getMigrationRun(List<Migration> migrations, String token) throws CatalogException {
+        validateAdmin(token);
+        return migrationDBAdaptor.get(migrations.stream().map(Migration::id).collect(Collectors.toList()));
+    }
+
     private List<Class<? extends MigrationTool>> filterPendingMigrations(String version,
                                                                          Set<Class<? extends MigrationTool>> availableMigrations)
             throws MigrationException {

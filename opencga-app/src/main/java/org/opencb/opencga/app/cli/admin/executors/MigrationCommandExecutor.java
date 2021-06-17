@@ -1,7 +1,9 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -16,6 +18,7 @@ import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMe
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewStudyMetadata;
 import org.opencb.opencga.app.cli.admin.executors.migration.v2_0_0.VariantStorage200MigrationTool;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
+import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -26,7 +29,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationManager;
+import org.opencb.opencga.catalog.migration.MigrationRun;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -48,9 +53,7 @@ import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200Migration
 
 import java.io.*;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -76,6 +79,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         String subCommandString = migrationCommandOptions.getSubCommand();
         switch (subCommandString) {
+            case "search":
+                search();
+                break;
 //            case "latest":
             case "v1.3.0":
                 v1_3_0();
@@ -100,6 +106,57 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 break;
         }
     }
+
+    private void search() throws CatalogException {
+        MigrationCommandOptions.SearchCommandOptions options = migrationCommandOptions.getSearchCommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+
+            List<Migration> migrations = catalogManager.getMigrationManager().getMigrations(token);
+            if (options.version != null) {
+                migrations.removeIf(migration -> !migration.version().equals(options.version));
+            }
+            if (CollectionUtils.isNotEmpty(options.domain)) {
+                migrations.removeIf(migration -> !options.domain.contains(migration.domain()));
+            }
+            Map<String, Pair<Migration, MigrationRun>> map = new HashMap<>(migrations.size());
+            for (Migration migration : migrations) {
+                map.put(migration.id(), Pair.of(migration, null));
+            }
+            List<MigrationRun> migrationRuns = catalogManager.getMigrationManager().getMigrationRun(migrations, token).getResults();
+            for (MigrationRun migrationRun : migrationRuns) {
+                map.get(migrationRun.getId()).setValue(migrationRun);
+            }
+
+            if (CollectionUtils.isNotEmpty(options.status)) {
+                if (!options.status.contains("PENDING")) {
+                    map.values().removeIf(p -> p.getValue() == null);
+                }
+                map.values().removeIf(p -> p.getValue() != null && !options.status.contains(p.getValue().getStatus().toString()));
+            }
+
+            Table<Pair<Migration, MigrationRun>> table = new Table<Pair<Migration, MigrationRun>>(Table.PrinterType.JANSI)
+                    .addColumn("ID", p -> p.getKey().id(), 50)
+                    .addColumn("Description", p -> p.getKey().description(), 50)
+                    .addColumnEnum("Domain", p -> p.getKey().domain())
+                    .addColumn("Version", p -> p.getKey().version())
+                    .addColumnEnum("Language", p -> p.getKey().language())
+                    .addColumn("Manual", p -> Boolean.toString(p.getKey().manual()))
+                    .addColumnNumber("Patch", p -> p.getKey().patch())
+                    .addColumnEnum("Status", p -> p.getValue().getStatus())
+                    .addColumnNumber("RunPatch", p -> p.getValue().getPatch())
+                    .addColumn("ExecutionTime", p -> p.getValue().getStart() + " - " + p.getValue().getEnd())
+                    .addColumn("Exception", p -> p.getValue().getException());
+
+            List<Pair<Migration, MigrationRun>> rows = new ArrayList<>(map.values());
+            rows.sort(Comparator.<Pair<Migration, MigrationRun>, String>comparing(p1 -> p1.getKey().version())
+                    .thenComparing(p -> p.getKey().rank()));
+            table.printTable(rows);
+        }
+    }
+
 
     private void v1_3_0() throws Exception {
         logger.info("MIGRATING v1.3.0");

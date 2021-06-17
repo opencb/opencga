@@ -44,7 +44,7 @@ public class MigrationRun {
      */
     private String exception;
 
-    enum MigrationStatus {
+    public enum MigrationStatus {
         DONE,
         ERROR
     }
