@@ -76,7 +76,7 @@ for i, clinical_host in enumerate(clinical_hosts):
 # Inject cellbase rest host, if set
 if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
     cellbase_rest_url = args.cellbase_rest_url.replace('\"', '').replace('[','').replace(']','')
-    storage_config["cellbase"]["host"] = cellbase_rest_url
+    storage_config["cellbase"]["rest"] = cellbase_rest_url
     
 # set default engine
 storage_config["variant"]["defaultEngine"] = args.variant_default_engine

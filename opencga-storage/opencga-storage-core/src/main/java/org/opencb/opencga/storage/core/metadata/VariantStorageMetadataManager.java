@@ -225,6 +225,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }).getSampleIndexConfigurationLatest();
     }
 
+    public boolean studyExists(String studyName) {
+        return exists() && getStudyIdOrNull(studyName) != null;
+    }
+
     public interface UpdateFunction<T, E extends Exception> {
         T update(T t) throws E;
     }

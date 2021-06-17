@@ -344,8 +344,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      */
     Long variableSetExists(long variableSetId);
 
-    default Long variableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.UID.key(), studyId);
+    default Long variableSetExists(String variableSetId, long studyId) throws CatalogDBException {
+        Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId).append(QueryParams.UID.key(), studyId);
         return count(query).getNumMatches();
     }
 
@@ -361,13 +361,13 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         }
     }
 
-    default void checkVariableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Long count = variableSetExists(variableSetName, studyId);
+    default void checkVariableSetExists(String variableSetId, long studyId) throws CatalogDBException {
+        Long count = variableSetExists(variableSetId, studyId);
         if (count <= 0) {
-            throw CatalogDBException.newInstance("VariableSet name '{}' does not exist", variableSetName);
+            throw CatalogDBException.newInstance("VariableSet id '{}' does not exist", variableSetId);
         } else if (count > 1) {
-            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet name '{}' in study '{}'", count,
-                    variableSetName, studyId);
+            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet id '{}' in study '{}'", count,
+                    variableSetId, studyId);
         }
     }
 

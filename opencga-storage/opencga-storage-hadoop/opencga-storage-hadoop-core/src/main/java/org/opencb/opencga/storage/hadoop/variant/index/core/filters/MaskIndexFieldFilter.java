@@ -44,6 +44,7 @@ public class MaskIndexFieldFilter extends IndexFieldFilter {
     public String toString() {
         return getClass().getSimpleName() + "{"
                 + getIndex().getId()
+                + " exact:" + isExactFilter()
                 + " (offset=" + getIndex().getBitOffset() + ", length=" + getIndex().getBitLength() + ")"
                 + " : [ " + IndexUtils.binaryToString(expectedMask, getIndex().getBitLength()) + " ] }";
     }

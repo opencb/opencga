@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.migration;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -18,7 +19,10 @@ import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -37,19 +41,22 @@ public class MigrationManager {
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
 
-    public void runMigration(String version, String appHome, String token) throws CatalogException {
+    public void runMigration(String version, String appHome, String token) throws CatalogException, IOException {
         runMigration(version, Collections.emptySet(), Collections.emptySet(), appHome, new ObjectMap(), token);
     }
 
     public void runMigration(String version, Set<Migration.MigrationDomain> domainsFilter,
                              Set<Migration.MigrationLanguage> languageFilter, String appHome, String token)
-            throws CatalogException {
+            throws CatalogException, IOException {
         runMigration(version, domainsFilter, languageFilter, appHome, new ObjectMap(), token);
     }
 
     public void runMigration(String version, Set<Migration.MigrationDomain> domainsFilter,
                              Set<Migration.MigrationLanguage> languageFilter, String appHome, ObjectMap params, String token)
-            throws CatalogException {
+            throws CatalogException, IOException {
+        Path appHomePath = Paths.get(appHome);
+        FileUtils.checkDirectory(appHomePath);
+
         validateAdmin(token);
 
         // Extend token life
@@ -81,12 +88,12 @@ public class MigrationManager {
 
         // 3. Execute pending migrations
         for (Class<? extends MigrationTool> migration : pendingMigrations) {
-            run(migration, appHome, new ObjectMap(), token);
+            run(migration, appHomePath, new ObjectMap(), token);
         }
 
         // 4. Execute target migration
         for (Class<? extends MigrationTool> migration : runnableMigrations) {
-            run(migration, appHome, params, token);
+            run(migration, appHomePath, params, token);
         }
     }
 
@@ -282,7 +289,7 @@ public class MigrationManager {
         return filteredMigrations;
     }
 
-    private void run(Class<? extends MigrationTool> runnableMigration, String appHome, ObjectMap params, String token)
+    private void run(Class<? extends MigrationTool> runnableMigration, Path appHome, ObjectMap params, String token)
             throws MigrationException {
         Migration annotation = getMigrationAnnotation(runnableMigration);
 
@@ -302,7 +309,7 @@ public class MigrationManager {
         try {
             migrationTool.execute();
             migrationRun.setStatus(MigrationRun.MigrationStatus.DONE);
-        } catch (MigrationException e) {
+        } catch (MigrationException | RuntimeException e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             migrationRun.setException(e.getMessage());
             logger.error("Migration '{}' failed with message: {}", annotation.id(), e.getMessage(), e);

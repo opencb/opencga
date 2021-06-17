@@ -24,8 +24,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -63,7 +61,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -333,11 +330,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 .append(QueryParams.STUDY_UID.key(), family.getStudyUid())
                 .append(QueryParams.UID.key(), family.getUid());
 
-        // TODO: This shouldn't be necessary now
-        if (queryOptions.getBoolean(Constants.REFRESH)) {
-            getLastVersionOfMembers(clientSession, tmpQuery, parameters);
-        }
-
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, family.getStudyUid(), family.getUid());
         } else {
@@ -454,59 +446,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     + String.join("', '", clinicalAnalysisIds) + "'.");
         }
 
-    }
-
-    private void getLastVersionOfMembers(ClientSession clientSession, Query query, ObjectMap parameters)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        if (parameters.containsKey(QueryParams.MEMBERS.key())) {
-            throw new CatalogDBException("Invalid option: Cannot update to the last version of members and update to different members at "
-                    + "the same time.");
-        }
-
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.MEMBERS.key());
-        OpenCGAResult<Family> queryResult = get(clientSession, query, options);
-
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Family not found.");
-        }
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogDBException("Update to the last version of members for multiple families at once is not supported.");
-        }
-
-        Family family = queryResult.first();
-        if (family.getMembers() == null || family.getMembers().isEmpty()) {
-            // Nothing to do
-            return;
-        }
-
-        // If we update to the latest version, we will also need to fetch the disorders and phenotypes
-        List<Long> individualIds = family.getMembers().stream().map(Individual::getUid).collect(Collectors.toList());
-        Query individualQuery = new Query()
-                .append(IndividualDBAdaptor.QueryParams.UID.key(), individualIds);
-        options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.VERSION.key(),
-                IndividualDBAdaptor.QueryParams.DISORDERS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key()
-        ));
-        OpenCGAResult<Individual> individualDataResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor()
-                .get(clientSession, individualQuery, options);
-        parameters.put(QueryParams.MEMBERS.key(), individualDataResult.getResults());
-
-        Map<String, Disorder> disorders = new HashMap<>();
-        Map<String, Phenotype> phenotypes = new HashMap<>();
-        for (Individual individual : individualDataResult.getResults()) {
-            if (individual.getDisorders() != null) {
-                for (Disorder disorder : individual.getDisorders()) {
-                    disorders.put(disorder.getId(), disorder);
-                }
-            }
-            if (individual.getPhenotypes() != null) {
-                for (Phenotype phenotype : individual.getPhenotypes()) {
-                    phenotypes.put(phenotype.getId(), phenotype);
-                }
-            }
-        }
-        parameters.put(QueryParams.PHENOTYPES.key(), new ArrayList<>(phenotypes.values()));
-        parameters.put(QueryParams.DISORDERS.key(), new ArrayList<>(disorders.values()));
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long familyUid)

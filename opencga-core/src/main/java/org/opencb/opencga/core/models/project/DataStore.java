@@ -25,6 +25,7 @@ public class DataStore {
 
     private String storageEngine;
     private String dbName;
+    //TODO: Rename to "options"
     private ObjectMap configuration;
 
     public DataStore() {

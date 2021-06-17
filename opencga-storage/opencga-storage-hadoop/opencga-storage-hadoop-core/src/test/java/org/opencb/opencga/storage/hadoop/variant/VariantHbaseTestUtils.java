@@ -58,8 +58,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.*;
@@ -420,7 +419,50 @@ public class VariantHbaseTestUtils {
             int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
             String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
             if (printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName)) return;
+            printSampleIndexTable2(dbAdaptor, outDir, studyId, sampleGtTableName);
         }
+    }
+
+    public static boolean printSampleIndexTable2(VariantHadoopDBAdaptor dbAdaptor, Path outDir, int studyId, String sampleGtTableName) throws IOException {
+        if (!dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
+            // Skip table
+            return true;
+        }
+        Path fileName = outDir.resolve("sample." + sampleGtTableName + ".detailed.txt");
+        try (
+                FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
+        ) {
+            SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
+            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(studyId);
+            for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
+                String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
+                RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(dbAdaptor.getMetadataManager().getStudyName(studyId), sampleName);
+                Map<String, String> map = new TreeMap<>();
+
+                out.println("");
+                out.println("");
+                out.println("");
+                out.println("SAMPLE: " + sampleName + " , " + sampleId);
+                while (it.hasNext()) {
+                    map.clear();
+                    SampleVariantIndexEntry entry = it.next();
+
+                    out.println("_______________________");
+                    out.println(entry.getVariant());
+                    out.println("gt: " + entry.getGenotype());
+                    out.println("file: " + entry.getFileIndex());
+                    out.println("ct: " + IndexUtils.binaryToString(entry.getAnnotationIndexEntry().getCtIndex(), schema.getCtIndex().getField().getBitLength()) + " : " + schema.getCtIndex().getField().decode(entry.getAnnotationIndexEntry().getCtIndex()));
+                    out.println("bt: " + IndexUtils.binaryToString(entry.getAnnotationIndexEntry().getBtIndex(), schema.getBiotypeIndex().getField().getBitLength()) + " : " + schema.getBiotypeIndex().getField().decode(entry.getAnnotationIndexEntry().getBtIndex()));
+                    out.println("ct_bt: " + schema.getCtBtIndex().getField().encode(entry.getAnnotationIndexEntry().getCtBtCombination()) + " : " + entry.getAnnotationIndexEntry().getCtBtCombination());
+
+
+                    for (Map.Entry<String, ?> e : map.entrySet()) {
+                        out.println("\t" + e.getKey() + " = " + e.getValue());
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     public static boolean printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir, int studyId, String sampleGtTableName)

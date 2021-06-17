@@ -22,4 +22,14 @@ public class NoOpIndexFieldFilter extends IndexFieldFilter {
     public boolean isExactFilter() {
         return false;
     }
+
+    @Override
+    public boolean isNoOp() {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + '{' + getIndex().getId() + '}';
+    }
 }

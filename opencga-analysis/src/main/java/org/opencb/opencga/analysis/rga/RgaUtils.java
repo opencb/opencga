@@ -180,8 +180,9 @@ class RgaUtils {
     }
 
     /** Calculate the list of population frequency values to look for in the db.
+     * At the moment, RGA only calculates ALL population frequencies so this method will remove the :ALL from the key if present.
      *
-     * @param filters A list containing {study}[<|>|<=|>=]{number}. e.g. 1kG_phase3<0.01";
+     * @param filters A list containing {study[:popFreq]}[<|>|<=|>=]{number}. e.g. 1kG_phase3<0.01";
      * @return the list of population frequency values to look for in the db with their corresponding population key.
      * @throws RgaException RgaException.
      */
@@ -191,6 +192,9 @@ class RgaUtils {
             KeyOpValue<String, String> keyOpValue = parseKeyOpValue(filter);
             if (keyOpValue.getKey() == null) {
                 throw new RgaException("Unexpected operation '" + filter + "'");
+            }
+            if (keyOpValue.getKey().endsWith(":ALL")) {
+                keyOpValue.setKey(keyOpValue.getKey().replace(":ALL", ""));
             }
 
             List<String> values = new LinkedList<>();
@@ -822,38 +826,45 @@ class RgaUtils {
             }
         }
 
-        public void processFeature(RgaUtils.CodedFeature codedFeature) {
+        public boolean passesFilter(RgaUtils.CodedFeature codedFeature) {
             if (codedFeature instanceof RgaUtils.CodedVariant) {
                 // Special checks for CodedVariants
                 RgaUtils.CodedVariant codedVariant = (CodedVariant) codedFeature;
                 if (!variantIdQuery.isEmpty() && !variantIdQuery.contains(codedVariant.getId())) {
-                    return;
+                    return false;
                 }
                 if (!dbSnpQuery.isEmpty() && !dbSnpQuery.contains(codedVariant.getDbSnp())) {
-                    return;
+                    return false;
                 }
                 if (!clinicalSignificanceQuery.isEmpty()
                         && codedVariant.getClinicalSignificances().stream().noneMatch((cs) -> clinicalSignificanceQuery.contains(cs))) {
-                    return;
+                    return false;
                 }
             }
 
             // Common filters
             if (!knockoutTypeQuery.isEmpty() && !knockoutTypeQuery.contains(codedFeature.getKnockoutType())) {
-                return;
+                return false;
             }
             if (!popFreqQuery.isEmpty()) {
                 for (Set<String> popFreq : popFreqQuery) {
                     if (codedFeature.getPopulationFrequencies().stream().noneMatch(popFreq::contains)) {
-                        return;
+                        return false;
                     }
                 }
             }
             if (!typeQuery.isEmpty() && !typeQuery.contains(codedFeature.getType())) {
-                return;
+                return false;
             }
             if (!consequenceTypeQuery.isEmpty()
                     && codedFeature.getConsequenceType().stream().noneMatch((ct) -> consequenceTypeQuery.contains(ct))) {
+                return false;
+            }
+            return true;
+        }
+
+        public void processFeature(RgaUtils.CodedFeature codedFeature) {
+            if (!passesFilter(codedFeature)) {
                 return;
             }
 
@@ -878,6 +889,10 @@ class RgaUtils {
                 default:
                     throw new IllegalStateException("Unexpected value: " + codedFeature.getKnockoutType());
             }
+        }
+
+        public Set<String> getIds() {
+            return ids;
         }
 
         public int getNumIds() {

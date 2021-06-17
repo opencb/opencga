@@ -1,10 +1,15 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
+import java.util.List;
+
 public abstract class DynamicIndexSchema extends IndexSchema {
 
     public DynamicIndexSchema() {
     }
 
-    public abstract boolean hasMoreValues();
+    public DynamicIndexSchema(List<IndexField<?>> fields) {
+        super(fields);
+    }
+
 
 }

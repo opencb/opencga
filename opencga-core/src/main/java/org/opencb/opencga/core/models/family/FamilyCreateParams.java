@@ -17,8 +17,6 @@
 package org.opencb.opencga.core.models.family;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -35,8 +33,6 @@ public class FamilyCreateParams {
     private String name;
     private String description;
 
-    private List<Phenotype> phenotypes;
-    private List<Disorder> disorders;
     private List<IndividualCreateParams> members;
 
     private Integer expectedSize;
@@ -48,14 +44,11 @@ public class FamilyCreateParams {
     public FamilyCreateParams() {
     }
 
-    public FamilyCreateParams(String id, String name, String description, List<Phenotype> phenotypes, List<Disorder> disorders,
-                              List<IndividualCreateParams> members, Integer expectedSize, Map<String, Object> attributes,
-                              List<AnnotationSet> annotationSets, CustomStatusParams status) {
+    public FamilyCreateParams(String id, String name, String description, List<IndividualCreateParams> members, Integer expectedSize,
+                              Map<String, Object> attributes, List<AnnotationSet> annotationSets, CustomStatusParams status) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.phenotypes = phenotypes;
-        this.disorders = disorders;
         this.members = members;
         this.expectedSize = expectedSize;
         this.attributes = attributes;
@@ -64,8 +57,7 @@ public class FamilyCreateParams {
     }
 
     public static FamilyCreateParams of(Family family) {
-        return new FamilyCreateParams(family.getId(), family.getName(), family.getDescription(), family.getPhenotypes(),
-                family.getDisorders(),
+        return new FamilyCreateParams(family.getId(), family.getName(), family.getDescription(),
                 family.getMembers() != null
                         ? family.getMembers().stream().map(IndividualCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
@@ -78,8 +70,6 @@ public class FamilyCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", disorders=").append(disorders);
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", status=").append(status);
@@ -102,7 +92,7 @@ public class FamilyCreateParams {
         String familyId = StringUtils.isEmpty(id) ? name : id;
         String familyName = StringUtils.isEmpty(name) ? familyId : name;
         int familyExpectedSize = expectedSize != null ? expectedSize : -1;
-        return new Family(familyId, familyName, phenotypes, disorders, relatives, "", description, familyExpectedSize, 1, 1, annotationSets,
+        return new Family(familyId, familyName, null, null, relatives, "", description, familyExpectedSize, 1, 1, annotationSets,
                 status != null ? status.toCustomStatus() : null, null, null, attributes);
     }
 
@@ -130,24 +120,6 @@ public class FamilyCreateParams {
 
     public FamilyCreateParams setDescription(String description) {
         this.description = description;
-        return this;
-    }
-
-    public List<Phenotype> getPhenotypes() {
-        return phenotypes;
-    }
-
-    public FamilyCreateParams setPhenotypes(List<Phenotype> phenotypes) {
-        this.phenotypes = phenotypes;
-        return this;
-    }
-
-    public List<Disorder> getDisorders() {
-        return disorders;
-    }
-
-    public FamilyCreateParams setDisorders(List<Disorder> disorders) {
-        this.disorders = disorders;
         return this;
     }
 

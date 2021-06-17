@@ -96,6 +96,22 @@ public class StudyManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCreateDuplicatedVariableSets() throws Exception {
+        Study study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+
+        // Create a new variable set changing the id
+        study.getVariableSets().get(0).setId("newId");
+        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), token);
+        Study study2 = catalogManager.getStudyManager().get(studyFqn, null, token).first();
+        assertEquals(study.getVariableSets().size() + 1, study2.getVariableSets().size());
+
+        // Replicate the first of the variable sets for creation
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("already exists");
+        catalogManager.getStudyManager().createVariableSet(studyFqn, study.getVariableSets().get(0), token);
+    }
+
+    @Test
     public void internalVariableSetTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
                 null, null, null, new QueryOptions(), token).first();

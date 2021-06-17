@@ -29,7 +29,7 @@ You might want to provide a single JSON or YAML file per entity. In the case of 
 The following entities are supported.
 
 * For [Individual](../data-models/individual.md):  `individuals.{json|yaml}`  
-* For [Sample](../data-models/sample.md):  `samples.{json|yaml}`  
+* For [Sample](../data-models/sample-model.md):  `samples.{json|yaml}`  
 * For  [File](../data-models/file.md): `files.{json|yaml}`  
 * For [Family](../data-models/family.md):  `families.{json|yaml}`
 * For  [Cohort](../data-models/cohort.md): `cohorts.{json|yaml}`  

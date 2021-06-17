@@ -11,7 +11,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
@@ -20,9 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation.AND;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation.OR;
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testIndex;
+import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testParentsGenotypeCode;
 
 /**
  * Converts SampleIndexEntry to collection of variants.
@@ -324,40 +323,11 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     }
 
     private boolean filterPopFreq(AnnotationIndexEntry annotationIndexEntry) {
-        if (query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty() || annotationIndexEntry.getPopFreqIndex() == null) {
-            return true;
-        }
-        for (PopulationFrequencyQuery q : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
-            int code = annotationIndexEntry.getPopFreqIndex()[q.getPosition()];
-            if (q.getMinCodeInclusive() <= code && code < q.getMaxCodeExclusive()) {
-                if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(OR)) {
-                    // Require ANY match
-                    // If any match, SUCCESS
-                    return true;
-                }
-            } else {
-                if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(AND)) {
-                    // Require ALL matches.
-                    // If any fail, FAIL
-                    return false;
-                }
-            }
-        }
-
-        if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(AND)) {
-            // Require ALL matches.
-            // If no fails, SUCCESS
-            return true;
-        } else {
-            // Require ANY match.
-            // If no matches, and partial, UNKNOWN. If unknown, SUCCESS
-            // If no matches, and fully covered, FAIL
-            return query.getAnnotationIndexQuery().isPopulationFrequencyQueryPartial();
-        }
+        return query.getAnnotationIndexQuery().getPopulationFrequencyFilter().test(annotationIndexEntry.getPopFreqIndex());
     }
 
     private boolean filterClinicalFields(AnnotationIndexEntry annotationIndexEntry) {
-        if (query.getAnnotationIndexQuery().getClinicalMask() == EMPTY_MASK) {
+        if (query.getAnnotationIndexQuery().getClinicalFilter().isNoOp()) {
             // No filter required
             return true;
         }
@@ -365,10 +335,11 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             // unable to filter by this field
             return true;
         }
-        if (!annotationIndexEntry.isClinical()) {
+        if (!annotationIndexEntry.hasClinical()) {
             return false;
         }
-        return testIndexAny(annotationIndexEntry.getClinicalIndex(), query.getAnnotationIndexQuery().getClinicalMask());
+        // FIXME
+        return query.getAnnotationIndexQuery().getClinicalFilter().test(annotationIndexEntry.getClinicalIndex());
     }
 
     private boolean filterBtCtFields(AnnotationIndexEntry annotationIndexEntry) {
@@ -380,59 +351,17 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             return true;
         }
         if (!annotationIndexEntry.hasBtIndex()
-                || testIndexAny(annotationIndexEntry.getBtIndex(), query.getAnnotationIndexQuery().getBiotypeMask())) {
+                || query.getAnnotationIndexQuery().getBiotypeFilter().test(annotationIndexEntry.getBtIndex())) {
 
             if (!annotationIndexEntry.hasCtIndex()
-                    || testIndexAny(annotationIndexEntry.getCtIndex(), query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
+                    || query.getAnnotationIndexQuery().getConsequenceTypeFilter().test(annotationIndexEntry.getCtIndex())) {
 
                 if (annotationIndexEntry.getCtBtCombination().getCtBtMatrix() == null
-                        || query.getAnnotationIndexQuery().getConsequenceTypeMask() == 0
-                        || query.getAnnotationIndexQuery().getBiotypeMask() == 0) {
+                        || query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()
+                        || query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()) {
                     return true;
                 } else {
-                    AnnotationIndexEntry.CtBtCombination ctBtCombination = annotationIndexEntry.getCtBtCombination();
-                    // Check ct+bt combinations
-                    short ctIndex = annotationIndexEntry.getCtIndex();
-                    int numCt = ctBtCombination.getNumCt();
-                    int numBt = ctBtCombination.getNumBt();
-                    // Pitfall!
-                    // if (numCt == 1 || numBt == 1) { return true; } This may not be true.
-                    // There could be missing rows/columns in the index
-                    byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
-                    // Check if any combination matches que query filter.
-                    // Walk through all values of CT and BT in this variant.
-                    // 3 conditions must meet:
-                    //  - The CT is part of the query filter
-                    //  - The BT is part of the query filter
-                    //  - The variant had the combination of both
-                    for (int ctIndexPos = 0; ctIndexPos < numCt; ctIndexPos++) {
-                        // Get the first CT value from the right.
-                        short ct = (short) Integer.lowestOneBit(ctIndex);
-                        // Remove the CT value from the index, so the next iteration gets the next value
-                        ctIndex &= ~ct;
-                        // Check if the CT is part of the query filter
-                        if (IndexUtils.testIndexAny(ct, query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
-                            // Iterate over the Biotype values
-                            byte btIndex = annotationIndexEntry.getBtIndex();
-                            for (int btIndexPos = 0; btIndexPos < numBt; btIndexPos++) {
-                                // As before, take the first BT value from the right.
-                                byte bt = (byte) Integer.lowestOneBit(btIndex);
-                                btIndex &= ~bt;
-                                // Check if the BT is part of the query filter
-                                if (IndexUtils.testIndexAny(bt, query.getAnnotationIndexQuery().getBiotypeMask())) {
-                                    // Check if this CT was together with this BT
-                                    if ((ctBtMatrix[ctIndexPos] & (1 << btIndexPos)) != 0) {
-                                        return true;
-                                    }
-                                }
-                            }
-                            // assert btIndex == 0; // We should have removed all BT from the index
-                        }
-                    }
-                    // assert ctIndex == 0; // We should have removed all CT from the index
-
-                    // could not find any valid combination
-                    return false;
+                    return query.getAnnotationIndexQuery().getCtBtFilter().test(annotationIndexEntry);
                 }
             }
         }

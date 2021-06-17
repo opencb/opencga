@@ -364,12 +364,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
                 .append(QueryParams.UID.key(), individual.getUid());
 
-        // TODO: This shouldn't be necessary now
-        if (queryOptions.getBoolean(Constants.REFRESH)) {
-            // Add the latest sample versions in the parameters object
-            updateToLastSampleVersions(clientSession, tmpQuery, parameters, queryOptions);
-        }
-
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, individual.getStudyUid(), individual.getUid());
         } else {
@@ -660,43 +654,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         createNewVersion(clientSession, individualCollection, queryResult.first());
-    }
-
-    private void updateToLastSampleVersions(ClientSession clientSession, Query query, ObjectMap parameters, QueryOptions queryOptions)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        if (parameters.containsKey(QueryParams.SAMPLES.key())) {
-            throw new CatalogDBException("Invalid option: Cannot update to the last version of samples and update to different samples at "
-                    + "the same time.");
-        }
-
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.SAMPLES.key());
-        OpenCGAResult<Individual> queryResult = get(query, options);
-
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Individual not found.");
-        }
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogDBException("Update to the last version of samples in multiple individuals at once not supported.");
-        }
-
-        Individual individual = queryResult.first();
-        if (individual.getSamples() == null || individual.getSamples().isEmpty()) {
-            // Nothing to do
-            return;
-        }
-
-        List<Long> sampleIds = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
-        Query sampleQuery = new Query()
-                .append(SampleDBAdaptor.QueryParams.UID.key(), sampleIds);
-        options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.VERSION.key()
-        ));
-        OpenCGAResult<Sample> sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(clientSession, sampleQuery, options);
-        parameters.put(QueryParams.SAMPLES.key(), sampleDataResult.getResults());
-
-        // Add SET action for samples
-        queryOptions.putIfAbsent(Constants.ACTIONS, new HashMap<>());
-        queryOptions.getMap(Constants.ACTIONS).put(QueryParams.SAMPLES.key(), SET);
     }
 
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
