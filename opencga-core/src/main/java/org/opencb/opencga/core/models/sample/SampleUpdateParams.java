@@ -82,8 +82,8 @@ public class SampleUpdateParams {
     @JsonIgnore
     public Sample toSample() {
         return new Sample(id, "", processing, collection, qualityControl, 1, 1, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                somatic, phenotypes, individualId, Collections.emptyList(), status.toCustomStatus(), new SampleInternal(), annotationSets,
-                attributes);
+                somatic, phenotypes, individualId, Collections.emptyList(), status != null ? status.toCustomStatus() : null,
+                new SampleInternal(), annotationSets, attributes);
     }
 
     @Override

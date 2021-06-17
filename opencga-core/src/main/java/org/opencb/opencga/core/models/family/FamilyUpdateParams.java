@@ -81,8 +81,8 @@ public class FamilyUpdateParams {
                 members != null
                         ? members.stream().map(m -> new Individual().setId(m.getId()).setUuid(m.getUuid())).collect(Collectors.toList())
                         : null,
-                TimeUtils.getTime(), description, members != null ? members.size() : 0, 1, 1, annotationSets, status.toCustomStatus(),
-                new FamilyInternal(), Collections.emptyMap(), attributes);
+                TimeUtils.getTime(), description, members != null ? members.size() : 0, 1, 1, annotationSets,
+                status != null ? status.toCustomStatus() : null, new FamilyInternal(), Collections.emptyMap(), attributes);
     }
 
     @Override

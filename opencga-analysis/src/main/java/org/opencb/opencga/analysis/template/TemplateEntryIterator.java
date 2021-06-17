@@ -204,7 +204,7 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
         for (int i = 0; i < split.length; i++) {
             Type type = allowedFields.get(fieldPosition.get(i));
             Object value = getValue(split[i], type);
-            map.put(fieldPosition.get(i), value);
+            map.putNested(fieldPosition.get(i), value, true);
         }
 
         String id = map.getString("id");

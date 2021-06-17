@@ -31,8 +31,10 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
@@ -508,7 +510,14 @@ public class TemplateManager {
                 if (!exists) {
                     // Create family
                     logger.debug("Create family '{}'", family.getId());
-                    catalogManager.getFamilyManager().create(studyFqn, family.toFamily(), QueryOptions.empty(), token);
+                    Family completeFamily = family.toFamily();
+                    if (CollectionUtils.isNotEmpty(completeFamily.getMembers())) {
+                        List<String> memberIds = completeFamily.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+                        completeFamily.setMembers(null);
+                        catalogManager.getFamilyManager().create(studyFqn, completeFamily, memberIds, QueryOptions.empty(), token);
+                    } else {
+                        catalogManager.getFamilyManager().create(studyFqn, family.toFamily(), QueryOptions.empty(), token);
+                    }
                 } else if (overwrite) {
                     String familyId = family.getId();
                     // Remove familyId

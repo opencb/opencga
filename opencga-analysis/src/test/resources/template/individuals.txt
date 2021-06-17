@@ -1,5 +1,11 @@
-#id	name	father	mother	parentalConsanguinity	sex
+#id	name	father.id	mother.id	parentalConsanguinity	sex
 child	Child	father	mother	false	MALE
 sister	Sister	father	mother	false	FEMALE
 father	Father			false	MALE
 mother	Mother			false	FEMALE
+mother1	mother1			false	FEMALE
+father1	father1			false	MALE
+child1	child1			false	UNKNOWN
+mother2	mother2			false	FEMALE
+father2	father2			false	MALE
+child22	child22			false	UNKNOWN
