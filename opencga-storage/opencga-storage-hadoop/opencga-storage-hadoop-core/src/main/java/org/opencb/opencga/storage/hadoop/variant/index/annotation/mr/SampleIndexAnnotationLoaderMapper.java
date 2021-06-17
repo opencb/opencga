@@ -4,6 +4,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
@@ -70,7 +71,11 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
         VariantRow variantRow = new VariantRow(result);
         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
-        AnnotationIndexEntry indexEntry = converter.convert(variantRow.getVariantAnnotation());
+        VariantAnnotation variantAnnotation = variantRow.getVariantAnnotation();
+        if (variantAnnotation == null) {
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variantsAnnotationNull").increment(1);
+        }
+        AnnotationIndexEntry indexEntry = converter.convert(variantAnnotation);
         // TODO Get stats given index values
 
         Set<String> samples = multiFileSamples ? new HashSet<>(result.rawCells().length) : null;
