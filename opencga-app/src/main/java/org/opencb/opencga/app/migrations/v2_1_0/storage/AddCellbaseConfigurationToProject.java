@@ -11,7 +11,7 @@ import org.opencb.opencga.core.models.project.Project;
 @Migration(id="add_cellbase_configuration_to_project", description = "Add cellbase configuration from storage-configuration.yml to project.internal.cellbase", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        patch = 1,
+        patch = 2,
         rank = 11)
 public class AddCellbaseConfigurationToProject extends MigrationTool {
 
