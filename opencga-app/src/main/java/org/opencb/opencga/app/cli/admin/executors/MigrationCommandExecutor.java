@@ -54,6 +54,7 @@ import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200Migration
 
 import java.io.*;
 import java.nio.file.Paths;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -132,10 +133,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
 
             if (CollectionUtils.isNotEmpty(options.status)) {
-                if (!options.status.contains("PENDING")) {
-                    map.values().removeIf(p -> p.getValue() == null);
-                }
-                map.values().removeIf(p -> p.getValue() != null && !options.status.contains(p.getValue().getStatus().toString()));
+                map.values().removeIf(p -> !options.status.contains(getMigrationStatus(p)));
             }
 
             Table<Pair<Migration, MigrationRun>> table = new Table<Pair<Migration, MigrationRun>>(Table.PrinterType.JANSI)
@@ -146,9 +144,11 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     .addColumnEnum("Language", p -> p.getKey().language())
                     .addColumn("Manual", p -> Boolean.toString(p.getKey().manual()))
                     .addColumnNumber("Patch", p -> p.getKey().patch())
-                    .addColumnEnum("Status", p -> p.getValue().getStatus())
+                    .addColumn("Status", MigrationCommandExecutor::getMigrationStatus)
                     .addColumnNumber("RunPatch", p -> p.getValue().getPatch())
-                    .addColumn("ExecutionTime", p -> p.getValue().getStart() + " - " + p.getValue().getEnd())
+                    .addColumn("ExecutionTime", p -> p.getValue().getStart() + " " + TimeUtils.durationToString(ChronoUnit.MILLIS.between(
+                            p.getValue().getStart().toInstant(),
+                            p.getValue().getEnd().toInstant())))
                     .addColumn("Exception", p -> p.getValue().getException());
 
             List<Pair<Migration, MigrationRun>> rows = new ArrayList<>(map.values());
@@ -158,6 +158,17 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         }
     }
 
+    public static String getMigrationStatus(Pair<Migration, MigrationRun> p) {
+        if (p.getValue() == null) {
+            return "PENDING";
+        } else {
+            if (p.getValue().getPatch() != p.getKey().patch()) {
+                return "OUTDATED";
+            } else {
+                return String.valueOf(p.getValue().getStatus());
+            }
+        }
+    }
 
     private void v1_3_0() throws Exception {
         logger.info("MIGRATING v1.3.0");
