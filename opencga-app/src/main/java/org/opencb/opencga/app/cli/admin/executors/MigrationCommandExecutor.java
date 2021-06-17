@@ -3,6 +3,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
@@ -123,7 +124,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
             Map<String, Pair<Migration, MigrationRun>> map = new HashMap<>(migrations.size());
             for (Migration migration : migrations) {
-                map.put(migration.id(), Pair.of(migration, null));
+                map.put(migration.id(), MutablePair.of(migration, null));
             }
             List<MigrationRun> migrationRuns = catalogManager.getMigrationManager().getMigrationRun(migrations, token).getResults();
             for (MigrationRun migrationRun : migrationRuns) {
