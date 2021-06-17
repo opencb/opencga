@@ -54,6 +54,7 @@ import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Study;
@@ -921,7 +922,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Family tmpFamily = new Family();
             if (updateParams != null && CollectionUtils.isNotEmpty(updateParams.getMembers())) {
                 // We obtain the members from catalog
-                autoCompleteFamilyMembers(study, tmpFamily, updateParams.getMembers(), userId);
+                List<String> memberIds = new ArrayList<>(updateParams.getMembers().size());
+                for (IndividualReferenceParam member : updateParams.getMembers()) {
+                    if (StringUtils.isNotEmpty(member.getId())) {
+                        memberIds.add(member.getId());
+                    } else if (StringUtils.isNotEmpty(member.getUuid())) {
+                        memberIds.add(member.getUuid());
+                    } else {
+                        throw new CatalogException("Found members without any id.");
+                    }
+                }
+                autoCompleteFamilyMembers(study, tmpFamily, memberIds, userId);
             } else {
                 // We use the list of members from the stored family
                 tmpFamily.setMembers(family.getMembers());
