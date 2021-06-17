@@ -4,7 +4,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
@@ -34,11 +36,13 @@ public class MigrationManager {
     private final MigrationDBAdaptor migrationDBAdaptor;
 
     private final Logger logger;
+    private final MongoDBAdaptorFactory dbAdaptorFactory;
 
-    public MigrationManager(CatalogManager catalogManager, MigrationDBAdaptor migrationDBAdaptor, Configuration configuration) {
+    public MigrationManager(CatalogManager catalogManager, DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         this.catalogManager = catalogManager;
         this.configuration = configuration;
-        this.migrationDBAdaptor = migrationDBAdaptor;
+        this.migrationDBAdaptor = dbAdaptorFactory.getMigrationDBAdaptor();
+        this.dbAdaptorFactory = (MongoDBAdaptorFactory) dbAdaptorFactory;
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
 
@@ -316,7 +320,7 @@ public class MigrationManager {
             throw new MigrationException("Can't instantiate class " + runnableMigration + " from migration '" + annotation.id() + "'", e);
         }
 
-        migrationTool.setup(configuration, catalogManager, appHome, params, token);
+        migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, appHome, params, token);
 
         StopWatch stopWatch = StopWatch.createStarted();
         logger.info("------------------------------------------------------");
@@ -333,7 +337,7 @@ public class MigrationManager {
         } catch (MigrationException | RuntimeException e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             String message;
-            if (e instanceof MigrationException && e.getCause()!=null) {
+            if (e instanceof MigrationException && e.getCause() != null) {
                 message = e.getCause().getMessage();
             } else {
                 message = e.getMessage();

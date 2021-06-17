@@ -444,10 +444,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperationByProject("configure", projectStr, params, token, engine -> {
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
 
-            dataStore.getConfiguration().putAll(params);
+            dataStore.getOptions().putAll(params);
             catalogManager.getProjectManager()
                     .setDatastoreVariant(projectStr, dataStore, token);
-            return dataStore.getConfiguration();
+            return dataStore.getOptions();
         });
     }
 
@@ -903,8 +903,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         VariantStorageEngine variantStorageEngine = storageEngineFactory
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), study.getFqn());
         configureCellbase(getProjectId(null, studyStr, token), variantStorageEngine, token);
-        if (dataStore.getConfiguration() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         if (study.getInternal() != null
                 && study.getInternal().getVariantEngineConfiguration() != null
@@ -933,8 +933,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         VariantStorageEngine variantStorageEngine = storageEngineFactory
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         configureCellbase(project, variantStorageEngine, token);
-        if (dataStore.getConfiguration() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
@@ -1598,8 +1598,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
         }
-        if (dataStore.getConfiguration() == null) {
-            dataStore.setConfiguration(new ObjectMap());
+        if (dataStore.getOptions() == null) {
+            dataStore.setOptions(new ObjectMap());
         }
 
         return dataStore;
