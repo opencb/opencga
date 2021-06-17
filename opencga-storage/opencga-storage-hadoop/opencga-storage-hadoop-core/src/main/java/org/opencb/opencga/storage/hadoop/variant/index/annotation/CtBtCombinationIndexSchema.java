@@ -105,14 +105,14 @@ public class CtBtCombinationIndexSchema /*extends DynamicIndexSchema*/ {
 
                 for (int ctPos = 0; ctPos < numCt; ctPos++) {
                     // Get the first CT value from the right.
-                    short ct = (short) Integer.lowestOneBit(ctIndex);
+                    int ct = Integer.lowestOneBit(ctIndex);
                     // Remove the CT value from the index, so the next iteration gets the next value
                     ctIndex &= ~ct;
                     int btIndexAux = btIndex;
-                    byte combinationValue = 0;
+                    int combinationValue = 0;
                     for (int btPos = 0; btPos < numBt; btPos++) {
                         // As before, take the first BT value from the right.
-                        byte bt = (byte) Integer.lowestOneBit(btIndexAux);
+                        int bt = Integer.lowestOneBit(btIndexAux);
                         btIndexAux &= ~bt;
 
                         // If the CT+BT combination is true, write a 1
@@ -210,7 +210,7 @@ public class CtBtCombinationIndexSchema /*extends DynamicIndexSchema*/ {
                     int btIndex = annotationIndexEntry.getBtIndex();
                     for (int btIndexPos = 0; btIndexPos < numBt; btIndexPos++) {
                         // As before, take the first BT value from the right.
-                        byte bt = (byte) Integer.lowestOneBit(btIndex);
+                        int bt = Integer.lowestOneBit(btIndex);
                         btIndex &= ~bt;
                         // Check if the BT is part of the query filter
                         if (btFilter.test(bt)) {
