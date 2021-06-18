@@ -76,7 +76,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -1744,7 +1743,7 @@ public class StudyManager extends AbstractManager {
      */
 
     /**
-     * Upload a file in Catalog.
+     * Upload a template file in Catalog.
      *
      * @param studyStr        study where the file will be uploaded.
      * @param filename        File name.
@@ -1819,11 +1818,11 @@ public class StudyManager extends AbstractManager {
 
             return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, 1, Collections.singletonList(templateId), 1);
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.STUDY, templateId, "", study.getId(),
+            auditManager.auditCreate(userId, Enums.Action.UPLOAD_TEMPLATE, Enums.Resource.STUDY, templateId, "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         } catch (Exception e) {
-            auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.STUDY, templateId, "", study.getId(),
+            auditManager.auditCreate(userId, Enums.Action.UPLOAD_TEMPLATE, Enums.Resource.STUDY, templateId, "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                             new Error(-1, "template upload", e.getMessage())));
             throw e;
@@ -1836,16 +1835,55 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-//    private Map<Long, String> getAllStudiesIdAndUid(List<Study> studies) {
-//        Map<Long, String> allStudiesIdAndUids = new HashMap<>();
-//
-//        for (Study study : studies) {
-//            String id = study.getFqn().replace(":", "__");
-//            long uid = study.getUid();
-//            allStudiesIdAndUids.put(uid, id);
-//        }
-//        return allStudiesIdAndUids;
-//
-//    }
+    /**
+     * Delete a template from Catalog.
+     *
+     * @param studyStr        study where the template belongs to.
+     * @param templateId      Template id.
+     * @param token           Token of the user performing the upload.
+     * @return an empty OpenCGAResult if it successfully uploaded.
+     * @throws CatalogException if there is any issue with the upload.
+     */
+    public OpenCGAResult<Boolean> deleteTemplate(String studyStr, String templateId, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = resolveId(studyStr, userId, QueryOptions.empty());
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyStr", studyStr)
+                .append("templateId", templateId)
+                .append("token", token);
+        try {
+            StopWatch stopWatch = StopWatch.createStarted();
+
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+
+            // We obtain the basic studyPath where we will upload the file temporarily
+            java.nio.file.Path studyPath = Paths.get(study.getUri());
+            Path path = studyPath.resolve("OPENCGA").resolve("TEMPLATE").resolve(templateId);
+
+            IOManager ioManager;
+            try {
+                ioManager = ioManagerFactory.get(study.getUri());
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(study.getUri(), e);
+            }
+            if (!ioManager.exists(path.toUri())) {
+                throw new CatalogException("Template '" + templateId + "' doesn't exist");
+            }
+
+            ioManager.deleteDirectory(path.toUri());
+
+            return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, 1, Collections.singletonList(true), 1);
+        } catch (CatalogException e) {
+            auditManager.auditCreate(userId, Enums.Action.DELETE_TEMPLATE, Enums.Resource.STUDY, templateId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        } catch (Exception e) {
+            auditManager.auditCreate(userId, Enums.Action.DELETE_TEMPLATE, Enums.Resource.STUDY, templateId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                            new Error(-1, "template delete", e.getMessage())));
+            throw e;
+        }
+    }
 
 }

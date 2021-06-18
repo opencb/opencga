@@ -24,16 +24,14 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -497,16 +495,28 @@ public class StudyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{study}/template/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @ApiOperation(httpMethod = "POST", value = "Resource to upload a zipped template", response = Object.class)
+    @ApiOperation(httpMethod = "POST", value = "Resource to upload a zipped template", response = String.class)
     public Response upload(
             @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
-            @ApiParam(value = "Template id", required = true) @FormDataParam("templateId") String id,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
             return createOkResponse(studyManager.uploadTemplate(studyStr, fileMetaData.getName(), fileInputStream, token));
         } catch (Exception e) {
             return createErrorResponse("Upload template file", e.getMessage());
+        }
+    }
+
+    @POST
+    @Path("/{study}/template/{templateId}/delete")
+    @ApiOperation(value = "Delete template", response = Boolean.class)
+    public Response delete(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Template id") @PathParam("templateId") String templateId) {
+        try {
+            return createOkResponse(studyManager.deleteTemplate(studyStr, templateId, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 

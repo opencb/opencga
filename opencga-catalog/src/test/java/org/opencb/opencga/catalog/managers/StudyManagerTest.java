@@ -210,4 +210,17 @@ public class StudyManagerTest extends AbstractManagerTest {
         result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token);
         System.out.println(result.first());
     }
+
+    @Test
+    public void deleteTemplates() throws IOException, CatalogException {
+        InputStream inputStream = getClass().getResource("/template.zip").openStream();
+        String templateId = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token).first();
+
+        Boolean deleted = catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, token).first();
+        assertTrue(deleted);
+
+        thrown.expectMessage("doesn't exist");
+        thrown.expect(CatalogException.class);
+        catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, token);
+    }
 }
