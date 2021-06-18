@@ -19,15 +19,16 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.avro.Schema;
 import org.apache.solr.common.StringUtils;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
+import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
@@ -143,5 +144,21 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertTrue(study.getConfiguration().getClinical().getPriorities().isEmpty());
         assertTrue(study.getConfiguration().getClinical().getFlags().isEmpty());
         assertTrue(study.getConfiguration().getClinical().getStatus().isEmpty());
+    }
+
+    @Test
+    public void emptyGroupTest() throws CatalogException {
+        // In the list of users we add it as null to test it properly
+        catalogManager.getStudyManager().createGroup(studyFqn, "@test", null, token);
+        Group first = catalogManager.getStudyManager().getGroup(studyFqn, "@test", token).first();
+        assertNotNull(first.getUserIds());
+
+        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", "dummy", "", 0L, Account.AccountType.GUEST, token);
+        catalogManager.getStudyManager().createGroup(studyFqn, "@test2", Collections.singletonList("dummy"), token);
+        catalogManager.getStudyManager().updateAcl(studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, token);
+
+        String dummyToken = catalogManager.getUserManager().login("dummy", "dummy").getToken();
+        OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), dummyToken);
+        assertTrue(search.getNumResults() > 0);
     }
 }

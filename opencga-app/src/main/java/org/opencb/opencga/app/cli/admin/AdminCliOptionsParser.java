@@ -122,6 +122,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
         migrationSubCommands.addCommand("v2.0.1", this.migrationCommandOptions.getMigrateV201CommandOptions());
         migrationSubCommands.addCommand("v2.0.3", this.migrationCommandOptions.getMigrateV203CommandOptions());
+        migrationSubCommands.addCommand("v2.0.5", this.migrationCommandOptions.getMigrateV205CommandOptions());
     }
 
     @Override

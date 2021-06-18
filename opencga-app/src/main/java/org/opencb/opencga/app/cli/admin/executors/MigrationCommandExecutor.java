@@ -37,6 +37,7 @@ import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -90,6 +91,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 break;
             case "v2.0.3":
                 v2_0_3();
+                break;
+            case "v2.0.5":
+                v2_0_5();
                 break;
             default:
                 logger.error("Subcommand '{}' not valid", subCommandString);
@@ -529,6 +533,61 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             }
         } catch (CatalogException e) {
             logger.error("Error migration to v2.0.3: {}", e.getMessage(), e);
+        } finally {
+            if (opencgaVersion != null) {
+                updateOpencgaVersion(metaCollection, opencgaVersion);
+            }
+        }
+    }
+
+    private void v2_0_5() throws CatalogException {
+        MigrationCommandOptions.MigrateV2_0_5CommandOptions options = migrationCommandOptions.getMigrateV205CommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
+        MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
+
+        OpencgaVersion opencgaVersion = null;
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            // Check admin password
+            String adminToken = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+            adminToken = catalogManager.getUserManager().getAdminNonExpiringToken(adminToken);
+
+            if (!needsMigration(metaCollection, 20005, 1)) {
+                logger.info("DB already migrated to v2.0.5. Nothing to migrate");
+                return;
+            }
+            opencgaVersion = new OpencgaVersion(20005, 1, this.opencgaVersion.getLastJavaUpdate(), this.opencgaVersion.getLastJsUpdate());
+
+            logger.info("Starting Catalog migration for 2.0.5");
+            if (needsUpdate(1)) {
+                StopWatch stopWatch = new StopWatch();
+                // Initialise all list of users from groups
+                for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+                    if (project.getStudies() != null) {
+                        for (Study study : project.getStudies()) {
+                            stopWatch.start();
+
+                            for (Group group : study.getGroups()) {
+                                if (group.getUserIds() == null) {
+                                    logger.info("Fixing group '{}' from study '{}'", group.getId(), study.getFqn());
+                                    catalogManager.getStudyManager().deleteGroup(study.getFqn(), group.getId(), adminToken);
+
+                                    // Create it again. The new implementation takes now good care of the list of userIds
+                                    catalogManager.getStudyManager().createGroup(study.getFqn(), group, adminToken);
+                                }
+                            }
+
+                            stopWatch.stop();
+                            stopWatch.reset();
+                        }
+                    }
+                }
+
+                opencgaVersion.incrementLastJavaUpdate();
+            }
+        } catch (CatalogException e) {
+            logger.error("Error migration to v2.0.5: {}", e.getMessage(), e);
         } finally {
             if (opencgaVersion != null) {
                 updateOpencgaVersion(metaCollection, opencgaVersion);
