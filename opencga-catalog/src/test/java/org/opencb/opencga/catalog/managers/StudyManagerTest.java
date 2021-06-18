@@ -34,9 +34,16 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipInputStream;
 
 import static org.junit.Assert.*;
 
@@ -190,5 +197,17 @@ public class StudyManagerTest extends AbstractManagerTest {
                 + study.getInternal().getVariantEngineConfiguration());
         assertEquals(sampleIndexConfiguration, study.getInternal().getVariantEngineConfiguration().getSampleIndex());
 
+    }
+
+    @Test
+    public void uploadTemplates() throws IOException, CatalogException {
+        InputStream inputStream = getClass().getResource("/template.zip").openStream();
+        OpenCGAResult<String> result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token);
+        assertFalse(StringUtils.isEmpty(result.first()));
+        System.out.println(result.first());
+
+        inputStream = getClass().getResource("/template.zip").openStream();
+        result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token);
+        System.out.println(result.first());
     }
 }

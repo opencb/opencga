@@ -36,6 +36,8 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class PosixIOManager extends IOManager {
 
@@ -332,6 +334,66 @@ public class PosixIOManager extends IOManager {
         } catch (IOException e) {
             throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString() + ": " + e.getMessage(), e);
         }
+    }
+
+    // Code adapted from https://www.baeldung.com/java-compress-and-uncompress
+    @Override
+    protected void unzip(File fileZip, File destDir) throws CatalogIOException {
+        byte[] buffer = new byte[1024];
+        try {
+            try (ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
+                ZipEntry zipEntry = zis.getNextEntry();
+                while (zipEntry != null) {
+                    File newFile = newFile(destDir, zipEntry);
+                    if (zipEntry.isDirectory()) {
+                        if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                            throw new CatalogIOException("Failed to create directory " + newFile);
+                        }
+                    } else {
+                        // fix for Windows-created archives
+                        File parent = newFile.getParentFile();
+                        if (!parent.isDirectory() && !parent.mkdirs()) {
+                            throw new CatalogIOException("Failed to create directory " + parent);
+                        }
+
+                        // write file content
+                        try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                            int len;
+                            while ((len = zis.read(buffer)) > 0) {
+                                fos.write(buffer, 0, len);
+                            }
+                        }
+                    }
+                    zipEntry = zis.getNextEntry();
+                }
+                zis.closeEntry();
+            }
+        } catch (IOException e) {
+            throw new CatalogIOException(e.getMessage(), e);
+        }
+    }
+
+    /*
+    Extracted from https://www.baeldung.com/java-compress-and-uncompress
+    This method guards against writing files to the file system outside of the target folder. This vulnerability is called Zip Slip.
+    https://snyk.io/research/zip-slip-vulnerability
+     */
+    private File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
+        File destFile = new File(destinationDir, zipEntry.getName());
+
+        String destDirPath = destinationDir.getCanonicalPath();
+        String destFilePath = destFile.getCanonicalPath();
+
+        if (!destFilePath.startsWith(destDirPath + File.separator)) {
+            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+        }
+
+        return destFile;
+    }
+
+    @Override
+    protected void decompressTarBall(Path file, Path destDir) throws CatalogIOException {
+
     }
 
     @Override

@@ -18,12 +18,14 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
@@ -33,6 +35,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -70,7 +74,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -87,6 +97,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class StudyManager extends AbstractManager {
 
     private final CatalogIOManager catalogIOManager;
+    private final IOManagerFactory ioManagerFactory;
 
     public static final String MEMBERS = "@members";
     public static final String ADMINS = "@admins";
@@ -109,10 +120,12 @@ public class StudyManager extends AbstractManager {
     protected Logger logger;
 
     StudyManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration) {
+                 DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, CatalogIOManager catalogIOManager,
+                 Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.catalogIOManager = catalogIOManager;
+        this.ioManagerFactory = ioManagerFactory;
         logger = LoggerFactory.getLogger(StudyManager.class);
     }
 
@@ -1723,6 +1736,103 @@ public class StudyManager extends AbstractManager {
             return owner + '@' + project;
         } else {
             throw new CatalogException("Invalid Study FQN. The accepted pattern is [ownerId@projectId:studyId]");
+        }
+    }
+
+    /*
+    ====================== TEMPLATES ======================
+     */
+
+    /**
+     * Upload a file in Catalog.
+     *
+     * @param studyStr        study where the file will be uploaded.
+     * @param filename        File name.
+     * @param inputStream     Input stream of the file to be uploaded (must be a .zip or .tar.gz file).
+     * @param token           Token of the user performing the upload.
+     * @return an empty OpenCGAResult if it successfully uploaded.
+     * @throws CatalogException if there is any issue with the upload.
+     */
+    public OpenCGAResult<String> uploadTemplate(String studyStr, String filename, InputStream inputStream, String token)
+            throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = resolveId(studyStr, userId, QueryOptions.empty());
+
+        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        String templateId = "template." + dateFormat.format(TimeUtils.getDate()) + "." + RandomStringUtils.random(6, true, false);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyStr", studyStr)
+                .append("token", token);
+        try {
+            StopWatch stopWatch = StopWatch.createStarted();
+
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+
+            ParamUtils.checkParameter(filename, "File name");
+            if (!filename.endsWith(".zip") && !filename.endsWith(".tar.gz")) {
+                throw new CatalogException("Expected zip or tar.gz file");
+            }
+
+            // We obtain the basic studyPath where we will upload the file temporarily
+            java.nio.file.Path studyPath = Paths.get(study.getUri());
+            Path path = studyPath.resolve("OPENCGA").resolve("TEMPLATE").resolve(templateId);
+
+            IOManager ioManager;
+            try {
+                ioManager = ioManagerFactory.get(study.getUri());
+            } catch (IOException e) {
+                throw CatalogIOException.ioManagerException(study.getUri(), e);
+            }
+            if (ioManager.exists(path.toUri())) {
+                throw new CatalogException("Template '" + templateId + "' already exists");
+            }
+
+            Path filePath = path.resolve(filename);
+            URI fileUri = path.resolve(filename).toUri();
+            try {
+                logger.debug("Creating folder '{}' to write the template file", path);
+                ioManager.createDirectory(path.toUri(), true);
+
+                // Start uploading the file to the directory
+                ioManager.copy(inputStream, fileUri);
+            } catch (Exception e) {
+                logger.error("Error uploading file '{}'. Trying to clean directory '{}'", filename, path, e);
+
+                // Clean temporal directory
+                ioManager.deleteDirectory(path.toUri());
+
+                throw new CatalogException("Error uploading file " + filename, e);
+            }
+
+            // Decompress file
+            try {
+                ioManager.decompress(filePath, path);
+            } catch (CatalogIOException e) {
+                logger.error("Error decompressing file '{}'. Trying to clean directory '{}'", filePath, path, e);
+
+                // Clean temporal directory
+                ioManager.deleteDirectory(path.toUri());
+
+                throw new CatalogException("Error decompressing file: '" + filePath + "'", e);
+            }
+
+            return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, 1, Collections.singletonList(templateId), 1);
+        } catch (CatalogException e) {
+            auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.STUDY, templateId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        } catch (Exception e) {
+            auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.STUDY, templateId, "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                            new Error(-1, "template upload", e.getMessage())));
+            throw e;
+        } finally {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                logger.error("Could not close InputStream. Already closed?");
+            }
         }
     }
 
