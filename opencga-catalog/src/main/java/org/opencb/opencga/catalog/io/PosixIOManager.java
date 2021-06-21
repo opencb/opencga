@@ -259,7 +259,8 @@ public class PosixIOManager extends IOManager {
             throw new CatalogIOException("Tail does not work with compressed files.");
         }
         if (lines > ParamConstants.MAXIMUM_LINES_CONTENT) {
-            throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT + ". Attempting to fail " + lines + " lines");
+            throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT
+                    + ". Attempting to fail " + lines + " lines");
         }
 
         int averageBytesPerLine = 250;
@@ -352,7 +353,8 @@ public class PosixIOManager extends IOManager {
     public FileContent head(Path file, long offset, int lines) throws CatalogIOException {
         if (Files.isRegularFile(file)) {
             if (lines > ParamConstants.MAXIMUM_LINES_CONTENT) {
-                throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT + ". Attempting to fail " + lines + " lines");
+                throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT
+                        + ". Attempting to fail " + lines + " lines");
             }
             if (offset == 0) {
                 int numLinesReturned = 0;
