@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
 
 public class JobsLog {
-    private static final int BATCH_SIZE = 2000;
+    private static final int BATCH_SIZE = ParamConstants.MAXIMUM_LINES_CONTENT;
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass().toString());
     private final OpenCGAClient openCGAClient;
@@ -139,7 +139,7 @@ public class JobsLog {
             jobs.put(jobId, content);
             printedLines.addAndGet(printContent(content));
 
-            // Read fewer lines than expected
+            // Read fewer lines than expected. Check EOF
             if (content.getLines() < params.getInt("lines")) {
                 if (c.follow) {
                     // Check job status
@@ -149,8 +149,8 @@ public class JobsLog {
                         eof = false;
                         break;
                     } else {
-                        // If the job is not running, skip sleep and break loop
-                        eof = true;
+                        // If the job is not running. Trust the content.eof
+                        eof = content.isEof();
                         break;
                     }
                 } else {

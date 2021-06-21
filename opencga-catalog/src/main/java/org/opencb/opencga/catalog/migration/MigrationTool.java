@@ -180,6 +180,8 @@ public abstract class MigrationTool {
         }
         if (count == 0) {
             privateLogger.info("Nothing to do!");
+        } else {
+            privateLogger.info("Updated {} documents from collection {}", count, outputCollection.getNamespace().getFullName());
         }
     }
 
