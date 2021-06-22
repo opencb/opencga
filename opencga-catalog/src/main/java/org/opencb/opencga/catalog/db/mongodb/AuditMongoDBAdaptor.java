@@ -55,6 +55,10 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
         this.auditConverter = new OpenCgaMongoConverter<>(AuditRecord.class);
     }
 
+    public MongoDBCollection getAuditCollection() {
+        return auditCollection;
+    }
+
     @Override
     public OpenCGAResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException {
         long startQuery = startQuery();
