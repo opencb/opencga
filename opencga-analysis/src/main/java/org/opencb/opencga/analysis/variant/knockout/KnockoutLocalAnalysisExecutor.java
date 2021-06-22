@@ -396,7 +396,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     }
                 }
                 for (ConsequenceType consequenceType : v.getAnnotation().getConsequenceTypes()) {
-                    if (transcripts == null || transcripts.contains(consequenceType.getEnsemblTranscriptId())) {
+                    if (transcripts == null || transcripts.contains(consequenceType.getTranscriptId())) {
                         if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                             KnockoutVariant knockoutVariant =
                                     addGene(v, sampleEntry.getData().get(0), KnockoutVariant.getDepth(studyEntry, fileEntry, sampleEntry),
@@ -405,7 +405,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                             knockoutVariant.setParentalOrigin(parentalOrigin);
                         }
                     }/* else {
-                        logger.debug("Discard transcript " + consequenceType.getEnsemblTranscriptId() + " at from issueEntry "
+                        logger.debug("Discard transcript " + consequenceType.getTranscriptId() + " at from issueEntry "
                                 + studyEntry.getIssues());
                     }*/
                 }
@@ -432,7 +432,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 Set<String> transcripts = new HashSet<>(svAnnotation.getConsequenceTypes().size());
                 for (ConsequenceType consequenceType : svAnnotation.getConsequenceTypes()) {
                     if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
-                        transcripts.add(consequenceType.getEnsemblTranscriptId());
+                        transcripts.add(consequenceType.getTranscriptId());
                     }
                 }
                 Query thisSvQuery = new Query(baseQuery)
@@ -452,7 +452,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     FileEntry fileEntry = studyEntry.getFiles().get(sampleEntry.getFileIndex());
                     for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
-                            if (transcripts.contains(consequenceType.getEnsemblTranscriptId())) {
+                            if (transcripts.contains(consequenceType.getTranscriptId())) {
                                 addGene(variant,
                                         sampleEntry.getData().get(0), KnockoutVariant.getDepth(studyEntry, fileEntry, sampleEntry),
                                         fileEntry, consequenceType, knockoutGenes,
@@ -545,7 +545,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                         logger.info("[{}] - Skip variant {}. CT filter not match", gene, variant.toString());
                         return;
                     }
-                    knockout.setId(cts.get(0).getEnsemblGeneId());
+                    knockout.setId(cts.get(0).getGeneId());
                     StudyEntry studyEntry = variant.getStudies().get(0);
                     for (SampleEntry sampleEntry : studyEntry.getSamples()) {
                         List<String> data = sampleEntry.getData();
@@ -558,7 +558,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
 //                                knockoutIndividual.setId(sample);
                                 knockoutIndividual.setSampleId(sample);
                                 for (ConsequenceType ct : cts) {
-                                    KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
+                                    KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getTranscriptId());
                                     knockoutTranscript.setBiotype(ct.getBiotype());
                                     knockoutTranscript.setStrand(ct.getStrand());
                                     knockoutTranscript.addVariant(new KnockoutVariant(
@@ -627,7 +627,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     KnockoutByGene.KnockoutIndividual knockoutIndividual = knockoutByGene.getIndividualBySampleId(sampleId);
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(ct, ctFilter, biotypeFilter, knockoutByGene.getName()::equals)) {
-                            KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
+                            KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getTranscriptId());
                             knockoutTranscript.setBiotype(ct.getBiotype());
                             knockoutTranscript.setStrand(ct.getStrand());
                             knockoutTranscript.addVariant(new KnockoutVariant(
@@ -671,7 +671,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     // The variant was already seen. i.e. there was a variant with this variant as secondary alternate
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(ct, ctFilter, biotypeFilter, knockout.getName()::equals)) {
-                            KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
+                            KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getTranscriptId());
                             knockoutTranscript.setBiotype(ct.getBiotype());
                             knockoutTranscript.setStrand(ct.getStrand());
 
@@ -713,7 +713,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                 Set<String> transcripts = new HashSet<>(svVariant.getAnnotation().getConsequenceTypes().size());
                 for (ConsequenceType consequenceType : svVariant.getAnnotation().getConsequenceTypes()) {
                     if (validCt(consequenceType, ctFilter, biotypeFilter, knockout.getName()::equals)) {
-                        transcripts.add(consequenceType.getEnsemblTranscriptId());
+                        transcripts.add(consequenceType.getTranscriptId());
                     }
                 }
 
@@ -733,8 +733,8 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                     }
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         if (validCt(ct, ctFilter, biotypeFilter, knockout.getName()::equals)) {
-                            if (transcripts.contains(ct.getEnsemblTranscriptId())) {
-                                KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getEnsemblTranscriptId());
+                            if (transcripts.contains(ct.getTranscriptId())) {
+                                KnockoutTranscript knockoutTranscript = knockoutIndividual.getTranscript(ct.getTranscriptId());
                                 knockoutTranscript.setBiotype(ct.getBiotype());
                                 knockoutTranscript.setStrand(ct.getStrand());
 
@@ -839,11 +839,11 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
                          String dbSnp, List<PopulationFrequency> populationFrequencies,
                          List<ClinicalSignificance> clinicalSignificance, VariantStats stats) {
         KnockoutGene gene = knockoutGenes.computeIfAbsent(consequenceType.getGeneName(), KnockoutGene::new);
-        gene.setId(consequenceType.getEnsemblGeneId());
+        gene.setId(consequenceType.getGeneId());
         gene.setBiotype(consequenceType.getBiotype());
         gene.setStrand(consequenceType.getStrand());
-        if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
-            KnockoutTranscript t = gene.getTranscript(consequenceType.getEnsemblTranscriptId());
+        if (StringUtils.isNotEmpty(consequenceType.getTranscriptId())) {
+            KnockoutTranscript t = gene.getTranscript(consequenceType.getTranscriptId());
             t.setBiotype(consequenceType.getBiotype());
             t.setStrand(consequenceType.getStrand());
             KnockoutVariant knockoutVariant = new KnockoutVariant(variant, dbSnp, gt, depth, filter, qual, stats, knockoutType,
@@ -861,7 +861,7 @@ public class KnockoutLocalAnalysisExecutor extends KnockoutAnalysisExecutor impl
         if (StringUtils.isEmpty(consequenceType.getGeneName())) {
             return false;
         }
-        if (StringUtils.isEmpty(consequenceType.getEnsemblTranscriptId())) {
+        if (StringUtils.isEmpty(consequenceType.getTranscriptId())) {
             return false;
         }
         if (!geneFilter.test(consequenceType.getGeneName())) {
