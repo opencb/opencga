@@ -16,9 +16,9 @@ This document describes how to download, configure and execute the OpenCGA CLI a
 
 ## **Procedure**
 
-### **1. Download the OpenCGA from github official repo**
+### **1. Download the OpenCGA from the GitHub official repository**
 
-In a web browser navigate to the official OpenCGA github repository at [https://github.com/opencb/opencga](https://github.com/opencb/opencga)/releases. Access the latest release page  by clicking  the release tag at the right side of the main screen shown below:
+In a web browser navigate to the official OpenCGA GitHub repository at [https://github.com/opencb/opencga](https://github.com/opencb/opencga)/releases. Access the latest release page  by clicking  the release tag at the right side of the main screen shown below:
 
 ![](https://lh5.googleusercontent.com/DgRb-6_zQTOYsc081hZgS2LHiIvTcemEo7sm51dKgzSfc9R9iPE1VIV74G5h40EOTvexCb244sGHK2cOy8y7KeugPCMUmigpUZc0xFAGJSC1mQJmvJ33gyHJEtVy3iy4z1LJwl34)
 
@@ -27,8 +27,7 @@ In a web browser navigate to the official OpenCGA github repository at [https://
 the scope of these instructions. 
 {% endhint %}
 
-On the release page click the `opencga-client-x.x.x.tar.gz` link, the package download should start automatically:  
-****
+On the release page click the `opencga-client-x.x.x.tar.gz` link, the package download should start automatically:
 
 ![](https://lh4.googleusercontent.com/acxlbLZ2ois1d8Y4KtHXXEQAgEr6HJwzKqhgsoWpyZJcsWS7dprN1sCaOedTzMLm15gn_-rZ2FSrC-T_B8reO7PDpyKJnbH6FZRvkRrjlUrteknfyBAZ7rojSi9NnfdI0xi9rXVS)
 
@@ -62,10 +61,9 @@ For that, open the `client-configuration.yml` file in the conf folder with your 
 $ nano $HOME/opencga-client-2.0.3/conf/client-configuration.yml 
 ```
 
-To change the host to your OpenCGA installation, go to the host parameter in the REST client configuration options and change the default URL to point to your installation.
+To change the host to your OpenCGA installation, go to the host parameter in the REST client configuration options and change the default URL to point to your installation. Save the changes and exit the editor.
 
-**Example:** let’s suppose we’d like to use the command line in the university demo installation at [http://bioinfo.hpc.cam.ac.uk/opencga-prod/](http://bioinfo.hpc.cam.ac.uk/opencga-prod/). Save the changes and exit the editor.  
-****
+**Example:** let’s suppose we’d like to use the command line in the university demo installation at [http://bioinfo.hpc.cam.ac.uk/opencga-prod/](http://bioinfo.hpc.cam.ac.uk/opencga-prod/). 
 
 ![](https://lh3.googleusercontent.com/dwB8DODonXFkljYgMGB3GX2eX8_IZvTXtNWW3A7NjVQWqId8k7JEEIBVYIGHf4S-yIXRFXdFcMRbLTYlkbzZrskBi3IL78hOW-iFLl3tl2HszH0OnQ9FuijjVKxcl5lRmevZcdBC)
 
