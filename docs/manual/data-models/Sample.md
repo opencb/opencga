@@ -63,7 +63,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Tags | Description |
 | :--- | :--- | :--- |
-| **tissue** <br> *String*  |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
+| **tissue** <br> *String*  |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> **Tags**: internal |
 | **organ** <br> *String* <br>since: 2.1 |internal<br> unique<br> immutable | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>*The sample collection is a list of samples*</br><a href="https://www.zettagenomics.com">ZetaGenomics</a> |
 | **~~quantity~~** <br> Deprecated<br> *String*  |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
 | **method** <br> *String*  |required<br> immutable | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p> |
