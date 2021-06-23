@@ -29,53 +29,53 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **id** <br> *String*  <br> | <p>Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and<br> cannot be changed at the moment.</p> |
-| **uuid** <br> *String*  <br> | <p>Global unique ID in any study of any OpenCGA installation. This is created during the sample creation and cannot be changed.</p> |
-| **processing**<br>*<a href="Sample.md#SampleProcessing"><em>SampleProcessing</em></a>* <br> | <p>An object describing how to sample was processed.</p> |
-| **collection**<br>*<a href="Sample.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.1 | <p>An object describing how the sample was collected.</p>*The sample collection is a list of samples* |
-| **qualityControl**<br>*<a href="Sample.md#SampleQualityControl"><em>SampleQualityControl</em></a>* <br><br>_since_: 2.1 | <p>An object describing how the sample was collected.</p>*The sample collection is a list of samples*</br><a href="https://www.zettagenomics.com">ZetaGenomics</a> |
-| **release** <br> *int*  <br> | <p>An integer describing the current release.</p> |
-| **version** <br> *int*  <br> | <p>An integer describing the current version.</p> |
-| **creationDate** <br> *String*  <br> | <p>An string describing the creation date.</p> |
-| **modificationDate** <br> *String*  <br> | <p>An string describing the last modification date.</p> |
-| **description** <br> *String*  <br> | <p>An string to describe the properties of the sample.</p> |
-| **somatic** <br> *boolean*  <br> | <p>An string to describe the properties of the sample.</p> |
-| **phenotypes**<br> List<*Phenotype*> <br> | <p>A List with related phenotypes.</p> |
-| **individualId** <br> *String*  <br> | <p>A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not<br> mandatory..</p></br><a href="https://www.zettagenomics.com">ZetaGenomics</a> |
-| **fileIds**<br> List<*String*> <br><br>_Deprecated_ | <p>List of File ID containing this sample, eg BAM, VCF, QC images, ...</p> |
-| **status**<br>*<a href="Sample.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
-| **internal**<br>*<a href="Sample.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>An object describing the status of the Sample.</p> |
+| **id** <br> *String*  <br> | <p>Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and<br> cannot be changed at the moment.</p><br>_Tags_:required, create, immutable |
+| **uuid** <br> *String*  <br> | <p>Global unique ID in any study of any OpenCGA installation. This is created during the sample creation and cannot be changed.</p><br>_Tags_:internal, unique, immutable |
+| **processing**<br>*<a href="Sample.md#SampleProcessing"><em>SampleProcessing</em></a>* <br> | <p>An object describing how to sample was processed.</p><br>_Tags_:required |
+| **collection**<br>*<a href="Sample.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.1 | <p>An object describing how the sample was collected.</p>_Note_:_The sample collection is a list of samples_<br>_Tags_: |
+| **qualityControl**<br>*<a href="Sample.md#SampleQualityControl"><em>SampleQualityControl</em></a>* <br><br>_since_: 2.1 | <p>An object describing how the sample was collected.</p>_Note_:_The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a><br>_Tags_: |
+| **release** <br> *int*  <br> | <p>An integer describing the current release.</p><br>_Tags_:internal, unique, immutable |
+| **version** <br> *int*  <br> | <p>An integer describing the current version.</p><br>_Tags_:internal, unique, immutable |
+| **creationDate** <br> *String*  <br> | <p>An string describing the creation date.</p><br>_Tags_:internal, unique, immutable |
+| **modificationDate** <br> *String*  <br> | <p>An string describing the last modification date.</p><br>_Tags_:internal, unique, immutable |
+| **description** <br> *String*  <br> | <p>An string to describe the properties of the sample.</p><br>_Tags_:required |
+| **somatic** <br> *boolean*  <br> | <p>An string to describe the properties of the sample.</p><br>_Tags_:required |
+| **phenotypes**<br> List<*Phenotype*> <br> | <p>A List with related phenotypes.</p><br>_Tags_:required, unique, immutable |
+| **individualId** <br> *String*  <br> | <p>A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not<br> mandatory..</p></br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a><br>_Tags_:required |
+| **fileIds**<br> List<*String*> <br><br>_Deprecated_ | <p>List of File ID containing this sample, eg BAM, VCF, QC images, ...</p><br>_Tags_:unique, immutable |
+| **status**<br>*<a href="Sample.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p><br>_Tags_:unique, immutable |
+| **internal**<br>*<a href="Sample.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the status of the Sample.</p><br>_Tags_:unique, immutable |
+| **attributes**<br> Map<*Object*,*String*> <br> | <p>An object describing the status of the Sample.</p><br>_Tags_: |
 ### SampleProcessing
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
 
 | Field | Description |
 | :---  | :--- |
-| **product** <br> *String*  <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p> |
-| **preparationMethod** <br> *String*  <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
-| **extractionMethod** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **~~labSampleId~~**<br> *String* <br><br>_Deprecated_ | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **quantity** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
+| **product** <br> *String*  <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p><br>_Tags_:required, immutable |
+| **preparationMethod** <br> *String*  <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p><br>_Tags_:required |
+| **extractionMethod** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **~~labSampleId~~**<br> *String* <br><br>_Deprecated_ | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **quantity** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **attributes**<br> Map<*Object*,*String*> <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
 ### SampleCollection
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
 
 | Field | Description |
 | :---  | :--- |
-| **tissue** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **organ** <br> *String*  <br><br>_since_: 2.1 | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>*The sample collection is a list of samples*</br><a href="https://www.zettagenomics.com">ZetaGenomics</a> |
-| **~~quantity~~**<br> *String* <br><br>_Deprecated_ | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **method** <br> *String*  <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p> |
-| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
+| **tissue** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **organ** <br> *String*  <br><br>_since_: 2.1 | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>_Note_:_The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a><br>_Tags_:internal, unique, immutable |
+| **~~quantity~~**<br> *String* <br><br>_Deprecated_ | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **method** <br> *String*  <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p><br>_Tags_:required, immutable |
+| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **attributes**<br> Map<*Object*,*String*> <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p><br>_Tags_:required |
 ### SampleInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Sample.md#Status"><em>Status</em></a>* <br><br>_since_: 2.1 | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p>*The sample collection is a list of samples*</br><a href="https://www.zettagenomics.com">ZetaGenomics</a> |
-| **~~rga~~**<br>*<a href="Sample.md#RgaIndex"><em>RgaIndex</em></a>* <br><br>_Deprecated_ | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
+| **status**<br>*<a href="Sample.md#Status"><em>Status</em></a>* <br><br>_since_: 2.1 | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p>_Note_:_The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
+| **~~rga~~**<br>*<a href="Sample.md#RgaIndex"><em>RgaIndex</em></a>* <br><br>_Deprecated_ | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
 ### Status
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
 
@@ -93,8 +93,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Sample.md#rgaindexstatus"><em>Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
+| **status**<br>*<a href="Sample.md#rgaindexstatus"><em>Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
 ### RgaIndex.Status
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex/Status.java).
 
@@ -110,9 +110,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **files**<br> List<*String*> <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **comments**<br> List<*ClinicalComment*> <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
-| **variantMetrics**<br>*<a href="Sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
+| **files**<br> List<*String*> <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
+| **comments**<br> List<*ClinicalComment*> <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p><br>_Tags_:required |
+| **variantMetrics**<br>*<a href="Sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
 ### SampleVariantQualityControlMetrics
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
@@ -126,9 +126,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **name** <br> *String*  <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p> |
-| **description** <br> *String*  <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
-| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
+| **name** <br> *String*  <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p><br>_Tags_:required, immutable |
+| **description** <br> *String*  <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p><br>_Tags_:required |
+| **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p><br>_Tags_:internal, unique, immutable |
 ## Example
 This is a full JSON example:
 ```javascript
