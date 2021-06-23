@@ -61,7 +61,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 ### SampleCollection
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
 
-<<<<<<< HEAD
 | Field | Description |
 | :---  | :--- |
 | **tissue** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
@@ -70,47 +69,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **method** <br> *String*  <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p> |
 | **date** <br> *String*  <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
-=======
-| Field | Tags | Description |
-| :--- | :--- | :--- |
-| **tissue** <br> *String*  |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> _Tags_: internal |
-| **organ** <br> *String* <br>since: 2.1 |internal<br> unique<br> immutable | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>**Tags**: internal <br>**Note**: _The sample collection is a list of samples_</br> **More info at**: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
-| **~~quantity~~** <br> Deprecated<br> *String*  |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **method** <br> *String*  |required<br> immutable | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p> |
-| **date** <br> *String*  |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **attributes**<br> Map<*Object*,*String*> <br> |required | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
-### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
-
-| Field | Tags | Description |
-| :--- | :--- | :--- |
-| **name** <br> *String*  |required<br> immutable | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p> |
-| **description** <br> *String*  |required | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
-| **date** <br> *String*  |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-### SampleQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
-
-| Field | Tags | Description |
-| :--- | :--- | :--- |
-| **files**<br> List<*String*> <br> |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-| **comments**<br> List<*ClinicalComment*> <br> |required | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p> |
-| **variantMetrics**<br>*<a href="Sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> |internal<br> unique<br> immutable | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p> |
-### SampleVariantQualityControlMetrics
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
-
-| Field | Tags | Description |
-| :--- | :--- | :--- |
-| **variantStats**<br> List<*SampleQcVariantStats*> <br> | | <p></p> |
-| **signatures**<br> List<*Signature*> <br> | | <p></p> |
-| **genomePlots**<br> List<*GenomePlot*> <br> | | <p></p> |
-### DaemonService
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/DaemonService.java).
-
-| Field | Tags | Description |
-| :--- | :--- | :--- |
-| **port** <br> *int*  | | <p></p> |
-| **sleepTime** <br> *int*  | | <p></p> |
->>>>>>> b904f4db3450fe2287b12f34eab2d676097195f8
 ### SampleInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
