@@ -92,12 +92,12 @@ public class JobsLog {
 
                 // Update list of running jobs
                 do {
-                    openCGAClient.getJobClient()
+                    secureOp(() -> openCGAClient.getJobClient()
                             .search(new ObjectMap(ParamConstants.STUDY_PARAM, c.study)
                                     .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), RUNNING)
                                     .append(QueryOptions.INCLUDE, "id"))
                             .allResults()
-                            .forEach(job -> jobs.putIfAbsent(job.getId(), null));
+                            .forEach(job -> jobs.putIfAbsent(job.getId(), null)));
                     i++;
                     if (jobs.isEmpty()) {
                         // Sleep if there are jobs left.
@@ -143,7 +143,7 @@ public class JobsLog {
             if (content.getLines() < params.getInt("lines")) {
                 if (c.follow) {
                     // Check job status
-                    Job job = openCGAClient.getJobClient().info(jobId, new ObjectMap(ParamConstants.STUDY_PARAM, c.study)).firstResult();
+                    Job job = secureOp(() -> openCGAClient.getJobClient().info(jobId, new ObjectMap(ParamConstants.STUDY_PARAM, c.study)).firstResult());
                     if (job.getInternal().getStatus().getName().equals(RUNNING)) {
                         // The job is still running. eof=false and break
                         eof = false;
@@ -167,6 +167,21 @@ public class JobsLog {
 
     interface Op<R> {
         R apply() throws ClientException;
+    }
+
+    interface OpConsumer {
+        void apply() throws ClientException;
+
+        default Op<Void> toOp() {
+            return () -> {
+                apply();
+                return null;
+            };
+        }
+    }
+
+    private void secureOp(OpConsumer op) throws ClientException {
+        secureOp(op.toOp());
     }
 
     private <T> T secureOp(Op<T> op) throws ClientException {
