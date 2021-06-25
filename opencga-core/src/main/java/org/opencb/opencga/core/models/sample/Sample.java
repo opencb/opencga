@@ -38,7 +38,7 @@ public class Sample extends Annotable {
      * Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and
      * cannot be changed at the moment.
      *
-     * @apiNote Required, Create, Immutable
+     * @apiNote Required, Immutable, Unique
      */
     private String id;
 
@@ -51,8 +51,6 @@ public class Sample extends Annotable {
 
     /**
      * An object describing how to sample was processed.
-     *
-     * @apiNote Required
      */
     private SampleProcessing processing;
 
@@ -78,49 +76,49 @@ public class Sample extends Annotable {
     /**
      * An integer describing the current release.
      *
-     * @apiNote Internal, Unique, Immutable
+     * @apiNote Internal
      */
     private int release;
 
     /**
      * An integer describing the current version.
      *
-     * @apiNote Internal, Unique, Immutable
+     * @apiNote Internal
      */
     private int version;
 
     /**
      * An string describing the creation date.
      *
-     * @apiNote Internal, Unique, Immutable
+     * @apiNote Internal
      */
     private String creationDate;
 
     /**
      * An string describing the last modification date.
      *
-     * @apiNote Internal, Unique, Immutable
+     * @apiNote Internal
      */
     private String modificationDate;
 
     /**
      * An string to describe the properties of the sample.
      *
-     * @apiNote Required
+     * @apiNote
      */
     private String description;
 
     /**
      * An string to describe the properties of the sample.
      *
-     * @apiNote Required
+     * @apiNote
      */
     private boolean somatic;
 
     /**
      * A List with related phenotypes.
      *
-     * @apiNote Required, Unique, Immutable
+     * @apiNote
      */
     private List<Phenotype> phenotypes;
 
@@ -128,7 +126,7 @@ public class Sample extends Annotable {
      * A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not
      * mandatory..
      *
-     * @apiNote Required
+     * @apiNote
      * @see [ZetaGenomics] (https://www.zettagenomics.com)
      */
     private String individualId;
@@ -136,7 +134,7 @@ public class Sample extends Annotable {
     /**
      * List of File ID containing this sample, eg BAM, VCF, QC images, ...
      *
-     * @apiNote Unique, Immutable
+     * @apiNote
      * @deprecated
      */
     private List<String> fileIds;
@@ -144,14 +142,14 @@ public class Sample extends Annotable {
     /**
      * An object describing the status of the Sample.
      *
-     * @apiNote Unique, Immutable
+     * @apiNote
      */
     private CustomStatus status;
 
     /**
      * An object describing the status of the Sample.
      *
-     * @apiNote Unique, Immutable
+     * @apiNote Internal
      */
     private SampleInternal internal;
 
