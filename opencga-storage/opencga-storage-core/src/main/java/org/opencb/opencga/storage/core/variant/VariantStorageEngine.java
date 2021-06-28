@@ -1026,6 +1026,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         executors.add(new CompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this));
+        executors.add(new BreakendVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
+                getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, configuration, getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(

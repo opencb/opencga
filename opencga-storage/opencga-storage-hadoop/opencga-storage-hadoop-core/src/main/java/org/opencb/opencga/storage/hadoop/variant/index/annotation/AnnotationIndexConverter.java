@@ -68,7 +68,7 @@ public class AnnotationIndexConverter {
 
     public AnnotationIndexEntry convert(VariantAnnotation variantAnnotation) {
         if (variantAnnotation == null) {
-            return AnnotationIndexEntry.empty();
+            return AnnotationIndexEntry.empty(schema);
         }
         byte b = 0;
         BitBuffer ctIndex = new BitBuffer(schema.getCtIndex().getBitsLength());

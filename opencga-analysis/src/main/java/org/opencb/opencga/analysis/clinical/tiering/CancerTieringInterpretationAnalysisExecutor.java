@@ -218,12 +218,12 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
                     List<ClinicalVariantEvidence> clinicalVariantEvidences = new ArrayList<>();
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
                         List<SequenceOntologyTerm> somaticSOTerms = getSomaticSequenceOntologyTerms(ct);
-                        if (roleInCancer.containsKey(ct.getEnsemblGeneId()) || roleInCancer.containsKey(ct.getGeneName())) {
+                        if (roleInCancer.containsKey(ct.getGeneId()) || roleInCancer.containsKey(ct.getGeneName())) {
                             // Create clinical variant evidence with TIER 2
                             ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
-                            clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), "GENE",
-                                    ct.getEnsemblTranscriptId(), ct.getGeneName(), somaticSOTerms, null));
+                            clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getGeneId(), "GENE",
+                                    ct.getTranscriptId(), ct.getGeneName(), somaticSOTerms, null));
                             VariantClassification classification = new VariantClassification();
                             classification.setTier(TIER_2);
                             List<String> acmg = calculateAcmgClassification(variant);
@@ -419,8 +419,8 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
         ClinicalVariantEvidence clinicalVariantEvidence = new ClinicalVariantEvidence();
 
         clinicalVariantEvidence.setPanelId(diseasePanel.getId());
-        clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getEnsemblGeneId(), "GENE",
-                ct.getEnsemblTranscriptId(), ct.getGeneName(), soTerms, panelGene.getXrefs()));
+        clinicalVariantEvidence.setGenomicFeature(new GenomicFeature(ct.getGeneId(), "GENE",
+                ct.getTranscriptId(), ct.getGeneName(), soTerms, panelGene.getXrefs()));
         VariantClassification classification = new VariantClassification();
         classification.setTier(tier);
         classification.setAcmg(calculateAcmgClassification(variant));
@@ -604,8 +604,8 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExec
             for (DiseasePanel panel : panels) {
                 for (DiseasePanel.GenePanel panelGene : panel.getGenes()) {
                     for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                        if (panelGene.getId() != null && consequenceType.getEnsemblGeneId() != null &&
-                                panelGene.equals(consequenceType.getEnsemblGeneId())) {
+                        if (panelGene.getId() != null && consequenceType.getGeneId() != null &&
+                                panelGene.equals(consequenceType.getGeneId())) {
                             panelSet.add(panel);
                             break;
                         }
