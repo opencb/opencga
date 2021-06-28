@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.template;
+package org.opencb.opencga.analysis.template.manager;
 
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.models.common.Enums;

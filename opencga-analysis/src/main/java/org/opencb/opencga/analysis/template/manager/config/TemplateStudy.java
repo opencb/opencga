@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.template.config;
+package org.opencb.opencga.analysis.template.manager.config;
 
 import org.opencb.opencga.core.models.study.GroupCreateParams;
 import org.opencb.opencga.core.models.study.StudyAclEntry;

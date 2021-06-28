@@ -143,6 +143,9 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         studySubCommands.addCommand("variable-sets-update", studyCommandOptions.variableSetsUpdateCommandOptions);
         studySubCommands.addCommand("variable-sets-variables-update", studyCommandOptions.variablesUpdateCommandOptions);
         studySubCommands.addCommand("variable-sets-variables-update", studyCommandOptions.variablesUpdateCommandOptions);
+        studySubCommands.addCommand("template-upload", studyCommandOptions.templateUploadCommandOptions);
+        studySubCommands.addCommand(StudyCommandOptions.TemplateRunCommandOptions.TEMPLATE_RUN_COMMAND,
+                studyCommandOptions.templateRunCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);

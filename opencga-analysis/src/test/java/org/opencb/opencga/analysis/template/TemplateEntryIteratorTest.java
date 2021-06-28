@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.template;
 
 import org.junit.Test;
+import org.opencb.opencga.analysis.template.manager.TemplateEntryIterator;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 
 import java.net.URISyntaxException;

@@ -24,6 +24,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.template.TemplateTask;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -32,6 +33,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -43,6 +45,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 
 @Path("/{apiVersion}/studies")
@@ -499,9 +503,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response upload(
             @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr) {
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
-            return createOkResponse(studyManager.uploadTemplate(studyStr, fileMetaData.getName(), fileInputStream, token));
+            return createOkResponse(studyManager.uploadTemplate(studyStr, fileMetaData.getFileName(), fileInputStream, token));
         } catch (Exception e) {
             return createErrorResponse("Upload template file", e.getMessage());
         }
@@ -518,6 +522,19 @@ public class StudyWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @POST
+    @Path("/{study}/template/run")
+    @ApiOperation(value = "Execute template", response = Job.class)
+    public Response executeTemplate(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
+        return submitJob(TemplateTask.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     private void fixVariable(Variable variable) {

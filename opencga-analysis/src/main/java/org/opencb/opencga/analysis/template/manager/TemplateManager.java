@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.template;
+package org.opencb.opencga.analysis.template.manager;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.template.config.TemplateFile;
-import org.opencb.opencga.analysis.template.config.TemplateManifest;
-import org.opencb.opencga.analysis.template.config.TemplateStudy;
+import org.opencb.opencga.analysis.template.manager.config.TemplateFile;
+import org.opencb.opencga.analysis.template.manager.config.TemplateManifest;
+import org.opencb.opencga.analysis.template.manager.config.TemplateStudy;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -81,7 +81,7 @@ public class TemplateManager {
         TemplateStudy study = manifest.getStudy();
 
         // NOTE: Do not change the order of the following resource creation.
-        String studyFqn = createStudy(manifest.getConfiguration().getProjectId(), study);
+        String studyFqn = addStudyMetadata(manifest.getConfiguration().getProjectId(), study);
 
         createIndividuals(studyFqn, path);
         createSamples(studyFqn, path);
@@ -138,70 +138,56 @@ public class TemplateManager {
             throw new IllegalArgumentException("Version mismatch! Expected " + templateVersion + " but found " + versionShort);
         }
 
-        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
-        if (!resume && !overwrite) {
-            if (studyExists(manifest.getConfiguration().getProjectId(), manifest.getStudy().getId())) {
-                throw new CatalogException("Study '" + manifest.getStudy().getId() + "' already exists. Do you want to resume?");
-            }
-        }
+        // Study should already exist
+        Study study = getStudy(manifest.getConfiguration().getProjectId(), manifest.getStudy().getId());
+        String userId = catalogManager.getUserManager().getUserId(token);
+        catalogManager.getAuthorizationManager().checkIsOwnerOrAdmin(study.getUid(), userId);
+
+//        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
+//        if (!resume && !overwrite) {
+//            if (studyExists(manifest.getConfiguration().getProjectId(), manifest.getStudy().getId())) {
+//                throw new CatalogException("Study '" + manifest.getStudy().getId() + "' already exists. Do you want to resume?");
+//            }
+//        }
     }
 
-    public boolean studyExists(String projectId, String studyId) {
-        try {
-            getStudy(projectId, studyId);
-            return true;
-        } catch (CatalogException e) {
-            return false;
-        }
-    }
-
-    public Study getStudy(String projectId, String studyId) throws CatalogException {
+    private Study getStudy(String projectId, String studyId) throws CatalogException {
         OpenCGAResult<Study> studyOpenCGAResult =
                     catalogManager.getStudyManager().get(projectId + ":" + studyId, QueryOptions.empty(), token);
         return studyOpenCGAResult.first();
     }
 
-    public String createStudy(String projectId, TemplateStudy tmplStudy) throws CatalogException {
-        Study origStudy;
-        try {
-            origStudy = getStudy(projectId, tmplStudy.getId());
-        } catch (CatalogException e) {
-            origStudy = null;
-        }
-        if (!resume && origStudy != null) {
-            throw new CatalogException("Study '" + tmplStudy.getId() + "' already exists. Do you want to resume?");
-        }
-
+    private String addStudyMetadata(String projectId, TemplateStudy tmplStudy) throws CatalogException {
+        Study origStudy = getStudy(projectId, tmplStudy.getId());
         String fqn;
-        if (origStudy == null) {
-            Study study = new Study()
-                    .setId(tmplStudy.getId())
-                    .setName(tmplStudy.getName())
-                    .setAlias(tmplStudy.getAlias())
-                    .setDescription(tmplStudy.getDescription())
-                    .setNotification(tmplStudy.getNotification())
-                    .setAttributes(tmplStudy.getAttributes())
-                    .setStatus(tmplStudy.getStatus() != null ? tmplStudy.getStatus().toCustomStatus() : null);
+//        if (origStudy == null) {
+//            Study study = new Study()
+//                    .setId(tmplStudy.getId())
+//                    .setName(tmplStudy.getName())
+//                    .setAlias(tmplStudy.getAlias())
+//                    .setDescription(tmplStudy.getDescription())
+//                    .setNotification(tmplStudy.getNotification())
+//                    .setAttributes(tmplStudy.getAttributes())
+//                    .setStatus(tmplStudy.getStatus() != null ? tmplStudy.getStatus().toCustomStatus() : null);
+//
+//            logger.info("Creating Study '{}'", tmplStudy.getId());
+//            OpenCGAResult<Study> result = catalogManager.getStudyManager().create(projectId, study, QueryOptions.empty(), token);
+//            fqn = result.first().getFqn();
+//
+//        } else {
+        fqn = origStudy.getFqn();
+        if (overwrite) {
+            // Updating values
+            StudyUpdateParams studyUpdateParams = new StudyUpdateParams(tmplStudy.getName(), tmplStudy.getAlias(),
+                    tmplStudy.getDescription(), tmplStudy.getNotification(), tmplStudy.getConfiguration(), tmplStudy.getAttributes(),
+                    tmplStudy.getStatus());
 
-            logger.info("Creating Study '{}'", tmplStudy.getId());
-            OpenCGAResult<Study> result = catalogManager.getStudyManager().create(projectId, study, QueryOptions.empty(), token);
-            fqn = result.first().getFqn();
-
+            logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
+            catalogManager.getStudyManager().update(fqn, studyUpdateParams, QueryOptions.empty(), token);
         } else {
-            fqn = origStudy.getFqn();
-
-            if (overwrite) {
-                // Updating values
-                StudyUpdateParams studyUpdateParams = new StudyUpdateParams(tmplStudy.getName(), tmplStudy.getAlias(),
-                        tmplStudy.getDescription(), tmplStudy.getNotification(), tmplStudy.getConfiguration(), tmplStudy.getAttributes(),
-                        tmplStudy.getStatus());
-
-                logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
-                catalogManager.getStudyManager().update(fqn, studyUpdateParams, QueryOptions.empty(), token);
-            } else {
-                logger.info("Study '{}' already exists.", tmplStudy.getId());
-            }
+            logger.info("Study '{}' already exists.", tmplStudy.getId());
         }
+//        }
 
         if (CollectionUtils.isNotEmpty(tmplStudy.getGroups())) {
             Set<String> existingGroups = origStudy != null

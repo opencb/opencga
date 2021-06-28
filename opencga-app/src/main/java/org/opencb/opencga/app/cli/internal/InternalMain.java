@@ -104,6 +104,9 @@ public class InternalMain {
                         case "jobs":
                             commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobCommandOptions());
                             break;
+                        case "studies":
+                            commandExecutor = new StudyCommandExecutor(cliOptionsParser.getStudyCommandOptions());
+                            break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

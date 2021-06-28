@@ -25,14 +25,19 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.RestResponse;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -97,6 +102,12 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "variable-sets-variables-update":
                 queryResponse = variableSetVariableUpdate();
+                break;
+            case "template-upload":
+                queryResponse = templateUpload();
+                break;
+            case StudyCommandOptions.TemplateRunCommandOptions.TEMPLATE_RUN_COMMAND:
+                queryResponse = templateRun();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -311,6 +322,35 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         Variable variable = loadFile(c.variable, Variable.class);
 
         return openCGAClient.getStudyClient().updateVariables(getSingleValidStudy(c.study), c.variableSet, variable, params);
+    }
+
+    private RestResponse<String> templateUpload() throws CatalogException, ClientException {
+        logger.debug("Upload template file");
+        StudyCommandOptions.TemplateUploadCommandOptions c = studiesCommandOptions.templateUploadCommandOptions;
+
+        c.study = getSingleValidStudy(c.study);
+        Path path = Paths.get(c.inputFile);
+        if (!path.toFile().exists()) {
+            throw new CatalogException("File '" + c.inputFile + "' not found");
+        }
+        if (!c.inputFile.endsWith("zip")) {
+            throw new CatalogException("File '" + c.inputFile + "' is not a zip file");
+        }
+
+        ObjectMap params = new ObjectMap("file", c.inputFile);
+
+        return openCGAClient.getStudyClient().uploadTemplate(c.study, params);
+    }
+
+    private RestResponse<Job> templateRun() throws CatalogException, ClientException {
+        logger.debug("Run template");
+        StudyCommandOptions.TemplateRunCommandOptions c = studiesCommandOptions.templateRunCommandOptions;
+
+        c.study = getSingleValidStudy(c.study);
+        TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);
+        ObjectMap params = new ObjectMap();
+
+        return openCGAClient.getStudyClient().runTemplate(c.study, templateParams, params);
     }
 
     /************************************************* Acl commands *********************************************************/
