@@ -644,7 +644,7 @@ public class RgaManagerTest {
 
         Query query = new Query()
                 .append(RgaQueryParams.KNOCKOUT.key(), KnockoutVariant.KnockoutType.COMP_HET)
-                .append(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + "<0.001;");
+                .append(RgaQueryParams.POPULATION_FREQUENCY.key(), RgaUtils.THOUSAND_GENOMES_STUDY + ":ALL" + "<0.001;");
         result = rgaManager.variantSummary(STUDY, query, QueryOptions.empty(), ownerToken);
         assertEquals(0, result.getNumResults());
 

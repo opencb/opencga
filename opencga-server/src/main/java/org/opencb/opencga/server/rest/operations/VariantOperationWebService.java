@@ -76,7 +76,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = VariantAnnotationIndexOperationTool.DESCRIPTION) @QueryParam("annotationUpdate") boolean annotate,
             @ApiParam(value = VariantAnnotationSaveOperationTool.DESCRIPTION) @QueryParam("annotationSaveId") String annotationSaveId,
             @ApiParam(value = "New cellbase configuration") CellBaseConfiguration configuration) {
-        return run(() -> variantManager.configureCellbase(project, configuration, annotate, annotationSaveId, token));
+        return run(() -> variantManager.setCellbaseConfiguration(project, configuration, annotate, annotationSaveId, token));
     }
 
     @POST

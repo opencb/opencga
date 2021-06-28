@@ -614,8 +614,8 @@ public class DocumentToVariantAnnotationConverter
                 Document ct = new Document();
 
                 putNotNull(ct, CT_GENE_NAME_FIELD, consequenceType.getGeneName());
-                putNotNull(ct, CT_ENSEMBL_GENE_ID_FIELD, consequenceType.getEnsemblGeneId());
-                putNotNull(ct, CT_ENSEMBL_TRANSCRIPT_ID_FIELD, consequenceType.getEnsemblTranscriptId());
+                putNotNull(ct, CT_ENSEMBL_GENE_ID_FIELD, consequenceType.getGeneId());
+                putNotNull(ct, CT_ENSEMBL_TRANSCRIPT_ID_FIELD, consequenceType.getTranscriptId());
 //                putNotNull(ct, RELATIVE_POS_FIELD, consequenceType.getRelativePosition());
                 putNotNull(ct, CT_CODON_FIELD, consequenceType.getCodon());
                 putNotDefault(ct, CT_STRAND_FIELD, consequenceType.getStrand(), DEFAULT_STRAND_VALUE);
@@ -644,11 +644,11 @@ public class DocumentToVariantAnnotationConverter
                         if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
                             gnSo.add(buildGeneSO(consequenceType.getGeneName(), so));
                         }
-                        if (StringUtils.isNotEmpty(consequenceType.getEnsemblGeneId())) {
-                            gnSo.add(buildGeneSO(consequenceType.getEnsemblGeneId(), so));
+                        if (StringUtils.isNotEmpty(consequenceType.getGeneId())) {
+                            gnSo.add(buildGeneSO(consequenceType.getGeneId(), so));
                         }
-                        if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
-                            gnSo.add(buildGeneSO(consequenceType.getEnsemblTranscriptId(), so));
+                        if (StringUtils.isNotEmpty(consequenceType.getTranscriptId())) {
+                            gnSo.add(buildGeneSO(consequenceType.getTranscriptId(), so));
                         }
                         if (proteinVariantAnnotation != null) {
                             if (StringUtils.isNotEmpty(proteinVariantAnnotation.getUniprotAccession())) {
@@ -719,11 +719,11 @@ public class DocumentToVariantAnnotationConverter
                 if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
                     xrefs.add(convertXrefToStorage(consequenceType.getGeneName(), "HGNC"));
                 }
-                if (StringUtils.isNotEmpty(consequenceType.getEnsemblGeneId())) {
-                    xrefs.add(convertXrefToStorage(consequenceType.getEnsemblGeneId(), "ensemblGene"));
+                if (StringUtils.isNotEmpty(consequenceType.getGeneId())) {
+                    xrefs.add(convertXrefToStorage(consequenceType.getGeneId(), "ensemblGene"));
                 }
-                if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
-                    xrefs.add(convertXrefToStorage(consequenceType.getEnsemblTranscriptId(), "ensemblTranscript"));
+                if (StringUtils.isNotEmpty(consequenceType.getTranscriptId())) {
+                    xrefs.add(convertXrefToStorage(consequenceType.getTranscriptId(), "ensemblTranscript"));
                 }
 
             }

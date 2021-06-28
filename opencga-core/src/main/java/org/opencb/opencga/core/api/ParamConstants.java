@@ -168,6 +168,10 @@ public class ParamConstants {
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
     public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
 
+    public static final int MAXIMUM_LINES_CONTENT = 1000;
+    public static final String MAXIMUM_LINES_CONTENT_DESCRIPTION =
+            "Maximum number of lines to be returned up to a maximum of " + MAXIMUM_LINES_CONTENT;
+
     // ---------------------------------------------
 
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
