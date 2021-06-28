@@ -895,6 +895,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public abstract void testConnection() throws StorageEngineException;
 
+    public void reloadCellbaseConfiguration() {
+        cellBaseUtils = null;
+    }
+
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
             final ProjectMetadata metadata = getMetadataManager().getProjectMetadata(getOptions());

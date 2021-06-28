@@ -59,7 +59,6 @@ public class FileMetadataReader {
     public static final String VARIANT_SOURCE = "variantSource";
 
     public static final String VARIANT_FILE_METADATA = "variantFileMetadata";
-    public static final String FILE_VARIANT_STATS_VARIABLE_SET = "opencga_file_variant_stats";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);

@@ -16,11 +16,13 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.common.Status;
 
 public class ProjectInternal {
 
     private Datastores datastores;
+    private CellBaseConfiguration cellbase;
     private Status status;
 
     public ProjectInternal() {
@@ -28,6 +30,12 @@ public class ProjectInternal {
 
     public ProjectInternal(Datastores datastores, Status status) {
         this.datastores = datastores;
+        this.status = status;
+    }
+
+    public ProjectInternal(Datastores datastores, CellBaseConfiguration cellbase, Status status) {
+        this.datastores = datastores;
+        this.cellbase = cellbase;
         this.status = status;
     }
 
@@ -46,6 +54,15 @@ public class ProjectInternal {
 
     public ProjectInternal setDatastores(Datastores datastores) {
         this.datastores = datastores;
+        return this;
+    }
+
+    public CellBaseConfiguration getCellbase() {
+        return cellbase;
+    }
+
+    public ProjectInternal setCellbase(CellBaseConfiguration cellbase) {
+        this.cellbase = cellbase;
         return this;
     }
 

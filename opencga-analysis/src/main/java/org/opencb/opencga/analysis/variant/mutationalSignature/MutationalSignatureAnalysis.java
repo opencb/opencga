@@ -40,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +134,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                     if (qc == null) {
                         qc = new SampleQualityControl();
                     }
-                    qc.getVariantMetrics().getSignatures().add(signature);
+                    qc.getVariant().getSignatures().add(signature);
 
                     catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                             QueryOptions.empty(), getToken());
@@ -150,10 +151,10 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
         File contextFile = dir.resolve(GENOME_CONTEXT_FILENAME).toFile();
         if (contextFile.exists()) {
             List<String> lines = FileUtils.readLines(contextFile, Charset.defaultCharset());
-            Signature.GenomeContextCount[] sigCounts = new Signature.GenomeContextCount[lines.size() - 1];
+            List<Signature.GenomeContextCount> sigCounts = new ArrayList<>(lines.size() - 1);
             for (int i = 1; i < lines.size(); i++) {
                 String[] fields = lines.get(i).split("\t");
-                sigCounts[i-1] = new Signature.GenomeContextCount(fields[2], Math.round(Float.parseFloat((fields[3]))));
+                sigCounts.add(new Signature.GenomeContextCount(fields[2], Math.round(Float.parseFloat((fields[3])))));
             }
             result.setCounts(sigCounts);
         }
@@ -168,11 +169,10 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
             Map content = JacksonUtils.getDefaultObjectMapper().readValue(coeffsFile, Map.class);
             Map coefficients = (Map) content.get("coefficients");
-            SignatureFitting.Score[] scores = new SignatureFitting.Score[coefficients.size()];
-            int i = 0;
+            List<SignatureFitting.Score> scores = new ArrayList<>(coefficients.size());
             for (Object key : coefficients.keySet()) {
                 Number coeff = (Number) coefficients.get(key);
-                scores[i++] = new SignatureFitting.Score((String) key, coeff.doubleValue());
+                scores.add(new SignatureFitting.Score((String) key, coeff.doubleValue()));
             }
             fitting.setScores(scores);
             fitting.setCoeff((Double) content.get("rss"));

@@ -23,7 +23,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -41,6 +40,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileContent;
@@ -423,6 +423,24 @@ public class JobManager extends ResourceManager<Job> {
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
             throws CatalogException {
         return submit(studyStr, toolId, priority, params, null, null, null, null, token);
+    }
+
+    public OpenCGAResult<Job> submitProject(String projectStr, String toolId, Enums.Priority priority, Map<String, Object> params,
+                                            String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags,
+                                            String token) throws CatalogException {
+        // Project job
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+        // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+        List<String> studies = catalogManager.getStudyManager()
+                .search(projectStr, new Query(), options, token)
+                .getResults()
+                .stream()
+                .map(Study::getFqn)
+                .collect(Collectors.toList());
+        if (studies.isEmpty()) {
+            throw new CatalogException("Project '" + projectStr + "' not found!");
+        }
+        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,

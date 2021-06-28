@@ -27,6 +27,7 @@ import java.util.List;
  * finibus.
  */
 public class SampleQualityControl implements Serializable {
+
     /**
      * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
      * lectus, ut ultrices nunc vulputate ac.
@@ -34,6 +35,7 @@ public class SampleQualityControl implements Serializable {
      * @apiNote Internal, Unique, Immutable
      */
     private List<String> files;
+
     /**
      * Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui
      * dignissim leo, quis ullamcorper felis elit a augue.
@@ -41,22 +43,23 @@ public class SampleQualityControl implements Serializable {
      * @apiNote Required
      */
     private List<ClinicalComment> comments;
+
     /**
      * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
      * lectus, ut ultrices nunc vulputate ac.
      *
      * @apiNote Internal, Unique, Immutable
      */
-    private SampleVariantQualityControlMetrics variantMetrics;
+    private SampleVariantQualityControlMetrics variant;
 
     public SampleQualityControl() {
         this(new ArrayList<>(), new ArrayList<>(), new SampleVariantQualityControlMetrics());
     }
 
-    public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variantMetrics) {
+    public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variant) {
         this.files = files;
         this.comments = comments;
-        this.variantMetrics = variantMetrics;
+        this.variant = variant;
     }
 
     @Override
@@ -64,7 +67,7 @@ public class SampleQualityControl implements Serializable {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
         sb.append("files=").append(files);
         sb.append(", comments=").append(comments);
-        sb.append(", variantMetrics=").append(variantMetrics);
+        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
@@ -87,12 +90,12 @@ public class SampleQualityControl implements Serializable {
         return this;
     }
 
-    public SampleVariantQualityControlMetrics getVariantMetrics() {
-        return variantMetrics;
+    public SampleVariantQualityControlMetrics getVariant() {
+        return variant;
     }
 
-    public SampleQualityControl setVariantMetrics(SampleVariantQualityControlMetrics variantMetrics) {
-        this.variantMetrics = variantMetrics;
+    public SampleQualityControl setVariant(SampleVariantQualityControlMetrics variant) {
+        this.variant = variant;
         return this;
     }
 }

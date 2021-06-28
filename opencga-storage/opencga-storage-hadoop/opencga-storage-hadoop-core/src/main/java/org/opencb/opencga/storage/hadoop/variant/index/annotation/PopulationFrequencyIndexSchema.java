@@ -1,24 +1,27 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
-import org.opencb.opencga.storage.hadoop.variant.index.core.IndexSchema;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.core.FixedSizeIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
-import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class PopulationFrequencyIndexSchema extends IndexSchema {
+public class PopulationFrequencyIndexSchema extends FixedSizeIndexSchema {
 
     private final Map<String, IndexField<Double>> populations;
+    private final SampleIndexConfiguration.PopulationFrequencyIndexConfiguration populationFrequencyIndexConfiguration;
 
-    public PopulationFrequencyIndexSchema(List<PopulationFrequencyRange> populationRanges) {
-        fields = new ArrayList<>(populationRanges.size());
+    public PopulationFrequencyIndexSchema(SampleIndexConfiguration.PopulationFrequencyIndexConfiguration
+                                                  populationFrequencyIndexConfiguration) {
+        fields = new ArrayList<>(populationFrequencyIndexConfiguration.getPopulations().size());
+        this.populationFrequencyIndexConfiguration = populationFrequencyIndexConfiguration;
         populations = new HashMap<>();
         int bitOffset = 0;
-        for (PopulationFrequencyRange configuration : populationRanges) {
+        for (IndexFieldConfiguration configuration : populationFrequencyIndexConfiguration.toIndexFieldConfiguration()) {
             IndexField<Double> field;
             switch (configuration.getType()) {
                 case RANGE_LT:
@@ -36,6 +39,10 @@ public class PopulationFrequencyIndexSchema extends IndexSchema {
     }
 
     public IndexField<Double> getField(String study, String population) {
-        return populations.get(study + ":" + population);
+        return getField(study + ":" + population);
+    }
+
+    public IndexField<Double> getField(String studyPop) {
+        return populations.get(studyPop);
     }
 }

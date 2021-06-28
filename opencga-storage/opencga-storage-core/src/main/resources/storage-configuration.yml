@@ -4,7 +4,7 @@
 ## This can be set up using maven profiles in your .m2/settings.xml
 cellbase:
   ## URL host to annotate variants, for example: http://ws.opencb.org/cellbase/
-  host: "${OPENCGA.CELLBASE.REST.HOST}"
+  url: "${OPENCGA.CELLBASE.REST.HOST}"
   version: "${OPENCGA.CELLBASE.VERSION}"
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
@@ -111,7 +111,7 @@ variant:
     annotator.cellbase.useCache: true
     annotator.cellbase.impreciseVariants: true          # Imprecise variants supported by cellbase
     annotator.cellbase.starAlternate: false             # Variants with stat "*" alternate supported by cellbase
-    annotator.cellbase.variantLengthThreshold: 10000    # Variants length threshold
+    #annotator.cellbase.variantLengthThreshold:         # Variants length threshold. By default, unlimited
 
     query.timeout.default: 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
     query.timeout.max: 30000     #(ms) Max allowed timeout for DBAdaptor operations.

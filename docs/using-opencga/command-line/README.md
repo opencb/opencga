@@ -8,9 +8,9 @@
 
 OpenCGA command line can be downloaded from the main GitHub repository:
 
-{% embed url="https://github.com/opencb/opencga/releases/download/v2.0.3/opencga-client-2.0.3.tar.gz" %}
+[https://github.com/opencb/opencga/releases/](https://github.com/opencb/opencga/releases/)
 
-The client needs to be configured to point to the OpenCGA REST server by editing the section "rest.host" at the file `conf/client-configuration.yml`
+For a detailed description of all the steps required to download and configure the CLI, refer to the xxx section of the USER MANUAL.
 
 ## Correlation Between REST and CLI
 

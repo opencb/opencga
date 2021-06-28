@@ -23,10 +23,14 @@ public class RangeIndexField extends IndexField<Double> {
     private int numRanges;
 
     public RangeIndexField(IndexFieldConfiguration configuration, int bitOffset) {
+        this(configuration, bitOffset, Double.MIN_VALUE, MAX);
+    }
+
+    public RangeIndexField(IndexFieldConfiguration configuration, int bitOffset, double minValue, double max) {
         super(configuration, bitOffset);
         this.thresholds = getConfiguration().getThresholds().clone();
-        min = Double.MIN_VALUE;
-        max = MAX;
+        min = minValue;
+        this.max = max;
         // There is one range more than thresholds.
         numRanges = thresholds.length + 1;
         if (configuration.getNullable()) {

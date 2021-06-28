@@ -47,7 +47,9 @@
 
 ## User Manual <a id="manual"></a>
 
-* [Login](manual/login.md)
+* [Using OpenCGA](manual/use/README.md)
+  * [Command Line](manual/use/command-line.md)
+  * [Client Libraries](manual/use/client-libraries.md)
 * [Data Management](manual/data-management/README.md)
   * [Data Ingestion Process](manual/data-management/data-ingestion-process.md)
   * [Projects and Studies](manual/data-management/projects-and-studies.md)
@@ -69,7 +71,7 @@
   * [Clinical Interpretation](manual/clinical-genomics/clinical-interpretation.md)
   * [Clinical Analysis](manual/clinical-genomics/clinical-analysis.md)
 * [Data Models](manual/data-models/README.md)
-  * [Sample](manual/data-models/sample.md)
+  * [Sample Model](manual/data-models/sample-model.md)
   * [Individual](manual/data-models/individual.md)
   * [File](manual/data-models/file.md)
   * [Family](manual/data-models/family.md)

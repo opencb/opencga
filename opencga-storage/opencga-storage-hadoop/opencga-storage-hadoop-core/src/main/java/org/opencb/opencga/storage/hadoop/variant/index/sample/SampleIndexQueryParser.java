@@ -4,9 +4,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
-import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -16,19 +17,16 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtCombinationIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.NoOpIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
-import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -799,9 +797,10 @@ public class SampleIndexQueryParser {
      */
     protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
         byte annotationIndex = 0;
-        byte biotypeMask = 0;
-        short consequenceTypeMask = 0;
-        byte clinicalMask = 0;
+        IndexFieldFilter biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+        IndexFieldFilter consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
+        CtBtCombinationIndexSchema.Filter ctBtFilter = schema.getCtBtIndex().getField().noOpFilter();
+        IndexFilter clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
 
         Boolean intergenic = null;
 
@@ -886,18 +885,8 @@ public class SampleIndexQueryParser {
             boolean useCtIndexFilter = !ctFilterCoveredBySummary || (!ctBtCombinationCoveredBySummary && combination.isBiotype());
             if (useCtIndexFilter) {
                 ctCovered = completeIndex;
-                for (String soName : soNames) {
-                    short mask = getMaskFromSoName(soName);
-                    if (mask == IndexUtils.EMPTY_MASK) {
-                        // If any element is not in the index, do not use this filter
-                        consequenceTypeMask = IndexUtils.EMPTY_MASK;
-                        ctCovered = false;
-                        break;
-                    }
-                    consequenceTypeMask |= mask;
-                    // Some CT filter values are not precise, so the query is not covered.
-                    ctCovered &= !isImpreciseCtMask(mask);
-                }
+                consequenceTypeFilter = schema.getCtIndex().getField().buildFilter(new OpValue<>("=", soNames));
+                ctCovered &= consequenceTypeFilter.isExactFilter();
                 // ConsequenceType filter is covered by index
                 if (ctCovered) {
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -927,18 +916,8 @@ public class SampleIndexQueryParser {
             boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.isConsequenceType();
             if (useBtIndexFilter) {
                 btCovered = completeIndex;
-                for (String biotype : biotypes) {
-                    byte mask = getMaskFromBiotype(biotype);
-                    if (mask == IndexUtils.EMPTY_MASK) {
-                        // If any element is not in the index, do not use this filter
-                        biotypeMask = IndexUtils.EMPTY_MASK;
-                        btCovered = false;
-                        break;
-                    }
-                    biotypeMask |= mask;
-                    // Some CT filter values are not precise, so the query is not covered.
-                    btCovered &= !isImpreciseBtMask(mask);
-                }
+                biotypeFilter = schema.getBiotypeIndex().getField().buildFilter(new OpValue<>("=", biotypes));
+                btCovered &= biotypeFilter.isExactFilter();
                 // Biotype filter is covered by index
                 if (btCovered) {
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -946,6 +925,10 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+        }
+
+        if (!consequenceTypeFilter.isNoOp() && !biotypeFilter.isNoOp()) {
+            ctBtFilter = schema.getCtBtIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter);
         }
         if (completeIndex && btCovered && ctCovered && !isValidParam(query, GENE)
                 && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
@@ -963,45 +946,24 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             annotationIndex |= CLINICAL_MASK;
-            boolean clinicalCovered = true;
-            for (String clinical : query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key())) {
-                switch (ClinicalSignificance.valueOf(clinical)) {
-                    case likely_benign:
-                    case benign:
-                        // These two values are covered by the same bit, so, they are not covered.
-                        clinicalCovered = false;
-                        clinicalMask |= CLINICAL_BENIGN_LIKELY_BENIGN_MASK;
-                        break;
-                    case VUS:
-                    case uncertain_significance:
-                        // These two values are synonymous
-                        clinicalMask |= CLINICAL_UNCERTAIN_SIGNIFICANCE_MASK;
-                        break;
-                    case likely_pathogenic:
-                        clinicalMask |= CLINICAL_LIKELY_PATHOGENIC_MASK;
-                        break;
-                    case pathogenic:
-                        clinicalMask |= CLINICAL_PATHOGENIC_MASK;
-                        break;
-                    default:
-                        clinicalCovered = false;
-                        break;
-                }
+            clinicalFilter = schema.getClinicalIndexSchema().buildFilter(schema.getClinicalIndexSchema().getClinicalSignificanceField()
+                    .buildFilter(new OpValue<>("=", query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key()))));
+            boolean clinicalCovered = clinicalFilter.isExactFilter();
+            if (!clinicalCovered) {
+                // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
+                clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
             }
             if (completeIndex && clinicalCovered) {
                 query.remove(ANNOT_CLINICAL_SIGNIFICANCE.key());
             }
-            if (!clinicalCovered) {
-                // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
-                clinicalMask = 0;
-            }
         }
 
-        List<PopulationFrequencyQuery> popFreqQuery = new ArrayList<>();
-        QueryOperation popFreqOp = QueryOperation.AND;
-        boolean popFreqPartial = false;
+        IndexFilter populationFrequencyFilter = schema.getPopFreqIndex().noOpFilter();
         // TODO: This will skip filters ANNOT_POPULATION_REFERENCE_FREQUENCY and ANNOT_POPULATION_MINNOR_ALLELE_FREQUENCY
         if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
+            List<IndexFieldFilter> populationFrequencyFilters = new ArrayList<>();
+            QueryOperation popFreqOp;
+            boolean popFreqPartial = false;
             ParsedQuery<String> popFreqFilter = VariantQueryUtils.splitValue(query, VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY);
             popFreqOp = popFreqFilter.getOperation();
 
@@ -1013,7 +975,7 @@ public class SampleIndexQueryParser {
                 KeyOpValue<String, String> keyOpValue = VariantQueryUtils.parseKeyOpValue(popFreq);
                 String studyPop = keyOpValue.getKey();
                 studyPops.add(studyPop);
-                double freqFilter = Double.valueOf(keyOpValue.getValue());
+                double freqFilter = Double.parseDouble(keyOpValue.getValue());
                 if (keyOpValue.getOp().equals("<") || keyOpValue.getOp().equals("<<")) {
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
                         popFreqLessThan001.add(studyPop);
@@ -1022,19 +984,12 @@ public class SampleIndexQueryParser {
 
                 boolean populationInSampleIndex = false;
                 boolean populationFilterFullyCovered = false;
-                int popFreqIdx = 0;
-                for (PopulationFrequencyRange populationRange : schema.getConfiguration().getPopulationRanges()) {
-                    if (populationRange.getKey().equals(studyPop)) {
-                        populationInSampleIndex = true;
-                        RangeQuery rangeQuery = getRangeQuery(keyOpValue.getOp(), freqFilter, populationRange.getThresholds(),
-                                0, 1 + RangeIndexField.DELTA);
-
-                        popFreqQuery.add(new PopulationFrequencyQuery(rangeQuery,
-                                popFreqIdx, populationRange.getStudy(),
-                                populationRange.getPopulation()));
-                        populationFilterFullyCovered |= rangeQuery.isExactQuery();
-                    }
-                    popFreqIdx++;
+                IndexField<Double> popFreqField = schema.getPopFreqIndex().getField(studyPop);
+                if (popFreqField != null) {
+                    populationInSampleIndex = true;
+                    IndexFieldFilter fieldFilter = popFreqField.buildFilter(new OpValue<>(keyOpValue.getOp(), freqFilter));
+                    populationFrequencyFilters.add(fieldFilter);
+                    populationFilterFullyCovered = fieldFilter.isExactFilter();
                 }
 
                 if (!populationInSampleIndex) {
@@ -1053,7 +1008,7 @@ public class SampleIndexQueryParser {
 
                     if (POP_FREQ_ANY_001_SET.size() == popFreqFilter.getValues().size()) {
                         // Do not filter using the PopFreq index, as the summary bit covers the filter
-                        popFreqQuery.clear();
+                        populationFrequencyFilters.clear();
 
                         // If the index is complete for all samples, remove the filter from main query
                         if (completeIndex) {
@@ -1063,7 +1018,7 @@ public class SampleIndexQueryParser {
                 }
                 if (popFreqPartial) {
                     // Can not use the index with partial OR queries.
-                    popFreqQuery.clear();
+                    populationFrequencyFilters.clear();
                 } else if (filtersNotCoveredByPopFreqQuery.isEmpty()) {
                     // If all filters are covered, remove filter form query.
                     if (completeIndex) {
@@ -1089,6 +1044,9 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+            if (!populationFrequencyFilters.isEmpty()) {
+                populationFrequencyFilter = schema.getPopFreqIndex().buildFilter(populationFrequencyFilters, popFreqOp);
+            }
         }
 
         byte annotationIndexMask = annotationIndex;
@@ -1101,13 +1059,12 @@ public class SampleIndexQueryParser {
 
         if (intergenic == null || intergenic) {
             // If intergenic is undefined, or true, CT and BT filters can not be used.
-            consequenceTypeMask = IndexUtils.EMPTY_MASK;
-            biotypeMask = IndexUtils.EMPTY_MASK;
+            biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+            consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
         }
 
-
-        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex}, consequenceTypeMask, biotypeMask,
-                clinicalMask, popFreqOp, popFreqQuery, popFreqPartial);
+        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex},
+                consequenceTypeFilter, biotypeFilter, ctBtFilter, clinicalFilter, populationFrequencyFilter);
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {

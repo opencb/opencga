@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -260,6 +261,10 @@ public class SampleIndexEntry {
             return fileIndex;
         }
 
+        public BitInputStream getFileIndexStream() {
+            return fileIndex == null ? null : new BitInputStream(fileIndex, fileIndexOffset, fileIndexLength);
+        }
+
         public int getFileIndexOffset() {
             return fileIndexOffset;
         }
@@ -311,8 +316,10 @@ public class SampleIndexEntry {
             return consequenceTypeIndex;
         }
 
-        public short getConsequenceTypeIndex(int nonIntergenicIndex) {
-            return Bytes.toShort(consequenceTypeIndex, consequenceTypeIndexOffset + nonIntergenicIndex * Short.BYTES);
+        public BitInputStream getConsequenceTypeIndexStream() {
+            return consequenceTypeIndex == null
+                    ? null
+                    : new BitInputStream(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength);
         }
 
         public SampleIndexGtEntry setConsequenceTypeIndex(byte[] consequenceTypeIndex) {
@@ -330,8 +337,8 @@ public class SampleIndexEntry {
             return biotypeIndex;
         }
 
-        public byte getBiotypeIndex(int idx) {
-            return biotypeIndex[biotypeIndexOffset + idx];
+        public BitInputStream getBiotypeIndexStream() {
+            return biotypeIndex == null ? null : new BitInputStream(biotypeIndex, biotypeIndexOffset, biotypeIndexLength);
         }
 
         public SampleIndexGtEntry setBiotypeIndex(byte[] biotypeIndex) {
@@ -347,6 +354,10 @@ public class SampleIndexEntry {
 
         public byte[] getCtBtIndex() {
             return ctBtIndex;
+        }
+
+        public BitInputStream getCtBtIndexStream() {
+            return ctBtIndex == null ? null : new BitInputStream(ctBtIndex, ctBtIndexOffset, ctBtIndexLength);
         }
 
         public int getCtBtIndexOffset() {
@@ -372,6 +383,12 @@ public class SampleIndexEntry {
             return populationFrequencyIndex;
         }
 
+        public BitInputStream getPopulationFrequencyIndexStream() {
+            return populationFrequencyIndex == null
+                    ? null
+                    : new BitInputStream(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength);
+        }
+
         public int getPopulationFrequencyIndexOffset() {
             return populationFrequencyIndexOffset;
         }
@@ -395,6 +412,13 @@ public class SampleIndexEntry {
             return clinicalIndex;
         }
 
+        public BitInputStream getClinicalIndexStream() {
+            return clinicalIndex == null
+                    ? null
+                    : new BitInputStream(clinicalIndex, clinicalIndexOffset, clinicalIndexLength);
+        }
+
+        @Deprecated
         public byte getClinicalIndex(int idx) {
             return clinicalIndex[clinicalIndexOffset + idx];
         }

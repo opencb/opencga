@@ -16,12 +16,11 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -237,28 +236,33 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                             s -> Collections.singletonList(s.getGenotype()), fieldKey);
                     break;
                 case "consequenceType":
-                case "ct":
+                case "ct": {
+                    IndexField<List<String>> field = schema.getCtIndex().getField();
                     thisAccumulator = new CategoricalAccumulator<>(
                             s -> s.getAnnotationIndexEntry() == null
                                     ? Collections.emptyList()
-                                    : AnnotationIndexConverter.getSoNamesFromMask(s.getAnnotationIndexEntry().getCtIndex()),
+                                    : field.decode(s.getAnnotationIndexEntry().getCtIndex()),
                             fieldKey);
                     break;
+                }
                 case "bt":
-                case "biotype":
+                case "biotype": {
+                    IndexField<List<String>> field = schema.getBiotypeIndex().getField();
                     thisAccumulator = new CategoricalAccumulator<>(
                             s -> s.getAnnotationIndexEntry() == null
                                     ? Collections.emptyList()
-                                    : AnnotationIndexConverter.getBiotypesFromMask(s.getAnnotationIndexEntry().getBtIndex()),
+                                    : field.decode(s.getAnnotationIndexEntry().getBtIndex()),
                             fieldKey);
                     break;
+                }
                 case "clinicalSignificance":
                     thisAccumulator = new CategoricalAccumulator<>(
                             s -> {
-                                if (s.getAnnotationIndexEntry() == null) {
+                                if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasClinical()) {
                                     return Collections.emptyList();
                                 }
-                                return AnnotationIndexConverter.getClinicalsFromMask(s.getAnnotationIndexEntry().getClinicalIndex());
+                                return schema.getClinicalIndexSchema().getClinicalSignificanceField()
+                                        .readAndDecode(s.getAnnotationIndexEntry().getClinicalIndex());
                             },
                             "clinicalSignificance");
                     break;

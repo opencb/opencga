@@ -896,30 +896,6 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
-    public void updateFamilyPhenotype() throws CatalogException {
-        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
-
-        Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
-        Phenotype phenotype2 = new Phenotype("dis2", "New name", "New source");
-        Phenotype phenotype3 = new Phenotype("dis3", "New name", "New source");
-
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3));
-
-        DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getId(),
-                updateParams, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, updatedFamily.getNumUpdated());
-
-        Family family = familyManager.get(STUDY, originalFamily.first().getId(), QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(3, family.getPhenotypes().size());
-
-        // Only one id should be the same as in originalFamilyIds (father id)
-        for (Phenotype phenotype : family.getPhenotypes()) {
-            assertEquals("New name", phenotype.getName());
-            assertEquals("New source", phenotype.getSource());
-        }
-    }
-
-    @Test
     public void updateFamilyQualityControl() throws CatalogException {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
@@ -939,20 +915,6 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals("message", updatedFamily.first().getQualityControl().getComments().get(0).getMessage());
         assertEquals("tag", updatedFamily.first().getQualityControl().getComments().get(0).getTags().get(0));
         assertEquals("date", updatedFamily.first().getQualityControl().getComments().get(0).getDate());
-    }
-
-
-    @Test
-    public void updateFamilyMissingPhenotype() throws CatalogException {
-        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
-
-        Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
-
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Collections.singletonList(phenotype1));
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("not present in any member of the family");
-        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
 }
