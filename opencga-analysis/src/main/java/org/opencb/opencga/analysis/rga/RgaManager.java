@@ -1266,7 +1266,9 @@ public class RgaManager implements AutoCloseable {
                         int processedIds = i;
                         // Get approximate count and stop
                         numMatchesFuture = executor.submit(
-                                () -> ((ids.size() + skippedIds.size()) * facetFieldDataResult.first().getBuckets().size()) / processedIds
+                                () -> (int) (
+                                        ((ids.size() + skippedIds.size()) * (long) facetFieldDataResult.first().getBuckets().size())
+                                                / processedIds)
                         );
                         eventList.add(new Event(Event.Type.WARNING, "numMatches value is approximated."));
                         break;
