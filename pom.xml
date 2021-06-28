@@ -46,7 +46,7 @@
         <opencga.version>2.1.0-rc2-SNAPSHOT</opencga.version>
         <pyopencga.version>${opencga.version}</pyopencga.version>
         <iva.version>2.1.0-beta</iva.version>
-        <cellbase.version>5.0.0-rc</cellbase.version>
+        <cellbase.version>5.0.0-SNAPSHOT</cellbase.version>
         <biodata.version>2.1.0</biodata.version>
         <java-common-libs.version>4.1.0</java-common-libs.version>
         <oskar.version>0.2.0</oskar.version>

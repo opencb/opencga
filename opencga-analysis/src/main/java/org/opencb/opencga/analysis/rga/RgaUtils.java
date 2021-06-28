@@ -563,7 +563,7 @@ class RgaUtils {
         if (variantAnnotation != null && StringUtils.isNotEmpty(transcriptId)
                 && CollectionUtils.isNotEmpty(variantAnnotation.getConsequenceTypes())) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
-                if (transcriptId.equals(ct.getEnsemblTranscriptId())) {
+                if (transcriptId.equals(ct.getTranscriptId())) {
                     consequenceType = ct;
                     break;
                 }

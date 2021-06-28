@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.slf4j.Logger;
@@ -45,7 +46,6 @@ public class PosixIOManager extends IOManager {
     protected static ObjectMapper jsonObjectMapper;
 
     private static final int MAXIMUM_BYTES = 1024 * 1024;
-    private static final int MAXIMUM_LINES = 1000;
 
     @Override
     protected void checkUriExists(URI uri) throws CatalogIOException {
@@ -260,7 +260,10 @@ public class PosixIOManager extends IOManager {
         if (file.toFile().getName().endsWith(".gz")) {
             throw new CatalogIOException("Tail does not work with compressed files.");
         }
-        lines = Math.min(lines, MAXIMUM_LINES);
+        if (lines > ParamConstants.MAXIMUM_LINES_CONTENT) {
+            throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT
+                    + ". Attempting to fail " + lines + " lines");
+        }
 
         int averageBytesPerLine = 250;
 
@@ -411,9 +414,11 @@ public class PosixIOManager extends IOManager {
     @Override
     public FileContent head(Path file, long offset, int lines) throws CatalogIOException {
         if (Files.isRegularFile(file)) {
+            if (lines > ParamConstants.MAXIMUM_LINES_CONTENT) {
+                throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT
+                        + ". Attempting to fail " + lines + " lines");
+            }
             if (offset == 0) {
-                lines = Math.min(lines, MAXIMUM_LINES);
-
                 int numLinesReturned = 0;
                 try (BufferedReader bufferedReader = FileUtils.newBufferedReader(file)) {
                     StringBuilder sb = new StringBuilder();

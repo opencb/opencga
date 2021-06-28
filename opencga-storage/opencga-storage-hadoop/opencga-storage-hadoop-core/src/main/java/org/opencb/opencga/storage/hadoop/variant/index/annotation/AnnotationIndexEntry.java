@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -121,8 +122,10 @@ public class AnnotationIndexEntry {
         }
     }
 
-    public static AnnotationIndexEntry empty() {
-        return new AnnotationIndexEntry().setCtBtCombination(new CtBtCombination(new int[0], 0, 0));
+    public static AnnotationIndexEntry empty(SampleIndexSchema schema) {
+        return new AnnotationIndexEntry()
+                .setPopFreqIndex(new BitBuffer(schema.getPopFreqIndex().getBitsLength()))
+                .setCtBtCombination(new CtBtCombination(new int[0], 0, 0));
     }
 
     public boolean hasSummaryIndex() {
@@ -204,8 +207,8 @@ public class AnnotationIndexEntry {
         return popFreqIndex;
     }
 
-    public AnnotationIndexEntry setPopFreqIndex(BitBuffer popFreqIndexBB) {
-        this.popFreqIndex = popFreqIndexBB;
+    public AnnotationIndexEntry setPopFreqIndex(BitBuffer popFreqIndex) {
+        this.popFreqIndex = popFreqIndex;
         return this;
     }
 

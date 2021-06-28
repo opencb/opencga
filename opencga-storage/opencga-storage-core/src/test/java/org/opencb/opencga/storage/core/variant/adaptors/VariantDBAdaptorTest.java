@@ -566,7 +566,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
                                 with("UniprotName", ProteinVariantAnnotation::getUniprotAccession, is("Q9BY64")))))),
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("EnsemblGene", ConsequenceType::getEnsemblGeneId, is("ENSG00000250026"))))),
+                        hasItem(with("EnsemblGene", ConsequenceType::getGeneId, is("ENSG00000250026"))))),
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
                         hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B")))))
 //                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,

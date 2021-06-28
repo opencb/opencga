@@ -349,6 +349,13 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 projectParameters.put("projects.$.attributes." + entry.getKey(), entry.getValue());
             }
         }
+        final String[] acceptedObjectParams = {QueryParams.INTERNAL_CELLBASE.key()};
+        for (String param : acceptedObjectParams) {
+            if (parameters.containsKey(param)) {
+                Object o = getMongoDBDocument(parameters.get(param), param);
+                projectParameters.put("projects.$." + param, o);
+            }
+        }
 
         Object datastores = parameters.get(QueryParams.INTERNAL_DATASTORES_VARIANT.key());
         if (datastores != null) {

@@ -174,6 +174,7 @@ rest:
     annotations:
       kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-body-size: 1024m
       # kubernetes.io/tls-acme: "true"
     hosts:
       - "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP

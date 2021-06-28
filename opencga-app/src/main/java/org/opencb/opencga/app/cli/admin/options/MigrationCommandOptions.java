@@ -6,6 +6,8 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.catalog.migration.Migration;
+import org.opencb.opencga.catalog.migration.MigrationRun;
 
 import java.util.List;
 
@@ -17,6 +19,7 @@ import java.util.List;
 @Parameters(commandNames = {"migration"}, commandDescription = "Migrate internal data models to upgrade OpenCGA version")
 public class MigrationCommandOptions extends GeneralCliOptions {
 
+    private final SearchCommandOptions searchCommandOptions;
     private final MigrateV1_3_0CommandOptions migrateV130CommandOptions;
     private final MigrateV1_4_0CommandOptions migrateV140CommandOptions;
     private final MigrateV2_0_0CommandOptions migrateV200CommandOptions;
@@ -28,6 +31,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
     public MigrationCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
         super(jCommander);
         this.commonOptions = commonOptions;
+        this.searchCommandOptions = new SearchCommandOptions();
         this.migrateV130CommandOptions = new MigrateV1_3_0CommandOptions();
         this.migrateV140CommandOptions = new MigrateV1_4_0CommandOptions();
         this.migrateV200CommandOptions = new MigrateV2_0_0CommandOptions();
@@ -36,6 +40,22 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         this.migrateV210CommandOptions = new MigrateV2_1_0CommandOptions();
     }
 
+    @Parameters(commandNames = {"search"}, commandDescription = "Search for migrations")
+    public class SearchCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+        @Parameter(names = {"--status"}, description = "Filter migrations by status. PENDING, ERROR, DONE")
+        public List<String> status;
+
+        @Parameter(names = {"--domain"}, description = "Select migration domain, either CATALOG or STORAGE")
+        public List<Migration.MigrationDomain> domain;
+
+        @Parameter(names = {"--version"}, description = "Migration version")
+        public String version;
+    }
+    
     @Parameters(commandNames = {"v1.3.0"}, commandDescription = "Migrate OpenCGA from version 1.2.x to 1.3.0")
     public class MigrateV1_3_0CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
 
@@ -119,6 +139,10 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         STORAGE,
         ANNOTATIONS,
         CATALOG_NO_ANNOTATIONS
+    }
+
+    public SearchCommandOptions getSearchCommandOptions() {
+        return searchCommandOptions;
     }
 
     public MigrateV1_3_0CommandOptions getMigrateV130CommandOptions() {

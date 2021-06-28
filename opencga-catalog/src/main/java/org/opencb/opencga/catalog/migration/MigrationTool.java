@@ -1,8 +1,15 @@
 package org.opencb.opencga.catalog.migration;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.WriteModel;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -14,11 +21,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class MigrationTool {
 
     protected Configuration configuration;
     protected CatalogManager catalogManager;
+    protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected Path appHome;
     protected String token;
 
@@ -34,12 +44,14 @@ public abstract class MigrationTool {
     }
 
     public final String getId() {
-        return "";
+        return getClass().getAnnotation(Migration.class).id();
     }
 
-    public final void setup(Configuration configuration, CatalogManager catalogManager, Path appHome, ObjectMap params, String token) {
+    public final void setup(Configuration configuration, CatalogManager catalogManager, MongoDBAdaptorFactory dbAdaptorFactory,
+                            Path appHome, ObjectMap params, String token) {
         this.configuration = configuration;
         this.catalogManager = catalogManager;
+        this.dbAdaptorFactory = dbAdaptorFactory;
         this.appHome = appHome;
         this.params = params;
         this.token = token;
@@ -51,7 +63,7 @@ public abstract class MigrationTool {
         } catch (MigrationException e) {
             throw e;
         } catch (Exception e) {
-            throw new MigrationException("Error running  migration '" + getId() + "'", e);
+            throw new MigrationException("Error running migration '" + getId() + "' : " + e.getMessage(), e);
         }
     }
 
@@ -122,6 +134,59 @@ public abstract class MigrationTool {
         } else {
             throw new MigrationException("Error with Javascript catalog migrating!");
         }
+    }
+
+    @FunctionalInterface
+    protected interface MigrateCollectionFunc {
+        void accept(Document document, List<WriteModel<Document>> bulk);
+    }
+
+    protected final void migrateCollection(String collection, Bson query, Bson projection,
+                                           MigrateCollectionFunc migrateFunc) {
+        migrateCollection(collection, collection, query, projection, migrateFunc);
+    }
+
+    protected final void migrateCollection(String inputCollection, String outputCollection, Bson query, Bson projection,
+                                           MigrateCollectionFunc migrateFunc) {
+        migrateCollection(getMongoCollection(inputCollection), getMongoCollection(outputCollection), query, projection, migrateFunc);
+    }
+
+    protected final void migrateCollection(MongoCollection<Document> inputCollection, MongoCollection<Document> outputCollection,
+                                           Bson query, Bson projection,
+                                           MigrateCollectionFunc migrateFunc) {
+        int batchSize = 1000;
+        int count = 0;
+        List<WriteModel<Document>> list = new ArrayList<>(batchSize);
+
+        ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(batchSize);
+        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
+            while (it.hasNext()) {
+                Document document = it.next();
+                migrateFunc.accept(document, list);
+
+                if (list.size() >= batchSize) {
+                    count += list.size();
+                    progressLogger.increment(list.size());
+                    outputCollection.bulkWrite(list);
+                    list.clear();
+                }
+            }
+            if (!list.isEmpty()) {
+                count += list.size();
+                progressLogger.increment(list.size());
+                outputCollection.bulkWrite(list);
+                list.clear();
+            }
+        }
+        if (count == 0) {
+            privateLogger.info("Nothing to do!");
+        } else {
+            privateLogger.info("Updated {} documents from collection {}", count, outputCollection.getNamespace().getFullName());
+        }
+    }
+
+    protected final MongoCollection<Document> getMongoCollection(String collectionName) {
+        return dbAdaptorFactory.getMongoDataStore().getDb().getCollection(collectionName);
     }
 
 }

@@ -104,7 +104,7 @@ public class CatalogManager implements AutoCloseable {
         this.initializeAdmin(configuration);
         authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, configuration);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
-        migrationManager = new MigrationManager(this, catalogDBAdaptorFactory.getMigrationDBAdaptor(), configuration);
+        migrationManager = new MigrationManager(this, catalogDBAdaptorFactory, configuration);
 
         adminManager = new AdminManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
