@@ -98,10 +98,6 @@ public class VariantSearchModel {
     @Field("geneToSoAcc")
     private List<String> geneToSoAcc;
 
-    @Field("clinical")
-    private List<String> clinical;
-
-    @Deprecated
     @Field("clinicalSig")
     private List<String> clinicalSig;
 
@@ -202,7 +198,6 @@ public class VariantSearchModel {
         sb.append(", biotypes=").append(biotypes);
         sb.append(", soAcc=").append(soAcc);
         sb.append(", geneToSoAcc=").append(geneToSoAcc);
-        sb.append(", clinical=").append(clinical);
         sb.append(", clinicalSig=").append(clinicalSig);
         sb.append(", traits=").append(traits);
         sb.append(", other=").append(other);
@@ -416,15 +411,6 @@ public class VariantSearchModel {
 
     public VariantSearchModel setGeneToSoAcc(List<String> geneToSoAcc) {
         this.geneToSoAcc = geneToSoAcc;
-        return this;
-    }
-
-    public List<String> getClinical() {
-        return clinical;
-    }
-
-    public VariantSearchModel setClinical(List<String> clinical) {
-        this.clinical = clinical;
         return this;
     }
 

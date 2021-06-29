@@ -977,7 +977,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // Set variant traits: ClinVar, Cosmic, HPO, ...
             if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
                 Set<String> clinicalSet = new HashSet<>();
-                Set<String> clinSigSet = new HashSet<>();
                 for (EvidenceEntry ev : variantAnnotation.getTraitAssociation()) {
                     if (ev.getSource() != null && StringUtils.isNotEmpty(ev.getSource().getName())) {
 
@@ -993,12 +992,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             if (ev.getVariantClassification() != null
                                     && ev.getVariantClassification().getClinicalSignificance() != null) {
                                 clinSigSuffix = FIELD_SEP + ev.getVariantClassification().getClinicalSignificance().name();
-                                clinSigSet.add(ev.getVariantClassification().getClinicalSignificance().name());
 
+//                                clinicalSet.add(ev.getVariantClassification().getClinicalSignificance().name());
                                 clinicalSig = ev.getVariantClassification().getClinicalSignificance().name();
                             }
-                            if (ev.getConsistencyStatus() != null && StringUtils.isNotEmpty(ev.getConsistencyStatus().name())
-                                    && ev.getConsistencyStatus().name().equals("congruent")) {
+                            if (ConsistencyStatus.congruent.equals(ev.getConsistencyStatus())) {
                                 status = "confirmed";
                             }
                             if (CollectionUtils.isNotEmpty(ev.getHeritableTraits())) {
@@ -1009,9 +1007,14 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         } else if ("cosmic".equalsIgnoreCase(ev.getSource().getName())) {
                             if (CollectionUtils.isNotEmpty(ev.getAdditionalProperties())) {
                                 for (Property additionalProperty : ev.getAdditionalProperties()) {
-                                    if (additionalProperty.getId().equals("FATHMM_PREDICTION")
-                                            && additionalProperty.getValue().equals("PATHOGENIC")) {
-                                        clinicalSig = "pathogenic";
+                                    if (additionalProperty.getId().equals("FATHMM_PREDICTION")) {
+                                        if (additionalProperty.getValue().equals("PATHOGENIC")) {
+                                            clinicalSig = "pathogenic";
+                                        } else {
+                                            if (additionalProperty.getValue().equals("NEUTRAL")) {
+                                                clinicalSig = "benign";
+                                            }
+                                        }
                                     }
 
                                     if (additionalProperty.getId().equals("MUTATION_SOMATIC_STATUS")
@@ -1057,11 +1060,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
 
                 if (CollectionUtils.isNotEmpty(clinicalSet)) {
-                    variantSearchModel.setClinical(new ArrayList<>(clinicalSet));
-                }
-
-                if (CollectionUtils.isNotEmpty(clinSigSet)) {
-                    variantSearchModel.setClinicalSig(new ArrayList<>(clinSigSet));
+                    variantSearchModel.setClinicalSig(new ArrayList<>(clinicalSet));
                 }
             }
             if (variantAnnotation.getGeneTraitAssociation() != null
