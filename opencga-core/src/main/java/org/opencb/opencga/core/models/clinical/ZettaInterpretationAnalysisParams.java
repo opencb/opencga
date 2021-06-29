@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.models.clinical;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -62,6 +61,9 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     private String customAnnotation;
 
     private String panel;
+    private String panelModeOfInheritance;
+    private String panelConfidence;
+    private String panelRoleInCancer;
 
     private String trait;
 
@@ -575,6 +577,33 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     public ZettaInterpretationAnalysisParams setPanel(String panel) {
         this.panel = panel;
+        return this;
+    }
+
+    public String getPanelModeOfInheritance() {
+        return panelModeOfInheritance;
+    }
+
+    public ZettaInterpretationAnalysisParams setPanelModeOfInheritance(String panelModeOfInheritance) {
+        this.panelModeOfInheritance = panelModeOfInheritance;
+        return this;
+    }
+
+    public String getPanelConfidence() {
+        return panelConfidence;
+    }
+
+    public ZettaInterpretationAnalysisParams setPanelConfidence(String panelConfidence) {
+        this.panelConfidence = panelConfidence;
+        return this;
+    }
+
+    public String getPanelRoleInCancer() {
+        return panelRoleInCancer;
+    }
+
+    public ZettaInterpretationAnalysisParams setPanelRoleInCancer(String panelRoleInCancer) {
+        this.panelRoleInCancer = panelRoleInCancer;
         return this;
     }
 

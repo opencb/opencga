@@ -3,6 +3,7 @@ package org.opencb.opencga.app.cli.main.executors.analysis;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
@@ -219,7 +220,10 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("clinicalSignificance", commandOptions.clinicalSignificance);
         queryParams.putIfNotNull("customAnnotation", commandOptions.annotations);
 
-        queryParams.putIfNotNull("panel", commandOptions.panel);
+        queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL.key(), commandOptions.panel);
+        queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL_MODE_OF_INHERITANCE.key(), commandOptions.panelModeOfInheritance);
+        queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL_CONFIDENCE.key(), commandOptions.panelConfidence);
+        queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER.key(), commandOptions.panelRoleInCancer);
 
         queryParams.putIfNotNull("trait", commandOptions.trait);
 
@@ -311,6 +315,9 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setClinicalSignificance(cliOptions.clinicalSignificance)
                         .setCustomAnnotation(cliOptions.annotations)
                         .setPanel(cliOptions.panel)
+                        .setPanelModeOfInheritance(cliOptions.panelModeOfInheritance)
+                        .setPanelConfidence(cliOptions.panelConfidence)
+                        .setPanelRoleInCancer(cliOptions.panelRoleInCancer)
                         .setTrait(cliOptions.trait)
                         .setPrimary(cliOptions.primary),
                 getCommonParamsFromClinicalOptions(clinicalCommandOptions.teamCommandOptions.study)

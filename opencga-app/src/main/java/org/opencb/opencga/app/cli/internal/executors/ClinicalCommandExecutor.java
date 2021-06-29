@@ -34,6 +34,7 @@ import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysi
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -243,7 +244,10 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         query.putIfNotNull("clinicalSignificance", cliOptions.clinicalSignificance);
         query.putIfNotNull("customAnnotation", cliOptions.annotations);
 
-        query.putIfNotNull("panel", cliOptions.panel);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL.key(), cliOptions.panel);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL_MODE_OF_INHERITANCE.key(), cliOptions.panelModeOfInheritance);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL_CONFIDENCE.key(), cliOptions.panelConfidence);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER.key(), cliOptions.panelRoleInCancer);
 
         query.putIfNotNull("trait", cliOptions.trait);
 

@@ -269,6 +269,12 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC, arity = 1)
+        public String panelModeOfInheritance;
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC, arity = 1)
+        public String panelConfidence;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
+        public String panelRoleInCancer;
     }
 
     @Parameters(commandNames = {VariantActionableCommandOptions.VARIANT_ACTIONABLE_COMMAND}, commandDescription = "Fetch actionable clinical variants")
@@ -420,6 +426,12 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC, arity = 1)
+        public String panelModeOfInheritance;
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC, arity = 1)
+        public String panelConfidence;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
+        public String panelRoleInCancer;
 
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
         public String family;

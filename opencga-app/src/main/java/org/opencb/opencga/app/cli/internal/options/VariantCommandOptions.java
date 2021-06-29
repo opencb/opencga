@@ -379,6 +379,12 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC, arity = 1)
+        public String panelModeOfInheritance;
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC, arity = 1)
+        public String panelConfidence;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
+        public String panelRoleInCancer;
 
         @Parameter(names = {"--saved-filter"}, description = SAVED_FILTER_DESCR, arity = 1)
         public String savedFilter;
@@ -861,6 +867,24 @@ public class VariantCommandOptions {
         @Override
         public AnnotationVariantQueryParams setPanel(String panel) {
             return super.setPanel(panel);
+        }
+
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelModeOfInheritance(String panelModeOfInheritance) {
+            return super.setPanelModeOfInheritance(panelModeOfInheritance);
+        }
+
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelConfidence(String panelConfidence) {
+            return super.setPanelConfidence(panelConfidence);
+        }
+
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelRoleInCancer(String panelRoleInCancer) {
+            return super.setPanelRoleInCancer(panelRoleInCancer);
         }
 
         @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParam.STATS_REF_DESCR)

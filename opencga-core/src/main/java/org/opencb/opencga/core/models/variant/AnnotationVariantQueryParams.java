@@ -9,6 +9,9 @@ public class AnnotationVariantQueryParams extends ToolParams {
     private String gene;
     private String type;
     private String panel;
+    private String panelModeOfInheritance;
+    private String panelConfidence;
+    private String panelRoleInCancer;
     private String cohortStatsRef;
     private String cohortStatsAlt;
     private String cohortStatsMaf;
@@ -82,6 +85,33 @@ public class AnnotationVariantQueryParams extends ToolParams {
 
     public AnnotationVariantQueryParams setPanel(String panel) {
         this.panel = panel;
+        return this;
+    }
+
+    public String getPanelModeOfInheritance() {
+        return panelModeOfInheritance;
+    }
+
+    public AnnotationVariantQueryParams setPanelModeOfInheritance(String panelModeOfInheritance) {
+        this.panelModeOfInheritance = panelModeOfInheritance;
+        return this;
+    }
+
+    public String getPanelConfidence() {
+        return panelConfidence;
+    }
+
+    public AnnotationVariantQueryParams setPanelConfidence(String panelConfidence) {
+        this.panelConfidence = panelConfidence;
+        return this;
+    }
+
+    public String getPanelRoleInCancer() {
+        return panelRoleInCancer;
+    }
+
+    public AnnotationVariantQueryParams setPanelRoleInCancer(String panelRoleInCancer) {
+        this.panelRoleInCancer = panelRoleInCancer;
         return this;
     }
 
