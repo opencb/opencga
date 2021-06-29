@@ -201,6 +201,9 @@ public class CatalogManager implements AutoCloseable {
         studyManager.create(ADMIN_PROJECT, ADMIN_STUDY, ADMIN_STUDY, ADMIN_STUDY, "Default study", null, null, null, Collections.emptyMap(),
                 null, token);
 
+        // Skip old available migrations
+        migrationManager.skipPendingMigrations(token);
+
         installIndexes(token, test);
     }
 
