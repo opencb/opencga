@@ -976,9 +976,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Set variant traits: ClinVar, Cosmic, HPO, ...
             if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
+                Set<String> clinicalSet = new HashSet<>();
                 Set<String> clinSigSet = new HashSet<>();
                 for (EvidenceEntry ev : variantAnnotation.getTraitAssociation()) {
                     if (ev.getSource() != null && StringUtils.isNotEmpty(ev.getSource().getName())) {
+
+                        String source = ev.getSource().getName().toLowerCase();
+                        String clinicalSig = null;
+                        String status = null;
+
                         if (StringUtils.isNotEmpty(ev.getId())) {
                             xrefs.add(ev.getId());
                         }
@@ -988,6 +994,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                     && ev.getVariantClassification().getClinicalSignificance() != null) {
                                 clinSigSuffix = FIELD_SEP + ev.getVariantClassification().getClinicalSignificance().name();
                                 clinSigSet.add(ev.getVariantClassification().getClinicalSignificance().name());
+
+                                clinicalSig = ev.getVariantClassification().getClinicalSignificance().name();
+                            }
+                            if (ev.getConsistencyStatus() != null && StringUtils.isNotEmpty(ev.getConsistencyStatus().name())
+                                    && ev.getConsistencyStatus().name().equals("congruent")) {
+                                status = "confirmed";
                             }
                             if (CollectionUtils.isNotEmpty(ev.getHeritableTraits())) {
                                 for (HeritableTrait trait : ev.getHeritableTraits()) {
@@ -995,13 +1007,59 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                 }
                             }
                         } else if ("cosmic".equalsIgnoreCase(ev.getSource().getName())) {
+                            if (CollectionUtils.isNotEmpty(ev.getAdditionalProperties())) {
+                                for (Property additionalProperty : ev.getAdditionalProperties()) {
+                                    if (additionalProperty.getId().equals("FATHMM_PREDICTION")
+                                            && additionalProperty.getValue().equals("PATHOGENIC")) {
+                                        clinicalSig = "pathogenic";
+                                    }
+
+                                    if (additionalProperty.getId().equals("MUTATION_SOMATIC_STATUS")
+                                            && additionalProperty.getValue().equals("Confirmed somatic variant")) {
+                                        status = "confirmed";
+                                    }
+                                    // Stop the for
+                                    if (StringUtils.isNotEmpty(clinicalSig) && StringUtils.isNotEmpty(status)) {
+                                        break;
+                                    }
+                                }
+                            }
                             if (ev.getSomaticInformation() != null) {
                                 traits.add("CM" + FIELD_SEP + ev.getId() + FIELD_SEP + ev.getSomaticInformation().getHistologySubtype()
                                         + FIELD_SEP + ev.getSomaticInformation().getHistologySubtype());
                             }
                         }
+
+                        // Create all possible combinations in this order from left to right: source, clinicalSig and status
+                        if (StringUtils.isNotEmpty(source)) {
+                            // Let's add the source to filter easily by clinvar or cosmic
+                            clinicalSet.add(source);
+
+                            if (StringUtils.isNotEmpty(clinicalSig)) {
+                                // Add only clinicalSig, this replaces old index
+                                clinicalSet.add(clinicalSig);
+                                clinicalSet.add(source + "_" + clinicalSig);
+
+                                // Combine the three parts
+                                if (StringUtils.isNotEmpty(status)) {
+                                    clinicalSet.add(clinicalSig + "_" + status);
+                                    clinicalSet.add(source + "_" + clinicalSig + "_" + status);
+                                }
+                            }
+
+                            // source with status, just in case clinicalSig does not exist
+                            if (StringUtils.isNotEmpty(status)) {
+                                clinicalSet.add(status);
+                                clinicalSet.add(source + "_" + status);
+                            }
+                        }
                     }
                 }
+
+                if (CollectionUtils.isNotEmpty(clinicalSet)) {
+                    variantSearchModel.setClinical(new ArrayList<>(clinicalSet));
+                }
+
                 if (CollectionUtils.isNotEmpty(clinSigSet)) {
                     variantSearchModel.setClinicalSig(new ArrayList<>(clinSigSet));
                 }
@@ -1068,7 +1126,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.getStudies().add(studyId);
 
             // We store the cohort stats:
-            //    - altStats__STUDY__COHORT = alternalte allele freq, e.g. altStats_1kg_phase3_ALL=0.02
+            //    - altStats__STUDY__COHORT = alternate allele freq, e.g. altStats_1kg_phase3_ALL=0.02
             //    - passStats__STUDY__COHORT = pass filter freq
             if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                 List<VariantStats> studyStats = studyEntry.getStats();
