@@ -215,7 +215,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Bson bsonUpdate;
         switch (action) {
             case ADD:
-                bsonUpdate = Updates.push(QueryParams.FAMILY_IDS.key(), familyId);
+                bsonUpdate = Updates.addToSet(QueryParams.FAMILY_IDS.key(), familyId);
                 break;
             case REMOVE:
                 bsonUpdate = Updates.pull(QueryParams.FAMILY_IDS.key(), familyId);
