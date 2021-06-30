@@ -539,4 +539,5 @@ public class VariantSearchModel {
         this.fileInfo = fileInfo;
         return this;
     }
+
 }
