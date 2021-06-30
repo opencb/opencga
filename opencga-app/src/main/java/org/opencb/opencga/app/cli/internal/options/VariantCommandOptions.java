@@ -82,6 +82,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -965,10 +966,22 @@ public class VariantCommandOptions {
             return super.setFunctionalScore(functionalScore);
         }
 
+        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
+        @Override
+        public AnnotationVariantQueryParams setClinical(String clinical) {
+            return super.setClinical(clinical);
+        }
+
         @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         @Override
         public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
             return super.setClinicalSignificance(clinicalSignificance);
+        }
+
+        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Override
+        public AnnotationVariantQueryParams setClinicalConfirmedStatus(String clinicalConfirmedStatus) {
+            return super.setClinicalConfirmedStatus(clinicalConfirmedStatus);
         }
     }
 

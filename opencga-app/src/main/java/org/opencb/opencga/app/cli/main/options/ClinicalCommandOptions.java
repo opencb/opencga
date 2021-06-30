@@ -249,8 +249,12 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         public String xref;
 
+        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
+        public String clinical;
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
+        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
+        public boolean clinicalConfirmedStatus;
 
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
         public String family;
@@ -421,8 +425,13 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         public String xref;
 
+        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
+        public String clinical;
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
+        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
+        public boolean clinicalConfirmedStatus;
+
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;

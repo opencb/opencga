@@ -57,7 +57,9 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     private String proteinKeyword;
     private String drug;
     private String functionalScore;
+    private String clinical;
     private String clinicalSignificance;
+    private boolean clinicalConfirmedStatus;
     private String customAnnotation;
 
     private String panel;
@@ -553,6 +555,15 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
+    public String getClinical() {
+        return clinical;
+    }
+
+    public ZettaInterpretationAnalysisParams setClinical(String clinical) {
+        this.clinical = clinical;
+        return this;
+    }
+
     public String getClinicalSignificance() {
         return clinicalSignificance;
     }
@@ -561,6 +572,16 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.clinicalSignificance = clinicalSignificance;
         return this;
     }
+
+    public boolean getClinicalConfirmedStatus() {
+        return clinicalConfirmedStatus;
+    }
+
+    public ZettaInterpretationAnalysisParams setClinicalConfirmedStatus(boolean clinicalConfirmedStatus) {
+        this.clinicalConfirmedStatus = clinicalConfirmedStatus;
+        return this;
+    }
+
 
     public String getCustomAnnotation() {
         return customAnnotation;

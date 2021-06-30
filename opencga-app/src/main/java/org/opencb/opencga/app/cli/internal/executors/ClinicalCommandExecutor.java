@@ -241,7 +241,9 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         query.putIfNotNull("proteinKeyword", cliOptions.proteinKeywords);
         query.putIfNotNull("drug", cliOptions.drugs);
         query.putIfNotNull("functionalScore", cliOptions.basicQueryOptions.functionalScore);
+        query.putIfNotNull("clinical", cliOptions.clinical);
         query.putIfNotNull("clinicalSignificance", cliOptions.clinicalSignificance);
+        query.putIfNotNull("clinicalConfirmedStatus", cliOptions.clinicalConfirmedStatus);
         query.putIfNotNull("customAnnotation", cliOptions.annotations);
 
         query.putIfNotNull(VariantCatalogQueryUtils.PANEL.key(), cliOptions.panel);

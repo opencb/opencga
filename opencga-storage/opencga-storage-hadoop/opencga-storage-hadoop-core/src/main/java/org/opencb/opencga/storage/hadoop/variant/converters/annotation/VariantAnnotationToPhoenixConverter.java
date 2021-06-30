@@ -24,6 +24,7 @@ import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.commons.Converter;
 import org.opencb.commons.utils.CompressionUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -33,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.parseConsequenceType;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.generateVariantRowKey;
@@ -115,7 +115,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         Set<String> drugs = new HashSet<>();
         Set<String> proteinKeywords = new HashSet<>();
         // Contains all the xrefs, and the id, the geneNames and transcripts
-        Set<ClinicalSignificance> clinicalSignificanceSet = new HashSet<>();
         Set<String> xrefs = new HashSet<>();
 
         addNotNull(xrefs, variantAnnotation.getId());
@@ -202,12 +201,6 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
             for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
                 addNotNull(xrefs, evidenceEntry.getId());
-                if (evidenceEntry.getVariantClassification() != null) {
-                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
-                    if (clinicalSignificance != null) {
-                        clinicalSignificanceSet.add(clinicalSignificance);
-                    }
-                }
             }
         }
 
@@ -266,7 +259,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
         map.put(GENE_TRAITS_NAME, geneTraitName);
         map.put(DRUG, drugs);
         map.put(XREFS, xrefs);
-        map.put(CLINICAL_SIGNIFICANCE, clinicalSignificanceSet.stream().map(ClinicalSignificance::toString).collect(Collectors.toList()));
+        map.put(CLINICAL, VariantQueryUtils.buildClinicalCombinations(variantAnnotation));
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {

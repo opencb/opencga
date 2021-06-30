@@ -18,6 +18,8 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_CONFIRMED_STATUS;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.parseGenotypeFilter;
 
 public class VariantQueryParserTest implements DummyVariantStorageTest {
@@ -89,5 +91,15 @@ public class VariantQueryParserTest implements DummyVariantStorageTest {
         Map<Object, List<String>> map = new LinkedHashMap<>();
         VariantQueryUtils.QueryOperation op = parseGenotypeFilter(genotypeFilter, map);
         return VariantQueryParser.preProcessGenotypesFilter(map, op, loadedGenotypes);
+    }
+
+
+    @Test
+    public void testParseClinicalCombinations() {
+        assertEquals(Arrays.asList("cosmic"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "cosmic")));
+        assertEquals(Arrays.asList("clinvar", "cosmic"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic")));
+        assertEquals(Arrays.asList("cosmic_pathogenic"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic")));
+        assertEquals(Arrays.asList("cosmic_confirmed"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true)));
+        assertEquals(Arrays.asList("clinvar_pathogenic_confirmed", "clinvar_likely_pathogenic_confirmed", "cosmic_pathogenic_confirmed", "cosmic_likely_pathogenic_confirmed"), VariantQueryParser.parseClinicalCombinationsList(new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_pathogenic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true)));
     }
 }

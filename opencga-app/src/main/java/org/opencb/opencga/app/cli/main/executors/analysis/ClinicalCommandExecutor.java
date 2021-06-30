@@ -217,7 +217,9 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("proteinKeyword", commandOptions.proteinKeywords);
         queryParams.putIfNotNull("drug", commandOptions.drugs);
         queryParams.putIfNotNull("functionalScore", commandOptions.basicQueryOptions.functionalScore);
+        queryParams.putIfNotNull("clinical", commandOptions.clinical);
         queryParams.putIfNotNull("clinicalSignificance", commandOptions.clinicalSignificance);
+        queryParams.putIfNotNull("clinicalConfirmedStatus", commandOptions.clinicalConfirmedStatus);
         queryParams.putIfNotNull("customAnnotation", commandOptions.annotations);
 
         queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL.key(), commandOptions.panel);
@@ -312,7 +314,9 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
                         .setProteinKeyword(cliOptions.proteinKeywords)
                         .setDrug(cliOptions.drugs)
                         .setFunctionalScore(cliOptions.basicQueryOptions.functionalScore)
+                        .setClinical(cliOptions.clinical)
                         .setClinicalSignificance(cliOptions.clinicalSignificance)
+                        .setClinicalConfirmedStatus(cliOptions.clinicalConfirmedStatus)
                         .setCustomAnnotation(cliOptions.annotations)
                         .setPanel(cliOptions.panel)
                         .setPanelModeOfInheritance(cliOptions.panelModeOfInheritance)

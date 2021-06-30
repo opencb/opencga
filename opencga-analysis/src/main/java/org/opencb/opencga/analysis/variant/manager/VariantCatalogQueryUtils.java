@@ -727,22 +727,6 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return query;
     }
 
-    private <T extends Enum<T>> List<T> getAsEnumList(Query query, QueryParam queryParam, Class<T> enumClass) {
-        return query.getAsStringList(queryParam.key())
-                .stream()
-                .map(enumName -> {
-                    String simplified = StringUtils.replaceChars(enumName, "_-", "");
-                    for (final T each : enumClass.getEnumConstants()) {
-                        if (each.name().equalsIgnoreCase(enumName)
-                                || StringUtils.replaceChars(each.name(), "_-", "").equalsIgnoreCase(simplified)) {
-                            return each;
-                        }
-                    }
-                    throw VariantQueryException.malformedParam(queryParam, enumName, "Unknown value");
-                })
-                .collect(Collectors.toList());
-    }
-
     /**
      * Gets the individual ID given an individual or sample id.
      * @param study             study
