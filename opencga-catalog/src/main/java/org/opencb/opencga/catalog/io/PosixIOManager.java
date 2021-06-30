@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class PosixIOManager extends IOManager {
 
@@ -341,7 +342,31 @@ public class PosixIOManager extends IOManager {
 
     // Code adapted from https://www.baeldung.com/java-compress-and-uncompress
     @Override
-    protected void unzip(File fileZip, File destDir) throws CatalogIOException {
+    public void zip(List<String> srcFiles, File destFile) throws CatalogIOException {
+        try (FileOutputStream fos = new FileOutputStream(destFile)) {
+            try (ZipOutputStream zipOut = new ZipOutputStream(fos)) {
+                for (String srcFile : srcFiles) {
+                    File fileToZip = new File(srcFile);
+                    try (FileInputStream fis = new FileInputStream(fileToZip)) {
+                        ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
+                        zipOut.putNextEntry(zipEntry);
+
+                        byte[] bytes = new byte[1024];
+                        int length;
+                        while ((length = fis.read(bytes)) >= 0) {
+                            zipOut.write(bytes, 0, length);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new CatalogIOException(e.getMessage(), e);
+        }
+    }
+
+    // Code adapted from https://www.baeldung.com/java-compress-and-uncompress
+    @Override
+    public void unzip(File fileZip, File destDir) throws CatalogIOException {
         byte[] buffer = new byte[1024];
         try {
             try (ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {

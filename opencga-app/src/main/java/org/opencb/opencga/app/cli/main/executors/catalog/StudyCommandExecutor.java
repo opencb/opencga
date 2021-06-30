@@ -25,19 +25,26 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.IOManager;
+import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.RestResponse;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -324,22 +331,62 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().updateVariables(getSingleValidStudy(c.study), c.variableSet, variable, params);
     }
 
-    private RestResponse<String> templateUpload() throws CatalogException, ClientException {
+    private RestResponse<String> templateUpload() throws CatalogException, ClientException, IOException {
         logger.debug("Upload template file");
         StudyCommandOptions.TemplateUploadCommandOptions c = studiesCommandOptions.templateUploadCommandOptions;
+
+        ObjectMap params = new ObjectMap();
 
         c.study = getSingleValidStudy(c.study);
         Path path = Paths.get(c.inputFile);
         if (!path.toFile().exists()) {
             throw new CatalogException("File '" + c.inputFile + "' not found");
         }
-        if (!c.inputFile.endsWith("zip")) {
+        IOManagerFactory ioManagerFactory = new IOManagerFactory();
+        IOManager ioManager = ioManagerFactory.get(path.toUri());
+
+        if (path.toFile().isDirectory()) {
+            List<String> fileList = new LinkedList<>();
+
+            ioManager.walkFileTree(path.toUri(), new SimpleFileVisitor<URI>() {
+                @Override
+                public FileVisitResult preVisitDirectory(URI dir, BasicFileAttributes attrs) throws IOException {
+                    if (!dir.equals(path.toUri())) {
+                        throw new IOException("More than one directory found");
+                    }
+                    return super.preVisitDirectory(dir, attrs);
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(URI file, IOException exc) throws IOException {
+                    throw new IOException("Error visiting file '" + file + "'");
+                }
+
+                @Override
+                public FileVisitResult visitFile(URI fileUri, BasicFileAttributes attrs) throws IOException {
+                    fileList.add(fileUri.getPath());
+                    return super.visitFile(fileUri, attrs);
+                }
+            });
+
+            Path manifestPath = path.resolve("manifest.zip");
+            logger.debug("Compressing file in '" + manifestPath + "' before uploading");
+            ioManager.zip(fileList, manifestPath.toFile());
+            params.put("file", manifestPath.toString());
+        } else if (c.inputFile.endsWith("zip")) {
+            params.put("file", c.inputFile);
+        } else {
             throw new CatalogException("File '" + c.inputFile + "' is not a zip file");
         }
 
-        ObjectMap params = new ObjectMap("file", c.inputFile);
+        RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplate(c.study, params);
+        if (path.toFile().isDirectory()) {
+            Path manifestPath = path.resolve("manifest.zip");
+            logger.debug("Removing generated zip file '" + manifestPath + "' after upload");
+            ioManager.deleteFile(manifestPath.toUri());
+        }
 
-        return openCGAClient.getStudyClient().uploadTemplate(c.study, params);
+        return uploadResponse;
     }
 
     private RestResponse<Job> templateRun() throws CatalogException, ClientException {

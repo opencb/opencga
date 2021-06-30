@@ -27,6 +27,7 @@ import java.net.URI;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitor;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
@@ -101,7 +102,13 @@ public abstract class IOManager {
         }
     }
 
-    protected abstract void unzip(File file, File destDir) throws CatalogIOException;
+    public abstract void zip(List<String> file, File destDir) throws CatalogIOException;
+
+    public void zip(String file, File destDir) throws CatalogIOException {
+        zip(Collections.singletonList(file), destDir);
+    };
+
+    public abstract void unzip(File file, File destDir) throws CatalogIOException;
 
     protected abstract void decompressTarBall(Path file, Path destDir) throws CatalogIOException;
 
