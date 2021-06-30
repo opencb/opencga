@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -205,6 +206,35 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUid), null);
 
         sampleDBAdaptor.getCollection().update(clientSession, query, update, null);
+    }
+
+    void updateFamilyReferences(ClientSession clientSession, long studyUid, List<String> individualIds, String familyId,
+                                ParamUtils.BasicUpdateAction action)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+
+        Bson bsonUpdate;
+        switch (action) {
+            case ADD:
+                bsonUpdate = Updates.push(QueryParams.FAMILY_IDS.key(), familyId);
+                break;
+            case REMOVE:
+                bsonUpdate = Updates.pull(QueryParams.FAMILY_IDS.key(), familyId);
+                break;
+            case SET:
+            default:
+                throw new IllegalArgumentException("Unexpected action '" + action + "'");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.ID.key(), individualIds);
+        Bson bsonQuery = parseQuery(query);
+
+        DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
+                new QueryOptions(MongoDBCollection.MULTI, true));
+        if (update.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update family references in individuals");
+        }
     }
 
     @Override
@@ -1310,6 +1340,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case NAME:
                     case FATHER_UID:
                     case MOTHER_UID:
+                    case FAMILY_IDS:
                     case DATE_OF_BIRTH:
                     case SEX:
                     case ETHNICITY:

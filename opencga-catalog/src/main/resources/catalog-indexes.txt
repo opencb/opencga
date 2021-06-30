@@ -87,6 +87,7 @@
 {"collection": "individual", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"father.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"mother.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"familyIds": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"sex": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"karyotypicSex": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"dateOfBirth": 1, "studyUid": 1}, "options": {"background": true}}

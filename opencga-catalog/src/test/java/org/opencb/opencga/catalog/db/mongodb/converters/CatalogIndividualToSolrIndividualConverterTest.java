@@ -24,6 +24,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
+import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -46,8 +47,8 @@ public class CatalogIndividualToSolrIndividualConverterTest {
     public void IndividualToSolrTest() {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
-        Individual individual = new Individual("Id", "individual", IndividualProperty.Sex.MALE, "Spanish",
-                new IndividualPopulation("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
+        Individual individual = new Individual("Id", "individual", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, "Spanish", new IndividualPopulation("valencian", "", ""), null, "",
+                        Collections.emptyList(), false, 2, AnnotationHelper.createAnnotation(), Collections.emptyList(), Collections.emptyList(), null);
 
         individual.setUid(300)
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(IndividualInternal.init())

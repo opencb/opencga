@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.microsoft.azure.management.sql.StorageKeyType;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -139,6 +140,63 @@ public class FamilyManagerTest extends GenericTest {
 
         assertTrue("Mother id not associated to any children", motherIdUpdated);
         assertTrue("Father id not associated to any children", fatherIdUpdated);
+    }
+
+    @Test
+    public void updateFamilyReferencesInIndividualTest() throws CatalogException {
+        DataResult<Family> familyDataResult = createDummyFamily("Martinez-Martinez", true);
+        for (Individual member : familyDataResult.first().getMembers()) {
+            assertEquals(1, member.getFamilyIds().size());
+            assertEquals(familyDataResult.first().getId(), member.getFamilyIds().get(0));
+        }
+
+        // Create a new individual
+        catalogManager.getIndividualManager().create(STUDY, new Individual().setId("john"), QueryOptions.empty(), sessionIdUser);
+        FamilyUpdateParams updateParams = new FamilyUpdateParams()
+                .setMembers(Arrays.asList("john", "father", "mother", "child1"));
+
+        familyManager.update(STUDY, familyDataResult.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        Family family = familyManager.get(STUDY, familyDataResult.first().getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(4, family.getMembers().size());
+        assertTrue(Arrays.asList("john", "father", "mother", "child1")
+                .containsAll(family.getMembers().stream().map(Individual::getId).collect(Collectors.toList())));
+        for (Individual member : familyDataResult.first().getMembers()) {
+            assertEquals(1, member.getFamilyIds().size());
+            assertEquals(familyDataResult.first().getId(), member.getFamilyIds().get(0));
+        }
+
+        // Check removed members no longer belong to the family
+        List<Individual> individualList = catalogManager.getIndividualManager().get(STUDY, Arrays.asList("child2", "child3"),
+                QueryOptions.empty(), sessionIdUser).getResults();
+        assertEquals(2, individualList.size());
+        for (Individual individual : individualList) {
+            assertEquals(0, individual.getFamilyIds().size());
+        }
+
+        createDummyFamily("Other-Family-Name", false);
+        individualList = catalogManager.getIndividualManager().get(STUDY, Arrays.asList("john", "father", "mother", "child1", "child2", "child3"),
+                QueryOptions.empty(), sessionIdUser).getResults();
+        for (Individual individual : individualList) {
+            switch (individual.getId()) {
+                case "john":
+                    assertEquals(1, individual.getFamilyIds().size());
+                    assertEquals("Martinez-Martinez", individual.getFamilyIds().get(0));
+                    break;
+                case "father":
+                case "mother":
+                case "child1":
+                    assertEquals(2, individual.getFamilyIds().size());
+                    assertTrue(individual.getFamilyIds().containsAll(Arrays.asList("Martinez-Martinez", "Other-Family-Name")));
+                    break;
+                case "child2":
+                case "child3":
+                    assertEquals(1, individual.getFamilyIds().size());
+                    assertEquals("Other-Family-Name", individual.getFamilyIds().get(0));
+                    break;
+                default:
+                    fail();
+            }
+        }
     }
 
     @Test
