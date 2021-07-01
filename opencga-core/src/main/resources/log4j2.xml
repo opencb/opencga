@@ -7,7 +7,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Root level="DEBUG">
+        <Root level="INFO">
             <AppenderRef ref="Console" />
         </Root>
         <Logger name="org.mongodb.driver.cluster" level="WARN"/>
