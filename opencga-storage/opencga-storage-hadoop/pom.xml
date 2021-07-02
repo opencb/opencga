@@ -26,12 +26,12 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.3.16</version>
+        <version>1.3.17</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-storage-hadoop</artifactId>
-    <version>1.3.16</version>
+    <version>1.3.17</version>
     <packaging>pom</packaging>
 
     <modules>
