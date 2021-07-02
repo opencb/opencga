@@ -309,7 +309,7 @@ public class OpenCGAWSServer {
                 .addAttribute("level", level));
         configurationBuilder.add(appender);
 
-        configurationBuilder.add(configurationBuilder.newRootLogger(Level.DEBUG)
+        configurationBuilder.add(configurationBuilder.newRootLogger(level)
                 .add(configurationBuilder.newAppenderRef("rolling"))
                 .add(configurationBuilder.newAppenderRef("stdout")));
 
