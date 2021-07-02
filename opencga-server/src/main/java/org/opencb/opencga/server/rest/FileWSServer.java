@@ -210,7 +210,11 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(new CatalogException("The path cannot be absolute"));
         }
 
-        if (fileInputStream != null) {
+        if (fileInputStream == null) {
+            return createErrorResponse("Upload file", "No file or chunk found");
+        }
+
+        try {
             if (filename == null) {
                 filename = fileMetaData.getFileName();
             }
@@ -220,13 +224,9 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setPath(relativeFilePath + filename)
                     .setFormat(fileFormat)
                     .setBioformat(bioformat);
-            try {
-                return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, token));
-            } catch (Exception e) {
-                return createErrorResponse("Upload file", e.getMessage());
-            }
-        } else {
-            return createErrorResponse("Upload file", "No file or chunk found");
+            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 

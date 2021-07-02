@@ -899,9 +899,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), file);
                 validateNewSamples(study, file, existingSamples, nonExistingSamples, token);
             } catch (CatalogException e) {
-                ioManager.deleteDirectory(tempDirectory);
-                logger.error("Upload file: {}", e.getMessage(), e);
-                throw new CatalogException("Upload file failed. Could not move the content to " + file.getUri() + ": " + e.getMessage());
+                try {
+                    logger.error("Error uploading file. Deleting temp directory", e);
+                    ioManager.deleteDirectory(tempDirectory);
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
+                throw new CatalogException("Upload file failed. Could not move the content to " + file.getUri(), e);
             }
 
             // Register the file in catalog
@@ -942,9 +946,13 @@ public class FileManager extends AnnotationSetManager<File> {
                     register(study, file, existingSamples, nonExistingSamples, parents, QueryOptions.empty(), token);
                 }
             } catch (CatalogException e) {
-                ioManager.deleteFile(file.getUri());
-                logger.error("Upload file: {}", e.getMessage(), e);
-                throw new CatalogException("Upload file failed. Could not register the file in the DB: " + e.getMessage());
+                try {
+                    logger.error("Error uploading file. Deleting file", e);
+                    ioManager.deleteFile(file.getUri());
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
+                throw new CatalogException("Upload file failed. Could not register the file in the DB", e);
             }
 
             auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.FILE, file.getId(), file.getUuid(),
