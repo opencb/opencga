@@ -202,6 +202,9 @@ public class CatalogManager implements AutoCloseable {
         projectManager.create(ADMIN_PROJECT, ADMIN_PROJECT, "Default project", "", "", "", null, token);
         studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"), QueryOptions.empty(), token);
 
+        // Skip old available migrations
+        migrationManager.skipPendingMigrations(token);
+
         installIndexes(token, test);
     }
 

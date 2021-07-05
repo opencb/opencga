@@ -46,7 +46,8 @@ public class MigrationRun {
 
     public enum MigrationStatus {
         DONE,
-        ERROR
+        ERROR,
+        REDUNDANT
     }
 
     public MigrationRun() {

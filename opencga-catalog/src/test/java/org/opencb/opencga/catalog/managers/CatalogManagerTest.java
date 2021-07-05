@@ -1596,7 +1596,68 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     }
 
-        @Test
+    @Test
+    public void changeIndividualIdTest() throws CatalogException {
+        Sample sample1 = new Sample().setId("sample1");
+        Sample sample2 = new Sample().setId("sample2");
+        Sample sample3 = new Sample().setId("sample3");
+        catalogManager.getSampleManager().create(studyFqn, sample1, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample2, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample3, QueryOptions.empty(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual1"),
+                Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()), QueryOptions.empty(), token);
+        List<Sample> samples = catalogManager.getSampleManager().get(studyFqn,
+                Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId()), QueryOptions.empty(), token).getResults();
+        for (Sample sample : samples) {
+            assertEquals("individual1", sample.getIndividualId());
+        }
+
+        Sample sample4 = new Sample().setId("sample4");
+        Sample sample5 = new Sample().setId("sample5");
+        Sample sample6 = new Sample().setId("sample6");
+        catalogManager.getSampleManager().create(studyFqn, sample4, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample5, QueryOptions.empty(), token);
+        catalogManager.getSampleManager().create(studyFqn, sample6, QueryOptions.empty(), token);
+
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual2"),
+                Arrays.asList(sample4.getId(), sample5.getId(), sample6.getId()), QueryOptions.empty(), token);
+        samples = catalogManager.getSampleManager().get(studyFqn,
+                Arrays.asList(sample4.getId(), sample5.getId(), sample6.getId()), QueryOptions.empty(), token).getResults();
+        for (Sample sample : samples) {
+            assertEquals("individual2", sample.getIndividualId());
+        }
+
+        // Update individual id
+        catalogManager.getIndividualManager().update(studyFqn, "individual1", new IndividualUpdateParams().setId("newId1"),
+                QueryOptions.empty(), token);
+        assertEquals(1, catalogManager.getIndividualManager().get(studyFqn, "newId1", QueryOptions.empty(), token).getNumResults());
+
+        catalogManager.getIndividualManager().update(studyFqn, "individual2", new IndividualUpdateParams().setId("newId2"),
+                QueryOptions.empty(), token);
+        assertEquals(1, catalogManager.getIndividualManager().get(studyFqn, "newId2", QueryOptions.empty(), token).getNumResults());
+
+        samples = catalogManager.getSampleManager().get(studyFqn,
+                Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId(), sample4.getId(), sample5.getId(), sample6.getId()),
+                QueryOptions.empty(), token).getResults();
+        for (Sample sample : samples) {
+            switch (sample.getId()) {
+                case "sample1":
+                case "sample2":
+                case "sample3":
+                    assertEquals("newId1", sample.getIndividualId());
+                    break;
+                case "sample4":
+                case "sample5":
+                case "sample6":
+                    assertEquals("newId2", sample.getIndividualId());
+                    break;
+                default:
+                    fail();
+            }
+        }
+    }
+
+    @Test
     public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
         Sample sample = new Sample().setId("sample1");
         catalogManager.getSampleManager().create(studyFqn, sample, QueryOptions.empty(), token);

@@ -30,6 +30,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,6 +135,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String SCORE_DESCRIPTION_FIELD = "desc";
 
     public static final String CLINICAL_DATA_FIELD = "clinical";
+    public static final String CLINICAL_COMBINATIONS_FIELD = "clinical_c";
 //    public static final String CLINICAL_COSMIC_FIELD = "cosmic";
 //    public static final String CLINICAL_GWAS_FIELD = "gwas";
 //    public static final String CLINICAL_CLINVAR_FIELD = "clinvar";
@@ -854,6 +856,7 @@ public class DocumentToVariantAnnotationConverter
         //Clinical Data
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
             document.put(CLINICAL_DATA_FIELD, generateClinicalDBList(variantAnnotation.getTraitAssociation()));
+            document.put(CLINICAL_COMBINATIONS_FIELD, VariantQueryUtils.buildClinicalCombinations(variantAnnotation));
 
             if (variantAnnotation.getTraitAssociation() != null) {
                 variantAnnotation.getTraitAssociation()

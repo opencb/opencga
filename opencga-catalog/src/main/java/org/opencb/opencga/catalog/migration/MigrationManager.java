@@ -123,6 +123,27 @@ public class MigrationManager {
         return migrationDBAdaptor.get(migrations.stream().map(Migration::id).collect(Collectors.toList()));
     }
 
+    // This method should only be called when installing OpenCGA for the first time so it skips all available (and old) migrations.
+    public void skipPendingMigrations(String token) throws CatalogException {
+        validateAdmin(token);
+
+        // 0. Fetch all migrations
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+
+        // 1. Skip all available migrations
+        for (Class<? extends MigrationTool> runnableMigration : availableMigrations) {
+            Migration annotation = getMigrationAnnotation(runnableMigration);
+
+            MigrationRun migrationRun = new MigrationRun(annotation.id(), annotation.description(), annotation.version(),
+                    TimeUtils.getDate(), TimeUtils.getDate(), annotation.patch(), MigrationRun.MigrationStatus.REDUNDANT, "");
+            try {
+                migrationDBAdaptor.upsert(migrationRun);
+            } catch (CatalogDBException e) {
+                throw new MigrationException("Could not register migration in OpenCGA", e);
+            }
+        }
+    }
+
     private List<Class<? extends MigrationTool>> filterPendingMigrations(String version,
                                                                          Set<Class<? extends MigrationTool>> availableMigrations)
             throws MigrationException {
@@ -369,14 +390,15 @@ public class MigrationManager {
             migrationResultMap.put(result.getId(), result);
         }
 
-        // Remove migrations if they have been run successfully with the proper patch
+        // Remove migrations if they have been run successfully or are redundant with the proper patch
         migrations.removeIf(m -> {
             Migration annotation = getMigrationAnnotation(m);
             if (!migrationResultMap.containsKey(annotation.id())) {
                 return false;
             }
             return annotation.patch() <= migrationResultMap.get(annotation.id()).getPatch()
-                    && migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.DONE;
+                    && (migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.DONE
+                    || migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.REDUNDANT);
         });
     }
 

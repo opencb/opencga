@@ -34,6 +34,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -976,7 +977,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Set variant traits: ClinVar, Cosmic, HPO, ...
             if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
-                Set<String> clinSigSet = new HashSet<>();
+                List<String> clinical = VariantQueryUtils.buildClinicalCombinations(variantAnnotation);
                 for (EvidenceEntry ev : variantAnnotation.getTraitAssociation()) {
                     if (ev.getSource() != null && StringUtils.isNotEmpty(ev.getSource().getName())) {
                         if (StringUtils.isNotEmpty(ev.getId())) {
@@ -987,7 +988,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             if (ev.getVariantClassification() != null
                                     && ev.getVariantClassification().getClinicalSignificance() != null) {
                                 clinSigSuffix = FIELD_SEP + ev.getVariantClassification().getClinicalSignificance().name();
-                                clinSigSet.add(ev.getVariantClassification().getClinicalSignificance().name());
                             }
                             if (CollectionUtils.isNotEmpty(ev.getHeritableTraits())) {
                                 for (HeritableTrait trait : ev.getHeritableTraits()) {
@@ -1002,8 +1002,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
                     }
                 }
-                if (CollectionUtils.isNotEmpty(clinSigSet)) {
-                    variantSearchModel.setClinicalSig(new ArrayList<>(clinSigSet));
+
+                if (CollectionUtils.isNotEmpty(clinical)) {
+                    variantSearchModel.setClinicalSig(clinical);
                 }
             }
             if (variantAnnotation.getGeneTraitAssociation() != null
@@ -1068,7 +1069,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.getStudies().add(studyId);
 
             // We store the cohort stats:
-            //    - altStats__STUDY__COHORT = alternalte allele freq, e.g. altStats_1kg_phase3_ALL=0.02
+            //    - altStats__STUDY__COHORT = alternate allele freq, e.g. altStats_1kg_phase3_ALL=0.02
             //    - passStats__STUDY__COHORT = pass filter freq
             if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                 List<VariantStats> studyStats = studyEntry.getStats();
