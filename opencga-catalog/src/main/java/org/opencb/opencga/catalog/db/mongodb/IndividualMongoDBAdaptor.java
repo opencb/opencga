@@ -460,6 +460,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 // We need to update the individual id reference in all its samples
                 dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualIdFromSamples(clientSession, individual.getStudyUid(),
                         individual.getId(), parameters.getString(QueryParams.ID.key()));
+
+                // Update the family roles
+                dbAdaptorFactory.getCatalogFamilyDBAdaptor().updateIndividualIdFromFamilies(clientSession, individual.getStudyUid(),
+                        individual.getUid(), individual.getId(), parameters.getString(QueryParams.ID.key()));
             }
 
 
