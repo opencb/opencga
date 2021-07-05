@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -102,10 +103,14 @@ public class VariantCatalogQueryUtilsTest {
 
         Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
         Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual1", "individual1", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), null, sessionId).first());
-        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual1", "individual1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
+                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
+                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
+                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), null, sessionId).first());
+        individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
+                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
         catalog.getFamilyManager().create(
                 "s1",
                 new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),

@@ -46,6 +46,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         NAME("name", TEXT, ""),
         FATHER("father", TEXT, ""),
         MOTHER("mother", TEXT, ""),
+        FAMILY_IDS("familyIds", TEXT_ARRAY, ""),
         FATHER_UID("father.uid", DECIMAL, ""),
         MOTHER_UID("mother.uid", DECIMAL, ""),
         LOCATION("location", TEXT_ARRAY, ""),

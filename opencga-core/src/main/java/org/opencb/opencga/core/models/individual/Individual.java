@@ -41,6 +41,7 @@ public class Individual extends Annotable {
 
     private Individual father;
     private Individual mother;
+    private List<String> familyIds;
     private Location location;
 
     private IndividualQualityControl qualityControl;
@@ -68,23 +69,17 @@ public class Individual extends Annotable {
     public Individual() {
     }
 
-    public Individual(String id, String name, Sex sex, String ethnicity, IndividualPopulation population, int release,
-                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, new Individual(), new Individual(), new Location(), sex, null, ethnicity, population, "", release,
-                1, TimeUtils.getTime(), LifeStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                false, annotationSets, new CustomStatus(), null, attributes);
-    }
-
     public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
-                      List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders) {
-        this(id, name, father, mother, location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, 1,
-                TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples, parentalConsanguinity,
-                annotationSets, new CustomStatus(), null, Collections.emptyMap());
+                      List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders,
+                      Map<String, Object> attributes) {
+        this(id, name, father, mother, Collections.emptyList(), location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release,
+                1, TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples, parentalConsanguinity,
+                annotationSets, new CustomStatus(), null, attributes);
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
+    public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location, Sex sex,
                       KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, String dateOfBirth, int release,
                       int version, String creationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
                       List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
@@ -93,38 +88,8 @@ public class Individual extends Annotable {
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
         this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
+        this.familyIds = familyIds;
         this.location = location;
-        this.sex = sex;
-        this.karyotypicSex = karyotypicSex;
-        this.ethnicity = ethnicity;
-        this.population = ObjectUtils.defaultIfNull(population, new IndividualPopulation());
-        this.dateOfBirth = dateOfBirth;
-        this.release = release;
-        this.version = version;
-        this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
-        this.lifeStatus = lifeStatus;
-        this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
-        this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
-        this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
-        this.parentalConsanguinity = parentalConsanguinity;
-        this.annotationSets = annotationSets;
-        this.status = status;
-        this.internal = internal;
-        this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
-    }
-
-    public Individual(String id, String name, Individual father, Individual mother, Location location,
-                      IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
-                      IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
-                      LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
-                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
-                      IndividualInternal internal, Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
-        this.father = ObjectUtils.defaultIfNull(father, new Individual());
-        this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
-        this.location = location;
-        this.qualityControl = qualityControl;
         this.sex = sex;
         this.karyotypicSex = karyotypicSex;
         this.ethnicity = ethnicity;
@@ -148,10 +113,11 @@ public class Individual extends Annotable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
+        sb.append(", familyIds=").append(familyIds);
         sb.append(", location=").append(location);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", sex=").append(sex);
@@ -168,6 +134,7 @@ public class Individual extends Annotable {
         sb.append(", disorders=").append(disorders);
         sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
@@ -268,6 +235,15 @@ public class Individual extends Annotable {
 
     public Individual setMother(Individual mother) {
         this.mother = mother;
+        return this;
+    }
+
+    public List<String> getFamilyIds() {
+        return familyIds;
+    }
+
+    public Individual setFamilyIds(List<String> familyIds) {
+        this.familyIds = familyIds;
         return this;
     }
 

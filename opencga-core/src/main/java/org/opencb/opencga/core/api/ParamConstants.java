@@ -212,6 +212,8 @@ public class ParamConstants {
     public static final String INDIVIDUAL_VERSION_PARAM = "version";
     public static final String INDIVIDUAL_VERSION_DESCRIPTION = "Comma separated list of individual versions. 'all' to get all the "
             + "individual versions. Not supported if multiple individual ids are provided";
+    public static final String INDIVIDUAL_FAMILY_IDS_PARAM = "familyIds";
+    public static final String INDIVIDUAL_FAMILY_IDS_DESCRIPTION = "Comma separated list of family ids the individuals may belong to.";
 
     // ---------------------------------------------
 

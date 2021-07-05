@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
+import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclParams;
@@ -114,16 +115,20 @@ public class RgaManagerTest {
 
             // Father
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(FATHER, FATHER, IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(FATHER), null, ownerToken).first());
+                    .create(STUDY, new Individual(FATHER, FATHER, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
+                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(FATHER), null, ownerToken).first());
             // Mother
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(MOTHER, MOTHER, IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(MOTHER), null, ownerToken).first());
+                    .create(STUDY, new Individual(MOTHER, MOTHER, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
+                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(MOTHER), null, ownerToken).first());
             // Son
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(SON, SON, IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(SON), null, ownerToken).first());
+                    .create(STUDY, new Individual(SON, SON, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
+                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(SON), null, ownerToken).first());
             // Daughter
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(DAUGHTER, DAUGHTER, IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(DAUGHTER), null, ownerToken).first());
+                    .create(STUDY, new Individual(DAUGHTER, DAUGHTER, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
+                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(DAUGHTER), null, ownerToken).first());
             catalogManager.getFamilyManager().create(
                     STUDY,
                     new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),

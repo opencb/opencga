@@ -230,6 +230,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setVersion(1);
         individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));
 
+        if (CollectionUtils.isNotEmpty(individual.getFamilyIds())) {
+            throw new CatalogException("'familyIds' list is not empty");
+        } else {
+            individual.setFamilyIds(Collections.emptyList());
+        }
+
         // Check the id is not in use
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())

@@ -119,8 +119,8 @@ public class IndividualCreateParams {
         String individualId = StringUtils.isEmpty(id) ? name : id;
         String individualName = StringUtils.isEmpty(name) ? individualId : name;
         return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother),
-                location, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, "", lifeStatus, phenotypes, disorders,
-                Collections.emptyList(), parentalConsanguinity != null ? parentalConsanguinity : false, annotationSets,
+                Collections.emptyList(), location, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, "", lifeStatus, phenotypes,
+                disorders, Collections.emptyList(), parentalConsanguinity != null ? parentalConsanguinity : false, annotationSets,
                 status != null ? status.toCustomStatus() : new CustomStatus(), null, attributes);
     }
 
