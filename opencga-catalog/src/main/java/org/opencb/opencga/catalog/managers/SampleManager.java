@@ -66,22 +66,20 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class SampleManager extends AnnotationSetManager<Sample> {
 
-    protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
-
     public static final QueryOptions INCLUDE_SAMPLE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.UUID.key(),
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
+    protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
-        this.userManager = catalogManager.getUserManager();
-        this.studyManager = catalogManager.getStudyManager();
+        userManager = catalogManager.getUserManager();
+        studyManager = catalogManager.getStudyManager();
     }
 
     @Override
@@ -171,6 +169,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             // Just in case the user provided a uuid or other kind of individual identifier, we set again the id value
             sample.setIndividualId(individualDataResult.first().getId());
+        }
+
+        if (CollectionUtils.isNotEmpty(sample.getCohortIds())) {
+            throw new CatalogException("'cohortIds' list is not empty");
+        } else {
+            sample.setCohortIds(Collections.emptyList());
         }
 
         sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
@@ -916,11 +920,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     /**
      * Update Sample from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sampleIds  List of Sample ids. Could be either the id or uuid.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sampleIds    List of Sample ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult with the objects updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -1110,7 +1114,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> sampleList, String member, boolean ignoreException,
-                                                         String token) throws CatalogException {
+                                                            String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1366,7 +1370,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 throw e;
             }
-
         } while (numProcessed < sampleList.size());
 
         return aclResultList;
@@ -1457,7 +1460,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(SampleDBAdaptor.STATS_ID);
             query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
         }
-
     }
 
     private void fixQualityControlUpdateParams(SampleUpdateParams sampleUpdateParams, QueryOptions options) throws CatalogException {
@@ -1485,7 +1487,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleUpdateParams.setAnnotationSets(Collections.singletonList(new AnnotationSet().setVariableSetId(variableSetId)));
             return;
         }
-
 
         List<AnnotationSet> annotationSetList = new LinkedList<>();
         if (sampleUpdateParams.getQualityControl().getVariant() != null) {

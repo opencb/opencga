@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -58,6 +59,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.CohortDBAdaptor.QueryParams.*;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
@@ -76,7 +78,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.cohortCollection = cohortCollection;
         this.deletedCohortCollection = deletedCohortCollection;
-        this.cohortConverter = new CohortConverter();
+        cohortConverter = new CohortConverter();
     }
 
     @Override
@@ -106,7 +108,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
     }
 
-    long insert(ClientSession clientSession, long studyId, Cohort cohort, List<VariableSet> variableSetList) throws CatalogDBException {
+    long insert(ClientSession clientSession, long studyId, Cohort cohort, List<VariableSet> variableSetList) throws CatalogDBException,
+            CatalogParameterException, CatalogAuthorizationException {
         checkCohortIdExists(clientSession, studyId, cohort.getId());
 
         long newId = getNewUid();
@@ -117,6 +120,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
         if (StringUtils.isEmpty(cohort.getCreationDate())) {
             cohort.setCreationDate(TimeUtils.getTime());
+        }
+        if (CollectionUtils.isNotEmpty(cohort.getSamples())) {
+            // Add Cohort reference to samples
+            List<String> sampleIds = cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(), sampleIds,
+                    cohort.getId(), ParamUtils.BasicUpdateAction.ADD);
         }
 
         Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
@@ -224,7 +233,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), cohortUid);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(),
+                        QueryParams.SAMPLES.key() + "." + QueryParams.ID.key()));
         OpenCGAResult<Cohort> documentResult = get(query, options);
         if (documentResult.getNumResults() == 0) {
             throw new CatalogDBException("Could not update cohort. Cohort uid '" + cohortUid + "' not found.");
@@ -251,7 +261,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key(),
+                        QueryParams.SAMPLES.key() + "." + QueryParams.ID.key()));
         DBIterator<Cohort> iterator = iterator(query, options);
 
         OpenCGAResult<Cohort> result = OpenCGAResult.empty();
@@ -279,8 +290,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 .append(QueryParams.UID.key(), cohort.getUid());
 
         DataResult result = updateAnnotationSets(clientSession, cohort.getUid(), parameters, variableSetList, queryOptions, false);
-        Document cohortUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions)
-                .toFinalUpdateDocument();
+        UpdateDocument parseUpdateDocument = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
+        Document cohortUpdate = parseUpdateDocument.toFinalUpdateDocument();
 
         if (cohortUpdate.isEmpty() && result.getNumUpdated() == 0) {
             if (!parameters.isEmpty()) {
@@ -307,19 +318,95 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             if (parameters.containsKey(SAMPLES.key())) {
                 // Update numSamples field
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UID.key(), SAMPLES.key() + "." + UID.key()));
-                MongoDBIterator<Cohort> iterator = cohortCollection.iterator(clientSession, finalQuery, null, cohortConverter, options);
+                MongoDBIterator<Cohort> iterator = cohortCollection.iterator(clientSession, finalQuery, null,
+                        cohortConverter, options);
                 while (iterator.hasNext()) {
                     Cohort tmpCohort = iterator.next();
                     Bson bsonQuery = parseQuery(new Query(UID.key(), tmpCohort.getUid()));
                     Document updateDoc = new Document("$set", new Document(NUM_SAMPLES.key(), tmpCohort.getSamples().size()));
                     cohortCollection.update(clientSession, bsonQuery, updateDoc, QueryOptions.empty());
                 }
+
+                // Update sample references of cohort
+                updateCohortReferenceInSamples(clientSession, cohort, parameters.getAsList(QueryParams.SAMPLES.key(),
+                        Sample.class), (ParamUtils.BasicUpdateAction) parseUpdateDocument.getAttributes().get(SAMPLES.key()));
             }
 
             logger.debug("Cohort {} successfully updated", cohort.getId());
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    private void updateCohortReferenceInSamples(ClientSession clientSession, Cohort cohort, List<Sample> samples,
+                                                ParamUtils.BasicUpdateAction updateAction)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+
+        switch (updateAction) {
+            case ADD:
+                addSamples(clientSession, cohort, samples);
+                break;
+            case SET:
+                removeSamples(clientSession, cohort, samples, false);
+                addSamples(clientSession, cohort, samples);
+                break;
+            case REMOVE:
+                removeSamples(clientSession, cohort, samples, true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void addSamples(ClientSession clientSession, Cohort cohort, List<Sample> samples) throws CatalogParameterException,
+            CatalogDBException, CatalogAuthorizationException {
+
+        List<String> newSampleIds = new ArrayList<>();
+
+        Set<String> currentSampleIds = cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+
+        for (Sample sample : samples) {
+            String sampleId = sample.getId();
+            if (!currentSampleIds.contains(sampleId)) {
+                newSampleIds.add(sampleId);
+            }
+        }
+        if (!newSampleIds.isEmpty()) {
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(), newSampleIds,
+                    cohort.getId(), ParamUtils.BasicUpdateAction.ADD);
+        }
+    }
+
+    /**
+     * @param clientSession
+     * @param cohort
+     * @param samples
+     * @param remove        Flag to know if list of samples provided are the ones to be removed or not
+     * @throws CatalogParameterException
+     * @throws CatalogDBException
+     * @throws CatalogAuthorizationException
+     */
+    private void removeSamples(ClientSession clientSession, Cohort cohort, List<Sample> samples, boolean remove)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        List<String> sampleIdsToRemove = new ArrayList<>();
+
+        Set<String> finalSampleSet = samples.stream().map(Sample::getId).collect(Collectors.toSet());
+
+        for (Sample member : cohort.getSamples()) {
+            if (remove) {
+                if (finalSampleSet.contains(member.getId())) {
+                    sampleIdsToRemove.add(member.getId());
+                }
+            } else {
+                if (!finalSampleSet.contains(member.getId())) {
+                    sampleIdsToRemove.add(member.getId());
+                }
+            }
+        }
+        if (!sampleIdsToRemove.isEmpty()) {
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(),
+                    sampleIdsToRemove, cohort.getId(), ParamUtils.BasicUpdateAction.REMOVE);
+        }
     }
 
     private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query,
@@ -366,6 +453,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         String[] sampleObjectParams = new String[]{SAMPLES.key()};
 
         if (operation == ParamUtils.BasicUpdateAction.SET || !parameters.getAsList(SAMPLES.key()).isEmpty()) {
+            document.getAttributes().put(SAMPLES.key(), operation);
             switch (operation) {
                 case SET:
                     filterObjectParams(parameters, document.getSet(), sampleObjectParams);
@@ -384,7 +472,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
-        String[] acceptedObjectParams = { QueryParams.STATUS.key() };
+        String[] acceptedObjectParams = {QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -886,5 +974,4 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         logger.debug("Sample uid '" + sampleUid + "' references removed from " + result.getNumUpdated() + " out of "
                 + result.getNumMatches() + " cohorts");
     }
-
 }
