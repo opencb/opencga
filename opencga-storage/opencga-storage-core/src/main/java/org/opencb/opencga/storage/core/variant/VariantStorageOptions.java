@@ -43,6 +43,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     LOAD_HOM_REF("load.homRef", YesNoAuto.AUTO),
     POST_LOAD_CHECK("load.postLoadCheck", YesNoAuto.AUTO),
 
+    DELETE_PARALLEL("delete.parallel", false),
+
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation
     STATS_CALCULATE("stats.calculate", false),          //Calculate stats on the postLoad step
