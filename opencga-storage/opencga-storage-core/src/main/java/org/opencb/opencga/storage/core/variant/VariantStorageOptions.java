@@ -72,7 +72,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_USE_CACHE("annotator.cellbase.useCache"),
     ANNOTATOR_CELLBASE_INCLUDE("annotator.cellbase.include"),
     ANNOTATOR_CELLBASE_EXCLUDE("annotator.cellbase.exclude"),
-    ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE), // by default: no limit
+    // by default, undefined, no limit
+    ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE),
     ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants", true),
     ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
 

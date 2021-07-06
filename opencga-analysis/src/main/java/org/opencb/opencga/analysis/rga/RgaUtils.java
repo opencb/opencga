@@ -180,8 +180,9 @@ class RgaUtils {
     }
 
     /** Calculate the list of population frequency values to look for in the db.
+     * At the moment, RGA only calculates ALL population frequencies so this method will remove the :ALL from the key if present.
      *
-     * @param filters A list containing {study}[<|>|<=|>=]{number}. e.g. 1kG_phase3<0.01";
+     * @param filters A list containing {study[:popFreq]}[<|>|<=|>=]{number}. e.g. 1kG_phase3<0.01";
      * @return the list of population frequency values to look for in the db with their corresponding population key.
      * @throws RgaException RgaException.
      */
@@ -191,6 +192,9 @@ class RgaUtils {
             KeyOpValue<String, String> keyOpValue = parseKeyOpValue(filter);
             if (keyOpValue.getKey() == null) {
                 throw new RgaException("Unexpected operation '" + filter + "'");
+            }
+            if (keyOpValue.getKey().endsWith(":ALL")) {
+                keyOpValue.setKey(keyOpValue.getKey().replace(":ALL", ""));
             }
 
             List<String> values = new LinkedList<>();
@@ -559,7 +563,7 @@ class RgaUtils {
         if (variantAnnotation != null && StringUtils.isNotEmpty(transcriptId)
                 && CollectionUtils.isNotEmpty(variantAnnotation.getConsequenceTypes())) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
-                if (transcriptId.equals(ct.getEnsemblTranscriptId())) {
+                if (transcriptId.equals(ct.getTranscriptId())) {
                     consequenceType = ct;
                     break;
                 }

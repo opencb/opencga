@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.project.Datastores;
 import org.opencb.opencga.core.models.project.Project;
@@ -150,6 +151,18 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
+    }
+
+    @Test
+    public void test() throws Exception {
+        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", null, 1,
+                new ProjectInternal(new Datastores(), new Status())), user1.getId(), null);
+        Project p1 = getProject(user1.getId(), "p1");
+        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", null, 1,
+                new ProjectInternal(new Datastores(), new Status())), user1.getId(), null);
+        Project p2 = getProject(user1.getId(), "p2");
+
+        catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap("internal.cellbase", new CellBaseConfiguration("url", "v")), new QueryOptions());
     }
 
 }

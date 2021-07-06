@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
 
 public class JobsLog {
-    private static final int BATCH_SIZE = 2000;
+    private static final int BATCH_SIZE = ParamConstants.MAXIMUM_LINES_CONTENT;
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass().toString());
     private final OpenCGAClient openCGAClient;
@@ -92,12 +92,12 @@ public class JobsLog {
 
                 // Update list of running jobs
                 do {
-                    openCGAClient.getJobClient()
+                    secureOp(() -> openCGAClient.getJobClient()
                             .search(new ObjectMap(ParamConstants.STUDY_PARAM, c.study)
                                     .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), RUNNING)
                                     .append(QueryOptions.INCLUDE, "id"))
                             .allResults()
-                            .forEach(job -> jobs.putIfAbsent(job.getId(), null));
+                            .forEach(job -> jobs.putIfAbsent(job.getId(), null)));
                     i++;
                     if (jobs.isEmpty()) {
                         // Sleep if there are jobs left.
@@ -139,18 +139,18 @@ public class JobsLog {
             jobs.put(jobId, content);
             printedLines.addAndGet(printContent(content));
 
-            // Read fewer lines than expected
+            // Read fewer lines than expected. Check EOF
             if (content.getLines() < params.getInt("lines")) {
                 if (c.follow) {
                     // Check job status
-                    Job job = openCGAClient.getJobClient().info(jobId, new ObjectMap(ParamConstants.STUDY_PARAM, c.study)).firstResult();
+                    Job job = secureOp(() -> openCGAClient.getJobClient().info(jobId, new ObjectMap(ParamConstants.STUDY_PARAM, c.study)).firstResult());
                     if (job.getInternal().getStatus().getName().equals(RUNNING)) {
                         // The job is still running. eof=false and break
                         eof = false;
                         break;
                     } else {
-                        // If the job is not running, skip sleep and break loop
-                        eof = true;
+                        // If the job is not running. Trust the content.eof
+                        eof = content.isEof();
                         break;
                     }
                 } else {
@@ -167,6 +167,21 @@ public class JobsLog {
 
     interface Op<R> {
         R apply() throws ClientException;
+    }
+
+    interface OpConsumer {
+        void apply() throws ClientException;
+
+        default Op<Void> toOp() {
+            return () -> {
+                apply();
+                return null;
+            };
+        }
+    }
+
+    private void secureOp(OpConsumer op) throws ClientException {
+        secureOp(op.toOp());
     }
 
     private <T> T secureOp(Op<T> op) throws ClientException {

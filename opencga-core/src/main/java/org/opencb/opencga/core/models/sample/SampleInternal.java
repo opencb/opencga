@@ -19,9 +19,27 @@ package org.opencb.opencga.core.models.sample;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.common.Status;
 
+/**
+ * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
+ * finibus.
+ */
 public class SampleInternal {
-
+    /**
+     * Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui
+     * dignissim leo, quis ullamcorper felis elit a augue.
+     *
+     * @implNote The sample collection is a list of samples
+     * @see [ZetaGenomics] (https://www.zettagenomics.com)
+     * @since 2.1
+     */
     private Status status;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     * @deprecated
+     */
     private RgaIndex rga;
 
     public SampleInternal() {

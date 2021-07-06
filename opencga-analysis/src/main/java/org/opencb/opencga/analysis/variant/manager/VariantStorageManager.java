@@ -252,7 +252,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public void annotationLoad(String projectStr, List<String> studies, String loadFile, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        String projectId = getProjectId(projectStr, studies, token);
+        String projectId = getProjectFqn(projectStr, studies, token);
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, studies, params, token, engine -> {
             new VariantAnnotationOperationManager(this, engine)
                     .annotationLoad(projectStr, getStudiesFqn(studies, token), params, loadFile, token);
@@ -263,7 +263,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void annotate(String projectStr, List<String> studies, String region, boolean overwriteAnnotations, String outDir,
                          String outputFileName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        String projectId = getProjectId(projectStr, studies, token);
+        String projectId = getProjectFqn(projectStr, studies, token);
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
             List<String> studiesFqn = getStudiesFqn(studies, token);
             new VariantAnnotationOperationManager(this, engine)
@@ -444,10 +444,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperationByProject("configure", projectStr, params, token, engine -> {
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
 
-            dataStore.getConfiguration().putAll(params);
+            dataStore.getOptions().putAll(params);
             catalogManager.getProjectManager()
                     .setDatastoreVariant(projectStr, dataStore, token);
-            return dataStore.getConfiguration();
+            return dataStore.getOptions();
         });
     }
 
@@ -512,8 +512,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @throws CatalogException on catalog errors
      * @throws StorageEngineException on storage engine errors
      */
-    public OpenCGAResult<Job> configureCellbase(String project, CellBaseConfiguration cellbaseConfiguration, boolean annotate,
-                                                String annotationSaveId, String token)
+    public OpenCGAResult<Job> setCellbaseConfiguration(String project, CellBaseConfiguration cellbaseConfiguration, boolean annotate,
+                                                       String annotationSaveId, String token)
             throws CatalogException, StorageEngineException {
         StopWatch stopwatch = StopWatch.createStarted();
         return secureOperationByProject("configureCellbase", project, new ObjectMap(), token, engine -> {
@@ -552,6 +552,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     }
                 }
             }
+            catalogManager.getProjectManager().setInternalCellbaseConfiguration(project, cellbaseConfiguration, token);
             result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
             return result;
         });
@@ -902,9 +903,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         DataStore dataStore = getDataStore(study.getFqn(), token);
         VariantStorageEngine variantStorageEngine = storageEngineFactory
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), study.getFqn());
-        configureCellbase(getProjectId(null, studyStr, token), variantStorageEngine, token);
-        if (dataStore.getConfiguration() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        setCellbaseConfiguration(variantStorageEngine, getProjectFqn(null, studyStr, token), token);
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         if (study.getInternal() != null
                 && study.getInternal().getVariantEngineConfiguration() != null
@@ -924,7 +925,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     protected VariantStorageEngine getVariantStorageEngine(String study, String token)
             throws StorageEngineException, CatalogException {
-        return getVariantStorageEngineByProject(getProjectId(null, study, token), empty(), token);
+        return getVariantStorageEngineByProject(getProjectFqn(null, study, token), empty(), token);
     }
 
     protected VariantStorageEngine getVariantStorageEngineByProject(String project, ObjectMap params, String token)
@@ -932,9 +933,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         DataStore dataStore = getDataStoreByProjectId(project, token);
         VariantStorageEngine variantStorageEngine = storageEngineFactory
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        configureCellbase(project, variantStorageEngine, token);
-        if (dataStore.getConfiguration() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        setCellbaseConfiguration(variantStorageEngine, project, token);
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
@@ -942,7 +943,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return variantStorageEngine;
     }
 
-    private void configureCellbase(String project, VariantStorageEngine engine, String token)
+    private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
             throws CatalogException {
         CellBaseConfiguration cellbase = catalogManager.getProjectManager()
                 .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL.key()), token)
@@ -1089,7 +1090,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureOperationByProject(String operationName, String projectStr, List<String> studies, ObjectMap params, String token,
                                            VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
-        projectStr = getProjectId(projectStr, studies, token);
+        projectStr = getProjectFqn(projectStr, studies, token);
         return secureOperationByProject(operationName, projectStr, params, token, operation);
     }
 
@@ -1520,11 +1521,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
     }
 
-    private String getProjectId(String projectStr, String study, String token) throws CatalogException {
-        return getProjectId(projectStr, Arrays.asList(StringUtils.split(study, ",")), token);
+    private String getProjectFqn(String projectStr, String study, String token) throws CatalogException {
+        return getProjectFqn(projectStr, Arrays.asList(StringUtils.split(study, ",")), token);
     }
 
-    private String getProjectId(String projectStr, List<String> studies, String token) throws CatalogException {
+    private String getProjectFqn(String projectStr, List<String> studies, String token) throws CatalogException {
         if (CollectionUtils.isEmpty(studies) && StringUtils.isEmpty(projectStr)) {
             List<Project> projects = catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).getResults();
             if (projects.size() == 1) {
@@ -1598,8 +1599,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
         }
-        if (dataStore.getConfiguration() == null) {
-            dataStore.setConfiguration(new ObjectMap());
+        if (dataStore.getOptions() == null) {
+            dataStore.setOptions(new ObjectMap());
         }
 
         return dataStore;

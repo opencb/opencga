@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
+import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.DataResult;
@@ -172,6 +173,19 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
 
     public VariantDBIterator map(UnaryOperator<Variant> map) {
         return new MapperVariantDBIterator(this, map);
+    }
+
+    public VariantDBIterator mapBuffered(UnaryOperator<List<Variant>> map, int batchSize) {
+        return new BufferedMappedVariantDBIterator(this, map, batchSize);
+    }
+
+    public VariantDBIterator localSkip(int skip) {
+        Iterators.advance(this, skip);
+        return this;
+    }
+
+    public VariantDBIterator localLimit(int limit) {
+        return new LimitVariantDBIterator(this, limit);
     }
 
     public static VariantDBIterator emptyIterator() {
