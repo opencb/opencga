@@ -1581,7 +1581,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(2, individual.getSamples().size());
         assertEquals(2, individual.getSamples().stream().map(Sample::getId)
                 .filter(s -> Arrays.asList(sample.getId(), sample2.getId()).contains(s)).count());
-
     }
 
     @Test
@@ -1644,6 +1643,42 @@ public class CatalogManagerTest extends AbstractManagerTest {
             }
         }
     }
+
+    @Test
+    public void changeIndividualIdTest2() throws CatalogException {
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("father"), null, QueryOptions.empty(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("mother"), null, QueryOptions.empty(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual()
+                .setId("child")
+                .setFather(new Individual().setId("father"))
+                .setMother(new Individual().setId("mother")),
+                null, QueryOptions.empty(), token);
+        Family family = catalogManager.getFamilyManager().create(studyFqn, new Family().setId("family"),
+                Arrays.asList("child", "mother", "father"), QueryOptions.empty(), token).first();
+
+        assertNotNull(family.getRoles());
+        assertFalse(family.getRoles().isEmpty());
+
+        assertTrue(family.getRoles().containsKey("child"));
+        for (Map.Entry<String, Map<String, Family.FamiliarRelationship>> entry : family.getRoles().entrySet()) {
+            if (!entry.getKey().equals("child")) {
+                assertTrue(entry.getValue().containsKey("child"));
+            }
+        }
+
+        // Update child's id
+        catalogManager.getIndividualManager().update(studyFqn, "child", new IndividualUpdateParams().setId("newId1"),
+                QueryOptions.empty(), token);
+        family = catalogManager.getFamilyManager().get(studyFqn, "family", QueryOptions.empty(), token).first();
+
+        assertTrue(family.getRoles().containsKey("newId1"));
+        for (Map.Entry<String, Map<String, Family.FamiliarRelationship>> entry : family.getRoles().entrySet()) {
+            if (!entry.getKey().equals("newId1")) {
+                assertTrue(entry.getValue().containsKey("newId1"));
+            }
+        }
+    }
+
 
     @Test
     public void testUpdateWithLockedClinicalAnalysis() throws CatalogException {
