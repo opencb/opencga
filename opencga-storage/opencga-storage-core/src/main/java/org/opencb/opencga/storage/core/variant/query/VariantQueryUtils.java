@@ -405,14 +405,15 @@ public final class VariantQueryUtils {
     /**
      * Determines if the given value is a known clinical accession or not.
      * <p>
-     * ClinVar accession starts with 'RCV' or 'SCV'
-     * COSMIC mutationId starts with 'COSM'
+     * ClinVar accession starts with 'VCV', 'RCV' or 'SCV'
+     * COSMIC mutationId starts with 'COSM', 'COSV'
      *
      * @param value Value to check
      * @return If is a known accession
      */
     public static boolean isClinicalAccession(String value) {
-        return value.startsWith("RCV") || value.startsWith("SCV") || value.startsWith("COSM");
+        return value.startsWith("RCV") || value.startsWith("SCV")  || value.startsWith("VCV")
+                || value.startsWith("COSM") || value.startsWith("COSV");
     }
 
     /**
