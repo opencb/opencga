@@ -244,23 +244,36 @@ public class SampleIndexConfiguration {
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
 
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSignificance(
-                        new IndexFieldConfiguration(
-                                IndexFieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
-                                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
-                                ClinicalSignificance.benign.toString(),
-                                ClinicalSignificance.likely_benign.toString(),
-//                                ClinicalSignificance.VUS.toString(),
-                                ClinicalSignificance.uncertain_significance.toString(),
-                                ClinicalSignificance.likely_pathogenic.toString(),
-                                ClinicalSignificance.pathogenic.toString())
-                                .setNullable(false));
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
                         IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "clinvar",
                         "cosmic")
+                        .setNullable(false)
+        );
+
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSignificance(
+                new IndexFieldConfiguration(
+                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
+                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        "clinvar_" + ClinicalSignificance.benign.toString(),
+                        "clinvar_" + ClinicalSignificance.likely_benign.toString(),
+                        "clinvar_" + ClinicalSignificance.uncertain_significance.toString(),
+                        "clinvar_" + ClinicalSignificance.likely_pathogenic.toString(),
+                        "clinvar_" + ClinicalSignificance.pathogenic.toString(),
+
+                        "clinvar_" + ClinicalSignificance.benign.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.likely_benign.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.uncertain_significance.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.likely_pathogenic.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.pathogenic.toString() + "_confirmed",
+
+                        "cosmic_" + ClinicalSignificance.benign.toString(),
+                        "cosmic_" + ClinicalSignificance.pathogenic.toString(),
+
+                        "cosmic_" + ClinicalSignificance.benign.toString() + "_confirmed",
+                        "cosmic_" + ClinicalSignificance.pathogenic.toString() + "_confirmed")
                         .setNullable(false)
         );
 
@@ -381,8 +394,8 @@ public class SampleIndexConfiguration {
         private PopulationFrequencyIndexConfiguration populationFrequency = new PopulationFrequencyIndexConfiguration();
         private IndexFieldConfiguration biotype;
         private IndexFieldConfiguration consequenceType;
-        private IndexFieldConfiguration clinicalSignificance;
         private IndexFieldConfiguration clinicalSource;
+        private IndexFieldConfiguration clinicalSignificance;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
             return populationFrequency;
@@ -411,6 +424,15 @@ public class SampleIndexConfiguration {
             return this;
         }
 
+        public IndexFieldConfiguration getClinicalSource() {
+            return clinicalSource;
+        }
+
+        public AnnotationIndexConfiguration setClinicalSource(IndexFieldConfiguration clinicalSource) {
+            this.clinicalSource = clinicalSource;
+            return this;
+        }
+
         public IndexFieldConfiguration getClinicalSignificance() {
             return clinicalSignificance;
         }
@@ -420,14 +442,6 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public IndexFieldConfiguration getClinicalSource() {
-            return clinicalSource;
-        }
-
-        public AnnotationIndexConfiguration setClinicalSource(IndexFieldConfiguration clinicalSource) {
-            this.clinicalSource = clinicalSource;
-            return this;
-        }
 
         @Override
         public boolean equals(Object o) {

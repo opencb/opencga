@@ -468,7 +468,8 @@ public abstract class AbstractParentClient {
         }
 
         if (!Response.Status.Family.SUCCESSFUL.equals(status.getFamily())) {
-            String message = "Unsuccessful HTTP status " + status.getFamily() + ":" + status.getStatusCode() + " '" + status.getReasonPhrase() + "'";
+            String message = "Unsuccessful HTTP status " + status.getFamily() + ":" + status.getStatusCode()
+                    + " '" + status.getReasonPhrase() + "'";
             throw new ClientException(message);
         }
     }

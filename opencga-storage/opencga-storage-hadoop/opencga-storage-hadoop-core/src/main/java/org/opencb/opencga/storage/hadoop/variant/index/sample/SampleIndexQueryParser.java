@@ -944,16 +944,33 @@ public class SampleIndexQueryParser {
             annotationIndex |= LOF_EXTENDED_MASK;
         }
 
-        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
+        List<IndexFieldFilter> clinicalFieldFilters = new ArrayList<>();
+        if (isValidParam(query, ANNOT_CLINICAL)) {
             annotationIndex |= CLINICAL_MASK;
-            clinicalFilter = schema.getClinicalIndexSchema().buildFilter(schema.getClinicalIndexSchema().getClinicalSignificanceField()
-                    .buildFilter(new OpValue<>("=", query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key()))));
+            Values<String> sources = splitValues(query.getString(ANNOT_CLINICAL.key()));
+
+            clinicalFieldFilters.add(schema.getClinicalIndexSchema().getSourceField().buildFilter(
+                    new Values<>(sources.getOperation(), sources.getValues(s -> new OpValue<>("=", Collections.singletonList(s))))));
+        }
+        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)) {
+            annotationIndex |= CLINICAL_MASK;
+            List<List<String>> clinicalLists = VariantQueryParser.parseClinicalCombination(query, true);
+
+            clinicalFieldFilters.add(schema.getClinicalIndexSchema().getClinicalSignificanceField()
+                    .buildFilter(new Values<>(QueryOperation.AND, clinicalLists.stream()
+                            .map(l -> new OpValue<>("=", l)).collect(Collectors.toList()))));
+        }
+        if (!clinicalFieldFilters.isEmpty()) {
+            clinicalFilter = schema.getClinicalIndexSchema().buildFilter(clinicalFieldFilters, QueryOperation.AND);
+
             boolean clinicalCovered = clinicalFilter.isExactFilter();
             if (!clinicalCovered) {
                 // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
                 clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
             }
             if (completeIndex && clinicalCovered) {
+                query.remove(ANNOT_CLINICAL.key());
+                query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
                 query.remove(ANNOT_CLINICAL_SIGNIFICANCE.key());
             }
         }

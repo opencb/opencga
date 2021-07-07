@@ -798,13 +798,14 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
      * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
      * @param expectedChecksum  Expected checksum to be checked
-     * @param expectedSize
+     * @param expectedSize      Expected file size
      * @param token       session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
-                                      boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token) throws CatalogException {
+                                      boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
+            throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
         if (StringUtils.isNotEmpty(expectedChecksum)) {
