@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -29,7 +30,7 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {TemplateLoader.TEMPLATE_RUN_COMMAND}, commandDescription = "Load data in OpenCGA from templates")
     public class TemplateLoader {
-        public static final String TEMPLATE_RUN_COMMAND = "template-run";
+        public static final String TEMPLATE_RUN_COMMAND = TemplateRunner.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
