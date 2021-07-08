@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.template.manager;
+package org.opencb.opencga.catalog.templates;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.template.manager.config.TemplateFile;
-import org.opencb.opencga.analysis.template.manager.config.TemplateManifest;
-import org.opencb.opencga.analysis.template.manager.config.TemplateStudy;
+import org.opencb.opencga.catalog.templates.config.TemplateFile;
+import org.opencb.opencga.catalog.templates.config.TemplateManifest;
+import org.opencb.opencga.catalog.templates.config.TemplateStudy;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -58,7 +58,7 @@ public class TemplateManager {
     private final Logger logger;
     private final boolean resume;
     private final boolean overwrite;
-    
+
     private final String token;
 
     public TemplateManager(CatalogManager catalogManager, boolean resume, boolean overwrite, String token) {
@@ -591,7 +591,8 @@ public class TemplateManager {
                 boolean exists = catalogManager.getClinicalAnalysisManager().count(studyFqn, query, token).getNumMatches() > 0;
 
                 if (exists && !resume) {
-                    throw new CatalogException("Clinical Analysis '" + clinical.getId() + "' already exists. Do you want to resume the load?");
+                    throw new CatalogException("Clinical Analysis '" + clinical.getId()
+                            + "' already exists. Do you want to resume the load?");
                 }
 
                 if (!exists) {

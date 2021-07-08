@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.template.manager.config;
+package org.opencb.opencga.catalog.templates.config;
 
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 

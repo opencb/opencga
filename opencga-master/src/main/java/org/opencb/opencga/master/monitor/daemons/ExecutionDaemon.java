@@ -46,7 +46,7 @@ import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
-import org.opencb.opencga.analysis.template.TemplateTask;
+import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -239,7 +239,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             put(JulieTool.ID, "variant julie-run");
 
-            put(TemplateTask.ID, "studies " + TemplateTask.ID + "-run");
+            put(TemplateRunner.ID, "studies " + TemplateRunner.ID + "-run");
         }};
     }
 
@@ -1106,7 +1106,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // If it is a template, we will store the execution results in the same template folder
         String toolId = job.getTool().getId();
-        if (toolId.equals(TemplateTask.ID)) {
+        if (toolId.equals(TemplateRunner.ID)) {
             copyJobResultsInTemplateFolder(job, outDirUri);
         }
 

@@ -1,7 +1,7 @@
-package org.opencb.opencga.analysis.template;
+package org.opencb.opencga.templates;
 
 import org.junit.Test;
-import org.opencb.opencga.analysis.template.manager.TemplateEntryIterator;
+import org.opencb.opencga.catalog.templates.TemplateEntryIterator;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 
 import java.net.URISyntaxException;
@@ -15,7 +15,7 @@ public class TemplateEntryIteratorTest {
 
     @Test
     public void testIterator() throws URISyntaxException {
-        Path path = Paths.get(this.getClass().getClassLoader().getResource("template").toURI());
+        Path path = Paths.get(this.getClass().getClassLoader().getResource("templates").toURI());
         try(TemplateEntryIterator<IndividualUpdateParams> iterator =
                 new TemplateEntryIterator<>(path, "individuals", IndividualUpdateParams.class)) {
             while (iterator.hasNext()) {

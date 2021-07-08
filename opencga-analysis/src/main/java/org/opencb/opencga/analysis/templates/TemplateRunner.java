@@ -1,9 +1,9 @@
-package org.opencb.opencga.analysis.template;
+package org.opencb.opencga.analysis.templates;
 
 import org.apache.solr.common.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.template.manager.TemplateManager;
-import org.opencb.opencga.analysis.template.manager.config.TemplateManifest;
+import org.opencb.opencga.catalog.templates.TemplateManager;
+import org.opencb.opencga.catalog.templates.config.TemplateManifest;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.core.models.common.Enums;
@@ -14,11 +14,11 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-@Tool(id = TemplateTask.ID, description = TemplateTask.DESCRIPTION, type = Tool.Type.OPERATION, resource = Enums.Resource.STUDY,
+@Tool(id = TemplateRunner.ID, description = TemplateRunner.DESCRIPTION, type = Tool.Type.OPERATION, resource = Enums.Resource.STUDY,
         scope = Tool.Scope.STUDY)
-public class TemplateTask extends OperationTool {
+public class TemplateRunner extends OperationTool {
 
-    public static final String ID = "template";
+    public static final String ID = "templates";
     public static final String DESCRIPTION = "Load the data described in the templates in OpenCGA.";
 
     private Path path;

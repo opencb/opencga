@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.template;
+package org.opencb.opencga.templates;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -7,10 +7,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.template.manager.TemplateManager;
-import org.opencb.opencga.analysis.template.manager.config.TemplateManifest;
+import org.opencb.opencga.catalog.templates.TemplateManager;
+import org.opencb.opencga.catalog.templates.config.TemplateManifest;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 
@@ -45,8 +46,9 @@ public class TemplateManagerTest {
 
         String token = catalogManager.getUserManager().login("user1", "password").getToken();
         catalogManager.getProjectManager().create("project", "Project", "", "name", "common", "GRCh38", QueryOptions.empty(), token);
+        catalogManager.getStudyManager().create("project", new Study().setId("study"), QueryOptions.empty(), token);
 
-        URL resource = this.getClass().getResource("/template/manifest.yml");
+        URL resource = this.getClass().getResource("/templates/manifest.yml");
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         TemplateManifest manifest = objectMapper.readValue(resource, TemplateManifest.class);
 

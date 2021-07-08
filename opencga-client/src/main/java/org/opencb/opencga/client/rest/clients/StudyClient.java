@@ -300,7 +300,7 @@ public class StudyClient extends AbstractParentClient {
     public RestResponse<Job> runTemplate(String study, TemplateParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("studies", study, "template", null, "run", params, POST, Job.class);
+        return execute("studies", study, "templates", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -313,7 +313,7 @@ public class StudyClient extends AbstractParentClient {
      */
     public RestResponse<String> uploadTemplate(String study, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("studies", study, "template", null, "upload", params, POST, String.class);
+        return execute("studies", study, "templates", null, "upload", params, POST, String.class);
     }
 
     /**
@@ -329,7 +329,7 @@ public class StudyClient extends AbstractParentClient {
     public RestResponse<Boolean> deleteTemplate(String study, String templateId, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("study", study);
-        return execute("studies", study, "template", templateId, "delete", params, POST, Boolean.class);
+        return execute("studies", study, "templates", templateId, "delete", params, POST, Boolean.class);
     }
 
     /**

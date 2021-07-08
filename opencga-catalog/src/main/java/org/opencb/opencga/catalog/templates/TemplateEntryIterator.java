@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.template.manager;
+package org.opencb.opencga.catalog.templates;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -341,18 +340,18 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
     }
 
     private static class Type {
-        QueryParam.Type type;
+        private QueryParam.Type type;
         private boolean file;
         private Map<String, Type> typeMap;
 
-        public Type() {
+        Type() {
         }
 
-        public Type(QueryParam.Type type) {
+        Type(QueryParam.Type type) {
             this.type = type;
         }
 
-        public Type(boolean file, Map<String, Type> typeMap) {
+        Type(boolean file, Map<String, Type> typeMap) {
             this.file = file;
             this.typeMap = typeMap;
         }
@@ -398,7 +397,14 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
                     && !declaredField.getType().getName().endsWith("ObjectMap")) {
                 getDeclaredFields(declaredField.getType(), key, map);
             } else if (declaredField.getType().getName().endsWith("List")) {
-                Class subclass = (Class<?>) ((ParameterizedTypeImpl) declaredField.getGenericType()).getActualTypeArguments()[0];
+                String subclassStr = declaredField.getAnnotatedType().getType().getTypeName();
+                subclassStr = subclassStr.substring(subclassStr.indexOf("<") + 1, subclassStr.length() - 1);
+                Class subclass;
+                try {
+                    subclass = Class.forName(subclassStr);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException("Could not obtain class for " + subclassStr);
+                }
                 if (subclass.getName().startsWith("org.opencb")) {
                     Map<String, Type> subMap = new HashMap<>();
                     map.put(key, new Type(true, subMap));

@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.template.manager.config;
+package org.opencb.opencga.catalog.templates.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;

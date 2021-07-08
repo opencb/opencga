@@ -24,7 +24,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.template.TemplateTask;
+import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -497,7 +497,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     ========================= TEMPLATES ===========================
      */
     @POST
-    @Path("/{study}/template/upload")
+    @Path("/{study}/templates/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", value = "Resource to upload a zipped template", response = String.class)
     public Response upload(
@@ -512,7 +512,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{study}/template/{templateId}/delete")
+    @Path("/{study}/templates/{templateId}/delete")
     @ApiOperation(value = "Delete template", response = Boolean.class)
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -525,7 +525,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{study}/template/run")
+    @Path("/{study}/templates/run")
     @ApiOperation(value = "Execute template", response = Job.class)
     public Response executeTemplate(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String study,
@@ -534,7 +534,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
-        return submitJob(TemplateTask.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitJob(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     private void fixVariable(Variable variable) {

@@ -1,7 +1,7 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.template.TemplateTask;
+import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.app.cli.internal.options.StudyCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -45,6 +45,6 @@ public class StudyCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.studyId);
 
-        toolRunner.execute(TemplateTask.class, params, Paths.get(cliOptions.outdir), cliOptions.jobOptions.jobId, token);
+        toolRunner.execute(TemplateRunner.class, params, Paths.get(cliOptions.outdir), cliOptions.jobOptions.jobId, token);
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.template.manager.config;
+package org.opencb.opencga.catalog.templates.config;
 
 public class TemplateConfiguration {
 
