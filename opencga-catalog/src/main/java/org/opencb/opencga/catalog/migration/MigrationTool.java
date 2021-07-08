@@ -29,6 +29,7 @@ public abstract class MigrationTool {
     protected Configuration configuration;
     protected CatalogManager catalogManager;
     protected MongoDBAdaptorFactory dbAdaptorFactory;
+    protected MigrationRun migrationRun;
     protected Path appHome;
     protected String token;
 
@@ -43,15 +44,20 @@ public abstract class MigrationTool {
         this.privateLogger = LoggerFactory.getLogger(MigrationTool.class);
     }
 
+    public final Migration getAnnotation() {
+        return getClass().getAnnotation(Migration.class);
+    }
+
     public final String getId() {
-        return getClass().getAnnotation(Migration.class).id();
+        return getAnnotation().id();
     }
 
     public final void setup(Configuration configuration, CatalogManager catalogManager, MongoDBAdaptorFactory dbAdaptorFactory,
-                            Path appHome, ObjectMap params, String token) {
+                            MigrationRun migrationRun, Path appHome, ObjectMap params, String token) {
         this.configuration = configuration;
         this.catalogManager = catalogManager;
         this.dbAdaptorFactory = dbAdaptorFactory;
+        this.migrationRun = migrationRun;
         this.appHome = appHome;
         this.params = params;
         this.token = token;
@@ -68,6 +74,10 @@ public abstract class MigrationTool {
     }
 
     protected abstract void run() throws Exception;
+
+    protected final MigrationRun getMigrationRun() {
+        return migrationRun;
+    }
 
     protected final StorageConfiguration readStorageConfiguration() throws MigrationException {
         try (FileInputStream is = new FileInputStream(appHome.resolve("conf").resolve("storage-configuration.yml").toFile())) {

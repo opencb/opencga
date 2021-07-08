@@ -1,8 +1,12 @@
 package org.opencb.opencga.catalog.migration;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
@@ -13,6 +17,9 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobReferenceParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -46,6 +53,17 @@ public class MigrationManager {
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
 
+    public MigrationRun runManualMigration(String id, Path appHome, ObjectMap params, String token) throws CatalogException {
+        validateAdmin(token);
+        for (Class<? extends MigrationTool> c : getAvailableMigrations()) {
+            Migration migrationAnnotation = getMigrationAnnotation(c);
+            if (migrationAnnotation.id().equals(id)) {
+                return run(c, appHome, params, token);
+            }
+        }
+        throw new MigrationException("Unable to find migration '" + id + "'");
+    }
+
     public void runMigration(String version, String appHome, String token) throws CatalogException, IOException {
         runMigration(version, Collections.emptySet(), Collections.emptySet(), appHome, new ObjectMap(), token);
     }
@@ -68,6 +86,7 @@ public class MigrationManager {
         token = catalogManager.getUserManager().getNonExpiringToken(AbstractManager.OPENCGA, token);
 
         // 0. Fetch all migrations
+        updateMigrationRuns(token);
         Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
 
         // 1. Fetch required migrations sorted by rank
@@ -104,6 +123,7 @@ public class MigrationManager {
 
     public List<Class<? extends MigrationTool>> getPendingMigrations(String version, String token) throws CatalogException {
         validateAdmin(token);
+        updateMigrationRuns(token);
         Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
         return filterPendingMigrations(version, availableMigrations);
     }
@@ -118,9 +138,44 @@ public class MigrationManager {
         return migrations;
     }
 
-    public OpenCGAResult<MigrationRun> getMigrationRun(List<Migration> migrations, String token) throws CatalogException {
+    public List<Pair<Migration, MigrationRun>> getMigrationRuns(String token) throws CatalogException {
+        return getMigrationRuns(null, null, null, token);
+    }
+
+    public List<Pair<Migration, MigrationRun>> getMigrationRuns(String version, List<Migration.MigrationDomain> domain,
+                                                                List<String> status, String token) throws CatalogException {
         validateAdmin(token);
-        return migrationDBAdaptor.get(migrations.stream().map(Migration::id).collect(Collectors.toList()));
+
+        // 0. Always update migration runs
+        updateMigrationRuns(token);
+
+        // 1. Get migrations and filter
+        List<Migration> migrations = getMigrations(token);
+        if (version != null) {
+            migrations.removeIf(migration -> !migration.version().equals(version));
+        }
+        if (CollectionUtils.isNotEmpty(domain)) {
+            migrations.removeIf(migration -> !domain.contains(migration.domain()));
+        }
+        Map<String, Pair<Migration, MigrationRun>> map = new HashMap<>(migrations.size());
+        for (Migration migration : migrations) {
+            map.put(migration.id(), MutablePair.of(migration, null));
+        }
+
+        // 2. Get migration runs and filter by status
+        List<MigrationRun> migrationRuns = migrationDBAdaptor.get(migrations.stream().map(Migration::id).collect(Collectors.toList()))
+                .getResults();
+        for (MigrationRun migrationRun : migrationRuns) {
+            map.get(migrationRun.getId()).setValue(migrationRun);
+        }
+        if (CollectionUtils.isNotEmpty(status)) {
+            map.values().removeIf(p -> !status.contains(p.getValue().getStatus().name()));
+        }
+
+        List<Pair<Migration, MigrationRun>> pairs = new ArrayList<>(map.values());
+        pairs.sort(Comparator.<Pair<Migration, MigrationRun>, String>comparing(p -> p.getKey().version())
+                .thenComparing(p -> p.getKey().rank()));
+        return pairs;
     }
 
     // This method should only be called when installing OpenCGA for the first time so it skips all available (and old) migrations.
@@ -141,6 +196,92 @@ public class MigrationManager {
             } catch (CatalogDBException e) {
                 throw new MigrationException("Could not register migration in OpenCGA", e);
             }
+        }
+    }
+
+    public void updateMigrationRuns(String token) throws CatalogException {
+        validateAdmin(token);
+
+        // 0. Fetch all migrations
+        Set<Class<? extends MigrationTool>> availableMigrations = getAvailableMigrations();
+
+        // 1. Update migration run status
+        for (Class<? extends MigrationTool> runnableMigration : availableMigrations) {
+            updateMigrationRun(getMigrationAnnotation(runnableMigration), token);
+        }
+
+    }
+
+    private void updateMigrationRun(Migration migration, String token) throws CatalogException {
+        MigrationRun migrationRun = migrationDBAdaptor.get(migration.id()).first();
+        boolean updated = false;
+
+        if (migrationRun == null) {
+            migrationRun = new MigrationRun();
+            migrationRun.setStatus(MigrationRun.MigrationStatus.PENDING);
+            migrationRun.setId(migration.id());
+            migrationRun.setDescription(migration.description());
+            migrationRun.setVersion(migration.version());
+            updated = true;
+        } else {
+            switch (migrationRun.getStatus()) {
+                case REDUNDANT:
+                case DONE:
+                    // Check patch
+                    if (migrationRun.getPatch() != migration.patch()) {
+                        migrationRun.setStatus(MigrationRun.MigrationStatus.OUTDATED);
+                        updated = true;
+                    }
+                    break;
+                case ON_HOLD:
+                    // Check jobs
+                    MigrationRun.MigrationStatus status = getOnHoldMigrationRunStatus(migration, migrationRun, token);
+                    migrationRun.setStatus(status);
+                    if (status != MigrationRun.MigrationStatus.ON_HOLD) {
+                        updated = true;
+                    }
+                    break;
+                case PENDING:
+                case OUTDATED:
+                case ERROR:
+                    // Nothing to do
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown status " + migrationRun.getStatus());
+            }
+        }
+        if (updated) {
+            migrationDBAdaptor.upsert(migrationRun);
+        }
+    }
+
+    private MigrationRun.MigrationStatus getOnHoldMigrationRunStatus(Migration migration, MigrationRun migrationRun, String token)
+            throws CatalogException {
+        boolean allDone = true;
+        boolean anyError = false;
+        for (JobReferenceParam jobR : migrationRun.getJobs()) {
+            Job job = catalogManager.getJobManager()
+                    .get(jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token).first();
+            String jobStatus = job.getInternal().getStatus().getName();
+            if (jobStatus.equals(Enums.ExecutionStatus.ERROR)) {
+                anyError = true;
+            }
+            if (!jobStatus.equals(Enums.ExecutionStatus.DONE)) {
+                allDone = false;
+            }
+        }
+
+        if (anyError) {
+            return MigrationRun.MigrationStatus.ERROR;
+        } else if (allDone) {
+            // It could get outdated
+            if (migrationRun.getPatch() != migration.patch()) {
+                return MigrationRun.MigrationStatus.OUTDATED;
+            } else {
+                return MigrationRun.MigrationStatus.DONE;
+            }
+        } else {
+            return MigrationRun.MigrationStatus.ON_HOLD;
         }
     }
 
@@ -330,7 +471,7 @@ public class MigrationManager {
         return filteredMigrations;
     }
 
-    private void run(Class<? extends MigrationTool> runnableMigration, Path appHome, ObjectMap params, String token)
+    private MigrationRun run(Class<? extends MigrationTool> runnableMigration, Path appHome, ObjectMap params, String token)
             throws MigrationException {
         Migration annotation = getMigrationAnnotation(runnableMigration);
 
@@ -341,21 +482,49 @@ public class MigrationManager {
             throw new MigrationException("Can't instantiate class " + runnableMigration + " from migration '" + annotation.id() + "'", e);
         }
 
-        migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, appHome, params, token);
+        Date start = TimeUtils.getDate();
+        MigrationRun migrationRun;
+        try {
+            migrationRun = migrationDBAdaptor.get(annotation.id()).first();
+            if (migrationRun == null) {
+                migrationRun = new MigrationRun();
+            }
+            migrationRun.setStatus(MigrationRun.MigrationStatus.PENDING);
+            migrationRun.setId(annotation.id());
+            migrationRun.setDescription(annotation.description());
+            migrationRun.setVersion(annotation.version());
+        } catch (CatalogDBException e) {
+            throw new MigrationException("Error reading migration run from catalog", e);
+        }
+        migrationTool.setup(configuration, catalogManager, dbAdaptorFactory, migrationRun, appHome, params, token);
 
         StopWatch stopWatch = StopWatch.createStarted();
         logger.info("------------------------------------------------------");
         logger.info("Executing migration '{}' for version '{}'", annotation.id(), annotation.version());
         logger.info("    {}", annotation.description());
         logger.info("------------------------------------------------------");
-        MigrationRun migrationRun = new MigrationRun(annotation.id(), annotation.description(), annotation.version(), TimeUtils.getDate(),
-                annotation.patch());
+
         try {
             migrationTool.execute();
-            migrationRun.setStatus(MigrationRun.MigrationStatus.DONE);
             logger.info("------------------------------------------------------");
-            logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
-        } catch (MigrationException | RuntimeException e) {
+            MigrationRun.MigrationStatus status;
+            if (migrationRun.getJobs().isEmpty()) {
+                status = MigrationRun.MigrationStatus.DONE;
+            } else {
+                status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
+            }
+            migrationRun.setStatus(status);
+            if (status == MigrationRun.MigrationStatus.DONE) {
+                logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
+            } else if (status == MigrationRun.MigrationStatus.ON_HOLD) {
+                logger.info("Migration '{}' on hold of pending jobs : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
+            } else if (status == MigrationRun.MigrationStatus.ERROR) {
+                logger.info("Migration '{}' on ERROR as some jobs failed : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
+            } else {
+                // Should not happen
+                logger.info("Migration '{}' finished with status {} : {}", annotation.id(), status, TimeUtils.durationToString(stopWatch));
+            }
+        } catch (Exception e) {
             migrationRun.setStatus(MigrationRun.MigrationStatus.ERROR);
             String message;
             if (e instanceof MigrationException && e.getCause() != null) {
@@ -367,13 +536,16 @@ public class MigrationManager {
             logger.info("------------------------------------------------------");
             logger.error("Migration '{}' failed with message: {}", annotation.id(), message, e);
         } finally {
+            migrationRun.setStart(start);
             migrationRun.setEnd(TimeUtils.getDate());
+            migrationRun.setPatch(annotation.patch());
             try {
                 migrationDBAdaptor.upsert(migrationRun);
             } catch (CatalogDBException e) {
                 throw new MigrationException("Could not register migration in OpenCGA", e);
             }
         }
+        return migrationRun;
     }
 
     private void filterOutExecutedMigrations(List<Class<? extends MigrationTool>> migrations) throws MigrationException {
@@ -390,15 +562,18 @@ public class MigrationManager {
             migrationResultMap.put(result.getId(), result);
         }
 
-        // Remove migrations if they have been run successfully or are redundant with the proper patch
+        // Remove migrations if:
+        //  - They have been run successfully
+        //  - They are redundant
+        //  - They are on hold
         migrations.removeIf(m -> {
             Migration annotation = getMigrationAnnotation(m);
             if (!migrationResultMap.containsKey(annotation.id())) {
                 return false;
             }
-            return annotation.patch() <= migrationResultMap.get(annotation.id()).getPatch()
-                    && (migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.DONE
-                    || migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.REDUNDANT);
+            return migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.DONE
+                    || migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.REDUNDANT
+                    || migrationResultMap.get(annotation.id()).getStatus() == MigrationRun.MigrationStatus.ON_HOLD;
         });
     }
 

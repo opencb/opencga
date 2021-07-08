@@ -1,9 +1,7 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.Document;
 import org.opencb.biodata.models.clinical.interpretation.Software;
@@ -116,25 +114,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
-            List<Migration> migrations = catalogManager.getMigrationManager().getMigrations(token);
-            if (options.version != null) {
-                migrations.removeIf(migration -> !migration.version().equals(options.version));
-            }
-            if (CollectionUtils.isNotEmpty(options.domain)) {
-                migrations.removeIf(migration -> !options.domain.contains(migration.domain()));
-            }
-            Map<String, Pair<Migration, MigrationRun>> map = new HashMap<>(migrations.size());
-            for (Migration migration : migrations) {
-                map.put(migration.id(), MutablePair.of(migration, null));
-            }
-            List<MigrationRun> migrationRuns = catalogManager.getMigrationManager().getMigrationRun(migrations, token).getResults();
-            for (MigrationRun migrationRun : migrationRuns) {
-                map.get(migrationRun.getId()).setValue(migrationRun);
-            }
-
-            if (CollectionUtils.isNotEmpty(options.status)) {
-                map.values().removeIf(p -> !options.status.contains(getMigrationStatus(p)));
-            }
+            List<Pair<Migration, MigrationRun>> rows = catalogManager.getMigrationManager()
+                    .getMigrationRuns(options.version, options.domain, options.status, token);
 
             Table<Pair<Migration, MigrationRun>> table = new Table<Pair<Migration, MigrationRun>>(Table.PrinterType.JANSI)
                     .addColumn("ID", p -> p.getKey().id(), 50)
@@ -151,9 +132,6 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                             p.getValue().getEnd().toInstant())))
                     .addColumn("Exception", p -> p.getValue().getException());
 
-            List<Pair<Migration, MigrationRun>> rows = new ArrayList<>(map.values());
-            rows.sort(Comparator.<Pair<Migration, MigrationRun>, String>comparing(p1 -> p1.getKey().version())
-                    .thenComparing(p -> p.getKey().rank()));
             table.printTable(rows);
         }
     }
@@ -162,11 +140,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         if (p.getValue() == null) {
             return "PENDING";
         } else {
-            if (p.getValue().getPatch() != p.getKey().patch()) {
-                return "OUTDATED";
-            } else {
-                return String.valueOf(p.getValue().getStatus());
-            }
+            return p.getValue().getStatus().name();
         }
     }
 
