@@ -183,15 +183,20 @@ public class TemplateManager {
                     tmplStudy.getStatus());
 
             logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
-            catalogManager.getStudyManager().update(fqn, studyUpdateParams, QueryOptions.empty(), token);
+            try {
+                catalogManager.getStudyManager().update(fqn, studyUpdateParams, QueryOptions.empty(), token);
+            } catch (CatalogException e) {
+                logger.warn(e.getMessage());
+            }
         } else {
             logger.info("Study '{}' already exists.", tmplStudy.getId());
         }
-//        }
 
         if (CollectionUtils.isNotEmpty(tmplStudy.getGroups())) {
             Set<String> existingGroups = origStudy != null
-                    ? origStudy.getGroups().stream().map(Group::getId).collect(Collectors.toSet())
+                    ? origStudy.getGroups().stream()
+                        .flatMap(g -> Arrays.asList(g.getId(), g.getId().substring(1)).stream())
+                        .collect(Collectors.toSet())
                     : new HashSet<>();
             for (GroupCreateParams group : tmplStudy.getGroups()) {
                 if (existingGroups.contains(group.getId())) {
@@ -245,9 +250,6 @@ public class TemplateManager {
                 new TemplateEntryIterator<>(path, "individuals", IndividualUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
-                if (count == 0) {
-                    logger.info("Creating individuals for study '{}'", studyFqn);
-                }
                 IndividualUpdateParams individual = iterator.next();
 
                 Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId());
@@ -267,9 +269,15 @@ public class TemplateManager {
                 individual.setSamples(null);
 
                 if (!exists) {
+                    if (count == 0) {
+                        logger.info("Creating individuals for study '{}'", studyFqn);
+                    }
+
                     // Create individual
                     logger.debug("Create individual '{}'", individual.getId());
                     catalogManager.getIndividualManager().create(studyFqn, individual.toIndividual(), QueryOptions.empty(), token);
+
+                    count++;
                 } else if (overwrite) {
                     String individualId = individual.getId();
                     // Remove individualId
@@ -277,9 +285,9 @@ public class TemplateManager {
 
                     logger.debug("Overwrite individual '{}'", individual.getId());
                     catalogManager.getIndividualManager().update(studyFqn, individualId, individual, QueryOptions.empty(), token);
-                }
 
-                count++;
+                    count++;
+                }
             }
             if (count > 0) {
                 logger.info("{} individuals processed for study '{}'", count, studyFqn);
@@ -403,9 +411,6 @@ public class TemplateManager {
                      new TemplateEntryIterator<>(path, "samples", SampleUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
-                if (count == 0) {
-                    logger.info("Creating samples for study '{}'", studyFqn);
-                }
                 SampleUpdateParams sample = iterator.next();
 
                 Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sample.getId());
@@ -416,9 +421,14 @@ public class TemplateManager {
                 }
 
                 if (!exists) {
+                    if (count == 0) {
+                        logger.info("Creating samples for study '{}'", studyFqn);
+                    }
                     // Create sample
                     logger.debug("Create sample '{}'", sample.getId());
                     catalogManager.getSampleManager().create(studyFqn, sample.toSample(), QueryOptions.empty(), token);
+
+                    count++;
                 } else if (overwrite) {
                     String sampleId = sample.getId();
                     // Remove sampleId
@@ -426,9 +436,9 @@ public class TemplateManager {
 
                     logger.debug("Overwrite sample '{}'", sample.getId());
                     catalogManager.getSampleManager().update(studyFqn, sampleId, sample, QueryOptions.empty(), token);
-                }
 
-                count++;
+                    count++;
+                }
             }
             if (count > 0) {
                 logger.info("{} samples processed for study '{}'", count, studyFqn);
@@ -442,9 +452,6 @@ public class TemplateManager {
                      new TemplateEntryIterator<>(path, "cohorts", CohortUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
-                if (count == 0) {
-                    logger.info("Creating cohorts for study '{}'", studyFqn);
-                }
                 CohortUpdateParams cohort = iterator.next();
 
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), cohort.getId());
@@ -455,9 +462,15 @@ public class TemplateManager {
                 }
 
                 if (!exists) {
+                    if (count == 0) {
+                        logger.info("Creating cohorts for study '{}'", studyFqn);
+                    }
+
                     // Create cohort
                     logger.debug("Create cohort '{}'", cohort.getId());
                     catalogManager.getCohortManager().create(studyFqn, cohort.toCohort(), QueryOptions.empty(), token);
+
+                    count++;
                 } else if (overwrite) {
                     String cohortId = cohort.getId();
                     // Remove cohortId
@@ -465,9 +478,9 @@ public class TemplateManager {
 
                     logger.debug("Overwrite cohort '{}'", cohort.getId());
                     catalogManager.getCohortManager().update(studyFqn, cohortId, cohort, QueryOptions.empty(), token);
-                }
 
-                count++;
+                    count++;
+                }
             }
             if (count > 0) {
                 logger.info("{} cohorts processed for study '{}'", count, studyFqn);
@@ -481,9 +494,6 @@ public class TemplateManager {
                      new TemplateEntryIterator<>(path, "families", FamilyUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
-                if (count == 0) {
-                    logger.info("Creating families for study '{}'", studyFqn);
-                }
                 FamilyUpdateParams family = iterator.next();
 
                 Query query = new Query(FamilyDBAdaptor.QueryParams.ID.key(), family.getId());
@@ -494,6 +504,10 @@ public class TemplateManager {
                 }
 
                 if (!exists) {
+                    if (count == 0) {
+                        logger.info("Creating families for study '{}'", studyFqn);
+                    }
+
                     // Create family
                     logger.debug("Create family '{}'", family.getId());
                     Family completeFamily = family.toFamily();
@@ -504,6 +518,8 @@ public class TemplateManager {
                     } else {
                         catalogManager.getFamilyManager().create(studyFqn, family.toFamily(), QueryOptions.empty(), token);
                     }
+
+                    count++;
                 } else if (overwrite) {
                     String familyId = family.getId();
                     // Remove familyId
@@ -511,9 +527,9 @@ public class TemplateManager {
 
                     logger.debug("Overwrite family '{}'", family.getId());
                     catalogManager.getFamilyManager().update(studyFqn, familyId, family, QueryOptions.empty(), token);
-                }
 
-                count++;
+                    count++;
+                }
             }
             if (count > 0) {
                 logger.info("{} families processed for study '{}'", count, studyFqn);
@@ -527,9 +543,6 @@ public class TemplateManager {
                      new TemplateEntryIterator<>(path, "panels", PanelUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
-                if (count == 0) {
-                    logger.info("Creating panels for study '{}'", studyFqn);
-                }
                 PanelUpdateParams panel = iterator.next();
 
                 Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panel.getId());
@@ -540,9 +553,15 @@ public class TemplateManager {
                 }
 
                 if (!exists) {
+                    if (count == 0) {
+                        logger.info("Creating panels for study '{}'", studyFqn);
+                    }
+
                     // Create family
                     logger.debug("Create panel '{}'", panel.getId());
                     catalogManager.getPanelManager().create(studyFqn, panel.toPanel(), QueryOptions.empty(), token);
+
+                    count++;
                 } else if (overwrite) {
                     String panelId = panel.getId();
                     // Remove panelId
@@ -550,9 +569,9 @@ public class TemplateManager {
 
                     logger.debug("Overwrite panel '{}'", panel.getId());
                     catalogManager.getPanelManager().update(studyFqn, panelId, panel, QueryOptions.empty(), token);
-                }
 
-                count++;
+                    count++;
+                }
             }
             if (count > 0) {
                 logger.info("{} panels processed for study '{}'", count, studyFqn);
@@ -566,9 +585,6 @@ public class TemplateManager {
                      new TemplateEntryIterator<>(path, "clinical", ClinicalAnalysisUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
-                if (count == 0) {
-                    logger.info("Creating Clinical Analyses for study '{}'", studyFqn);
-                }
                 ClinicalAnalysisUpdateParams clinical = iterator.next();
 
                 Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), clinical.getId());
@@ -579,10 +595,16 @@ public class TemplateManager {
                 }
 
                 if (!exists) {
+                    if (count == 0) {
+                        logger.info("Creating Clinical Analyses for study '{}'", studyFqn);
+                    }
+
                     // Create Clinical Analysis
                     logger.debug("Create Clinical Analysis '{}'", clinical.getId());
                     catalogManager.getClinicalAnalysisManager().create(studyFqn, clinical.toClinicalAnalysis(), QueryOptions.empty(),
                             token);
+
+                    count++;
                 } else if (overwrite) {
                     String clinicalId = clinical.getId();
                     // Remove clinicalAnalysisId
@@ -590,9 +612,9 @@ public class TemplateManager {
 
                     logger.debug("Overwrite Clinical Analysis '{}'", clinical.getId());
                     catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalId, clinical, QueryOptions.empty(), token);
-                }
 
-                count++;
+                    count++;
+                }
             }
             if (count > 0) {
                 logger.info("{} clinical analyses processed for study '{}'", count, studyFqn);
@@ -606,9 +628,6 @@ public class TemplateManager {
                      new TemplateEntryIterator<>(path, "files", TemplateFile.class)) {
             int count = 0;
             while (iterator.hasNext()) {
-                if (count == 0) {
-                    logger.info("Creating File for study '{}'", studyFqn);
-                }
                 TemplateFile file = iterator.next();
 
                 Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
@@ -620,6 +639,10 @@ public class TemplateManager {
 
                 boolean incomplete = false;
                 if (!exists) {
+                    if (count == 0) {
+                        logger.info("Creating File for study '{}'", studyFqn);
+                    }
+
                     // Create File
                     logger.debug("Create File '{}'", file.getPath());
                     catalogManager.getFileManager().link(studyFqn,
@@ -633,9 +656,9 @@ public class TemplateManager {
                         logger.debug("Overwrite Clinical Analysis '{}'", file.getPath());
                     }
                     catalogManager.getFileManager().update(studyFqn, file.getPath(), file, QueryOptions.empty(), token);
-                }
 
-                count++;
+                    count++;
+                }
             }
             if (count > 0) {
                 logger.info("{} files processed for study '{}'", count, studyFqn);

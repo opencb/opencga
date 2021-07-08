@@ -78,8 +78,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -1757,8 +1755,7 @@ public class StudyManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyStr, userId, QueryOptions.empty());
 
-        DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
-        String templateId = "template." + dateFormat.format(TimeUtils.getDate()) + "." + RandomStringUtils.random(6, true, false);
+        String templateId = "template." + TimeUtils.getTime() + "." + RandomStringUtils.random(6, true, false);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyStr", studyStr)
