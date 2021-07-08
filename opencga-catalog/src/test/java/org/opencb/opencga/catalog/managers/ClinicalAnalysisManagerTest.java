@@ -990,7 +990,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomStatusTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1012,7 +1012,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomPriorityTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1035,7 +1035,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomFlagTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1119,7 +1119,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomConsentTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1156,7 +1156,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateInterpretationCustomStatusTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        InterpretationStudyConfiguration configuration = study.getConfiguration().getClinical().getInterpretation();
+        InterpretationStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical().getInterpretation();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, true);
         StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);

@@ -143,24 +143,24 @@ public class StudyManagerTest extends AbstractManagerTest {
     public void updateClinicalConfiguration() throws CatalogException {
         Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
                 null, null, null, new QueryOptions(), token).first();
-        assertNotNull(study.getConfiguration());
-        assertNotNull(study.getConfiguration().getClinical());
-        assertFalse(study.getConfiguration().getClinical().getPriorities().isEmpty());
-        assertFalse(study.getConfiguration().getClinical().getFlags().isEmpty());
-        assertFalse(study.getConfiguration().getClinical().getStatus().isEmpty());
+        assertNotNull(study.getInternal().getConfiguration());
+        assertNotNull(study.getInternal().getConfiguration().getClinical());
+        assertFalse(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
+        assertFalse(study.getInternal().getConfiguration().getClinical().getFlags().isEmpty());
+        assertFalse(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
 
-        ClinicalAnalysisStudyConfiguration configuration = new ClinicalAnalysisStudyConfiguration(Collections.emptyMap(), null,
+        ClinicalAnalysisStudyConfiguration clinicalConfiguration = new ClinicalAnalysisStudyConfiguration(Collections.emptyMap(), null,
                 Collections.emptyList(), Collections.emptyMap(), null);
         StudyUpdateParams updateParams = new StudyUpdateParams()
-                .setConfiguration(new StudyConfiguration(configuration));
+                .setConfiguration(new StudyConfiguration(clinicalConfiguration, null));
         catalogManager.getStudyManager().update("newStudy", updateParams, QueryOptions.empty(), token);
 
         study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
-        assertNotNull(study.getConfiguration());
-        assertNotNull(study.getConfiguration().getClinical());
-        assertTrue(study.getConfiguration().getClinical().getPriorities().isEmpty());
-        assertTrue(study.getConfiguration().getClinical().getFlags().isEmpty());
-        assertTrue(study.getConfiguration().getClinical().getStatus().isEmpty());
+        assertNotNull(study.getInternal().getConfiguration());
+        assertNotNull(study.getInternal().getConfiguration().getClinical());
+        assertTrue(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
+        assertTrue(study.getInternal().getConfiguration().getClinical().getFlags().isEmpty());
+        assertTrue(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
     }
 
 
@@ -168,27 +168,27 @@ public class StudyManagerTest extends AbstractManagerTest {
     public void testSetVariantEngineConfiguration() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
         System.out.println("getVariantEngineConfiguration() = "
-                + study.getInternal().getVariantEngineConfiguration());
+                + study.getInternal().getConfiguration().getVariantEngine());
 
         catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k1", "v1"), token);
         study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
         System.out.println("getVariantEngineConfiguration() = "
-                + study.getInternal().getVariantEngineConfiguration());
-        assertEquals(new ObjectMap("k1", "v1"), study.getInternal().getVariantEngineConfiguration().getOptions());
+                + study.getInternal().getConfiguration().getVariantEngine());
+        assertEquals(new ObjectMap("k1", "v1"), study.getInternal().getConfiguration().getVariantEngine().getOptions());
 
         catalogManager.getStudyManager().setVariantEngineConfigurationOptions(studyFqn, new ObjectMap("k2", "v2"), token);
         study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
         System.out.println("getVariantEngineConfiguration() = "
-                + study.getInternal().getVariantEngineConfiguration());
-        assertEquals(new ObjectMap("k2", "v2"), study.getInternal().getVariantEngineConfiguration().getOptions());
+                + study.getInternal().getConfiguration().getVariantEngine());
+        assertEquals(new ObjectMap("k2", "v2"), study.getInternal().getConfiguration().getVariantEngine().getOptions());
 
         SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.defaultConfiguration();
         catalogManager.getStudyManager()
                 .setVariantEngineConfigurationSampleIndex(studyFqn, sampleIndexConfiguration, token);
         study = catalogManager.getStudyManager().get(studyFqn, null, token).first();
         System.out.println("getVariantEngineConfiguration() = "
-                + study.getInternal().getVariantEngineConfiguration());
-        assertEquals(sampleIndexConfiguration, study.getInternal().getVariantEngineConfiguration().getSampleIndex());
+                + study.getInternal().getConfiguration().getVariantEngine());
+        assertEquals(sampleIndexConfiguration, study.getInternal().getConfiguration().getVariantEngine().getSampleIndex());
 
     }
 }

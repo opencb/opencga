@@ -434,14 +434,14 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
                 if (needsUpdate(1)) {
                     StudyUpdateParams updateParams = new StudyUpdateParams()
-                            .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()));
+                            .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null));
 
                     // Create default study configuration
                     for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
                         String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
                         if (project.getStudies() != null) {
                             for (Study study : project.getStudies()) {
-                                if (study.getConfiguration() == null) {
+                                if (study.getInternal() == null || study.getInternal().getConfiguration() == null) {
                                     logger.info("Updating study configuration from study '{}'", study.getFqn());
                                     catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
                                 }

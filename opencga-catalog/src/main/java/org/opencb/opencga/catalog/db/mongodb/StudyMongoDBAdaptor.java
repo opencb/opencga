@@ -1346,7 +1346,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.CONFIGURATION_CLINICAL.key(),
+        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
                 QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
 

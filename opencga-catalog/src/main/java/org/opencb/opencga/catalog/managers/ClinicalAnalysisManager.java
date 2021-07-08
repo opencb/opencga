@@ -231,10 +231,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("options", options)
                 .append("token", token);
         try {
-            if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null) {
+            if (study.getInternal() == null || study.getInternal().getConfiguration() == null
+                    || study.getInternal().getConfiguration().getClinical() == null) {
                 throw new CatalogException("Unexpected error: ClinicalConfiguration is null");
             }
-            ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getConfiguration().getClinical();
+            ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS);
 
@@ -1148,10 +1149,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                                    ClinicalAnalysisUpdateParams updateParams, String userId, QueryOptions options)
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null) {
+        if (study.getInternal() == null || study.getInternal().getConfiguration() == null
+                || study.getInternal().getConfiguration().getClinical() == null) {
             throw new CatalogException("Unexpected error: ClinicalConfiguration is null");
         }
-        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
