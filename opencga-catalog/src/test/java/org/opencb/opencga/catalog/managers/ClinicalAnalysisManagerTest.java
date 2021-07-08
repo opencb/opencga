@@ -52,6 +52,7 @@ import org.opencb.opencga.core.models.common.StatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
@@ -2054,7 +2055,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Create without a panel and update the panel
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser).first();
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
-                new ClinicalAnalysisUpdateParams().setPanels(Collections.singletonList(panel.getId())), QueryOptions.empty(), sessionIdUser);
+                new ClinicalAnalysisUpdateParams().setPanels(Collections.singletonList(new PanelReferenceParam(panel.getId()))),
+                QueryOptions.empty(), sessionIdUser);
 
         ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
 

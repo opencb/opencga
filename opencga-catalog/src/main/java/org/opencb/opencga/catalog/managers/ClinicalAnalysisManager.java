@@ -52,6 +52,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -1247,7 +1248,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
             // Get panels
-            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), updateParams.getPanels());
+            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(),
+                    updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList()));
             OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
                     panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
             if (panelResult.getNumResults() < updateParams.getPanels().size()) {
