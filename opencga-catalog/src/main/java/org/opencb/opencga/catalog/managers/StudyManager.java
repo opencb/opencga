@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -41,6 +40,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -104,7 +104,7 @@ public class StudyManager extends AbstractManager {
             StudyDBAdaptor.QueryParams.FQN.key()));
     static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
     static final QueryOptions INCLUDE_CONFIGURATION =
-            new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.CONFIGURATION.key());
+            new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION.key());
 
     protected Logger logger;
 
@@ -266,6 +266,8 @@ public class StudyManager extends AbstractManager {
 
         internal = ParamUtils.defaultObject(internal, StudyInternal::new);
         internal.setStatus(ParamUtils.defaultObject(internal.getStatus(), Status::new));
+        internal.setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(),
+                new StudyVariantEngineConfiguration()));
         attributes = ParamUtils.defaultObject(attributes, HashMap::new);
 
         ObjectMap auditParams = new ObjectMap()
@@ -301,7 +303,7 @@ public class StudyManager extends AbstractManager {
             Study study = new Study(id, name, alias, creationDate, description, notification, 0,
                     Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)), new Group(ADMINS, Collections.emptyList())), files,
                     null, null, new LinkedList<>(), null, null, null, null, null, null, null, project.getCurrentRelease(),
-                    status, internal, new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration()), attributes);
+                    status, internal, attributes);
 
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
@@ -1610,7 +1612,7 @@ public class StudyManager extends AbstractManager {
                 StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
 
         authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
-        StudyVariantEngineConfiguration configuration = study.getInternal().getVariantEngineConfiguration();
+        StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
         }
@@ -1628,7 +1630,7 @@ public class StudyManager extends AbstractManager {
                 StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
 
         authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
-        StudyVariantEngineConfiguration configuration = study.getInternal().getVariantEngineConfiguration();
+        StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
         if (configuration == null) {
             configuration = new StudyVariantEngineConfiguration();
         }

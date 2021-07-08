@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
 import java.util.List;
@@ -36,7 +37,7 @@ public class ClinicalAnalysisUpdateParams {
 
     private List<FileReferenceParam> files;
 
-    private List<String> panels;
+    private List<PanelReferenceParam> panels;
 
     private Boolean locked;
 //    private ProbandParam proband;
@@ -58,7 +59,7 @@ public class ClinicalAnalysisUpdateParams {
     }
 
     public ClinicalAnalysisUpdateParams(String id, String description, DisorderReferenceParam disorder, List<FileReferenceParam> files,
-                                        List<String> panels, Boolean locked, ClinicalAnalystParam analyst,
+                                        List<PanelReferenceParam> panels, Boolean locked, ClinicalAnalystParam analyst,
                                         ClinicalConsentAnnotationParam consent, String dueDate,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, List<ClinicalCommentParam> comments,
                                         PriorityParam priority, List<FlagValueParam> flags, Map<String, Object> attributes,
@@ -159,11 +160,11 @@ public class ClinicalAnalysisUpdateParams {
         return this;
     }
 
-    public List<String> getPanels() {
+    public List<PanelReferenceParam> getPanels() {
         return panels;
     }
 
-    public ClinicalAnalysisUpdateParams setPanels(List<String> panels) {
+    public ClinicalAnalysisUpdateParams setPanels(List<PanelReferenceParam> panels) {
         this.panels = panels;
         return this;
     }

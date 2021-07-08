@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.StatusParam;
@@ -25,6 +24,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
@@ -44,7 +44,7 @@ public class ClinicalAnalysisCreateParams {
     private ProbandParam proband;
     private FamilyParam family;
 
-    private List<String> panels;
+    private List<PanelReferenceParam> panels;
 
     private ClinicalAnalystParam analyst;
     private EntryParam interpretation;
@@ -65,7 +65,7 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<String> panels, ClinicalAnalystParam analyst, EntryParam interpretation,
+                                        List<PanelReferenceParam> panels, ClinicalAnalystParam analyst, EntryParam interpretation,
                                         ClinicalConsentAnnotationParam consent, String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
@@ -98,7 +98,7 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
                 clinicalAnalysis.getPanels() != null
-                        ? clinicalAnalysis.getPanels().stream().map(DiseasePanel::getId).collect(Collectors.toList())
+                        ? clinicalAnalysis.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
                         : null,
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInterpretation() != null
@@ -186,8 +186,8 @@ public class ClinicalAnalysisCreateParams {
 
         List<org.opencb.opencga.core.models.panel.Panel> diseasePanelList = panels != null ? new ArrayList<>(panels.size()) : Collections.emptyList();
         if (panels != null) {
-            for (String panel : panels) {
-                diseasePanelList.add(new org.opencb.opencga.core.models.panel.Panel().setId(panel));
+            for (PanelReferenceParam panel : panels) {
+                diseasePanelList.add(new org.opencb.opencga.core.models.panel.Panel().setId(panel.getId()));
             }
         }
 
@@ -266,11 +266,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public List<String> getPanels() {
+    public List<PanelReferenceParam> getPanels() {
         return panels;
     }
 
-    public ClinicalAnalysisCreateParams setPanels(List<String> panels) {
+    public ClinicalAnalysisCreateParams setPanels(List<PanelReferenceParam> panels) {
         this.panels = panels;
         return this;
     }

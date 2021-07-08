@@ -460,9 +460,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     .first();
             ObjectMap options;
             if (study.getInternal() != null
-                    && study.getInternal().getVariantEngineConfiguration() != null
-                    && study.getInternal().getVariantEngineConfiguration().getOptions() != null) {
-                options = study.getInternal().getVariantEngineConfiguration().getOptions();
+                    && study.getInternal().getConfiguration() != null
+                    && study.getInternal().getConfiguration().getVariantEngine() != null
+                    && study.getInternal().getConfiguration().getVariantEngine().getOptions() != null) {
+                options = study.getInternal().getConfiguration().getVariantEngine().getOptions();
             } else {
                 options = new ObjectMap();
             }
@@ -908,9 +909,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         if (study.getInternal() != null
-                && study.getInternal().getVariantEngineConfiguration() != null
-                && study.getInternal().getVariantEngineConfiguration().getOptions() != null) {
-            variantStorageEngine.getOptions().putAll(study.getInternal().getVariantEngineConfiguration().getOptions());
+                && study.getInternal().getConfiguration() != null
+                && study.getInternal().getConfiguration().getVariantEngine() != null
+                && study.getInternal().getConfiguration().getVariantEngine().getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(study.getInternal().getConfiguration().getVariantEngine().getOptions());
         }
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
