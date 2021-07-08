@@ -58,7 +58,11 @@ public class VariantQueryParser {
     }
 
     public static List<List<String>> parseClinicalCombination(Query query) {
-        List<String> clinicalCombinationSet = parseClinicalCombinationsList(query);
+        return parseClinicalCombination(query, false);
+    }
+
+    public static List<List<String>> parseClinicalCombination(Query query, boolean allCombinations) {
+        List<String> clinicalCombinationSet = parseClinicalCombinationsList(query, allCombinations);
         if (clinicalCombinationSet.isEmpty()) {
             return Collections.emptyList();
         }
@@ -75,6 +79,10 @@ public class VariantQueryParser {
     }
 
     protected static List<String> parseClinicalCombinationsList(Query query) {
+        return parseClinicalCombinationsList(query, false);
+    }
+
+    protected static List<String> parseClinicalCombinationsList(Query query, boolean allCombinations) {
         Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
         List<String> clinicalSourceList = clinicalSources.getValues();
         List<ClinicalSignificance> clinicalSigList = getAsEnumList(query, ANNOT_CLINICAL_SIGNIFICANCE, ClinicalSignificance.class);
@@ -82,12 +90,25 @@ public class VariantQueryParser {
 
         List<String> clinicalCombinations = new LinkedList<>();
         if (clinicalSourceList.isEmpty()) {
-            // Add at least one value to enter the loop
-            clinicalSourceList.add(null);
+            if (allCombinations) {
+                clinicalSourceList.add("clinvar");
+                clinicalSourceList.add("cosmic");
+            } else {
+                // Add at least one value to enter the loop
+                clinicalSourceList.add(null);
+            }
         }
         if (clinicalSigList.isEmpty()) {
-            // Add at least one value to enter the loop
-            clinicalSigList.add(null);
+            if (allCombinations) {
+                clinicalSigList.add(ClinicalSignificance.benign);
+                clinicalSigList.add(ClinicalSignificance.likely_benign);
+                clinicalSigList.add(ClinicalSignificance.likely_pathogenic);
+                clinicalSigList.add(ClinicalSignificance.pathogenic);
+                clinicalSigList.add(ClinicalSignificance.uncertain_significance);
+            } else {
+                // Add at least one value to enter the loop
+                clinicalSigList.add(null);
+            }
         }
         for (String clinicalSource : clinicalSourceList) {
             for (ClinicalSignificance clinicalSignificance : clinicalSigList) {
@@ -101,7 +122,10 @@ public class VariantQueryParser {
                     }
                     value += clinicalSignificance.name();
                 }
-                if (clinicalConfirmedStatus) {
+                if (clinicalConfirmedStatus || allCombinations) {
+                    if (allCombinations) {
+                        clinicalCombinations.add(value);
+                    }
                     if (!value.isEmpty()) {
                         value += "_";
                     }

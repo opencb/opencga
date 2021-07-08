@@ -8,8 +8,8 @@ import java.util.Arrays;
 
 public class ClinicalIndexSchema extends FixedSizeIndexSchema {
 
-    private final CategoricalMultiValuedIndexField<String> clinicalSignificanceField;
     private final CategoricalMultiValuedIndexField<String> sourceField;
+    private final CategoricalMultiValuedIndexField<String> clinicalSignificanceField;
 
     public ClinicalIndexSchema(IndexFieldConfiguration sourceConfiguration, IndexFieldConfiguration clinicalConfiguration) {
         sourceField = new CategoricalMultiValuedIndexField<>(sourceConfiguration, 0, sourceConfiguration.getValues());
@@ -19,11 +19,11 @@ public class ClinicalIndexSchema extends FixedSizeIndexSchema {
         updateIndexSizeBits();
     }
 
-    public CategoricalMultiValuedIndexField<String> getClinicalSignificanceField() {
-        return clinicalSignificanceField;
-    }
-
     public CategoricalMultiValuedIndexField<String> getSourceField() {
         return sourceField;
+    }
+
+    public CategoricalMultiValuedIndexField<String> getClinicalSignificanceField() {
+        return clinicalSignificanceField;
     }
 }

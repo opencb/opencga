@@ -57,6 +57,8 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
                 VariantQueryParam.STUDY,
                 VariantQueryParam.TYPE,
                 VariantQueryParam.INCLUDE_SAMPLE,
+                VariantQueryParam.INCLUDE_SAMPLE_ID,
+                VariantQueryParam.INCLUDE_GENOTYPE,
                 VariantQueryParam.INCLUDE_FILE
         );
         Predicate<Variant> variantLocalFilter = filterBuilder.buildFilter(query, options);
@@ -146,7 +148,8 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         List<Region> regions = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
             BreakendMate mate = variant.getSv().getBreakend().getMate();
-            regions.add(new Region(mate.getChromosome(), mate.getPosition() - 10, mate.getPosition() + 10));
+            int buffer = 50;
+            regions.add(new Region(mate.getChromosome(), mate.getPosition() - buffer, mate.getPosition() + buffer));
         }
         baseQuery.put(VariantQueryParam.REGION.key(), regions);
 

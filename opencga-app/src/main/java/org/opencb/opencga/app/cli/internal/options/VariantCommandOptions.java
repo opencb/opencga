@@ -978,7 +978,7 @@ public class VariantCommandOptions {
 //            return super.setClinicalSignificance(clinicalSignificance);
 //        }
 
-        @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         @Override
         public AnnotationVariantQueryParams setClinicalConfirmedStatus(String clinicalConfirmedStatus) {
             return super.setClinicalConfirmedStatus(clinicalConfirmedStatus);
