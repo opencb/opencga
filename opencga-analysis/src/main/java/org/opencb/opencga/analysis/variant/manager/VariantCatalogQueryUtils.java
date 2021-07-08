@@ -133,7 +133,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             QueryParam.create("panelConfidence", PANEL_CONFIDENCE_DESC, QueryParam.Type.TEXT);
 
     public static final String PANEL_ROLE_IN_CANCER_DESC = "Filter genes from specific panels that match certain role in cancer. " +
-            "Accepted values : [ both, oncogene, tumorSuppressorGene, fusion, both ]";
+            "Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]";
     public static final QueryParam PANEL_ROLE_IN_CANCER =
             QueryParam.create("panelRoleInCancer", PANEL_ROLE_IN_CANCER_DESC, QueryParam.Type.TEXT);
 
@@ -627,45 +627,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Set<String> variants = new HashSet<>();
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
-                Set<ClinicalProperty.Confidence> panelConfidence =
-                        new HashSet<>(getAsEnumList(query, PANEL_CONFIDENCE, ClinicalProperty.Confidence.class));
-                Set<ClinicalProperty.ModeOfInheritance> panelModeOfInheritance =
-                        query.getAsStringList(PANEL_MODE_OF_INHERITANCE.key())
-                                .stream()
-                                .map(ClinicalProperty.ModeOfInheritance::parse)
-                                .collect(Collectors.toSet());
-                Set<ClinicalProperty.RoleInCancer> panelRoleInCancer =
-                        new HashSet<>(getAsEnumList(query, PANEL_ROLE_IN_CANCER, ClinicalProperty.RoleInCancer.class));
-
                 Panel panel = getPanel(defaultStudyStr, panelId, token);
-                for (GenePanel genePanel : panel.getGenes()) {
-                    // Do not filter out if undefined
-                    if (!panelConfidence.isEmpty()
-                            && genePanel.getConfidence() != null
-                            && !panelConfidence.contains(genePanel.getConfidence())) {
-                        // Discard this gene
-                        continue;
-                    }
-                    // Do not filter out if undefined
-                    if (!panelModeOfInheritance.isEmpty()
-                            && genePanel.getModeOfInheritance() != null
-                            && !panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
-                        // Discard this gene
-                        continue;
-                    }
-                    // Do not filter out if undefined
-                    if (!panelRoleInCancer.isEmpty()
-                            && genePanel.getCancer() != null && genePanel.getCancer().getRole() != null
-                            && !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
-                        // Discard this gene
-                        continue;
-                    }
-                    String gene = genePanel.getName();
-                    if (StringUtils.isEmpty(gene)) {
-                        gene = genePanel.getId();
-                    }
-                    geneNames.add(gene);
-                }
+                geneNames.addAll(getGenesFromPanel(query, panel));
 
                 if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
                     if (assembly == null) {
@@ -725,6 +688,49 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
 
         return query;
+    }
+
+    protected static Set<String> getGenesFromPanel(Query query, Panel panel) {
+        Set<String> geneNames = new HashSet<>();
+        Set<ClinicalProperty.Confidence> panelConfidence =
+                new HashSet<>(getAsEnumList(query, PANEL_CONFIDENCE, ClinicalProperty.Confidence.class));
+        Set<ClinicalProperty.ModeOfInheritance> panelModeOfInheritance =
+                query.getAsStringList(PANEL_MODE_OF_INHERITANCE.key())
+                        .stream()
+                        .map(ClinicalProperty.ModeOfInheritance::parse)
+                        .collect(Collectors.toSet());
+        Set<ClinicalProperty.RoleInCancer> panelRoleInCancer =
+                new HashSet<>(getAsEnumList(query, PANEL_ROLE_IN_CANCER, ClinicalProperty.RoleInCancer.class));
+
+        for (GenePanel genePanel : panel.getGenes()) {
+            // Do not filter out if undefined
+            if (!panelConfidence.isEmpty()
+                    && genePanel.getConfidence() != null
+                    && !panelConfidence.contains(genePanel.getConfidence())) {
+                // Discard this gene
+                continue;
+            }
+            // Do not filter out if undefined
+            if (!panelModeOfInheritance.isEmpty()
+                    && genePanel.getModeOfInheritance() != null
+                    && !panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
+                // Discard this gene
+                continue;
+            }
+            // Do not filter out if undefined
+            if (!panelRoleInCancer.isEmpty()
+                    && genePanel.getCancer() != null && genePanel.getCancer().getRole() != null
+                    && !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
+                // Discard this gene
+                continue;
+            }
+            String gene = genePanel.getName();
+            if (StringUtils.isEmpty(gene)) {
+                gene = genePanel.getId();
+            }
+            geneNames.add(gene);
+        }
+        return geneNames;
     }
 
     /**
