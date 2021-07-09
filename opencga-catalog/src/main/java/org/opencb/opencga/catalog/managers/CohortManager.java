@@ -1059,7 +1059,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 }
 
                 InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                        new ArrayList<>(), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
+                        new ArrayList<>(sampleIds), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
 
                 if (sampleResult.getNumResults() != sampleIds.size()) {
                     throw new CatalogException("Could not find all the samples introduced. Update was not performed.");

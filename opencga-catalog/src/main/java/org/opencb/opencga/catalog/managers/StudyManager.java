@@ -107,7 +107,7 @@ public class StudyManager extends AbstractManager {
     private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
 
     static final QueryOptions INCLUDE_STUDY_UID = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
-    public static final QueryOptions INCLUDE_STUDY_ID = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+    public static final QueryOptions INCLUDE_STUDY_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(),
             StudyDBAdaptor.QueryParams.FQN.key()));
     static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
@@ -137,18 +137,18 @@ public class StudyManager extends AbstractManager {
                 studyStr = studyList.get(0);
             }
 
-            return smartResolutor(studyStr, userId, null).getResults();
+            return smartResolutor(studyStr, userId, INCLUDE_STUDY_IDS).getResults();
         }
 
         List<Study> returnList = new ArrayList<>(studyList.size());
         for (String study : studyList) {
-            returnList.add(resolveId(study, userId));
+            returnList.add(resolveId(study, userId, INCLUDE_STUDY_IDS));
         }
         return returnList;
     }
 
     Study resolveId(String studyStr, String userId) throws CatalogException {
-        return resolveId(studyStr, userId, null);
+        return resolveId(studyStr, userId, INCLUDE_STUDY_IDS);
     }
 
     Study resolveId(String studyStr, String userId, QueryOptions options) throws CatalogException {
@@ -215,22 +215,9 @@ public class StudyManager extends AbstractManager {
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), project);
 //        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), study);
 
-        if (queryOptions.isEmpty()) {
-            queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
-                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
-                    StudyDBAdaptor.QueryParams.URI.key()
-            ));
-        } else {
-            Set<String> includeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
-            includeList.addAll(Arrays.asList(
-                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
-                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
-                    StudyDBAdaptor.QueryParams.URI.key()));
-            // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
-            queryOptions = new QueryOptions(QueryOptions.INCLUDE, new ArrayList<>(includeList));
+        if (!queryOptions.isEmpty()) {
+            // Ensure at least the ids are included
+            fixQueryOptions(queryOptions, INCLUDE_STUDY_IDS.getAsStringList(QueryOptions.INCLUDE));
         }
 
         OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, queryOptions, userId);
@@ -249,6 +236,30 @@ public class StudyManager extends AbstractManager {
         }
 
         return studyDataResult;
+    }
+
+    private void fixQueryOptions(QueryOptions queryOptions, List<String> includeFieldsList) {
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            Set<String> includeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+            includeList.addAll(Arrays.asList(
+                    StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
+                    StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
+                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.URI.key()));
+            // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
+            queryOptions.put(QueryOptions.INCLUDE, new ArrayList<>(includeList));
+        } else if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+            // We will make sure that the user does not exclude the minimum required fields
+            Set<String> excludeList = new HashSet<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+            for (String field : includeFieldsList) {
+                excludeList.remove(field);
+            }
+            if (!excludeList.isEmpty()) {
+                queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeList));
+            } else {
+                queryOptions.remove(QueryOptions.EXCLUDE);
+            }
+        }
     }
 
     private OpenCGAResult<Study> getStudy(long projectUid, String studyUuid, QueryOptions options) throws CatalogDBException {
@@ -307,6 +318,7 @@ public class StudyManager extends AbstractManager {
             study.setCreationDate(TimeUtils.getTime());
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
+            study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
             study.setAttributes(ParamUtils.defaultObject(study.getAttributes(), HashMap::new));
 
             study.setClinicalAnalyses(ParamUtils.defaultObject(study.getClinicalAnalyses(), ArrayList::new));
@@ -647,7 +659,7 @@ public class StudyManager extends AbstractManager {
     public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Enums.Entity entry, PermissionRule permissionRule,
                                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = resolveId(studyId, userId);
+        Study study = resolveId(studyId, userId, INCLUDE_STUDY_IDS);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)

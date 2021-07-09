@@ -64,7 +64,7 @@ public abstract class OperationManager {
     }
 
     protected final String getStudyFqn(String study, String token) throws CatalogException {
-        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
+        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
     }
 
     public static boolean isVcfFormat(File file) {

@@ -120,13 +120,13 @@ public class CatalogUtils {
                         Collections.singleton(VariantField.STUDIES));
             } else {
                 // Get all studies from user.
-                return catalogManager.getStudyManager().search(new Query(), StudyManager.INCLUDE_STUDY_ID, sessionId).getResults()
+                return catalogManager.getStudyManager().search(new Query(), StudyManager.INCLUDE_STUDY_IDS, sessionId).getResults()
                         .stream()
                         .map(Study::getFqn)
                         .collect(Collectors.toList());
             }
         }
-        return catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_ID, false, sessionId).getResults()
+        return catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_IDS, false, sessionId).getResults()
                 .stream()
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
