@@ -1358,8 +1358,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         if (updateParams != null && updateParams.getFather() != null) {
-            if (StringUtils.isNotEmpty(updateParams.getFather())) {
-                OpenCGAResult<Individual> queryResult = internalGet(studyUid, updateParams.getFather(), INCLUDE_INDIVIDUAL_IDS, userId);
+            if (StringUtils.isNotEmpty(updateParams.getFather().getId()) || StringUtils.isNotEmpty(updateParams.getFather().getUuid())) {
+                String fatherId = StringUtils.isNotEmpty(updateParams.getFather().getId())
+                        ? updateParams.getFather().getId() : updateParams.getFather().getUuid();
+                OpenCGAResult<Individual> queryResult = internalGet(studyUid, fatherId, INCLUDE_INDIVIDUAL_IDS, userId);
                 parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), queryResult.first().getUid());
             } else {
                 parameters.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), -1L);
@@ -1367,8 +1369,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             parameters.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
         }
         if (updateParams != null && updateParams.getMother() != null) {
-            if (StringUtils.isNotEmpty(updateParams.getMother())) {
-                OpenCGAResult<Individual> queryResult = internalGet(studyUid, updateParams.getMother(), INCLUDE_INDIVIDUAL_IDS, userId);
+            if (StringUtils.isNotEmpty(updateParams.getMother().getId()) || StringUtils.isNotEmpty(updateParams.getMother().getUuid())) {
+                String motherId = StringUtils.isNotEmpty(updateParams.getMother().getId())
+                        ? updateParams.getMother().getId() : updateParams.getMother().getUuid();
+                OpenCGAResult<Individual> queryResult = internalGet(studyUid, motherId, INCLUDE_INDIVIDUAL_IDS, userId);
                 parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), queryResult.first().getUid());
             } else {
                 parameters.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), -1L);

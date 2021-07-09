@@ -54,6 +54,9 @@ public class StudyCommandOptions {
     public AclsCommandOptions aclsCommandOptions;
     public AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
+    public TemplateUploadCommandOptions templateUploadCommandOptions;
+    public TemplateRunCommandOptions templateRunCommandOptions;
+
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
@@ -86,6 +89,9 @@ public class StudyCommandOptions {
 
         this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsUpdateCommandOptions = new AclsUpdateCommandOptions();
+
+        this.templateUploadCommandOptions = new TemplateUploadCommandOptions();
+        this.templateRunCommandOptions = new TemplateRunCommandOptions();
     }
 
     public abstract class BaseStudyCommand extends StudyOption {
@@ -327,5 +333,25 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--template"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)
         public String template;
+    }
+
+    @Parameters(commandNames = {"template-upload"}, commandDescription = "Upload template zip file")
+    public class TemplateUploadCommandOptions extends BaseStudyCommand {
+        @Parameter(names = {"-i","--input"}, description = "ZIP file containing the template files or folder", required = true, arity = 1)
+        public String inputFile;
+    }
+
+    @Parameters(commandNames = {TemplateRunCommandOptions.TEMPLATE_RUN_COMMAND}, commandDescription = "Execute template")
+    public class TemplateRunCommandOptions extends BaseStudyCommand {
+        public static final String TEMPLATE_RUN_COMMAND = "template-run";
+
+        @Parameter(names = {"--id"}, description = "Template id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--overwrite"}, description = "Overwrite study metadata.", arity = 0)
+        public boolean overwrite;
+
+        @Parameter(names = {"--resume"}, description = "Resume study metadata ingestion.", arity = 0)
+        public boolean resume;
     }
 }

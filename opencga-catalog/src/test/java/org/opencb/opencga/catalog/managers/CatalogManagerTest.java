@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.project.Project;
@@ -1303,7 +1304,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<Cohort> result = catalogManager.getCohortManager().update(studyFqn, myCohort.getId(),
                 new CohortUpdateParams()
                         .setId("myModifiedCohort")
-                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId3.getId(), sampleId4.getId(), sampleId5.getId())),
+                        .setSamples(Arrays.asList(
+                                new SampleReferenceParam().setId(sampleId1.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId4.getId()),
+                                new SampleReferenceParam().setId(sampleId5.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
 
@@ -1336,7 +1342,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 ParamUtils.BasicUpdateAction.ADD.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
-                        .setSamples(Arrays.asList(sampleId1.getId(), sampleId3.getId(), sampleId1.getId(), sampleId3.getId())),
+                        .setSamples(Arrays.asList(
+                                new SampleReferenceParam().setId(sampleId1.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId1.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
         myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
@@ -1347,7 +1357,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 ParamUtils.BasicUpdateAction.REMOVE.name()));
         result = catalogManager.getCohortManager().update(studyFqn, myModifiedCohort.getId(),
                 new CohortUpdateParams()
-                        .setSamples(Arrays.asList(sampleId3.getId(), sampleId3.getId())),
+                        .setSamples(Arrays.asList(
+                                new SampleReferenceParam().setId(sampleId3.getId()),
+                                new SampleReferenceParam().setId(sampleId3.getId()))),
                 options, token);
         assertEquals(1, result.getNumUpdated());
         myModifiedCohort = catalogManager.getCohortManager().get(studyFqn, "myModifiedCohort", QueryOptions.empty(), token).first();
@@ -1976,7 +1988,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), token);
 
         DataResult<Individual> individualDataResult = individualManager.update(studyFqn, "child",
-                new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+                new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
+                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
         assertEquals(1, individualDataResult.getNumUpdated());
 
         Individual individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
@@ -1996,7 +2009,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), token);
 
         DataResult<Individual> individualDataResult = individualManager.update(studyFqn, "child",
-                new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+                new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
+                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
         assertEquals(1, individualDataResult.getNumUpdated());
 
         Individual individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
@@ -2007,7 +2021,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("father", individual.getFather().getId());
         assertEquals(1, individual.getFather().getVersion());
 
-        individualManager.update(studyFqn, "child", new IndividualUpdateParams().setFather("").setMother(""), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "child", new IndividualUpdateParams().setFather(new IndividualReferenceParam("", ""))
+                .setMother(new IndividualReferenceParam("", "")), QueryOptions.empty(), token);
         individual = individualManager.get(studyFqn, "child", QueryOptions.empty(), token).first();
 
         assertNull(individual.getMother().getId());
@@ -2023,9 +2038,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
         individualManager.create(studyFqn, new Individual().setId("father").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(), token);
         individualManager.create(studyFqn, new Individual().setId("mother").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(), token);
 
-        individualManager.update(studyFqn, "proband", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
-        individualManager.update(studyFqn, "brother", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
-        individualManager.update(studyFqn, "sister", new IndividualUpdateParams().setFather("father").setMother("mother"), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "proband", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
+                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "brother", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
+                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
+        individualManager.update(studyFqn, "sister", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
+                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
 
         OpenCGAResult<Individual> relatives = catalogManager.getIndividualManager().relatives(studyFqn, "proband", 2,
                 new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()), token);

@@ -20,12 +20,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.models.file.FileContent;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.CopyOption;
 import java.nio.file.FileVisitor;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
@@ -71,6 +73,44 @@ public abstract class IOManager {
     public abstract FileContent head(Path file, long offset, int lines) throws CatalogIOException;
 
     public abstract FileContent tail(Path file, int lines) throws CatalogIOException;
+
+    /**
+     * Decompress zip or tar.gz file.
+     * @param file     File to be decompressed.
+     * @param destDir  Directory where the file will be decompressed.
+     * @throws CatalogIOException if there is any issue decompressing the file.
+     */
+    public void decompress(Path file, Path destDir) throws CatalogIOException {
+        if (!file.toFile().isFile()) {
+            throw new CatalogIOException("File '" + file + "' is not a file");
+        }
+        if (!file.toString().endsWith(".zip") && !file.toString().endsWith(".tar.gz")) {
+            throw new CatalogIOException("Unexpected extension. Can only decompress zip or tar.gz files");
+        }
+        if (!destDir.toFile().isDirectory()) {
+            throw new CatalogIOException("Cannot find directory '" + destDir + "'");
+        }
+        if (!destDir.toFile().canWrite()) {
+            throw new CatalogIOException("Cannot write in directory '" + destDir + "'");
+        }
+        if (file.toString().endsWith(".zip")) {
+            unzip(file.toFile(), destDir.toFile());
+        } else if (file.toString().endsWith(".tar.gz")) {
+            decompressTarBall(file, destDir);
+        } else {
+            throw new IllegalStateException("Unexpected situation");
+        }
+    }
+
+    public abstract void zip(List<String> file, File destDir) throws CatalogIOException;
+
+    public void zip(String file, File destDir) throws CatalogIOException {
+        zip(Collections.singletonList(file), destDir);
+    };
+
+    public abstract void unzip(File file, File destDir) throws CatalogIOException;
+
+    protected abstract void decompressTarBall(Path file, Path destDir) throws CatalogIOException;
 
     /**
      * Grep the content of a file.

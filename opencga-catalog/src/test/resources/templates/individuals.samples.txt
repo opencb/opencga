@@ -1,0 +1,7 @@
+#individualId	id
+child	sample1
+child	sample2
+sister	sample3
+sister	sample4
+father	sample5
+mother	sample6

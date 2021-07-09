@@ -35,6 +35,7 @@ import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -159,8 +160,9 @@ public class CatalogStorageMetadataSynchronizerTest {
             indexedFiles.add(file.getName());
             List<String> samples = catalogManager.getCohortManager().getSamples(studyId, cohortId, sessionId).getResults().stream().map(Sample::getId).collect(Collectors.toList());
             samples.addAll(file.getSampleIds());
+            List<SampleReferenceParam> sampleReferenceParams = samples.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList());
             catalogManager.getCohortManager().update(studyId, cohortId,
-                    new CohortUpdateParams().setSamples(samples), true, null, sessionId);
+                    new CohortUpdateParams().setSamples(sampleReferenceParams), true, null, sessionId);
         }
         return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
     }
@@ -207,7 +209,8 @@ public class CatalogStorageMetadataSynchronizerTest {
         String fileId = files.get(1).getId();
         catalogManager.getFileManager().update(studyId, fileId, new FileUpdateParams().setSampleIds(Collections.emptyList()), new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "SET")), sessionId);
 
-        catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams().setSamples(Collections.singletonList("NA12878")), true, new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "REMOVE")), sessionId);
+        catalogManager.getCohortManager().update(studyId, "ALL", new CohortUpdateParams()
+                .setSamples(Collections.singletonList(new SampleReferenceParam().setId("NA12878"))), true, new QueryOptions(Constants.ACTIONS, Collections.singletonMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), "REMOVE")), sessionId);
         catalogManager.getSampleManager().delete(studyId, Collections.singletonList("NA12878"), new QueryOptions(), sessionId);
 
         assertEquals(0, catalogManager.getFileManager().get(studyId, fileId, new QueryOptions(), sessionId).first().getSampleIds().size());
