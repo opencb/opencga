@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant;
+package org.opencb.opencga.analysis.variant.manager;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.clinical.interpretation.CancerPanel;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -38,6 +39,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -84,6 +86,7 @@ public class VariantCatalogQueryUtilsTest {
     private static File file3;
     private static File file4;
     private static File file5;
+    private static Panel myPanel;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -131,16 +134,25 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
 
-        org.opencb.opencga.core.models.panel.Panel panel = new org.opencb.opencga.core.models.panel.Panel("MyPanel", "MyPanel", 1);
-        panel.setGenes(
+        myPanel = new Panel("MyPanel", "MyPanel", 1);
+        myPanel.setGenes(
                 Arrays.asList(
-                        new GenePanel().setName("BRCA2"),
-                        new GenePanel().setName("CADM1"),
-                        new GenePanel().setName("CTBP2P1"),
-                        new GenePanel().setName("ADSL")
+                        (GenePanel) new GenePanel()
+                                .setName("BRCA2")
+                                .setCancer(new CancerPanel().setRole(ClinicalProperty.RoleInCancer.TUMOR_SUPPRESSOR_GENE)),
+                        (GenePanel) new GenePanel()
+                                .setName("CADM1")
+                                .setModeOfInheritance(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_RECESSIVE)
+                                .setCancer(new CancerPanel().setRole(ClinicalProperty.RoleInCancer.ONCOGENE)),
+                        (GenePanel) new GenePanel()
+                                .setName("CTBP2P1")
+                                .setModeOfInheritance(ClinicalProperty.ModeOfInheritance.AUTOSOMAL_DOMINANT)
+                                .setConfidence(ClinicalProperty.Confidence.HIGH),
+                        new GenePanel()
+                                .setName("ADSL")
                 ));
 
-        catalog.getPanelManager().create("s1", panel, null, sessionId);
+        catalog.getPanelManager().create("s1", myPanel, null, sessionId);
 
 
         queryUtils = new VariantCatalogQueryUtils(catalog);
@@ -478,6 +490,24 @@ public class VariantCatalogQueryUtilsTest {
             }
         }
         assertEquals(new HashSet<>(VariantCatalogQueryUtils.VARIANT_CATALOG_QUERY_PARAMS), params);
+    }
+
+    @Test
+    public void testPanels() {
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL")),
+                VariantCatalogQueryUtils.getGenesFromPanel(new Query(), myPanel));
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+                VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMOR_SUPPRESSOR_GENE"), myPanel));
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+                VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMORSUPPRESSORGENE"), myPanel));
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+                VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumor_suppressor_gene"), myPanel));
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+                VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumorSuppressorGene"), myPanel));
+        assertEquals(new HashSet<>(Arrays.asList("CADM1", "CTBP2P1", "ADSL")),
+                VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "oncogene"), myPanel));
+        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "ADSL")),
+                VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_MODE_OF_INHERITANCE.key(), "AUTOSOMAL_RECESSIVE"), myPanel));
     }
 
     protected String parseValue(VariantQueryParam param, String value) throws CatalogException {
