@@ -43,17 +43,16 @@ import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
-import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200MigrationToolParams;
 
 import java.io.*;
 import java.nio.file.Paths;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
@@ -407,21 +406,21 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 fetchUpdateVersionVariables(metaCollection);
 
                 if (needsUpdate(1)) {
-                    StudyUpdateParams updateParams = new StudyUpdateParams()
-                            .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null));
-
-                    // Create default study configuration
-                    for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
-                        String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
-                        if (project.getStudies() != null) {
-                            for (Study study : project.getStudies()) {
-                                if (study.getInternal() == null || study.getInternal().getConfiguration() == null) {
-                                    logger.info("Updating study configuration from study '{}'", study.getFqn());
-                                    catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
-                                }
-                            }
-                        }
-                    }
+//                    StudyUpdateParams updateParams = new StudyUpdateParams()
+//                            .setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null));
+//
+//                    // Create default study configuration
+//                    for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), adminToken).getResults()) {
+//                        String token = catalogManager.getUserManager().getNonExpiringToken(project.getFqn().split("@")[0], adminToken);
+//                        if (project.getStudies() != null) {
+//                            for (Study study : project.getStudies()) {
+//                                if (study.getInternal() == null || study.getInternal().getConfiguration() == null) {
+//                                    logger.info("Updating study configuration from study '{}'", study.getFqn());
+//                                    catalogManager.getStudyManager().update(study.getFqn(), updateParams, QueryOptions.empty(), token);
+//                                }
+//                            }
+//                        }
+//                    }
                     updateLastUpdate(metaCollection, 1);
                 }
 

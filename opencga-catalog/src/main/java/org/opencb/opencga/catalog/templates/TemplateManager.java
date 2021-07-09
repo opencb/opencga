@@ -20,12 +20,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.templates.config.TemplateFile;
-import org.opencb.opencga.catalog.templates.config.TemplateManifest;
-import org.opencb.opencga.catalog.templates.config.TemplateStudy;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.templates.config.TemplateFile;
+import org.opencb.opencga.catalog.templates.config.TemplateManifest;
+import org.opencb.opencga.catalog.templates.config.TemplateStudy;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
@@ -179,8 +179,7 @@ public class TemplateManager {
         if (overwrite) {
             // Updating values
             StudyUpdateParams studyUpdateParams = new StudyUpdateParams(tmplStudy.getName(), tmplStudy.getAlias(),
-                    tmplStudy.getDescription(), tmplStudy.getNotification(), tmplStudy.getConfiguration(), tmplStudy.getAttributes(),
-                    tmplStudy.getStatus());
+                    tmplStudy.getDescription(), tmplStudy.getNotification(), tmplStudy.getAttributes(), tmplStudy.getStatus());
 
             logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
             try {
