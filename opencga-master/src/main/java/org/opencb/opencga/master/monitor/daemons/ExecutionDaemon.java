@@ -1125,7 +1125,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             Path path = studyPath.resolve("OPENCGA").resolve("TEMPLATE").resolve(templateId);
 
             FileUtils.copyDirectory(outDirPath.toFile(), path.resolve(outDirPath.getFileName()).toFile());
-            FileUtils.copyFile(outDirPath.resolve("template.result.json").toFile(), path.resolve("template.result.json").toFile());
+            FileUtils.copyFile(outDirPath.resolve(TemplateRunner.ID + ".result.json").toFile(),
+                    path.resolve(TemplateRunner.ID + ".result.json").toFile());
         } catch (CatalogException | IOException e) {
             logger.error("Could not store job results in template folder", e);
         }

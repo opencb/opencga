@@ -332,7 +332,7 @@ public class MigrationManager {
                         new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Migration.class.getName()))
                 )
                 .addUrls(getUrls())
-                .filterInputsBy(input -> input != null && input.endsWith(".class"))
+                .filterInputsBy(input -> input != null && input.endsWith(".class") && !input.endsWith("StorageMigrationTool.class"))
         );
 
         Set<Class<? extends MigrationTool>> migrations = reflections.getSubTypesOf(MigrationTool.class);
