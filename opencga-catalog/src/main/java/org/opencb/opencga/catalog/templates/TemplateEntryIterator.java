@@ -304,7 +304,7 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
                 split = value.split(",");
                 return Arrays.stream(split).map(Long::parseLong).collect(Collectors.toList());
             case BOOLEAN:
-                return Boolean.getBoolean(value);
+                return Boolean.parseBoolean(value);
             case BOOLEAN_ARRAY:
                 split = value.split(",");
                 return Arrays.stream(split).map(Boolean::getBoolean).collect(Collectors.toList());

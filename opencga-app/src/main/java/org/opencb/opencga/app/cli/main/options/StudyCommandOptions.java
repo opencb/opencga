@@ -335,7 +335,7 @@ public class StudyCommandOptions {
         public String template;
     }
 
-    @Parameters(commandNames = {"template-upload"}, commandDescription = "Upload template zip file")
+    @Parameters(commandNames = {"template-upload"}, commandDescription = "Upload template")
     public class TemplateUploadCommandOptions extends BaseStudyCommand {
         @Parameter(names = {"-i","--input"}, description = "ZIP file containing the template files or folder", required = true, arity = 1)
         public String inputFile;

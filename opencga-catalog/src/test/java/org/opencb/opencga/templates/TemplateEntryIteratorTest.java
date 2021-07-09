@@ -3,6 +3,7 @@ package org.opencb.opencga.templates;
 import org.junit.Test;
 import org.opencb.opencga.catalog.templates.TemplateEntryIterator;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -14,7 +15,7 @@ import static org.junit.Assert.assertNotNull;
 public class TemplateEntryIteratorTest {
 
     @Test
-    public void testIterator() throws URISyntaxException {
+    public void testIndividualIterator() throws URISyntaxException {
         Path path = Paths.get(this.getClass().getClassLoader().getResource("templates").toURI());
         try(TemplateEntryIterator<IndividualUpdateParams> iterator =
                 new TemplateEntryIterator<>(path, "individuals", IndividualUpdateParams.class)) {
@@ -22,6 +23,19 @@ public class TemplateEntryIteratorTest {
                 IndividualUpdateParams next = iterator.next();
                 assertNotNull(next.getId());
                 assertFalse(next.getSamples().isEmpty());
+            }
+        }
+    }
+
+    @Test
+    public void testSampleIterator() throws URISyntaxException {
+        Path path = Paths.get(this.getClass().getClassLoader().getResource("templates").toURI());
+        try(TemplateEntryIterator<SampleUpdateParams> iterator =
+                    new TemplateEntryIterator<>(path, "samples", SampleUpdateParams.class)) {
+            while (iterator.hasNext()) {
+                SampleUpdateParams next = iterator.next();
+                assertNotNull(next.getId());
+//                assertFalse(next.getSamples().isEmpty());
             }
         }
     }
