@@ -52,6 +52,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Family family;
 
     private List<Panel> panels;
+    private boolean panelLocked;
 
     private boolean locked;
 
@@ -87,7 +88,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, List<Panel> panels, boolean locked, Interpretation interpretation,
+                            Family family, List<Panel> panels, boolean panelLocked, boolean locked, Interpretation interpretation,
                             List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent, ClinicalAnalyst analyst,
                             ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
                             String dueDate, int release, List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl,
@@ -100,6 +101,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.proband = proband;
         this.family = family;
         this.panels = panels;
+        this.panelLocked = panelLocked;
         this.locked = locked;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
@@ -131,6 +133,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
+        sb.append(", panelLocked=").append(panelLocked);
         sb.append(", locked=").append(locked);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
@@ -233,6 +236,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setPanels(List<Panel> panels) {
         this.panels = panels;
+        return this;
+    }
+
+    public boolean isPanelLocked() {
+        return panelLocked;
+    }
+
+    public ClinicalAnalysis setPanelLocked(boolean panelLocked) {
+        this.panelLocked = panelLocked;
         return this;
     }
 
