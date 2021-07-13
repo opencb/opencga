@@ -1213,7 +1213,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     private void checkInterpretationPermissions(String study, long interpretationId, String token)
             throws CatalogException, ClinicalVariantException {
         // Get user ID from token and study numeric ID
-        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
+        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(), interpretationId);
@@ -1232,7 +1232,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (query != null && query.containsKey(ClinicalVariantEngine.QueryParams.STUDY.key())) {
             String study = query.getString(ClinicalVariantEngine.QueryParams.STUDY.key());
             List<String> studies = Arrays.asList(study.split(","));
-            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_ID, false, userId)
+            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_IDS, false, userId)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

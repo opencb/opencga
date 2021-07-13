@@ -422,7 +422,7 @@ public class FileManager extends AnnotationSetManager<File> {
     public OpenCGAResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, Integer release, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyDBAdaptor.get(file.getStudyUid(), StudyManager.INCLUDE_STUDY_ID).first();
+        Study study = studyDBAdaptor.get(file.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
 
         ObjectMap auditParams = new ObjectMap()
                 .append("file", file)

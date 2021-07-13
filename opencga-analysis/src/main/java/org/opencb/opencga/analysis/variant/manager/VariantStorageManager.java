@@ -1354,7 +1354,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private void checkStudyPermissions(String study, String userId, String token) throws CatalogException {
-        long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getUid();
+        long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
         CatalogAuthorizationException exception = null;
 
         // Check VIEW_AGGREGATED_VARIANTS
@@ -1518,7 +1518,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private String getStudyFqn(String study, String token) throws CatalogException {
-        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
+        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
     }
 
     private String getProjectFqn(String projectStr, String study, String token) throws CatalogException {
@@ -1538,7 +1538,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         if (CollectionUtils.isNotEmpty(studies)) {
             // Ensure all studies are valid. Convert to FQN
             studies = catalogManager.getStudyManager()
-                    .get(studies, StudyManager.INCLUDE_STUDY_ID, false, token)
+                    .get(studies, StudyManager.INCLUDE_STUDY_IDS, false, token)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

@@ -34,6 +34,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -151,9 +153,7 @@ public class StudyManagerTest extends AbstractManagerTest {
 
         ClinicalAnalysisStudyConfiguration clinicalConfiguration = new ClinicalAnalysisStudyConfiguration(Collections.emptyMap(), null,
                 Collections.emptyList(), Collections.emptyMap(), null);
-        StudyUpdateParams updateParams = new StudyUpdateParams()
-                .setConfiguration(new StudyConfiguration(clinicalConfiguration, null));
-        catalogManager.getStudyManager().update("newStudy", updateParams, QueryOptions.empty(), token);
+        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", clinicalConfiguration, token);
 
         study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
         assertNotNull(study.getInternal().getConfiguration());
@@ -161,6 +161,17 @@ public class StudyManagerTest extends AbstractManagerTest {
         assertTrue(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
         assertTrue(study.getInternal().getConfiguration().getClinical().getFlags().isEmpty());
         assertTrue(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
+
+        clinicalConfiguration = ClinicalAnalysisStudyConfiguration.defaultConfiguration();
+        catalogManager.getClinicalAnalysisManager().configureStudy("newStudy", clinicalConfiguration, token);
+
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+        assertNotNull(study.getInternal().getConfiguration());
+        assertNotNull(study.getInternal().getConfiguration().getClinical());
+        assertFalse(study.getInternal().getConfiguration().getClinical().getPriorities().isEmpty());
+        assertFalse(study.getInternal().getConfiguration().getClinical().getFlags().isEmpty());
+        assertFalse(study.getInternal().getConfiguration().getClinical().getStatus().isEmpty());
+
     }
 
 
@@ -190,5 +201,30 @@ public class StudyManagerTest extends AbstractManagerTest {
                 + study.getInternal().getConfiguration().getVariantEngine());
         assertEquals(sampleIndexConfiguration, study.getInternal().getConfiguration().getVariantEngine().getSampleIndex());
 
+    }
+
+    @Test
+    public void uploadTemplates() throws IOException, CatalogException {
+        InputStream inputStream = getClass().getResource("/template.zip").openStream();
+        OpenCGAResult<String> result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token);
+        assertFalse(StringUtils.isEmpty(result.first()));
+        System.out.println(result.first());
+
+        inputStream = getClass().getResource("/template.zip").openStream();
+        result = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token);
+        System.out.println(result.first());
+    }
+
+    @Test
+    public void deleteTemplates() throws IOException, CatalogException {
+        InputStream inputStream = getClass().getResource("/template.zip").openStream();
+        String templateId = catalogManager.getStudyManager().uploadTemplate(studyFqn, "template.zip", inputStream, token).first();
+
+        Boolean deleted = catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, token).first();
+        assertTrue(deleted);
+
+        thrown.expectMessage("doesn't exist");
+        thrown.expect(CatalogException.class);
+        catalogManager.getStudyManager().deleteTemplate(studyFqn, templateId, token);
     }
 }

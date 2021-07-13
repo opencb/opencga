@@ -37,7 +37,7 @@ import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -77,8 +77,11 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         File file = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         for (int i = 0; i < coh.length; i++) {
-            List<String> sampleIds = file.getSampleIds().subList(file.getSampleIds().size() / coh.length * i,
-                    file.getSampleIds().size() / coh.length * (i + 1));
+            List<SampleReferenceParam> sampleIds = file.getSampleIds().subList(file.getSampleIds().size() / coh.length * i,
+                    file.getSampleIds().size() / coh.length * (i + 1))
+                    .stream()
+                    .map(s -> new SampleReferenceParam().setId(s))
+                    .collect(Collectors.toList());
             Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh" + i,
                     Enums.CohortType.CONTROL_SET, "", sampleIds, null, null, null), null, null, null, sessionId).first();
             coh[i] = cohort.getId();
@@ -255,8 +258,8 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                 new CohortUpdateParams().setDescription("NewDescription"), new QueryOptions(), sessionId);
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getInternal().getStatus().getName());
 
-        List<String> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
-                .map(Sample::getId)
+        List<SampleReferenceParam> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
+                .map(s -> new SampleReferenceParam().setId(s.getId()))
                 .skip(10).limit(100)
                 .collect(Collectors.toList());
         catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setSamples(newCohort),

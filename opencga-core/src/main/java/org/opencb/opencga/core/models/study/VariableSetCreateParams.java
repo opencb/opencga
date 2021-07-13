@@ -16,8 +16,13 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class VariableSetCreateParams {
 
@@ -46,6 +51,13 @@ public class VariableSetCreateParams {
     public static VariableSetCreateParams of(VariableSet variableSet) {
         return new VariableSetCreateParams(variableSet.getId(), variableSet.getName(), variableSet.isUnique(), variableSet.isConfidential(),
                 variableSet.getDescription(), variableSet.getEntities(), new ArrayList<>(variableSet.getVariables()));
+    }
+
+    public VariableSet toVariableSet() {
+        Set<Variable> variableSet = variables != null
+                ? new HashSet<>(variables)
+                : new HashSet<>();
+        return new VariableSet(id, name, unique, confidential, false, description, variableSet, entities, 1, new ObjectMap());
     }
 
     @Override

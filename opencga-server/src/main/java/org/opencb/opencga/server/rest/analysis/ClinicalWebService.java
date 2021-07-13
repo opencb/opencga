@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
@@ -45,16 +46,15 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
@@ -121,6 +121,15 @@ public class ClinicalWebService extends AnalysisWebService {
 //        catalogInterpretationManager = catalogManager.getInterpretationManager();
 //        clinicalManager = catalogManager.getClinicalAnalysisManager();
 //    }
+
+    @POST
+    @Path("/clinical/configure")
+    @ApiOperation(value = "Update Clinical Analysis configuration.", response = ObjectMap.class)
+    public Response clinicalConfigure(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Configuration params to update") ClinicalAnalysisStudyConfiguration params) {
+        return run(() -> clinicalManager.configureStudy(study, params, token));
+    }
 
     @POST
     @Path("/create")

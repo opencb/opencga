@@ -127,12 +127,20 @@
                 <filtering>true</filtering>
                 <excludes>
                     <exclude>**/biofiles/</exclude>
+                    <exclude>template.zip</exclude>
                 </excludes>
             </testResource>
             <testResource>
                 <directory>src/test/resources/biofiles</directory>
                 <targetPath>biofiles/</targetPath>
                 <filtering>false</filtering>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>template.zip</include>
+                </includes>
             </testResource>
         </testResources>
         <plugins>

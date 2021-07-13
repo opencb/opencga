@@ -1223,7 +1223,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_ID, false, sessionId)
+                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_IDS, false, sessionId)
                         .getResults();
                 return studies.stream().map(Study::getFqn).collect(Collectors.toList());
             } else {

@@ -25,8 +25,6 @@ import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.client.template.TemplateManager;
-import org.opencb.opencga.client.template.config.TemplateConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.*;
@@ -34,11 +32,8 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,9 +80,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "logout":
                 logout();
-                break;
-            case "template":
-                loadTemplate();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -225,24 +217,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
         PasswordChangeParams changeParams = new PasswordChangeParams(c.user, c.password, c.npassword);
         return openCGAClient.getUserClient().password(changeParams);
-    }
-
-    private void loadTemplate() throws IOException, ClientException {
-        UserCommandOptions.TemplateCommandOptions options = usersCommandOptions.templateCommandOptions;
-        if (cliSession == null) {
-            throw new ClientException("Please, login first");
-        }
-        TemplateConfiguration template = TemplateConfiguration.load(Paths.get(options.file));
-        TemplateManager templateManager = new TemplateManager(clientConfiguration, options.resume, cliSession.getToken());
-        Set<String> studies = null;
-        if (StringUtils.isNotEmpty(options.study)) {
-            studies = Arrays.stream(options.study.split(",")).collect(Collectors.toSet());
-        }
-        if (options.validate) {
-            templateManager.validate(template, studies);
-        } else {
-            templateManager.execute(template, studies);
-        }
     }
 
 }

@@ -102,7 +102,7 @@ public abstract class OperationTool extends OpenCgaTool {
     }
 
     protected String getStudyFqn(String study) throws CatalogException {
-        return getCatalogManager().getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, getToken()).first().getFqn();
+        return getCatalogManager().getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, getToken()).first().getFqn();
     }
 
     private static boolean isVcfFormat(File.Format format) {
