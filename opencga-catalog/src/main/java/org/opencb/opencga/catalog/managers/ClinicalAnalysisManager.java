@@ -1245,6 +1245,31 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateFiles(study, clinicalAnalysis, userId);
         }
 
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) || updateParams.getPanelLocked() != null) {
+            // Check the Clinical Analysis have no interpretations
+            Query query = new Query()
+                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId());
+            OpenCGAResult<Long> count = interpretationDBAdaptor.count(query);
+            if (count.getNumMatches() > 0) {
+                throw new CatalogException("Cannot update ClinicalAnalysis '" + clinicalAnalysis.getId()
+                        + "'. Updating 'panels' or 'panelLocked' fields is forbidden when the Clinical Analysis contains Interpretations");
+            }
+
+            if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
+                // Validate and get panels
+                List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
+                query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
+                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                        panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+                if (panelResult.getNumResults() < panelIds.size()) {
+                    throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
+                }
+
+                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+            }
+        }
+
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
         }
