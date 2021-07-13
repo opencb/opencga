@@ -293,7 +293,7 @@ public class MigrationManager {
         List<Class<? extends MigrationTool>> migrations = new ArrayList<>(availableMigrations);
         migrations.sort(this::compareTo);
 
-        // 2.2. Find position of first migration with version "version"
+        // 2.2. Find position of first migration with version >= "version"
         int pos = -1;
         for (int i = 0; i < migrations.size(); i++) {
             Class<? extends MigrationTool> migration = migrations.get(i);
@@ -302,18 +302,18 @@ public class MigrationManager {
                 throw new MigrationException("Class " + migration + " does not have the required java annotation @"
                         + Migration.class.getSimpleName());
             }
-            if (annotation.version().equalsIgnoreCase(version)) {
+
+            if (compareVersion(annotation.version(), version) >= 0) {
                 pos = i;
                 break;
             }
         }
-        if (pos == -1) {
-            throw new MigrationException("Could not find migration for version '" + version + "'");
-        } else if (pos == 0) {
+        if (pos == 0) {
             return Collections.emptyList();
+        } else if (pos > 0) {
+            // Exclude newer migrations
+            migrations = migrations.subList(0, pos);
         }
-        // Exclude newer migrations
-        migrations = migrations.subList(0, pos);
 
         // Exclude successfully executed migrations
         filterOutExecutedMigrations(migrations);
@@ -388,8 +388,25 @@ public class MigrationManager {
         Migration m1Annotation = getMigrationAnnotation(m1);
         Migration m2Annotation = getMigrationAnnotation(m2);
 
-        String[] m1VersionSplit = m1Annotation.version().split("\\.");
-        String[] m2VersionSplit = m2Annotation.version().split("\\.");
+        int compareValue = compareVersion(m1Annotation.version(), m2Annotation.version());
+        if (compareValue == 1 || compareValue == -1) {
+            return compareValue;
+        }
+
+        // Rank
+        if (m1Annotation.rank() > m2Annotation.rank()) {
+            return 1;
+        } else if (m1Annotation.rank() < m2Annotation.rank()) {
+            return -1;
+        }
+
+        throw new IllegalStateException("Found migration '" + m1Annotation.id() + "' and '" + m2Annotation.id() + "' with same rank "
+                + m1Annotation.rank() + " for same version " + m1Annotation.version());
+    }
+
+    private int compareVersion(String version1, String version2) {
+        String[] m1VersionSplit = version1.toUpperCase().split("\\.");
+        String[] m2VersionSplit = version2.toUpperCase().split("\\.");
 
         // 1. Check version
         // Check first version number
@@ -425,17 +442,8 @@ public class MigrationManager {
             }
         }
 
-        // Rank
-        if (m1Annotation.rank() > m2Annotation.rank()) {
-            return 1;
-        } else if (m1Annotation.rank() < m2Annotation.rank()) {
-            return -1;
-        }
-
-        throw new IllegalStateException("Found migration '" + m1Annotation.id() + "' and '" + m2Annotation.id() + "' with same rank "
-                + m1Annotation.rank() + " for same version " + m1Annotation.version());
+        return 0;
     }
-
 
     private List<Class<? extends MigrationTool>> filterRunnableMigrations(String version, Set<Migration.MigrationDomain> domainFilter,
                                                                           Set<Migration.MigrationLanguage> languageFilter,
@@ -454,7 +462,7 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : allMigrations) {
             Migration annotation = getMigrationAnnotation(migration);
 
-            if (StringUtils.isNotEmpty(version) && !annotation.version().equals(version)) {
+            if (StringUtils.isNotEmpty(version) && !annotation.version().equalsIgnoreCase(version)) {
                 continue;
             }
             if (!domainFilter.isEmpty() && !domainFilter.contains(annotation.domain())) {
