@@ -42,6 +42,8 @@ public class ClinicalAnalysisUpdateParams {
     private List<FileReferenceParam> files;
 
     private List<PanelReferenceParam> panels;
+    private Boolean panelLock;
+
     private ProbandParam proband;
     private FamilyParam family;
 
@@ -64,7 +66,7 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        List<PanelReferenceParam> panels, Boolean locked, ClinicalAnalystParam analyst,
+                                        List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked, ClinicalAnalystParam analyst,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, ClinicalConsentAnnotationParam consent,
                                         String dueDate, List<ClinicalCommentParam> comments, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
@@ -76,6 +78,7 @@ public class ClinicalAnalysisUpdateParams {
         this.proband = proband;
         this.family = family;
         this.panels = panels;
+        this.panelLock = panelLock;
         this.locked = locked;
         this.analyst = analyst;
         this.qualityControl = qualityControl;
@@ -100,6 +103,7 @@ public class ClinicalAnalysisUpdateParams {
                 proband != null ? proband.toIndividual() : null,
                 family != null ? family.toFamily() : null,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
+                panelLock != null ? panelLock : false,
                 locked, null, null,
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
                 analyst != null ? analyst.toClinicalAnalyst() : null,
@@ -119,9 +123,10 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", type=").append(type);
         sb.append(", disorder=").append(disorder);
         sb.append(", files=").append(files);
+        sb.append(", panels=").append(panels);
+        sb.append(", panelLock=").append(panelLock);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
-        sb.append(", panels=").append(panels);
         sb.append(", locked=").append(locked);
         sb.append(", analyst=").append(analyst);
         sb.append(", qualityControl=").append(qualityControl);
@@ -205,6 +210,15 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setPanels(List<PanelReferenceParam> panels) {
         this.panels = panels;
+        return this;
+    }
+
+    public Boolean getPanelLock() {
+        return panelLock;
+    }
+
+    public ClinicalAnalysisUpdateParams setPanelLock(Boolean panelLock) {
+        this.panelLock = panelLock;
         return this;
     }
 
