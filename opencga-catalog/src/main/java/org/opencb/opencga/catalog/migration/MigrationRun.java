@@ -1,6 +1,11 @@
 package org.opencb.opencga.catalog.migration;
 
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobReferenceParam;
+
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 public class MigrationRun {
 
@@ -35,6 +40,11 @@ public class MigrationRun {
     private int patch;
 
     /**
+     * Migration jobs.
+     */
+    private List<JobReferenceParam> jobs = new LinkedList<>();
+
+    /**
      * Migration status.
      */
     private MigrationStatus status;
@@ -45,9 +55,30 @@ public class MigrationRun {
     private String exception;
 
     public enum MigrationStatus {
+        /**
+         * Migration not needed. The migration refers to an older OpenCGA version.
+         */
+        REDUNDANT,
+        /**
+         * Pending of execution.
+         */
+        PENDING,
+        /**
+         * Already executed migration, but there is a newer migration version.
+         */
+        OUTDATED,
+        /**
+         * On hold of background jobs to be finished.
+         */
+        ON_HOLD,
+        /**
+         * Migration executed successfully.
+         */
         DONE,
-        ERROR,
-        REDUNDANT
+        /**
+         * Error executing the migration. Needs to be re-executed.
+         */
+        ERROR
     }
 
     public MigrationRun() {
@@ -139,6 +170,30 @@ public class MigrationRun {
 
     public MigrationRun setPatch(int patch) {
         this.patch = patch;
+        return this;
+    }
+
+    public List<JobReferenceParam> getJobs() {
+        return jobs;
+    }
+
+    public MigrationRun setJobs(List<JobReferenceParam> jobs) {
+        this.jobs = jobs;
+        return this;
+    }
+
+    public void removeJob(Job job) {
+        if (this.jobs == null) {
+            this.jobs = new LinkedList<>();
+        }
+        jobs.removeIf(j -> j.getUuid().equals(job.getUuid()));
+    }
+
+    public MigrationRun addJob(Job job) {
+        if (this.jobs == null) {
+            this.jobs = new LinkedList<>();
+        }
+        this.jobs.add(new JobReferenceParam(job));
         return this;
     }
 

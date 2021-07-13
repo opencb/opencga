@@ -18,6 +18,7 @@ package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.glassfish.jersey.client.ClientProperties;
@@ -45,6 +46,7 @@ import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
+import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -236,6 +238,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(AuxiliarRgaAnalysis.ID, "clinical " + AuxiliarRgaAnalysis.ID + "-run");
 
             put(JulieTool.ID, "variant julie-run");
+
+            put(TemplateRunner.ID, "studies " + TemplateRunner.ID + "-run");
         }};
     }
 
@@ -1100,7 +1104,32 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         job.getInternal().setStatus(updateParams.getInternal().getStatus());
         notifyStatusChange(job);
 
+        // If it is a template, we will store the execution results in the same template folder
+        String toolId = job.getTool().getId();
+        if (toolId.equals(TemplateRunner.ID)) {
+            copyJobResultsInTemplateFolder(job, outDirUri);
+        }
+
         return 1;
+    }
+
+    private void copyJobResultsInTemplateFolder(Job job, Path outDirPath) {
+        try {
+            String templateId = String.valueOf(job.getParams().get("id"));
+
+            // We obtain the basic studyPath where we will upload the file temporarily
+            Study study = catalogManager.getStudyManager().get(job.getStudy().getId(),
+                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), token).first();
+
+            java.nio.file.Path studyPath = Paths.get(study.getUri());
+            Path path = studyPath.resolve("OPENCGA").resolve("TEMPLATE").resolve(templateId);
+
+            FileUtils.copyDirectory(outDirPath.toFile(), path.resolve(outDirPath.getFileName()).toFile());
+            FileUtils.copyFile(outDirPath.resolve(TemplateRunner.ID + ".result.json").toFile(),
+                    path.resolve(TemplateRunner.ID + ".result.json").toFile());
+        } catch (CatalogException | IOException e) {
+            logger.error("Could not store job results in template folder", e);
+        }
     }
 
     private void notifyStatusChange(Job job) {

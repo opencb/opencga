@@ -150,7 +150,9 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
         addParam(query, ANNOT_TRAIT, queryVariantsOptions.trait);
         addParam(query, ANNOT_XREF, queryVariantsOptions.xref);
+        addParam(query, ANNOT_CLINICAL, queryVariantsOptions.clinical);
         addParam(query, ANNOT_CLINICAL_SIGNIFICANCE, queryVariantsOptions.clinicalSignificance);
+        addParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS, queryVariantsOptions.clinicalConfirmedStatus);
 
         addParam(query, STATS_MGF, queryVariantsOptions.mgf);
         addParam(query, STATS_PASS_FREQ, queryVariantsOptions.cohortStatsPass);

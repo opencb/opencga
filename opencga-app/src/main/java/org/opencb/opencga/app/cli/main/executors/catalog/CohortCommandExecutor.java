@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,10 +34,13 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 03/06/16.
@@ -146,8 +150,14 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         CohortCreateParams createParams = new CohortCreateParams()
                 .setId(cohortsCommandOptions.createCommandOptions.name)
                 .setType(cohortsCommandOptions.createCommandOptions.type)
-                .setDescription(cohortsCommandOptions.createCommandOptions.description)
-                .setSamples(cohortsCommandOptions.createCommandOptions.sampleIds);
+                .setDescription(cohortsCommandOptions.createCommandOptions.description);
+        if (CollectionUtils.isNotEmpty(cohortsCommandOptions.createCommandOptions.sampleIds)) {
+            List<SampleReferenceParam> sampleReferenceParamList = cohortsCommandOptions.createCommandOptions.sampleIds
+                    .stream()
+                    .map(s -> new SampleReferenceParam().setId(s))
+                    .collect(Collectors.toList());
+            createParams.setSamples(sampleReferenceParamList);
+        }
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.createCommandOptions.study);
@@ -172,8 +182,15 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
 
         CohortUpdateParams updateParams = new CohortUpdateParams()
                 .setId(cohortsCommandOptions.updateCommandOptions.name)
-                .setDescription(cohortsCommandOptions.updateCommandOptions.description)
-                .setSamples(cohortsCommandOptions.updateCommandOptions.samples);
+                .setDescription(cohortsCommandOptions.updateCommandOptions.description);
+
+        if (CollectionUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.samples)) {
+            List<SampleReferenceParam> sampleReferenceParamList = cohortsCommandOptions.updateCommandOptions.samples
+                    .stream()
+                    .map(s -> new SampleReferenceParam().setId(s))
+                    .collect(Collectors.toList());
+            updateParams.setSamples(sampleReferenceParamList);
+        }
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.updateCommandOptions.study);

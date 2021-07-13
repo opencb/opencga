@@ -52,6 +52,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -69,6 +70,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -230,10 +232,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("options", options)
                 .append("token", token);
         try {
-            if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null) {
+            if (study.getInternal() == null || study.getInternal().getConfiguration() == null
+                    || study.getInternal().getConfiguration().getClinical() == null) {
                 throw new CatalogException("Unexpected error: ClinicalConfiguration is null");
             }
-            ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getConfiguration().getClinical();
+            ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS);
 
@@ -1147,10 +1150,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                                    ClinicalAnalysisUpdateParams updateParams, String userId, QueryOptions options)
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null) {
+        if (study.getInternal() == null || study.getInternal().getConfiguration() == null
+                || study.getInternal().getConfiguration().getClinical() == null) {
             throw new CatalogException("Unexpected error: ClinicalConfiguration is null");
         }
-        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
@@ -1247,7 +1251,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
             // Get panels
-            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), updateParams.getPanels());
+            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(),
+                    updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList()));
             OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
                     panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
             if (panelResult.getNumResults() < updateParams.getPanels().size()) {
@@ -1791,7 +1796,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("action", action)
                 .append("token", token);
 
-        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL);
 
         try {
             auditManager.initAuditBatch(operationUuid);
@@ -1932,4 +1937,39 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
     }
 
+    public OpenCGAResult configureStudy(String studyStr, ClinicalAnalysisStudyConfiguration clinicalConfiguration, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("clinicalConfiguration", clinicalConfiguration)
+                .append("token", token);
+
+        try {
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+            ParamUtils.checkObj(clinicalConfiguration, "clinical configuration");
+
+            // TODO: Check fields
+
+            ObjectMap update = new ObjectMap();
+            try {
+                update.putNested(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
+                        new ObjectMap(getUpdateObjectMapper().writeValueAsString(clinicalConfiguration)), true);
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Study> updateResult = studyDBAdaptor.update(study.getUid(), update, QueryOptions.empty());
+            auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return updateResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
 }

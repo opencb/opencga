@@ -1485,7 +1485,11 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE,
                 (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0], rawValue), null, filters);
 
-        addQueryFilter(query, ANNOT_CLINICAL_SIGNIFICANCE, VariantColumn.CLINICAL_SIGNIFICANCE, filters);
+
+        for (List<String> clinicalCombinations : VariantQueryParser.parseClinicalCombination(query)) {
+            addQueryFilter(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalCombinations),
+                    ANNOT_CLINICAL_SIGNIFICANCE, VariantColumn.CLINICAL, filters);
+        }
     }
 
     private void addSoFlagCombination(Query query, List<String> filters) {

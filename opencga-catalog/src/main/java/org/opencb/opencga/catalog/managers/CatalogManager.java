@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
@@ -37,6 +38,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.slf4j.Logger;
@@ -45,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -109,7 +110,8 @@ public class CatalogManager implements AutoCloseable {
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager,
                 configuration);
-        studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManager, configuration);
+        studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogIOManager, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
@@ -198,8 +200,7 @@ public class CatalogManager implements AutoCloseable {
 
         String token = userManager.login(OPENCGA, password).getToken();
         projectManager.create(ADMIN_PROJECT, ADMIN_PROJECT, "Default project", "", "", "", null, token);
-        studyManager.create(ADMIN_PROJECT, ADMIN_STUDY, ADMIN_STUDY, ADMIN_STUDY, "Default study", null, null, null, Collections.emptyMap(),
-                null, token);
+        studyManager.create(ADMIN_PROJECT, new Study().setId(ADMIN_STUDY).setDescription("Default study"), QueryOptions.empty(), token);
 
         // Skip old available migrations
         migrationManager.skipPendingMigrations(token);

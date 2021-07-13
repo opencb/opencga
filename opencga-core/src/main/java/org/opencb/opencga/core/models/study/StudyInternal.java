@@ -17,17 +17,28 @@
 package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 public class StudyInternal {
 
     private Status status;
-    private StudyVariantEngineConfiguration variantEngineConfiguration;
+    private StudyConfiguration configuration;
 
     public StudyInternal() {
     }
 
-    public StudyInternal(Status status) {
+    public StudyInternal(Status status, StudyConfiguration configuration) {
         this.status = status;
+        this.configuration = configuration;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("StudyInternal{");
+        sb.append("status=").append(status);
+        sb.append(", configuration=").append(configuration);
+        sb.append('}');
+        return sb.toString();
     }
 
     public Status getStatus() {
@@ -39,21 +50,12 @@ public class StudyInternal {
         return this;
     }
 
-    public StudyVariantEngineConfiguration getVariantEngineConfiguration() {
-        return variantEngineConfiguration;
+    public StudyConfiguration getConfiguration() {
+        return configuration;
     }
 
-    public StudyInternal setVariantEngineConfiguration(StudyVariantEngineConfiguration variantEngineConfiguration) {
-        this.variantEngineConfiguration = variantEngineConfiguration;
+    public StudyInternal setConfiguration(StudyConfiguration configuration) {
+        this.configuration = configuration;
         return this;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("StudyInternal{");
-        sb.append("status=").append(status);
-        sb.append(", variantEngineConfiguration=").append(variantEngineConfiguration);
-        sb.append('}');
-        return sb.toString();
     }
 }

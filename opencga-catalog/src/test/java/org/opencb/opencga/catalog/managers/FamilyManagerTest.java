@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.microsoft.azure.management.sql.StorageKeyType;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -46,6 +45,7 @@ import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -153,7 +153,12 @@ public class FamilyManagerTest extends GenericTest {
         // Create a new individual
         catalogManager.getIndividualManager().create(STUDY, new Individual().setId("john"), QueryOptions.empty(), sessionIdUser);
         FamilyUpdateParams updateParams = new FamilyUpdateParams()
-                .setMembers(Arrays.asList("john", "father", "mother", "child1"));
+                .setMembers(Arrays.asList(
+                        new IndividualReferenceParam().setId("john"),
+                        new IndividualReferenceParam().setId("father"),
+                        new IndividualReferenceParam().setId("mother"),
+                        new IndividualReferenceParam().setId("child1")
+                ));
 
         familyManager.update(STUDY, familyDataResult.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
         Family family = familyManager.get(STUDY, familyDataResult.first().getId(), QueryOptions.empty(), sessionIdUser).first();
@@ -936,7 +941,9 @@ public class FamilyManagerTest extends GenericTest {
     public void updateFamilyMissingMember() throws CatalogException {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList("child3", "father"));
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList(
+                new IndividualReferenceParam().setId("child3"),
+                new IndividualReferenceParam().setId("father")));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");

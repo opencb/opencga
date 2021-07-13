@@ -19,19 +19,25 @@ package org.opencb.opencga.core.models.cohort;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class CohortUpdateParams {
 
     private String id;
+    private Enums.CohortType type;
     private String description;
-    private List<String> samples;
+    private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
     private CustomStatusParams status;
@@ -39,9 +45,10 @@ public class CohortUpdateParams {
     public CohortUpdateParams() {
     }
 
-    public CohortUpdateParams(String id, String description, List<String> samples, List<AnnotationSet> annotationSets,
-                              Map<String, Object> attributes, CustomStatusParams status) {
+    public CohortUpdateParams(String id, Enums.CohortType type, String description, List<SampleReferenceParam> samples,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
+        this.type = type;
         this.description = description;
         this.samples = samples;
         this.annotationSets = annotationSets;
@@ -65,10 +72,19 @@ public class CohortUpdateParams {
         return params;
     }
 
+    public Cohort toCohort() {
+        return new Cohort(id, type, TimeUtils.getTime(), description,
+                samples != null ?
+                        samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
+                        : null,
+                samples != null ? samples.size() : 0, annotationSets, 1, status.toCustomStatus(), new CohortInternal(), attributes);
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortUpdateParams{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
@@ -87,6 +103,15 @@ public class CohortUpdateParams {
         return this;
     }
 
+    public Enums.CohortType getType() {
+        return type;
+    }
+
+    public CohortUpdateParams setType(Enums.CohortType type) {
+        this.type = type;
+        return this;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -96,11 +121,11 @@ public class CohortUpdateParams {
         return this;
     }
 
-    public List<String> getSamples() {
+    public List<SampleReferenceParam> getSamples() {
         return samples;
     }
 
-    public CohortUpdateParams setSamples(List<String> samples) {
+    public CohortUpdateParams setSamples(List<SampleReferenceParam> samples) {
         this.samples = samples;
         return this;
     }

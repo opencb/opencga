@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
@@ -45,16 +46,15 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.analysis.knockout.*;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.SAVED_FILTER_DESCR;
@@ -121,6 +121,15 @@ public class ClinicalWebService extends AnalysisWebService {
 //        catalogInterpretationManager = catalogManager.getInterpretationManager();
 //        clinicalManager = catalogManager.getClinicalAnalysisManager();
 //    }
+
+    @POST
+    @Path("/clinical/configure")
+    @ApiOperation(value = "Update Clinical Analysis configuration.", response = ObjectMap.class)
+    public Response clinicalConfigure(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Configuration params to update") ClinicalAnalysisStudyConfiguration params) {
+        return run(() -> clinicalManager.configureStudy(study, params, token));
+    }
 
     @POST
     @Path("/create")
@@ -1068,10 +1077,15 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "proteinKeyword", value = ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "drug", value = ANNOT_DRUG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinical", value = ANNOT_CLINICAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelModeOfInheritance", value = VariantCatalogQueryUtils.PANEL_MOI_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelConfidence", value = VariantCatalogQueryUtils.PANEL_CONFIDENCE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelRoleInCancer", value = VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER_DESC, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
     })

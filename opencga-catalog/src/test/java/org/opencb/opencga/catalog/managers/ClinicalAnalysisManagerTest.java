@@ -52,6 +52,7 @@ import org.opencb.opencga.core.models.common.StatusValue;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsent;
@@ -989,7 +990,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomStatusTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1011,7 +1012,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomPriorityTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1034,7 +1035,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomFlagTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1118,7 +1119,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateCustomConsentTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        ClinicalAnalysisStudyConfiguration configuration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
@@ -1155,7 +1156,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void updateInterpretationCustomStatusTest() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(STUDY, QueryOptions.empty(), sessionIdUser).first();
-        InterpretationStudyConfiguration configuration = study.getConfiguration().getClinical().getInterpretation();
+        InterpretationStudyConfiguration configuration = study.getInternal().getConfiguration().getClinical().getInterpretation();
 
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, true);
         StatusValue status = configuration.getStatus().get(dummyEnvironment.first().getType()).get(0);
@@ -2054,7 +2055,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         // Create without a panel and update the panel
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser).first();
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
-                new ClinicalAnalysisUpdateParams().setPanels(Collections.singletonList(panel.getId())), QueryOptions.empty(), sessionIdUser);
+                new ClinicalAnalysisUpdateParams().setPanels(Collections.singletonList(new PanelReferenceParam(panel.getId()))),
+                QueryOptions.empty(), sessionIdUser);
 
         ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
 

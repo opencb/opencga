@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -492,6 +493,64 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     + String.join("', '", clinicalAnalysisIds) + "'.");
         }
 
+    }
+
+    void updateIndividualIdFromFamilies(ClientSession clientSession, long studyUid, long memberUid, String oldIndividualId,
+                                        String newIndividualId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (StringUtils.isEmpty(oldIndividualId)) {
+            throw new CatalogDBException("Empty old individual ID");
+        }
+        if (StringUtils.isEmpty(newIndividualId)) {
+            throw new CatalogDBException("Empty new individual ID");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.MEMBER_UID.key(), memberUid);
+
+        // We need to update the roles so it reflects the new individual id
+        DBIterator<Family> iterator = iterator(clientSession, query, new QueryOptions(QueryParams.UID.key(), QueryParams.ROLES.key()));
+        while (iterator.hasNext()) {
+            Family family = iterator.next();
+
+            if (family.getRoles() != null) {
+                boolean changed = false;
+                Map<String, Map<String, Family.FamiliarRelationship>> roles = new HashMap<>();
+
+                for (Map.Entry<String, Map<String, Family.FamiliarRelationship>> entry : family.getRoles().entrySet()) {
+                    if (oldIndividualId.equals(entry.getKey())) {
+                        roles.put(newIndividualId, entry.getValue());
+                        changed = true;
+                    } else {
+                        if (entry.getValue() == null) {
+                            roles.put(entry.getKey(), entry.getValue());
+                        } else {
+                            Map<String, Family.FamiliarRelationship> relationshipMap = new HashMap<>();
+                            for (Map.Entry<String, Family.FamiliarRelationship> entry2 : entry.getValue().entrySet()) {
+                                if (oldIndividualId.equals(entry2.getKey())) {
+                                    relationshipMap.put(newIndividualId, entry2.getValue());
+                                    changed = true;
+                                } else {
+                                    relationshipMap.put(entry.getKey(), entry2.getValue());
+                                }
+                            }
+                            roles.put(entry.getKey(), relationshipMap);
+                        }
+                    }
+                }
+
+                if (changed) {
+                    Bson bsonQuery = parseQuery(new Query()
+                            .append(QueryParams.STUDY_UID.key(), studyUid)
+                            .append(QueryParams.UID.key(), family.getUid())
+                    );
+                    Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
+                    familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
+                }
+            }
+
+        }
     }
 
     private void createNewVersion(ClientSession clientSession, long studyUid, long familyUid)
