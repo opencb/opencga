@@ -1245,7 +1245,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateFiles(study, clinicalAnalysis, userId);
         }
 
-        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) || updateParams.getPanelLocked() != null) {
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) || updateParams.getPanelLock() != null) {
             // Check the Clinical Analysis have no interpretations
             Query query = new Query()
                     .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())

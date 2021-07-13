@@ -209,7 +209,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         try {
             QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key()));
+                            ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
             ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisStr,
                     clinicalOptions, userId).first();
 
@@ -273,7 +273,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         if (CollectionUtils.isEmpty(interpretation.getPanels())) {
             interpretation.setPanels(clinicalAnalysis.getPanels());
         } else {
-            if (clinicalAnalysis.isPanelLocked()) {
+            if (clinicalAnalysis.isPanelLock()) {
                 // Check the panels are the same provided in the Clinical Analysis
                 Set<String> clinicalPanelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
                 Set<String> interpretationPanelIds = interpretation.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
@@ -396,7 +396,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             try {
                 QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS,
                         Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
-                                ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key()));
+                                ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
                 OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                         clinicalAnalysisId, clinicalOptions, userId);
                 if (clinicalResult.getNumResults() == 0) {
@@ -860,7 +860,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         // Check if user has permissions to write clinical analysis
         QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                 Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
-                        ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key()));
+                        ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), clinicalOptions, userId).first();
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
@@ -910,7 +910,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (updateParams != null && CollectionUtils.isNotEmpty(updateParams.getPanels())) {
-            if (clinicalAnalysis.isPanelLocked()) {
+            if (clinicalAnalysis.isPanelLock()) {
                 throw new CatalogException("Updating panels from Interpretation is not allowed. "
                         + "'panelLock' from ClinicalAnalysis is set to True.");
             }

@@ -21,12 +21,12 @@ public class PanelLock extends MigrationTool {
     @Override
     protected void run() throws Exception {
         migrateCollection(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION,
-                new Document(ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key(), new Document("$exists", false)),
+                new Document(ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(), new Document("$exists", false)),
                 Projections.include("_id"),
                 (clinical, bulk) -> {
                     bulk.add(new UpdateOneModel<>(
                                     eq("_id", clinical.get("_id")),
-                                    new Document("$set", new Document(ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCKED.key(), false))
+                                    new Document("$set", new Document(ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(), false))
                             )
                     );
                 }

@@ -2236,7 +2236,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
-        assertFalse(result.first().isPanelLocked());
+        assertFalse(result.first().isPanelLock());
     }
 
     @Test
@@ -2257,16 +2257,16 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(0, result.first().getPanels().size());
-        assertFalse(result.first().isPanelLocked());
+        assertFalse(result.first().isPanelLock());
 
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList()))
-                        .setPanelLocked(true),
+                        .setPanelLock(true),
                 QueryOptions.empty(), sessionIdUser);
         result = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
-        assertTrue(result.first().isPanelLocked());
+        assertTrue(result.first().isPanelLock());
     }
 
     @Test
@@ -2288,7 +2288,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
-        assertFalse(result.first().isPanelLocked());
+        assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
                 new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
@@ -2315,14 +2315,14 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setId("analysis")
                 .setType(ClinicalAnalysis.Type.SINGLE)
                 .setProband(proband)
-                .setPanelLocked(true)
+                .setPanelLock(true)
                 .setPanels(panels.subList(0, 2));
 
         OpenCGAResult<ClinicalAnalysis> result =
                 catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
-        assertTrue(result.first().isPanelLocked());
+        assertTrue(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
                 new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
@@ -2355,7 +2355,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
-        assertFalse(result.first().isPanelLocked());
+        assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
                 new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
