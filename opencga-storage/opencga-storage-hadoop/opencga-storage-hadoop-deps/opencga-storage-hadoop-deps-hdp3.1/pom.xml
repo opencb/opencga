@@ -39,7 +39,7 @@
         <hbase.version>2.0.2.${hdp.dependencies.version}</hbase.version>
         <!--Despite using hbase v2.0.0, this HDP version uses the 2.1.0 thirdparty libraries-->
         <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
+        <zookeeper.version>3.4.14</zookeeper.version>
         <phoenix.version>5.0.0.${hdp.dependencies.version}</phoenix.version>
         <apache.tephra.version>0.14.0-incubating</apache.tephra.version>
         <tephra.version>0.7.0</tephra.version>
