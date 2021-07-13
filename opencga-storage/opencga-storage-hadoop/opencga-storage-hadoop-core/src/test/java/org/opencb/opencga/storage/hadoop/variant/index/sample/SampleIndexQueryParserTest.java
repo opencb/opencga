@@ -112,7 +112,7 @@ public class SampleIndexQueryParserTest {
     }
 
     private SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, List<String>> filesFromSample, boolean multiFileSample) {
-        return sampleIndexQueryParser.parseFileQuery(query, sample, multiFileSample, false, filesFromSample);
+        return sampleIndexQueryParser.parseFileQuery(query, sample, multiFileSample, false, filesFromSample, false);
     }
 
     private byte parseAnnotationMask(Query query) {
@@ -419,22 +419,22 @@ public class SampleIndexQueryParserTest {
         Values<SampleFileIndexQuery> fileQuery;
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(1, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(1, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F2:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(2, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F3:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(1, fileQuery.size());
         assertTrue(VariantQueryUtils.isValidParam(query, FILE_DATA));
     }
