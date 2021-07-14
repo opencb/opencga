@@ -197,8 +197,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                         : null)
                 .setEthnicity(commandOptions.ethnicity)
                 .setKaryotypicSex(commandOptions.karyotypicSex)
-                .setLifeStatus(commandOptions.lifeStatus)
-                .setAffectationStatus(commandOptions.affectationStatus);
+                .setLifeStatus(commandOptions.lifeStatus);
         if (StringUtils.isNotEmpty(commandOptions.populationDescription) || StringUtils.isNotEmpty(commandOptions.populationName)
                 || StringUtils.isNotEmpty(commandOptions.populationSubpopulation)) {
             updateParams.setPopulation(new IndividualPopulation(commandOptions.name, commandOptions.populationSubpopulation,
@@ -264,7 +263,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
         params.putIfNotEmpty("status", commandOptions.status);
         params.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
-        params.putIfNotEmpty("affectationStatus", commandOptions.affectationStatus);
         params.putIfNotEmpty("numSamples", commandOptions.numSamples);
         params.putIfNotEmpty("sex", commandOptions.sex);
         params.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);

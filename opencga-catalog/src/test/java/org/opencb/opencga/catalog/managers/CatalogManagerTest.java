@@ -31,11 +31,13 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
@@ -1161,13 +1163,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
                 token).first();
         Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort")
-                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, token).first();
+                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3))
+                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), null, token).first();
 
         assertEquals("MyCohort", myCohort.getId());
         assertEquals(3, myCohort.getSamples().size());
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId1.getUid()));
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId2.getUid()));
         assertTrue(myCohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList()).contains(sampleId3.getUid()));
+        assertNotNull(myCohort.getStatus());
+        assertEquals("custom", myCohort.getStatus().getName());
+        assertEquals("description", myCohort.getStatus().getDescription());
     }
 
 //    @Test
@@ -1443,8 +1449,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(12, myCohort.getSamples().size());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
-        myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort2"), null, token).first();
+        myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort()
+                .setId("MyCohort2")
+                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), null, token).first();
         assertEquals(3, myCohort.getSamples().size());
+        assertNotNull(myCohort.getStatus());
+        assertEquals("custom", myCohort.getStatus().getName());
+        assertEquals("description", myCohort.getStatus().getDescription());
     }
 
     /**
