@@ -399,6 +399,7 @@ public abstract class AbstractParentClient {
         params.remove("file");
         params.remove("body");
 
+        path.property(ClientProperties.READ_TIMEOUT, null);
         path.register(MultiPartFeature.class);
 
         final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
