@@ -49,7 +49,6 @@ public class IndividualUpdateParams {
     private String dateOfBirth;
     private IndividualProperty.KaryotypicSex karyotypicSex;
     private IndividualProperty.LifeStatus lifeStatus;
-    private IndividualProperty.AffectationStatus affectationStatus;
     private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
@@ -64,10 +63,9 @@ public class IndividualUpdateParams {
     public IndividualUpdateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
                                   Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex, String ethnicity,
                                   IndividualPopulation population, String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
-                                  IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
-                                  List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
-                                  List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
-                                  Map<String, Object> attributes) {
+                                  IndividualProperty.LifeStatus lifeStatus, List<SampleReferenceParam> samples,
+                                  List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
+                                  CustomStatusParams status, IndividualQualityControl qualityControl, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -80,7 +78,6 @@ public class IndividualUpdateParams {
         this.dateOfBirth = dateOfBirth;
         this.karyotypicSex = karyotypicSex;
         this.lifeStatus = lifeStatus;
-        this.affectationStatus = affectationStatus;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.phenotypes = phenotypes;
@@ -135,7 +132,6 @@ public class IndividualUpdateParams {
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", lifeStatus=").append(lifeStatus);
-        sb.append(", affectationStatus=").append(affectationStatus);
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", phenotypes=").append(phenotypes);
@@ -252,15 +248,6 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams setLifeStatus(IndividualProperty.LifeStatus lifeStatus) {
         this.lifeStatus = lifeStatus;
-        return this;
-    }
-
-    public IndividualProperty.AffectationStatus getAffectationStatus() {
-        return affectationStatus;
-    }
-
-    public IndividualUpdateParams setAffectationStatus(IndividualProperty.AffectationStatus affectationStatus) {
-        this.affectationStatus = affectationStatus;
         return this;
     }
 
