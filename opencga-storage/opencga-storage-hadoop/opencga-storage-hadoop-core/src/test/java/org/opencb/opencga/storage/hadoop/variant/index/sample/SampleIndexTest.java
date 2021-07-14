@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.TableName;
@@ -606,6 +607,17 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testAggregation(executor, "type;gt>>ct");
         testAggregation(executor, "gt>>type>>ct>>biotype");
         testAggregation(executor, "clinicalSignificance>>gt>>type>>ct>>biotype");
+
+
+        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter();
+
+        Query query = new Query(STUDY.key(), STUDY_NAME_3).append(SAMPLE.key(), "NA12877").append(SAMPLE_DATA.key(), "NA12877:DP>=10");
+        assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "chromosome")));
+        System.out.println(writer.writeValueAsString(executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "chromosome")).first()));
+
+        // DP>=11 is not supported
+        query = new Query(STUDY.key(), STUDY_NAME_3).append(SAMPLE.key(), "NA12877").append(SAMPLE_DATA.key(), "NA12877:DP>=11");
+        assertFalse(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "chromosome")));
     }
 
     private void testAggregation(SampleIndexVariantAggregationExecutor executor, String facet) throws JsonProcessingException {

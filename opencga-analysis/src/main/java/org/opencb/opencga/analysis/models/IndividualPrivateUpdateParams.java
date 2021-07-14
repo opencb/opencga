@@ -22,12 +22,11 @@ public class IndividualPrivateUpdateParams extends IndividualUpdateParams {
                                          Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex, String ethnicity,
                                          IndividualPopulation population, String dateOfBirth,
                                          IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
-                                         IndividualProperty.AffectationStatus affectationStatus, List<SampleReferenceParam> samples,
-                                         List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
+                                         List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                          List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
                                          Map<String, Object> attributes, IndividualInternal internal) {
         super(id, name, father, mother, parentalConsanguinity, location, sex, ethnicity, population, dateOfBirth, karyotypicSex, lifeStatus,
-                affectationStatus, samples, annotationSets, phenotypes, disorders, status, qualityControl, attributes);
+                samples, annotationSets, phenotypes, disorders, status, qualityControl, attributes);
         this.internal = internal;
     }
 

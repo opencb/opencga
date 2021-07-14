@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_1_0.catalog.java;
+package org.opencb.opencga.app.migrations.v2_1_0_rc2.catalog;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -22,7 +22,7 @@ import static com.mongodb.client.model.Filters.eq;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 16)
+        rank = 2)
 public class AddPanelsToInterpretations extends MigrationTool {
 
     @Override

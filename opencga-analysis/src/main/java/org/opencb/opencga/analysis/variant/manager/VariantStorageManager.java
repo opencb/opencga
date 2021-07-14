@@ -692,15 +692,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery, String token)
             throws CatalogException, IOException, StorageEngineException {
         Query query = inputQuery == null ? new Query() : new Query(inputQuery);
-        query.put(STUDY.key(), studyStr);
+        String study = getStudyFqn(studyStr, token);
+        query.put(STUDY.key(), study);
         query.put(SAMPLE.key(), sample);
 
        return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
             logger.debug("getSampleStats {}", query);
-            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(
-                    query.getString(STUDY.key()),
-                    query.getString(SAMPLE.key()),
-                    query);
+            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(study, sample, query);
             logger.debug("getFacets in {}ms", result.getTime());
             return result;
         });

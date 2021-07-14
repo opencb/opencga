@@ -163,6 +163,7 @@ public class SampleIndexQueryParser {
 
         Set<String> mendelianErrorSet = new HashSet<>();
         boolean onlyDeNovo = false;
+        boolean partialGtIndex = false;
 
         // Extract sample and genotypes to filter
         if (isValidParam(query, GENOTYPE)) {
@@ -215,7 +216,6 @@ public class SampleIndexQueryParser {
                 parentsSet.addAll(parentsMap.get(child));
             }
 
-            boolean partialGtIndex = false;
             for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
                 String sampleName = entry.getKey();
                 if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
@@ -315,7 +315,7 @@ public class SampleIndexQueryParser {
             }
 
             if (!isValidParam(query, SAMPLE_DATA)) {
-                // Do not remove FORMAT
+                // Do not remove if SAMPLE_DATA filter is present
                 query.remove(SAMPLE.key());
             }
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
@@ -380,7 +380,7 @@ public class SampleIndexQueryParser {
         Map<String, Values<SampleFileIndexQuery>> fileIndexMap = new HashMap<>(samplesMap.size());
         for (String sample : samplesMap.keySet()) {
             Values<SampleFileIndexQuery> fileIndexQuery =
-                    parseFilesQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex);
+                    parseFilesQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex, partialGtIndex);
 
             fileIndexMap.put(sample, fileIndexQuery);
         }
@@ -575,7 +575,7 @@ public class SampleIndexQueryParser {
 
 
     protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
-                                                         boolean multiFileSample, boolean partialFilesIndex) {
+                                                           boolean multiFileSample, boolean partialFilesIndex, boolean partialGtIndex) {
         return parseFilesQuery(query, sample, multiFileSample, partialFilesIndex, s -> {
             Integer sampleId = metadataManager.getSampleId(studyId, s);
             List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
@@ -584,11 +584,11 @@ public class SampleIndexQueryParser {
                 fileNames.add(metadataManager.getFileName(studyId, fileId));
             }
             return fileNames;
-        });
+        }, partialGtIndex);
     }
 
     protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
-                                                         Function<String, List<String>> filesFromSample) {
+                                                           Function<String, List<String>> filesFromSample, boolean partialGtIndex) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
         List<String> filesFromFileData = fileDataParsedQuery.getValues(KeyValues::getKey);
 
@@ -609,7 +609,7 @@ public class SampleIndexQueryParser {
                 Query subQuery = new Query(query);
 //                    subQuery.remove(FILE.key());
                 subQuery.put(FILE_DATA.key(), fileDataParsedQuery.getValue(kv -> kv.getKey().equals(fileFromFileData)).toQuery());
-                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialFilesIndex, filesFromSample));
+                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialFilesIndex, filesFromSample, partialGtIndex));
                 if (isValidParam(subQuery, FILE_DATA)) {
                     // This subquery did not remove the fileData, so it's not fully covered. Can't remove the fileData filter.
                     fileDataCovered = false;
@@ -620,12 +620,12 @@ public class SampleIndexQueryParser {
             }
             return new Values<>(fileDataParsedQuery.getOperation(), fileIndexQueries);
         }
-        return new Values<>(null,
-                Collections.singletonList(parseFileQuery(query, sample, multiFileSample, partialFilesIndex, filesFromSample)));
+        return new Values<>(null, Collections.singletonList(
+                parseFileQuery(query, sample, multiFileSample, partialFilesIndex, filesFromSample, partialGtIndex)));
     }
 
     protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
-                                                  Function<String, List<String>> filesFromSample) {
+                                                  Function<String, List<String>> filesFromSample, boolean partialGtIndex) {
 
         List<String> files = null;
         List<IndexFieldFilter> filtersList = new ArrayList<>(schema.getFileIndex().getFields().size());
@@ -763,6 +763,10 @@ public class SampleIndexQueryParser {
                 if (!partialFilesIndex) {
                     if (sampleDataQuery.isEmpty()) {
                         query.remove(SAMPLE_DATA.key());
+                        if (!partialGtIndex) {
+                            query.remove(GENOTYPE.key());
+                            query.remove(SAMPLE.key());
+                        }
                     } else {
                         query.put(SAMPLE_DATA.key(), sampleDataQuery.toQuery());
                     }
