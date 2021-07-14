@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 
 import java.util.List;
 
@@ -31,15 +30,12 @@ public abstract class FixedSizeIndexSchema extends IndexSchema {
 
     /**
      * Read index element from the bit input stream.
-     * @param stream Bit input stream
+     * @param buffer BitBuffer
      * @param i element position
      * @return BitBuffer containing all fields from the index.
      */
-    public BitBuffer read(BitInputStream stream, int i) {
-        return stream.getBitBuffer(i * indexSizeBits, indexSizeBits);
+    public BitBuffer read(BitBuffer buffer, int i) {
+        return buffer.getBitBuffer(i * indexSizeBits, indexSizeBits);
     }
 
-    public int readValue(BitInputStream stream, int i) {
-        return stream.getIntPartial(i * indexSizeBits, indexSizeBits);
-    }
 }
