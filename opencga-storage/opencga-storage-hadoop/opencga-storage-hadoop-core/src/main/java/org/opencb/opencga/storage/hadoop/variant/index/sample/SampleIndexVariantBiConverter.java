@@ -9,6 +9,7 @@ import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 
 import java.io.ByteArrayOutputStream;
@@ -218,7 +219,7 @@ public class SampleIndexVariantBiConverter {
             nonIntergenicCount = 0;
             clinicalCount = 0;
             annotationIndexEntry = new AnnotationIndexEntry();
-            annotationIndexEntry.setCtBtCombination(new AnnotationIndexEntry.CtBtCombination(new int[0], 0, 0));
+            annotationIndexEntry.setCtBtCombination(new CombinationIndexSchema.Combination());
             annotationIndexEntryIdx = -1;
             fileIndexIdx = 0;
             fileIndexCount = 0;
@@ -311,9 +312,9 @@ public class SampleIndexVariantBiConverter {
             annotationIndexEntry.setHasCtIndex(false);
             annotationIndexEntry.setHasBtIndex(false);
             annotationIndexEntry.setHasClinical(false);
-            AnnotationIndexEntry.CtBtCombination ctBtCombination = annotationIndexEntry.getCtBtCombination();
-            ctBtCombination.setNumCt(0);
-            ctBtCombination.setNumBt(0);
+            CombinationIndexSchema.Combination ctBtCombination = annotationIndexEntry.getCtBtCombination();
+            ctBtCombination.setNumA(0);
+            ctBtCombination.setNumB(0);
 
             if (gtEntry.getAnnotationIndex() != null) {
                 annotationIndexEntry.setSummaryIndex(gtEntry.getAnnotationIndex(idx));

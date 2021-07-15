@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.THREE_PRIME_UTR_VARIANT;
+import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -595,13 +595,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     @Test
-    public void testAggregationCorrectness() throws Exception {
+    public void testAggregationCorrectnessCt() throws Exception {
         SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
-        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
-
         SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(STUDY_NAME_3);
 
-        CategoricalMultiValuedIndexField<String> field = (CategoricalMultiValuedIndexField<String>) schema.getCtIndex().getField();
+        CategoricalMultiValuedIndexField<String> field = schema.getCtIndex().getField();
         IndexFieldConfiguration ctConf = field.getConfiguration();
         List<String> cts = new ArrayList<>();
         for (String ct : ctConf.getValues()) {
@@ -610,34 +608,52 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             }
         }
         assertNotEquals(new ArrayList<>(), cts);
-//        cts = Collections.singletonList("TF_binding_site_variant");
+        cts.remove(TF_BINDING_SITE_VARIANT);
+        cts.remove(REGULATORY_REGION_VARIANT);
         System.out.println("cts = " + cts);
 
         for (String ct : cts) {
-            Query query = new Query(STUDY.key(), STUDY_NAME_3)
-                    .append(SAMPLE.key(), "NA12877")
-                    .append(ANNOT_CONSEQUENCE_TYPE.key(), ct);
-            assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType")));
+            testAggregationCorrectness(ct);
+        }
+    }
 
-            AtomicInteger count = new AtomicInteger(0);
-            sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
-            FacetField facet = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
+    @Test
+    public void testAggregationCorrectnessTFBS() throws Exception {
+        testAggregationCorrectness(TF_BINDING_SITE_VARIANT);
+    }
 
-            assertEquals(count.get(), facet.getCount());
-            FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
-            System.out.println("ct = " + ct + " : " + count.get());
+    @Test
+    public void testAggregationCorrectnessRegulatoryRegionVariant() throws Exception {
+        testAggregationCorrectness(REGULATORY_REGION_VARIANT);
+    }
+
+    private void testAggregationCorrectness(String ct) throws Exception {
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
+
+        Query query = new Query(STUDY.key(), STUDY_NAME_3)
+                .append(SAMPLE.key(), "NA12877")
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), ct);
+        assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType")));
+
+        AtomicInteger count = new AtomicInteger(0);
+        sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
+        FacetField facet = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
+
+        assertEquals(count.get(), facet.getCount());
+        FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
+        System.out.println("ct = " + ct + " : " + count.get());
 //            System.out.println("facet = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
-            String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
-                    + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
-            if (count.get() == 0) {
-                // Count be null if no counts
-                if (bucket != null) {
-                    assertEquals(msg, 0, bucket.getCount());
-                }
-            } else {
-                assertNotNull(msg, bucket);
-                assertEquals(msg, count.get(), bucket.getCount());
+        String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
+                + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
+        if (count.get() == 0) {
+            // Count be null if no counts
+            if (bucket != null) {
+                assertEquals(msg, 0, bucket.getCount());
             }
+        } else {
+            assertNotNull(msg, bucket);
+            assertEquals(msg, count.get(), bucket.getCount());
         }
     }
 

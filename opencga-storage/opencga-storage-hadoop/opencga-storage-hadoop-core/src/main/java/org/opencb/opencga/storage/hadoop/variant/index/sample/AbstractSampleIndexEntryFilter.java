@@ -356,12 +356,15 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             if (!annotationIndexEntry.hasCtIndex()
                     || query.getAnnotationIndexQuery().getConsequenceTypeFilter().test(annotationIndexEntry.getCtIndex())) {
 
-                if (annotationIndexEntry.getCtBtCombination().getCtBtMatrix() == null
+                if (annotationIndexEntry.getCtBtCombination().getMatrix() == null
                         || query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()
                         || query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()) {
                     return true;
                 } else {
-                    return query.getAnnotationIndexQuery().getCtBtFilter().test(annotationIndexEntry);
+                    return query.getAnnotationIndexQuery().getCtBtFilter().test(
+                            annotationIndexEntry.getCtBtCombination(),
+                            annotationIndexEntry.getCtIndex(),
+                            annotationIndexEntry.getBtIndex());
                 }
             }
         }

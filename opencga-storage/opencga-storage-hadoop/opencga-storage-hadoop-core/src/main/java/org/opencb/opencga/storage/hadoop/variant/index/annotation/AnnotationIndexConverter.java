@@ -5,6 +5,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
@@ -79,7 +80,7 @@ public class AnnotationIndexConverter {
         boolean clinical = false;
 
         List<Pair<String, String>> ctBtPair = new LinkedList<>();
-        AnnotationIndexEntry.CtBtCombination ctBtCombination = null;
+        CombinationIndexSchema.Combination ctBtCombination = null;
         if (variantAnnotation.getConsequenceTypes() != null) {
             Set<String> biotypes = new HashSet<>();
             Set<String> cts = new HashSet<>();
@@ -117,7 +118,7 @@ public class AnnotationIndexConverter {
             }
             schema.getBiotypeIndex().getField().write(new ArrayList<>(biotypes), btIndex);
             schema.getCtIndex().getField().write(new ArrayList<>(cts), ctIndex);
-            ctBtCombination = schema.getCtBtIndex().getField().getCtBtCombination(ctBtPair, ctIndex, btIndex);
+            ctBtCombination = schema.getCtBtIndex().getField().getCombination(ctBtPair, ctIndex, btIndex);
         }
         if (intergenic) {
             b |= INTERGENIC_MASK;
