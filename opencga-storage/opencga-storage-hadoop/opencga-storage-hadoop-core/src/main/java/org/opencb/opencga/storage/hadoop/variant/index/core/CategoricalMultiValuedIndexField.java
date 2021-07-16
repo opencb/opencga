@@ -77,8 +77,8 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
             if (withOther) {
                 numBits = values.length + 1;
                 this.values = Arrays.copyOf(values, values.length + 1);
-                this.values[values.length] = null;
                 this.otherValuePosition = values.length;
+                this.values[otherValuePosition] = null;
             } else {
                 this.values = values;
                 numBits = values.length;

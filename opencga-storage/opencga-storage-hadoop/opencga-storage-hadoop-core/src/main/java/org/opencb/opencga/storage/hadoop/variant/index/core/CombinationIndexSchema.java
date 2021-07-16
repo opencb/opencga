@@ -61,8 +61,8 @@ public class CombinationIndexSchema /*extends DynamicIndexSchema*/ {
             numValuesA = indexA.getBitLength();
             numValuesB = indexB.getBitLength();
             if (numValuesA > Integer.SIZE || numValuesB > Integer.SIZE) {
-                throw new IllegalArgumentException("Unable to build CombinationIndexSchema. " +
-                        "numValuesA = " + numValuesA + ", numValuesB = " + numValuesB);
+                throw new IllegalArgumentException("Unable to build CombinationIndexSchema. "
+                        + "numValuesA = " + numValuesA + ", numValuesB = " + numValuesB);
             }
         }
 
@@ -162,6 +162,43 @@ public class CombinationIndexSchema /*extends DynamicIndexSchema*/ {
                 combination = null;
             }
             return combination;
+        }
+
+        public List<Pair<String, String>> getPairs(Combination combination, int fieldValueA, int fieldValueB) {
+            List<Pair<String, String>> pairs = new LinkedList<>();
+
+            int numA = combination.getNumA();
+            int numB = combination.getNumB();
+
+            int[] matrix = combination.getMatrix();
+            // Walk through all values of A and B in this value.
+            int strippedFieldValueA = fieldValueA;
+            for (int posA = 0; posA < numA; posA++) {
+                // Get the first A value from the right.
+                int a = Integer.lowestOneBit(strippedFieldValueA);
+                // Remove the A value from the index, so the next iteration gets the next value
+                strippedFieldValueA &= ~a;
+
+                // Iterate over B values
+                int strippedFieldValueB = fieldValueB;
+                for (int posB = 0; posB < numB; posB++) {
+                    // As before, take the first B value from the right.
+                    int b = Integer.lowestOneBit(strippedFieldValueB);
+                    strippedFieldValueB &= ~b;
+                    // Check if the B is part of the query filter
+
+                    // Check if this A was together with this B
+                    if ((matrix[posA] & (1 << posB)) != 0) {
+                        String decodeA = indexA.decode(a).get(0);
+                        String decodeB = indexB.decode(b).get(0);
+                        pairs.add(Pair.of(decodeA == null ? "OTHER" : decodeA, decodeB == null ? "OTHER" : decodeB));
+                    }
+                }
+                // assert strippedFieldValueB == 0; // We should have removed all B values from the index
+            }
+            // assert strippedFieldValueA == 0; // We should have removed all A values from the index
+
+            return pairs;
         }
 
         private int maskPosition(int s) {

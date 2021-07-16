@@ -644,9 +644,14 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
                 }
-                if (includeAll || !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()
-                        && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
+                if (includeAll || !query.getAnnotationIndexQuery().getTranscriptFlagFilter().isNoOp()) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationTranscriptFlagIndexColumn(gt));
+                }
+                if (includeAll || !query.getAnnotationIndexQuery().getCtBtFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
+                }
+                if (includeAll || !query.getAnnotationIndexQuery().getCtTfFilter().isNoOp()) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationCtTfIndexColumn(gt));
                 }
                 if (includeAll || !query.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));

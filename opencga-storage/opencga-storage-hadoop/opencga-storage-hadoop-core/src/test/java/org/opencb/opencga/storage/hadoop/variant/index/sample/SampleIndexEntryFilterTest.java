@@ -254,7 +254,9 @@ public class SampleIndexEntryFilterTest {
                 new byte[2],
                 schema.getCtIndex().getField().noOpFilter(),
                 schema.getBiotypeIndex().getField().noOpFilter(),
+                schema.getTranscriptFlagIndexSchema().getField().noOpFilter(),
                 schema.getCtBtIndex().getField().noOpFilter(),
+                schema.getCtTfIndex().getField().noOpFilter(),
                 schema.getClinicalIndexSchema().noOpFilter(),
                 schema.getPopFreqIndex().buildFilter(Arrays.asList(frequencyQuery), op));
         // TODO: what about Partial?

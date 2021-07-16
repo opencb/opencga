@@ -203,7 +203,9 @@ public class SampleIndexVariantBiConverter {
         private BitInputStream popFreq;
         private BitInputStream ctIndex;
         private BitInputStream btIndex;
+        private BitInputStream tfIndex;
         private BitInputStream ctBtIndex;
+        private BitInputStream ctTfIndex;
         private int nonIntergenicCount;
         private int clinicalCount;
         private BitInputStream fileIndex;
@@ -220,6 +222,7 @@ public class SampleIndexVariantBiConverter {
             clinicalCount = 0;
             annotationIndexEntry = new AnnotationIndexEntry();
             annotationIndexEntry.setCtBtCombination(new CombinationIndexSchema.Combination());
+            annotationIndexEntry.setCtTfCombination(new CombinationIndexSchema.Combination());
             annotationIndexEntryIdx = -1;
             fileIndexIdx = 0;
             fileIndexCount = 0;
@@ -231,7 +234,9 @@ public class SampleIndexVariantBiConverter {
             this.gtEntry = gtEntry;
             this.ctIndex = gtEntry.getConsequenceTypeIndexStream();
             this.btIndex = gtEntry.getBiotypeIndexStream();
+            this.tfIndex = gtEntry.getTranscriptFlagIndexStream();
             this.ctBtIndex = gtEntry.getCtBtIndexStream();
+            this.ctTfIndex = gtEntry.getCtTfIndexStream();
             this.popFreq = gtEntry.getPopulationFrequencyIndexStream();
             this.clinicalIndex = gtEntry.getClinicalIndexStream();
             this.fileIndex = gtEntry.getFileIndexStream();
@@ -308,13 +313,7 @@ public class SampleIndexVariantBiConverter {
             }
 
             int idx = nextIndex();
-            annotationIndexEntry.setHasSummaryIndex(false);
-            annotationIndexEntry.setHasCtIndex(false);
-            annotationIndexEntry.setHasBtIndex(false);
-            annotationIndexEntry.setHasClinical(false);
-            CombinationIndexSchema.Combination ctBtCombination = annotationIndexEntry.getCtBtCombination();
-            ctBtCombination.setNumA(0);
-            ctBtCombination.setNumB(0);
+            annotationIndexEntry.clear();
 
             if (gtEntry.getAnnotationIndex() != null) {
                 annotationIndexEntry.setSummaryIndex(gtEntry.getAnnotationIndex(idx));
@@ -329,10 +328,23 @@ public class SampleIndexVariantBiConverter {
                     if (btIndex != null) {
                         annotationIndexEntry.setBtIndex(schema.getBiotypeIndex().readFieldValue(btIndex, nextNonIntergenic));
                     }
+                    if (tfIndex != null) {
+                        annotationIndexEntry.setTfIndex(schema.getTranscriptFlagIndexSchema().readFieldValue(tfIndex, nextNonIntergenic));
+                    }
 
                     if (ctBtIndex != null && annotationIndexEntry.getCtIndex() != 0 && annotationIndexEntry.getBtIndex() != 0) {
-                        schema.getCtBtIndex().getField()
-                                .read(ctBtIndex, annotationIndexEntry.getCtIndex(), annotationIndexEntry.getBtIndex(), ctBtCombination);
+                        schema.getCtBtIndex().getField().read(
+                                ctBtIndex,
+                                annotationIndexEntry.getCtIndex(),
+                                annotationIndexEntry.getBtIndex(),
+                                annotationIndexEntry.getCtBtCombination());
+                    }
+                    if (ctTfIndex != null && annotationIndexEntry.getCtIndex() != 0 && annotationIndexEntry.getTfIndex() != 0) {
+                        schema.getCtBtIndex().getField().read(
+                                ctTfIndex,
+                                annotationIndexEntry.getCtIndex(),
+                                annotationIndexEntry.getTfIndex(),
+                                annotationIndexEntry.getCtTfCombination());
                     }
                 }
             }

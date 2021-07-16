@@ -244,6 +244,18 @@ public class SampleIndexConfiguration {
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
 
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
+                new IndexFieldConfiguration(
+                        IndexFieldConfiguration.Source.ANNOTATION,
+                        "transcriptFlag",
+                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        "canonical",
+                        "MANE Select",
+                        "CCDS",
+                        "basic",
+                        "TSO500"
+                        ).setNullable(false));
+
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
@@ -396,6 +408,7 @@ public class SampleIndexConfiguration {
         private IndexFieldConfiguration consequenceType;
         private IndexFieldConfiguration clinicalSource;
         private IndexFieldConfiguration clinicalSignificance;
+        private IndexFieldConfiguration transcriptFlagIndexConfiguration;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
             return populationFrequency;
@@ -422,6 +435,14 @@ public class SampleIndexConfiguration {
         public AnnotationIndexConfiguration setConsequenceType(IndexFieldConfiguration consequenceType) {
             this.consequenceType = consequenceType;
             return this;
+        }
+
+        public IndexFieldConfiguration getTranscriptFlagIndexConfiguration() {
+            return transcriptFlagIndexConfiguration;
+        }
+
+        public void setTranscriptFlagIndexConfiguration(IndexFieldConfiguration transcriptFlagIndexConfiguration) {
+            this.transcriptFlagIndexConfiguration = transcriptFlagIndexConfiguration;
         }
 
         public IndexFieldConfiguration getClinicalSource() {

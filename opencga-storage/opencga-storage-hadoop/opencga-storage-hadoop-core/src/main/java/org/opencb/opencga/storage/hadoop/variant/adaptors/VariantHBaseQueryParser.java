@@ -174,7 +174,7 @@ public class VariantHBaseQueryParser {
         } else {
             if (!otherParams.isEmpty()) {
                 for (VariantQueryParam otherParam : otherParams) {
-                    messages.add("Unsupported param " + otherParam);
+                    messages.add("Unsupported param '" + otherParam.key() + "'");
                 }
             }
             return messages;

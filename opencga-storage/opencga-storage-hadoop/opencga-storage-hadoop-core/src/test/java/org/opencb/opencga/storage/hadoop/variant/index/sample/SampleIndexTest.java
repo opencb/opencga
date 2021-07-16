@@ -234,6 +234,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             Connection c = dbAdaptor.getHBaseManager().getConnection();
 
             VariantHbaseTestUtils.printSampleIndexTable(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
+            VariantHbaseTestUtils.printSampleIndexTable2(dbAdaptor, Paths.get(newOutputUri()), studyId, copy);
 
             ResultScanner origScanner = c.getTable(TableName.valueOf(orig)).getScanner(new Scan());
             ResultScanner copyScanner = c.getTable(TableName.valueOf(copy)).getScanner(new Scan());
@@ -359,15 +360,94 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testQueryAnnotationIndex() throws Exception {
-        testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), "protein_coding"));
+        testQueryAnnotationIndex(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated"));
+
+        //    11:62951221:C:G
+        // - SLC22A25 : [missense_variant, stop_lost, 3_prime_UTR_variant, NMD_transcript_variant]
+        // - SLC22A10 : [non_coding_transcript_variant, intron_variant]
+
+        // Should return the variant     // 11:62951221:C:G
+        testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A25").append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
+        // Should NOT return the variant // 11:62951221:C:G
+        testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A10").append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
+
+
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained")
+                .append(ANNOT_BIOTYPE.key(), "protein_coding")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
+
+
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained")
+                .append(ANNOT_BIOTYPE.key(), "protein_coding")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")
+                .append(GENE.key(), "BRCA2")
+        );
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_biotype() throws Exception {
+        testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), PROTEIN_CODING));
+        testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), NONSENSE_MEDIATED_DECAY));
+        testQueryAnnotationIndex(new Query(ANNOT_BIOTYPE.key(), PROTEIN_CODING + "," + NONSENSE_MEDIATED_DECAY));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_ct() throws Exception {
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
-        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained").append(GENE.key(), "HPS4"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained"));
+//        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained,mature_miRNA_variant"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained").append(GENE.key(), "HPS4"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_CtBt() throws Exception {
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant").append(ANNOT_BIOTYPE.key(), "nonsense_mediated_decay"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_Tf() throws Exception {
+        // Available flags in cellbase v4, grch37:
+        //  basic
+        //  CCDS
+        //  cds_start_NF
+        //  cds_end_NF
+        //  mRNA_start_NF
+        //  mRNA_end_NF
+        //  seleno
+
+        testQueryAnnotationIndex(new Query(ANNOT_TRANSCRIPT_FLAG.key(), "CCDS"));
+        testQueryAnnotationIndex(new Query(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
+
+        // Test filtering by other non-covered flags:
+        testQueryAnnotationIndex(new Query(ANNOT_TRANSCRIPT_FLAG.key(), "seleno"));
+        testQueryAnnotationIndex(new Query(ANNOT_TRANSCRIPT_FLAG.key(), "basic,seleno"));
+        testQueryAnnotationIndex(new Query(ANNOT_TRANSCRIPT_FLAG.key(), "CCDS,seleno"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_CtTf() throws Exception {
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "CCDS"));
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic,CCDS"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost").append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost").append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
-        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_gained"));
-        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant").append(ANNOT_BIOTYPE.key(), "nonsense_mediated_decay"));
-        testQueryAnnotationIndex(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift=tolerated"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_CtTf_better_than_dbadaptor() throws Exception {
+        // These are queries not fully covered using the DBAdaptor (returns more values than expected)
+        // SampleIndex is more accurate than DBAdaptor, but still not 100% accurate
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost").append(ANNOT_TRANSCRIPT_FLAG.key(), "seleno"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_pop_freq() throws Exception {
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL=0"));
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0"));
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.001"));
@@ -378,25 +458,15 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>=0.005,GNOMAD_GENOMES:ALL>=0.005"));
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL<0.005,GNOMAD_GENOMES:ALL<0.005"));
         testQueryAnnotationIndex(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:ALL>0.005,GNOMAD_GENOMES:ALL>0.005"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_clinical() throws Exception {
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "likely_benign"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_benign"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL.key(), "clinvar"));
-
-//        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
-        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained"));
-        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained,mature_miRNA_variant"));
-
-
-        //    11:62951221:C:G
-        // - SLC22A25 : [missense_variant, stop_lost, 3_prime_UTR_variant, NMD_transcript_variant]
-        // - SLC22A10 : [non_coding_transcript_variant, intron_variant]
-
-        // Should return the variant     // 11:62951221:C:G
-        testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A25").append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
-        // Should NOT return the variant // 11:62951221:C:G
-        testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A10").append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {
@@ -461,6 +531,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("annotationIndex    = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask(), indexQuery.getAnnotationIndex()));
         System.out.println("biotype            = " + indexQuery.getAnnotationIndexQuery().getBiotypeFilter());
         System.out.println("ct                 = " + indexQuery.getAnnotationIndexQuery().getConsequenceTypeFilter());
+        System.out.println("transcriptFlag     = " + indexQuery.getAnnotationIndexQuery().getTranscriptFlagFilter());
+        System.out.println("ctBt               = " + indexQuery.getAnnotationIndexQuery().getCtBtFilter());
+        System.out.println("ctTf               = " + indexQuery.getAnnotationIndexQuery().getCtTfFilter());
         System.out.println("clinical           = " + indexQuery.getAnnotationIndexQuery().getClinicalFilter());
         System.out.println("popFreq            = " + indexQuery.getAnnotationIndexQuery().getPopulationFrequencyFilter());
         for (String sample : indexQuery.getSamplesMap().keySet()) {
@@ -715,10 +788,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testSampleVariantStatsFail() throws Exception {
+        thrown.expectMessage("No VariantAggregationExecutor found to run the query");
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         for (String study : studies) {
             for (String sample : sampleNames.get(study)) {
-                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, new Query(ANNOT_CONSEQUENCE_TYPE.key(), "synonymous_variant"));
+                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, new Query()
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), NON_CODING_TRANSCRIPT_EXON_VARIANT));
                 System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
             }
         }
