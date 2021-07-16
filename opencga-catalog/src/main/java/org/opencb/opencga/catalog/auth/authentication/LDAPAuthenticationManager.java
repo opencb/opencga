@@ -108,7 +108,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         try {
             List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(host, Arrays.asList(userId), usersSearch);
             if (userInfoFromLDAP.isEmpty()) {
-                throw new CatalogAuthenticationException("The user id " + userId + " could not be found in LDAP.");
+                throw new CatalogAuthenticationException("LDAP: The user id " + userId + " could not be found.");
             }
 
             String rdn = getDN(userInfoFromLDAP.get(0));
@@ -137,7 +137,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             new InitialDirContext(env);
         } catch (NamingException e) {
             logger.error("{}", e.getMessage(), e);
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw new CatalogAuthenticationException("LDAP: " + e.getMessage(), e);
         }
 
         return new AuthenticationResponse(jwtManager.createJWTToken(userId, claims, expiration));
