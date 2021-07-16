@@ -39,6 +39,9 @@ public abstract class AuthenticationManager {
 
     protected Logger logger;
 
+    protected int DEFAULT_CONNECT_TIMEOUT = 500; // In milliseconds
+    protected int DEFAULT_READ_TIMEOUT = 1000; // In milliseconds
+
     AuthenticationManager() {
         // Any class extending this one must properly initialise JwtManager
         this.logger = LoggerFactory.getLogger(this.getClass());

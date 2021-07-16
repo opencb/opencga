@@ -54,6 +54,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private String dnFormat;
     private String uidKey;
     private String uidFormat;
+    private int readTimeout;
+    private int connectTimeout;
 
     private long expiration;
 
@@ -85,6 +87,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.dnFormat = String.valueOf(authOptions.getOrDefault(LDAP_DN_FORMAT, "%s"));
         this.uidKey = String.valueOf(authOptions.getOrDefault(LDAP_UID_KEY, "uid"));
         this.uidFormat = String.valueOf(authOptions.getOrDefault(LDAP_UID_FORMAT, "%s"));  // no formatting by default
+        this.readTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(READ_TIMEOUT, DEFAULT_READ_TIMEOUT)));
+        this.connectTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(CONNECT_TIMEOUT, DEFAULT_CONNECT_TIMEOUT)));
         this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(
                 String.valueOf(authOptions.getOrDefault(LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, false))
         );
@@ -246,6 +250,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             // Obtain users from external origin
             Hashtable env = new Hashtable();
             env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+            env.put("com.sun.jndi.ldap.connect.timeout", String.valueOf(connectTimeout));
+            env.put("com.sun.jndi.ldap.read.timeout", String.valueOf(readTimeout));
             env.put(Context.PROVIDER_URL, host);
 
             if (StringUtils.isNotEmpty(authUserId) && StringUtils.isNotEmpty(authPassword)) {
@@ -257,9 +263,6 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             if (ldaps && sslInvalidCertificatesAllowed) {
                 env.put("java.naming.ldap.factory.socket", "org.opencb.opencga.catalog.auth.authentication.MySSLSocketFactory");
             }
-
-            // Specify timeout to be 0.5 seconds
-            env.put("com.sun.jndi.ldap.connect.timeout", "500");
 
             dctx = null;
             while (dctx == null) {
