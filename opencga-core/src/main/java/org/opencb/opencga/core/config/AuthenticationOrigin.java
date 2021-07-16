@@ -48,7 +48,7 @@ public class AuthenticationOrigin {
     public static final String LDAP_UID_FORMAT = "uidFormat";
     public static final String LDAP_SSL_INVALID_CERTIFICATES_ALLOWED = "sslInvalidCertificatesAllowed";
     public static final String READ_TIMEOUT = "readTimeout";
-    public static final String CONNECT_TIMEOUT = "connectTimeout";
+    public static final String CONNECTION_TIMEOUT = "connectionTimeout";
 
     public AuthenticationOrigin() {
         this("internal", AuthenticationType.OPENCGA.name(), "localhost", Collections.emptyMap());

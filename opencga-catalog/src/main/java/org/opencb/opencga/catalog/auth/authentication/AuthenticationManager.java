@@ -39,7 +39,7 @@ public abstract class AuthenticationManager {
 
     protected Logger logger;
 
-    protected int DEFAULT_CONNECT_TIMEOUT = 500; // In milliseconds
+    protected int DEFAULT_CONNECTION_TIMEOUT = 500; // In milliseconds
     protected int DEFAULT_READ_TIMEOUT = 1000; // In milliseconds
 
     AuthenticationManager() {

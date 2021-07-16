@@ -88,7 +88,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.uidKey = String.valueOf(authOptions.getOrDefault(LDAP_UID_KEY, "uid"));
         this.uidFormat = String.valueOf(authOptions.getOrDefault(LDAP_UID_FORMAT, "%s"));  // no formatting by default
         this.readTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(READ_TIMEOUT, DEFAULT_READ_TIMEOUT)));
-        this.connectTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(CONNECT_TIMEOUT, DEFAULT_CONNECT_TIMEOUT)));
+        this.connectTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)));
         this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(
                 String.valueOf(authOptions.getOrDefault(LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, false))
         );
