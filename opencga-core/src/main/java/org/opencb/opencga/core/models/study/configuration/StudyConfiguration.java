@@ -16,6 +16,10 @@ public class StudyConfiguration {
         this.variantEngine = variantEngine;
     }
 
+    public static StudyConfiguration init() {
+        return new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null);
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyConfiguration{");

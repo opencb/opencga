@@ -22,20 +22,27 @@ import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 public class StudyInternal {
 
     private Status status;
+    private StudyIndex index;
     private StudyConfiguration configuration;
 
     public StudyInternal() {
     }
 
-    public StudyInternal(Status status, StudyConfiguration configuration) {
+    public StudyInternal(Status status, StudyIndex index, StudyConfiguration configuration) {
         this.status = status;
+        this.index = index;
         this.configuration = configuration;
+    }
+
+    public static StudyInternal init() {
+        return new StudyInternal(new Status(), StudyIndex.init(), StudyConfiguration.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyInternal{");
         sb.append("status=").append(status);
+        sb.append(", index=").append(index);
         sb.append(", configuration=").append(configuration);
         sb.append('}');
         return sb.toString();
@@ -47,6 +54,15 @@ public class StudyInternal {
 
     public StudyInternal setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public StudyIndex getIndex() {
+        return index;
+    }
+
+    public StudyInternal setIndex(StudyIndex index) {
+        this.index = index;
         return this;
     }
 
