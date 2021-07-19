@@ -123,7 +123,7 @@ public class ClinicalWebService extends AnalysisWebService {
 //    }
 
     @POST
-    @Path("/clinical/configure")
+    @Path("/clinical/configuration/update")
     @ApiOperation(value = "Update Clinical Analysis configuration.", response = ObjectMap.class)
     public Response clinicalConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
