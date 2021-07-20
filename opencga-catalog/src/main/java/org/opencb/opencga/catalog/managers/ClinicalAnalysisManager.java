@@ -254,9 +254,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
 
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
-            clinicalAnalysis.setInternal(ParamUtils.defaultObject(clinicalAnalysis.getInternal(), ClinicalAnalysisInternal::new));
-            clinicalAnalysis.getInternal().setStatus(ParamUtils.defaultObject(clinicalAnalysis.getInternal().getStatus(),
-                    ClinicalAnalysisStatus::new));
+            clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
             clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
                     new Disorder("", "", "", Collections.emptyMap(), "", Collections.emptyList())));
             clinicalAnalysis.setDueDate(ParamUtils.defaultObject(clinicalAnalysis.getDueDate(),
