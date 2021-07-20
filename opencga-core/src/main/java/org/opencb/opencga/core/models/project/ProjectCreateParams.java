@@ -16,26 +16,38 @@
 
 package org.opencb.opencga.core.models.project;
 
+import java.util.Collections;
+import java.util.Map;
+
 public class ProjectCreateParams {
 
     private String id;
-
     private String name;
-    private String description;;
+    private String description;
+    private String creationDate;
     private ProjectOrganism organism;
+    private Map<String, Object> attributes;
 
     public ProjectCreateParams() {
     }
 
-    public ProjectCreateParams(String id, String name, String description, ProjectOrganism organism) {
+    public ProjectCreateParams(String id, String name, String description, String creationDate, ProjectOrganism organism,
+                               Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.creationDate = creationDate;
         this.organism = organism;
+        this.attributes = attributes;
     }
 
     public static ProjectCreateParams of(Project project) {
-        return new ProjectCreateParams(project.getId(), project.getName(), project.getDescription(), project.getOrganism());
+        return new ProjectCreateParams(project.getId(), project.getName(), project.getCreationDate(), project.getDescription(),
+                project.getOrganism(), project.getAttributes());
+    }
+
+    public Project toProject() {
+        return new Project(id, name, creationDate, description, organism, Collections.emptyList(), 1, ProjectInternal.init(), attributes);
     }
 
     @Override
@@ -44,7 +56,9 @@ public class ProjectCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", organism=").append(organism);
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
@@ -76,12 +90,30 @@ public class ProjectCreateParams {
         return this;
     }
 
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public ProjectCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
     public ProjectOrganism getOrganism() {
         return organism;
     }
 
     public ProjectCreateParams setOrganism(ProjectOrganism organism) {
         this.organism = organism;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public ProjectCreateParams setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
         return this;
     }
 }

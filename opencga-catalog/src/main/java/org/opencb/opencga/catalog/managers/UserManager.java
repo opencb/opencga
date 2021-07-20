@@ -71,7 +71,7 @@ public class UserManager extends AbstractManager {
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
 
-    private static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+    static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
       UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
