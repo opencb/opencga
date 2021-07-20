@@ -251,8 +251,11 @@ public class SampleIndexConfiguration {
                         IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "canonical",
                         "MANE Select",
+                        "MANE Plus Clinical",
                         "CCDS",
                         "basic",
+                        "LRG",
+                        "EGLH_HaemOnc",
                         "TSO500"
                         ).setNullable(false));
 
@@ -303,6 +306,7 @@ public class SampleIndexConfiguration {
         }
         annotationIndexConfiguration.biotype.validate();
         annotationIndexConfiguration.consequenceType.validate();
+        annotationIndexConfiguration.transcriptFlagIndexConfiguration.validate();
         annotationIndexConfiguration.clinicalSignificance.validate();
         annotationIndexConfiguration.clinicalSource.validate();
     }
@@ -327,6 +331,10 @@ public class SampleIndexConfiguration {
         }
         if (annotationIndexConfiguration.consequenceType == null) {
             annotationIndexConfiguration.consequenceType = defaultConfiguration.annotationIndexConfiguration.consequenceType;
+        }
+        if (annotationIndexConfiguration.transcriptFlagIndexConfiguration == null) {
+            annotationIndexConfiguration.transcriptFlagIndexConfiguration = defaultConfiguration.annotationIndexConfiguration
+                    .transcriptFlagIndexConfiguration;
         }
         if (annotationIndexConfiguration.clinicalSignificance == null) {
             annotationIndexConfiguration.clinicalSignificance = defaultConfiguration.annotationIndexConfiguration.clinicalSignificance;
