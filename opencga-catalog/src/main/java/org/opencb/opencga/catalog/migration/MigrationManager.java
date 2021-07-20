@@ -430,11 +430,11 @@ public class MigrationManager {
             return -1;
         }
         // Check for RC's
-        int rc_m1 = m1VersionSplit.length == 2 ? Integer.parseInt(m1VersionSplit[1]) : 0;
-        int rc_m2 = m2VersionSplit.length == 2 ? Integer.parseInt(m2VersionSplit[1]) : 0;
-        if (rc_m1 > rc_m2) {
+        int rcM1 = m1VersionSplit.length == 2 ? Integer.parseInt(m1VersionSplit[1]) : 0;
+        int rcM2 = m2VersionSplit.length == 2 ? Integer.parseInt(m2VersionSplit[1]) : 0;
+        if (rcM1 > rcM2) {
             return 1;
-        } else if (rc_m1 < rc_m2) {
+        } else if (rcM1 < rcM2) {
             return -1;
         }
 
