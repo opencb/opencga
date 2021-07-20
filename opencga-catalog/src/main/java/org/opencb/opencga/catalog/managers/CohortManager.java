@@ -369,8 +369,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
         cohort.setRelease(studyManager.getCurrentRelease(study));
-        cohort.setInternal(ParamUtils.defaultObject(cohort.getInternal(), CohortInternal::new));
-        cohort.getInternal().setStatus(ParamUtils.defaultObject(cohort.getInternal().getStatus(), CohortStatus::new));
+        cohort.setInternal(CohortInternal.init());
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
         cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), CustomStatus::new));
         cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
