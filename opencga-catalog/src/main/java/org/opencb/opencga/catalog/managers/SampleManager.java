@@ -186,7 +186,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
         sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::init));
-        sample.getInternal().setStatus(new Status());
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
 
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
