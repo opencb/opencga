@@ -480,12 +480,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * Modify SampleIndex configuration. Automatically submit a job to rebuild the sample index.
      * @param studyStr  Study identifier
      * @param sampleIndexConfiguration New sample index configuration
+     * @param skipRebuild Do not launch rebuild jobs
      * @param token User's token
      * @return Result with VariantSampleIndexOperationTool job
      * @throws CatalogException on catalog errors
      * @throws StorageEngineException on storage engine errors
      */
-    public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+    public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration,
+                                                   boolean skipRebuild, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
             sampleIndexConfiguration.validate();
@@ -494,11 +496,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
-            // If changes, launch sample-index-run
-            VariantSampleIndexParams params =
-                    new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
-            return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
-                    params.toParams(STUDY_PARAM, studyFqn), token);
+            if (skipRebuild) {
+                return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0);
+            } else {
+                // If changes, launch sample-index-run
+                VariantSampleIndexParams params =
+                        new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
+                return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                        params.toParams(STUDY_PARAM, studyFqn), token);
+            }
         });
     }
 
