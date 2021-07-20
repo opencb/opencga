@@ -53,8 +53,12 @@ public class CatalogAuthenticationException extends CatalogException {
         return new CatalogAuthenticationException("Incorrect user or password.");
     }
 
-    public static CatalogAuthenticationException userNotAllowed() {
-        return new CatalogAuthenticationException("User not allowed to access the system.");
+    public static CatalogAuthenticationException incorrectUserOrPassword(String domain) {
+        return new CatalogAuthenticationException(domain + ": Incorrect user or password.");
+    }
+
+    public static CatalogAuthenticationException userNotAllowed(String domain) {
+        return new CatalogAuthenticationException(domain + ": User not allowed to access the system.");
     }
 
 }
