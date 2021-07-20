@@ -199,7 +199,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         FileInternal.initialize(), 1000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        null, null, 1, new CustomStatus(), new StudyInternal(new Status(), null), Collections.emptyMap()), null);
+                        null, null, 1, new CustomStatus(), StudyInternal.init(), Collections.emptyMap()), null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
                 new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(),
@@ -221,7 +221,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
-                        new StudyInternal(new Status(), null), Collections.emptyMap()), null);
+                        StudyInternal.init(), Collections.emptyMap()), null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("mineco", "MINECO", "mineco", "", "", null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
@@ -233,7 +233,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         "data/alignment.bam", null, "Tophat alignment file", FileInternal.initialize(), 5000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
-                        new StudyInternal(new Status(), null), Collections.emptyMap()), null);
+                        StudyInternal.init(), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);
