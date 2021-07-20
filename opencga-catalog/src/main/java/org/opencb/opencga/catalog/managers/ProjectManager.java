@@ -38,9 +38,11 @@ import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.project.*;
+import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectInternal;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -255,8 +257,8 @@ public class ProjectManager extends AbstractManager {
         OpenCGAResult<Project> queryResult;
         Project project;
         try {
-            project = new Project(id, name, description, new ProjectOrganism(scientificName, commonName,
-                    assembly), 1, new ProjectInternal(new Datastores(), new Status()));
+            project = new Project(id, name, description, new ProjectOrganism(scientificName, commonName, assembly), 1,
+                    ProjectInternal.init());
             validateProjectForCreation(project, user.first());
 
             projectDBAdaptor.insert(project, userId, options);

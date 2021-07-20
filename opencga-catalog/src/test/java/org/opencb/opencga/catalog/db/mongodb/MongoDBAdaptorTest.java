@@ -177,12 +177,9 @@ public class MongoDBAdaptorTest extends GenericTest {
         user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
                 Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user1, "1234", null);
-        catalogProjectDBAdaptor.insert(new Project("P1", "project", "", null, 1,
-                new ProjectInternal(new Datastores(), new Status())), "jcoll", null);
-        catalogProjectDBAdaptor.insert(new Project("P2", "project", "", null, 1,
-                new ProjectInternal(new Datastores(), new Status())), "jcoll", null);
-        catalogProjectDBAdaptor.insert(new Project("P3", "project", "", null, 1,
-                new ProjectInternal(new Datastores(), new Status())), "jcoll", null);
+        catalogProjectDBAdaptor.insert(new Project("P1", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
+        catalogProjectDBAdaptor.insert(new Project("P2", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
+        catalogProjectDBAdaptor.insert(new Project("P3", "project", "", null, 1, ProjectInternal.init()), "jcoll", null);
 
         user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "ACME", new UserInternal(new UserStatus()));
         catalogUserDBAdaptor.insert(user2, "1111", null);
@@ -191,7 +188,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                 Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user3, "2222", null);
         catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", null, "very long description", null,
-                Collections.emptyList(), 1, new ProjectInternal(new Datastores(), new Status()), Collections.emptyMap()
+                Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()
         ), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
                 new Study("name", "Study name", "ph1", "", "", null, 0,
@@ -210,7 +207,7 @@ public class MongoDBAdaptorTest extends GenericTest {
 
         catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
         catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", null, "My description", null,
-                Collections.emptyList(), 1, new ProjectInternal(new Datastores(), new Status()), Collections.emptyMap()), "pfurio", null);
+                Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("spongeScan", "spongeScan", "sponges", "", "", null,
                         0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
