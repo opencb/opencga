@@ -701,19 +701,25 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         logger.info("AnnotationIndex = " + IndexUtils.maskToString(
                 annotationIndexQuery.getAnnotationIndexMask(), annotationIndexQuery.getAnnotationIndex()));
         if (!annotationIndexQuery.getBiotypeFilter().isNoOp()) {
-            logger.info("BiotypeIndex    = " + annotationIndexQuery.getBiotypeFilter().toString());
+            logger.info("Biotype filter  = " + annotationIndexQuery.getBiotypeFilter().toString());
         }
         if (!annotationIndexQuery.getConsequenceTypeFilter().isNoOp()) {
-            logger.info("CTIndex         = " + annotationIndexQuery.getConsequenceTypeFilter().toString());
+            logger.info("CT filter       = " + annotationIndexQuery.getConsequenceTypeFilter().toString());
+        }
+        if (!annotationIndexQuery.getTranscriptFlagFilter().isNoOp()) {
+            logger.info("Tf filter       = " + annotationIndexQuery.getTranscriptFlagFilter().toString());
         }
         if (!annotationIndexQuery.getCtBtFilter().isNoOp()) {
-            logger.info("CtBtIndex       = " + annotationIndexQuery.getCtBtFilter().toString());
+            logger.info("CtBt filter     = " + annotationIndexQuery.getCtBtFilter().toString());
+        }
+        if (!annotationIndexQuery.getCtTfFilter().isNoOp()) {
+            logger.info("CtTf filter     = " + annotationIndexQuery.getCtTfFilter().toString());
         }
         if (!annotationIndexQuery.getClinicalFilter().isNoOp()) {
-            logger.info("ClinicalIndex   = " + annotationIndexQuery.getClinicalFilter());
+            logger.info("Clinical filter = " + annotationIndexQuery.getClinicalFilter());
         }
         if (!annotationIndexQuery.getPopulationFrequencyFilter().isNoOp()) {
-            logger.info("PopFreq         = " + annotationIndexQuery.getPopulationFrequencyFilter());
+            logger.info("PopFreq filter  = " + annotationIndexQuery.getPopulationFrequencyFilter());
         }
     }
 
