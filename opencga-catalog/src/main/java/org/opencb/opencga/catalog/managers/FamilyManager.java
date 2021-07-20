@@ -212,8 +212,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setDisorders(ParamUtils.defaultObject(family.getDisorders(), Collections.emptyList()));
             family.setCreationDate(TimeUtils.getTime());
             family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
-            family.setInternal(ParamUtils.defaultObject(family.getInternal(), FamilyInternal::new));
-            family.getInternal().setStatus(new FamilyStatus());
+            family.setInternal(FamilyInternal.init());
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
             family.setStatus(ParamUtils.defaultObject(family.getStatus(), CustomStatus::new));
             family.setQualityControl(ParamUtils.defaultObject(family.getQualityControl(), FamilyQualityControl::new));
