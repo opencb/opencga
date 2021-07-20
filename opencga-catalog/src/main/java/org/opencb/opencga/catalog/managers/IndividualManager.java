@@ -42,7 +42,6 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -222,8 +221,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setStatus(ParamUtils.defaultObject(individual.getStatus(), CustomStatus::new));
         individual.setQualityControl(ParamUtils.defaultObject(individual.getQualityControl(), IndividualQualityControl::new));
 
-        individual.setInternal(ParamUtils.defaultObject(individual.getInternal(), IndividualInternal::init));
-        individual.getInternal().setStatus(new Status());
+        individual.setInternal(IndividualInternal.init());
         individual.setCreationDate(TimeUtils.getTime());
         individual.setModificationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
