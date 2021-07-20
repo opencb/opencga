@@ -352,12 +352,16 @@ public class MigrationManager {
                 throw new IllegalStateException("Found duplicated migration id '" + annotation.id() + "' in version "
                         + annotation.version());
             }
-            if (versionRankMap.get(annotation.version()).contains(annotation.rank())) {
-                throw new IllegalStateException("Found duplicated migration rank " + annotation.rank() + " in version "
-                        + annotation.version());
+            // Exclude default rank -1
+            if (annotation.rank() != -1) {
+                if (versionRankMap.get(annotation.version()).contains(annotation.rank())) {
+                    throw new IllegalStateException("Found duplicated migration rank " + annotation.rank() + " in version "
+                            + annotation.version());
+                }
+
+                versionRankMap.get(annotation.version()).add(annotation.rank());
             }
             versionIdMap.get(annotation.version()).add(annotation.id());
-            versionRankMap.get(annotation.version()).add(annotation.rank());
         }
 
         return migrations;
@@ -398,6 +402,9 @@ public class MigrationManager {
             return 1;
         } else if (m1Annotation.rank() < m2Annotation.rank()) {
             return -1;
+        } else if (m1Annotation.rank() == -1) {
+            // If rank is -1 is because the order doesn't really matter so we simply prioritise the first migration found
+            return 1;
         }
 
         throw new IllegalStateException("Found migration '" + m1Annotation.id() + "' and '" + m2Annotation.id() + "' with same rank "
