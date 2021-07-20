@@ -15,10 +15,7 @@ import org.opencb.opencga.core.models.job.JobReferenceParam;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -267,6 +264,23 @@ public class MigrationManagerTest extends AbstractManagerTest {
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
+    }
+
+
+    @Test
+    public void testMigrationVersionOrder() {
+        List<String> expected = Arrays.asList("0.0.0", "0.0.1", "0.0.10", "0.1.0", "0.1.10", "1.1.0", "2.0.0",
+                "2.0.1",
+                "2.0.1-RC1",
+                "2.0.1-RC2",
+                "2.0.1-RC3",
+                "2.1.0");
+
+        ArrayList<String> actual = new ArrayList<>(expected);
+        Collections.shuffle(actual);
+        actual.sort(MigrationManager::compareVersion);
+
+        assertEquals(expected, actual);
     }
 
 }
