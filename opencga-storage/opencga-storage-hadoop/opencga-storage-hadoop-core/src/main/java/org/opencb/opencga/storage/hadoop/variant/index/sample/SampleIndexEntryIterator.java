@@ -30,7 +30,9 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
     Variant next();
 
     default SampleVariantIndexEntry nextSampleVariantIndexEntry() {
-        AnnotationIndexEntry annotationIndexEntry = nextAnnotationIndexEntry();
+        // Make a copy of the AnnotationIndexEntry!
+        // This object could be reused
+        AnnotationIndexEntry annotationIndexEntry = new AnnotationIndexEntry(nextAnnotationIndexEntry());
         BitBuffer fileIndex = null;
         if (hasFileIndex()) {
             fileIndex = nextFileIndexEntry();

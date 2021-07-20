@@ -36,7 +36,6 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileVisitResult;
@@ -379,7 +378,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             throw new CatalogException("File '" + c.inputFile + "' is not a zip file");
         }
 
-        RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplate(c.study, params);
+        RestResponse<String> uploadResponse = openCGAClient.getStudyClient().uploadTemplates(c.study, params);
         if (path.toFile().isDirectory()) {
             Path manifestPath = path.resolve("manifest.zip");
             logger.debug("Removing generated zip file '" + manifestPath + "' after upload");
@@ -397,7 +396,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);
         ObjectMap params = new ObjectMap();
 
-        return openCGAClient.getStudyClient().runTemplate(c.study, templateParams, params);
+        return openCGAClient.getStudyClient().runTemplates(c.study, templateParams, params);
     }
 
     /************************************************* Acl commands *********************************************************/

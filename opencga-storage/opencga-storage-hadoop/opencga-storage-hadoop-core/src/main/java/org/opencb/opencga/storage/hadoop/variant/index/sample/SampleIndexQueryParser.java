@@ -835,7 +835,7 @@ public class SampleIndexQueryParser {
                 intergenic = false;
             } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)) {
                 intergenic = true;
-            }
+            } // else, leave undefined : intergenic = null
             boolean ctFilterCoveredBySummary = false;
             boolean ctBtCombinationCoveredBySummary = false;
             if (LOF_SET.containsAll(soNames)) {
