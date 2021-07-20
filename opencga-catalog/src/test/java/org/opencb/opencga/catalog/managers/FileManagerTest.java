@@ -844,7 +844,7 @@ public class FileManagerTest extends AbstractManagerTest {
         link(uri, "", studyFqn, new ObjectMap(), token);
 
         File file = fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder_to_link/file.txt",
-                "", FileInternal.initialize(), 0, null, null, "", null, null, null), false, "bla bla", null, token).first();
+                "", FileInternal.init(), 0, null, null, "", null, null, null), false, "bla bla", null, token).first();
 
         assertEquals(uri.resolve("file.txt"), file.getUri());
     }
@@ -1540,7 +1540,7 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, FileInternal.initialize().setStatus(new FileStatus(FileStatus.STAGE)),
+                "folder/subfolder/subsubfolder/my_staged.txt", null, FileInternal.init().setStatus(new FileStatus(FileStatus.STAGE)),
                         0, null, null, "", null, null, null), true, "bla bla", null, token).first();
 
         Query query = new Query()
