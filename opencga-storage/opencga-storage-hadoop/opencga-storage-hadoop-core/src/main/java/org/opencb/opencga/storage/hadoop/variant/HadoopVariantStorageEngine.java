@@ -563,7 +563,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        ObjectMap options = configuration.getVariantEngine(STORAGE_ENGINE_ID).getOptions();
+        ObjectMap options = getOptions();
 
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
@@ -603,7 +603,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             logger.info("------------------------------------------------------");
             logger.info("Remove files {} in archive '{}' and analysis table '{}'", fileIds, archiveTable, variantsTable);
             logger.info("------------------------------------------------------");
-            ExecutorService service = options.getBoolean("delete.parallel", true)
+            boolean parallelDelete = options.getBoolean(
+                    VariantStorageOptions.DELETE_PARALLEL.key(),
+                    VariantStorageOptions.DELETE_PARALLEL.defaultValue());
+            ExecutorService service = parallelDelete
                     ? Executors.newCachedThreadPool()
                     : Executors.newSingleThreadExecutor();
             Future<Integer> deleteFromVariants = service.submit(() -> {
@@ -670,7 +673,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             service.awaitTermination(12, TimeUnit.HOURS);
             if (!samplesToRebuildIndex.isEmpty()) {
                 logger.info("Rebuild sample index for samples " + samplesToRebuildIndex);
+                for (String sample : samplesToRebuildIndex) {
+                    int sampleId = getMetadataManager().getSampleIdOrFail(studyId, sample);
+                    getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                        SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
+                        SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
+                        return sampleMetadata;
+                    });
+                }
                 sampleIndex(study, samplesToRebuildIndex, options);
+                sampleIndexAnnotate(study, samplesToRebuildIndex, options);
             }
 
             logger.info("------------------------------------------------------");

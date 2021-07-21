@@ -37,7 +37,7 @@ public @interface Migration {
     /**
      * @return rank to know the execution order.
      */
-    int rank();
+    int rank() default -1;
 
     /**
      * @return migration patch.

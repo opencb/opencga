@@ -1,0 +1,7 @@
+#id	somatic	individualId	processing.product	collection.tissue
+sample1	true	child	product1	liver
+sample2	false	child	product1	kidney
+sample3	true	sister	product1	liver
+sample4	true	sister	product2	kidney
+sample5	false	father	product2	liver
+sample6	true	mother	product3	liver

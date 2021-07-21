@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 public class VariantFilterBuilder {
 
@@ -31,7 +31,7 @@ public class VariantFilterBuilder {
         List<Predicate<Variant>> filters = new LinkedList<>();
 
         addRegionFilters(query, filters);
-//        addAnnotationFilters(query, filters);
+        addAnnotationFilters(query, filters);
 
         if (filters.isEmpty()) {
             return v -> true;
@@ -127,10 +127,43 @@ public class VariantFilterBuilder {
         }
     }
 
-//    private void addAnnotationFilters(Query query, List<Predicate<Variant>> filters) {
+    private void addAnnotationFilters(Query query, List<Predicate<Variant>> filters) {
 //        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
-//
-//    }
+        List<Set<String>> clinicalCombinations = VariantQueryParser.parseClinicalCombination(query)
+                .stream().map(HashSet::new).collect(Collectors.toList());
+        if (clinicalCombinations.isEmpty()) {
+            return;
+        }
+        if (clinicalCombinations.size() == 1) {
+            Set<String> clinicalCombinationSet = clinicalCombinations.get(0);
+            filters.add(variant -> {
+                for (String c : VariantQueryUtils.buildClinicalCombinations(variant.getAnnotation())) {
+                    if (clinicalCombinationSet.contains(c)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        } else {
+            filters.add(variant -> {
+                for (Set<String> sourceCombinations : clinicalCombinations) {
+                    boolean validSource = false;
+                    for (String c : VariantQueryUtils.buildClinicalCombinations(variant.getAnnotation())) {
+                        if (sourceCombinations.contains(c)) {
+                            validSource = true;
+                            break;
+                        }
+                    }
+                    if (!validSource) {
+                        return false;
+                    }
+                }
+                // All sources were valid
+                return true;
+            });
+        }
+
+    }
 
     private boolean validGene(Set<String> genes, ConsequenceType ct) {
         return genes.contains(ct.getGeneId()) || genes.contains(ct.getGeneName()) || genes.contains(ct.getTranscriptId());

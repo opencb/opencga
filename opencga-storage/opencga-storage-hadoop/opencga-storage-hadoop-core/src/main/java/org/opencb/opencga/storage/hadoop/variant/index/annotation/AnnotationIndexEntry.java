@@ -4,6 +4,7 @@ import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -25,6 +26,22 @@ public class AnnotationIndexEntry {
 
 
     public AnnotationIndexEntry() {
+    }
+
+    public AnnotationIndexEntry(AnnotationIndexEntry annotationIndexEntry) {
+        this(
+                annotationIndexEntry.summaryIndex,
+                annotationIndexEntry.intergenic,
+                annotationIndexEntry.ctIndex,
+                annotationIndexEntry.btIndex,
+                new CtBtCombination(
+                        Arrays.copyOf(
+                                annotationIndexEntry.ctBtCombination.ctBtMatrix, annotationIndexEntry.ctBtCombination.ctBtMatrix.length),
+                        annotationIndexEntry.ctBtCombination.numCt, annotationIndexEntry.ctBtCombination.numBt),
+                annotationIndexEntry.popFreqIndex == null ? null : new BitBuffer(annotationIndexEntry.popFreqIndex),
+                annotationIndexEntry.hasClinical,
+                annotationIndexEntry.clinicalIndex == null ? null : new BitBuffer(annotationIndexEntry.clinicalIndex)
+        );
     }
 
     public AnnotationIndexEntry(

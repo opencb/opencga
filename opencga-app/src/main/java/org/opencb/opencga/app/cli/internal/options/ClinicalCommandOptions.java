@@ -201,8 +201,14 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--xref"}, description = ANNOT_XREF_DESCR)
         public String xref;
 
+        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
+        public String clinical;
+
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
+
+        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
+        public boolean clinicalConfirmedStatus;
 
         @Parameter(names = {"--family"}, description = FAMILY_DESC, arity = 1)
         public String family;
@@ -221,6 +227,12 @@ public class ClinicalCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC, arity = 1)
+        public String panelModeOfInheritance;
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC, arity = 1)
+        public String panelConfidence;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
+        public String panelRoleInCancer;
 
         @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
         public boolean primary;

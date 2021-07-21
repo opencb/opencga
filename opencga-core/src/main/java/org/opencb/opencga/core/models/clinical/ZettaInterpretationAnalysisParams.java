@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.models.clinical;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
@@ -58,10 +57,15 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
     private String proteinKeyword;
     private String drug;
     private String functionalScore;
+    private String clinical;
     private String clinicalSignificance;
+    private boolean clinicalConfirmedStatus;
     private String customAnnotation;
 
     private String panel;
+    private String panelModeOfInheritance;
+    private String panelConfidence;
+    private String panelRoleInCancer;
 
     private String trait;
 
@@ -551,6 +555,15 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         return this;
     }
 
+    public String getClinical() {
+        return clinical;
+    }
+
+    public ZettaInterpretationAnalysisParams setClinical(String clinical) {
+        this.clinical = clinical;
+        return this;
+    }
+
     public String getClinicalSignificance() {
         return clinicalSignificance;
     }
@@ -559,6 +572,16 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
         this.clinicalSignificance = clinicalSignificance;
         return this;
     }
+
+    public boolean getClinicalConfirmedStatus() {
+        return clinicalConfirmedStatus;
+    }
+
+    public ZettaInterpretationAnalysisParams setClinicalConfirmedStatus(boolean clinicalConfirmedStatus) {
+        this.clinicalConfirmedStatus = clinicalConfirmedStatus;
+        return this;
+    }
+
 
     public String getCustomAnnotation() {
         return customAnnotation;
@@ -575,6 +598,33 @@ public class ZettaInterpretationAnalysisParams extends ToolParams {
 
     public ZettaInterpretationAnalysisParams setPanel(String panel) {
         this.panel = panel;
+        return this;
+    }
+
+    public String getPanelModeOfInheritance() {
+        return panelModeOfInheritance;
+    }
+
+    public ZettaInterpretationAnalysisParams setPanelModeOfInheritance(String panelModeOfInheritance) {
+        this.panelModeOfInheritance = panelModeOfInheritance;
+        return this;
+    }
+
+    public String getPanelConfidence() {
+        return panelConfidence;
+    }
+
+    public ZettaInterpretationAnalysisParams setPanelConfidence(String panelConfidence) {
+        this.panelConfidence = panelConfidence;
+        return this;
+    }
+
+    public String getPanelRoleInCancer() {
+        return panelRoleInCancer;
+    }
+
+    public ZettaInterpretationAnalysisParams setPanelRoleInCancer(String panelRoleInCancer) {
+        this.panelRoleInCancer = panelRoleInCancer;
         return this;
     }
 

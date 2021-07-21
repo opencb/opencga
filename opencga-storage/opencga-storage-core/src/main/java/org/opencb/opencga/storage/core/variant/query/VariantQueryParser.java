@@ -57,6 +57,88 @@ public class VariantQueryParser {
         this.projectionParser = new VariantQueryProjectionParser(metadataManager);
     }
 
+    public static List<List<String>> parseClinicalCombination(Query query) {
+        return parseClinicalCombination(query, false);
+    }
+
+    public static List<List<String>> parseClinicalCombination(Query query, boolean allCombinations) {
+        List<String> clinicalCombinationSet = parseClinicalCombinationsList(query, allCombinations);
+        if (clinicalCombinationSet.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
+        if (QueryOperation.AND.equals(clinicalSources.getOperation()) && clinicalSources.getValues().size() > 1) {
+            List<List<String>> combinationsPerSource = new ArrayList<>(clinicalSources.getValues().size());
+            for (String source : clinicalSources.getValues()) {
+                combinationsPerSource.add(clinicalCombinationSet.stream().filter(s -> s.contains(source)).collect(Collectors.toList()));
+            }
+            return combinationsPerSource;
+        } else {
+            return Collections.singletonList(clinicalCombinationSet);
+        }
+    }
+
+    protected static List<String> parseClinicalCombinationsList(Query query) {
+        return parseClinicalCombinationsList(query, false);
+    }
+
+    protected static List<String> parseClinicalCombinationsList(Query query, boolean allCombinations) {
+        Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
+        List<String> clinicalSourceList = clinicalSources.getValues();
+        List<ClinicalSignificance> clinicalSigList = getAsEnumList(query, ANNOT_CLINICAL_SIGNIFICANCE, ClinicalSignificance.class);
+        boolean clinicalConfirmedStatus = query.getBoolean(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+
+        List<String> clinicalCombinations = new LinkedList<>();
+        if (clinicalSourceList.isEmpty()) {
+            if (allCombinations) {
+                clinicalSourceList.add("clinvar");
+                clinicalSourceList.add("cosmic");
+            } else {
+                // Add at least one value to enter the loop
+                clinicalSourceList.add(null);
+            }
+        }
+        if (clinicalSigList.isEmpty()) {
+            if (allCombinations) {
+                clinicalSigList.add(ClinicalSignificance.benign);
+                clinicalSigList.add(ClinicalSignificance.likely_benign);
+                clinicalSigList.add(ClinicalSignificance.likely_pathogenic);
+                clinicalSigList.add(ClinicalSignificance.pathogenic);
+                clinicalSigList.add(ClinicalSignificance.uncertain_significance);
+            } else {
+                // Add at least one value to enter the loop
+                clinicalSigList.add(null);
+            }
+        }
+        for (String clinicalSource : clinicalSourceList) {
+            for (ClinicalSignificance clinicalSignificance : clinicalSigList) {
+                String value = "";
+                if (clinicalSource != null) {
+                    value = clinicalSource;
+                }
+                if (clinicalSignificance != null) {
+                    if (!value.isEmpty()) {
+                        value += "_";
+                    }
+                    value += clinicalSignificance.name();
+                }
+                if (clinicalConfirmedStatus || allCombinations) {
+                    if (allCombinations) {
+                        clinicalCombinations.add(value);
+                    }
+                    if (!value.isEmpty()) {
+                        value += "_";
+                    }
+                    value += "confirmed";
+                }
+                if (!value.isEmpty()) {
+                    clinicalCombinations.add(value);
+                }
+            }
+        }
+        return clinicalCombinations;
+    }
+
     public ParsedVariantQuery parseQuery(Query query, QueryOptions options) {
         return parseQuery(query, options, false);
     }

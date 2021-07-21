@@ -2,11 +2,11 @@ package org.opencb.opencga.analysis.rga.iterators;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -83,7 +83,7 @@ public abstract class SolrNativeIterator<E> implements Iterator<E>, AutoCloseabl
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
 
                 // Execute the query and fetch setRows records, we will iterate over this list
-                solrResponse = solrClient.query(collection, solrQuery);
+                solrResponse = solrClient.query(collection, solrQuery, SolrRequest.METHOD.POST);
 
                 // When the number of returned elements is less than setRows it means there are no enough elements in the server
                 if (solrResponse.getResults().size() < BATCH_SIZE) {

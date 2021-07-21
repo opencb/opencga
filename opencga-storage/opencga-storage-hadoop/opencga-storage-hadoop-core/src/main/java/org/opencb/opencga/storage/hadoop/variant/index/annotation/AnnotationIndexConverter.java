@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
@@ -149,24 +148,32 @@ public class AnnotationIndexConverter {
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
             b |= CLINICAL_MASK;
             clinical = true;
-            Set<String> clinicalSignificances = new HashSet<>();
-            Set<String> clinicalSource = new HashSet<>();
-            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
-                if (evidenceEntry.getSource() != null && StringUtils.isNotEmpty(evidenceEntry.getSource().getName())) {
-                    clinicalSource.add(evidenceEntry.getSource().getName().toLowerCase());
-                }
-                if (evidenceEntry.getVariantClassification() != null) {
-                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
-                    if (clinicalSignificance != null) {
-                        if (clinicalSignificance.equals(ClinicalSignificance.VUS)) {
-                            clinicalSignificance = ClinicalSignificance.uncertain_significance;
-                        }
-                        clinicalSignificances.add(clinicalSignificance.toString());
-                    }
+            List<String> combinations = VariantQueryUtils.buildClinicalCombinations(variantAnnotation);
+            Set<String> source = new HashSet<>();
+//            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+//                if (evidenceEntry.getSource() != null && StringUtils.isNotEmpty(evidenceEntry.getSource().getName())) {
+//                    clinicalSource.add(evidenceEntry.getSource().getName().toLowerCase());
+//                }
+//                if (evidenceEntry.getVariantClassification() != null) {
+//                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
+//                    if (clinicalSignificance != null) {
+//                        if (clinicalSignificance.equals(ClinicalSignificance.VUS)) {
+//                            clinicalSignificance = ClinicalSignificance.uncertain_significance;
+//                        }
+//                        clinicalSignificances.add(clinicalSignificance.toString());
+//                    }
+//                }
+//            }
+
+            for (String combination : combinations) {
+                if (combination.startsWith("cosmic")) {
+                    source.add("cosmic");
+                } else if (combination.startsWith("clinvar")) {
+                    source.add("clinvar");
                 }
             }
-            schema.getClinicalIndexSchema().getClinicalSignificanceField().write(new ArrayList<>(clinicalSignificances), clinicalIndex);
-            schema.getClinicalIndexSchema().getSourceField().write(new ArrayList<>(clinicalSource), clinicalIndex);
+            schema.getClinicalIndexSchema().getSourceField().write(new ArrayList<>(source), clinicalIndex);
+            schema.getClinicalIndexSchema().getClinicalSignificanceField().write(combinations, clinicalIndex);
         }
         return new AnnotationIndexEntry(b, intergenic, ctIndex.toInt(), btIndex.toInt(), ctBtCombination, popFreq, clinical, clinicalIndex);
     }

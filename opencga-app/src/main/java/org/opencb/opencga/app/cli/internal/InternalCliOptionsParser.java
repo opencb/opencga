@@ -35,6 +35,7 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions.RGA_AUX_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.StudyCommandOptions.TemplateLoader.TEMPLATE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
@@ -104,6 +105,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private CohortCommandOptions cohortCommandOptions;
     private IndividualCommandOptions individualCommandOptions;
     private JobCommandOptions jobCommandOptions;
+    private StudyCommandOptions studyCommandOptions;
 
 
     public InternalCliOptionsParser() {
@@ -257,6 +259,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("jobs", jobCommandOptions);
         JCommander jobSubCommands = jCommander.getCommands().get("jobs");
         jobSubCommands.addCommand("secondary-index", jobCommandOptions.secondaryIndex);
+
+        studyCommandOptions = new StudyCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("studies", studyCommandOptions);
+        JCommander studySubcommands = jCommander.getCommands().get("studies");
+        studySubcommands.addCommand(TEMPLATE_RUN_COMMAND, studyCommandOptions.templateLoader);
     }
 
     @Override
@@ -535,5 +542,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public JobCommandOptions getJobCommandOptions() {
         return jobCommandOptions;
+    }
+
+    public StudyCommandOptions getStudyCommandOptions() {
+        return studyCommandOptions;
     }
 }

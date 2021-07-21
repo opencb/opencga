@@ -133,18 +133,19 @@ public class Sample extends Annotable {
                   String creationDate, String modificationDate, String description, boolean somatic, List<Phenotype> phenotypes,
                   String individualId, List<String> fileIds, CustomStatus status, SampleInternal internal,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, uuid, processing, collection, release, version, creationDate, modificationDate, description, somatic,
-                phenotypes, individualId, Collections.emptyList(), fileIds, status, internal, annotationSets, attributes);
+        this(id, uuid, processing, collection, null, release, version, creationDate, modificationDate, description,
+                somatic, phenotypes, individualId, Collections.emptyList(), fileIds, status, internal, annotationSets, attributes);
     }
 
-    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, int release, int version,
-                  String creationDate, String modificationDate, String description, boolean somatic, List<Phenotype> phenotypes,
-                  String individualId, List<String> cohortIds, List<String> fileIds, CustomStatus status, SampleInternal internal,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, SampleQualityControl qualityControl,
+                  int release, int version, String creationDate, String modificationDate, String description, boolean somatic,
+                  List<Phenotype> phenotypes, String individualId, List<String> cohortIds, List<String> fileIds, CustomStatus status,
+                  SampleInternal internal, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.processing = processing;
         this.collection = collection;
+        this.qualityControl = qualityControl;
         this.release = release;
         this.version = version;
         this.creationDate = creationDate;

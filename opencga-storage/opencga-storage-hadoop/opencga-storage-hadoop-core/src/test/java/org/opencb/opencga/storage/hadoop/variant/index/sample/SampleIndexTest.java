@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.TableName;
@@ -23,6 +24,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -32,7 +34,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -43,19 +44,21 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CategoricalMultiValuedIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.THREE_PRIME_UTR_VARIANT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.THREE_PRIME_UTR_VARIANT;
 
 /**
  * Created on 12/04/19.
@@ -379,6 +382,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "likely_benign"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_benign"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign"));
+        testQueryAnnotationIndex(new Query(ANNOT_CLINICAL.key(), "clinvar"));
 
 //        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "intergenic_variant"));
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained"));
@@ -591,8 +595,56 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     @Test
+    public void testAggregationCorrectness() throws Exception {
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
+
+        SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(STUDY_NAME_3);
+
+        CategoricalMultiValuedIndexField<String> field = (CategoricalMultiValuedIndexField<String>) schema.getCtIndex().getField();
+        IndexFieldConfiguration ctConf = field.getConfiguration();
+        List<String> cts = new ArrayList<>();
+        for (String ct : ctConf.getValues()) {
+            if (!field.ambiguous(Collections.singletonList(ct))) {
+                cts.add(ct);
+            }
+        }
+        assertNotEquals(new ArrayList<>(), cts);
+//        cts = Collections.singletonList("TF_binding_site_variant");
+        System.out.println("cts = " + cts);
+
+        for (String ct : cts) {
+            Query query = new Query(STUDY.key(), STUDY_NAME_3)
+                    .append(SAMPLE.key(), "NA12877")
+                    .append(ANNOT_CONSEQUENCE_TYPE.key(), ct);
+            assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType")));
+
+            AtomicInteger count = new AtomicInteger(0);
+            sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
+            FacetField facet = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType")).first();
+
+            assertEquals(count.get(), facet.getCount());
+            FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
+            System.out.println("ct = " + ct + " : " + count.get());
+//            System.out.println("facet = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
+            String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
+                    + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
+            if (count.get() == 0) {
+                // Count be null if no counts
+                if (bucket != null) {
+                    assertEquals(msg, 0, bucket.getCount());
+                }
+            } else {
+                assertNotNull(msg, bucket);
+                assertEquals(msg, count.get(), bucket.getCount());
+            }
+        }
+    }
+
+    @Test
     public void testAggregation() throws Exception {
-        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor());
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
 
         testAggregation(executor, "qual", STUDY_NAME_3, "NA12877");
         testAggregation(executor, "dp", STUDY_NAME_3, "NA12877");
@@ -605,6 +657,17 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testAggregation(executor, "type;gt>>ct");
         testAggregation(executor, "gt>>type>>ct>>biotype");
         testAggregation(executor, "clinicalSignificance>>gt>>type>>ct>>biotype");
+
+
+        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter();
+
+        Query query = new Query(STUDY.key(), STUDY_NAME_3).append(SAMPLE.key(), "NA12877").append(SAMPLE_DATA.key(), "NA12877:DP>=10");
+        assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "chromosome")));
+        System.out.println(writer.writeValueAsString(executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "chromosome")).first()));
+
+        // DP>=11 is not supported
+        query = new Query(STUDY.key(), STUDY_NAME_3).append(SAMPLE.key(), "NA12877").append(SAMPLE_DATA.key(), "NA12877:DP>=11");
+        assertFalse(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "chromosome")));
     }
 
     private void testAggregation(SampleIndexVariantAggregationExecutor executor, String facet) throws JsonProcessingException {

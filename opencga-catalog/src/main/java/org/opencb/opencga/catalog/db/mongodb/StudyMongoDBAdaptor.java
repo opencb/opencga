@@ -216,25 +216,35 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         studyCollection.insert(clientSession, studyObject, null);
 
-        for (File file : files) {
-            dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
-                    Collections.emptyList(), Collections.emptyList());
+        if (files != null) {
+            for (File file : files) {
+                dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
+                        Collections.emptyList(), Collections.emptyList());
+            }
         }
 
-        for (Job job : jobs) {
-            dbAdaptorFactory.getCatalogJobDBAdaptor().insert(clientSession, study.getUid(), job);
+        if (jobs != null) {
+            for (Job job : jobs) {
+                dbAdaptorFactory.getCatalogJobDBAdaptor().insert(clientSession, study.getUid(), job);
+            }
         }
 
-        for (Cohort cohort : cohorts) {
-            dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
+        if (cohorts != null) {
+            for (Cohort cohort : cohorts) {
+                dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
+            }
         }
 
-        for (org.opencb.opencga.core.models.panel.Panel panel : panels) {
-            dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
+        if (panels != null) {
+            for (org.opencb.opencga.core.models.panel.Panel panel : panels) {
+                dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
+            }
         }
 
-        for (Family family : families) {
-            dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
+        if (families != null) {
+            for (Family family : families) {
+                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
+            }
         }
 
         return study;
@@ -1346,7 +1356,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.CONFIGURATION_CLINICAL.key(),
+        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
                 QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
 

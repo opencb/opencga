@@ -33,10 +33,10 @@ public class DefaultSampleIndexConfiguration extends MigrationTool {
         VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, engineFactory);
 
         for (Study study : catalogManager.getStudyManager().search(new Query(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("fqn", "internal")), token).getResults()) {
-            if (study.getInternal().getVariantEngineConfiguration() == null) {
-                study.getInternal().setVariantEngineConfiguration(new StudyVariantEngineConfiguration());
+            if (study.getInternal().getConfiguration().getVariantEngine() == null) {
+                study.getInternal().getConfiguration().setVariantEngine(new StudyVariantEngineConfiguration());
             }
-            if (study.getInternal().getVariantEngineConfiguration().getSampleIndex() != null) {
+            if (study.getInternal().getConfiguration().getVariantEngine().getSampleIndex() != null) {
                 logger.info("Study {} already has a SampleIndex configuration", study.getFqn());
                 continue;
             }

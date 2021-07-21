@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -421,7 +422,7 @@ public class FileManager extends AnnotationSetManager<File> {
     public OpenCGAResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, Integer release, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
-        Study study = studyDBAdaptor.get(file.getStudyUid(), StudyManager.INCLUDE_STUDY_ID).first();
+        Study study = studyDBAdaptor.get(file.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
 
         ObjectMap auditParams = new ObjectMap()
                 .append("file", file)
@@ -784,9 +785,32 @@ public class FileManager extends AnnotationSetManager<File> {
      */
     public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
                                       boolean calculateChecksum, String token) throws CatalogException {
+        return upload(studyStr, fileInputStream, file, overwrite, parents, calculateChecksum, null, null, token);
+    }
+
+    /**
+     * Upload a file in Catalog.
+     *
+     * @param studyStr        study where the file will be uploaded.
+     * @param fileInputStream Input stream of the file to be uploaded.
+     * @param file            File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite       Overwrite the current file if any.
+     * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
+     * @param expectedChecksum  Expected checksum to be checked
+     * @param expectedSize      Expected file size
+     * @param token       session id of the user performing the upload.
+     * @return a OpenCGAResult with the file uploaded.
+     * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
+     */
+    public OpenCGAResult<File> upload(String studyStr, InputStream fileInputStream, File file, boolean overwrite, boolean parents,
+                                      boolean calculateChecksum, String expectedChecksum, Long expectedSize, String token)
+            throws CatalogException {
         // Check basic parameters
         ParamUtils.checkObj(fileInputStream, "fileInputStream");
-
+        if (StringUtils.isNotEmpty(expectedChecksum)) {
+            calculateChecksum = true;
+        }
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -796,6 +820,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("overwrite", overwrite)
                 .append("parents", parents)
                 .append("calculateChecksum", calculateChecksum)
+                .append("expectedChecksum", expectedChecksum)
+                .append("expectedSize", expectedSize)
                 .append("token", token);
         try {
             validateNewFile(study, file, token, overwrite);
@@ -848,8 +874,12 @@ public class FileManager extends AnnotationSetManager<File> {
             java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + file.getName()).resolve(file.getName());
             URI tempDirectory = tempFilePath.getParent().toUri();
             logger.info("Uploading file... Temporal file path: {}", tempFilePath.toString());
-
+            if (expectedSize != null && expectedSize > 0) {
+                logger.info("Expected size: " + expectedSize + "Bytes , " + IOUtils.humanReadableByteCount(expectedSize, false));
+            }
             // Create the temporal directory and upload the file
+            URI tempFileUri = tempFilePath.toUri();
+            String checksum = null;
             try {
                 if (!ioManager.exists(tempFilePath.getParent().toUri())) {
                     logger.debug("Creating temporal folder: {}", tempFilePath.getParent());
@@ -858,16 +888,38 @@ public class FileManager extends AnnotationSetManager<File> {
 
                 // Start uploading the file to the temporal directory
                 // Upload the file to a temporary folder
-                ioManager.copy(fileInputStream, tempFilePath.toUri());
+                ioManager.copy(fileInputStream, tempFileUri);
+
+                if (expectedSize != null && expectedSize > 0) {
+                    long actualSize = ioManager.getFileSize(tempFileUri);
+                    if (expectedSize != actualSize) {
+                        throw new CatalogIOException("File size mismatch!"
+                                + " Expected size: " + expectedSize + " Bytes, actual size: " + actualSize + " Bytes."
+                                + " Error uploading file " + file.getPath());
+                    }
+                }
+
+                if (calculateChecksum) {
+                    checksum = ioManager.calculateChecksum(tempFileUri);
+                    if (StringUtils.isNotEmpty(expectedChecksum)) {
+                        // Validate checksum
+                        if (!checksum.equals(expectedChecksum)) {
+                            throw new CatalogIOException("MD5 Checksum mismatch!"
+                                    + " Expected checksum: '" + expectedChecksum + "', actual checksum: '" + checksum + "'."
+                                    + " Error uploading file " + file.getPath());
+                        }
+                    }
+                }
             } catch (Exception e) {
-                logger.error("Error uploading file {}", file.getName(), e);
-
-                // Clean temporal directory
-                ioManager.deleteDirectory(tempDirectory);
-
+                try {
+                    logger.error("Error uploading file. Deleting temp directory", e);
+                    // Clean temporal directory
+                    ioManager.deleteDirectory(tempDirectory);
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
                 throw new CatalogException("Error uploading file " + file.getName(), e);
             }
-            URI sourceUri = tempFilePath.toUri();
 
             List<Sample> existingSamples = new LinkedList<>();
             List<Sample> nonExistingSamples = new LinkedList<>();
@@ -877,17 +929,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 // Create the directories where the file will be placed (if they weren't created before)
                 ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
 
-                String checksum = null;
-                if (calculateChecksum) {
-                    checksum = ioManager.calculateChecksum(sourceUri);
-                }
                 if (overwrite) {
-                    ioManager.move(sourceUri, file.getUri(), StandardCopyOption.REPLACE_EXISTING);
+                    ioManager.move(tempFileUri, file.getUri(), StandardCopyOption.REPLACE_EXISTING);
                 } else {
-                    ioManager.move(sourceUri, file.getUri());
+                    ioManager.move(tempFileUri, file.getUri());
                 }
                 if (calculateChecksum && !checksum.equals(ioManager.calculateChecksum(file.getUri()))) {
-                    throw new CatalogIOException("Error moving file from " + sourceUri + " to " + file.getUri());
+                    throw new CatalogIOException("Error moving file from " + tempFileUri + " to " + file.getUri());
                 }
 
                 // Remove the temporal directory
@@ -899,9 +947,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), file);
                 validateNewSamples(study, file, existingSamples, nonExistingSamples, token);
             } catch (CatalogException e) {
-                ioManager.deleteDirectory(tempDirectory);
-                logger.error("Upload file: {}", e.getMessage(), e);
-                throw new CatalogException("Upload file failed. Could not move the content to " + file.getUri() + ": " + e.getMessage());
+                try {
+                    logger.error("Error uploading file. Deleting temp directory", e);
+                    ioManager.deleteDirectory(tempDirectory);
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
+                throw new CatalogException("Upload file failed. Could not move the content to " + file.getUri(), e);
             }
 
             // Register the file in catalog
@@ -942,9 +994,13 @@ public class FileManager extends AnnotationSetManager<File> {
                     register(study, file, existingSamples, nonExistingSamples, parents, QueryOptions.empty(), token);
                 }
             } catch (CatalogException e) {
-                ioManager.deleteFile(file.getUri());
-                logger.error("Upload file: {}", e.getMessage(), e);
-                throw new CatalogException("Upload file failed. Could not register the file in the DB: " + e.getMessage());
+                try {
+                    logger.error("Error uploading file. Deleting file", e);
+                    ioManager.deleteFile(file.getUri());
+                } catch (Exception e1) {
+                    e.addSuppressed(e1);
+                }
+                throw new CatalogException("Upload file failed. Could not register the file in the DB", e);
             }
 
             auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.FILE, file.getId(), file.getUuid(),

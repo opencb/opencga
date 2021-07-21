@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli.main.io;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
@@ -36,6 +37,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.text.SimpleDateFormat;
@@ -75,11 +77,16 @@ public class TextOutputWriter extends AbstractOutputWriter {
             return;
         }
 
-        if (queryResponse.getResponses().size() == 0 || ((DataResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
-            if (queryResponse.first().getNumMatches() > 0) {
+        if (queryResponse.getResponses().size() == 0 || ((OpenCGAResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
+            if (queryResponse.getResponses().size() == 1 && queryResponse.first().getNumMatches() > 0) {
                 // count
                 ps.println(queryResponse.first().getNumMatches());
             } else {
+                if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
+                    for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
+                        ps.println("EVENT: " + event.getMessage());
+                    }
+                }
                 ps.println("No results found for the query.");
             }
             return;
@@ -132,6 +139,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 break;
             case "FileTree":
                 printTreeFile(queryResponse);
+                break;
+            case "String":
+                ps.println(StringUtils.join((List<String>) queryResponse.first().getResults(), ", "));
                 break;
             default:
                 System.err.println(ANSI_YELLOW + "Warning: " + clazz + " results not yet supported in text format. Using YAML format"

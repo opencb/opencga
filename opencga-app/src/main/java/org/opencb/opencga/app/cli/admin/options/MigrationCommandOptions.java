@@ -7,7 +7,6 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.migration.Migration;
-import org.opencb.opencga.catalog.migration.MigrationRun;
 
 import java.util.List;
 
@@ -20,24 +19,14 @@ import java.util.List;
 public class MigrationCommandOptions extends GeneralCliOptions {
 
     private final SearchCommandOptions searchCommandOptions;
-    private final MigrateV1_3_0CommandOptions migrateV130CommandOptions;
-    private final MigrateV1_4_0CommandOptions migrateV140CommandOptions;
-    private final MigrateV2_0_0CommandOptions migrateV200CommandOptions;
-    private final MigrateV2_0_1CommandOptions migrateV201CommandOptions;
-    private final MigrateV2_0_3CommandOptions migrateV203CommandOptions;
-    private final MigrateV2_1_0CommandOptions migrateV210CommandOptions;
+    private final RunCommandOptions runCommandOptions;
     private final AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
     public MigrationCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
         super(jCommander);
         this.commonOptions = commonOptions;
         this.searchCommandOptions = new SearchCommandOptions();
-        this.migrateV130CommandOptions = new MigrateV1_3_0CommandOptions();
-        this.migrateV140CommandOptions = new MigrateV1_4_0CommandOptions();
-        this.migrateV200CommandOptions = new MigrateV2_0_0CommandOptions();
-        this.migrateV201CommandOptions = new MigrateV2_0_1CommandOptions();
-        this.migrateV203CommandOptions = new MigrateV2_0_3CommandOptions();
-        this.migrateV210CommandOptions = new MigrateV2_1_0CommandOptions();
+        this.runCommandOptions = new RunCommandOptions();
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for migrations")
@@ -56,117 +45,26 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         public String version;
     }
     
-    @Parameters(commandNames = {"v1.3.0"}, commandDescription = "Migrate OpenCGA from version 1.2.x to 1.3.0")
-    public class MigrateV1_3_0CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+    @Parameters(commandNames = {"run"}, commandDescription = "Run migrations")
+    public class RunCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
 
-        @Parameter(names = {"--file-backup"}, description = "Create a backup for all migrated variant metadata files")
-        public boolean createBackup;
+        @Parameter(names = {"--domain"}, description = "Run migrations of the chosen domain only [CATALOG, STORAGE]")
+        public Migration.MigrationDomain domain;
 
-        @Parameter(names = {"--skip-disk-files"}, description = "Do not migrate VariantSource files from disk.")
-        public boolean skipDiskFiles;
+        @Parameter(names = {"--version"}, description = "Run all pending migrations up to this version number")
+        public String version;
 
-        @Parameter(names = {"--files"}, description = "VariantSource files to migrate into VariantFileMetadata. Don't do any operation in catalog.", variableArity = true)
-        public List<String> files;
-
-    }
-
-    @Parameters(commandNames = {"v1.4.0"}, commandDescription = "Migrate OpenCGA from version 1.3.x to 1.4.0")
-    public class MigrateV1_4_0CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
-
-        @Parameter(names = {"--what"}, description = "Select which parts will be migrated. Options: ALL, CATALOG, STORAGE, ANNOTATIONS, "
-                + "CATALOG_NO_ANNOTATIONS")
-        public Migrate what = Migrate.ALL;
-    }
-
-    @Parameters(commandNames = {"v2.0.0"}, commandDescription = "Migrate OpenCGA from version 1.4.2 to 2.0.0")
-    public class MigrateV2_0_0CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
-
-        @Parameter(names = {"--job-directory"}, description = "This new OpenCGA version requires a folder where all the analyses will be"
-                + " executed from. Please, specify which folder you will be using. Mandatory parameter when migrating ALL or RC1."
-                + " WARNING: The folder typed here will necessarily need to be exactly the same one specified in the configuration file !",
-                arity = 1)
-        public String jobFolder;
-
-        @Parameter(names = {"--what"}, description = "Select to which version migrate. To get to the stable version, it is mandatory "
-                + "migrating to RC1 and RC2 first !!. Options: ALL, RC1, RC2, STABLE, VARIANT_STORAGE")
-        public MigrateRC what = MigrateRC.ALL;
-    }
-
-    @Parameters(commandNames = {"v2.0.1"}, commandDescription = "Migrate OpenCGA from version 2.0.0 to 2.0.1")
-    public class MigrateV2_0_1CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
-
-    }
-
-    @Parameters(commandNames = {"v2.0.3"}, commandDescription = "Migrate OpenCGA from version 2.0.1 to 2.0.3")
-    public class MigrateV2_0_3CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
-
-    }
-
-    @Parameters(commandNames = {"v2.1.0"}, commandDescription = "Migrate OpenCGA from version 2.0.x to 2.1.0")
-    public class MigrateV2_1_0CommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
-
-    }
-
-    public enum MigrateRC {
-        ALL,
-        RC1,
-        RC2,
-        STABLE,
-        VARIANT_STORAGE
-    }
-
-    public enum Migrate {
-        ALL,
-        CATALOG,
-        STORAGE,
-        ANNOTATIONS,
-        CATALOG_NO_ANNOTATIONS
     }
 
     public SearchCommandOptions getSearchCommandOptions() {
         return searchCommandOptions;
     }
 
-    public MigrateV1_3_0CommandOptions getMigrateV130CommandOptions() {
-        return migrateV130CommandOptions;
-    }
-
-    public MigrateV1_4_0CommandOptions getMigrateV140CommandOptions() {
-        return migrateV140CommandOptions;
-    }
-
-    public MigrateV2_0_0CommandOptions getMigrateV200CommandOptions() {
-        return migrateV200CommandOptions;
-    }
-
-    public MigrateV2_0_1CommandOptions getMigrateV201CommandOptions() {
-        return migrateV201CommandOptions;
-    }
-
-    public MigrateV2_0_3CommandOptions getMigrateV203CommandOptions() {
-        return migrateV203CommandOptions;
-    }
-
-    public MigrateV2_1_0CommandOptions getMigrateV210CommandOptions() {
-        return migrateV210CommandOptions;
+    public RunCommandOptions getRunCommandOptions() {
+        return runCommandOptions;
     }
 
     public AdminCliOptionsParser.AdminCommonCommandOptions getCommonOptions() {

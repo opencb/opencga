@@ -485,6 +485,18 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 //                    familyDBAdaptor.getFamilyCollection().update(clientSession, bsonQuery, update, QueryOptions.empty());
                 }
             }
+
+            if (StringUtils.isNotEmpty(parameters.getString(QueryParams.ID.key()))) {
+                // We need to update the individual id reference in all its samples
+                dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualIdFromSamples(clientSession, individual.getStudyUid(),
+                        individual.getId(), parameters.getString(QueryParams.ID.key()));
+
+                // Update the family roles
+                dbAdaptorFactory.getCatalogFamilyDBAdaptor().updateIndividualIdFromFamilies(clientSession, individual.getStudyUid(),
+                        individual.getUid(), individual.getId(), parameters.getString(QueryParams.ID.key()));
+            }
+
+
             logger.debug("Individual {} successfully updated", individual.getId());
         }
 

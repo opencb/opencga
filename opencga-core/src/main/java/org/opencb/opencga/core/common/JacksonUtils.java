@@ -62,7 +62,8 @@ public class JacksonUtils {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
-//        objectMapper.addMixIn(Panel.class, PanelUnwrapMixin.class);
+
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         return objectMapper;
     }
 
@@ -106,7 +107,6 @@ public class JacksonUtils {
         objectMapper.addMixIn(VariableSet.class, PrivateUidMixin.class);
         objectMapper.addMixIn(ClinicalAnalysis.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Interpretation.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         return objectMapper;

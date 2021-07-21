@@ -74,22 +74,24 @@ public class Individual extends Annotable {
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
                       List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders,
                       Map<String, Object> attributes) {
-        this(id, name, father, mother, Collections.emptyList(), location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release,
-                1, TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples, parentalConsanguinity,
-                annotationSets, new CustomStatus(), null, attributes);
+        this(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population, dateOfBirth,
+                release, 1, TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
+                parentalConsanguinity, annotationSets, new CustomStatus(), null, attributes);
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location, Sex sex,
-                      KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, String dateOfBirth, int release,
-                      int version, String creationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
-                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
-                      IndividualInternal internal, Map<String, Object> attributes) {
+    public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
+                      IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
+                      IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
+                      LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders, List<Sample> samples,
+                      boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status, IndividualInternal internal,
+                      Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
         this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
         this.familyIds = familyIds;
         this.location = location;
+        this.qualityControl = qualityControl;
         this.sex = sex;
         this.karyotypicSex = karyotypicSex;
         this.ethnicity = ethnicity;

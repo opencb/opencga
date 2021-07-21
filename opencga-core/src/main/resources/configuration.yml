@@ -56,6 +56,8 @@ authentication:
 #      uidKey: uid                                          # Key to get the user id to be used in OpenCGA. By default, 'uid'.
 #      uidFormat: "%s"                                      # Formatter to extract the user id if the uid is contained within a larger string. By default, '%s' to take the whole string.
 #      sslInvalidCertificatesAllowed: false                 # If using LDAPs with a custom certificate, set to true to accept any certificate. By default, false.
+#      connectionTimeout: 500                               # Connection timeout value. Default: 500 ms
+#      readTimeout: 1000                                    # Read timeout value. Default: 1000 ms
 
 # Azure AD configuration example
 #  - id: aad                                               # Any id

@@ -347,7 +347,6 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("fileName", commandOptions.fileName);
         params.putIfNotEmpty("file", commandOptions.inputFile);
 
-
         return openCGAClient.getFileClient().upload(params);
     }
 

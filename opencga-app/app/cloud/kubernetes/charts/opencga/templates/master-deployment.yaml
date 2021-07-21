@@ -6,6 +6,10 @@ metadata:
     {{- include "opencga.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.master.replicaCount }}
+  strategy:
+    # Recreate master instead of rolling update.
+    # Small downtime in the master is better than having two master running concurrently, even if it's for a few seconds
+    type: Recreate
   selector:
     matchLabels:
       app: {{ .Values.master.name }}
