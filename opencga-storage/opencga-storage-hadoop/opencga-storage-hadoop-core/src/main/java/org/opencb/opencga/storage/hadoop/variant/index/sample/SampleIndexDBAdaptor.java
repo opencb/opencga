@@ -292,16 +292,26 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         });
     }
 
-    public Iterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
+        return rawIterator(study, sample, null);
+    }
+
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
         String tableName = getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();
-            scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
+            if (region != null) {
+                scan.setStartRow(SampleIndexSchema.toRowKey(sample, region.getChromosome(), region.getStart()));
+                scan.setStopRow(SampleIndexSchema.toRowKey(sample, region.getChromosome(),
+                        region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexSchema.BATCH_SIZE)));
+            } else {
+                scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
+            }
             HBaseToSampleIndexConverter converter = newConverter(study);
             ResultScanner scanner = table.getScanner(scan);
             Iterator<Result> resultIterator = scanner.iterator();
-            return Iterators.transform(resultIterator, converter::convert);
+            return CloseableIterator.wrap(Iterators.transform(resultIterator, converter::convert), scanner);
         });
     }
 
