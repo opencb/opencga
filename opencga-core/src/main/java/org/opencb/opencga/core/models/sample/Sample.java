@@ -35,27 +35,27 @@ import java.util.Map;
 public class Sample extends Annotable {
 
     /**
-     * Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and
-     * cannot be changed at the moment.
+     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter
+     * when creating a new sample, this ID cannot be changed at the moment.
      *
      * @apiNote Required, Immutable, Unique
      */
     private String id;
 
     /**
-     * Global unique ID in any study of any OpenCGA installation. This is created during the sample creation and cannot be changed.
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.
      *
      * @apiNote Internal, Unique, Immutable
      */
     private String uuid;
 
     /**
-     * An object describing how to sample was processed.
+     * Describes how the sample was processed in the lab.
      */
     private SampleProcessing processing;
 
     /**
-     * An object describing how the sample was collected.
+     * Describes how the sample was collected.
      *
      * @apiNote
      * @implNote The sample collection is a list of samples
@@ -64,7 +64,7 @@ public class Sample extends Annotable {
     private SampleCollection collection;
 
     /**
-     * An object describing how the sample was collected.
+     * Contains different metrics to evaluate the quality of the sample.
      *
      * @apiNote
      * @implNote The sample collection is a list of samples
@@ -74,7 +74,7 @@ public class Sample extends Annotable {
     private SampleQualityControl qualityControl;
 
     /**
-     * An integer describing the current release.
+     * An integer describing the current data release.
      *
      * @apiNote Internal
      */
@@ -88,14 +88,14 @@ public class Sample extends Annotable {
     private int version;
 
     /**
-     * An string describing the creation date.
+     * String representing when the sample was created, this is automatically set by OpenCGA.
      *
      * @apiNote Internal
      */
     private String creationDate;
 
     /**
-     * An string describing the last modification date.
+     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
      *
      * @apiNote Internal
      */
@@ -109,7 +109,7 @@ public class Sample extends Annotable {
     private String description;
 
     /**
-     * An string to describe the properties of the sample.
+     * Indicates if the sample is somatic or germline (default)
      *
      * @apiNote
      */
@@ -147,14 +147,14 @@ public class Sample extends Annotable {
     private CustomStatus status;
 
     /**
-     * An object describing the status of the Sample.
+     * An object describing the internal information of the Sample. This is managed by OpenCGA.
      *
      * @apiNote Internal
      */
     private SampleInternal internal;
 
     /**
-     * An object describing the status of the Sample.
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
      *
      * @apiNote
      */
