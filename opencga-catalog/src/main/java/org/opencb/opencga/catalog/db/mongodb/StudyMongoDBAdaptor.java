@@ -1346,9 +1346,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     static Document getDocumentUpdateParams(ObjectMap parameters) {
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(),
-                QueryParams.DESCRIPTION.key(), };
+        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(QueryParams.CREATION_DATE.key(), time);
+            studyParameters.put(PRIVATE_CREATION_DATE, date);
+        }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, studyParameters, acceptedLongParams);
