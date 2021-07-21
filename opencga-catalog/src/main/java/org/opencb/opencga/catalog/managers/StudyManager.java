@@ -867,6 +867,7 @@ public class StudyManager extends AbstractManager {
         try {
             ParamUtils.checkObj(group, "group");
             ParamUtils.checkGroupId(group.getId());
+            group.setUserIds(ParamUtils.defaultObject(group.getUserIds(), Collections::emptyList));
 
             if (group.getSyncedFrom() != null) {
                 ParamUtils.checkParameter(group.getSyncedFrom().getAuthOrigin(), "Authentication origin");
@@ -886,7 +887,7 @@ public class StudyManager extends AbstractManager {
             }
 
             List<String> users = group.getUserIds();
-            if (ListUtils.isNotEmpty(users)) {
+            if (CollectionUtils.isNotEmpty(users)) {
                 // We remove possible duplicates
                 users = users.stream().collect(Collectors.toSet()).stream().collect(Collectors.toList());
                 userDBAdaptor.checkIds(users);
@@ -896,7 +897,7 @@ public class StudyManager extends AbstractManager {
             group.setUserIds(users);
 
             // Add those users to the members group
-            if (ListUtils.isNotEmpty(users)) {
+            if (CollectionUtils.isNotEmpty(users)) {
                 studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
             }
 
