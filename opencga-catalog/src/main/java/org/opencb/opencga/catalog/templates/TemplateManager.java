@@ -647,8 +647,8 @@ public class TemplateManager {
                     // Create File
                     logger.debug("Create File '{}'", file.getPath());
                     catalogManager.getFileManager().link(studyFqn,
-                            new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getRelatedFiles(),
-                                    file.getStatus(), null), true, token);
+                            new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getCreationDate(),
+                                    file.getRelatedFiles(), file.getStatus(), null), true, token);
                     incomplete = true;
                 }
 
