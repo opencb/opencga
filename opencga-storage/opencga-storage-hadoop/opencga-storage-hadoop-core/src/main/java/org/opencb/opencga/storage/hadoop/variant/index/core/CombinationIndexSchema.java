@@ -176,6 +176,7 @@ public class CombinationIndexSchema /*extends DynamicIndexSchema*/ {
             for (int posA = 0; posA < numA; posA++) {
                 // Get the first A value from the right.
                 int a = Integer.lowestOneBit(strippedFieldValueA);
+                String decodeA = indexA.decode(a).get(0);
                 // Remove the A value from the index, so the next iteration gets the next value
                 strippedFieldValueA &= ~a;
 
@@ -189,7 +190,6 @@ public class CombinationIndexSchema /*extends DynamicIndexSchema*/ {
 
                     // Check if this A was together with this B
                     if ((matrix[posA] & (1 << posB)) != 0) {
-                        String decodeA = indexA.decode(a).get(0);
                         String decodeB = indexB.decode(b).get(0);
                         pairs.add(Pair.of(decodeA == null ? "OTHER" : decodeA, decodeB == null ? "OTHER" : decodeB));
                     }

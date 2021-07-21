@@ -695,7 +695,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return get(intersectQuery, queryOptions, token);
     }
 
-    public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery, String token)
+    public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery,
+                                                         QueryOptions options, String token)
             throws CatalogException, IOException, StorageEngineException {
         Query query = inputQuery == null ? new Query() : new Query(inputQuery);
         String study = getStudyFqn(studyStr, token);
@@ -704,7 +705,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
        return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
             logger.debug("getSampleStats {}", query);
-            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(study, sample, query);
+//            logger.info("Filter transcript = {} (raw: '{}')",
+//                    options.getBoolean("filterTranscript", false), options.get("filterTranscript"));
+            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(study, sample, query, options);
             logger.debug("getFacets in {}ms", result.getTime());
             return result;
         });

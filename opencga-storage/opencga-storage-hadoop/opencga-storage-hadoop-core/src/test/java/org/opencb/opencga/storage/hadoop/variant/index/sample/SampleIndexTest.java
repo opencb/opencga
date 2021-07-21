@@ -667,6 +667,49 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         }
     }
 
+
+    @Test
+    public void testAggregationCorrectnessFilterTranscript() throws Exception {
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
+
+        String ct = "missense_variant";
+        String flag = "basic";
+
+        Query query = new Query(STUDY.key(), STUDY_NAME_3)
+                .append(SAMPLE.key(), "NA12877")
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), ct)
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), flag);
+        assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType>>transcriptFlag")));
+
+        AtomicInteger count = new AtomicInteger(0);
+        sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
+        FacetField facet = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType>>transcriptFlag")
+                .append("filterTranscript", true)).first();
+        FacetField facetAll = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType>>transcriptFlag")
+                .append("filterTranscript", false)).first();
+
+        assertEquals(count.get(), facet.getCount());
+        FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
+        FacetField.Bucket bucketAll = facetAll.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
+        System.out.println("ct = " + ct + " : " + count.get());
+        System.out.println("facet    = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
+        System.out.println("facetAll = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetAll));
+        String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
+                + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
+        if (count.get() == 0) {
+            // Count be null if no counts
+            if (bucket != null) {
+                assertEquals(msg, 0, bucket.getCount());
+            }
+        } else {
+            assertNotNull(msg, bucket);
+            assertEquals(msg, count.get(), bucket.getCount());
+            // There should be only one filter
+            assertEquals(1, facet.getBuckets().size());
+        }
+    }
+
     @Test
     public void testAggregationCorrectnessCt() throws Exception {
         SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
@@ -780,7 +823,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         for (String study : studies) {
             for (String sample : sampleNames.get(study)) {
-                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null);
+                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null, null);
                 System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
             }
         }
@@ -793,7 +836,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         for (String study : studies) {
             for (String sample : sampleNames.get(study)) {
                 DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, new Query()
-                        .append(ANNOT_CONSEQUENCE_TYPE.key(), NON_CODING_TRANSCRIPT_EXON_VARIANT));
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), NON_CODING_TRANSCRIPT_EXON_VARIANT), null);
                 System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
             }
         }

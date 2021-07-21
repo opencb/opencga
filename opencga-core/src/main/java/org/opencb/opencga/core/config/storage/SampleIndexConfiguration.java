@@ -125,6 +125,14 @@ public class SampleIndexConfiguration {
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
 
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
+                new IndexFieldConfiguration(
+                        IndexFieldConfiguration.Source.ANNOTATION,
+                        "transcriptFlag",
+                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        "do_not_use"
+                ).setNullable(false));
+
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
@@ -484,13 +492,14 @@ public class SampleIndexConfiguration {
             return Objects.equals(populationFrequency, that.populationFrequency)
                     && Objects.equals(biotype, that.biotype)
                     && Objects.equals(consequenceType, that.consequenceType)
+                    && Objects.equals(transcriptFlagIndexConfiguration, that.transcriptFlagIndexConfiguration)
                     && Objects.equals(clinicalSignificance, that.clinicalSignificance)
                     && Objects.equals(clinicalSource, that.clinicalSource);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(populationFrequency, biotype, consequenceType, clinicalSignificance, clinicalSource);
+            return Objects.hash(populationFrequency, biotype, consequenceType, transcriptFlagIndexConfiguration, clinicalSignificance, clinicalSource);
         }
     }
 

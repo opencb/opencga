@@ -500,9 +500,15 @@ public class SampleIndexEntry {
             sb.append(", biotypeIndex=").append(biotypeIndex == null ? "null"
                     : Bytes.toStringBinary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength));
             sb.append(", biotypeIndexLength=").append(biotypeIndexLength);
+            sb.append(", transcriptFlagIndex=").append(transcriptFlagIndex == null ? "null"
+                    : Bytes.toStringBinary(transcriptFlagIndex, transcriptFlagIndexOffset, transcriptFlagIndexLength));
+            sb.append(", transcriptFlagIndexLength=").append(transcriptFlagIndexLength);
             sb.append(", ctBtIndex=").append(ctBtIndex == null ? "null"
                     : Bytes.toStringBinary(ctBtIndex, ctBtIndexOffset, ctBtIndexLength));
             sb.append(", ctBtIndexLength=").append(ctBtIndexLength);
+            sb.append(", ctTfIndex=").append(ctTfIndex == null ? "null"
+                    : Bytes.toStringBinary(ctTfIndex, ctTfIndexOffset, ctTfIndexLength));
+            sb.append(", ctTfIndexLength=").append(ctTfIndexLength);
             sb.append(", populationFrequencyIndex=").append(populationFrequencyIndex == null ? "null"
                     : Bytes.toStringBinary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength));
             sb.append(", clinicalIndex=").append(clinicalIndex == null ? "null"
@@ -525,7 +531,7 @@ public class SampleIndexEntry {
             return count == that.count
                     && Objects.equals(gt, that.gt)
                     && Arrays.equals(annotationCounts, that.annotationCounts)
-                    && fileIndex.equals(that.fileIndex)
+                    && Arrays.equals(fileIndex, that.fileIndex)
                     && Bytes.equals(variants, variantsOffset, that.variantsLength,
                         that.variants, that.variantsOffset, that.variantsLength)
                     && Bytes.equals(annotationIndex, annotationIndexOffset, that.annotationIndexLength,
