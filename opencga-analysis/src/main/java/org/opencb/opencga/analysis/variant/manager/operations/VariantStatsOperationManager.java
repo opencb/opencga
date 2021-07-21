@@ -240,7 +240,7 @@ public class VariantStatsOperationManager extends OperationManager {
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams(cohortName,
-                        Enums.CohortType.COLLECTION, "", Collections.emptyList(), null, null, null), null, null, null, sessionId);
+                        Enums.CohortType.COLLECTION, "", null, Collections.emptyList(), null, null, null), null, null, null, sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
             } else {

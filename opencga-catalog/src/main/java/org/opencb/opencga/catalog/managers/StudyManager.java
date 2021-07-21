@@ -630,7 +630,7 @@ public class StudyManager extends AbstractManager {
             }
 
             if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
-                ParamUtils.checkCreationDate(parameters.getCreationDate());
+                ParamUtils.checkCreationDateFormat(parameters.getCreationDate());
             }
 
             ObjectMap update;

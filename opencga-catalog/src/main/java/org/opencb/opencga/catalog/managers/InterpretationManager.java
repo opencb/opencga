@@ -865,7 +865,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getCreationDate())) {
-            ParamUtils.checkCreationDate(updateParams.getCreationDate());
+            ParamUtils.checkCreationDateFormat(updateParams.getCreationDate());
         }
 
         ObjectMap parameters = new ObjectMap();

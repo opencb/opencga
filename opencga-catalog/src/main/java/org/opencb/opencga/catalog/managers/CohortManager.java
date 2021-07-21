@@ -191,8 +191,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 }
                 List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds,
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList, 0,
-                        cohortParams.getAnnotationSets(), 1,
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(), 1,
                         cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                         cohortParams.getAttributes()));
 
@@ -230,15 +230,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             new Query(Constants.ANNOTATION, variableSetId + ":" + variableId + "=" + value),
                             SampleManager.INCLUDE_SAMPLE_IDS, token);
 
-                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                            sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
+                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                            cohortParams.getDescription(), sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
                             cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                             cohortParams.getAttributes()));
                 }
             } else {
                 //Create empty cohort
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getDescription(), Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
             }
         } catch (CatalogException e) {
             auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
@@ -363,7 +363,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
-        cohort.setCreationDate(TimeUtils.getTime());
+        cohort.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(cohort.getCreationDate()));
         cohort.setModificationDate(TimeUtils.getTime());
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
@@ -989,6 +989,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private OpenCGAResult<Cohort> update(Study study, Cohort cohort, CohortUpdateParams updateParams, boolean allowModifyCohortAll,
                                          QueryOptions options, String userId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (StringUtils.isNotEmpty(updateParams.getCreationDate())) {
+            ParamUtils.checkCreationDateFormat(updateParams.getCreationDate());
+        }
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {

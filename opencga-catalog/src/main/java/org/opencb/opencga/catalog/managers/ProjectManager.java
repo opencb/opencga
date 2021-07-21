@@ -474,7 +474,7 @@ public class ProjectManager extends AbstractManager {
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.CREATION_DATE.key())) {
                 // Validate creationDate format
                 String creationDate = parameters.getString(ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
-                ParamUtils.checkCreationDate(creationDate);
+                ParamUtils.checkCreationDateFormat(creationDate);
             }
 
             // Update organism information only if any of the fields was not properly defined

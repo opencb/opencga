@@ -155,7 +155,7 @@ public class ParamUtils {
         }
     }
 
-    public static void checkCreationDate(String creationDate) throws CatalogParameterException {
+    public static void checkCreationDateFormat(String creationDate) throws CatalogParameterException {
         if (StringUtils.isEmpty(creationDate)) {
             throw new CatalogParameterException("'creationDate' is null or empty");
         } else {
@@ -172,7 +172,7 @@ public class ParamUtils {
         if (StringUtils.isEmpty(creationDate)) {
             return TimeUtils.getTime();
         } else {
-            checkCreationDate(creationDate);
+            checkCreationDateFormat(creationDate);
             return creationDate;
         }
     }
