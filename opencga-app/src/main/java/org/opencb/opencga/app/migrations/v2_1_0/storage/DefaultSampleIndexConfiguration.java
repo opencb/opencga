@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.study.Study;
@@ -23,7 +24,7 @@ import java.util.Date;
 @Migration(id="default_sample_index_configuration", description = "Add a default backward compatible sample index configuration", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        patch = 3,
+        patch = 4,
         rank = 16) // Needs to run after StudyClinicalConfigurationRelocation
 public class DefaultSampleIndexConfiguration extends MigrationTool {
 
@@ -33,18 +34,33 @@ public class DefaultSampleIndexConfiguration extends MigrationTool {
         VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, engineFactory);
 
         for (Study study : catalogManager.getStudyManager().search(new Query(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("fqn", "internal")), token).getResults()) {
-            if (study.getInternal().getConfiguration().getVariantEngine() == null) {
-                study.getInternal().getConfiguration().setVariantEngine(new StudyVariantEngineConfiguration());
-            }
-            if (study.getInternal().getConfiguration().getVariantEngine().getSampleIndex() != null) {
-                logger.info("Study {} already has a SampleIndex configuration", study.getFqn());
-                continue;
-            }
             if (variantStorageManager.exists(study.getFqn(), token)) {
+                if (study.getInternal().getConfiguration().getVariantEngine() == null) {
+                    study.getInternal().getConfiguration().setVariantEngine(new StudyVariantEngineConfiguration());
+                }
+                SampleIndexConfiguration sampleIndexConfiguration;
+                if (study.getInternal().getConfiguration().getVariantEngine().getSampleIndex() != null) {
+                    logger.info("Study {} already has a SampleIndex configuration", study.getFqn());
+                    sampleIndexConfiguration = study.getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+                    boolean skipUpdateConfiguration = true;
+                    if (sampleIndexConfiguration.getAnnotationIndexConfiguration().getTranscriptFlagIndexConfiguration() == null) {
+                        logger.info("Missing transcriptFlag");
+                        skipUpdateConfiguration = false;
+                        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
+                                new IndexFieldConfiguration(IndexFieldConfiguration.Source.ANNOTATION, "transcriptFlag",
+                                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE, "invalid_transcript_flag_index"));
+                    }
+                    if (skipUpdateConfiguration) {
+                        logger.info("Skip study");
+                        continue;
+                    }
+                } else {
+                    sampleIndexConfiguration = SampleIndexConfiguration.backwardCompatibleConfiguration();
+                    sampleIndexConfiguration.validate();
+                }
+
                 DataStore dataStore = variantStorageManager.getDataStore(study.getFqn(), token);
                 VariantStorageEngine engine = engineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-                SampleIndexConfiguration sampleIndexConfiguration = SampleIndexConfiguration.backwardCompatibleConfiguration();
-                sampleIndexConfiguration.validate();
                 engine.getMetadataManager().updateStudyMetadata(study.getFqn(), studyMetadata -> {
                     if (CollectionUtils.isEmpty(studyMetadata.getSampleIndexConfigurations())) {
                         studyMetadata.setSampleIndexConfigurations(new ArrayList<>());
