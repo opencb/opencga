@@ -310,7 +310,7 @@ public class StudyManager extends AbstractManager {
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
-            study.setCreationDate(TimeUtils.getTime());
+            study.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(study.getCreationDate()));
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
@@ -627,6 +627,10 @@ public class StudyManager extends AbstractManager {
 
             if (StringUtils.isNotEmpty(parameters.getAlias())) {
                 ParamUtils.checkIdentifier(parameters.getAlias(), "alias");
+            }
+
+            if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
+                ParamUtils.checkCreationDate(parameters.getCreationDate());
             }
 
             ObjectMap update;

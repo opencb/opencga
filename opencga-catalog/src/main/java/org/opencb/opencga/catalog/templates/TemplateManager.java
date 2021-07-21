@@ -179,7 +179,8 @@ public class TemplateManager {
         if (overwrite) {
             // Updating values
             StudyUpdateParams studyUpdateParams = new StudyUpdateParams(tmplStudy.getName(), tmplStudy.getAlias(),
-                    tmplStudy.getDescription(), tmplStudy.getNotification(), tmplStudy.getAttributes(), tmplStudy.getStatus());
+                    tmplStudy.getDescription(), tmplStudy.getCreationDate(), tmplStudy.getNotification(), tmplStudy.getAttributes(),
+                    tmplStudy.getStatus());
 
             logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
             try {
