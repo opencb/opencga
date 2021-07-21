@@ -130,7 +130,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
         if (StringUtils.isEmpty(project.getCreationDate())) {
-            project.setCreationDate(TimeUtils.getTime());
+            throw new CatalogDBException(QueryParams.CREATION_DATE.key() + " cannot be empty");
         }
 
         Document projectDocument = projectConverter.convertToStorageType(project);

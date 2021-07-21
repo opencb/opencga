@@ -241,7 +241,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedBooleanParams = {LOCKED.key(), PANEL_LOCK.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.DUE_DATE.key()};
+        String[] acceptedParams = {CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
@@ -791,7 +791,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
         }
         if (StringUtils.isEmpty(clinicalAnalysis.getCreationDate())) {
-            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
+            throw new CatalogDBException(CREATION_DATE.key() + " cannot be empty");
         }
 
         Document clinicalDocument = clinicalConverter.convertToStorageType(clinicalAnalysis);

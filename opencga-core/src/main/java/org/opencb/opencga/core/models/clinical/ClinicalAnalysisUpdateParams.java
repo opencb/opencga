@@ -53,6 +53,7 @@ public class ClinicalAnalysisUpdateParams {
 
     private ClinicalConsentAnnotationParam consent;
 
+    private String creationDate;
     private String dueDate;
     private List<ClinicalCommentParam> comments;
     private PriorityParam priority; // id
@@ -68,7 +69,7 @@ public class ClinicalAnalysisUpdateParams {
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked, ClinicalAnalystParam analyst,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, ClinicalConsentAnnotationParam consent,
-                                        String dueDate, List<ClinicalCommentParam> comments, PriorityParam priority,
+                                        String creationDate, String dueDate, List<ClinicalCommentParam> comments, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
@@ -83,6 +84,7 @@ public class ClinicalAnalysisUpdateParams {
         this.analyst = analyst;
         this.qualityControl = qualityControl;
         this.consent = consent;
+        this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
         this.priority = priority;
@@ -109,7 +111,7 @@ public class ClinicalAnalysisUpdateParams {
                 analyst != null ? analyst.toClinicalAnalyst() : null,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null,
-                TimeUtils.getTime(), TimeUtils.getTime(), dueDate, 1,
+                creationDate, TimeUtils.getTime(), dueDate, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null,
                 null, null, attributes, status != null ? status.toCustomStatus() : null);
@@ -131,6 +133,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", analyst=").append(analyst);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
@@ -255,6 +258,15 @@ public class ClinicalAnalysisUpdateParams {
 
     public ClinicalAnalysisUpdateParams setConsent(ClinicalConsentAnnotationParam consent) {
         this.consent = consent;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public ClinicalAnalysisUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

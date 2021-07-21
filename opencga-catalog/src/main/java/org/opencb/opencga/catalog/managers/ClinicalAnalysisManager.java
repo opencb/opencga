@@ -510,7 +510,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 obtainFiles(study, clinicalAnalysis, userId);
             }
 
-            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
+            clinicalAnalysis.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(clinicalAnalysis.getCreationDate()));
             clinicalAnalysis.setModificationDate(TimeUtils.getTime());
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
@@ -1156,6 +1156,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
+            ParamUtils.checkCreationDate(clinicalAnalysis.getCreationDate());
+        }
 
         ObjectMap parameters;
         if (updateParams != null) {

@@ -178,7 +178,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
         }
         if (StringUtils.isEmpty(study.getCreationDate())) {
-            study.setCreationDate(TimeUtils.getTime());
+            throw new CatalogDBException(QueryParams.CREATION_DATE.key() + " cannot be empty");
         }
 
         //Empty nested fields
