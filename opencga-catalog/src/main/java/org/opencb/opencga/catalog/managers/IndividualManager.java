@@ -222,7 +222,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setQualityControl(ParamUtils.defaultObject(individual.getQualityControl(), IndividualQualityControl::new));
 
         individual.setInternal(IndividualInternal.init());
-        individual.setCreationDate(TimeUtils.getTime());
+        individual.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(individual.getCreationDate()));
         individual.setModificationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
@@ -1288,6 +1288,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()))) {
+            ParamUtils.checkCreationDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()));
+        }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
