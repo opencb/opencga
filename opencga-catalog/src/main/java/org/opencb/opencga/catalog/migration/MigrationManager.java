@@ -405,36 +405,27 @@ public class MigrationManager {
     }
 
     protected static int compareVersion(String version1, String version2) {
-        String[] m1VersionSplit = version1.toUpperCase().split("\\.");
-        String[] m2VersionSplit = version2.toUpperCase().split("\\.");
+        int[] m1VersionSplit = Arrays.stream(version1.split("\\.")).mapToInt(Integer::parseInt).toArray();
+        int[] m2VersionSplit = Arrays.stream(version2.split("\\.")).mapToInt(Integer::parseInt).toArray();
 
         // 1. Check version
         // Check first version number
-        if (Integer.parseInt(m1VersionSplit[0]) > Integer.parseInt(m2VersionSplit[0])) {
+        if (m1VersionSplit[0] > m2VersionSplit[0]) {
             return 1;
-        } else if (Integer.parseInt(m1VersionSplit[0]) < Integer.parseInt(m2VersionSplit[0])) {
+        } else if (m1VersionSplit[0] < m2VersionSplit[0]) {
             return -1;
         }
         // Check second version number
-        if (Integer.parseInt(m1VersionSplit[1]) > Integer.parseInt(m2VersionSplit[1])) {
+        if (m1VersionSplit[1] > m2VersionSplit[1]) {
             return 1;
-        } else if (Integer.parseInt(m1VersionSplit[1]) < Integer.parseInt(m2VersionSplit[1])) {
+        } else if (m1VersionSplit[1] < m2VersionSplit[1]) {
             return -1;
         }
-        m1VersionSplit = m1VersionSplit[2].split("-RC");
-        m2VersionSplit = m2VersionSplit[2].split("-RC");
+
         // Check third version number
-        if (Integer.parseInt(m1VersionSplit[0]) > Integer.parseInt(m2VersionSplit[0])) {
+        if (m1VersionSplit[2] > m2VersionSplit[2]) {
             return 1;
-        } else if (Integer.parseInt(m1VersionSplit[0]) < Integer.parseInt(m2VersionSplit[0])) {
-            return -1;
-        }
-        // Check for RC's
-        int rcM1 = m1VersionSplit.length == 2 ? Integer.parseInt(m1VersionSplit[1]) : 0;
-        int rcM2 = m2VersionSplit.length == 2 ? Integer.parseInt(m2VersionSplit[1]) : 0;
-        if (rcM1 > rcM2) {
-            return 1;
-        } else if (rcM1 < rcM2) {
+        } else if (m1VersionSplit[2] < m2VersionSplit[2]) {
             return -1;
         }
 

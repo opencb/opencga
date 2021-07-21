@@ -99,7 +99,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             if (StringUtils.isNotEmpty(options.version)) {
                 version = options.version;
             } else {
-                version = GitRepositoryState.get().getClosestTagName();
+                version = GitRepositoryState.get().getBuildVersion();
+                // Remove extra information
+                version = version.split("-")[0];
             }
             if (version.startsWith("v")) {
                 // Remove "v" (v1.1.0 -> 1.1.0)
