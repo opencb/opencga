@@ -39,6 +39,9 @@ public class CategoricalAccumulator<T> extends FacetFieldAccumulator<T> {
         Collection<String> values = getCategory.apply(t);
         List<FacetField.Bucket> buckets = new ArrayList<>();
         for (String value : values) {
+            if (value == null) {
+                value = "other";
+            }
             FacetField.Bucket bucket = null;
             for (FacetField.Bucket thisBucket : field.getBuckets()) {
                 if (thisBucket.getValue().equals(value)) {

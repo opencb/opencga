@@ -193,16 +193,27 @@ public final class VariantQueryUtils {
         }
 
         public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query) {
+            return fromQuery(query, Arrays.asList("basic", "CCDS"));
+        }
+
+        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query, List<String> knownFlags) {
             // Do not change the order of the following lines, it must match the Enum values!
             String combination = isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
             combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "CT_" : "";
             if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
                 List<String> flags = new LinkedList<>(query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key()));
-                flags.remove("basic");
-                flags.remove("CCDS");
-                // If empty, it means it only contains "basic" or "CCDS"
-                if (flags.isEmpty()) {
-                    combination += "FLAG";
+                if (knownFlags == null) {
+                    // Consider any flag
+                    if (!flags.isEmpty()) {
+                        combination += "FLAG";
+                    }
+                } else {
+                    // Consider only those known flags
+                    flags.removeAll(knownFlags);
+                    // If empty, it means it only contains "basic" or "CCDS"
+                    if (flags.isEmpty()) {
+                        combination += "FLAG";
+                    }
                 }
             }
             if (combination.isEmpty()) {

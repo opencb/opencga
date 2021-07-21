@@ -77,8 +77,8 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
             if (withOther) {
                 numBits = values.length + 1;
                 this.values = Arrays.copyOf(values, values.length + 1);
-                this.values[values.length] = null;
-                this.otherValuePosition = numBits;
+                this.otherValuePosition = values.length;
+                this.values[otherValuePosition] = null;
             } else {
                 this.values = values;
                 numBits = values.length;
@@ -100,6 +100,9 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
                         valuesPosition.put(valueAlias, pos);
                     }
                 }
+            }
+            if (otherValuePosition != null) {
+                ambiguousValues |= 1 << otherValuePosition;
             }
             this.ambiguousValues = ambiguousValues;
             if (values.length > Integer.SIZE) {

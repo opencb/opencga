@@ -106,23 +106,25 @@ public class HBaseManager implements AutoCloseable {
     @Override
     public void close() throws IOException {
         if (this.closeConnection.get()) {
-            Connection con = this.connection.getAndSet(null);
-            if (null != con) {
-                LOGGER.info("Close HBase connection {}", con);
-                con.close();
-                OPEN_CONNECTIONS.decrementAndGet();
-                LOGGER.info("Remaining HBase open connections: {}", getOpenConnections());
+            synchronized (this.connection) {
+                Connection con = this.connection.getAndSet(null);
+                if (null != con) {
+                    LOGGER.info("Close HBase connection {}", con);
+                    con.close();
+                    OPEN_CONNECTIONS.decrementAndGet();
+                    LOGGER.info("Remaining HBase open connections: {}", getOpenConnections());
 //                CONNECTIONS.remove(con);
+                }
             }
         }
     }
 
     public Connection getConnection() {
         Connection con = this.connection.get();
-        if (con == null) {
+        if (con == null || con.isClosed()) {
             synchronized (this.connection) {
                 con = this.connection.get();
-                if (con == null) {
+                if (con == null || con.isClosed()) {
                     try {
                         con = ConnectionFactory.createConnection(this.getConf());
                     } catch (IOException e) {

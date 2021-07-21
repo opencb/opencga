@@ -393,7 +393,7 @@ public class MigrationManager {
         Migration m2Annotation = getMigrationAnnotation(m2);
 
         int compareValue = compareVersion(m1Annotation.version(), m2Annotation.version());
-        if (compareValue == 1 || compareValue == -1) {
+        if (compareValue != 0) {
             return compareValue;
         }
 
@@ -411,7 +411,7 @@ public class MigrationManager {
                 + m1Annotation.rank() + " for same version " + m1Annotation.version());
     }
 
-    private int compareVersion(String version1, String version2) {
+    protected static int compareVersion(String version1, String version2) {
         String[] m1VersionSplit = version1.toUpperCase().split("\\.");
         String[] m2VersionSplit = version2.toUpperCase().split("\\.");
 
@@ -437,16 +437,12 @@ public class MigrationManager {
             return -1;
         }
         // Check for RC's
-        if (m1VersionSplit.length == 2 && m2VersionSplit.length == 1) {
-            return -1;
-        } else if (m1VersionSplit.length == 1 && m2VersionSplit.length == 2) {
+        int rcM1 = m1VersionSplit.length == 2 ? Integer.parseInt(m1VersionSplit[1]) : 0;
+        int rcM2 = m2VersionSplit.length == 2 ? Integer.parseInt(m2VersionSplit[1]) : 0;
+        if (rcM1 > rcM2) {
             return 1;
-        } else if (m1VersionSplit.length == 2 && m2VersionSplit.length == 2) {
-            if (Integer.parseInt(m1VersionSplit[1]) > Integer.parseInt(m2VersionSplit[1])) {
-                return 1;
-            } else if (Integer.parseInt(m1VersionSplit[1]) < Integer.parseInt(m2VersionSplit[1])) {
-                return -1;
-            }
+        } else if (rcM1 < rcM2) {
+            return -1;
         }
 
         return 0;
@@ -469,7 +465,7 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : allMigrations) {
             Migration annotation = getMigrationAnnotation(migration);
 
-            if (StringUtils.isNotEmpty(version) && !annotation.version().equalsIgnoreCase(version)) {
+            if (StringUtils.isNotEmpty(version) && compareVersion(annotation.version(), version) == 0) {
                 continue;
             }
             if (!domainFilter.isEmpty() && !domainFilter.contains(annotation.domain())) {

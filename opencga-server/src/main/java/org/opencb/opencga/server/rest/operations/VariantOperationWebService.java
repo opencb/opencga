@@ -265,8 +265,9 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
             @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
-        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, token));
+        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, skipRebuild, token));
     }
 
     @POST
