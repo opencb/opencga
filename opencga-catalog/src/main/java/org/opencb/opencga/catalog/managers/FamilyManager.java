@@ -45,7 +45,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -210,7 +209,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
             family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
             family.setDisorders(ParamUtils.defaultObject(family.getDisorders(), Collections.emptyList()));
-            family.setCreationDate(TimeUtils.getTime());
+            family.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(family.getCreationDate()));
             family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
             family.setInternal(FamilyInternal.init());
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
@@ -880,6 +879,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
             }
+        }
+
+        if (StringUtils.isNotEmpty(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()))) {
+            ParamUtils.checkCreationDateFormat(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()));
         }
 
         // If there is nothing to update, we fail
