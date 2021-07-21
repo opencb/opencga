@@ -41,7 +41,10 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.*;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -176,7 +179,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
         sample.setCollection(ParamUtils.defaultObject(sample.getCollection(), SampleCollection::new));
         sample.setQualityControl(ParamUtils.defaultObject(sample.getQualityControl(), SampleQualityControl::new));
-        sample.setCreationDate(ParamUtils.defaultString(sample.getCreationDate(), TimeUtils.getTime()));
+        sample.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(sample.getCreationDate()));
         sample.setModificationDate(TimeUtils.getTime());
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
@@ -1001,6 +1004,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse SampleUpdateParams object: " + e.getMessage(), e);
             }
+        }
+
+        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.CREATION_DATE.key()))) {
+            ParamUtils.checkCreationDateFormat(parameters.getString(SampleDBAdaptor.QueryParams.CREATION_DATE.key()));
         }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {

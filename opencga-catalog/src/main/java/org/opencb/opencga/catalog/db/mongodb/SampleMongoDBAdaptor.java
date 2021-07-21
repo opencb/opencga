@@ -159,7 +159,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
         }
         if (StringUtils.isEmpty(sample.getCreationDate())) {
-            sample.setCreationDate(TimeUtils.getTime());
+            throw new CatalogDBException(QueryParams.CREATION_DATE.key() + " cannot be empty");
         }
         if (sample.getFileIds() == null) {
             sample.setFileIds(Collections.emptyList());
@@ -543,6 +543,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
 
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
