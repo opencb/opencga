@@ -1540,20 +1540,13 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, FileInternal.init().setStatus(new FileStatus(FileStatus.STAGE)),
+                "folder/subfolder/subsubfolder/my_staged.txt", null, FileInternal.init(),
                         0, null, null, "", null, null, null), true, "bla bla", null, token).first();
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*")
                 .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
         setToPendingDelete(studyFqn, query);
-
-        try {
-            fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, token);
-            fail("Delete should fail because it cannot delete files in STAGE status");
-        } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("STAGE"));
-        }
 
         File fileTmp = fileManager.get(studyFqn, folder.getPath(), null, token).first();
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());

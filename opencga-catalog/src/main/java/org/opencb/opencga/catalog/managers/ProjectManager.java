@@ -300,6 +300,7 @@ public class ProjectManager extends AbstractManager {
         project.setModificationDate(TimeUtils.getTime());
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
+        project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
 
         if (user.getAccount().getType() != Account.AccountType.ADMINISTRATOR
                 && (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())

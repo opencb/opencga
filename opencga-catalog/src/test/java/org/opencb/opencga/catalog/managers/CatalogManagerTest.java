@@ -429,10 +429,17 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Project project = result.first();
         System.out.println(result);
 
+        assertNotEquals("20180101120000", project.getCreationDate());
         assertEquals(newProjectName, project.getName());
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(project.getAttributes().get(entry.getKey()), entry.getValue());
         }
+
+        options = new ObjectMap();
+        options.put(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), "20180101120000");
+        catalogManager.getProjectManager().update(projectId, options, null, token);
+        project =  catalogManager.getProjectManager().get(projectId, null, token).first();
+        assertEquals("20180101120000", project.getCreationDate());
 
         options = new ObjectMap();
         options.put(ProjectDBAdaptor.QueryParams.ID.key(), "newProjectId");
@@ -472,14 +479,19 @@ public class CatalogManagerTest extends AbstractManagerTest {
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(study.getAttributes().get(entry.getKey()), entry.getValue());
         }
+
+        assertNotEquals("20180101120000", study.getCreationDate());
+        catalogManager.getStudyManager().update(studyId, new StudyUpdateParams().setCreationDate("20180101120000"), null, token);
+        study = catalogManager.getStudyManager().get(studyId, null, token).first();
+        assertEquals("20180101120000", study.getCreationDate());
     }
 
     @Test
     public void testGetAllStudies() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
-        catalogManager.getStudyManager().create(projectId, "study_1", null, "study_1",
-                "description", null, null, null, null, null, token);
+        Study study_1 = catalogManager.getStudyManager().create(projectId, new Study().setId("study_1").setCreationDate("20150101120000"), null, token).first();
+        assertEquals("20150101120000", study_1.getCreationDate());
 
         catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", "description", null, null, null, null, null, token);
 

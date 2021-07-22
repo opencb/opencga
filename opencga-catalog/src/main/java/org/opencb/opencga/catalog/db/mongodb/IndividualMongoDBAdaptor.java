@@ -613,13 +613,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         while (iterator.hasNext()) {
             Family family = iterator.next();
 
-            List<Individual> members = new ArrayList<>(family.getMembers().size());
+            List<Map<String, Object>> members = new ArrayList<>(family.getMembers().size());
             for (Individual member : family.getMembers()) {
                 if (member.getUid() == individual.getUid()) {
                     member.setVersion(individual.getVersion() + 1);
                 }
-                members.add(member);
+                members.add(getMongoDBDocument(member, "Individual"));
             }
+
 
             ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
 
