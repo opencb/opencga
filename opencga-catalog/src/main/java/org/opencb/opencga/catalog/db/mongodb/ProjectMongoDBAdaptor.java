@@ -129,12 +129,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         if (StringUtils.isEmpty(project.getUuid())) {
             project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
-        if (StringUtils.isEmpty(project.getCreationDate())) {
-            throw new CatalogDBException(QueryParams.CREATION_DATE.key() + " cannot be empty");
-        }
 
         Document projectDocument = projectConverter.convertToStorageType(project);
-        projectDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(project.getCreationDate()));
+        projectDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(project.getCreationDate()) ? TimeUtils.toDate(project.getCreationDate()) : TimeUtils.getDate());
         projectDocument.put(PRIVATE_MODIFICATION_DATE, projectDocument.get(PRIVATE_CREATION_DATE));
 
         Bson update = Updates.push("projects", projectDocument);

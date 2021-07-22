@@ -203,14 +203,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (StringUtils.isEmpty(file.getUuid())) {
             file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         }
-        if (StringUtils.isEmpty(file.getCreationDate())) {
-            throw new CatalogDBException(StudyDBAdaptor.QueryParams.CREATION_DATE.key() + " cannot be empty");
-        }
 
         Document fileDocument = fileConverter.convertToStorageType(file, samples, variableSetList);
 
         fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-        fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
+        fileDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(file.getCreationDate()) ? TimeUtils.toDate(file.getCreationDate()) : TimeUtils.getDate());
         fileDocument.put(PRIVATE_MODIFICATION_DATE, fileDocument.get(PRIVATE_CREATION_DATE));
 
         fileCollection.insert(clientSession, fileDocument, null);

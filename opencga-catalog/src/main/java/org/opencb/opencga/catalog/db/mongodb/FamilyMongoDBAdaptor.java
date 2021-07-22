@@ -174,9 +174,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (StringUtils.isEmpty(family.getUuid())) {
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
         }
-        if (StringUtils.isEmpty(family.getCreationDate())) {
-            throw new CatalogDBException(StudyDBAdaptor.QueryParams.CREATION_DATE.key() + " cannot be empty");
-        }
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -184,7 +181,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyDocument.put(LAST_OF_VERSION, true);
         familyDocument.put(LAST_OF_RELEASE, true);
-        familyDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
+        familyDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(family.getCreationDate()) ? TimeUtils.toDate(family.getCreationDate()) : TimeUtils.getDate());
         familyDocument.put(PRIVATE_MODIFICATION_DATE, familyDocument.get(PRIVATE_CREATION_DATE));
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 

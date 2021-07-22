@@ -177,9 +177,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (StringUtils.isEmpty(study.getUuid())) {
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
         }
-        if (StringUtils.isEmpty(study.getCreationDate())) {
-            throw new CatalogDBException(QueryParams.CREATION_DATE.key() + " cannot be empty");
-        }
 
         //Empty nested fields
         List<File> files = study.getFiles();
@@ -211,7 +208,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         );
         studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
-        studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
+        studyObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(study.getCreationDate()) ? TimeUtils.toDate(study.getCreationDate()) : TimeUtils.getDate());
         studyObject.put(PRIVATE_MODIFICATION_DATE, studyObject.get(PRIVATE_CREATION_DATE));
 
         studyCollection.insert(clientSession, studyObject, null);

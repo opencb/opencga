@@ -115,13 +115,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         if (StringUtils.isEmpty(cohort.getUuid())) {
             cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
         }
-        if (StringUtils.isEmpty(cohort.getCreationDate())) {
-            throw new CatalogDBException(QueryParams.CREATION_DATE.key() + " cannot be empty");
-        }
 
         Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
 
-        cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+        cohortObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(cohort.getCreationDate()) ? TimeUtils.toDate(cohort.getCreationDate()) : TimeUtils.getDate());
         cohortObject.put(PRIVATE_MODIFICATION_DATE, cohortObject.get(PRIVATE_CREATION_DATE));
         cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 

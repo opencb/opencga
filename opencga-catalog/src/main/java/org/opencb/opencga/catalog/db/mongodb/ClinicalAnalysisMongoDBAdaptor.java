@@ -797,9 +797,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (StringUtils.isEmpty(clinicalAnalysis.getUuid())) {
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
         }
-        if (StringUtils.isEmpty(clinicalAnalysis.getCreationDate())) {
-            throw new CatalogDBException(CREATION_DATE.key() + " cannot be empty");
-        }
 
         Document clinicalDocument = clinicalConverter.convertToStorageType(clinicalAnalysis);
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {

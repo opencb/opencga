@@ -167,9 +167,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (StringUtils.isEmpty(individual.getUuid())) {
             individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));
         }
-        if (StringUtils.isEmpty(individual.getCreationDate())) {
-            throw new CatalogDBException(StudyDBAdaptor.QueryParams.CREATION_DATE.key() + " cannot be empty");
-        }
 
         Document individualDocument = individualConverter.convertToStorageType(individual, variableSetList);
 
@@ -177,7 +174,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(individual.getRelease()));
         individualDocument.put(LAST_OF_VERSION, true);
         individualDocument.put(LAST_OF_RELEASE, true);
-        individualDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(individual.getCreationDate()));
+        individualDocument.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(individual.getCreationDate())
+                ? TimeUtils.toDate(individual.getCreationDate())
+                : TimeUtils.getDate());
         individualDocument.put(PRIVATE_MODIFICATION_DATE, individualDocument.get(PRIVATE_CREATION_DATE));
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
