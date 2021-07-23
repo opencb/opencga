@@ -33,9 +33,20 @@ import java.util.Map;
  */
 public class File extends Annotable {
 
+    /**
+     * File ID is a mandatory parameter when creating a new File, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
-    private String name;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the File creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+    private String name;
 
     /**
      * Formats: file, folder, index.
@@ -57,10 +68,34 @@ public class File extends Annotable {
     private URI uri;
     private String path;
 
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Internal
+     */
     private int release;
+
+    /**
+     * String representing when the File was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the File was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
+    /**
+     * An string to describe the properties of the File.
+     *
+     * @apiNote
+     */
     private String description;
+
     private boolean external;
 
     private long size;
@@ -75,8 +110,26 @@ public class File extends Annotable {
 
     @Deprecated
     private Map<String, Object> stats;
+
+    /**
+     * An object describing the status of the File.
+     *
+     * @apiNote
+     */
     private CustomStatus status;
+
+    /**
+     * An object describing the internal information of the File. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private FileInternal internal;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
 
     public File() {
@@ -103,7 +156,7 @@ public class File extends Annotable {
                 List<String> sampleIds, List<FileRelatedFile> relatedFiles, String jobId, int release,
                 List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats, CustomStatus status,
                 FileInternal internal, Map<String, Object> attributes) {
-        this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
+        id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
         this.type = type;
         this.format = format;
@@ -121,7 +174,7 @@ public class File extends Annotable {
         this.software = software;
         this.experiment = experiment;
         this.sampleIds = sampleIds;
-        this.tags = Collections.emptyList();
+        tags = Collections.emptyList();
         this.relatedFiles = relatedFiles;
         this.annotationSets = annotationSets;
         this.jobId = jobId;
@@ -129,88 +182,6 @@ public class File extends Annotable {
         this.stats = stats;
         this.status = status;
         this.attributes = attributes;
-    }
-
-    public enum Type {
-        FILE,
-        DIRECTORY
-    }
-
-    public enum Compression {
-        GZIP,
-        BGZIP,
-        ZIP,
-        SNAPPY,
-        NONE,
-    }
-
-    /**
-     * General format of the file, such as text, or binary, etc.
-     */
-    public enum Format {
-        VCF,
-        BCF,
-        GVCF,
-        TBI,
-        BIGWIG,
-
-        SAM,
-        BAM,
-        BAI,
-        CRAM,
-        CRAI,
-        FASTQ,
-        FASTA,
-        PED,
-
-        TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
-
-        IMAGE,
-        PLAIN,
-        BINARY,
-        NONE,
-        UNKNOWN,
-    }
-
-    /**
-     * Specific format of the biological file, such as variant, alignment, pedigree, etc.
-     */
-    public enum Bioformat {
-        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
-        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
-        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
-        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
-        DATAMATRIX_EXPRESSION,
-        //        DATAMATRIX_SNP,
-//        IDLIST_GENE,
-//        IDLIST_TRANSCRIPT,
-//        IDLIST_PROTEIN,
-//        IDLIST_SNP,
-//        IDLIST_FUNCTIONALTERMS,
-//        IDLIST_RANKED,
-        IDLIST,
-        IDLIST_RANKED,
-        ANNOTATION_GENEVSANNOTATION,
-
-        OTHER_NEWICK,
-        OTHER_BLAST,
-        OTHER_INTERACTION,
-        OTHER_GENOTYPE,
-        OTHER_PLINK,
-        OTHER_VCF,
-        OTHER_PED,
-
-        @Deprecated VCF4,
-
-        VARIANT,
-        ALIGNMENT,
-        COVERAGE,
-        SEQUENCE,
-        PEDIGREE,
-        REFERENCE_GENOME,
-        NONE,
-        UNKNOWN
     }
 
     @Override
@@ -493,5 +464,87 @@ public class File extends Annotable {
     public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    public enum Type {
+        FILE,
+        DIRECTORY
+    }
+
+    public enum Compression {
+        GZIP,
+        BGZIP,
+        ZIP,
+        SNAPPY,
+        NONE,
+    }
+
+    /**
+     * General format of the file, such as text, or binary, etc.
+     */
+    public enum Format {
+        VCF,
+        BCF,
+        GVCF,
+        TBI,
+        BIGWIG,
+
+        SAM,
+        BAM,
+        BAI,
+        CRAM,
+        CRAI,
+        FASTQ,
+        FASTA,
+        PED,
+
+        TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
+
+        IMAGE,
+        PLAIN,
+        BINARY,
+        NONE,
+        UNKNOWN,
+    }
+
+    /**
+     * Specific format of the biological file, such as variant, alignment, pedigree, etc.
+     */
+    public enum Bioformat {
+        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
+        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
+        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
+        DATAMATRIX_EXPRESSION,
+        //        DATAMATRIX_SNP,
+//        IDLIST_GENE,
+//        IDLIST_TRANSCRIPT,
+//        IDLIST_PROTEIN,
+//        IDLIST_SNP,
+//        IDLIST_FUNCTIONALTERMS,
+//        IDLIST_RANKED,
+        IDLIST,
+        IDLIST_RANKED,
+        ANNOTATION_GENEVSANNOTATION,
+
+        OTHER_NEWICK,
+        OTHER_BLAST,
+        OTHER_INTERACTION,
+        OTHER_GENOTYPE,
+        OTHER_PLINK,
+        OTHER_VCF,
+        OTHER_PED,
+
+        @Deprecated VCF4,
+
+        VARIANT,
+        ALIGNMENT,
+        COVERAGE,
+        SEQUENCE,
+        PEDIGREE,
+        REFERENCE_GENOME,
+        NONE,
+        UNKNOWN
     }
 }

@@ -27,7 +27,9 @@ import java.util.*;
 public class User {
 
     /**
-     * id is a unique string in the database.
+     * User ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
      */
     private String id;
     private String name;
@@ -36,14 +38,30 @@ public class User {
 
     private Account account;
 
+    /**
+     * An object describing the internal information of the User. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private UserInternal internal;
     private UserQuota quota;
 
+    /**
+     * A List with related projects.
+     *
+     * @apiNote
+     */
     private List<Project> projects;
     private List<Project> sharedProjects;
 
     private Map<String, ObjectMap> configs;
     private List<UserFilter> filters;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
 
     public User() {
@@ -202,5 +220,4 @@ public class User {
         this.attributes = attributes;
         return this;
     }
-
 }

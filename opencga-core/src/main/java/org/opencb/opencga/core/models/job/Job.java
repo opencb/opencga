@@ -29,21 +29,53 @@ import java.util.Map;
  */
 public class Job extends PrivateStudyUid {
 
+    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
+    /**
+     * Job ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+
+    /**
+     * An string to describe the properties of the Job.
+     *
+     * @apiNote
+     */
     private String description;
 
     private ToolInfo tool;
-
     private String userId;
     private String commandLine;
-
     private Map<String, Object> params;
 
+    /**
+     * String representing when the sample was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
 
     private Enums.Priority priority;
+
+    /**
+     * An object describing the internal information of the Sample. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private JobInternal internal;
 
     private File outDir;
@@ -51,19 +83,19 @@ public class Job extends PrivateStudyUid {
     private List<File> output;   // output files of this job
     private List<String> tags;
     private List<Job> dependsOn;
-
     private ExecutionResult execution;
-
     private File stdout;
     private File stderr;
-
     private boolean visited;
 
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Internal
+     */
     private int release;
     private JobStudyParam study;
     private Map<String, Object> attributes;
-
-    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
 
     public Job() {
     }
