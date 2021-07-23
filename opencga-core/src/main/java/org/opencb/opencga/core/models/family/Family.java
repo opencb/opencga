@@ -36,100 +36,85 @@ import java.util.Map;
  */
 public class Family extends Annotable {
 
+    /**
+     * Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
-    private String name;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the Family creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+
+    private String name;
     private List<Individual> members;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
     private FamilyQualityControl qualityControl;
 
+    /**
+     * String representing when the Family was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the Family was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
     private int expectedSize;
+
+    /**
+     * An string to describe the properties of the Family.
+     *
+     * @apiNote
+     */
     private String description;
 
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Internal
+     */
     private int release;
+
+    /**
+     * An integer describing the current version.
+     *
+     * @apiNote Internal
+     */
     private int version;
+
+    /**
+     * An object describing the status of the Family.
+     *
+     * @apiNote
+     */
     private CustomStatus status;
+
+    /**
+     * An object describing the internal information of the Family. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private FamilyInternal internal;
     private Map<String, Map<String, FamiliarRelationship>> roles;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
-
-    public enum FamiliarRelationship {
-        MOTHER("", "mother"),
-        FATHER("", "father"),
-        STEP_MOTHER("", "mother"),
-        STEP_FATHER("", "father"),
-        IDENTICAL_TWIN("", "twin"),
-        FRATERNAL_TWIN("", "twin"),
-        FULL_SIBLING("", "sibling"),
-        HALF_SIBLING("", "sibling"),
-        STEP_SIBLING("", "sibling"),
-        SISTER("", "sister"),
-        BROTHER("", "brother"),
-        STEP_SISTER("", "sister"),
-        STEP_BROTHER("", "brother"),
-        SON("", "son"),
-        DAUGHTER("", "daughter"),
-
-        CHILD_OF_UNKNOWN_SEX("", "child"),
-
-        UNCLE("", "uncle"),
-        AUNT("", "aunt"),
-        MATERNAL_AUNT("", "aunt"),
-        MATERNAL_UNCLE("", "uncle"),
-        PATERNAL_AUNT("", "aunt"),
-        PATERNAL_UNCLE("", "uncle"),
-        NEPHEW("", "nephew"),
-        NIECE("", "niece"),
-        GRANDSON("", "grandson"),
-        GRANDCHILD("", "grandchild"),
-        GRANDDAUGHTER("", "granddaughter"),
-        GRANDFATHER("", "grandfather"),
-        GRANDMOTHER("", "grandmother"),
-        MATERNAL_GRANDMOTHER("", "grandmother"),
-        PATERNAL_GRANDMOTHER("", "grandmother"),
-        MATERNAL_GRANDFATHER("", "grandfather"),
-        PATERNAL_GRANDFATHER("", "grandfather"),
-        GREAT_GRANDFATHER("", "great-grandfather"),
-        GREAT_GRANDMOTHER("", "great-grandmother"),
-        DOUBLE_FIRST_COUSING("", "cousin"),
-        COUSIN("", "cousin"),
-        MALE_COUSIN("", "cousin"),
-        FEMALE_COUSIN("", "cousin"),
-        SECOND_COUSIN("", "cousin"),
-        MALE_SECOND_COUSIN("", "cousin"),
-        FEMALE_SECOND_COUSIN("", "cousin"),
-        SPOUSE("", "spouse"),
-        HUSBAND("", "husband"),
-        OTHER("", "other"),
-        UNKNOWN("", "unknown"),
-        UNRELATED("", "unrelated"),
-
-        PROBAND("", "proband");
-
-        private final String snomedCtId;
-        private final String isA;
-
-        FamiliarRelationship(String snomedCtId, String isA) {
-            this.snomedCtId = snomedCtId;
-            this.isA = isA;
-        }
-
-        public String getId() {
-            return this.name();
-        }
-
-        public String getSnomedCtId() {
-            return snomedCtId;
-        }
-
-        public String getIsA() {
-            return isA;
-        }
-    }
 
     public Family() {
     }
@@ -197,6 +182,7 @@ public class Family extends Annotable {
         return this;
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
@@ -206,10 +192,12 @@ public class Family extends Annotable {
         return this;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public Family setId(String id) {
         this.id = id;
         return this;
@@ -348,5 +336,79 @@ public class Family extends Annotable {
     public Family setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    public enum FamiliarRelationship {
+        MOTHER("", "mother"),
+        FATHER("", "father"),
+        STEP_MOTHER("", "mother"),
+        STEP_FATHER("", "father"),
+        IDENTICAL_TWIN("", "twin"),
+        FRATERNAL_TWIN("", "twin"),
+        FULL_SIBLING("", "sibling"),
+        HALF_SIBLING("", "sibling"),
+        STEP_SIBLING("", "sibling"),
+        SISTER("", "sister"),
+        BROTHER("", "brother"),
+        STEP_SISTER("", "sister"),
+        STEP_BROTHER("", "brother"),
+        SON("", "son"),
+        DAUGHTER("", "daughter"),
+
+        CHILD_OF_UNKNOWN_SEX("", "child"),
+
+        UNCLE("", "uncle"),
+        AUNT("", "aunt"),
+        MATERNAL_AUNT("", "aunt"),
+        MATERNAL_UNCLE("", "uncle"),
+        PATERNAL_AUNT("", "aunt"),
+        PATERNAL_UNCLE("", "uncle"),
+        NEPHEW("", "nephew"),
+        NIECE("", "niece"),
+        GRANDSON("", "grandson"),
+        GRANDCHILD("", "grandchild"),
+        GRANDDAUGHTER("", "granddaughter"),
+        GRANDFATHER("", "grandfather"),
+        GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDMOTHER("", "grandmother"),
+        PATERNAL_GRANDMOTHER("", "grandmother"),
+        MATERNAL_GRANDFATHER("", "grandfather"),
+        PATERNAL_GRANDFATHER("", "grandfather"),
+        GREAT_GRANDFATHER("", "great-grandfather"),
+        GREAT_GRANDMOTHER("", "great-grandmother"),
+        DOUBLE_FIRST_COUSING("", "cousin"),
+        COUSIN("", "cousin"),
+        MALE_COUSIN("", "cousin"),
+        FEMALE_COUSIN("", "cousin"),
+        SECOND_COUSIN("", "cousin"),
+        MALE_SECOND_COUSIN("", "cousin"),
+        FEMALE_SECOND_COUSIN("", "cousin"),
+        SPOUSE("", "spouse"),
+        HUSBAND("", "husband"),
+        OTHER("", "other"),
+        UNKNOWN("", "unknown"),
+        UNRELATED("", "unrelated"),
+
+        PROBAND("", "proband");
+
+        private final String snomedCtId;
+        private final String isA;
+
+        FamiliarRelationship(String snomedCtId, String isA) {
+            this.snomedCtId = snomedCtId;
+            this.isA = isA;
+        }
+
+        public String getId() {
+            return name();
+        }
+
+        public String getSnomedCtId() {
+            return snomedCtId;
+        }
+
+        public String getIsA() {
+            return isA;
+        }
     }
 }
