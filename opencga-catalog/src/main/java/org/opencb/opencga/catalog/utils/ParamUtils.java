@@ -22,9 +22,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -150,6 +152,28 @@ public class ParamUtils {
             }
         } else {
             throw new CatalogParameterException("ID is null or Empty");
+        }
+    }
+
+    public static void checkCreationDateFormat(String creationDate) throws CatalogParameterException {
+        if (StringUtils.isEmpty(creationDate)) {
+            throw new CatalogParameterException("'creationDate' is null or empty");
+        } else {
+            // Validate creationDate can be parsed and has the proper format
+            Date date = TimeUtils.toDate(creationDate);
+            if (date == null || creationDate.length() != 14) {
+                throw new CatalogParameterException("Unexpected 'creationDate' format. Expected format is 'yyyyMMddHHmmss'");
+            }
+        }
+    }
+
+
+    public static String checkCreationDateOrGetCurrentCreationDate(String creationDate) throws CatalogParameterException {
+        if (StringUtils.isEmpty(creationDate)) {
+            return TimeUtils.getTime();
+        } else {
+            checkCreationDateFormat(creationDate);
+            return creationDate;
         }
     }
 

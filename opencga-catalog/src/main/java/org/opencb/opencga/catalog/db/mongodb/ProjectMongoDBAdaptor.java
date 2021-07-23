@@ -129,12 +129,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         if (StringUtils.isEmpty(project.getUuid())) {
             project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
-        if (StringUtils.isEmpty(project.getCreationDate())) {
-            project.setCreationDate(TimeUtils.getTime());
-        }
 
         Document projectDocument = projectConverter.convertToStorageType(project);
-        projectDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(project.getCreationDate()));
+        projectDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(project.getCreationDate()) ? TimeUtils.toDate(project.getCreationDate()) : TimeUtils.getDate());
         projectDocument.put(PRIVATE_MODIFICATION_DATE, projectDocument.get(PRIVATE_CREATION_DATE));
 
         Bson update = Updates.push("projects", projectDocument);
@@ -336,13 +334,21 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document projectParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(),
                 QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 projectParameters.put("projects.$." + s, parameters.getString(s));
             }
         }
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            projectParameters.put("projects.$." + QueryParams.CREATION_DATE.key(), time);
+            projectParameters.put("projects.$." + PRIVATE_CREATION_DATE, date);
+        }
+
         Map<String, Object> attributes = parameters.getMap(QueryParams.ATTRIBUTES.key());
         if (attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
@@ -383,8 +389,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            projectParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
-            projectParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            projectParameters.put("projects.$." + QueryParams.MODIFICATION_DATE.key(), time);
+            projectParameters.put("projects.$." + PRIVATE_MODIFICATION_DATE, date);
         }
 
         return projectParameters;

@@ -15,11 +15,12 @@ public class SamplePrivateUpdateParams extends SampleUpdateParams {
     public SamplePrivateUpdateParams() {
     }
 
-    public SamplePrivateUpdateParams(String id, String description, String individualId, SampleProcessing processing,
+    public SamplePrivateUpdateParams(String id, String description, String creationDate, String individualId, SampleProcessing processing,
                                      SampleCollection collection, SampleQualityControl qualityControl, Boolean somatic,
                                      List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
                                      CustomStatusParams status, SampleInternal internal) {
-        super(id, description, individualId, processing, collection, qualityControl, somatic, phenotypes, annotationSets, attributes, status);
+        super(id, description, creationDate, individualId, processing, collection, qualityControl, somatic, phenotypes, annotationSets,
+                attributes, status);
         this.internal = internal;
     }
 

@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -78,7 +79,7 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor = new AuthorizationMongoDBAdaptor(dbAdaptorFactory, dbAdaptorTest.getConfiguration());
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", TimeUtils.getTime(), null, null, null, 1, 1, "", false,
                 Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()),
                 Collections.emptyList(), QueryOptions.empty());
         s1 = getSample(studyId, "s1");
@@ -242,8 +243,8 @@ public class AuthorizationMongoDBAdaptorTest {
     @Test
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", null, null, null, 1, 1, "", false,
-                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()),
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", TimeUtils.getTime(), null, null, null, 1, 1, "",
+                false, Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample s2 = getSample(studyId, "s2");
 

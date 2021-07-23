@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
@@ -60,8 +59,6 @@ import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
-import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
@@ -311,11 +308,9 @@ public class StudyManager extends AbstractManager {
             study.setName(ParamUtils.defaultString(study.getName(), study.getId()));
             study.setAlias(ParamUtils.defaultString(study.getAlias(), study.getId()));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
-            study.setInternal(ParamUtils.defaultObject(study.getInternal(), StudyInternal::new));
-            study.getInternal().setStatus(ParamUtils.defaultObject(study.getInternal().getStatus(), Status::new));
-            study.getInternal().setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null));
+            study.setInternal(StudyInternal.init());
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
-            study.setCreationDate(TimeUtils.getTime());
+            study.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(study.getCreationDate()));
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
@@ -331,9 +326,9 @@ public class StudyManager extends AbstractManager {
 
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    FileInternal.initialize(), 0, project.getCurrentRelease());
+                    FileInternal.init(), 0, project.getCurrentRelease());
             File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
-                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
+                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.init(), 0, project.getCurrentRelease());
             files.add(rootFile);
             files.add(jobsFile);
 
@@ -632,6 +627,10 @@ public class StudyManager extends AbstractManager {
 
             if (StringUtils.isNotEmpty(parameters.getAlias())) {
                 ParamUtils.checkIdentifier(parameters.getAlias(), "alias");
+            }
+
+            if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
+                ParamUtils.checkCreationDateFormat(parameters.getCreationDate());
             }
 
             ObjectMap update;

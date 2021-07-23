@@ -202,14 +202,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (StringUtils.isEmpty(file.getUuid())) {
             file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         }
-        if (StringUtils.isEmpty(file.getCreationDate())) {
-            file.setCreationDate(TimeUtils.getTime());
-        }
 
         Document fileDocument = fileConverter.convertToStorageType(file, samples, variableSetList);
 
         fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-        fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
+        fileDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(file.getCreationDate()) ? TimeUtils.toDate(file.getCreationDate()) : TimeUtils.getDate());
         fileDocument.put(PRIVATE_MODIFICATION_DATE, fileDocument.get(PRIVATE_CREATION_DATE));
 
         fileCollection.insert(clientSession, fileDocument, null);
@@ -522,11 +520,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
-                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(), QueryParams.PATH.key(),
-                QueryParams.CHECKSUM.key(), QueryParams.JOB_ID.key(),
+                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.PATH.key(), QueryParams.CHECKSUM.key(),
+                QueryParams.JOB_ID.key(),
         };
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
 
         if (parameters.containsKey(QueryParams.PATH.key())) {
             checkOnlyOneFileMatches(clientSession, query);

@@ -55,7 +55,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(studyId >= 0);
         File file;
         file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, "",
-                FileInternal.initialize(), 1000, 1);
+                FileInternal.init(), 1000, 1);
         LinkedList<FileAclEntry> acl = new LinkedList<>();
         acl.push(new FileAclEntry("jcoll", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
                 FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FileAclEntry.FilePermissions.VIEW_HEADER.name(),
@@ -63,13 +63,13 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         acl.push(new FileAclEntry("jmmut", Collections.emptyList()));
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, "",
-                FileInternal.initialize(), 1000, 1);
+                FileInternal.init(), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", null, "",
-                FileInternal.initialize(), 1000, 1);
+                FileInternal.init(), 1000, 1);
         System.out.println(catalogFileDBAdaptor.insert(studyId, file, null, null, null, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", null, "",
-                FileInternal.initialize(), 1000, 1);
+                FileInternal.init(), 1000, 1);
 
         try {
             System.out.println(catalogFileDBAdaptor.insert(-20, file, null, null, null, null));

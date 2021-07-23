@@ -19,14 +19,14 @@ public class IndividualPrivateUpdateParams extends IndividualUpdateParams {
     }
 
     public IndividualPrivateUpdateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
-                                         Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex, String ethnicity,
-                                         IndividualPopulation population, String dateOfBirth,
+                                         String creationDate, Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex,
+                                         String ethnicity, IndividualPopulation population, String dateOfBirth,
                                          IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
                                          List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                          List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
                                          Map<String, Object> attributes, IndividualInternal internal) {
-        super(id, name, father, mother, parentalConsanguinity, location, sex, ethnicity, population, dateOfBirth, karyotypicSex, lifeStatus,
-                samples, annotationSets, phenotypes, disorders, status, qualityControl, attributes);
+        super(id, name, father, mother, creationDate, parentalConsanguinity, location, sex, ethnicity, population, dateOfBirth,
+                karyotypicSex, lifeStatus, samples, annotationSets, phenotypes, disorders, status, qualityControl, attributes);
         this.internal = internal;
     }
 

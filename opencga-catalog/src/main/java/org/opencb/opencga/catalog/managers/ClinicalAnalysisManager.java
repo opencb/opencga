@@ -254,9 +254,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
 
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
-            clinicalAnalysis.setInternal(ParamUtils.defaultObject(clinicalAnalysis.getInternal(), ClinicalAnalysisInternal::new));
-            clinicalAnalysis.getInternal().setStatus(ParamUtils.defaultObject(clinicalAnalysis.getInternal().getStatus(),
-                    ClinicalAnalysisStatus::new));
+            clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
             clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
                     new Disorder("", "", "", Collections.emptyMap(), "", Collections.emptyList())));
             clinicalAnalysis.setDueDate(ParamUtils.defaultObject(clinicalAnalysis.getDueDate(),
@@ -512,7 +510,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 obtainFiles(study, clinicalAnalysis, userId);
             }
 
-            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
+            clinicalAnalysis.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(clinicalAnalysis.getCreationDate()));
             clinicalAnalysis.setModificationDate(TimeUtils.getTime());
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
@@ -1158,6 +1156,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
+            ParamUtils.checkCreationDateFormat(clinicalAnalysis.getCreationDate());
+        }
 
         ObjectMap parameters;
         if (updateParams != null) {

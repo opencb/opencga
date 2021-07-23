@@ -179,7 +179,8 @@ public class TemplateManager {
         if (overwrite) {
             // Updating values
             StudyUpdateParams studyUpdateParams = new StudyUpdateParams(tmplStudy.getName(), tmplStudy.getAlias(),
-                    tmplStudy.getDescription(), tmplStudy.getNotification(), tmplStudy.getAttributes(), tmplStudy.getStatus());
+                    tmplStudy.getDescription(), tmplStudy.getCreationDate(), tmplStudy.getNotification(), tmplStudy.getAttributes(),
+                    tmplStudy.getStatus());
 
             logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
             try {
@@ -646,8 +647,8 @@ public class TemplateManager {
                     // Create File
                     logger.debug("Create File '{}'", file.getPath());
                     catalogManager.getFileManager().link(studyFqn,
-                            new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getRelatedFiles(),
-                                    file.getStatus(), null), true, token);
+                            new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getCreationDate(),
+                                    file.getRelatedFiles(), file.getStatus(), null), true, token);
                     incomplete = true;
                 }
 

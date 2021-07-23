@@ -8,12 +8,15 @@ public class StudyConfiguration {
     private StudyVariantEngineConfiguration variantEngine;
 
     public StudyConfiguration() {
-        this(new ClinicalAnalysisStudyConfiguration(), new StudyVariantEngineConfiguration());
     }
 
     public StudyConfiguration(ClinicalAnalysisStudyConfiguration clinical, StudyVariantEngineConfiguration variantEngine) {
         this.clinical = clinical;
         this.variantEngine = variantEngine;
+    }
+
+    public static StudyConfiguration init() {
+        return new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null);
     }
 
     @Override

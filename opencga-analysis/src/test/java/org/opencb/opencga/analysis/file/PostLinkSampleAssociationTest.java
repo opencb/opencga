@@ -50,7 +50,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         fileManager.setFileSampleLinkThreshold(1);
 
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null), false, token);
+        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
         assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getName());
@@ -104,7 +104,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         fileManager.setFileSampleLinkThreshold(1);
 
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null), false, token);
+        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
         assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getName());
