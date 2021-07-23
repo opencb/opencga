@@ -29,7 +29,6 @@ import java.util.Map;
  */
 public class Job extends PrivateStudyUid {
 
-    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
     /**
      * Job ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
      *
@@ -42,42 +41,35 @@ public class Job extends PrivateStudyUid {
      * @apiNote Internal, Unique, Immutable
      */
     private String uuid;
-
     /**
      * An string to describe the properties of the Job.
      *
      * @apiNote
      */
     private String description;
-
     private ToolInfo tool;
     private String userId;
     private String commandLine;
     private Map<String, Object> params;
-
     /**
      * String representing when the sample was created, this is automatically set by OpenCGA.
      *
      * @apiNote Internal
      */
     private String creationDate;
-
     /**
      * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
      *
      * @apiNote Internal
      */
     private String modificationDate;
-
     private Enums.Priority priority;
-
     /**
      * An object describing the internal information of the Sample. This is managed by OpenCGA.
      *
      * @apiNote Internal
      */
     private JobInternal internal;
-
     private File outDir;
     private List<File> input;    // input files to this job
     private List<File> output;   // output files of this job
@@ -87,6 +79,7 @@ public class Job extends PrivateStudyUid {
     private File stdout;
     private File stderr;
     private boolean visited;
+    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
 
     /**
      * An integer describing the current data release.
