@@ -269,11 +269,9 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testMigrationVersionOrder() {
-        List<String> expected = Arrays.asList("0.0.0", "0.0.1", "0.0.10", "0.1.0", "0.1.10", "1.1.0", "2.0.0",
+        List<String> expected = Arrays.asList("0.0.0", "0.0.1", "0.0.10", "0.1.0", "0.1.10", "1.1.0",
+                "2.0.0",
                 "2.0.1",
-                "2.0.1-RC1",
-                "2.0.1-RC2",
-                "2.0.1-RC3",
                 "2.1.0");
 
         ArrayList<String> actual = new ArrayList<>(expected);

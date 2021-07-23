@@ -449,7 +449,7 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : allMigrations) {
             Migration annotation = getMigrationAnnotation(migration);
 
-            if (StringUtils.isNotEmpty(version) && compareVersion(annotation.version(), version) == 0) {
+            if (StringUtils.isNotEmpty(version) && compareVersion(annotation.version(), version) != 0) {
                 continue;
             }
             if (!domainFilter.isEmpty() && !domainFilter.contains(annotation.domain())) {
