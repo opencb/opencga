@@ -1145,7 +1145,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private void sendWebhookNotification(Job job, URL url) throws URISyntaxException, CatalogException, CloneNotSupportedException {
-        JobInternal jobInternal = new JobInternal(null, job.getInternal().getWebhook().clone(), null);
+        JobInternal jobInternal = new JobInternal(null, null, job.getInternal().getWebhook().clone(), null);
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams()
                 .setInternal(jobInternal);
 

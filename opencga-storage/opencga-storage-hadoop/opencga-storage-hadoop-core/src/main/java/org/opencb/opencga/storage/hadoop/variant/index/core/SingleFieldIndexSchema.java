@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.core;
 
-import org.opencb.opencga.storage.core.io.bit.BitInputStream;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 
 import java.util.Collections;
 
@@ -17,8 +17,8 @@ public abstract class SingleFieldIndexSchema<T> extends FixedSizeIndexSchema {
         return field;
     }
 
-    public int readFieldValue(BitInputStream stream, int i) {
-//        return getField().read(read(stream, i));
-        return stream.getIntPartial(i * getBitsLength(), getBitsLength());
+    public int readFieldValue(BitBuffer buffer, int i) {
+//        return getField().read(read(buffer, i));
+        return buffer.getIntPartial(i * getBitsLength(), getBitsLength());
     }
 }

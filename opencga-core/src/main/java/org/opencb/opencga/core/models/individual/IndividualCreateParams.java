@@ -39,6 +39,7 @@ public class IndividualCreateParams {
 
     private IndividualReferenceParam father;
     private IndividualReferenceParam mother;
+    private String creationDate;
     private Location location;
     private List<SampleCreateParams> samples;
     private IndividualProperty.Sex sex;
@@ -58,8 +59,8 @@ public class IndividualCreateParams {
     }
 
     public IndividualCreateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
-                                  Location location, List<SampleCreateParams> samples, IndividualProperty.Sex sex, String ethnicity,
-                                  Boolean parentalConsanguinity, IndividualPopulation population, String dateOfBirth,
+                                  String creationDate, Location location, List<SampleCreateParams> samples, IndividualProperty.Sex sex,
+                                  String ethnicity, Boolean parentalConsanguinity, IndividualPopulation population, String dateOfBirth,
                                   IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
                                   List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
                                   CustomStatusParams status, Map<String, Object> attributes) {
@@ -67,6 +68,7 @@ public class IndividualCreateParams {
         this.name = name;
         this.father = father;
         this.mother = mother;
+        this.creationDate = creationDate;
         this.location = location;
         this.samples = samples;
         this.sex = sex;
@@ -91,7 +93,7 @@ public class IndividualCreateParams {
                 individual.getMother() != null
                         ? new IndividualReferenceParam(individual.getMother().getId(), individual.getMother().getUuid())
                         : null,
-                individual.getLocation(),
+                individual.getCreationDate(), individual.getLocation(),
                 individual.getSamples() != null
                         ? individual.getSamples().stream().map(SampleCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
@@ -106,8 +108,9 @@ public class IndividualCreateParams {
         final StringBuilder sb = new StringBuilder("IndividualCreateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", father='").append(father).append('\'');
-        sb.append(", mother='").append(mother).append('\'');
+        sb.append(", father=").append(father);
+        sb.append(", mother=").append(mother);
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", location=").append(location);
         sb.append(", samples=").append(samples);
         sb.append(", sex=").append(sex);
@@ -145,7 +148,7 @@ public class IndividualCreateParams {
                 ? new Individual().setId(this.mother.getId()).setUuid(this.mother.getUuid())
                 : null;
         return new Individual(individualId, individualName, father, mother, Collections.emptyList(), location, null, sex,
-                karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, "", lifeStatus, phenotypes, disorders,
+                karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, creationDate, lifeStatus, phenotypes, disorders,
                 sampleList, parentalConsanguinity != null ? parentalConsanguinity : false,
                 annotationSets, status != null ? status.toCustomStatus() : new CustomStatus(), null, attributes);
     }
@@ -183,6 +186,15 @@ public class IndividualCreateParams {
 
     public IndividualCreateParams setMother(IndividualReferenceParam mother) {
         this.mother = mother;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public IndividualCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

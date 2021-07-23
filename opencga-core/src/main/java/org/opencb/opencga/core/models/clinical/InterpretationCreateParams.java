@@ -35,6 +35,7 @@ public class InterpretationCreateParams {
     private String id;
     private String description;
     private String clinicalAnalysisId;
+    private String creationDate;
     private ClinicalAnalystParam analyst;
     private List<InterpretationMethod> methods;
     private List<ClinicalVariant> primaryFindings;
@@ -46,13 +47,15 @@ public class InterpretationCreateParams {
     public InterpretationCreateParams() {
     }
 
-    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalystParam analyst,
-                                      List<InterpretationMethod> methods, List<ClinicalVariant> primaryFindings,
-                                      List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
-                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes) {
+    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, String creationDate,
+                                      ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
+                                      List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments,
+                                      Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
+        this.creationDate = creationDate;
         this.analyst = analyst;
         this.methods = methods;
         this.primaryFindings = primaryFindings;
@@ -64,7 +67,8 @@ public class InterpretationCreateParams {
 
     public static InterpretationCreateParams of(Interpretation interpretation) {
         return new InterpretationCreateParams(interpretation.getId(), interpretation.getDescription(),
-                interpretation.getClinicalAnalysisId(), ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethods(),
+                interpretation.getClinicalAnalysisId(), interpretation.getCreationDate(),
+                ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethods(),
                 interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
                 interpretation.getPanels() != null
                         ? interpretation.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
@@ -81,6 +85,7 @@ public class InterpretationCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", analyst=").append(analyst);
         sb.append(", methods=").append(methods);
         sb.append(", primaryFindings=").append(primaryFindings);
@@ -93,7 +98,7 @@ public class InterpretationCreateParams {
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(id, description, clinicalAnalysisId, analyst.toClinicalAnalyst(), methods, TimeUtils.getTime(),
+        return new Interpretation(id, description, clinicalAnalysisId, analyst.toClinicalAnalyst(), methods, creationDate,
                 TimeUtils.getTime(), primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
@@ -128,6 +133,15 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public InterpretationCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

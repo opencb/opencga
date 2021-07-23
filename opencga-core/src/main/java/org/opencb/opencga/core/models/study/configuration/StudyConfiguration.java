@@ -8,7 +8,6 @@ public class StudyConfiguration {
     private StudyVariantEngineConfiguration variantEngine;
 
     public StudyConfiguration() {
-        this(new ClinicalAnalysisStudyConfiguration(), new StudyVariantEngineConfiguration());
     }
 
     public StudyConfiguration(ClinicalAnalysisStudyConfiguration clinical, StudyVariantEngineConfiguration variantEngine) {

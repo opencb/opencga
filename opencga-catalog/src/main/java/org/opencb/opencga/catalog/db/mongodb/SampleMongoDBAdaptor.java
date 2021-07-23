@@ -158,9 +158,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         if (StringUtils.isEmpty(sample.getUuid())) {
             sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
         }
-        if (StringUtils.isEmpty(sample.getCreationDate())) {
-            sample.setCreationDate(TimeUtils.getTime());
-        }
         if (sample.getFileIds() == null) {
             sample.setFileIds(Collections.emptyList());
         }
@@ -171,7 +168,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
         sampleObject.put(LAST_OF_VERSION, true);
         sampleObject.put(LAST_OF_RELEASE, true);
-        sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
+        sampleObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(sample.getCreationDate()) ? TimeUtils.toDate(sample.getCreationDate()) : TimeUtils.getDate());
         sampleObject.put(PRIVATE_MODIFICATION_DATE, sampleObject.get(PRIVATE_CREATION_DATE));
         sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
@@ -543,6 +541,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
 
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);

@@ -177,9 +177,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (StringUtils.isEmpty(study.getUuid())) {
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
         }
-        if (StringUtils.isEmpty(study.getCreationDate())) {
-            study.setCreationDate(TimeUtils.getTime());
-        }
 
         //Empty nested fields
         List<File> files = study.getFiles();
@@ -211,7 +208,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         );
         studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
-        studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
+        studyObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(study.getCreationDate()) ? TimeUtils.toDate(study.getCreationDate()) : TimeUtils.getDate());
         studyObject.put(PRIVATE_MODIFICATION_DATE, studyObject.get(PRIVATE_CREATION_DATE));
 
         studyCollection.insert(clientSession, studyObject, null);
@@ -1343,12 +1341,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
-    static Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
+    static Document getDocumentUpdateParams(ObjectMap parameters) {
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(),
-                QueryParams.DESCRIPTION.key(), };
+        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(QueryParams.CREATION_DATE.key(), time);
+            studyParameters.put(PRIVATE_CREATION_DATE, date);
+        }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, studyParameters, acceptedLongParams);

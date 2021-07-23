@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.family;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -36,6 +35,7 @@ public class FamilyUpdateParams {
     private String id;
     private String name;
     private String description;
+    private String creationDate;
     private List<IndividualReferenceParam> members;
     private Integer expectedSize;
     private FamilyQualityControl qualityControl;
@@ -46,12 +46,13 @@ public class FamilyUpdateParams {
     public FamilyUpdateParams() {
     }
 
-    public FamilyUpdateParams(String id, String name, String description, List<IndividualReferenceParam> members, Integer expectedSize,
-                              CustomStatusParams status, FamilyQualityControl qualityControl, List<AnnotationSet> annotationSets,
-                              Map<String, Object> attributes) {
+    public FamilyUpdateParams(String id, String name, String description, String creationDate, List<IndividualReferenceParam> members,
+                              Integer expectedSize, CustomStatusParams status, FamilyQualityControl qualityControl,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.creationDate = creationDate;
         this.members = members;
         this.expectedSize = expectedSize;
         this.status = status;
@@ -81,7 +82,7 @@ public class FamilyUpdateParams {
                 members != null
                         ? members.stream().map(m -> new Individual().setId(m.getId()).setUuid(m.getUuid())).collect(Collectors.toList())
                         : null,
-                TimeUtils.getTime(), description, members != null ? members.size() : 0, 1, 1, annotationSets,
+                creationDate, description, members != null ? members.size() : 0, 1, 1, annotationSets,
                 status != null ? status.toCustomStatus() : null, new FamilyInternal(), Collections.emptyMap(), attributes);
     }
 
@@ -91,10 +92,11 @@ public class FamilyUpdateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
-        sb.append(", status=").append(status);
         sb.append(", qualityControl=").append(qualityControl);
+        sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -125,6 +127,15 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public FamilyUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

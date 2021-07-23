@@ -310,7 +310,7 @@ public class StudyManager extends AbstractManager {
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
-            study.setCreationDate(TimeUtils.getTime());
+            study.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(study.getCreationDate()));
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
@@ -326,9 +326,9 @@ public class StudyManager extends AbstractManager {
 
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    FileInternal.initialize(), 0, project.getCurrentRelease());
+                    FileInternal.init(), 0, project.getCurrentRelease());
             File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
-                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
+                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.init(), 0, project.getCurrentRelease());
             files.add(rootFile);
             files.add(jobsFile);
 
@@ -627,6 +627,10 @@ public class StudyManager extends AbstractManager {
 
             if (StringUtils.isNotEmpty(parameters.getAlias())) {
                 ParamUtils.checkIdentifier(parameters.getAlias(), "alias");
+            }
+
+            if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
+                ParamUtils.checkCreationDateFormat(parameters.getCreationDate());
             }
 
             ObjectMap update;

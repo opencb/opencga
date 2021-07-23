@@ -379,6 +379,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
             document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());

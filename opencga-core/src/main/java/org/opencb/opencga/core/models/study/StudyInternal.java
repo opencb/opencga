@@ -16,10 +16,12 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
-public class StudyInternal {
+public class StudyInternal extends Internal {
 
     private Status status;
     private StudyIndex index;
@@ -28,20 +30,21 @@ public class StudyInternal {
     public StudyInternal() {
     }
 
-    public StudyInternal(Status status, StudyIndex index, StudyConfiguration configuration) {
-        this.status = status;
+    public StudyInternal(Status status, String registrationDate, StudyIndex index, StudyConfiguration configuration) {
+        super(status, registrationDate);
         this.index = index;
         this.configuration = configuration;
     }
 
     public static StudyInternal init() {
-        return new StudyInternal(new Status(), StudyIndex.init(), StudyConfiguration.init());
+        return new StudyInternal(new Status(), TimeUtils.getTime(), StudyIndex.init(), StudyConfiguration.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyInternal{");
-        sb.append("status=").append(status);
+        sb.append("registrationDate='").append(registrationDate).append('\'');
+        sb.append(", status=").append(status);
         sb.append(", index=").append(index);
         sb.append(", configuration=").append(configuration);
         sb.append('}');
@@ -54,6 +57,15 @@ public class StudyInternal {
 
     public StudyInternal setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public Internal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
         return this;
     }
 

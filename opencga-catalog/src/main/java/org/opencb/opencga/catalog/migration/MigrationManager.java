@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -332,16 +333,23 @@ public class MigrationManager {
                         new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Migration.class.getName()))
                 )
                 .addUrls(getUrls())
-                .filterInputsBy(input -> input != null && input.endsWith(".class") && !input.endsWith("StorageMigrationTool.class"))
+                .filterInputsBy(input -> input != null && input.endsWith(".class"))
         );
 
         Set<Class<? extends MigrationTool>> migrations = reflections.getSubTypesOf(MigrationTool.class);
+        // Final migrations will contain all migrations that are not abstract classes
+        Set<Class<? extends MigrationTool>> finalMigrations = new HashSet<>();
 
         // Validate unique ids and rank
         Map<String, Set<String>> versionIdMap = new HashMap<>();
         Map<String, Set<Integer>> versionRankMap = new HashMap<>();
 
         for (Class<? extends MigrationTool> migration : migrations) {
+            if (Modifier.isAbstract(migration.getModifiers())) {
+                continue;
+            }
+            finalMigrations.add(migration);
+
             Migration annotation = getMigrationAnnotation(migration);
 
             if (!versionIdMap.containsKey(annotation.version())) {
@@ -352,15 +360,19 @@ public class MigrationManager {
                 throw new IllegalStateException("Found duplicated migration id '" + annotation.id() + "' in version "
                         + annotation.version());
             }
-            if (versionRankMap.get(annotation.version()).contains(annotation.rank())) {
-                throw new IllegalStateException("Found duplicated migration rank " + annotation.rank() + " in version "
-                        + annotation.version());
+            // Exclude default rank -1
+            if (annotation.rank() != -1) {
+                if (versionRankMap.get(annotation.version()).contains(annotation.rank())) {
+                    throw new IllegalStateException("Found duplicated migration rank " + annotation.rank() + " in version "
+                            + annotation.version());
+                }
+
+                versionRankMap.get(annotation.version()).add(annotation.rank());
             }
             versionIdMap.get(annotation.version()).add(annotation.id());
-            versionRankMap.get(annotation.version()).add(annotation.rank());
         }
 
-        return migrations;
+        return finalMigrations;
     }
 
     private static Collection<URL> getUrls() {
@@ -398,6 +410,9 @@ public class MigrationManager {
             return 1;
         } else if (m1Annotation.rank() < m2Annotation.rank()) {
             return -1;
+        } else if (m1Annotation.rank() == -1) {
+            // If rank is -1 is because the order doesn't really matter so we simply prioritise the first migration found
+            return 1;
         }
 
         throw new IllegalStateException("Found migration '" + m1Annotation.id() + "' and '" + m2Annotation.id() + "' with same rank "

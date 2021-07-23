@@ -330,11 +330,8 @@ public class JobManager extends ResourceManager<Job> {
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
         // Set default internal
-        job.setInternal(ParamUtils.defaultObject(job.getInternal(), new JobInternal()));
-        job.getInternal().setStatus(ParamUtils.defaultObject(job.getInternal().getStatus(), new Enums.ExecutionStatus()));
-        job.getInternal().setWebhook(ParamUtils.defaultObject(job.getInternal().getWebhook(),
-                new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>())));
-        job.getInternal().setEvents(ParamUtils.defaultObject(job.getInternal().getEvents(), new LinkedList<>()));
+        job.setInternal(JobInternal.init());
+        job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
 
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
@@ -501,7 +498,7 @@ public class JobManager extends ResourceManager<Job> {
             if (job.getInternal() != null) {
                 job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             } else {
-                job.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
+                job.setInternal(new JobInternal(TimeUtils.getTime(), new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
             job.getInternal().getStatus().setDescription(e.toString());

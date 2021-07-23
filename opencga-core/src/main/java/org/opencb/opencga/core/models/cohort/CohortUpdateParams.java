@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.cohort;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
@@ -37,6 +36,7 @@ public class CohortUpdateParams {
     private String id;
     private Enums.CohortType type;
     private String description;
+    private String creationDate;
     private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -45,11 +45,12 @@ public class CohortUpdateParams {
     public CohortUpdateParams() {
     }
 
-    public CohortUpdateParams(String id, Enums.CohortType type, String description, List<SampleReferenceParam> samples,
+    public CohortUpdateParams(String id, Enums.CohortType type, String description, String creationDate, List<SampleReferenceParam> samples,
                               List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.type = type;
         this.description = description;
+        this.creationDate = creationDate;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -73,7 +74,7 @@ public class CohortUpdateParams {
     }
 
     public Cohort toCohort() {
-        return new Cohort(id, type, TimeUtils.getTime(), description,
+        return new Cohort(id, type, creationDate, description,
                 samples != null ?
                         samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
                         : null,
@@ -86,6 +87,7 @@ public class CohortUpdateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -118,6 +120,15 @@ public class CohortUpdateParams {
 
     public CohortUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public CohortUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

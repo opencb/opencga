@@ -115,13 +115,11 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         if (StringUtils.isEmpty(cohort.getUuid())) {
             cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
         }
-        if (StringUtils.isEmpty(cohort.getCreationDate())) {
-            cohort.setCreationDate(TimeUtils.getTime());
-        }
 
         Document cohortObject = cohortConverter.convertToStorageType(cohort, variableSetList);
 
-        cohortObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(cohort.getCreationDate()));
+        cohortObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(cohort.getCreationDate()) ? TimeUtils.toDate(cohort.getCreationDate()) : TimeUtils.getDate());
         cohortObject.put(PRIVATE_MODIFICATION_DATE, cohortObject.get(PRIVATE_CREATION_DATE));
         cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
@@ -354,8 +352,15 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key()};
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Enums.CohortType.class);
         filterEnumParams(parameters, document.getSet(), acceptedEnums);

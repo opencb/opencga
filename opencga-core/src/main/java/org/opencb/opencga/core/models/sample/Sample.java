@@ -122,11 +122,11 @@ public class Sample extends Annotable {
                 new CustomStatus(), null, new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(String id, String individualId, SampleProcessing processing, SampleCollection collection, int release, int version,
-                  String description, boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, CustomStatus status,
-                  SampleInternal internal, Map<String, Object> attributes) {
-        this(id, null, processing, collection, release, version, "", "", description, somatic, phenotypes, individualId, new LinkedList<>(),
-                status, internal, annotationSets, attributes);
+    public Sample(String id, String creationDate, String individualId, SampleProcessing processing, SampleCollection collection,
+                  int release, int version, String description, boolean somatic, List<Phenotype> phenotypes,
+                  List<AnnotationSet> annotationSets, CustomStatus status, SampleInternal internal, Map<String, Object> attributes) {
+        this(id, null, processing, collection, release, version, creationDate, "", description, somatic, phenotypes, individualId,
+                new LinkedList<>(), status, internal, annotationSets, attributes);
     }
 
     public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, int release, int version,

@@ -17,12 +17,15 @@
 package org.opencb.opencga.core.models.job;
 
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Internal;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-public class JobInternal implements Cloneable {
+public class JobInternal extends Internal implements Cloneable {
 
     private Enums.ExecutionStatus status;
     private JobInternalWebhook webhook;
@@ -32,19 +35,25 @@ public class JobInternal implements Cloneable {
     }
 
     public JobInternal(Enums.ExecutionStatus status) {
-        this(status, null, null);
+        this(null, status, null, null);
     }
 
-    public JobInternal(Enums.ExecutionStatus status, JobInternalWebhook webhook, List<Event> events) {
+    public JobInternal(String registrationDate, Enums.ExecutionStatus status, JobInternalWebhook webhook, List<Event> events) {
+        super(null, registrationDate);
         this.status = status;
         this.webhook = webhook;
         this.events = events;
     }
 
+    public static JobInternal init() {
+        return new JobInternal(TimeUtils.getTime(), new Enums.ExecutionStatus(), null, new ArrayList<>());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("JobInternal{");
-        sb.append("status=").append(status);
+        sb.append("registrationDate='").append(registrationDate).append('\'');
+        sb.append(", status=").append(status);
         sb.append(", webhook=").append(webhook);
         sb.append(", events=").append(events);
         sb.append('}');
@@ -53,7 +62,7 @@ public class JobInternal implements Cloneable {
 
     @Override
     public JobInternal clone() throws CloneNotSupportedException {
-        return new JobInternal(status, webhook.clone(), new LinkedList<>(events));
+        return new JobInternal(registrationDate, status, webhook.clone(), new LinkedList<>(events));
     }
 
     public Enums.ExecutionStatus getStatus() {
@@ -80,6 +89,15 @@ public class JobInternal implements Cloneable {
 
     public JobInternal setEvents(List<Event> events) {
         this.events = events;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public Internal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
         return this;
     }
 }

@@ -37,6 +37,7 @@ public class IndividualCreateParams {
     private String id;
     private String name;
 
+    private String creationDate;
     private IndividualReferenceParam father;
     private IndividualReferenceParam mother;
     private Location location;
@@ -57,13 +58,15 @@ public class IndividualCreateParams {
     public IndividualCreateParams() {
     }
 
-    public IndividualCreateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
-                                  Location location, IndividualProperty.Sex sex, String ethnicity, Boolean parentalConsanguinity,
-                                  IndividualPopulation population, String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
-                                  IndividualProperty.LifeStatus lifeStatus, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
-                                  List<Disorder> disorders, CustomStatusParams status, Map<String, Object> attributes) {
+    public IndividualCreateParams(String id, String name, String creationDate, IndividualReferenceParam father,
+                                  IndividualReferenceParam mother, Location location, IndividualProperty.Sex sex, String ethnicity,
+                                  Boolean parentalConsanguinity, IndividualPopulation population, String dateOfBirth,
+                                  IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
+                                  List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
+                                  CustomStatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
+        this.creationDate = creationDate;
         this.father = father;
         this.mother = mother;
         this.location = location;
@@ -82,7 +85,7 @@ public class IndividualCreateParams {
     }
 
     public static IndividualCreateParams of(Individual individual) {
-        return new IndividualCreateParams(individual.getId(), individual.getName(),
+        return new IndividualCreateParams(individual.getId(), individual.getName(), individual.getCreationDate(),
                 individual.getFather() != null
                         ? new IndividualReferenceParam(individual.getFather().getId(), individual.getFather().getUuid())
                         : null,
@@ -101,8 +104,9 @@ public class IndividualCreateParams {
         final StringBuilder sb = new StringBuilder("IndividualCreateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", father='").append(father).append('\'');
-        sb.append(", mother='").append(mother).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", father=").append(father);
+        sb.append(", mother=").append(mother);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -130,7 +134,7 @@ public class IndividualCreateParams {
                 ? new Individual().setId(this.mother.getId()).setUuid(this.mother.getUuid())
                 : null;
         return new Individual(individualId, individualName, father, mother, Collections.emptyList(), location, null, sex,
-                karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, "", lifeStatus, phenotypes, disorders,
+                karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, creationDate, lifeStatus, phenotypes, disorders,
                 Collections.emptyList(), parentalConsanguinity != null ? parentalConsanguinity : false,
                 annotationSets, status != null ? status.toCustomStatus() : new CustomStatus(), null, attributes);
     }
@@ -168,6 +172,15 @@ public class IndividualCreateParams {
 
     public IndividualCreateParams setMother(IndividualReferenceParam mother) {
         this.mother = mother;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public IndividualCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

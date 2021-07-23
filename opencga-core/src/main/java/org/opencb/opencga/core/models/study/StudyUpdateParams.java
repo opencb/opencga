@@ -25,19 +25,20 @@ public class StudyUpdateParams {
     private String name;
     private String alias;
     private String description;
+    private String creationDate;
     private StudyNotification notification;
-
     private Map<String, Object> attributes;
     private CustomStatusParams status;
 
     public StudyUpdateParams() {
     }
 
-    public StudyUpdateParams(String name, String alias, String description, StudyNotification notification, Map<String, Object> attributes,
-                             CustomStatusParams status) {
+    public StudyUpdateParams(String name, String alias, String description, String creationDate, StudyNotification notification,
+                             Map<String, Object> attributes, CustomStatusParams status) {
         this.name = name;
         this.alias = alias;
         this.description = description;
+        this.creationDate = creationDate;
         this.notification = notification;
         this.attributes = attributes;
         this.status = status;
@@ -49,6 +50,7 @@ public class StudyUpdateParams {
         sb.append("name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", notification=").append(notification);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -80,6 +82,15 @@ public class StudyUpdateParams {
 
     public StudyUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public StudyUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

@@ -29,10 +29,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.FamilyCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -177,9 +174,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (StringUtils.isEmpty(family.getUuid())) {
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
         }
-        if (StringUtils.isEmpty(family.getCreationDate())) {
-            family.setCreationDate(TimeUtils.getTime());
-        }
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -187,7 +181,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyDocument.put(LAST_OF_VERSION, true);
         familyDocument.put(LAST_OF_RELEASE, true);
-        familyDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
+        familyDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(family.getCreationDate()) ? TimeUtils.toDate(family.getCreationDate()) : TimeUtils.getDate());
         familyDocument.put(PRIVATE_MODIFICATION_DATE, familyDocument.get(PRIVATE_CREATION_DATE));
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
@@ -573,6 +568,13 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);

@@ -12,6 +12,7 @@ public class CohortGenerateParams {
     private String id;
     private Enums.CohortType type;
     private String description;
+    private String creationDate;
     private List<AnnotationSet> annotationSets;
     private CustomStatusParams status;
     private Map<String, Object> attributes;
@@ -19,18 +20,19 @@ public class CohortGenerateParams {
     public CohortGenerateParams() {
     }
 
-    public CohortGenerateParams(String id, Enums.CohortType type, String description, List<AnnotationSet> annotationSets,
-                                CustomStatusParams status, Map<String, Object> attributes) {
+    public CohortGenerateParams(String id, Enums.CohortType type, String description, String creationDate,
+                                List<AnnotationSet> annotationSets, CustomStatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.description = description;
+        this.creationDate = creationDate;
         this.annotationSets = annotationSets;
         this.status = status;
         this.attributes = attributes;
     }
 
     public Cohort toCohort() {
-        return new Cohort(id, type, null, description, null, 0, annotationSets, 0, status != null ? status.toCustomStatus() : null,
+        return new Cohort(id, type, creationDate, description, null, 0, annotationSets, 0, status != null ? status.toCustomStatus() : null,
                 null, attributes);
     }
 
@@ -40,6 +42,7 @@ public class CohortGenerateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
@@ -71,6 +74,15 @@ public class CohortGenerateParams {
 
     public CohortGenerateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public CohortGenerateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

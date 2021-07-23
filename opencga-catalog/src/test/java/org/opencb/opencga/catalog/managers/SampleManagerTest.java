@@ -161,6 +161,28 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCustomCreationDate() throws CatalogException {
+        Sample s1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("s1").setCreationDate("20140101120000"),
+                QueryOptions.empty(), token).first();
+        assertEquals("20140101120000", s1.getCreationDate());
+
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<2015"), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
+        assertEquals("s1", search.first().getId());
+
+        catalogManager.getSampleManager().update(studyFqn, "s1", new SampleUpdateParams().setCreationDate("20160101120000"), QueryOptions.empty(), token);
+        search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<2015"), QueryOptions.empty(), token);
+        assertEquals(0, search.getNumResults());
+
+        search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<201602"), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
+        assertEquals("s1", search.first().getId());
+    }
+
+    @Test
     public void testSampleVersioningWithWeirdId() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();

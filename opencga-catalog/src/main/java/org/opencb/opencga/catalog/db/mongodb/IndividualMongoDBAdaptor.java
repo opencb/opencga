@@ -167,9 +167,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (StringUtils.isEmpty(individual.getUuid())) {
             individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));
         }
-        if (StringUtils.isEmpty(individual.getCreationDate())) {
-            individual.setCreationDate(TimeUtils.getTime());
-        }
 
         Document individualDocument = individualConverter.convertToStorageType(individual, variableSetList);
 
@@ -177,7 +174,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(individual.getRelease()));
         individualDocument.put(LAST_OF_VERSION, true);
         individualDocument.put(LAST_OF_RELEASE, true);
-        individualDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(individual.getCreationDate()));
+        individualDocument.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(individual.getCreationDate())
+                ? TimeUtils.toDate(individual.getCreationDate())
+                : TimeUtils.getDate());
         individualDocument.put(PRIVATE_MODIFICATION_DATE, individualDocument.get(PRIVATE_CREATION_DATE));
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
@@ -614,13 +613,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         while (iterator.hasNext()) {
             Family family = iterator.next();
 
-            List<Individual> members = new ArrayList<>(family.getMembers().size());
+            List<Map<String, Object>> members = new ArrayList<>(family.getMembers().size());
             for (Individual member : family.getMembers()) {
                 if (member.getUid() == individual.getUid()) {
                     member.setVersion(individual.getVersion() + 1);
                 }
-                members.add(member);
+                members.add(getMongoDBDocument(member, "Individual"));
             }
+
 
             ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
 
@@ -726,6 +726,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
                 QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.DATE_OF_BIRTH.key(), };
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), IndividualProperty.Sex.class);
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
