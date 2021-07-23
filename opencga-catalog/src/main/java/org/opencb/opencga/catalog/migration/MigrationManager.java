@@ -232,6 +232,10 @@ public class MigrationManager {
                         migrationRun.setStatus(MigrationRun.MigrationStatus.OUTDATED);
                         updated = true;
                     }
+                    if (migrationRun.getException() != null) {
+                        migrationRun.setException(null);
+                        updated = true;
+                    }
                     break;
                 case ON_HOLD:
                     // Check jobs
@@ -508,6 +512,8 @@ public class MigrationManager {
             } else {
                 status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
             }
+            // Clear exception
+            migrationRun.setException(null);
             migrationRun.setStatus(status);
             if (status == MigrationRun.MigrationStatus.DONE) {
                 logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));
