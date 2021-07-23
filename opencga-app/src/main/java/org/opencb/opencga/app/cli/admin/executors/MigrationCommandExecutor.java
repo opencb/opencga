@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -14,6 +15,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
@@ -45,6 +47,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 break;
             case "run":
                 run();
+                break;
+            case "run-manual":
+                runManual();
                 break;
             default:
                 logger.error("Subcommand '{}' not valid", subCommandString);
@@ -101,18 +106,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
-            String version;
-            if (StringUtils.isNotEmpty(options.version)) {
-                version = options.version;
-            } else {
-                version = GitRepositoryState.get().getBuildVersion();
-                // Remove extra information
-                version = version.split("-")[0];
-            }
-            if (version.startsWith("v")) {
-                // Remove "v" (v1.1.0 -> 1.1.0)
-                version = version.substring(1);
-            }
+            String version = parseVersion(options.version);
 
             Set<Migration.MigrationDomain> domains;
             if (options.domain != null) {
@@ -127,6 +121,31 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             MigrationManager migrationManager = catalogManager.getMigrationManager();
             migrationManager.runMigration(version, domains, Collections.emptySet(), appHome, token);
         }
+    }
+
+    private void runManual() throws Exception {
+        MigrationCommandOptions.RunManualCommandOptions options = migrationCommandOptions.getRunManualCommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+
+            catalogManager.getMigrationManager().runManualMigration(parseVersion(options.version), options.id, Paths.get(appHome),
+                    options.force, new ObjectMap(options.commonOptions.commonOptions.params), token);
+        }
+    }
+
+    private String parseVersion(String version) {
+        if (StringUtils.isEmpty(version)) {
+            version = GitRepositoryState.get().getBuildVersion();
+            // Remove extra information
+            version = version.split("-")[0];
+        }
+        if (version.startsWith("v")) {
+            // Remove "v" (v1.1.0 -> 1.1.0)
+            version = version.substring(1);
+        }
+        return version;
     }
 
 }

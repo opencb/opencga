@@ -54,11 +54,29 @@ public class MigrationManager {
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
 
-    public MigrationRun runManualMigration(String id, Path appHome, ObjectMap params, String token) throws CatalogException {
+    public MigrationRun runManualMigration(String version, String id, Path appHome, ObjectMap params, String token)
+            throws CatalogException {
+        return runManualMigration(version, id, appHome, false, params, token);
+    }
+
+    public MigrationRun runManualMigration(String version, String id, Path appHome, boolean force, ObjectMap params, String token)
+            throws CatalogException {
         validateAdmin(token);
         for (Class<? extends MigrationTool> c : getAvailableMigrations()) {
-            Migration migrationAnnotation = getMigrationAnnotation(c);
-            if (migrationAnnotation.id().equals(id)) {
+            Migration migration = getMigrationAnnotation(c);
+            if (migration.id().equals(id) && migration.version().equals(version)) {
+                MigrationRun migrationRun = updateMigrationRun(migration, token);
+                if (!force) {
+                    if (migrationRun.getStatus().equals(MigrationRun.MigrationStatus.DONE)) {
+                        throw new MigrationException("Migration '" + id + "' already executed. Force migration run to continue.");
+                    }
+                    if (migrationRun.getStatus().equals(MigrationRun.MigrationStatus.ON_HOLD)) {
+                        throw new MigrationException("Migration '" + id + "' holding jobs to finish. Force migration run to continue.");
+                    }
+                    if (migrationRun.getStatus().equals(MigrationRun.MigrationStatus.REDUNDANT)) {
+                        throw new MigrationException("Migration '" + id + "' is not needed. Force migration run to continue.");
+                    }
+                }
                 return run(c, appHome, params, token);
             }
         }
@@ -213,7 +231,7 @@ public class MigrationManager {
 
     }
 
-    private void updateMigrationRun(Migration migration, String token) throws CatalogException {
+    private MigrationRun updateMigrationRun(Migration migration, String token) throws CatalogException {
         MigrationRun migrationRun = migrationDBAdaptor.get(migration.id()).first();
         boolean updated = false;
 
@@ -258,6 +276,7 @@ public class MigrationManager {
         if (updated) {
             migrationDBAdaptor.upsert(migrationRun);
         }
+        return migrationRun;
     }
 
     private MigrationRun.MigrationStatus getOnHoldMigrationRunStatus(Migration migration, MigrationRun migrationRun, String token)
