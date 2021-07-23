@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -336,10 +337,11 @@ public class MigrationManager {
                         new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Migration.class.getName()))
                 )
                 .addUrls(getUrls())
-                .filterInputsBy(input -> input != null && input.endsWith(".class") && !input.endsWith("StorageMigrationTool.class"))
+                .filterInputsBy(input -> input != null && input.endsWith(".class"))
         );
 
         Set<Class<? extends MigrationTool>> migrations = reflections.getSubTypesOf(MigrationTool.class);
+        migrations.removeIf(c -> Modifier.isAbstract(c.getModifiers()));
 
         // Validate unique ids and rank
         Map<String, Set<String>> versionIdMap = new HashMap<>();
