@@ -232,6 +232,10 @@ public class MigrationManager {
                         migrationRun.setStatus(MigrationRun.MigrationStatus.OUTDATED);
                         updated = true;
                     }
+                    if (migrationRun.getException() != null) {
+                        migrationRun.setException(null);
+                        updated = true;
+                    }
                     break;
                 case ON_HOLD:
                     // Check jobs
@@ -449,7 +453,7 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : allMigrations) {
             Migration annotation = getMigrationAnnotation(migration);
 
-            if (StringUtils.isNotEmpty(version) && compareVersion(annotation.version(), version) == 0) {
+            if (StringUtils.isNotEmpty(version) && compareVersion(annotation.version(), version) != 0) {
                 continue;
             }
             if (!domainFilter.isEmpty() && !domainFilter.contains(annotation.domain())) {
@@ -508,6 +512,8 @@ public class MigrationManager {
             } else {
                 status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
             }
+            // Clear exception
+            migrationRun.setException(null);
             migrationRun.setStatus(status);
             if (status == MigrationRun.MigrationStatus.DONE) {
                 logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));

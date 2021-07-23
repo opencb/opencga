@@ -22,7 +22,7 @@ import static com.mongodb.client.model.Filters.eq;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 21)
+        rank = 22)
 public class AddPanelsToInterpretations extends MigrationTool {
 
     @Override

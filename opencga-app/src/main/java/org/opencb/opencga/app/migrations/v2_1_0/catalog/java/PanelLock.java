@@ -15,7 +15,7 @@ import static com.mongodb.client.model.Filters.eq;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 20)
+        rank = 21)
 public class PanelLock extends MigrationTool {
 
     @Override
