@@ -5,14 +5,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.app.migrations.StorageMigrationTool;
 import org.opencb.opencga.catalog.migration.Migration;
-import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyVariantEngineConfiguration;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
@@ -24,48 +23,68 @@ import java.util.Date;
 @Migration(id="default_sample_index_configuration", description = "Add a default backward compatible sample index configuration", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        patch = 4,
+        patch = 5,
         rank = 16) // Needs to run after StudyClinicalConfigurationRelocation
-public class DefaultSampleIndexConfiguration extends MigrationTool {
+public class DefaultSampleIndexConfiguration extends StorageMigrationTool {
 
     @Override
     protected void run() throws Exception {
-        StorageEngineFactory engineFactory = StorageEngineFactory.get(readStorageConfiguration());
-        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, engineFactory);
+        VariantStorageManager variantStorageManager = getVariantStorageManager();
 
         for (Study study : catalogManager.getStudyManager().search(new Query(), new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("fqn", "internal")), token).getResults()) {
             if (variantStorageManager.exists(study.getFqn(), token)) {
+                DataStore dataStore = variantStorageManager.getDataStore(study.getFqn(), token);
+                VariantStorageEngine engine = getVariantStorageEngineFactory()
+                        .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+                StudyMetadata metadata = engine.getMetadataManager().getStudyMetadata(study.getFqn());
                 if (study.getInternal().getConfiguration().getVariantEngine() == null) {
                     study.getInternal().getConfiguration().setVariantEngine(new StudyVariantEngineConfiguration());
                 }
+
+                boolean updateConfiguration = false;
+
                 SampleIndexConfiguration sampleIndexConfiguration;
-                if (study.getInternal().getConfiguration().getVariantEngine().getSampleIndex() != null) {
+                if (CollectionUtils.isEmpty(metadata.getSampleIndexConfigurations())) {
+                    updateConfiguration = true;
+                    sampleIndexConfiguration = SampleIndexConfiguration.backwardCompatibleConfiguration();
+                    sampleIndexConfiguration.validate();
+                } else {
                     logger.info("Study {} already has a SampleIndex configuration", study.getFqn());
-                    sampleIndexConfiguration = study.getInternal().getConfiguration().getVariantEngine().getSampleIndex();
-                    boolean skipUpdateConfiguration = true;
+                    sampleIndexConfiguration = metadata.getSampleIndexConfigurationLatest().getConfiguration();
+
+                    if (study.getInternal().getConfiguration().getVariantEngine().getSampleIndex() == null) {
+                        // Missing sample index configuration in catalog
+                        updateConfiguration = true;
+                    } else {
+                        SampleIndexConfiguration catalogSampleIndexConfiguration
+                                = study.getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+                        // Different sample index configuration
+                        if (!catalogSampleIndexConfiguration.equals(sampleIndexConfiguration)) {
+                            updateConfiguration = true;
+                        }
+                    }
                     if (sampleIndexConfiguration.getAnnotationIndexConfiguration().getTranscriptFlagIndexConfiguration() == null) {
                         logger.info("Missing transcriptFlag");
-                        skipUpdateConfiguration = false;
+                        updateConfiguration = true;
                         sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
                                 new IndexFieldConfiguration(IndexFieldConfiguration.Source.ANNOTATION, "transcriptFlag",
                                         IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE, "invalid_transcript_flag_index"));
                     }
-                    if (skipUpdateConfiguration) {
-                        logger.info("Skip study");
-                        continue;
-                    }
-                } else {
-                    sampleIndexConfiguration = SampleIndexConfiguration.backwardCompatibleConfiguration();
-                    sampleIndexConfiguration.validate();
                 }
 
-                DataStore dataStore = variantStorageManager.getDataStore(study.getFqn(), token);
-                VariantStorageEngine engine = engineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+                if (!updateConfiguration) {
+                    logger.info("Skip study");
+                    continue;
+                }
+
                 engine.getMetadataManager().updateStudyMetadata(study.getFqn(), studyMetadata -> {
                     if (CollectionUtils.isEmpty(studyMetadata.getSampleIndexConfigurations())) {
                         studyMetadata.setSampleIndexConfigurations(new ArrayList<>());
                         studyMetadata.getSampleIndexConfigurations().add(
                                 new StudyMetadata.SampleIndexConfigurationVersioned(sampleIndexConfiguration, 1, Date.from(Instant.now())));
+                    } else {
+                        int size = studyMetadata.getSampleIndexConfigurations().size();
+                        studyMetadata.getSampleIndexConfigurations().get(size - 1).setConfiguration(sampleIndexConfiguration);
                     }
                     return studyMetadata;
                 });
