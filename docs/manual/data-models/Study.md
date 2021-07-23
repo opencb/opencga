@@ -268,12 +268,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **internal**<br>*<a href="Study.md#ClinicalAnalysisInternal"><em>ClinicalAnalysisInternal</em></a>* <br> | <p>An object describing the internal information of the ClinicalAnalysis. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 | **status**<br> *Status* <br> | <p>An object describing the status of the ClinicalAnalysis.</p> |
-### FamilyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="Study.md#FamilyStatus"><em>FamilyStatus</em></a>* <br> | <p></p> |
 ### SampleInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
@@ -281,6 +275,19 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
 | **rga**<br>*<a href="Study.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
+### StudyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| **configuration**<br>*<a href="Study.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
+### FamilyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*<a href="Study.md#FamilyStatus"><em>FamilyStatus</em></a>* <br> | <p></p> |
 ### JobInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
 
@@ -289,25 +296,21 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="Study.md#ExecutionStatus"><em>ExecutionStatus</em></a>* <br> | <p></p> |
 | **webhook**<br>*<a href="Study.md#JobInternalWebhook"><em>JobInternalWebhook</em></a>* <br> | <p></p> |
 | **events**<br> List<*Event*> <br> | <p></p> |
-### StudyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
-| **configuration**<br>*<a href="Study.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
-### IndividualInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
 ### UserInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Study.md#UserStatus"><em>UserStatus</em></a>* <br> | <p></p> |
+### FileInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*<a href="Study.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
+| **index**<br>*<a href="Study.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
+| **sampleMap**<br> Map<*String*> <br> | <p></p> |
+| **missingSamples**<br>*<a href="Study.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
 ### ProjectInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 
@@ -316,12 +319,12 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **datastores**<br>*<a href="Study.md#Datastores"><em>Datastores</em></a>* <br> | <p></p> |
 | **cellbase**<br>*<a href="Study.md#CellBaseConfiguration"><em>CellBaseConfiguration</em></a>* <br> | <p></p> |
 | **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
-### InterpretationInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationInternal.java).
+### IndividualInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Study.md#InterpretationStatus"><em>InterpretationStatus</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
 ### CohortInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
 
@@ -334,12 +337,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Study.md#ClinicalAnalysisStatus"><em>ClinicalAnalysisStatus</em></a>* <br> | <p></p> |
-### FileInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
+### InterpretationInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Study.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
-| **index**<br>*<a href="Study.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
-| **sampleMap**<br> Map<*String*> <br> | <p></p> |
-| **missingSamples**<br>*<a href="Study.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="Study.md#InterpretationStatus"><em>InterpretationStatus</em></a>* <br> | <p></p> |

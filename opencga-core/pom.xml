@@ -209,12 +209,12 @@
                                 <additionalOption>${project.basedir}/src/main/java</additionalOption>
                                 <additionalOption>-classes2Markdown</additionalOption>
                                 <additionalOption>
-                                    org.opencb.opencga.core.models.cohort.Cohort;org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.clinical.ClinicalAnalysis;org.opencb.opencga.core.models.family.Family;org.opencb.opencga.core.models.file.File;org.opencb.opencga.core.models.individual.Individual;org.opencb.opencga.core.models.study.Study;org.opencb.opencga.core.models.project.Project;org.opencb.opencga.core.models.user.User
+                                    org.opencb.opencga.core.models.cohort.Cohort;org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.clinical.ClinicalAnalysis;org.opencb.opencga.core.models.family.Family;org.opencb.opencga.core.models.file.File;org.opencb.opencga.core.models.individual.Individual;org.opencb.opencga.core.models.study.Study;org.opencb.opencga.core.models.project.Project;org.opencb.opencga.core.models.user.User;org.opencb.opencga.core.models.job.Job
                                 </additionalOption>
                                 <additionalOption>-tableTagsClasses</additionalOption>
                                 <additionalOption>
-                                     org.opencb.opencga.core.models.cohort.Cohort;org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.clinical.ClinicalAnalysis;org.opencb.opencga.core.models.family.Family;org.opencb.opencga.core.models.file.File;org.opencb.opencga.core.models.individual.Individual;org.opencb.opencga.core.models.study.Study;org.opencb.opencga.core.models.project.Project;org.opencb.opencga.core.models.user.User
-                                 </additionalOption>
+                                    org.opencb.opencga.core.models.cohort.Cohort;org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.clinical.ClinicalAnalysis;org.opencb.opencga.core.models.family.Family;org.opencb.opencga.core.models.file.File;org.opencb.opencga.core.models.individual.Individual;org.opencb.opencga.core.models.study.Study;org.opencb.opencga.core.models.project.Project;org.opencb.opencga.core.models.user.User;org.opencb.opencga.core.models.job.Job
+                                </additionalOption>
                                 <additionalOption>-jsondir</additionalOption>
                                 <additionalOption>${project.basedir}/src/main/resources/doc/json</additionalOption>
                             </additionalOptions>
