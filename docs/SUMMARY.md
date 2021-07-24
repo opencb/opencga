@@ -68,6 +68,7 @@
 * [Clinical Genomics](manual/clinical-genomics/README.md)
   * [Clinical Interpretation](manual/clinical-genomics/clinical-interpretation.md)
   * [Clinical Analysis](manual/clinical-genomics/clinical-analysis.md)
+* [Data Models](manual/data-models.md)
 * [Using JupyterLab](manual/using-jupyterlab.md)
 * [Administrator](manual/administrator/README.md)
   * [User Management](manual/administrator/user-management.md)
