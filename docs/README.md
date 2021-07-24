@@ -1,18 +1,10 @@
----
-description: Welcome to OpenCGA!
----
-
 # Home
 
-{% hint style="info" %}
-Development version 2.1.0-alpha
-{% endhint %}
-
-OpenCGA is an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.
+OpenCGA is the most advanced big data genomic analysis platform. It is implemented as an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.
 
 OpenCGA provides the most advanced and complete genomic data platform. The performance, scalability and huge number features makes of OpenCGA an unique full-stack solution today. OpenCGA takes care of security and implements a high-performance query engine and analysis frameworks for _Big Data_ analysis and visualisation in current genomics. OpenCGA uses the most modern and advanced technologies, and has been designed and implemented to scale to hundreds of thousands if genomes accounting for petabytes of variant data. It is built on top of three main components: _Catalog Metadata Database_, _Variant Storage Engine_ and _Analysis Framework_.
 
-## Main Features
+### Main Features
 
 * **Authenticated** and **secure** platform to query and visualise data. An advanced **permission** system has been implemented to ensure data privacy.
 * A **metadata database** to keep track of registered users, projects, studies, files, samples, families, jobs, ...
@@ -26,4 +18,6 @@ OpenCGA provides the most advanced and complete genomic data platform. The perfo
 * Easy **programmatic access** and **pipeline integration** thanks to the four different **client libraries** developed in **Java,** [**Python**](http://docs.opencb.org/display/opencga/Python)**,** [**R**](http://docs.opencb.org/display/opencga/R) and **Javascript**
 * Interactive **web-based application** to query, analyse and visualise variants, alignments and clinical data
 * **Zetta Genomics** start-up is being launched in 2019 to offer official support and customisation. **OpenCB Enterprise** will be launched in 2020 with many new features!  
+
+
 

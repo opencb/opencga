@@ -1,36 +1,12 @@
-# Metadata
+# Metadata and Clinical Data
 
-## Data Models
+## Metadata
 
 OpenCGA implements an advanced Metadata Database \([OpenCGA Catalog](../components-1/catalog/)\) that keeps track of ...
 
-### Main features
-
-#### Rich
 
 
+## Clinical Data
 
-#### Customizable
-
-
-
-#### Versioned
-
-
-
-#### UUID
-
-
-
-#### Permission
-
-
-
-#### Clinical Case Studies
-
-
-
-
-
-
+OpenCGA provides a rich set of data models covering the most commons needs for any genomic analysis...
 

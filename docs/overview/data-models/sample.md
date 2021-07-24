@@ -1,36 +1,20 @@
-# Sample Model
+# Sample
 
 ## Overview
 
-Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis.
+Sample data model ... 
 
-## Sample Field Attributes
-
-There are some attributes that a user can manipulate, while others are reserved for internal OpenCGA use
-
-### Fields subjected to Update and Create Operations
-
-**Create Fields: `id`**
-
-**Update Fields: `individualId, fileIds, processing, collection, somatic, annotationSets, qualityControl, description, phenotypes, status, attributes`**
-
-### Fields for OpenCGA Internal use \(immutable\) 
-
-**`uuid, release, version, creationDate, modificationDate, internal`**
-
-## Data Model
+## Data Models
 
 ### Sample
 
-This is the main data model, it stores the most basic and important information. You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
+This is the main data model, it stores the most basic and important information. You can find the Java [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 <table>
   <thead>
     <tr>
-      <th style="text-align:left"><b>Field</b>
-      </th>
-      <th style="text-align:left"><b>Description</b>
-      </th>
+      <th style="text-align:left">Field</th>
+      <th style="text-align:left">Description</th>
     </tr>
   </thead>
   <tbody>
@@ -42,10 +26,10 @@ This is the main data model, it stores the most basic and important information.
         </p>
       </td>
       <td style="text-align:left">
-        <p><b>Unique</b> Sample ID in the study, this can be repeated across different
-          studies. This is a mandatory parameter in the creation and cannot be changed
-          at the moment.</p>
-        <p><em>Constraints: Required, Create, Immutable</em>
+        <p>Unique Sample ID in the study, this can be repeated across different studies.
+          This is a mandatory parameter in the creation and cannot be changed at
+          the moment.</p>
+        <p><em>Constraints: Mandatory, Unique, Immutable</em>
         </p>
       </td>
     </tr>
@@ -88,8 +72,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>processing</b>
         </p>
-        <p><a href="sample-model.md#sampleprocessing"><em>SampleProcessing</em></a>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left">An object describing how to sample was processed.</td>
     </tr>
@@ -97,8 +80,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>collection</b>
         </p>
-        <p><a href="sample-model.md#samplecollection"><em>SampleCollection</em></a>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplecollection"><em>SampleCollection</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left">An object describing how the sample was collected.</td>
     </tr>
@@ -124,8 +106,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>qualityControl</b>
         </p>
-        <p><a href="sample-model.md#samplequalitycontrol"><em>SampleQualityControl</em></a>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
     </tr>
@@ -187,8 +168,7 @@ This is the main data model, it stores the most basic and important information.
       <td style="text-align:left">
         <p><b>status</b>
         </p>
-        <p><a href="./#status"><em>CustomStatus</em></a>
-        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="./#status"><em>CustomStatus</em></a>&lt;em&gt;&lt;/em&gt;</p>
       </td>
       <td style="text-align:left"></td>
     </tr>
@@ -215,7 +195,7 @@ This is the main data model, it stores the most basic and important information.
 
 ### SampleProcessing
 
-This object describes how the sample was processed in the laboratory or clinical set where it was collected.
+This object describes how the sample was processed in the lab.
 
 <table>
   <thead>
@@ -263,8 +243,7 @@ This object describes how the sample was processed in the laboratory or clinical
     </tr>
     <tr>
       <td style="text-align:left">
-        <p><b>quantity</b>
-        </p>
+        <p>quantity</p>
         <p><em>String</em>
         </p>
       </td>
@@ -272,8 +251,7 @@ This object describes how the sample was processed in the laboratory or clinical
     </tr>
     <tr>
       <td style="text-align:left">
-        <p><b>date</b>
-        </p>
+        <p>date</p>
         <p><em>String</em>
         </p>
       </td>
@@ -284,7 +262,11 @@ This object describes how the sample was processed in the laboratory or clinical
 
 ### SampleCollection
 
+
+
 ### SampleQualityControl
+
+
 
 ## Example
 

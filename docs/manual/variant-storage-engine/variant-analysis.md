@@ -1,5 +1,2 @@
 # Variant Analysis
 
-  
-
-
