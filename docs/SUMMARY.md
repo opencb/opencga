@@ -65,7 +65,7 @@
   * [Variant Query](manual/variant-storage-engine/variant-query.md)
   * [Variant Aggregation Stats](manual/variant-storage-engine/variant-aggregation-stats.md)
   * [Variant Analysis](manual/variant-storage-engine/variant-analysis.md)
-* [Data Models](manual/clinical-genomics/README.md)
+* [Data Models](manual/data-models/README.md)
   * [Sample](manual/data-models/sample.md)
   * [Individual](manual/data-models/individual.md)
 * [Clinical Genomics](manual/clinical-genomics/README.md)
