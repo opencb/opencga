@@ -76,7 +76,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = VariantAnnotationIndexOperationTool.DESCRIPTION) @QueryParam("annotationUpdate") boolean annotate,
             @ApiParam(value = VariantAnnotationSaveOperationTool.DESCRIPTION) @QueryParam("annotationSaveId") String annotationSaveId,
             @ApiParam(value = "New cellbase configuration") CellBaseConfiguration configuration) {
-        return run(() -> variantManager.configureCellbase(project, configuration, annotate, annotationSaveId, token));
+        return run(() -> variantManager.setCellbaseConfiguration(project, configuration, annotate, annotationSaveId, token));
     }
 
     @POST
@@ -265,8 +265,9 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
             @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
-        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, token));
+        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, skipRebuild, token));
     }
 
     @POST

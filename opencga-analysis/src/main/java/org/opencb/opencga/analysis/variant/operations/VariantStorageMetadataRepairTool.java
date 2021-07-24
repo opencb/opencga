@@ -202,8 +202,8 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
         VariantStorageEngine variantStorageEngine = StorageEngineFactory.get(getVariantStorageManager().getStorageConfiguration())
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        if (dataStore.getConfiguration() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         return variantStorageEngine;
     }

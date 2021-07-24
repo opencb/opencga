@@ -58,9 +58,13 @@ public abstract class VariantAggregationExecutor {
     public final VariantQueryResult<FacetField> aggregation(Query query, QueryOptions options) {
         if (query == null) {
             query = new Query();
+        } else {
+            query = new Query(query);
         }
         if (options == null) {
             options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
         }
 
         String facet = options.getString(QueryOptions.FACET);

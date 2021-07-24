@@ -27,21 +27,72 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-
 public class Cohort extends Annotable {
 
+    /**
+     * Cohort ID is a mandatory parameter when creating a new Cohort, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the Cohort creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
     private Enums.CohortType type;
+
+    /**
+     * String representing when the Cohort was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the Cohort was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
+    /**
+     * An string to describe the properties of the Cohort.
+     *
+     * @apiNote
+     */
     private String description;
     private List<Sample> samples;
     private int numSamples;
 
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Internal
+     */
     private int release;
+
+    /**
+     * An object describing the status of the Sample.
+     *
+     * @apiNote
+     */
     private CustomStatus status;
+
+    /**
+     * An object describing the internal information of the Sample. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private CohortInternal internal;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
 
     public Cohort() {
@@ -132,6 +183,7 @@ public class Cohort extends Annotable {
         return this;
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
@@ -141,10 +193,12 @@ public class Cohort extends Annotable {
         return this;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public Cohort setId(String id) {
         this.id = id;
         return this;

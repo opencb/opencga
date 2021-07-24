@@ -47,7 +47,9 @@
 
 ## User Manual <a id="manual"></a>
 
-* [Login](manual/login.md)
+* [Using OpenCGA](manual/use/README.md)
+  * [Command Line](manual/use/command-line.md)
+  * [Client Libraries](manual/use/client-libraries.md)
 * [Data Management](manual/data-management/README.md)
   * [Data Ingestion Process](manual/data-management/data-ingestion-process.md)
   * [Projects and Studies](manual/data-management/projects-and-studies.md)

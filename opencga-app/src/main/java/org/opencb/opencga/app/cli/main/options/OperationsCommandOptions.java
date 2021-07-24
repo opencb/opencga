@@ -317,8 +317,12 @@ public class OperationsCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--sample-index-configuration-file"}, required = true, description = "File containing the new SampleIndexConfiguration to upload in JSON format.")
+        @Parameter(names = {"--sample-index-configuration-file"}, required = true, description
+                = "File containing the new SampleIndexConfiguration to upload in JSON format.")
         public String sampleIndex;
+
+        @Parameter(names = {"--skip-rebuild"}, arity = 0, description = "Do not launch sample index rebuild jobs.")
+        public boolean skipRebuild;
     }
 
     @Parameters(commandNames = {VARIANT_FAMILY_INDEX}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)

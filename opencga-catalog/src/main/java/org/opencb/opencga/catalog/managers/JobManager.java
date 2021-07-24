@@ -529,10 +529,10 @@ public class JobManager extends ResourceManager<Job> {
         return get(null, String.valueOf(jobId), options, sessionId);
     }
 
-    public OpenCGAResult<Job> get(List<String> jobIds, QueryOptions options, boolean ignoreException, String sessionId)
-            throws CatalogException {
-        return get(null, jobIds, options, ignoreException, sessionId);
-    }
+//    public OpenCGAResult<Job> get(List<String> jobIds, QueryOptions options, boolean ignoreException, String sessionId)
+//            throws CatalogException {
+//        return get(null, jobIds, options, ignoreException, sessionId);
+//    }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);

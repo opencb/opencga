@@ -272,8 +272,8 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         Map<String, ConsequenceType> map = new HashMap<>();
         if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
             for (ConsequenceType consequenceType: variant.getAnnotation().getConsequenceTypes()) {
-                if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
-                    map.put(consequenceType.getEnsemblTranscriptId(), consequenceType);
+                if (StringUtils.isNotEmpty(consequenceType.getTranscriptId())) {
+                    map.put(consequenceType.getTranscriptId(), consequenceType);
                 }
             }
         }

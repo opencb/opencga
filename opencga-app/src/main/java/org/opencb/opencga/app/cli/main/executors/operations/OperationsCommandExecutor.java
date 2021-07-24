@@ -262,14 +262,19 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         OperationsCommandOptions.VariantSampleIndexConfigureCommandOptions cliOptions = operationsCommandOptions.variantSampleIndexConfigure;
 
         ObjectMap params = getParams(cliOptions);
+        params.put("skipRebuild", cliOptions.skipRebuild);
 
-
-        Path sampleIndexFile = Paths.get(cliOptions.sampleIndex);
-        if (!sampleIndexFile.toFile().exists()) {
-            throw new IOException("File '" + sampleIndexFile + "' not found!");
+        SampleIndexConfiguration sampleIndex;
+        if (cliOptions.sampleIndex.equals("default")) {
+            sampleIndex = SampleIndexConfiguration.defaultConfiguration();
+        } else {
+            Path sampleIndexFile = Paths.get(cliOptions.sampleIndex);
+            if (!sampleIndexFile.toFile().exists()) {
+                throw new IOException("File '" + sampleIndexFile + "' not found!");
+            }
+            sampleIndex = JacksonUtils.getDefaultObjectMapper().readValue(sampleIndexFile.toFile(),
+                    SampleIndexConfiguration.class);
         }
-        SampleIndexConfiguration sampleIndex = JacksonUtils.getDefaultObjectMapper().readValue(sampleIndexFile.toFile(),
-                SampleIndexConfiguration.class);
 
         return openCGAClient.getVariantOperationClient().configureSampleIndex(sampleIndex, params);
     }

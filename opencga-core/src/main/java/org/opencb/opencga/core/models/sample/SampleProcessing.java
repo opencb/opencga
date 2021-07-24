@@ -26,7 +26,6 @@ public class SampleProcessing {
     private String labSampleId;
     private String quantity;
     private String date;
-
     private Map<String, Object> attributes;
 
     public SampleProcessing() {

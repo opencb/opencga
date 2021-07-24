@@ -190,9 +190,10 @@ public class FileWSServer extends OpenCGAWSServer {
             @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
 
-            @ApiParam(value = "filename") @FormDataParam("filename") String filename,
-            @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
-            @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
+            @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("filename") String filename,
+            @ApiParam(value = "File format") @DefaultValue("") @FormDataParam("fileFormat") File.Format fileFormat,
+            @ApiParam(value = "File bioformat") @DefaultValue("") @FormDataParam("bioformat") File.Bioformat bioformat,
+            @ApiParam(value = "Expected MD5 file checksum") @DefaultValue("") @FormDataParam("checksum") String expectedChecksum,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
@@ -210,23 +211,25 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(new CatalogException("The path cannot be absolute"));
         }
 
-        if (fileInputStream != null) {
+        if (fileInputStream == null) {
+            return createErrorResponse("Upload file", "No file or chunk found");
+        }
+
+        try {
             if (filename == null) {
                 filename = fileMetaData.getFileName();
             }
+            long expectedSize = fileMetaData.getSize();
 
             File file = new File()
                     .setName(filename)
                     .setPath(relativeFilePath + filename)
                     .setFormat(fileFormat)
                     .setBioformat(bioformat);
-            try {
-                return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true, token));
-            } catch (Exception e) {
-                return createErrorResponse("Upload file", e.getMessage());
-            }
-        } else {
-            return createErrorResponse("Upload file", "No file or chunk found");
+            return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true,
+                    expectedChecksum, expectedSize, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
     }
 
@@ -255,7 +258,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Starting byte from which the file will be read") @QueryParam("offset") long offset,
-            @ApiParam(value = "Maximum number of lines to be returned", defaultValue = "20") @QueryParam("lines") Integer lines) {
+            @ApiParam(value = ParamConstants.MAXIMUM_LINES_CONTENT_DESCRIPTION, defaultValue = "20") @QueryParam("lines") Integer lines) {
         try {
             if (lines == null) {
                 lines = 20;
@@ -273,7 +276,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response tail(
             @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Maximum number of lines to be returned", defaultValue = "20") @QueryParam("lines") Integer lines) {
+            @ApiParam(value = ParamConstants.MAXIMUM_LINES_CONTENT_DESCRIPTION, defaultValue = "20") @QueryParam("lines") Integer lines) {
         try {
             if (lines == null) {
                 lines = 20;

@@ -29,40 +29,143 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by jacobo on 11/09/14.
+ * Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular
+ * analysis. This is the main data model, it stores the most basic and important information.
  */
 public class Sample extends Annotable {
 
+    /**
+     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter
+     * when creating a new sample, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+
+    /**
+     * Describes how the sample was processed in the lab.
+     */
     private SampleProcessing processing;
+
+    /**
+     * Describes how the sample was collected.
+     *
+     * @apiNote
+     * @implNote The sample collection is a list of samples
+     * @since 2.1
+     */
     private SampleCollection collection;
 
+    /**
+     * Contains different metrics to evaluate the quality of the sample.
+     *
+     * @apiNote
+     * @implNote The sample collection is a list of samples
+     * @see [ZetaGenomics] (https://www.zettagenomics.com)
+     * @since 2.1
+     */
     private SampleQualityControl qualityControl;
 
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Internal
+     */
     private int release;
+
+    /**
+     * An integer describing the current version.
+     *
+     * @apiNote Internal
+     */
     private int version;
+
+    /**
+     * String representing when the sample was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
+    /**
+     * An string to describe the properties of the sample.
+     *
+     * @apiNote
+     */
     private String description;
+
+    /**
+     * Indicates if the sample is somatic or germline (default)
+     *
+     * @apiNote
+     */
     private boolean somatic;
+
+    /**
+     * A List with related phenotypes.
+     *
+     * @apiNote
+     */
     private List<Phenotype> phenotypes;
 
+    /**
+     * A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not
+     * mandatory..
+     *
+     * @apiNote
+     * @see [ZetaGenomics] (https://www.zettagenomics.com)
+     */
     private String individualId;
+
+    /**
+     * List of File ID containing this sample, eg BAM, VCF, QC images, ...
+     *
+     * @apiNote
+     * @deprecated
+     */
     private List<String> fileIds;
 
+    /**
+     * An object describing the status of the Sample.
+     *
+     * @apiNote
+     */
     private CustomStatus status;
 
+    /**
+     * An object describing the internal information of the Sample. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private SampleInternal internal;
-    private Map<String, Object> attributes;
 
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
+    private Map<String, Object> attributes;
 
     public Sample() {
     }
 
     public Sample(String id, String individualId, String description, int release) {
         this(id, null, new SampleProcessing("", "", "", "", "", "", new HashMap<>()), new SampleCollection("", "", "", "", "",
-                new HashMap<>()), release, 1, "", "", description, false, new LinkedList<>(), individualId, new LinkedList<>(),
+                        new HashMap<>()), release, 1, "", "", description, false, new LinkedList<>(), individualId, new LinkedList<>(),
                 new CustomStatus(), null, new LinkedList<>(), new HashMap<>());
     }
 
@@ -208,6 +311,7 @@ public class Sample extends Annotable {
         return this;
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
@@ -217,10 +321,12 @@ public class Sample extends Annotable {
         return this;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public Sample setId(String id) {
         this.id = id;
         return this;
@@ -366,5 +472,4 @@ public class Sample extends Annotable {
         super.setAnnotationSets(annotationSets);
         return this;
     }
-
 }

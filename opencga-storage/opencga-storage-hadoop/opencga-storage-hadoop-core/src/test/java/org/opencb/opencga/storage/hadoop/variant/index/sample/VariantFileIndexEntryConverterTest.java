@@ -6,10 +6,10 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 
-import java.util.Arrays;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 
@@ -30,44 +30,44 @@ public class VariantFileIndexEntryConverterTest {
 
         fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").build()));
+                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", ".").build()));
 
         fileIndex.getTypeIndex().write(VariantType.INDEL, bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:-").addSample("s1", "0/1", "0").build()));
+                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:-").addSample("s1", "0/1", ".").build()));
 
         fileIndex.getTypeIndex().write(VariantType.DELETION, bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 0, v("1:100-200:A:<DEL>").addSample("s1", "0/1", "0").build()));
+                fileIndexConverter.createFileIndexValue(0, 0, v("1:100-200:A:<DEL>").addSample("s1", "0/1", ".").build()));
 
         fileIndex.getTypeIndex().write(VariantType.INSERTION, bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 0, v("1:100-200:A:<INS>").addSample("s1", "0/1", "0").build()));
+                fileIndexConverter.createFileIndexValue(0, 0, v("1:100-200:A:<INS>").addSample("s1", "0/1", ".").build()));
 
         fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
         fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER).write("PASS", bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").setFilter("PASS").build()));
+                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", ".").setFilter("PASS").build()));
 
         fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.FILTER).write(null, bitBuffer);
         fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).write("2000.0", bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").setQuality(2000.0).build()));
+                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", ".").setQuality(2000.0).build()));
 
         fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).write("10.0", bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", "0").setQuality(10.0).build()));
+                fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", ".").setQuality(10.0).build()));
 
         bitBuffer.clear();
         fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
         fileIndex.getFilePositionIndex().write(3, bitBuffer);
         fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).write("10.0", bitBuffer);
         assertEquals(bitBuffer,
-                fileIndexConverter.createFileIndexValue(0, 3, v("1:100:A:C").addSample("s1", "0/1", "0").setQuality(10.0).build()));
+                fileIndexConverter.createFileIndexValue(0, 3, v("1:100:A:C").addSample("s1", "0/1", ".").setQuality(10.0).build()));
 
         bitBuffer.clear();
         fileIndex.getTypeIndex().write(VariantType.SNV, bitBuffer);
-        for (Integer dp : Arrays.asList(1, 5, 10, 20, 50)) {
+        for (Integer dp : IntStream.range(0, 60).toArray()) {
             fileIndex.getCustomField(IndexFieldConfiguration.Source.SAMPLE, "DP").write(String.valueOf(dp), bitBuffer);
             assertEquals(bitBuffer,
                     fileIndexConverter.createFileIndexValue(0, 0, v("1:100:A:C").addSample("s1", "0/1", dp.toString()).build()));

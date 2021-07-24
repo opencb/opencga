@@ -43,6 +43,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     LOAD_HOM_REF("load.homRef", YesNoAuto.AUTO),
     POST_LOAD_CHECK("load.postLoadCheck", YesNoAuto.AUTO),
 
+    DELETE_PARALLEL("delete.parallel", false),
+
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation
     STATS_CALCULATE("stats.calculate", false),          //Calculate stats on the postLoad step
@@ -72,7 +74,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_USE_CACHE("annotator.cellbase.useCache"),
     ANNOTATOR_CELLBASE_INCLUDE("annotator.cellbase.include"),
     ANNOTATOR_CELLBASE_EXCLUDE("annotator.cellbase.exclude"),
-    ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", 10000),
+    // by default, undefined, no limit
+    ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE),
     ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants", true),
     ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
 

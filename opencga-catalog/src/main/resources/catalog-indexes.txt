@@ -181,3 +181,12 @@
 {"collection": "interpretation", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1, "_lastOfVersion": 1}, "options": {"background": true}}
+
+{"collection": "audit", "fields": {"studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"userId": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"action": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"resource": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"resourceId": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"resourceUuid": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"status.name": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"date": 1, "studyUuid": 1}, "options": {"background": true}}

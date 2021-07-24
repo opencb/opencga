@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.models.common.CustomStatusParams;
-import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 import java.util.Map;
 
@@ -28,20 +27,18 @@ public class StudyUpdateParams {
     private String description;
     private StudyNotification notification;
 
-    private StudyConfiguration configuration;
     private Map<String, Object> attributes;
     private CustomStatusParams status;
 
     public StudyUpdateParams() {
     }
 
-    public StudyUpdateParams(String name, String alias, String description, StudyNotification notification,
-                             StudyConfiguration configuration, Map<String, Object> attributes, CustomStatusParams status) {
+    public StudyUpdateParams(String name, String alias, String description, StudyNotification notification, Map<String, Object> attributes,
+                             CustomStatusParams status) {
         this.name = name;
         this.alias = alias;
         this.description = description;
         this.notification = notification;
-        this.configuration = configuration;
         this.attributes = attributes;
         this.status = status;
     }
@@ -53,7 +50,6 @@ public class StudyUpdateParams {
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", notification=").append(notification);
-        sb.append(", configuration=").append(configuration);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
         sb.append('}');
@@ -93,15 +89,6 @@ public class StudyUpdateParams {
 
     public StudyUpdateParams setNotification(StudyNotification notification) {
         this.notification = notification;
-        return this;
-    }
-
-    public StudyConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    public StudyUpdateParams setConfiguration(StudyConfiguration configuration) {
-        this.configuration = configuration;
         return this;
     }
 

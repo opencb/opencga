@@ -401,6 +401,7 @@ public abstract class AbstractParentClient {
         params.remove("file");
         params.remove("body");
 
+        path.property(ClientProperties.READ_TIMEOUT, timeout * 10);
         path.register(MultiPartFeature.class);
 
         final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
@@ -453,12 +454,6 @@ public abstract class AbstractParentClient {
 
     private <T> void checkErrors(RestResponse<T> restResponse, Response.StatusType status, String method, WebTarget path)
             throws ClientException {
-        // TODO: Check response status
-//        if (Response.Status.Family.SUCCESSFUL.equals(status.getFamily())) {
-//            // REST call succeed
-//            return;
-//        }
-
         if (restResponse != null && restResponse.getEvents() != null) {
             for (Event event : restResponse.getEvents()) {
                 if (Event.Type.ERROR.equals(event.getType())) {
@@ -469,6 +464,16 @@ public abstract class AbstractParentClient {
                         logger.debug("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
                     }
                 }
+            }
+        }
+
+        if (!Response.Status.Family.SUCCESSFUL.equals(status.getFamily())) {
+            String message = "Unsuccessful HTTP status " + status.getFamily() + ":" + status.getStatusCode()
+                    + " '" + status.getReasonPhrase() + "'";
+            if (throwExceptionOnError) {
+                throw new ClientException(message);
+            } else {
+                logger.debug(message);
             }
         }
     }

@@ -292,16 +292,26 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         });
     }
 
-    public Iterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
+        return rawIterator(study, sample, null);
+    }
+
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
         String tableName = getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();
-            scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
+            if (region != null) {
+                scan.setStartRow(SampleIndexSchema.toRowKey(sample, region.getChromosome(), region.getStart()));
+                scan.setStopRow(SampleIndexSchema.toRowKey(sample, region.getChromosome(),
+                        region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexSchema.BATCH_SIZE)));
+            } else {
+                scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
+            }
             HBaseToSampleIndexConverter converter = newConverter(study);
             ResultScanner scanner = table.getScanner(scan);
             Iterator<Result> resultIterator = scanner.iterator();
-            return Iterators.transform(resultIterator, converter::convert);
+            return CloseableIterator.wrap(Iterators.transform(resultIterator, converter::convert), scanner);
         });
     }
 
@@ -644,9 +654,14 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (includeAll || !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
                 }
-                if (includeAll || !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()
-                        && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
+                if (includeAll || !query.getAnnotationIndexQuery().getTranscriptFlagFilter().isNoOp()) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationTranscriptFlagIndexColumn(gt));
+                }
+                if (includeAll || !query.getAnnotationIndexQuery().getCtBtFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
+                }
+                if (includeAll || !query.getAnnotationIndexQuery().getCtTfFilter().isNoOp()) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationCtTfIndexColumn(gt));
                 }
                 if (includeAll || !query.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
@@ -696,19 +711,25 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         logger.info("AnnotationIndex = " + IndexUtils.maskToString(
                 annotationIndexQuery.getAnnotationIndexMask(), annotationIndexQuery.getAnnotationIndex()));
         if (!annotationIndexQuery.getBiotypeFilter().isNoOp()) {
-            logger.info("BiotypeIndex    = " + annotationIndexQuery.getBiotypeFilter().toString());
+            logger.info("Biotype filter  = " + annotationIndexQuery.getBiotypeFilter().toString());
         }
         if (!annotationIndexQuery.getConsequenceTypeFilter().isNoOp()) {
-            logger.info("CTIndex         = " + annotationIndexQuery.getConsequenceTypeFilter().toString());
+            logger.info("CT filter       = " + annotationIndexQuery.getConsequenceTypeFilter().toString());
+        }
+        if (!annotationIndexQuery.getTranscriptFlagFilter().isNoOp()) {
+            logger.info("Tf filter       = " + annotationIndexQuery.getTranscriptFlagFilter().toString());
         }
         if (!annotationIndexQuery.getCtBtFilter().isNoOp()) {
-            logger.info("CtBtIndex       = " + annotationIndexQuery.getCtBtFilter().toString());
+            logger.info("CtBt filter     = " + annotationIndexQuery.getCtBtFilter().toString());
+        }
+        if (!annotationIndexQuery.getCtTfFilter().isNoOp()) {
+            logger.info("CtTf filter     = " + annotationIndexQuery.getCtTfFilter().toString());
         }
         if (!annotationIndexQuery.getClinicalFilter().isNoOp()) {
-            logger.info("ClinicalIndex   = " + annotationIndexQuery.getClinicalFilter());
+            logger.info("Clinical filter = " + annotationIndexQuery.getClinicalFilter());
         }
         if (!annotationIndexQuery.getPopulationFrequencyFilter().isNoOp()) {
-            logger.info("PopFreq         = " + annotationIndexQuery.getPopulationFrequencyFilter());
+            logger.info("PopFreq filter  = " + annotationIndexQuery.getPopulationFrequencyFilter());
         }
     }
 

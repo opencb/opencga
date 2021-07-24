@@ -256,9 +256,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
         public IndividualProperty.LifeStatus lifeStatus = IndividualProperty.LifeStatus.UNKNOWN;
 
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
-        public IndividualProperty.AffectationStatus affectationStatus = IndividualProperty.AffectationStatus.UNKNOWN;
-
         @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
         public String dateOfBirth;
 
@@ -342,9 +339,6 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--life-status"}, description = "Life status.", arity = 1)
         public String lifeStatus;
-
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status.", arity = 1)
-        public String affectationStatus;
 
         @Parameter(names = {"--num-samples"}, description = "Number of samples", arity = 1)
         public String numSamples;

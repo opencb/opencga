@@ -140,7 +140,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
 
         DataResult result = userCollection.update(bson, set, null);
         if (result.getNumUpdated() == 0) {  //0 query matches.
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw CatalogAuthenticationException.incorrectUserOrPassword("Internal");
         }
         return new OpenCGAResult(result);
     }
@@ -156,7 +156,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogAuthenticationException("Could not encrypt password: " + e.getMessage(), e);
         }
         if (userCollection.count(bson).getNumMatches() == 0) {
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw CatalogAuthenticationException.incorrectUserOrPassword("Internal");
         }
     }
 

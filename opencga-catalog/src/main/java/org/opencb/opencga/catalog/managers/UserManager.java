@@ -71,6 +71,9 @@ public class UserManager extends AbstractManager {
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
 
+    private static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+      UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
+
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
             throws CatalogException {
@@ -790,20 +793,31 @@ public class UserManager extends AbstractManager {
         String authId = null;
         AuthenticationResponse response = null;
 
-        // We attempt to login the user with the different authentication managers
-        for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
-            AuthenticationManager authenticationManager = entry.getValue();
+        OpenCGAResult<User> userOpenCGAResult = userDBAdaptor.get(username, INCLUDE_ACCOUNT);
+        if (userOpenCGAResult.getNumResults() == 1) {
+            authId = userOpenCGAResult.first().getAccount().getAuthentication().getId();
             try {
-                response = authenticationManager.authenticate(username, password);
-                authId = entry.getKey();
-                break;
+                response = authenticationManagerMap.get(authId).authenticate(username, password);
             } catch (CatalogAuthenticationException e) {
-                logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
+                auditManager.auditUser(username, Enums.Action.LOGIN, username,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+                throw e;
+            }
+        } else {
+            // We attempt to login the user with the different authentication managers
+            for (Map.Entry<String, AuthenticationManager> entry : authenticationManagerMap.entrySet()) {
+                AuthenticationManager authenticationManager = entry.getValue();
+                try {
+                    response = authenticationManager.authenticate(username, password);
+                    authId = entry.getKey();
+                    break;
+                } catch (CatalogAuthenticationException e) {
+                    logger.debug("Attempted authentication failed with {} for user '{}'\n{}", entry.getKey(), username, e.getMessage(), e);
+                }
             }
         }
 
         if (response == null) {
-            // TODO: We should raise better exceptions. It could fail for other reasons.
             auditManager.auditUser(username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
             throw CatalogAuthenticationException.incorrectUserOrPassword();

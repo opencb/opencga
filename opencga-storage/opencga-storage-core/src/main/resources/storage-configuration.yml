@@ -27,7 +27,7 @@ search:
   configSet: "${OPENCGA.STORAGE.SEARCH.CONFIG_SET}"
   mode: "cloud"
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
-  insertBatchSize: 10000
+  insertBatchSize: 5000
 
 ## Clinical database for indexing the pathogenic variants reported.
 clinical:
@@ -111,7 +111,7 @@ variant:
     annotator.cellbase.useCache: true
     annotator.cellbase.impreciseVariants: true          # Imprecise variants supported by cellbase
     annotator.cellbase.starAlternate: false             # Variants with stat "*" alternate supported by cellbase
-    annotator.cellbase.variantLengthThreshold: 10000    # Variants length threshold
+    #annotator.cellbase.variantLengthThreshold:         # Variants length threshold. By default, unlimited
 
     query.timeout.default: 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
     query.timeout.max: 30000     #(ms) Max allowed timeout for DBAdaptor operations.

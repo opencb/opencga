@@ -45,6 +45,7 @@ import org.opencb.opencga.core.models.family.FamilyQualityControl;
 import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclParams;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -878,7 +879,9 @@ public class FamilyManagerTest extends GenericTest {
     public void updateFamilyMissingMember() throws CatalogException {
         DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
-        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList("child3", "father"));
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList(
+                new IndividualReferenceParam().setId("child3"),
+                new IndividualReferenceParam().setId("father")));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");

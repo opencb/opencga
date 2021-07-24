@@ -65,10 +65,10 @@ public class SampleIndexQueryParserTest {
     @Before
     public void setUp() throws Exception {
         configuration = SampleIndexConfiguration.defaultConfiguration()
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s1", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s2", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s3", "ALL"))
-                .addPopulationRange(new SampleIndexConfiguration.PopulationFrequencyRange("s4", "ALL"));
+                .addPopulation(new SampleIndexConfiguration.Population("s1", "ALL"))
+                .addPopulation(new SampleIndexConfiguration.Population("s2", "ALL"))
+                .addPopulation(new SampleIndexConfiguration.Population("s3", "ALL"))
+                .addPopulation(new SampleIndexConfiguration.Population("s4", "ALL"));
 
         SampleIndexSchema schema = new SampleIndexSchema(configuration);
         fileIndex = schema.getFileIndex();
@@ -112,7 +112,7 @@ public class SampleIndexQueryParserTest {
     }
 
     private SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, List<String>> filesFromSample, boolean multiFileSample) {
-        return sampleIndexQueryParser.parseFileQuery(query, sample, multiFileSample, false, filesFromSample);
+        return sampleIndexQueryParser.parseFileQuery(query, sample, multiFileSample, false, filesFromSample, false);
     }
 
     private byte parseAnnotationMask(Query query) {
@@ -419,22 +419,22 @@ public class SampleIndexQueryParserTest {
         Values<SampleFileIndexQuery> fileQuery;
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(1, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(1, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F2:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(2, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F3:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, n -> Arrays.asList("F1", "F2"), false);
         assertEquals(1, fileQuery.size());
         assertTrue(VariantQueryUtils.isValidParam(query, FILE_DATA));
     }
@@ -713,7 +713,7 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parsePopFreqQueryTest() {
-        double[] default_ranges = configuration.getAnnotationIndexConfiguration().getPopulationFrequency().get(0).getThresholds();
+        double[] default_ranges = configuration.getAnnotationIndexConfiguration().getPopulationFrequency().getThresholds();
         for (int i = 0; i < default_ranges.length; i++) {
             RangeIndexFieldFilter q;
             double r = default_ranges[i];
@@ -922,11 +922,44 @@ public class SampleIndexQueryParserTest {
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
+//        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
+//        indexQuery = parseAnnotationIndexQuery(query, true);
+//        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
+//        assertFalse(query.isEmpty()); // Imprecise CT value
+    }
+
+    @Test
+    public void testCoveredQuery_ct_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.MISSENSE_VARIANT).append(ANNOT_TRANSCRIPT_FLAG.key(), "basic");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
-        assertFalse(query.isEmpty()); // Imprecise CT value
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+    }
 
+    @Test
+    public void testCoveredQuery_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_TRANSCRIPT_FLAG.key(), "basic");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertTrue(indexQuery.getTranscriptFlagFilter().isExactFilter());
+        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+
+        // Imprecise query
+        query = new Query().append(ANNOT_TRANSCRIPT_FLAG.key(), "seleno");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isExactFilter());
+        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertFalse(query.isEmpty());
     }
 
 

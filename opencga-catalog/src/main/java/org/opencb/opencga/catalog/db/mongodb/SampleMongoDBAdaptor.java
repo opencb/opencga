@@ -22,6 +22,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -422,6 +423,25 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         + " of '" + sampleId + "'");
             }
         }
+    }
+
+    void updateIndividualIdFromSamples(ClientSession clientSession, long studyUid, String oldIndividualId, String newIndividualId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (StringUtils.isEmpty(oldIndividualId)) {
+            throw new CatalogDBException("Empty old individual ID");
+        }
+        if (StringUtils.isEmpty(newIndividualId)) {
+            throw new CatalogDBException("Empty new individual ID");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.INDIVIDUAL_ID.key(), oldIndividualId);
+        Bson bsonQuery = parseQuery(query);
+
+        Bson update = Updates.set(QueryParams.INDIVIDUAL_ID.key(), newIndividualId);
+
+        sampleCollection.update(clientSession, bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     /**

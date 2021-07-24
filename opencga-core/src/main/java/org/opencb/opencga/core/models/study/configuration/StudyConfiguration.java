@@ -1,20 +1,26 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.opencga.core.models.study.StudyVariantEngineConfiguration;
+
 public class StudyConfiguration {
 
     private ClinicalAnalysisStudyConfiguration clinical;
+    private StudyVariantEngineConfiguration variantEngine;
 
     public StudyConfiguration() {
+        this(new ClinicalAnalysisStudyConfiguration(), new StudyVariantEngineConfiguration());
     }
 
-    public StudyConfiguration(ClinicalAnalysisStudyConfiguration clinical) {
+    public StudyConfiguration(ClinicalAnalysisStudyConfiguration clinical, StudyVariantEngineConfiguration variantEngine) {
         this.clinical = clinical;
+        this.variantEngine = variantEngine;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyConfiguration{");
         sb.append("clinical=").append(clinical);
+        sb.append(", variantEngine=").append(variantEngine);
         sb.append('}');
         return sb.toString();
     }
@@ -25,6 +31,15 @@ public class StudyConfiguration {
 
     public StudyConfiguration setClinical(ClinicalAnalysisStudyConfiguration clinical) {
         this.clinical = clinical;
+        return this;
+    }
+
+    public StudyVariantEngineConfiguration getVariantEngine() {
+        return variantEngine;
+    }
+
+    public StudyConfiguration setVariantEngine(StudyVariantEngineConfiguration variantEngine) {
+        this.variantEngine = variantEngine;
         return this;
     }
 }

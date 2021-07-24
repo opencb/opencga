@@ -418,15 +418,17 @@ public class VariantHbaseTestUtils {
         for (Integer studyId : dbAdaptor.getMetadataManager().getStudies(null).values()) {
             int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
             String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
-            if (printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName)) return;
-            printSampleIndexTable2(dbAdaptor, outDir, studyId, sampleGtTableName);
+            if (dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
+                printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName);
+                printSampleIndexTable2(dbAdaptor, outDir, studyId, sampleGtTableName);
+            }
         }
     }
 
-    public static boolean printSampleIndexTable2(VariantHadoopDBAdaptor dbAdaptor, Path outDir, int studyId, String sampleGtTableName) throws IOException {
+    public static void printSampleIndexTable2(VariantHadoopDBAdaptor dbAdaptor, Path outDir, int studyId, String sampleGtTableName) throws IOException {
         if (!dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
             // Skip table
-            return true;
+            return;
         }
         Path fileName = outDir.resolve("sample." + sampleGtTableName + ".detailed.txt");
         try (
@@ -437,39 +439,25 @@ public class VariantHbaseTestUtils {
             for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
                 String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
                 RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(dbAdaptor.getMetadataManager().getStudyName(studyId), sampleName);
-                Map<String, String> map = new TreeMap<>();
 
                 out.println("");
                 out.println("");
                 out.println("");
                 out.println("SAMPLE: " + sampleName + " , " + sampleId);
                 while (it.hasNext()) {
-                    map.clear();
                     SampleVariantIndexEntry entry = it.next();
-
                     out.println("_______________________");
-                    out.println(entry.getVariant());
-                    out.println("gt: " + entry.getGenotype());
-                    out.println("file: " + entry.getFileIndex());
-                    out.println("ct: " + IndexUtils.binaryToString(entry.getAnnotationIndexEntry().getCtIndex(), schema.getCtIndex().getField().getBitLength()) + " : " + schema.getCtIndex().getField().decode(entry.getAnnotationIndexEntry().getCtIndex()));
-                    out.println("bt: " + IndexUtils.binaryToString(entry.getAnnotationIndexEntry().getBtIndex(), schema.getBiotypeIndex().getField().getBitLength()) + " : " + schema.getBiotypeIndex().getField().decode(entry.getAnnotationIndexEntry().getBtIndex()));
-                    out.println("ct_bt: " + schema.getCtBtIndex().getField().encode(entry.getAnnotationIndexEntry().getCtBtCombination()) + " : " + entry.getAnnotationIndexEntry().getCtBtCombination());
-
-
-                    for (Map.Entry<String, ?> e : map.entrySet()) {
-                        out.println("\t" + e.getKey() + " = " + e.getValue());
-                    }
+                    out.println(entry.toString(schema));
                 }
             }
         }
-        return false;
     }
 
-    public static boolean printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir, int studyId, String sampleGtTableName)
+    public static void printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir, int studyId, String sampleGtTableName)
             throws IOException {
         if (!dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
             // Skip table
-            return true;
+            return;
         }
         Path fileName = outDir.resolve("sample." + sampleGtTableName + ".txt");
         try (
@@ -515,7 +503,6 @@ public class VariantHbaseTestUtils {
 
             });
         }
-        return false;
     }
 
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,

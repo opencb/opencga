@@ -55,10 +55,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
-import org.opencb.opencga.storage.core.variant.query.executors.ChromDensityVariantAggregationExecutor;
-import org.opencb.opencga.storage.core.variant.query.executors.DBAdaptorVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
-import org.opencb.opencga.storage.core.variant.query.executors.VariantQueryExecutor;
+import org.opencb.opencga.storage.core.variant.query.executors.*;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
@@ -566,7 +563,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        ObjectMap options = configuration.getVariantEngine(STORAGE_ENGINE_ID).getOptions();
+        ObjectMap options = getOptions();
 
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
@@ -606,7 +603,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             logger.info("------------------------------------------------------");
             logger.info("Remove files {} in archive '{}' and analysis table '{}'", fileIds, archiveTable, variantsTable);
             logger.info("------------------------------------------------------");
-            ExecutorService service = options.getBoolean("delete.parallel", true)
+            boolean parallelDelete = options.getBoolean(
+                    VariantStorageOptions.DELETE_PARALLEL.key(),
+                    VariantStorageOptions.DELETE_PARALLEL.defaultValue());
+            ExecutorService service = parallelDelete
                     ? Executors.newCachedThreadPool()
                     : Executors.newSingleThreadExecutor();
             Future<Integer> deleteFromVariants = service.submit(() -> {
@@ -673,7 +673,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             service.awaitTermination(12, TimeUnit.HOURS);
             if (!samplesToRebuildIndex.isEmpty()) {
                 logger.info("Rebuild sample index for samples " + samplesToRebuildIndex);
+                for (String sample : samplesToRebuildIndex) {
+                    int sampleId = getMetadataManager().getSampleIdOrFail(studyId, sample);
+                    getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
+                        SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
+                        SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
+                        return sampleMetadata;
+                    });
+                }
                 sampleIndex(study, samplesToRebuildIndex, options);
+                sampleIndexAnnotate(study, samplesToRebuildIndex, options);
             }
 
             logger.info("------------------------------------------------------");
@@ -925,10 +934,13 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     protected List<VariantQueryExecutor> initVariantQueryExecutors() throws StorageEngineException {
-        List<VariantQueryExecutor> executors = new ArrayList<>(6);
+        List<VariantQueryExecutor> executors = new ArrayList<>(8);
 
         executors.add(new SampleIndexCompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this, getSampleIndexDBAdaptor(), getDBAdaptor()));
+        executors.add(new BreakendVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions(), new SampleIndexVariantQueryExecutor(
+                getDBAdaptor(), getSampleIndexDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, getConfiguration(), getOptions()));
         executors.add(new SampleIndexMendelianErrorQueryExecutor(

@@ -85,7 +85,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
         }
 
         try {
-            Study study = catalogManager.getStudyManager().get(studyFqn, StudyManager.INCLUDE_STUDY_ID, token).first();
+            Study study = catalogManager.getStudyManager().get(studyFqn, StudyManager.INCLUDE_STUDY_IDS, token).first();
 
             OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(studyFqn, path, false, QueryOptions.empty(), token);
             if (parents.getNumResults() == 0) {
