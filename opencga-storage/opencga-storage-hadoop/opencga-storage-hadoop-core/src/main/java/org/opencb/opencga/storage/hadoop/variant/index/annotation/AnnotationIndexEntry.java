@@ -208,6 +208,10 @@ public class AnnotationIndexEntry {
         hasCtIndex = false;
         hasTfIndex = false;
         hasClinical = false;
+        summaryIndex = 0;
+        ctIndex = 0;
+        btIndex = 0;
+        tfIndex = 0;
         ctBtCombination.setNumA(0);
         ctBtCombination.setNumB(0);
         ctTfCombination.setNumA(0);

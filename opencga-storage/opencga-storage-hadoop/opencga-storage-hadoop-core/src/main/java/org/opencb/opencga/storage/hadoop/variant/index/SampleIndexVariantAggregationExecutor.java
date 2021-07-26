@@ -254,7 +254,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     if (filterTranscript) {
                         thisAccumulator = new CategoricalAccumulator<>(
                                 s -> {
-                                    if (s.getAnnotationIndexEntry() == null) {
+                                    if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasCtIndex()) {
                                         return Collections.emptyList();
                                     }
                                     Set<String> cts = new HashSet<>(field.decode(s.getAnnotationIndexEntry().getCtIndex()));
@@ -296,7 +296,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                                 fieldKey);
                     } else {
                         thisAccumulator = new CategoricalAccumulator<>(
-                                s -> s.getAnnotationIndexEntry() == null
+                                s -> s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasCtIndex()
                                         ? Collections.emptyList()
                                         : field.decode(s.getAnnotationIndexEntry().getCtIndex()),
                                 fieldKey);
@@ -309,7 +309,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     if (filterTranscript) {
                         thisAccumulator = new CategoricalAccumulator<>(
                                 s -> {
-                                    if (s.getAnnotationIndexEntry() == null) {
+                                    if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasBtIndex()) {
                                         return Collections.emptyList();
                                     }
                                     Set<String> bts = new HashSet<>(field.decode(s.getAnnotationIndexEntry().getBtIndex()));
@@ -336,7 +336,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                                 fieldKey);
                     } else {
                         thisAccumulator = new CategoricalAccumulator<>(
-                                s -> s.getAnnotationIndexEntry() == null
+                                s -> s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasBtIndex()
                                         ? Collections.emptyList()
                                         : field.decode(s.getAnnotationIndexEntry().getBtIndex()),
                                 fieldKey);
@@ -347,7 +347,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     CategoricalMultiValuedIndexField<String> field = schema.getTranscriptFlagIndexSchema().getField();
                     thisAccumulator = new CategoricalAccumulator<>(
                             s -> {
-                                if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasClinical()) {
+                                if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasTfIndex()) {
                                     return Collections.emptyList();
                                 }
                                 return field.decode(s.getAnnotationIndexEntry().getTfIndex());
