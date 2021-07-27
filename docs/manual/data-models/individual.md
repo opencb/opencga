@@ -1,4 +1,5 @@
 # Individual
+<<<<<<< HEAD
 ## Overview
 Created by jacobo on 11/09/14.
 ### Summary 
@@ -160,3 +161,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br>*<a href="Individual.md#Status"><em>Status</em></a>* <br> | <p></p> |
 | **configuration**<br>*<a href="Individual.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
+=======
+
+>>>>>>> 0f705d64233be5f93747457264e25ea526fc6c04
