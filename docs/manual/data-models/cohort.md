@@ -1,6 +1,4 @@
 # Cohort
-<<<<<<< HEAD
-<<<<<<< HEAD
 ## Overview
 
 ### Summary 
@@ -96,9 +94,3 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Cohort.md#CohortStatus"><em>CohortStatus</em></a>* <br> | <p></p> |
-=======
-
->>>>>>> 0f705d64233be5f93747457264e25ea526fc6c04
-=======
-
->>>>>>> 0f705d64233be5f93747457264e25ea526fc6c04
