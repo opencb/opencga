@@ -1,5 +1,6 @@
 # Sample
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## Overview
 Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular
  analysis. This is the main data model, it stores the most basic and important information.
@@ -158,6 +159,11 @@ This is a full JSON example:
 }
 
 ```
+=======
+
+dsfsdf ![](../../.gitbook/assets/image%20%286%29%20%285%29%20%285%29%20%285%29%20%285%29%20%284%29%20%281%29.png) ![](../../.gitbook/assets/error.png) 
+
+>>>>>>> 0f705d64233be5f93747457264e25ea526fc6c04
 =======
 
 dsfsdf ![](../../.gitbook/assets/image%20%286%29%20%285%29%20%285%29%20%285%29%20%285%29%20%284%29%20%281%29.png) ![](../../.gitbook/assets/error.png) 
