@@ -75,7 +75,7 @@
   * [Family](manual/data-models/family.md)
   * [Cohort](manual/data-models/cohort.md)
   * [Job](manual/data-models/job.md)
-  * [Clinical Analysis](manual/data-models/clinicalanalysis.md)
+  * [Clinical Analysis](manual/data-models/clinical-analysis.md)
 * [Clinical Genomics](manual/clinical-genomics/README.md)
   * [Clinical Interpretation](manual/clinical-genomics/clinical-interpretation.md)
   * [Clinical Analysis](manual/clinical-genomics/clinical-analysis.md)
