@@ -808,7 +808,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             // Add a combination with the transcript flag
                             if (conseqType.getTranscriptAnnotationFlags() != null) {
                                 for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
-                                    if (transcriptFlag.equalsIgnoreCase("basic") || transcriptFlag.equalsIgnoreCase("CCDS")) {
+                                    if (VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.contains(transcriptFlag)) {
                                         geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getGeneId() + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + soIdInt + "_" + transcriptFlag);
