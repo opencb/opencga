@@ -46,10 +46,10 @@ public class NewClinicalSignificanceFields extends StorageMigrationTool {
                     } else {
                         logger.info("Rerun job, as the patch has changed.");
                     }
-                } else if (status.equals(Enums.ExecutionStatus.ERROR)) {
+                } else if (status.equals(Enums.ExecutionStatus.ERROR) || status.equals(Enums.ExecutionStatus.ABORTED)) {
                     logger.info("Retry migration job for project {}", project);
                 } else {
-                    logger.info("Job {} for migrating project {} in status {}. Wait for completition", job.getId(), project, status);
+                    logger.info("Job {} for migrating project {} in status {}. Wait for completion", job.getId(), project, status);
                     continue;
                 }
                 getMigrationRun().removeJob(job);
