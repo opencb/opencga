@@ -63,60 +63,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="Study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
 | **internal**<br>*<a href="Study.md#StudyInternal"><em>StudyInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### Family
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p>Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the Family creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **name**<br> *String* <br> | <p></p> |
-| **members**<br> List<*<a href="Study.md#Individual"><em>Individual</em></a>*> <br> | <p></p> |
-| **phenotypes**<br> List<*Phenotype*> <br> | <p></p> |
-| **disorders**<br> List<*Disorder*> <br> | <p></p> |
-| **qualityControl**<br>*<a href="Study.md#FamilyQualityControl"><em>FamilyQualityControl</em></a>* <br> | <p></p> |
-| **creationDate**<br> *String* <br> | <p>String representing when the Family was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the Family was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **expectedSize**<br> *int* <br> | <p></p> |
-| **description**<br> *String* <br> | <p>An string to describe the properties of the Family.</p> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **version**<br> *int* <br> | <p>An integer describing the current version.</p>_Tags_: _internal_ |
-| **status**<br>*<a href="Study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Family.</p> |
-| **internal**<br>*<a href="Study.md#FamilyInternal"><em>FamilyInternal</em></a>* <br> | <p>An object describing the internal information of the Family. This is managed by OpenCGA.</p>_Tags_: _internal_ |
-| **roles**<br> Map<*MapString*,*String*,*FamiliarRelationship*> <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### ClinicalAnalysis
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysis.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p>ClinicalAnalysis ID is a mandatory parameter when creating a new ClinicalAnalysis, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the ClinicalAnalysis creation and cannot be<br> changed.</p>_Tags_: _internal, unique, immutable_ |
-| **description**<br> *String* <br> | <p>An string to describe the properties of the ClinicalAnalysis.</p> |
-| **type**<br>*<a href="Study.md#enum-clinicalanalysistype"><em>ClinicalAnalysis.Type</em></a>* <br> | <p></p> |
-| **disorder**<br> *Disorder* <br> | <p></p> |
-| **files**<br> List<*<a href="Study.md#File"><em>File</em></a>*> <br> | <p></p> |
-| **proband**<br>*<a href="Study.md#Individual"><em>Individual</em></a>* <br> | <p></p> |
-| **family**<br>*<a href="Study.md#Family"><em>Family</em></a>* <br> | <p></p> |
-| **panels**<br> List<*<a href="Study.md#Panel"><em>Panel</em></a>*> <br> | <p></p> |
-| **panelLock**<br> *boolean* <br> | <p></p> |
-| **locked**<br> *boolean* <br> | <p></p> |
-| **interpretation**<br>*<a href="Study.md#Interpretation"><em>Interpretation</em></a>* <br> | <p></p> |
-| **secondaryInterpretations**<br> List<*<a href="Study.md#Interpretation"><em>Interpretation</em></a>*> <br> | <p></p> |
-| **consent**<br>*<a href="Study.md#ClinicalConsentAnnotation"><em>ClinicalConsentAnnotation</em></a>* <br> | <p></p> |
-| **analyst**<br> *ClinicalAnalyst* <br> | <p></p> |
-| **priority**<br>*<a href="Study.md#ClinicalPriorityAnnotation"><em>ClinicalPriorityAnnotation</em></a>* <br> | <p></p> |
-| **flags**<br> List<*<a href="Study.md#FlagAnnotation"><em>FlagAnnotation</em></a>*> <br> | <p></p> |
-| **creationDate**<br> *String* <br> | <p>String representing when the sample was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the sample was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **dueDate**<br> *String* <br> | <p></p> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **qualityControl**<br>*<a href="Study.md#ClinicalAnalysisQualityControl"><em>ClinicalAnalysisQualityControl</em></a>* <br> | <p></p> |
-| **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
-| **audit**<br> List<*ClinicalAudit*> <br> | <p></p> |
-| **internal**<br>*<a href="Study.md#ClinicalAnalysisInternal"><em>ClinicalAnalysisInternal</em></a>* <br> | <p>An object describing the internal information of the ClinicalAnalysis. This is managed by OpenCGA.</p>_Tags_: _internal_ |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-| **status**<br> *Status* <br> | <p>An object describing the status of the ClinicalAnalysis.</p> |
 ### File
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
 
@@ -170,6 +116,21 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="Study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
 | **internal**<br>*<a href="Study.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+### VariableSet
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/VariableSet.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br> *String* <br> | <p></p> |
+| **name**<br> *String* <br> | <p></p> |
+| **unique**<br> *boolean* <br> | <p></p> |
+| **confidential**<br> *boolean* <br> | <p></p> |
+| **internal**<br> *boolean* <br> | <p></p> |
+| **description**<br> *String* <br> | <p></p> |
+| **variables**<br> Set<*<a href="Study.md#Variable"><em>Variable</em></a>*> <br> | <p></p> |
+| **entities**<br> List<*AnnotableDataModels*> <br> | <p></p> |
+| **release**<br> *int* <br> | <p></p> |
+| **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
 ### Individual
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/Individual.java).
 
@@ -199,38 +160,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="Study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p></p> |
 | **internal**<br>*<a href="Study.md#IndividualInternal"><em>IndividualInternal</em></a>* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### Cohort
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p>Cohort ID is a mandatory parameter when creating a new Cohort, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the Cohort creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **type**<br>*<a href="Study.md#CohortType"><em>CohortType</em></a>* <br> | <p></p> |
-| **creationDate**<br> *String* <br> | <p>String representing when the Cohort was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the Cohort was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **description**<br> *String* <br> | <p>An string to describe the properties of the Cohort.</p> |
-| **samples**<br> List<*<a href="Study.md#Sample"><em>Sample</em></a>*> <br> | <p></p> |
-| **numSamples**<br> *int* <br> | <p></p> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **status**<br>*<a href="Study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
-| **internal**<br>*<a href="Study.md#CohortInternal"><em>CohortInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### VariableSet
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/VariableSet.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p></p> |
-| **name**<br> *String* <br> | <p></p> |
-| **unique**<br> *boolean* <br> | <p></p> |
-| **confidential**<br> *boolean* <br> | <p></p> |
-| **internal**<br> *boolean* <br> | <p></p> |
-| **description**<br> *String* <br> | <p></p> |
-| **variables**<br> Set<*<a href="Study.md#Variable"><em>Variable</em></a>*> <br> | <p></p> |
-| **entities**<br> List<*AnnotableDataModels*> <br> | <p></p> |
-| **release**<br> *int* <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
 ### Group
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Group.java).
 
@@ -268,6 +197,77 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
 | **study**<br>*<a href="Study.md#JobStudyParam"><em>JobStudyParam</em></a>* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+### Cohort
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br> *String* <br> | <p>Cohort ID is a mandatory parameter when creating a new Cohort, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
+| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the Cohort creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
+| **type**<br>*<a href="Study.md#CohortType"><em>CohortType</em></a>* <br> | <p></p> |
+| **creationDate**<br> *String* <br> | <p>String representing when the Cohort was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
+| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the Cohort was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
+| **description**<br> *String* <br> | <p>An string to describe the properties of the Cohort.</p> |
+| **samples**<br> List<*<a href="Study.md#Sample"><em>Sample</em></a>*> <br> | <p></p> |
+| **numSamples**<br> *int* <br> | <p></p> |
+| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
+| **status**<br>*<a href="Study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
+| **internal**<br>*<a href="Study.md#CohortInternal"><em>CohortInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+### ClinicalAnalysis
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysis.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br> *String* <br> | <p>ClinicalAnalysis ID is a mandatory parameter when creating a new ClinicalAnalysis, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
+| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the ClinicalAnalysis creation and cannot be<br> changed.</p>_Tags_: _internal, unique, immutable_ |
+| **description**<br> *String* <br> | <p>An string to describe the properties of the ClinicalAnalysis.</p> |
+| **type**<br>*<a href="Study.md#enum-clinicalanalysistype"><em>ClinicalAnalysis.Type</em></a>* <br> | <p></p> |
+| **disorder**<br> *Disorder* <br> | <p></p> |
+| **files**<br> List<*<a href="Study.md#File"><em>File</em></a>*> <br> | <p></p> |
+| **proband**<br>*<a href="Study.md#Individual"><em>Individual</em></a>* <br> | <p></p> |
+| **family**<br>*<a href="Study.md#Family"><em>Family</em></a>* <br> | <p></p> |
+| **panels**<br> List<*<a href="Study.md#Panel"><em>Panel</em></a>*> <br> | <p></p> |
+| **panelLock**<br> *boolean* <br> | <p></p> |
+| **locked**<br> *boolean* <br> | <p></p> |
+| **interpretation**<br>*<a href="Study.md#Interpretation"><em>Interpretation</em></a>* <br> | <p></p> |
+| **secondaryInterpretations**<br> List<*<a href="Study.md#Interpretation"><em>Interpretation</em></a>*> <br> | <p></p> |
+| **consent**<br>*<a href="Study.md#ClinicalConsentAnnotation"><em>ClinicalConsentAnnotation</em></a>* <br> | <p></p> |
+| **analyst**<br> *ClinicalAnalyst* <br> | <p></p> |
+| **priority**<br>*<a href="Study.md#ClinicalPriorityAnnotation"><em>ClinicalPriorityAnnotation</em></a>* <br> | <p></p> |
+| **flags**<br> List<*<a href="Study.md#FlagAnnotation"><em>FlagAnnotation</em></a>*> <br> | <p></p> |
+| **creationDate**<br> *String* <br> | <p>String representing when the sample was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
+| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the sample was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
+| **dueDate**<br> *String* <br> | <p></p> |
+| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
+| **qualityControl**<br>*<a href="Study.md#ClinicalAnalysisQualityControl"><em>ClinicalAnalysisQualityControl</em></a>* <br> | <p></p> |
+| **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
+| **audit**<br> List<*ClinicalAudit*> <br> | <p></p> |
+| **internal**<br>*<a href="Study.md#ClinicalAnalysisInternal"><em>ClinicalAnalysisInternal</em></a>* <br> | <p>An object describing the internal information of the ClinicalAnalysis. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+| **status**<br> *Status* <br> | <p>An object describing the status of the ClinicalAnalysis.</p> |
+### Family
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br> *String* <br> | <p>Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
+| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the Family creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
+| **name**<br> *String* <br> | <p></p> |
+| **members**<br> List<*<a href="Study.md#Individual"><em>Individual</em></a>*> <br> | <p></p> |
+| **phenotypes**<br> List<*Phenotype*> <br> | <p></p> |
+| **disorders**<br> List<*Disorder*> <br> | <p></p> |
+| **qualityControl**<br>*<a href="Study.md#FamilyQualityControl"><em>FamilyQualityControl</em></a>* <br> | <p></p> |
+| **creationDate**<br> *String* <br> | <p>String representing when the Family was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
+| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the Family was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
+| **expectedSize**<br> *int* <br> | <p></p> |
+| **description**<br> *String* <br> | <p>An string to describe the properties of the Family.</p> |
+| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
+| **version**<br> *int* <br> | <p>An integer describing the current version.</p>_Tags_: _internal_ |
+| **status**<br>*<a href="Study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Family.</p> |
+| **internal**<br>*<a href="Study.md#FamilyInternal"><em>FamilyInternal</em></a>* <br> | <p>An object describing the internal information of the Family. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **roles**<br> Map<*MapString*,*String*,*FamiliarRelationship*> <br> | <p></p> |
+| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 ### SampleInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
@@ -275,25 +275,18 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
 | **rga**<br>*<a href="Study.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
-### ClinicalAnalysisInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="Study.md#ClinicalAnalysisStatus"><em>ClinicalAnalysisStatus</em></a>* <br> | <p></p> |
-### StudyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
+### IndividualInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
-| **configuration**<br>*<a href="Study.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
-### InterpretationInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationInternal.java).
+### FamilyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Study.md#InterpretationStatus"><em>InterpretationStatus</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="Study.md#FamilyStatus"><em>FamilyStatus</em></a>* <br> | <p></p> |
 ### FileInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
 
@@ -303,12 +296,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **index**<br>*<a href="Study.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
 | **sampleMap**<br> Map<*String*> <br> | <p></p> |
 | **missingSamples**<br>*<a href="Study.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
-### IndividualInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
+### JobInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="Study.md#ExecutionStatus"><em>ExecutionStatus</em></a>* <br> | <p></p> |
+| **webhook**<br>*<a href="Study.md#JobInternalWebhook"><em>JobInternalWebhook</em></a>* <br> | <p></p> |
+| **events**<br> List<*Event*> <br> | <p></p> |
+### InterpretationInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*<a href="Study.md#InterpretationStatus"><em>InterpretationStatus</em></a>* <br> | <p></p> |
 ### ProjectInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 
@@ -323,23 +324,22 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Study.md#CohortStatus"><em>CohortStatus</em></a>* <br> | <p></p> |
+### ClinicalAnalysisInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*<a href="Study.md#ClinicalAnalysisStatus"><em>ClinicalAnalysisStatus</em></a>* <br> | <p></p> |
 ### UserInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Study.md#UserStatus"><em>UserStatus</em></a>* <br> | <p></p> |
-### JobInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
+### StudyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Study.md#ExecutionStatus"><em>ExecutionStatus</em></a>* <br> | <p></p> |
-| **webhook**<br>*<a href="Study.md#JobInternalWebhook"><em>JobInternalWebhook</em></a>* <br> | <p></p> |
-| **events**<br> List<*Event*> <br> | <p></p> |
-### FamilyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="Study.md#FamilyStatus"><em>FamilyStatus</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="Study.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| **configuration**<br>*<a href="Study.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |

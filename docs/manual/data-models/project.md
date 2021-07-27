@@ -81,13 +81,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br>*<a href="Project.md#Status"><em>Status</em></a>* <br> | <p></p> |
 | **rga**<br>*<a href="Project.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
-### StudyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="Project.md#Status"><em>Status</em></a>* <br> | <p></p> |
-| **configuration**<br>*<a href="Project.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
 ### ProjectInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 
@@ -102,3 +95,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Project.md#CohortStatus"><em>CohortStatus</em></a>* <br> | <p></p> |
+### StudyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*<a href="Project.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| **configuration**<br>*<a href="Project.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |

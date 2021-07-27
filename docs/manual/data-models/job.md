@@ -59,6 +59,13 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
 | **study**<br>*<a href="Job.md#JobStudyParam"><em>JobStudyParam</em></a>* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+### JobStudyParam
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobStudyParam.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br> *String* <br> | <p></p> |
+| **others**<br> List<*String*> <br> | <p></p> |
 ### File
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
 
@@ -90,25 +97,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="Job.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
 | **internal**<br>*<a href="Job.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### JobStudyParam
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobStudyParam.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p></p> |
-| **others**<br> List<*String*> <br> | <p></p> |
-### Enum Enums.Priority
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/Priority.java).
-
-| Field | Description |
-| :---  | :--- |
-| **URGENT** <br> | <p></p> |
-| **HIGH** <br> | <p></p> |
-| **MEDIUM** <br> | <p></p> |
-| **LOW** <br> | <p></p> |
-| **UNKNOWN** <br> | <p></p> |
-| **value** <br> | <p></p> |
 ### ExecutionResult
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutionResult.java).
 
@@ -123,6 +111,18 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **steps**<br> List<*<a href="Job.md#ToolStep"><em>ToolStep</em></a>*> <br> | <p></p> |
 | **events**<br> List<*Event*> <br> | <p></p> |
 | **attributes**<br> *ObjectMap* <br> | <p></p> |
+### Enum Enums.Priority
+_Enumeration class._
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/Priority.java).
+
+| Field | Description |
+| :---  | :--- |
+| **URGENT** <br> | <p></p> |
+| **HIGH** <br> | <p></p> |
+| **MEDIUM** <br> | <p></p> |
+| **LOW** <br> | <p></p> |
+| **UNKNOWN** <br> | <p></p> |
+| **value** <br> | <p></p> |
 ### ToolInfo
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/ToolInfo.java).
 
@@ -140,13 +140,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br>*<a href="Job.md#Status"><em>Status</em></a>* <br> | <p></p> |
 | **rga**<br>*<a href="Job.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
-### StudyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="Job.md#Status"><em>Status</em></a>* <br> | <p></p> |
-| **configuration**<br>*<a href="Job.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
 ### FileInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
 
@@ -156,6 +149,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **index**<br>*<a href="Job.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
 | **sampleMap**<br> Map<*String*> <br> | <p></p> |
 | **missingSamples**<br>*<a href="Job.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
+### JobInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*<a href="Job.md#ExecutionStatus"><em>ExecutionStatus</em></a>* <br> | <p></p> |
+| **webhook**<br>*<a href="Job.md#JobInternalWebhook"><em>JobInternalWebhook</em></a>* <br> | <p></p> |
+| **events**<br> List<*Event*> <br> | <p></p> |
 ### ProjectInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 
@@ -170,11 +171,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="Job.md#CohortStatus"><em>CohortStatus</em></a>* <br> | <p></p> |
-### JobInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
+### StudyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Job.md#ExecutionStatus"><em>ExecutionStatus</em></a>* <br> | <p></p> |
-| **webhook**<br>*<a href="Job.md#JobInternalWebhook"><em>JobInternalWebhook</em></a>* <br> | <p></p> |
-| **events**<br> List<*Event*> <br> | <p></p> |
+| **status**<br>*<a href="Job.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| **configuration**<br>*<a href="Job.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
