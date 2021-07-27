@@ -40,9 +40,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **id**<br> *String* <br> | <p>File ID is a mandatory parameter when creating a new File, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
 | **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the File creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
 | **name**<br> *String* <br> | <p></p> |
-| **type**<br>*<a href="File.md#enum-filetype"><em>File.Type</em></a>* <br> | <p>Formats: file, folder, index.</p> |
-| **format**<br>*<a href="File.md#enum-fileformat"><em>File.Format</em></a>* <br> | <p>Formats: txt, executable, image, ...</p> |
-| **bioformat**<br>*<a href="File.md#enum-filebioformat"><em>File.Bioformat</em></a>* <br> | <p>BAM, VCF, ...</p> |
+| **type**<br>*<a href="file.md#enum-filetype"><em>File.Type</em></a>* <br> | <p>Formats: file, folder, index.</p> |
+| **format**<br>*<a href="file.md#enum-fileformat"><em>File.Format</em></a>* <br> | <p>Formats: txt, executable, image, ...</p> |
+| **bioformat**<br>*<a href="file.md#enum-filebioformat"><em>File.Bioformat</em></a>* <br> | <p>BAM, VCF, ...</p> |
 | **checksum**<br> *String* <br> | <p></p> |
 | **uri**<br> *URI* <br> | <p></p> |
 | **path**<br> *String* <br> | <p></p> |
@@ -53,15 +53,15 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **external**<br> *boolean* <br> | <p></p> |
 | **size**<br> *long* <br> | <p></p> |
 | **software**<br> *Software* <br> | <p></p> |
-| **experiment**<br>*<a href="File.md#FileExperiment"><em>FileExperiment</em></a>* <br> | <p></p> |
+| **experiment**<br>*<a href="file.md#FileExperiment"><em>FileExperiment</em></a>* <br> | <p></p> |
 | **sampleIds**<br> List<*String*> <br> | <p></p> |
 | **jobId**<br> *String* <br> | <p></p> |
 | **tags**<br> List<*String*> <br> | <p></p> |
-| **relatedFiles**<br> List<*<a href="File.md#FileRelatedFile"><em>FileRelatedFile</em></a>*> <br> | <p></p> |
-| **qualityControl**<br>*<a href="File.md#FileQualityControl"><em>FileQualityControl</em></a>* <br> | <p></p> |
+| **relatedFiles**<br> List<*<a href="file.md#FileRelatedFile"><em>FileRelatedFile</em></a>*> <br> | <p></p> |
+| **qualityControl**<br>*<a href="file.md#FileQualityControl"><em>FileQualityControl</em></a>* <br> | <p></p> |
 | **stats**<br> Map<*Object*,*String*> <br> | <p></p> |
-| **status**<br>*<a href="File.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
-| **internal**<br>*<a href="File.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **status**<br>*<a href="file.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
+| **internal**<br>*<a href="file.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 ### Enum File.Type
 _Enumeration class._
@@ -107,9 +107,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **variant**<br>*<a href="File.md#VariantFileQualityControl"><em>VariantFileQualityControl</em></a>* <br> | <p></p> |
-| **alignment**<br>*<a href="File.md#AlignmentQualityControl"><em>AlignmentQualityControl</em></a>* <br> | <p></p> |
-| **coverage**<br>*<a href="File.md#CoverageQualityControl"><em>CoverageQualityControl</em></a>* <br> | <p></p> |
+| **variant**<br>*<a href="file.md#VariantFileQualityControl"><em>VariantFileQualityControl</em></a>* <br> | <p></p> |
+| **alignment**<br>*<a href="file.md#AlignmentQualityControl"><em>AlignmentQualityControl</em></a>* <br> | <p></p> |
+| **coverage**<br>*<a href="file.md#CoverageQualityControl"><em>CoverageQualityControl</em></a>* <br> | <p></p> |
 ### AlignmentQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/alignment/AlignmentQualityControl.java).
 
@@ -136,9 +136,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **technology**<br>*<a href="File.md#enum-fileexperimenttechnology"><em>FileExperiment.Technology</em></a>* <br> | <p></p> |
-| **method**<br>*<a href="File.md#enum-fileexperimentmethod"><em>FileExperiment.Method</em></a>* <br> | <p></p> |
-| **nucleicAcidType**<br>*<a href="File.md#enum-fileexperimentnucleicacidtype"><em>FileExperiment.NucleicAcidType</em></a>* <br> | <p></p> |
+| **technology**<br>*<a href="file.md#enum-fileexperimenttechnology"><em>FileExperiment.Technology</em></a>* <br> | <p></p> |
+| **method**<br>*<a href="file.md#enum-fileexperimentmethod"><em>FileExperiment.Method</em></a>* <br> | <p></p> |
+| **nucleicAcidType**<br>*<a href="file.md#enum-fileexperimentnucleicacidtype"><em>FileExperiment.NucleicAcidType</em></a>* <br> | <p></p> |
 | **manufacturer**<br> *String* <br> | <p></p> |
 | **platform**<br> *String* <br> | <p></p> |
 | **library**<br> *String* <br> | <p></p> |
@@ -180,8 +180,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **file**<br>*<a href="File.md#File"><em>File</em></a>* <br> | <p></p> |
-| **relation**<br>*<a href="File.md#enum-filerelatedfilerelation"><em>FileRelatedFile.Relation</em></a>* <br> | <p></p> |
+| **file**<br>*<a href="file.md#File"><em>File</em></a>* <br> | <p></p> |
+| **relation**<br>*<a href="file.md#enum-filerelatedfilerelation"><em>FileRelatedFile.Relation</em></a>* <br> | <p></p> |
 ### File
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
 
@@ -190,9 +190,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **id**<br> *String* <br> | <p>File ID is a mandatory parameter when creating a new File, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
 | **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the File creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
 | **name**<br> *String* <br> | <p></p> |
-| **type**<br>*<a href="File.md#enum-filetype"><em>File.Type</em></a>* <br> | <p>Formats: file, folder, index.</p> |
-| **format**<br>*<a href="File.md#enum-fileformat"><em>File.Format</em></a>* <br> | <p>Formats: txt, executable, image, ...</p> |
-| **bioformat**<br>*<a href="File.md#enum-filebioformat"><em>File.Bioformat</em></a>* <br> | <p>BAM, VCF, ...</p> |
+| **type**<br>*<a href="file.md#enum-filetype"><em>File.Type</em></a>* <br> | <p>Formats: file, folder, index.</p> |
+| **format**<br>*<a href="file.md#enum-fileformat"><em>File.Format</em></a>* <br> | <p>Formats: txt, executable, image, ...</p> |
+| **bioformat**<br>*<a href="file.md#enum-filebioformat"><em>File.Bioformat</em></a>* <br> | <p>BAM, VCF, ...</p> |
 | **checksum**<br> *String* <br> | <p></p> |
 | **uri**<br> *URI* <br> | <p></p> |
 | **path**<br> *String* <br> | <p></p> |
@@ -203,15 +203,15 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **external**<br> *boolean* <br> | <p></p> |
 | **size**<br> *long* <br> | <p></p> |
 | **software**<br> *Software* <br> | <p></p> |
-| **experiment**<br>*<a href="File.md#FileExperiment"><em>FileExperiment</em></a>* <br> | <p></p> |
+| **experiment**<br>*<a href="file.md#FileExperiment"><em>FileExperiment</em></a>* <br> | <p></p> |
 | **sampleIds**<br> List<*String*> <br> | <p></p> |
 | **jobId**<br> *String* <br> | <p></p> |
 | **tags**<br> List<*String*> <br> | <p></p> |
-| **relatedFiles**<br> List<*<a href="File.md#FileRelatedFile"><em>FileRelatedFile</em></a>*> <br> | <p></p> |
-| **qualityControl**<br>*<a href="File.md#FileQualityControl"><em>FileQualityControl</em></a>* <br> | <p></p> |
+| **relatedFiles**<br> List<*<a href="file.md#FileRelatedFile"><em>FileRelatedFile</em></a>*> <br> | <p></p> |
+| **qualityControl**<br>*<a href="file.md#FileQualityControl"><em>FileQualityControl</em></a>* <br> | <p></p> |
 | **stats**<br> Map<*Object*,*String*> <br> | <p></p> |
-| **status**<br>*<a href="File.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
-| **internal**<br>*<a href="File.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **status**<br>*<a href="file.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
+| **internal**<br>*<a href="file.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 ### Enum File.Bioformat
 _Enumeration class._
@@ -257,10 +257,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="File.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
-| **index**<br>*<a href="File.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="file.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
+| **index**<br>*<a href="file.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
 | **sampleMap**<br> Map<*String*> <br> | <p></p> |
-| **missingSamples**<br>*<a href="File.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
+| **missingSamples**<br>*<a href="file.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
 ### MissingSamples
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).
 
@@ -288,11 +288,11 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **userId**<br> *String* <br> | <p></p> |
 | **creationDate**<br> *String* <br> | <p></p> |
-| **status**<br>*<a href="File.md#fileindexindexstatus"><em>FileIndex.IndexStatus</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="file.md#fileindexindexstatus"><em>FileIndex.IndexStatus</em></a>* <br> | <p></p> |
 | **jobId**<br> *long* <br> | <p></p> |
 | **release**<br> *long* <br> | <p></p> |
-| **transformedFile**<br>*<a href="File.md#fileindextransformedfile"><em>FileIndex.TransformedFile</em></a>* <br> | <p></p> |
-| **localFileIndex**<br>*<a href="File.md#fileindexlocalfileindex"><em>FileIndex.LocalFileIndex</em></a>* <br> | <p></p> |
+| **transformedFile**<br>*<a href="file.md#fileindextransformedfile"><em>FileIndex.TransformedFile</em></a>* <br> | <p></p> |
+| **localFileIndex**<br>*<a href="file.md#fileindexlocalfileindex"><em>FileIndex.LocalFileIndex</em></a>* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
 ### FileIndex.TransformedFile
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/TransformedFile.java).
@@ -334,7 +334,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="File.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
-| **index**<br>*<a href="File.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="file.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
+| **index**<br>*<a href="file.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
 | **sampleMap**<br> Map<*String*> <br> | <p></p> |
-| **missingSamples**<br>*<a href="File.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
+| **missingSamples**<br>*<a href="file.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |

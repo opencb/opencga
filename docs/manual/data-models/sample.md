@@ -31,9 +31,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **id**<br> *String* <br> | <p>Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter<br> when creating a new sample, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
 | **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **processing**<br>*<a href="Sample.md#SampleProcessing"><em>SampleProcessing</em></a>* <br> | <p>Describes how the sample was processed in the lab.</p> |
-| **collection**<br>*<a href="Sample.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.1 | <p>Describes how the sample was collected.</p>_Note_: _The sample collection is a list of samples_ |
-| **qualityControl**<br>*<a href="Sample.md#SampleQualityControl"><em>SampleQualityControl</em></a>* <br><br>_since_: 2.1 | <p>Contains different metrics to evaluate the quality of the sample.</p>_Note_: _The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
+| **processing**<br>*<a href="sample.md#SampleProcessing"><em>SampleProcessing</em></a>* <br> | <p>Describes how the sample was processed in the lab.</p> |
+| **collection**<br>*<a href="sample.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.1 | <p>Describes how the sample was collected.</p>_Note_: _The sample collection is a list of samples_ |
+| **qualityControl**<br>*<a href="sample.md#SampleQualityControl"><em>SampleQualityControl</em></a>* <br><br>_since_: 2.1 | <p>Contains different metrics to evaluate the quality of the sample.</p>_Note_: _The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
 | **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
 | **version**<br> *int* <br> | <p>An integer describing the current version.</p>_Tags_: _internal_ |
 | **creationDate**<br> *String* <br> | <p>String representing when the sample was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
@@ -43,8 +43,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **phenotypes**<br> List<*Phenotype*> <br> | <p>A List with related phenotypes.</p> |
 | **individualId**<br> *String* <br> | <p>A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not<br> mandatory..</p>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
 | **fileIds**<br> List<*String*> <br><br>_Deprecated_ | <p>List of File ID containing this sample, eg BAM, VCF, QC images, ...</p> |
-| **status**<br>*<a href="Sample.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
-| **internal**<br>*<a href="Sample.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **status**<br>*<a href="sample.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
+| **internal**<br>*<a href="sample.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 ### SampleCollection
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
@@ -84,7 +84,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **files**<br> List<*String*> <br> | <p></p> |
 | **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
-| **variant**<br>*<a href="Sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p></p> |
+| **variant**<br>*<a href="sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p></p> |
 ### SampleVariantQualityControlMetrics
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
@@ -98,14 +98,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Sample.md#Status"><em>Status</em></a>* <br> | <p></p> |
-| **rga**<br>*<a href="Sample.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="sample.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| **rga**<br>*<a href="sample.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
 ### RgaIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Sample.md#enum-rgaindexstatus"><em>RgaIndex.Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
+| **status**<br>*<a href="sample.md#enum-rgaindexstatus"><em>RgaIndex.Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
 | **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
 ### Enum RgaIndex.Status
 _Enumeration class._

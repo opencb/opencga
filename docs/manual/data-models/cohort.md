@@ -25,15 +25,15 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **id**<br> *String* <br> | <p>Cohort ID is a mandatory parameter when creating a new Cohort, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
 | **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the Cohort creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **type**<br>*<a href="Cohort.md#CohortType"><em>CohortType</em></a>* <br> | <p></p> |
+| **type**<br>*<a href="cohort.md#CohortType"><em>CohortType</em></a>* <br> | <p></p> |
 | **creationDate**<br> *String* <br> | <p>String representing when the Cohort was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
 | **modificationDate**<br> *String* <br> | <p>String representing when was the last time the Cohort was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
 | **description**<br> *String* <br> | <p>An string to describe the properties of the Cohort.</p> |
-| **samples**<br> List<*<a href="Cohort.md#Sample"><em>Sample</em></a>*> <br> | <p></p> |
+| **samples**<br> List<*<a href="cohort.md#Sample"><em>Sample</em></a>*> <br> | <p></p> |
 | **numSamples**<br> *int* <br> | <p></p> |
 | **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **status**<br>*<a href="Cohort.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
-| **internal**<br>*<a href="Cohort.md#CohortInternal"><em>CohortInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **status**<br>*<a href="cohort.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
+| **internal**<br>*<a href="cohort.md#CohortInternal"><em>CohortInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 ### Sample
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
@@ -42,9 +42,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **id**<br> *String* <br> | <p>Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter<br> when creating a new sample, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
 | **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **processing**<br>*<a href="Cohort.md#SampleProcessing"><em>SampleProcessing</em></a>* <br> | <p>Describes how the sample was processed in the lab.</p> |
-| **collection**<br>*<a href="Cohort.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.1 | <p>Describes how the sample was collected.</p>_Note_: _The sample collection is a list of samples_ |
-| **qualityControl**<br>*<a href="Cohort.md#SampleQualityControl"><em>SampleQualityControl</em></a>* <br><br>_since_: 2.1 | <p>Contains different metrics to evaluate the quality of the sample.</p>_Note_: _The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
+| **processing**<br>*<a href="cohort.md#SampleProcessing"><em>SampleProcessing</em></a>* <br> | <p>Describes how the sample was processed in the lab.</p> |
+| **collection**<br>*<a href="cohort.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.1 | <p>Describes how the sample was collected.</p>_Note_: _The sample collection is a list of samples_ |
+| **qualityControl**<br>*<a href="cohort.md#SampleQualityControl"><em>SampleQualityControl</em></a>* <br><br>_since_: 2.1 | <p>Contains different metrics to evaluate the quality of the sample.</p>_Note_: _The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
 | **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
 | **version**<br> *int* <br> | <p>An integer describing the current version.</p>_Tags_: _internal_ |
 | **creationDate**<br> *String* <br> | <p>String representing when the sample was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
@@ -54,8 +54,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **phenotypes**<br> List<*Phenotype*> <br> | <p>A List with related phenotypes.</p> |
 | **individualId**<br> *String* <br> | <p>A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not<br> mandatory..</p>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
 | **fileIds**<br> List<*String*> <br><br>_Deprecated_ | <p>List of File ID containing this sample, eg BAM, VCF, QC images, ...</p> |
-| **status**<br>*<a href="Cohort.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
-| **internal**<br>*<a href="Cohort.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
+| **status**<br>*<a href="cohort.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
+| **internal**<br>*<a href="cohort.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 ### SampleCollection
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
@@ -95,7 +95,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **files**<br> List<*String*> <br> | <p></p> |
 | **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
-| **variant**<br>*<a href="Cohort.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p></p> |
+| **variant**<br>*<a href="cohort.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p></p> |
 ### SampleVariantQualityControlMetrics
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
@@ -109,14 +109,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Cohort.md#Status"><em>Status</em></a>* <br> | <p></p> |
-| **rga**<br>*<a href="Cohort.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="cohort.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| **rga**<br>*<a href="cohort.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
 ### RgaIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Cohort.md#enum-rgaindexstatus"><em>RgaIndex.Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
+| **status**<br>*<a href="cohort.md#enum-rgaindexstatus"><em>RgaIndex.Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
 | **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
 ### Enum RgaIndex.Status
 _Enumeration class._
@@ -162,7 +162,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="Cohort.md#CohortStatus"><em>CohortStatus</em></a>* <br> | <p></p> |
+| **status**<br>*<a href="cohort.md#CohortStatus"><em>CohortStatus</em></a>* <br> | <p></p> |
 ### CohortStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortStatus.java).
 
