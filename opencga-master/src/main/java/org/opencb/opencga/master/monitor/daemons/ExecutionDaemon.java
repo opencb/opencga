@@ -588,11 +588,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected void checkToolExecutionPermission(Job job) throws Exception {
         Tool tool = new ToolFactory().getTool(job.getTool().getId());
 
+        if (catalogManager.getAuthorizationManager().isInstallationAdministrator(job.getUserId())) {
+            // Installation administrator user can run everything
+            return;
+        }
         if (tool.scope().equals(Tool.Scope.GLOBAL)) {
-            if (!job.getUserId().equals(ParamConstants.OPENCGA_USER_ID)) {
-                throw new CatalogAuthorizationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' "
-                        + "can run tools with scope '" + Tool.Scope.GLOBAL + "'");
-            }
+            throw new CatalogAuthorizationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' "
+                    + "can run tools with scope '" + Tool.Scope.GLOBAL + "'");
         } else {
             if (job.getStudy().getId().startsWith(job.getUserId() + ParamConstants.USER_PROJECT_SEPARATOR)) {
                 // If the user is the owner of the project, accept all.
