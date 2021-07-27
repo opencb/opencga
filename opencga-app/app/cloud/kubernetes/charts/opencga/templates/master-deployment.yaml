@@ -6,6 +6,10 @@ metadata:
     {{- include "opencga.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.master.replicaCount }}
+  strategy:
+    # Recreate master instead of rolling update.
+    # Small downtime in the master is better than having two master running concurrently, even if it's for a few seconds
+    type: Recreate
   selector:
     matchLabels:
       app: {{ .Values.master.name }}
@@ -14,6 +18,7 @@ spec:
     metadata:
       labels:
         app: {{ .Values.master.name }}
+        confMd5: {{ .Values.confMd5 | default "NA" | quote }}
         {{- include "opencga.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.master.imagePullSecrets }}
@@ -32,6 +37,8 @@ spec:
         resources:
           {{- toYaml .Values.init.resources | nindent 12 }}
         env:
+        - name: "OVERWRITE_CONFIGURATION"
+          value: "{{ .Values.init.configuration.overwrite }}"
         - name:  "INIT_OPENCGA_PASS"
           valueFrom:
             secretKeyRef:
@@ -51,34 +58,30 @@ spec:
               name: {{ include "opencga.secretName" . }}
               key: hdInsightSshPassword
         - name: "INIT_HADOOP_SSH_REMOTE_OPENCGA_HOME"
-          value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/" 
+          value:  "/home/{{ .Values.hadoop.sshUsername  }}/opencga/"
         - name: "INIT_SEARCH_HOSTS"
-        {{- if .Values.deploySolr }}
-          value: http://opencga-solr-svc:8983
-        {{- else }}
-          value:  {{ .Values.solr.hosts | toString | quote }}
-        {{- end }} 
+          value: {{ include "solrHosts" . | quote  }}
+        - name: "INIT_CATALOG_SEARCH_HOSTS"
+          value: {{ include "solrHosts" . | quote }}
         - name: "INIT_CLINICAL_HOSTS"
-          value:  {{ .Values.solr.hosts | toString | quote}}
+          value: {{ include "solrHosts" . | toString | quote }}
         - name: "INIT_CATALOG_DATABASE_HOSTS"
-        {{- if .Values.deployMongo }}
-          value:  opencga-mongodb-replicaset
-        {{- else }}
-          value:  {{ .Values.catalog.database.hosts | toString | quote}}
-        {{- end }} 
+          value: {{ include "mongodb.hosts" .  | quote }}
         - name: "INIT_CATALOG_DATABASE_USER"
-          value:  {{ .Values.catalog.database.user  }} 
+          value:  {{ .Values.mongodb.user  }}
         - name: "INIT_CATALOG_DATABASE_PASSWORD"
           valueFrom:
             secretKeyRef:
               name: {{ include "opencga.secretName" . }}
               key: mongoDbPassword
-        - name: "INIT_CATALOG_SEARCH_HOSTS"
-        {{- if .Values.deploySolr }}
-          value: http://opencga-solr-svc:8983
-        {{- else }}
-          value:  {{ .Values.solr.hosts | toString | quote }}
-        {{- end }}
+        - name: "INIT_CATALOG_DATABASE_SSL"
+          value: {{ .Values.mongodb.ssl | toString | quote }}
+        - name: "INIT_CATALOG_DATABASE_REPLICA_SET"
+          value: {{ include "mongodb.replicaSet" . | toString | quote }}
+        - name: "INIT_CATALOG_DATABASE_AUTHENTICATION_MECHANISM"
+          value: {{ .Values.mongodb.authenticationMechanism  }}
+        - name: "INIT_CATALOG_DATABASE_AUTHENTICATION_DATABASE"
+          value: {{ .Values.mongodb.authenticationDatabase  }}
         - name: "INIT_REST_HOST"
           value:   "http://{{ .Values.rest.name }}/opencga"
         - name: "INIT_GRPC_HOST"
@@ -88,7 +91,9 @@ spec:
         - name: "INIT_K8S_MASTER_NODE"
           value: {{ .Values.analysis.execution.options.k8s.masterNode }}
         - name: "INIT_K8S_NAMESPACE"
-          value: {{ .Values.analysis.execution.options.k8s.namespace }}
+          value: {{ .Release.Namespace }}
+        - name: "INIT_K8S_IMAGE_NAME"
+          value: {{ tpl .Values.master.image.repository . | quote }}
         - name: "INIT_K8S_VOLUMES_PVC_CONF"
           value: {{ include "pvcConf" . | quote }}
         - name: "INIT_K8S_VOLUMES_PVC_SESSIONS"
@@ -99,8 +104,6 @@ spec:
           value: {{ include "pvcAnalysisconf" . | quote }}
         - name: "INIT_ANALYSIS_EXECUTION_MODE"
           value: {{ .Values.analysis.execution.id | quote }}
-        - name: "INIT_MAX_CONCURRENT_JOBS"
-          value: {{ .Values.analysis.index.variant.maxConcurrentJobs  | quote }}
         volumeMounts:
           - name: default-conf
             mountPath: /opt/opencga/default-conf
@@ -109,7 +112,7 @@ spec:
           - name : analysisconf
             mountPath: /opt/volume/analysis
           - name : sessions
-            mountPath: /opt/volume/sessions
+            mountPath: /opt/opencga/sessions
     {{- with .Values.init.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -142,14 +145,15 @@ spec:
           resources:
             {{- toYaml .Values.master.resources | nindent 12 }}
           volumeMounts:
-          - name : conf
-            mountPath: /opt/opencga/conf
-          - name : sessions
-            mountPath: /opt/opencga/sessions
-          - name : variants
-            mountPath: /opt/opencga/variants
-          - name : analysisconf
-            mountPath: /opt/opencga/analysis
+            - name : conf
+              mountPath: /opt/opencga/conf
+            - name : sessions
+              mountPath: /opt/opencga/sessions
+            - name : variants
+              mountPath: /opt/opencga/variants
+            - name : analysisconf
+              mountPath: /opt/opencga/analysis
+            {{ include "additionalVolumeMounts" . | nindent 12 }}
       volumes:
       - name: conf
         persistentVolumeClaim:
@@ -166,6 +170,7 @@ spec:
       - name: default-conf
         configMap:
           name: {{ include "opencga.defaultConf.name" . }}
+      {{ include "additionalVolumes" . | nindent 6 }}
     {{- with .Values.master.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

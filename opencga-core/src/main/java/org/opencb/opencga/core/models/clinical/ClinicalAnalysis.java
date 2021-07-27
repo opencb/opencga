@@ -22,12 +22,11 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.PrivateStudyUid;
-import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotation;
 import org.opencb.opencga.core.models.study.configuration.ClinicalPriorityAnnotation;
 
@@ -51,6 +50,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     private Individual proband;
     private Family family;
+
+    private List<Panel> panels;
+    private boolean panelLock;
 
     private boolean locked;
 
@@ -86,11 +88,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, boolean locked, Interpretation interpretation, List<Interpretation> secondaryInterpretations,
-                            ClinicalConsentAnnotation consent, ClinicalAnalyst analyst, ClinicalPriorityAnnotation priority,
-                            List<FlagAnnotation> flags, String creationDate, String modificationDate, String dueDate, int release,
-                            List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit,
-                            ClinicalAnalysisInternal internal, Map<String, Object> attributes, Status status) {
+                            Family family, List<Panel> panels, boolean panelLock, boolean locked, Interpretation interpretation,
+                            List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent, ClinicalAnalyst analyst,
+                            ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
+                            String dueDate, int release, List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl,
+                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -98,6 +100,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.files = files;
         this.proband = proband;
         this.family = family;
+        this.panels = panels;
+        this.panelLock = panelLock;
         this.locked = locked;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
@@ -128,6 +132,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
+        sb.append(", panels=").append(panels);
+        sb.append(", panelLock=").append(panelLock);
         sb.append(", locked=").append(locked);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
@@ -221,6 +227,24 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setFamily(Family family) {
         this.family = family;
+        return this;
+    }
+
+    public List<Panel> getPanels() {
+        return panels;
+    }
+
+    public ClinicalAnalysis setPanels(List<Panel> panels) {
+        this.panels = panels;
+        return this;
+    }
+
+    public boolean isPanelLock() {
+        return panelLock;
+    }
+
+    public ClinicalAnalysis setPanelLock(boolean panelLock) {
+        this.panelLock = panelLock;
         return this;
     }
 

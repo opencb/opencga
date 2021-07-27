@@ -85,7 +85,7 @@ public final class VariantQueryParam implements QueryParam {
             + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
             + "When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position"
             + " e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... "
-            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
+            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS "
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT . "
             + "3) Sample with segregation mode: {sample}:{segregation}. Only one sample accepted."
             + "Accepted segregation modes: "
@@ -101,7 +101,7 @@ public final class VariantQueryParam implements QueryParam {
             + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
             + "When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position"
             + " e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... "
-            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
+            + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT, HET_MISS and MISS "
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. "
             + "This will automatically set 'includeSample' parameter when not provided";
     public static final VariantQueryParam GENOTYPE = new VariantQueryParam("genotype", TEXT_ARRAY, GENOTYPE_DESCR);
@@ -115,7 +115,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String INCLUDE_SAMPLE_DESCR
             = "List of samples to be included in the result. "
-            + ACCEPTS_ALL_NONE;
+            + ACCEPTS_ALL_NONE + " If undefined, automatically includes samples used for filtering. If none, no sample is included.";
     public static final VariantQueryParam INCLUDE_SAMPLE = new VariantQueryParam("includeSample", TEXT_ARRAY, INCLUDE_SAMPLE_DESCR);
 
     public static final String INCLUDE_SAMPLE_ID_DESCR
@@ -167,7 +167,7 @@ public final class VariantQueryParam implements QueryParam {
 
     public static final String INCLUDE_FILE_DESCR
             = "List of files to be returned. "
-            + ACCEPTS_ALL_NONE;
+            + ACCEPTS_ALL_NONE + " If undefined, automatically includes files used for filtering. If none, no file is included.";
     public static final VariantQueryParam INCLUDE_FILE = new VariantQueryParam("includeFile", TEXT_ARRAY, INCLUDE_FILE_DESCR);
 
     public static final String COHORT_DESCR
@@ -290,10 +290,20 @@ public final class VariantQueryParam implements QueryParam {
             = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...";
     public static final VariantQueryParam ANNOT_TRAIT = new VariantQueryParam("trait", TEXT_ARRAY, ANNOT_TRAIT_DESCR);
 
+    public static final String ANNOT_CLINICAL_DESCR
+            = "Clinical source: clinvar, cosmic";
+    public static final VariantQueryParam ANNOT_CLINICAL =
+            new VariantQueryParam("clinical", TEXT_ARRAY, ANNOT_CLINICAL_DESCR);
+
     public static final String ANNOT_CLINICAL_SIGNIFICANCE_DESCR
             = "Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic";
     public static final VariantQueryParam ANNOT_CLINICAL_SIGNIFICANCE =
             new VariantQueryParam("clinicalSignificance", TEXT_ARRAY, ANNOT_CLINICAL_SIGNIFICANCE_DESCR);
+
+    public static final String ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR
+            = "Clinical confirmed status";
+    public static final VariantQueryParam ANNOT_CLINICAL_CONFIRMED_STATUS =
+            new VariantQueryParam("clinicalConfirmedStatus", TEXT_ARRAY, ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR);
 
     @Deprecated
     public static final String ANNOT_CLINVAR_DESCR

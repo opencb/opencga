@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.core;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -137,11 +139,13 @@ public final class StorageEngineFactory {
 
             try {
                 T storageEngine = Class.forName(clazz).asSubclass(superClass).newInstance();
-                storageEngine.setConfiguration(this.storageConfiguration, storageEngineId, dbName);
+                StorageConfiguration storageConfiguration = JacksonUtils.getDefaultObjectMapper()
+                        .updateValue(new StorageConfiguration(), this.storageConfiguration);
+                storageEngine.setConfiguration(storageConfiguration, storageEngineId, dbName);
 
                 storageEnginesMap.put(key, storageEngine);
                 return storageEngine;
-            } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+            } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | JsonMappingException e) {
                 throw new StorageEngineException("Error instantiating StorageEngine '" + clazz + "'", e);
             }
         } else {

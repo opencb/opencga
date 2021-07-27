@@ -1,0 +1,55 @@
+{{/*
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{.Release.Name}}-solr-install-configsets-job"
+  labels:
+    {{- include "opencga.selectorLabels" . | nindent 4 }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{.Release.Name}}-solr-install-configsets-job"
+      labels:
+        {{- include "opencga.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers: #Additional init containers to run in the pod. These will run along with the init container that sets up the "solr.xml"
+        - name: opencga-extract-configset
+          securityContext:
+            {{- toYaml .Values.init.securityContext | nindent 12 }}
+          image: {{ tpl .Values.init.image.repository . | quote }}
+          imagePullPolicy: {{ .Values.init.image.pullPolicy | quote }}
+          volumeMounts:
+            - name: opencgaconfigsets
+              mountPath: /opencga-solr-configsets
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - "mkdir -p /opencga-solr-configsets/misc/ && cp -r /opt/opencga/misc/solr/ /opencga-solr-configsets/misc/ && touch /opencga-solr-configsets/READY"
+
+        #      sidecarContainers: #Sidecar containers to run in the pod. These are in addition to the Solr Container
+        - name: opencga-load-configset
+          securityContext:
+            {{- toYaml .Values.init.securityContext | nindent 12 }}
+          image: "{{ .Values.solr.deploy.image.repository }}:{{ .Values.solr.deploy.image.tag }}"
+          imagePullPolicy: {{ .Values.init.image.pullPolicy | quote }}
+          env:
+            - name: SOLR_HOME
+              value: /opt/solr
+            - name: ZK_HOST
+              value: {{ include "solrHosts" . | quote }}
+          volumeMounts:
+            - name: opencgaconfigsets
+              mountPath: /opencga-solr-configsets
+          command: [ "/bin/bash", "-c" ]
+          args:
+            - "while [ ! -f /opencga-solr-configsets/READY ] ; do echo 'Waiting for the configsets' ; sleep 1 ; done ; ls -lR /opencga-solr-configsets/; /opencga-solr-configsets/misc/solr/install.sh $ZK_HOST $SOLR_HOME /opencga-solr-configsets/"
+      volumes: # Additional non-data volumes to load into the default container
+        - name: opencgaconfigsets
+          emptyDir: {}
+*/}}

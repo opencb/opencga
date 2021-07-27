@@ -218,8 +218,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @QueryParam("release") String release,
             @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
-                    defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
@@ -228,10 +226,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
-
-            queryOptions.put(Constants.REFRESH, refresh);
-            queryOptions.remove("updateIndividualVersion");
-            query.remove("updateIndividualVersion");
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
@@ -254,17 +248,12 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = ParamConstants.FAMILY_UPDATE_ROLES_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_UPDATE_ROLES_PARAM) boolean updateRoles,
-            @ApiParam(value = "Update all the individual references from the family to point to their latest versions", defaultValue = "false") @QueryParam("updateIndividualVersion") boolean refresh,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
-
-            queryOptions.put(Constants.REFRESH, refresh);
-            queryOptions.remove("updateIndividualVersion");
-            query.remove("updateIndividualVersion");
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
@@ -316,14 +305,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION)
                     boolean incVersion,
-            @ApiParam(value = "Update all the individual references from the family to point to their latest versions",
-                    defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
-            queryOptions.put(Constants.REFRESH, refresh);
 
             return createOkResponse(catalogManager.getFamilyManager().updateAnnotations(studyStr, familyStr, annotationSetId,
                     updateParams, action, queryOptions, token));

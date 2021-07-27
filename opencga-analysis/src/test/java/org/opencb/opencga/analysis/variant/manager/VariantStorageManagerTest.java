@@ -57,7 +57,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         variantManager.configureStudy(studyFqn, expectedStudyConfiguration1, sessionId);
         variantManager.configureStudy(studyId2, expectedStudyConfiguration2, sessionId);
 
-        ObjectMap configuration = variantManager.getDataStoreByProjectId(projectId, sessionId).getConfiguration();
+        ObjectMap configuration = variantManager.getDataStoreByProjectId(projectId, sessionId).getOptions();
         assertEquals(expectedConfiguration, configuration);
 
         VariantStorageEngine vse = variantManager.getVariantStorageEngine(studyId, sessionId);

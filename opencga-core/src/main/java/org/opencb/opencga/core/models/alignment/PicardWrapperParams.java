@@ -1,11 +1,12 @@
 package org.opencb.opencga.core.models.alignment;
 
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
 public class PicardWrapperParams extends ToolParams {
-    public static final String DESCRIPTION = "Picard parameters";
+    public static final String DESCRIPTION = "Picard parameters. " + ParamConstants.PICARD_COMMAND_DESCRIPTION;
 
     private String command;
     private String outdir;

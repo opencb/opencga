@@ -72,6 +72,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
+        PANEL_LOCK("panelLock", BOOLEAN, ""),
         LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
@@ -83,6 +84,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         FAMILY_MEMBERS_UID("family.members.uid", INTEGER_ARRAY, ""),
         FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", INTEGER_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
+        PANELS("panels", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
         COMMENTS_DATE("comments.date", TEXT, ""),
         ALERTS("alerts", TEXT_ARRAY, ""),

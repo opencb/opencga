@@ -7,7 +7,6 @@ import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -247,6 +246,7 @@ public class SampleIndexAnnotationLoader {
         int version = sampleDBAdaptor.getSampleIndexConfiguration(studyId).getVersion();
         String sampleIndexTableName = sampleDBAdaptor.getSampleIndexTableName(studyId);
         Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
+        SampleIndexSchema schema = sampleDBAdaptor.getSchema(studyId);
 
         for (Integer sample : samples) {
             sampleIterators.put(sample, sampleDBAdaptor.iteratorByGt(studyId, sample));
@@ -278,7 +278,7 @@ public class SampleIndexAnnotationLoader {
                         annotationEntries = annotationIndexReader.apply(new Region(chromosome, start, end));
                     }
 
-                    Put put = annotate(chromosome, start, sampleId, next, annotationEntries);
+                    Put put = annotate(chromosome, start, sampleId, next, annotationEntries, schema);
                     mutator.mutate(put);
                 }
             }
@@ -293,7 +293,8 @@ public class SampleIndexAnnotationLoader {
     }
 
     private Put annotate(String chromosome, int start, Integer sampleId,
-                        Map<String, List<Variant>> sampleIndex, List<Pair<Variant, AnnotationIndexEntry>> annotationMasks) {
+                         Map<String, List<Variant>> sampleIndex, List<Pair<Variant, AnnotationIndexEntry>> annotationMasks,
+                         SampleIndexSchema schema) {
         byte[] rk = SampleIndexSchema.toRowKey(sampleId, chromosome, start);
         Put put = new Put(rk);
 
@@ -324,8 +325,7 @@ public class SampleIndexAnnotationLoader {
                             restarted = true;
                         } else {
                             logger.error("Missing variant to annotate " + variantToAnnotate);
-                            builder.add(AnnotationIndexEntry.empty(
-                                    SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_THRESHOLDS.length));
+                            builder.add(AnnotationIndexEntry.empty(schema));
                             missingVariants++;
                             break;
                         }

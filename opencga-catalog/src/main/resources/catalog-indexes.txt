@@ -87,6 +87,7 @@
 {"collection": "individual", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"father.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"mother.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"familyIds": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"sex": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"karyotypicSex": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"dateOfBirth": 1, "studyUid": 1}, "options": {"background": true}}
@@ -104,7 +105,6 @@
 {"collection": "individual", "fields": {"customInternalAnnotationSets.vs": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "individual", "fields": {"internal.rga.status": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collection": "cohort", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
@@ -182,3 +182,12 @@
 {"collection": "interpretation", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1, "_lastOfVersion": 1}, "options": {"background": true}}
+
+{"collection": "audit", "fields": {"studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"userId": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"action": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"resource": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"resourceId": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"resourceUuid": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"status.name": 1, "studyUuid": 1}, "options": {"background": true}}
+{"collection": "audit", "fields": {"date": 1, "studyUuid": 1}, "options": {"background": true}}

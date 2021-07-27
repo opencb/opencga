@@ -574,7 +574,7 @@ class Test_init_script(unittest.TestCase):
             "cellbase",
         )
         self.assertEqual(
-            storage_config["cellbase"]["host"], "http://test-cellbase-server1:8080"
+            storage_config["cellbase"]["url"], "http://test-cellbase-server1:8080"
         )
 
     def test_cellbase_rest_empty_set(self):
@@ -659,7 +659,7 @@ class Test_init_script(unittest.TestCase):
             "cellbase",
         )
         self.assertEqual(
-            storage_config["cellbase"]["host"],
+            storage_config["cellbase"]["url"],
             "https://ws.opencb.org/cellbase/",
         )
 
@@ -743,7 +743,7 @@ class Test_init_script(unittest.TestCase):
             "cellbase",
         )
         self.assertEqual(
-            storage_config["cellbase"]["host"],
+            storage_config["cellbase"]["url"],
             "https://ws.opencb.org/cellbase/",
         )
 

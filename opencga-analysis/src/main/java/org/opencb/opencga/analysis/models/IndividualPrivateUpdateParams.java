@@ -6,6 +6,7 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.individual.*;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
 import java.util.List;
 import java.util.Map;
@@ -17,15 +18,15 @@ public class IndividualPrivateUpdateParams extends IndividualUpdateParams {
     public IndividualPrivateUpdateParams() {
     }
 
-    public IndividualPrivateUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity,
-                                         Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
-                                         String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
-                                         IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
-                                         List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
+    public IndividualPrivateUpdateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
+                                         String creationDate, Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex,
+                                         String ethnicity, IndividualPopulation population, String dateOfBirth,
+                                         IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
+                                         List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                          List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
                                          Map<String, Object> attributes, IndividualInternal internal) {
-        super(id, name, father, mother, parentalConsanguinity, location, sex, ethnicity, population, dateOfBirth, karyotypicSex, lifeStatus,
-                affectationStatus, samples, annotationSets, phenotypes, disorders, status, qualityControl, attributes);
+        super(id, name, father, mother, creationDate, parentalConsanguinity, location, sex, ethnicity, population, dateOfBirth,
+                karyotypicSex, lifeStatus, samples, annotationSets, phenotypes, disorders, status, qualityControl, attributes);
         this.internal = internal;
     }
 

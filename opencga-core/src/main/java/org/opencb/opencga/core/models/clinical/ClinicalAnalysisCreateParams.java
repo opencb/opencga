@@ -24,6 +24,8 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 
@@ -42,12 +44,17 @@ public class ClinicalAnalysisCreateParams {
 
     private ProbandParam proband;
     private FamilyParam family;
+
+    private List<PanelReferenceParam> panels;
+    private Boolean panelLock;
+
     private ClinicalAnalystParam analyst;
     private EntryParam interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsentAnnotationParam consent;
 
+    private String creationDate;
     private String dueDate;
     private List<ClinicalCommentParam> comments;
     private PriorityParam priority;
@@ -61,8 +68,9 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
-                                        ClinicalAnalystParam analyst, EntryParam interpretation,
-                                        ClinicalConsentAnnotationParam consent, String dueDate, List<ClinicalCommentParam> comments,
+                                        List<PanelReferenceParam> panels, Boolean panelLock, ClinicalAnalystParam analyst,
+                                        EntryParam interpretation, ClinicalConsentAnnotationParam consent, String creationDate,
+                                        String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
@@ -72,9 +80,12 @@ public class ClinicalAnalysisCreateParams {
         this.files = files;
         this.proband = proband;
         this.family = family;
+        this.panels = panels;
+        this.panelLock = panelLock;
         this.analyst = analyst;
         this.interpretation = interpretation;
         this.consent = consent;
+        this.creationDate = creationDate;
         this.dueDate = dueDate;
         this.comments = comments;
         this.qualityControl = qualityControl;
@@ -92,11 +103,16 @@ public class ClinicalAnalysisCreateParams {
                         : null,
                 clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
                 clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
+                clinicalAnalysis.getPanels() != null
+                        ? clinicalAnalysis.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
+                        : null,
+                clinicalAnalysis.isPanelLock(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInterpretation() != null
                         ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
                         : null,
-                ClinicalConsentAnnotationParam.of(clinicalAnalysis.getConsent()), clinicalAnalysis.getDueDate(),
+                ClinicalConsentAnnotationParam.of(clinicalAnalysis.getConsent()), clinicalAnalysis.getCreationDate(),
+                clinicalAnalysis.getDueDate(),
                 clinicalAnalysis.getComments() != null
                         ? clinicalAnalysis.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
@@ -120,13 +136,16 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", files=").append(files);
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
+        sb.append(", panels=").append(panels);
+        sb.append(", panelLock=").append(panelLock);
         sb.append(", analyst=").append(analyst);
         sb.append(", interpretation=").append(interpretation);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
-        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", flags=").append(flags);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -138,10 +157,10 @@ public class ClinicalAnalysisCreateParams {
 
         Individual individual = null;
         if (proband != null) {
-            individual = new Individual().setId(proband.id);
-            if (proband.samples != null) {
-                List<Sample> sampleList = proband.samples.stream()
-                        .map(sample -> new Sample().setId(sample.id))
+            individual = new Individual().setId(proband.getId());
+            if (proband.getSamples() != null) {
+                List<Sample> sampleList = proband.getSamples().stream()
+                        .map(sample -> new Sample().setId(sample.getId()))
                         .collect(Collectors.toList());
                 individual.setSamples(sampleList);
             }
@@ -149,13 +168,13 @@ public class ClinicalAnalysisCreateParams {
 
         Family f = null;
         if (family != null) {
-            f = new Family().setId(family.id);
-            if (family.members != null) {
-                List<Individual> members = new ArrayList<>(family.members.size());
-                for (ProbandParam member : family.members) {
-                    Individual auxIndividual = new Individual().setId(member.id);
-                    if (member.samples != null) {
-                        List<Sample> samples = member.samples.stream().map(s -> new Sample().setId(s.id)).collect(Collectors.toList());
+            f = new Family().setId(family.getId());
+            if (family.getMembers() != null) {
+                List<Individual> members = new ArrayList<>(family.getMembers().size());
+                for (ProbandParam member : family.getMembers()) {
+                    Individual auxIndividual = new Individual().setId(member.getId());
+                    if (member.getSamples() != null) {
+                        List<Sample> samples = member.getSamples().stream().map(s -> new Sample().setId(s.getId())).collect(Collectors.toList());
                         auxIndividual.setSamples(samples);
                     }
                     members.add(auxIndividual);
@@ -175,12 +194,20 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f, false,
-                primaryInterpretation, new LinkedList<>(), consent != null ? consent.toClinicalConsentAnnotation() : null,
+        List<Panel> diseasePanelList = panels != null ? new ArrayList<>(panels.size()) : Collections.emptyList();
+        if (panels != null) {
+            for (PanelReferenceParam panel : panels) {
+                diseasePanelList.add(new org.opencb.opencga.core.models.panel.Panel().setId(panel.getId()));
+            }
+        }
+
+        return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
+                diseasePanelList, panelLock != null ? panelLock : false, false, primaryInterpretation, new LinkedList<>(),
+                consent != null ? consent.toClinicalConsentAnnotation() : null,
                 new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()),
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
-                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null , null, null,
-                dueDate, 1,
+                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null ,
+                creationDate, null, dueDate, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null, attributes,
                 status != null ? status.toCustomStatus() : null);
@@ -249,6 +276,24 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
+    public List<PanelReferenceParam> getPanels() {
+        return panels;
+    }
+
+    public ClinicalAnalysisCreateParams setPanels(List<PanelReferenceParam> panels) {
+        this.panels = panels;
+        return this;
+    }
+
+    public Boolean getPanelLock() {
+        return panelLock;
+    }
+
+    public ClinicalAnalysisCreateParams setPanelLock(Boolean panelLock) {
+        this.panelLock = panelLock;
+        return this;
+    }
+
     public ClinicalAnalystParam getAnalyst() {
         return analyst;
     }
@@ -282,6 +327,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setConsent(ClinicalConsentAnnotationParam consent) {
         this.consent = consent;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public ClinicalAnalysisCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 
@@ -337,132 +391,6 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams setStatus(StatusParam status) {
         this.status = status;
         return this;
-    }
-
-    private static class SampleParams {
-        private String id;
-
-        public SampleParams() {
-        }
-
-        public SampleParams(String id) {
-            this.id = id;
-        }
-
-        public static SampleParams of(Sample sample) {
-            return new SampleParams(sample.getId());
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("SampleParams{");
-            sb.append("id='").append(id).append('\'');
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public SampleParams setId(String id) {
-            this.id = id;
-            return this;
-        }
-    }
-
-    private static class ProbandParam {
-        private String id;
-        private List<SampleParams> samples;
-
-        public ProbandParam() {
-        }
-
-        public ProbandParam(String id, List<SampleParams> samples) {
-            this.id = id;
-            this.samples = samples;
-        }
-
-        public static ProbandParam of(Individual individual) {
-            return new ProbandParam(individual.getId(),
-                    individual.getSamples() != null
-                            ? individual.getSamples().stream().map(SampleParams::of).collect(Collectors.toList())
-                            : Collections.emptyList());
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("ProbandParam{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", samples=").append(samples);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public ProbandParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<SampleParams> getSamples() {
-            return samples;
-        }
-
-        public ProbandParam setSamples(List<SampleParams> samples) {
-            this.samples = samples;
-            return this;
-        }
-    }
-
-    private static class FamilyParam {
-        private String id;
-        private List<ProbandParam> members;
-
-        public FamilyParam() {
-        }
-
-        public FamilyParam(String id, List<ProbandParam> members) {
-            this.id = id;
-            this.members = members;
-        }
-
-        public static FamilyParam of(Family family) {
-            return new FamilyParam(family.getId(),
-                    family.getMembers() != null
-                            ? family.getMembers().stream().map(ProbandParam::of).collect(Collectors.toList())
-                            : Collections.emptyList());
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("FamilyParam{");
-            sb.append("id='").append(id).append('\'');
-            sb.append(", members=").append(members);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public FamilyParam setId(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public List<ProbandParam> getMembers() {
-            return members;
-        }
-
-        public FamilyParam setMembers(List<ProbandParam> members) {
-            this.members = members;
-            return this;
-        }
     }
 
 }

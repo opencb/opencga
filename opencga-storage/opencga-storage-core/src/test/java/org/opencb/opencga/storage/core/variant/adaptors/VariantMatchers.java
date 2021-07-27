@@ -155,6 +155,24 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<Variant> withFilter(Predicate<Variant> filter) {
+        return withFilter(filter, "");
+    }
+
+    public static Matcher<Variant> withFilter(Predicate<Variant> filter, final String message) {
+        return new TypeSafeDiagnosingMatcher<Variant>() {
+            @Override
+            protected boolean matchesSafely(Variant item, Description mismatchDescription) {
+                return filter.test(item);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Passes filter" + (message == null ? "" : (":" + message)));
+            }
+        };
+    }
+
     public static Matcher<Variant> hasAnnotation(Matcher<? super VariantAnnotation> subMatcher) {
         return new FeatureMatcher<Variant, VariantAnnotation>(subMatcher, "with variant annotation", "VariantAnnotation") {
             @Override

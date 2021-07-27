@@ -24,8 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -160,7 +159,7 @@ public class PanelManager extends ResourceManager<Panel> {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
             // Check all the panel fields
-            ParamUtils.checkAlias(panel.getId(), "id");
+            ParamUtils.checkIdentifier(panel.getId(), "id");
             panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
             panel.setRelease(studyManager.getCurrentRelease(study));
             panel.setVersion(1);
@@ -530,7 +529,7 @@ public class PanelManager extends ResourceManager<Panel> {
         authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.WRITE);
 
         if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
-            ParamUtils.checkAlias(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
+            ParamUtils.checkIdentifier(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
                     PanelDBAdaptor.QueryParams.ID.key());
         }
 

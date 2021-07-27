@@ -194,10 +194,10 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testLinkVCFandBAMPair() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null, null), false, token);
 
         String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", null, null, null, null), false, token);
 
         Sample sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).first();
@@ -208,7 +208,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testGetBase64Image() throws CatalogException {
         String qualityImageFile = getClass().getResource("/fastqc-per_base_sequence_quality.png").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", null, null, null, null), false, token);
 
         OpenCGAResult<FileContent> result = fileManager.image(studyFqn, "fastqc-per_base_sequence_quality.png", token);
         assertEquals(1, result.getNumResults());
@@ -844,7 +844,7 @@ public class FileManagerTest extends AbstractManagerTest {
         link(uri, "", studyFqn, new ObjectMap(), token);
 
         File file = fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder_to_link/file.txt",
-                "", FileInternal.initialize(), 0, null, null, "", null, null), false, "bla bla", null, token).first();
+                "", FileInternal.init(), 0, null, null, "", null, null, null), false, "bla bla", null, token).first();
 
         assertEquals(uri.resolve("file.txt"), file.getUri());
     }
@@ -1540,20 +1540,13 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, FileInternal.initialize().setStatus(new FileStatus(FileStatus.STAGE)),
-                        0, null, null, "", null, null), true, "bla bla", null, token).first();
+                "folder/subfolder/subsubfolder/my_staged.txt", null, FileInternal.init(),
+                        0, null, null, "", null, null, null), true, "bla bla", null, token).first();
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*")
                 .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY);
         setToPendingDelete(studyFqn, query);
-
-        try {
-            fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, token);
-            fail("Delete should fail because it cannot delete files in STAGE status");
-        } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("STAGE"));
-        }
 
         File fileTmp = fileManager.get(studyFqn, folder.getPath(), null, token).first();
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());

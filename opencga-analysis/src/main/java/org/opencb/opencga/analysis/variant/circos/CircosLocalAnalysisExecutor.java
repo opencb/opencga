@@ -25,7 +25,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.StructuralVariation;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.DockerUtils;
@@ -50,9 +49,8 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.opencb.biodata.models.variant.avro.VariantType.*;
-import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_INPUT_PATH;
-import static org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH;
+import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_INPUT_PATH;
+import static org.opencb.opencga.analysis.wrappers.executors.DockerWrapperAnalysisExecutor.DOCKER_OUTPUT_PATH;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 @ToolExecutor(id="opencga-local", tool = CircosAnalysis.ID,
@@ -131,7 +129,7 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         if (MapUtils.isEmpty(errors)) {
             // Execute R script
             // circos.R ./snvs.tsv ./indels.tsv ./cnvs.tsv ./rearrs.tsv SampleId
-            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
+            String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/genome-plot";
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),

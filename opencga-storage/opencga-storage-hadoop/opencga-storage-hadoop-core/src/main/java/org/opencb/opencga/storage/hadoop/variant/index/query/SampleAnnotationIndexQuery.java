@@ -1,93 +1,37 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-
-import java.util.Collections;
-import java.util.List;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtCombinationIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 public class SampleAnnotationIndexQuery {
     private final byte[] annotationIndexMask; // byte[] = {mask , index}
-    private final short consequenceTypeMask;
-    private final byte biotypeMask;
-    private final byte clinicalMask;
-    private final List<PopulationFrequencyQuery> populationFrequencyQueries;
-    private final VariantQueryUtils.QueryOperation populationFrequencyQueryOperator;
-    private final boolean populationFrequencyQueryPartial;
+    private final IndexFieldFilter consequenceTypeFilter;
+    private final IndexFieldFilter biotypeFilter;
+    private final CtBtCombinationIndexSchema.Filter ctBtFilter;
+    private final IndexFilter clinicalFilter;
+    private final IndexFilter populationFrequencyFilter;
 
-    public static class PopulationFrequencyQuery extends RangeQuery {
-        private final int position;
-        private final String study;
-        private final String population;
-
-        public PopulationFrequencyQuery(RangeQuery rangeQuery, int position, String study, String population) {
-            super(rangeQuery.minValueInclusive, rangeQuery.maxValueExclusive,
-                    rangeQuery.minCodeInclusive, rangeQuery.maxCodeExclusive,
-                    rangeQuery.exactQuery);
-            this.position = position;
-            this.study = study;
-            this.population = population;
-        }
-
-        public PopulationFrequencyQuery(int position, String study, String population,
-                                        double minFreqInclusive, double maxFreqExclusive,
-                                        byte minCodeInclusive, byte maxCodeExclusive) {
-            super(minFreqInclusive, maxFreqExclusive, minCodeInclusive, maxCodeExclusive);
-            this.position = position;
-            this.study = study;
-            this.population = population;
-        }
-
-        public int getPosition() {
-            return position;
-        }
-
-        public String getStudy() {
-            return study;
-        }
-
-        public String getPopulation() {
-            return population;
-        }
-
-        public String getStudyPopulation() {
-            return study + ":" + population;
-        }
-
-        @Override
-        public String toString() {
-            return "PopulationFrequencyQuery{"
-                    + "[" + position + "] population='" + study + ':' + population + '\''
-                    + ", query [" + minValueInclusive + ", " + maxValueExclusive + ")"
-                    + ", code [" + minCodeInclusive + ", " + maxCodeExclusive + ")"
-                    + ", exact: " + exactQuery
-                    + '}';
-        }
-    }
-
-
-    public SampleAnnotationIndexQuery() {
+    public SampleAnnotationIndexQuery(SampleIndexSchema schema) {
         this.annotationIndexMask = new byte[]{0, 0};
-        this.consequenceTypeMask = 0;
-        this.biotypeMask = 0;
-        this.clinicalMask = 0;
-        this.populationFrequencyQueries = Collections.emptyList();
-        this.populationFrequencyQueryOperator = VariantQueryUtils.QueryOperation.AND;
-        this.populationFrequencyQueryPartial = true;
+        this.consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
+        this.biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+        this.ctBtFilter = schema.getCtBtIndex().getField().noOpFilter();
+        this.clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
+        this.populationFrequencyFilter = schema.getPopFreqIndex().noOpFilter();
     }
 
-    public SampleAnnotationIndexQuery(byte[] annotationIndexMask, short consequenceTypeMask, byte biotypeMask,
-                                      byte clinicalMask, VariantQueryUtils.QueryOperation populationFrequencyQueryOperator,
-                                      List<PopulationFrequencyQuery> populationFrequencyQueries,
-                                      boolean populationFrequencyQueryPartial) {
+    public SampleAnnotationIndexQuery(byte[] annotationIndexMask, IndexFieldFilter consequenceTypeFilter, IndexFieldFilter biotypeFilter,
+                                      CtBtCombinationIndexSchema.Filter ctBtFilter, IndexFilter clinicalFilter,
+                                      IndexFilter populationFrequencyFilter) {
         this.annotationIndexMask = annotationIndexMask;
-        this.consequenceTypeMask = consequenceTypeMask;
-        this.biotypeMask = biotypeMask;
-        this.clinicalMask = clinicalMask;
-        this.populationFrequencyQueries = Collections.unmodifiableList(populationFrequencyQueries);
-        this.populationFrequencyQueryOperator = populationFrequencyQueryOperator;
-        this.populationFrequencyQueryPartial = populationFrequencyQueryPartial;
+        this.consequenceTypeFilter = consequenceTypeFilter;
+        this.biotypeFilter = biotypeFilter;
+        this.ctBtFilter = ctBtFilter;
+        this.clinicalFilter = clinicalFilter;
+        this.populationFrequencyFilter = populationFrequencyFilter;
     }
 
     public byte getAnnotationIndexMask() {
@@ -98,34 +42,31 @@ public class SampleAnnotationIndexQuery {
         return annotationIndexMask[1];
     }
 
-    public short getConsequenceTypeMask() {
-        return consequenceTypeMask;
+    public IndexFieldFilter getConsequenceTypeFilter() {
+        return consequenceTypeFilter;
     }
 
-    public byte getBiotypeMask() {
-        return biotypeMask;
+    public IndexFieldFilter getBiotypeFilter() {
+        return biotypeFilter;
     }
 
-    public List<PopulationFrequencyQuery> getPopulationFrequencyQueries() {
-        return populationFrequencyQueries;
+    public CtBtCombinationIndexSchema.Filter getCtBtFilter() {
+        return ctBtFilter;
     }
 
-    public VariantQueryUtils.QueryOperation getPopulationFrequencyQueryOperator() {
-        return populationFrequencyQueryOperator;
+    public IndexFilter getPopulationFrequencyFilter() {
+        return populationFrequencyFilter;
     }
 
-    public boolean isPopulationFrequencyQueryPartial() {
-        return populationFrequencyQueryPartial;
-    }
-
-    public byte getClinicalMask() {
-        return clinicalMask;
+    public IndexFilter getClinicalFilter() {
+        return clinicalFilter;
     }
 
     public boolean isEmpty() {
         return getAnnotationIndexMask() == IndexUtils.EMPTY_MASK
-                && biotypeMask == IndexUtils.EMPTY_MASK
-                && consequenceTypeMask == IndexUtils.EMPTY_MASK
-                && CollectionUtils.isEmpty(populationFrequencyQueries);
+                && biotypeFilter.isNoOp()
+                && consequenceTypeFilter.isNoOp()
+                && clinicalFilter.isNoOp()
+                && populationFrequencyFilter.isNoOp();
     }
 }

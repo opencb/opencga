@@ -17,10 +17,12 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -29,13 +31,15 @@ import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.VariantSampleIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
@@ -62,6 +66,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
@@ -77,6 +82,8 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_DESCR;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -119,6 +126,8 @@ public class VariantCommandOptions {
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
     public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
+    public final GenomePlotCommandOptions genomePlotCommandOptions;
+    public final GenomePlotInternalCommandOptions genomePlotInternalCommandOptions;
     public final MendelianErrorCommandOptions mendelianErrorCommandOptions;
     public final InferredSexCommandOptions inferredSexCommandOptions;
     public final RelatednessCommandOptions relatednessCommandOptions;
@@ -184,6 +193,8 @@ public class VariantCommandOptions {
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
+        this.genomePlotCommandOptions = new GenomePlotCommandOptions();
+        this.genomePlotInternalCommandOptions = new GenomePlotInternalCommandOptions();
         this.mendelianErrorCommandOptions = new MendelianErrorCommandOptions();
         this.inferredSexCommandOptions = new InferredSexCommandOptions();
         this.relatednessCommandOptions = new RelatednessCommandOptions();
@@ -226,6 +237,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
         public boolean stdout;
+
+        @Parameter(names = {"--skip-indexed-files"}, description = "Do not fail if any of the input files was already indexed.")
+        public boolean skipIndexedFiles;
     }
 
     @Parameters(commandNames = {SECONDARY_INDEX_COMMAND}, commandDescription = "Creates a secondary index using a search engine")
@@ -367,6 +381,12 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC, arity = 1)
+        public String panelModeOfInheritance;
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC, arity = 1)
+        public String panelConfidence;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
+        public String panelRoleInCancer;
 
         @Parameter(names = {"--saved-filter"}, description = SAVED_FILTER_DESCR, arity = 1)
         public String savedFilter;
@@ -376,12 +396,9 @@ public class VariantCommandOptions {
         public String variantsFile;
     }
 
-    @Parameters(commandNames = {VariantStatsCommandOptions.STATS_RUN_COMMAND}, commandDescription = "Create and load stats into a database.")
+    @Parameters(commandNames = {VariantStatsCommandOptions.STATS_RUN_COMMAND}, commandDescription = VariantStatsAnalysis.DESCRIPTION)
     public class VariantStatsCommandOptions extends GeneralCliOptions.StudyOption {
         public static final String STATS_RUN_COMMAND = "stats-run";
-
-        @ParametersDelegate
-        public GenericVariantStatsOptions genericVariantStatsOptions = new GenericVariantStatsOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -403,11 +420,31 @@ public class VariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
 
-        @Parameter(names = {"--index"}, description = "Index stats in the variant storage database", arity = 0)
-        public boolean index;
-
         @Parameter(names = {"--samples"}, description = "List of samples to use as cohort to calculate stats")
         public List<String> samples;
+
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        public String region;
+
+        @Parameter(names = {"--gene"}, description = "List of genes.")
+        public String gene;
+
+        @Parameter(names = {"--output-file-name"}, description = "Output file name. Default: database name", arity = 1)
+        public String fileName;
+
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
+        public Aggregation aggregated = Aggregation.NONE;
+
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        public String aggregationMappingFile;
+
+        @Parameter(names = {"--index"}, hidden = true, description = "UNUSED. Index functionality moved to operations variant-stats-index", arity = 0)
+        @Deprecated
+        public void setIndex(Boolean index) {
+            if (index != null && index) {
+                throw new ParameterException("Deprecated param --index . Index functionality has been moved to 'operations variant-stats-index'");
+            }
+        }
     }
 
     @Parameters(commandNames = {GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
@@ -449,7 +486,7 @@ public class VariantCommandOptions {
     @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
     public class SampleIndexCommandOptions extends GeneralCliOptions.StudyOption {
         public static final String SAMPLE_INDEX_COMMAND = "sample-index";
-        public static final String SAMPLE_INDEX_COMMAND_DESCRIPTION = "Annotate sample index.";
+        public static final String SAMPLE_INDEX_COMMAND_DESCRIPTION = VariantSampleIndexOperationTool.DESCRIPTION;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -834,6 +871,24 @@ public class VariantCommandOptions {
             return super.setPanel(panel);
         }
 
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelModeOfInheritance(String panelModeOfInheritance) {
+            return super.setPanelModeOfInheritance(panelModeOfInheritance);
+        }
+
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelConfidence(String panelConfidence) {
+            return super.setPanelConfidence(panelConfidence);
+        }
+
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelRoleInCancer(String panelRoleInCancer) {
+            return super.setPanelRoleInCancer(panelRoleInCancer);
+        }
+
         @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParam.STATS_REF_DESCR)
         @Override
         public AnnotationVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
@@ -912,10 +967,22 @@ public class VariantCommandOptions {
             return super.setFunctionalScore(functionalScore);
         }
 
-        @Parameter(names = {"--search-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
         @Override
-        public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
-            return super.setClinicalSignificance(clinicalSignificance);
+        public AnnotationVariantQueryParams setClinical(String clinical) {
+            return super.setClinical(clinical);
+        }
+
+//        @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+//        @Override
+//        public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
+//            return super.setClinicalSignificance(clinicalSignificance);
+//        }
+
+        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Override
+        public AnnotationVariantQueryParams setClinicalConfirmedStatus(String clinicalConfirmedStatus) {
+            return super.setClinicalConfirmedStatus(clinicalConfirmedStatus);
         }
     }
 
@@ -1173,9 +1240,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--index"}, description = "Index result for Recessive Gene Analysis")
         public boolean index;
-
-        @Parameter(names = {"--index-job-tags"}, description = "Job tags for the RGA index job generated.")
-        public List<String> indexJobTags;
     }
 
     @Parameters(commandNames = SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND, commandDescription = SampleEligibilityAnalysis.DESCRIPTION)
@@ -1220,10 +1284,80 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "Sample name.")
+        @Parameter(names = {"--sample"}, description = "Sample name.", required = true)
         public String sample;
 
+        @Parameter(names = {"--id"}, description = "Signature ID.")
+        public String id;
+
+        @Parameter(names = {"--description"}, description = "Signature description.")
+        public String description;
+
+        @DynamicParameter(names = {"-q", "--query"}, description = "Signature query, e.g.:. -q type=\"SNV\" -q ct=\"missense_variant\"")
+        public Map<String, String> query = new HashMap<>();
+
+        @Parameter(names = {"--release"}, description = "Release of COSMIC mutational signatures. Valid values: 2, 3, 3.1 and 3.2.")
+        public String release = "2";
+
+        @Parameter(names = {"--fitting"}, description = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour.")
+        public boolean fitting;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GenomePlotCommandOptions.GENOME_PLOT_RUN_COMMAND, commandDescription = GenomePlotAnalysis.DESCRIPTION)
+    public class GenomePlotCommandOptions {
+        public static final String GENOME_PLOT_RUN_COMMAND = GenomePlotAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--id"}, description = "Genome plot ID.")
+        public String id;
+
+        @Parameter(names = {"--description"}, description = "Genome plot description.")
+        public String description;
+
+        @Parameter(names = {"--config-file"}, description = "Genome plot configuration file in JSON format.", required = true)
+        public String configFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GenomePlotInternalCommandOptions.GENOME_PLOT_RUN_COMMAND, commandDescription = GenomePlotAnalysis.DESCRIPTION)
+    public class GenomePlotInternalCommandOptions {
+        public static final String GENOME_PLOT_RUN_COMMAND = GenomePlotAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
+        public String sample;
+
+        @Parameter(names = {"--id"}, description = "Genome plot ID.")
+        public String id;
+
+        @Parameter(names = {"--description"}, description = "Genome plot description.")
+        public String description;
+
+        @Parameter(names = {"--config-file"}, description = "Genome plot configuration file in JSON format.", required = true)
+        public String configFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
 
@@ -1373,129 +1507,36 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID.", required = true)
         public String sample;
 
-        @Parameter(names = {"--dict-file"}, description = "Dictionary file of the reference genome (for computing HS metrics).")
-        public String dictFile;
-
-        @Parameter(names = {"--bait-file"}, description = "Bait intervals file in BED format (for HS metrics).")
-        public String baitFile;
-
-        @Parameter(names = {"--variant-stats-id"}, description = "Variant stats ID.")
+        @Parameter(names = {"--vsi", "--variant-stats-id"}, description = "Variant stats ID.")
         public String variantStatsId;
 
-        @Parameter(names = {"--variant-stats-description"}, description = "Variant stats description.")
+        @Parameter(names = {"--vsd", "--variant-stats-description"}, description = "Variant stats description.")
         public String variantStatsDecription;
 
         @DynamicParameter(names = {"--vsq", "--variant-stats-query"}, description = "Variant stats query, e.g.:. --vsq gene=\"BRCA2\" --vsq ct=\"missense_variant\"")
         public Map<String, String> variantStatsQuery = new HashMap<>();
 
-        @Parameter(names = {"--signature-id"}, description = "Signature ID.")
+        @Parameter(names = {"--si", "--signature-id"}, description = "Mutational signature ID (mutational signature is calculated for somatic samples only).")
         public String signatureId;
 
-        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
+        @Parameter(names = {"--sd", "--signature-description"}, description = "Mutational signature description.")
+        public String signatureDescription;
+
+        @DynamicParameter(names = {"--sq", "--signature-query"}, description = "Mutational signature query, e.g.:. --sq type=\"SNV\" --sq ct=\"missense_variant\"")
         public Map<String, String> signatureQuery = new HashMap<>();
 
-        @Parameter(names = {"--genes-for-coverage-stats"}, description = "A comma separated list of genes to compute the coverage stats.")
-        public String genesForCoverageStats;
+        @Parameter(names = {"--signature-release"}, description = "Release of COSMIC mutational signatures. Valid values: 2, 3, 3.1 and 3.2.")
+        public String signatureRelease = "2";
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
-        public String outdir;
-    }
 
-    @Parameters(commandNames = PlinkCommandOptions.PLINK_RUN_COMMAND, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)
-    public class PlinkCommandOptions {
-        public static final String PLINK_RUN_COMMAND = PlinkWrapperAnalysis.ID + "-run";
+        @Parameter(names = {"--gpi", "--genome-plot-id"}, description = "Genome plot ID (genome plot is calculated for somatic samples only).")
+        public String genomePlotId;
 
-        @ParametersDelegate
-        //public GeneralCliOptions.CommonCommandOptions commonOptions = commonOptions;
-        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+        @Parameter(names = {"--gpd", "--genome-plot-description"}, description = "Genome plot description.")
+        public String genomePlotDescr;
 
-        @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
-
-        @ParametersDelegate
-        public Object jobOptions = commonJobOptionsObject;
-
-        @Parameter(names = {"--study"}, description = "Study.")
-        public String study;
-
-        @Parameter(names = {"--tped-file"}, description = "Transpose PED file (.tped) containing SNP and genotype information.")
-        public String tpedFile;
-
-        @Parameter(names = {"--tfam-file"}, description = "Transpose FAM file (.tfam) containing individual and family information.")
-        public String tfamFile;
-
-        @Parameter(names = {"--covar-file"}, description = "Covariate file.")
-        public String covarFile;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
-        public String outdir;
-    }
-
-    @Parameters(commandNames = RvtestsCommandOptions.RVTEST_RUN_COMMAND, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
-    public class RvtestsCommandOptions {
-        public static final String RVTEST_RUN_COMMAND = RvtestsWrapperAnalysis.ID + "-run";
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
-
-        @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
-
-        @ParametersDelegate
-        public Object jobOptions = commonJobOptionsObject;
-
-        @Parameter(names = {"--study"}, description = "Study.")
-        public String study;
-
-        @Parameter(names = {"--command"}, description = "Rvtests command. Valid values: rvtest or vcf2kinship.")
-        public String executable = "rvtest";
-
-        @Parameter(names = {"--vcf-file"}, description = "VCF file.")
-        public String vcfFile;
-
-        @Parameter(names = {"--pheno-file"}, description = "Phenotype file.")
-        public String phenoFile;
-
-        @Parameter(names = {"--pedigree-file"}, description = "Pedigree file.")
-        public String pedigreeFile;
-
-        @Parameter(names = {"--kinship-file"}, description = "Kinship file.")
-        public String kinshipFile;
-
-        @Parameter(names = {"--covar-file"}, description = "Covariate file.")
-        public String covarFile;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
-        public String outdir;
-    }
-
-    @Parameters(commandNames = GatkCommandOptions.GATK_RUN_COMMAND, commandDescription = GatkWrapperAnalysis.DESCRIPTION)
-    public class GatkCommandOptions {
-        public static final String GATK_RUN_COMMAND = GatkWrapperAnalysis.ID + "-run";
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
-
-        @ParametersDelegate
-        public Object jobOptions = commonJobOptionsObject;
-
-        @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
-
-        @Parameter(names = {"--study"}, description = "Study.")
-        public String study;
-
-        @Parameter(names = {"--command"}, description = "Gatk command. Currently, the only command supported is 'HaplotypeCaller'")
-        public String command = "HaplotypeCaller";
-
-        @Parameter(names = {"--fasta-file"}, description = "FASTA file for reference genome")
-        public String fastaFile;
-
-        @Parameter(names = {"--bam-file"}, description = "BAM file for input alignments.")
-        public String bamFile;
-
-        @Parameter(names = {"--vcf-filename"}, description = "VCF filename.")
-        public String vcfFilename;
+        @Parameter(names = {"--gpcf", "--genome-plot-config-file"}, description = "Genome plot configuration file in JSON format.")
+        public String genomePlotConfigFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
@@ -1530,5 +1571,92 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
+    }
+
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    // Plink
+
+    @Parameters(commandNames = PlinkCommandOptions.PLINK_RUN_COMMAND, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)
+    public class PlinkCommandOptions {
+        public static final String PLINK_RUN_COMMAND = PlinkWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        //public GeneralCliOptions.CommonCommandOptions commonOptions = commonOptions;
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+
+        @DynamicParameter(names = {"--plink-params"}, description = "Plink parameters e.g.:. --plink-params tfile=test --plink-params "
+                + " assoc=true")
+        public Map<String, String> plinkParams = new HashMap<>();
+    }
+
+    // RvTests
+
+    @Parameters(commandNames = RvtestsCommandOptions.RVTESTS_RUN_COMMAND, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
+    public class RvtestsCommandOptions {
+        public static final String RVTESTS_RUN_COMMAND = RvtestsWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--command"}, description = "Rvtests command. Valid values: rvtest or vcf2kinship.")
+        public String command = "rvtest";
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+
+        @DynamicParameter(names = {"--rvtests-params"}, description = "RvTests parameters e.g.:. --rvtests-params single=famScore --rvtests-params meta=score,cov")
+        public Map<String, String> rvtestsParams = new HashMap<>();
+    }
+
+    // GATK
+
+    @Parameters(commandNames = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.ID, commandDescription = org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis.DESCRIPTION)
+    public class GatkCommandOptions {
+        public static final String GATK_RUN_COMMAND = GatkWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
+        public String study;
+
+        @Parameter(names = {"--command"}, description = GATK_COMMAND_DESCRIPTION)
+        public String command;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+
+        @DynamicParameter(names = {"--gatk-params"}, description = "Gatk parameters e.g.:. --gatk-params I=test.bam")
+        public Map<String, String> gatkParams = new HashMap<>();
     }
 }

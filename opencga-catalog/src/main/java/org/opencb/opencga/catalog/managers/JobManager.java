@@ -23,8 +23,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -42,6 +40,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileContent;
@@ -252,7 +251,7 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
             ParamUtils.checkObj(job, "Job");
-            ParamUtils.checkAlias(job.getId(), "job id");
+            ParamUtils.checkIdentifier(job.getId(), "job id");
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
@@ -331,11 +330,8 @@ public class JobManager extends ResourceManager<Job> {
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
         // Set default internal
-        job.setInternal(ParamUtils.defaultObject(job.getInternal(), new JobInternal()));
-        job.getInternal().setStatus(ParamUtils.defaultObject(job.getInternal().getStatus(), new Enums.ExecutionStatus()));
-        job.getInternal().setWebhook(ParamUtils.defaultObject(job.getInternal().getWebhook(),
-                new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>())));
-        job.getInternal().setEvents(ParamUtils.defaultObject(job.getInternal().getEvents(), new LinkedList<>()));
+        job.setInternal(JobInternal.init());
+        job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
 
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
@@ -426,6 +422,24 @@ public class JobManager extends ResourceManager<Job> {
         return submit(studyStr, toolId, priority, params, null, null, null, null, token);
     }
 
+    public OpenCGAResult<Job> submitProject(String projectStr, String toolId, Enums.Priority priority, Map<String, Object> params,
+                                            String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags,
+                                            String token) throws CatalogException {
+        // Project job
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+        // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+        List<String> studies = catalogManager.getStudyManager()
+                .search(projectStr, new Query(), options, token)
+                .getResults()
+                .stream()
+                .map(Study::getFqn)
+                .collect(Collectors.toList());
+        if (studies.isEmpty()) {
+            throw new CatalogException("Project '" + projectStr + "' not found!");
+        }
+        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
+    }
+
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
                                      String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
             throws CatalogException {
@@ -484,7 +498,7 @@ public class JobManager extends ResourceManager<Job> {
             if (job.getInternal() != null) {
                 job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             } else {
-                job.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
+                job.setInternal(new JobInternal(TimeUtils.getTime(), new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
             job.getInternal().getStatus().setDescription(e.toString());
@@ -496,14 +510,14 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult count(Query query, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        authorizationManager.checkIsAdmin(userId);
+        authorizationManager.isInstallationAdministrator(userId);
 
         return jobDBAdaptor.count(query);
     }
 
     public DBIterator<Job> iterator(Query query, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
-        authorizationManager.checkIsAdmin(userId);
+        authorizationManager.isInstallationAdministrator(userId);
 
         return jobDBAdaptor.iterator(query, options);
     }
@@ -512,10 +526,10 @@ public class JobManager extends ResourceManager<Job> {
         return get(null, String.valueOf(jobId), options, sessionId);
     }
 
-    public OpenCGAResult<Job> get(List<String> jobIds, QueryOptions options, boolean ignoreException, String sessionId)
-            throws CatalogException {
-        return get(null, jobIds, options, ignoreException, sessionId);
-    }
+//    public OpenCGAResult<Job> get(List<String> jobIds, QueryOptions options, boolean ignoreException, String sessionId)
+//            throws CatalogException {
+//        return get(null, jobIds, options, ignoreException, sessionId);
+//    }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);

@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +32,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
@@ -118,6 +120,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "link-run":
                 queryResponse = linkRun();
+                break;
+            case "post-link-run":
+                queryResponse = postLinkRun();
                 break;
             case "unlink":
                 queryResponse = unlink();
@@ -218,6 +223,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(FileDBAdaptor.QueryParams.BIOFORMAT.key(), StringUtils.join(commandOptions.bioformat, ","));
         params.putIfNotNull(FileDBAdaptor.QueryParams.FORMAT.key(), StringUtils.join(commandOptions.format, ","));
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), commandOptions.internalIndexStatus);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), commandOptions.folder);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), commandOptions.modificationDate);
@@ -307,7 +313,15 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 .setBioformat(commandOptions.bioformat)
                 .setDescription(commandOptions.description)
                 .setTags(commandOptions.tags)
-                .setSampleIds(commandOptions.sampleIds);
+                .setSampleIds(commandOptions.sampleIds)
+                .setSoftware(new Software(
+                        commandOptions.softwareName,
+                        commandOptions.softwareVersion,
+                        commandOptions.softwareRepository,
+                        commandOptions.softwareCommit,
+                        commandOptions.softwareWebsite,
+                        commandOptions.softwareParams.isEmpty() ? null : commandOptions.softwareParams
+                ));
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
@@ -323,8 +337,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         FileCommandOptions.UploadCommandOptions commandOptions = filesCommandOptions.uploadCommandOptions;
 
         ObjectMap params = new ObjectMap()
-                .append("fileFormat", commandOptions.fileFormat)
-                .append("bioformat", commandOptions.bioformat)
+                .append("fileFormat", ParamUtils.defaultString(commandOptions.fileFormat, File.Format.UNKNOWN.toString()))
+                .append("bioformat", ParamUtils.defaultString(commandOptions.bioformat, File.Bioformat.UNKNOWN.toString()))
                 .append("parents", commandOptions.parents);
 
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
@@ -332,7 +346,6 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("description", commandOptions.description);
         params.putIfNotEmpty("fileName", commandOptions.fileName);
         params.putIfNotEmpty("file", commandOptions.inputFile);
-
 
         return openCGAClient.getFileClient().upload(params);
     }
@@ -386,6 +399,17 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 commandOptions.parents);
 
         return openCGAClient.getFileClient().runLink(data, params);
+    }
+
+    private RestResponse<Job> postLinkRun() throws ClientException {
+        FileCommandOptions.PostLinkRunCommandOptions commandOptions = filesCommandOptions.postLinkRunCommandOptions;
+
+        ObjectMap params = getCommonParams(commandOptions.study, filesCommandOptions.commonCommandOptions.params);
+        addJobParams(commandOptions.jobOptions, params);
+
+        PostLinkToolParams data = new PostLinkToolParams(commandOptions.files, commandOptions.batchSize);
+
+        return openCGAClient.getFileClient().runPostlink(data, params);
     }
 
 //    private RestResponse relink() throws CatalogException, IOException {

@@ -20,8 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
 import org.junit.Test;
-import org.opencb.biodata.formats.sequence.fastqc.FastQc;
-import org.opencb.biodata.formats.sequence.fastqc.Summary;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
@@ -163,6 +161,119 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCustomCreationDate() throws CatalogException {
+        Sample s1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("s1").setCreationDate("20140101120000"),
+                QueryOptions.empty(), token).first();
+        assertEquals("20140101120000", s1.getCreationDate());
+
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<2015"), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
+        assertEquals("s1", search.first().getId());
+
+        catalogManager.getSampleManager().update(studyFqn, "s1", new SampleUpdateParams().setCreationDate("20160101120000"), QueryOptions.empty(), token);
+        search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<2015"), QueryOptions.empty(), token);
+        assertEquals(0, search.getNumResults());
+
+        search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.CREATION_DATE.key(), "<201602"), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
+        assertEquals("s1", search.first().getId());
+    }
+
+    @Test
+    public void testSampleVersioningWithWeirdId() throws CatalogException {
+        Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
+        String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
+
+        String sampleId = "test__Sa..mp--le";
+
+        catalogManager.getSampleManager().create(studyFqn,
+                new Sample().setId(sampleId).setDescription("description"), null, token);
+        catalogManager.getSampleManager().update(studyFqn, sampleId, new SampleUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+        catalogManager.getSampleManager().update(studyFqn, sampleId, new SampleUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        catalogManager.getProjectManager().incrementRelease(projectId, token);
+        // We create something to have a gap in the release
+        catalogManager.getSampleManager().create(studyFqn, new Sample().setId("du--m---m..y"), null, token);
+
+        catalogManager.getProjectManager().incrementRelease(projectId, token);
+        catalogManager.getSampleManager().update(studyFqn, sampleId, new SampleUpdateParams(),
+                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+
+        catalogManager.getSampleManager().update(studyFqn, sampleId,
+                new SampleUpdateParams().setDescription("new description"), null, token);
+
+        // We want the whole history of the sample
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(Constants.ALL_VERSIONS, true);
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, null, token);
+        assertEquals(4, sampleDataResult.getNumResults());
+        assertEquals("description", sampleDataResult.getResults().get(0).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(1).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(2).getDescription());
+        assertEquals("new description", sampleDataResult.getResults().get(3).getDescription());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.VERSION.key(), "all");
+        sampleDataResult = catalogManager.getSampleManager().get(studyFqn, Collections.singletonList(sampleId),
+                query, null, false, token);
+        assertEquals(4, sampleDataResult.getNumResults());
+        assertEquals("description", sampleDataResult.getResults().get(0).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(1).getDescription());
+        assertEquals("description", sampleDataResult.getResults().get(2).getDescription());
+        assertEquals("new description", sampleDataResult.getResults().get(3).getDescription());
+
+        // We want the last version of release 1
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.SNAPSHOT.key(), 1);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, null, token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals(3, sampleDataResult.first().getVersion());
+
+        // We want the last version of release 2 (must be the same of release 1)
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.SNAPSHOT.key(), 2);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, null, token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals(3, sampleDataResult.first().getVersion());
+
+        // We want the last version of the sample
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, null, token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals(4, sampleDataResult.first().getVersion());
+
+        // We want the version 2 of the sample
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.VERSION.key(), 2);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, null, token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals(2, sampleDataResult.first().getVersion());
+
+        // We want the version 1 of the sample
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.VERSION.key(), 1);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn, query, null, token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals(1, sampleDataResult.first().getVersion());
+
+        DataResult<Sample> testSample = catalogManager.getSampleManager()
+                .get(studyFqn, Collections.singletonList(sampleId), new Query(Constants.ALL_VERSIONS, true), null, false, token);
+        assertEquals(4, testSample.getResults().size());
+    }
+
+
+    @Test
     public void searchByInternalAnnotationSetTest() throws CatalogException {
         Set<Variable> variables = new HashSet<>();
         variables.add(new Variable().setId("a").setType(Variable.VariableType.STRING));
@@ -266,7 +377,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
         SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
-        SampleQualityControl qualityControl = new SampleQualityControl(null, null, null, metrics);
+        SampleQualityControl qualityControl = new SampleQualityControl(null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
                 new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
@@ -309,7 +420,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
         metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
-        qualityControl = new SampleQualityControl(null, null, null, metrics);
+        qualityControl = new SampleQualityControl(null, null, metrics);
 
         // And update sample
         result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl),
@@ -384,7 +495,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         // Remove SampleQcVariantStats values
-        qualityControl = new SampleQualityControl(Arrays.asList("file1", "file2"), null, null, null);
+        qualityControl = new SampleQualityControl(Arrays.asList("file1", "file2"), null, null);
 
         // And update sample
         result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl),
@@ -440,7 +551,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
         SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
-        SampleQualityControl qualityControl = new SampleQualityControl(null, null, null, metrics);
+        SampleQualityControl qualityControl = new SampleQualityControl(null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
                 new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
@@ -474,7 +585,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
         metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
-        qualityControl = new SampleQualityControl(null, null, null, metrics);
+        qualityControl = new SampleQualityControl(null, null, metrics);
 
         // And update sample
         result = catalogManager.getSampleManager().update(studyFqn, "sample", new SampleUpdateParams().setQualityControl(qualityControl), QueryOptions.empty(), token);
@@ -559,31 +670,6 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals("my description", testSample.first().getStatus().getDescription());
         assertNotNull(testSample.first().getStatus().getDate());
         assertTrue(testSample.first().getCollection().getAttributes().isEmpty());
-    }
-
-    @Test
-    public void updateQualityControlField() throws CatalogException {
-        catalogManager.getSampleManager().create(studyFqn,
-                new Sample().setId("testSample").setDescription("description"), null, token);
-
-        SampleQualityControl qualityControl = new SampleQualityControl();
-
-        SampleAlignmentQualityControlMetrics metrics = new SampleAlignmentQualityControlMetrics();
-        metrics.setFastQc(new FastQc().setSummary(new Summary("basicStatistics", "perBaseSeqQuality", "perTileSeqQuality",
-                "perSeqQualityScores", "perBaseSeqContent", "perSeqGcContent", "perBaseNContent", "seqLengthDistribution",
-                "seqDuplicationLevels", "overrepresentedSeqs", "adapterContent", "kmerContent")));
-
-        qualityControl.getAlignmentMetrics().add(metrics);
-
-        catalogManager.getSampleManager().update(studyFqn, "testSample", new SampleUpdateParams().setQualityControl(qualityControl),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
-
-        DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
-        assertEquals("basicStatistics", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getBasicStatistics());
-        assertEquals("perBaseSeqQuality", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerBaseSeqQuality());
-        assertEquals("perTileSeqQuality", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerTileSeqQuality());
-        assertEquals("perSeqQualityScores", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerSeqQualityScores());
-        assertEquals("perBaseSeqContent", testSample.first().getQualityControl().getAlignmentMetrics().get(0).getFastQc().getSummary().getPerBaseSeqContent());
     }
 
     @Test

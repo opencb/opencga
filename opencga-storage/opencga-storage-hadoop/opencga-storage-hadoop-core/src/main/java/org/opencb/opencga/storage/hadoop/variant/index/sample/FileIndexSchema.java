@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public class FileIndexSchema extends IndexSchema {
+public class FileIndexSchema extends FixedSizeIndexSchema {
 
     private final List<IndexField<?>> fixedFields;
     private final List<IndexField<String>> customFields;
@@ -100,8 +100,9 @@ public class FileIndexSchema extends IndexSchema {
         return getMultiFileIndex().readAndDecode(fileIndex);
     }
 
-    public boolean isMultiFile(BitBuffer fileIndex, int bitOffset) {
-        int code = fileIndex.getIntPartial(bitOffset + getMultiFileIndex().getBitOffset(), getMultiFileIndex().getBitLength());
+    public boolean isMultiFile(BitBuffer fileIndex, int elementIndex) {
+        int code = fileIndex.getIntPartial(
+                (elementIndex * getBitsLength()) + getMultiFileIndex().getBitOffset(), getMultiFileIndex().getBitLength());
         return getMultiFileIndex().decode(code);
     }
 
@@ -122,9 +123,10 @@ public class FileIndexSchema extends IndexSchema {
 
     protected CategoricalIndexField<Boolean> buildMultiFile(IndexField<?> prevIndex) {
         return new CategoricalIndexField<>(
-                new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "multiFile", IndexFieldConfiguration.Type.CATEGORICAL),
+                new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "multiFile", IndexFieldConfiguration.Type.CATEGORICAL)
+                .setNullable(false),
                 prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()),
-                new Boolean[]{false, true}, false);
+                new Boolean[]{false, true});
     }
 
     private CategoricalIndexField<VariantType> buildVariantTypeIndexField(IndexField<?> prevIndex) {
@@ -185,16 +187,17 @@ public class FileIndexSchema extends IndexSchema {
 
     private static IndexField<String> buildCustomIndexField(IndexFieldConfiguration conf, int bitOffset) {
         switch (conf.getType()) {
-            case RANGE:
-                return new RangeIndexField(conf, bitOffset, conf.getThresholds()).from(s -> {
+            case RANGE_LT:
+            case RANGE_GT:
+                return new RangeIndexField(conf, bitOffset).from(s -> {
                     try {
                         if (s == null || s.isEmpty() || s.equals(VCFConstants.MISSING_VALUE_v4)) {
-                            return 0d;
+                            return null;
                         } else {
                             return Double.parseDouble(s);
                         }
                     } catch (NumberFormatException e) {
-                        return 0d;
+                        return null;
                     }
                 }, v -> v == null ? null : v.toString());
             case CATEGORICAL:

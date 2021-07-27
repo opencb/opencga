@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -344,8 +343,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      */
     Long variableSetExists(long variableSetId);
 
-    default Long variableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.UID.key(), studyId);
+    default Long variableSetExists(String variableSetId, long studyId) throws CatalogDBException {
+        Query query = new Query(QueryParams.VARIABLE_SET_ID.key(), variableSetId).append(QueryParams.UID.key(), studyId);
         return count(query).getNumMatches();
     }
 
@@ -361,13 +360,13 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         }
     }
 
-    default void checkVariableSetExists(String variableSetName, long studyId) throws CatalogDBException {
-        Long count = variableSetExists(variableSetName, studyId);
+    default void checkVariableSetExists(String variableSetId, long studyId) throws CatalogDBException {
+        Long count = variableSetExists(variableSetId, studyId);
         if (count <= 0) {
-            throw CatalogDBException.newInstance("VariableSet name '{}' does not exist", variableSetName);
+            throw CatalogDBException.newInstance("VariableSet id '{}' does not exist", variableSetId);
         } else if (count > 1) {
-            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet name '{}' in study '{}'", count,
-                    variableSetName, studyId);
+            throw CatalogDBException.newInstance("'{}' documents found with the VariableSet id '{}' in study '{}'", count,
+                    variableSetId, studyId);
         }
     }
 
@@ -425,14 +424,16 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
-        CONFIGURATION("configuration", OBJECT, ""),
-        CONFIGURATION_CLINICAL("configuration.search", OBJECT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        INTERNAL_VARIANT_ENGINE_CONFIGURATION("internal.variantEngineConfiguration", Type.OBJECT, ""),
-        INTERNAL_VARIANT_ENGINE_CONFIGURATION_OPTIONS("internal.variantEngineConfiguration.options", Type.OBJECT, ""),
-        INTERNAL_VARIANT_ENGINE_CONFIGURATION_SAMPLE_INDEX("internal.variantEngineConfiguration.sampleIndex", Type.OBJECT, ""),
+        INTERNAL_CONFIGURATION("internal.configuration", OBJECT, ""),
+        INTERNAL_CONFIGURATION_CLINICAL("internal.configuration.clinical", OBJECT, ""),
+        INTERNAL_INDEX_RECESSIVE_GENE("internal.index.recessiveGene", OBJECT, ""),
+        INTERNAL_VARIANT_ENGINE_CONFIGURATION("internal.configuration.variantEngineConfiguration", Type.OBJECT, ""),
+        INTERNAL_VARIANT_ENGINE_CONFIGURATION_OPTIONS("internal.configuration.variantEngineConfiguration.options", Type.OBJECT, ""),
+        INTERNAL_VARIANT_ENGINE_CONFIGURATION_SAMPLE_INDEX("internal.configuration.variantEngineConfiguration.sampleIndex", Type.OBJECT,
+                ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),

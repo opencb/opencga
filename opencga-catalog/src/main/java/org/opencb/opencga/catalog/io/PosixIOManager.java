@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.slf4j.Logger;
@@ -36,6 +37,9 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 public class PosixIOManager extends IOManager {
 
@@ -43,7 +47,6 @@ public class PosixIOManager extends IOManager {
     protected static ObjectMapper jsonObjectMapper;
 
     private static final int MAXIMUM_BYTES = 1024 * 1024;
-    private static final int MAXIMUM_LINES = 1000;
 
     @Override
     protected void checkUriExists(URI uri) throws CatalogIOException {
@@ -258,7 +261,10 @@ public class PosixIOManager extends IOManager {
         if (file.toFile().getName().endsWith(".gz")) {
             throw new CatalogIOException("Tail does not work with compressed files.");
         }
-        lines = Math.min(lines, MAXIMUM_LINES);
+        if (lines > ParamConstants.MAXIMUM_LINES_CONTENT) {
+            throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT
+                    + ". Attempting to fail " + lines + " lines");
+        }
 
         int averageBytesPerLine = 250;
 
@@ -334,6 +340,90 @@ public class PosixIOManager extends IOManager {
         }
     }
 
+    // Code adapted from https://www.baeldung.com/java-compress-and-uncompress
+    @Override
+    public void zip(List<String> srcFiles, File destFile) throws CatalogIOException {
+        try (FileOutputStream fos = new FileOutputStream(destFile)) {
+            try (ZipOutputStream zipOut = new ZipOutputStream(fos)) {
+                for (String srcFile : srcFiles) {
+                    File fileToZip = new File(srcFile);
+                    try (FileInputStream fis = new FileInputStream(fileToZip)) {
+                        ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
+                        zipOut.putNextEntry(zipEntry);
+
+                        byte[] bytes = new byte[1024];
+                        int length;
+                        while ((length = fis.read(bytes)) >= 0) {
+                            zipOut.write(bytes, 0, length);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new CatalogIOException(e.getMessage(), e);
+        }
+    }
+
+    // Code adapted from https://www.baeldung.com/java-compress-and-uncompress
+    @Override
+    public void unzip(File fileZip, File destDir) throws CatalogIOException {
+        byte[] buffer = new byte[1024];
+        try {
+            try (ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
+                ZipEntry zipEntry = zis.getNextEntry();
+                while (zipEntry != null) {
+                    File newFile = newFile(destDir, zipEntry);
+                    if (zipEntry.isDirectory()) {
+                        if (!newFile.isDirectory() && !newFile.mkdirs()) {
+                            throw new CatalogIOException("Failed to create directory " + newFile);
+                        }
+                    } else {
+                        // fix for Windows-created archives
+                        File parent = newFile.getParentFile();
+                        if (!parent.isDirectory() && !parent.mkdirs()) {
+                            throw new CatalogIOException("Failed to create directory " + parent);
+                        }
+
+                        // write file content
+                        try (FileOutputStream fos = new FileOutputStream(newFile)) {
+                            int len;
+                            while ((len = zis.read(buffer)) > 0) {
+                                fos.write(buffer, 0, len);
+                            }
+                        }
+                    }
+                    zipEntry = zis.getNextEntry();
+                }
+                zis.closeEntry();
+            }
+        } catch (IOException e) {
+            throw new CatalogIOException(e.getMessage(), e);
+        }
+    }
+
+    /*
+    Extracted from https://www.baeldung.com/java-compress-and-uncompress
+    This method guards against writing files to the file system outside of the target folder. This vulnerability is called Zip Slip.
+    https://snyk.io/research/zip-slip-vulnerability
+     */
+    private File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
+        File destFile = new File(destinationDir, zipEntry.getName());
+
+        String destDirPath = destinationDir.getCanonicalPath();
+        String destFilePath = destFile.getCanonicalPath();
+
+        if (!destFilePath.startsWith(destDirPath + File.separator)) {
+            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+        }
+
+        return destFile;
+    }
+
+    @Override
+    protected void decompressTarBall(Path file, Path destDir) throws CatalogIOException {
+
+    }
+
     @Override
     public FileContent base64Image(Path file) throws CatalogIOException {
         byte[] fileContent;
@@ -349,9 +439,11 @@ public class PosixIOManager extends IOManager {
     @Override
     public FileContent head(Path file, long offset, int lines) throws CatalogIOException {
         if (Files.isRegularFile(file)) {
+            if (lines > ParamConstants.MAXIMUM_LINES_CONTENT) {
+                throw new CatalogIOException("Unable to tail more than " + ParamConstants.MAXIMUM_LINES_CONTENT
+                        + ". Attempting to fail " + lines + " lines");
+            }
             if (offset == 0) {
-                lines = Math.min(lines, MAXIMUM_LINES);
-
                 int numLinesReturned = 0;
                 try (BufferedReader bufferedReader = FileUtils.newBufferedReader(file)) {
                     StringBuilder sb = new StringBuilder();

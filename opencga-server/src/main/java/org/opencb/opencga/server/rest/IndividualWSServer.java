@@ -143,6 +143,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = false) @QueryParam("name") String name,
             @ApiParam(value = "father", required = false) @QueryParam("father") String father,
             @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FAMILY_IDS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FAMILY_IDS_PARAM) String familyIds,
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
             @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
@@ -153,7 +154,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") String karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
-            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus") String affectationStatus,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted,
@@ -204,6 +204,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name", required = false) @QueryParam("name") String name,
             @ApiParam(value = "father", required = false) @QueryParam("father") String father,
             @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FAMILY_IDS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FAMILY_IDS_PARAM) String familyIds,
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
             @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
@@ -214,7 +215,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") String karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
-            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus") String affectationStatus,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
@@ -263,8 +263,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     IndividualProperty.KaryotypicSex karyotypicSex,
             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
                     IndividualProperty.LifeStatus lifeStatus,
-            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    IndividualProperty.AffectationStatus affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)") @QueryParam("release") String release,
@@ -274,13 +272,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
-                    defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            queryOptions.put(Constants.REFRESH, refresh);
-            queryOptions.remove("updateSampleVersion");
 
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
@@ -316,13 +310,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
-                    defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
         try {
-            queryOptions.put(Constants.REFRESH, refresh);
-            queryOptions.remove("updateSampleVersion");
-
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
@@ -381,14 +370,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions", defaultValue = "false")
-                @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {
                 action = ParamUtils.CompleteUpdateAction.ADD;
             }
-            queryOptions.put(Constants.REFRESH, refresh);
 
             return createOkResponse(catalogManager.getIndividualManager().updateAnnotations(studyStr, individualStr, annotationSetId,
                     updateParams, action, queryOptions, token));

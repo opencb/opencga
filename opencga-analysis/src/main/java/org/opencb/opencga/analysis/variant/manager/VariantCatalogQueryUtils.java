@@ -120,6 +120,22 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final String PANEL_DESC = "Filter by genes from the given disease panel";
     public static final QueryParam PANEL =
             QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
+    public static final String PANEL_MOI_DESC = "Filter genes from specific panels that match certain mode of inheritance. " +
+                    "Accepted values : "
+                    + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
+                    + "deNovo, mendelianError, compoundHeterozygous ]";
+    public static final QueryParam PANEL_MODE_OF_INHERITANCE =
+            QueryParam.create("panelModeOfInheritance", PANEL_MOI_DESC
+                    , QueryParam.Type.TEXT);
+    public static final String PANEL_CONFIDENCE_DESC = "Filter genes from specific panels that match certain confidence. " +
+            "Accepted values : [ high, medium, low, rejected ]";
+    public static final QueryParam PANEL_CONFIDENCE =
+            QueryParam.create("panelConfidence", PANEL_CONFIDENCE_DESC, QueryParam.Type.TEXT);
+
+    public static final String PANEL_ROLE_IN_CANCER_DESC = "Filter genes from specific panels that match certain role in cancer. " +
+            "Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]";
+    public static final QueryParam PANEL_ROLE_IN_CANCER =
+            QueryParam.create("panelRoleInCancer", PANEL_ROLE_IN_CANCER_DESC, QueryParam.Type.TEXT);
 
     public static final List<QueryParam> VARIANT_CATALOG_QUERY_PARAMS = Arrays.asList(
             SAMPLE_ANNOTATION,
@@ -218,9 +234,21 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
      * @throws CatalogException if there is any catalog error
      */
     public Query parseQuery(Query query, String token) throws CatalogException {
+        return parseQuery(query, null, token);
+    }
+
+    /**
+     * Transforms a high level Query to a query fully understandable by storage.
+     * @param query     High level query. Will be modified by the method.
+     * @param queryOptions   Query options. Won't be modified
+     * @param token User's session id
+     * @return          Modified input query (same instance)
+     * @throws CatalogException if there is any catalog error
+     */
+    public Query parseQuery(Query query, QueryOptions queryOptions, String token) throws CatalogException {
         if (query == null) {
             // Nothing to do!
-            return null;
+            return new Query();
         }
 
         if (isValidParam(query, SAVED_FILTER)) {
@@ -257,8 +285,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         cohortFilterValidator.processFilter(query, VariantQueryParam.MISSING_GENOTYPES, release, token, defaultStudyStr);
 
         if (release != null) {
-            // If no list of included files is specified:
-            if (VariantQueryProjectionParser.isIncludeFilesDefined(query, Collections.singleton(VariantField.STUDIES_FILES))) {
+            // If include all files:
+            if (VariantQueryProjectionParser.getIncludeFileStatus(query, VariantField.all())
+                    .equals(VariantQueryProjectionParser.IncludeStatus.ALL)) {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
@@ -272,8 +301,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 }
                 query.append(VariantQueryParam.INCLUDE_FILE.key(), includeFiles);
             }
-            // If no list of included samples is specified:
-            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, Collections.singleton(VariantField.STUDIES_SAMPLES))) {
+            // If include all samples:
+            if (VariantQueryProjectionParser.getIncludeFileStatus(query, VariantField.all())
+                    .equals(VariantQueryProjectionParser.IncludeStatus.ALL)) {
                 List<String> includeSamples = new ArrayList<>();
                 Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.RELEASE.key(), "<=" + release);
                 QueryOptions sampleOptions = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
@@ -598,13 +628,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
                 Panel panel = getPanel(defaultStudyStr, panelId, token);
-                for (GenePanel genePanel : panel.getGenes()) {
-                    String gene = genePanel.getName();
-                    if (StringUtils.isEmpty(gene)) {
-                        gene = genePanel.getId();
-                    }
-                    geneNames.add(gene);
-                }
+                geneNames.addAll(getGenesFromPanel(query, panel));
 
                 if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
                     if (assembly == null) {
@@ -615,7 +639,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     if (panel.getRegions() != null) {
                         for (DiseasePanel.RegionPanel region : panel.getRegions()) {
                             for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
-                                if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
+                                if (coordinate  .getAssembly().equalsIgnoreCase(assembly)) {
                                     regions.add(Region.parseRegion(coordinate.getLocation()));
                                 }
                             }
@@ -646,11 +670,67 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
             query.put(GENE.key(), geneNames);
             query.put(SKIP_MISSING_GENES, true);
+        } else {
+            if (isValidParam(query, PANEL_CONFIDENCE)) {
+                throw VariantQueryException.malformedParam(PANEL_CONFIDENCE, query.getString(PANEL_CONFIDENCE.key()),
+                        "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_CONFIDENCE.toString() + "\".");
+            }
+            if (isValidParam(query, PANEL_MODE_OF_INHERITANCE)) {
+                throw VariantQueryException.malformedParam(PANEL_MODE_OF_INHERITANCE, query.getString(PANEL_MODE_OF_INHERITANCE.key()),
+                        "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_MODE_OF_INHERITANCE.toString() + "\".");
+            }
+            if (isValidParam(query, PANEL_ROLE_IN_CANCER)) {
+                throw VariantQueryException.malformedParam(PANEL_ROLE_IN_CANCER, query.getString(PANEL_ROLE_IN_CANCER.key()),
+                        "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_ROLE_IN_CANCER.toString() + "\".");
+            }
         }
 
         logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
 
         return query;
+    }
+
+    protected static Set<String> getGenesFromPanel(Query query, Panel panel) {
+        Set<String> geneNames = new HashSet<>();
+        Set<ClinicalProperty.Confidence> panelConfidence =
+                new HashSet<>(getAsEnumList(query, PANEL_CONFIDENCE, ClinicalProperty.Confidence.class));
+        Set<ClinicalProperty.ModeOfInheritance> panelModeOfInheritance =
+                query.getAsStringList(PANEL_MODE_OF_INHERITANCE.key())
+                        .stream()
+                        .map(ClinicalProperty.ModeOfInheritance::parse)
+                        .collect(Collectors.toSet());
+        Set<ClinicalProperty.RoleInCancer> panelRoleInCancer =
+                new HashSet<>(getAsEnumList(query, PANEL_ROLE_IN_CANCER, ClinicalProperty.RoleInCancer.class));
+
+        for (GenePanel genePanel : panel.getGenes()) {
+            // Do not filter out if undefined
+            if (!panelConfidence.isEmpty()
+                    && genePanel.getConfidence() != null
+                    && !panelConfidence.contains(genePanel.getConfidence())) {
+                // Discard this gene
+                continue;
+            }
+            // Do not filter out if undefined
+            if (!panelModeOfInheritance.isEmpty()
+                    && genePanel.getModeOfInheritance() != null
+                    && !panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
+                // Discard this gene
+                continue;
+            }
+            // Do not filter out if undefined
+            if (!panelRoleInCancer.isEmpty()
+                    && genePanel.getCancer() != null && genePanel.getCancer().getRole() != null
+                    && !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
+                // Discard this gene
+                continue;
+            }
+            String gene = genePanel.getName();
+            if (StringUtils.isEmpty(gene)) {
+                gene = genePanel.getId();
+            }
+            geneNames.add(gene);
+        }
+        return geneNames;
     }
 
     /**
@@ -1143,7 +1223,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_ID, false, sessionId)
+                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_IDS, false, sessionId)
                         .getResults();
                 return studies.stream().map(Study::getFqn).collect(Collectors.toList());
             } else {

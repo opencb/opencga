@@ -8,7 +8,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
 
@@ -201,6 +200,8 @@ public class SampleIndexVariantBiConverter {
         protected SampleIndexEntry.SampleIndexGtEntry gtEntry;
         private final SampleIndexSchema schema;
         private BitInputStream popFreq;
+        private BitInputStream ctIndex;
+        private BitInputStream btIndex;
         private BitInputStream ctBtIndex;
         private int nonIntergenicCount;
         private int clinicalCount;
@@ -211,36 +212,28 @@ public class SampleIndexVariantBiConverter {
         // Reuse the annotation index entry. Avoid create a new instance for each variant.
         private final AnnotationIndexEntry annotationIndexEntry;
         private int annotationIndexEntryIdx;
-        private int fileDataIndexesBitsLength;
+        private BitInputStream clinicalIndex;
 
         SampleIndexGtEntryIterator(SampleIndexSchema schema) {
             nonIntergenicCount = 0;
             clinicalCount = 0;
             annotationIndexEntry = new AnnotationIndexEntry();
-            annotationIndexEntry.setCtBtCombination(new AnnotationIndexEntry.CtBtCombination(new byte[0], 0, 0));
+            annotationIndexEntry.setCtBtCombination(new AnnotationIndexEntry.CtBtCombination(new int[0], 0, 0));
             annotationIndexEntryIdx = -1;
             fileIndexIdx = 0;
             fileIndexCount = 0;
             this.schema = schema;
-            fileDataIndexesBitsLength = schema.getFileIndex().getBitsLength();
         }
 
         SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexSchema schema) {
             this(schema);
             this.gtEntry = gtEntry;
-            this.ctBtIndex = gtEntry.getCtBtIndex() == null
-                    ? null
-                    : new BitInputStream(gtEntry.getCtBtIndex(), gtEntry.getCtBtIndexOffset(), gtEntry.getCtBtIndexLength());
-            this.popFreq = gtEntry.getPopulationFrequencyIndex() == null
-                    ? null
-                    : new BitInputStream(gtEntry.getPopulationFrequencyIndex(),
-                    gtEntry.getPopulationFrequencyIndexOffset(),
-                    gtEntry.getPopulationFrequencyIndexLength());
-            this.fileIndex = gtEntry.getFileIndex() == null
-                    ? null
-                    : new BitInputStream(gtEntry.getFileIndex(),
-                    gtEntry.getFileIndexOffset(),
-                    gtEntry.getFileIndexLength());
+            this.ctIndex = gtEntry.getConsequenceTypeIndexStream();
+            this.btIndex = gtEntry.getBiotypeIndexStream();
+            this.ctBtIndex = gtEntry.getCtBtIndexStream();
+            this.popFreq = gtEntry.getPopulationFrequencyIndexStream();
+            this.clinicalIndex = gtEntry.getClinicalIndexStream();
+            this.fileIndex = gtEntry.getFileIndexStream();
         }
 
         @Override
@@ -260,7 +253,7 @@ public class SampleIndexVariantBiConverter {
 
         public boolean isMultiFileIndex(int i) {
 //            configuration.getFileIndex().getMultiFileIndex().readAndDecode()
-            return schema.getFileIndex().isMultiFile(fileIndex, i * fileDataIndexesBitsLength);
+            return schema.getFileIndex().isMultiFile(fileIndex, i);
         }
 
         private int nextFileIndex() {
@@ -291,7 +284,7 @@ public class SampleIndexVariantBiConverter {
         }
 
         private BitBuffer getFileIndex(int i) {
-            return fileIndex.getBitBuffer(i * fileDataIndexesBitsLength, fileDataIndexesBitsLength);
+            return schema.getFileIndex().read(fileIndex, i);
         }
 
         @Override
@@ -317,6 +310,7 @@ public class SampleIndexVariantBiConverter {
             annotationIndexEntry.setHasSummaryIndex(false);
             annotationIndexEntry.setHasCtIndex(false);
             annotationIndexEntry.setHasBtIndex(false);
+            annotationIndexEntry.setHasClinical(false);
             AnnotationIndexEntry.CtBtCombination ctBtCombination = annotationIndexEntry.getCtBtCombination();
             ctBtCombination.setNumCt(0);
             ctBtCombination.setNumBt(0);
@@ -328,38 +322,33 @@ public class SampleIndexVariantBiConverter {
 
                 if (nonIntergenic) {
                     int nextNonIntergenic = nextNonIntergenicIndex();
-                    if (gtEntry.getConsequenceTypeIndex() != null) {
-                        annotationIndexEntry.setCtIndex(gtEntry.getConsequenceTypeIndex(nextNonIntergenic));
+                    if (ctIndex != null) {
+                        annotationIndexEntry.setCtIndex(schema.getCtIndex().readFieldValue(ctIndex, nextNonIntergenic));
                     }
-                    if (gtEntry.getBiotypeIndex() != null) {
-                        annotationIndexEntry.setBtIndex(gtEntry.getBiotypeIndex(nextNonIntergenic));
+                    if (btIndex != null) {
+                        annotationIndexEntry.setBtIndex(schema.getBiotypeIndex().readFieldValue(btIndex, nextNonIntergenic));
                     }
 
                     if (ctBtIndex != null && annotationIndexEntry.getCtIndex() != 0 && annotationIndexEntry.getBtIndex() != 0) {
-                        int numCt = Integer.bitCount(Short.toUnsignedInt(annotationIndexEntry.getCtIndex()));
-                        int numBt = Integer.bitCount(Byte.toUnsignedInt(annotationIndexEntry.getBtIndex()));
-                        ctBtCombination.setNumCt(numCt);
-                        ctBtCombination.setNumBt(numBt);
-                        ctBtCombination.setCtBtMatrix(ctBtIndex.readBytes(numCt, numBt));
+                        schema.getCtBtIndex().getField()
+                                .read(ctBtIndex, annotationIndexEntry.getCtIndex(), annotationIndexEntry.getBtIndex(), ctBtCombination);
                     }
                 }
             }
 
-            byte[] popFreqIndex;
             if (popFreq != null) {
-                popFreqIndex = popFreq.readBytes(schema.getConfiguration().getPopulationRanges().size(),
-                        AnnotationIndexConverter.POP_FREQ_SIZE);
-            } else {
-                popFreqIndex = null;
+                // TODO: Reuse BitBuffer
+                BitBuffer popFreqIndex = popFreq.readBitBuffer(schema.getPopFreqIndex().getBitsLength());
+                annotationIndexEntry.setPopFreqIndex(popFreqIndex);
             }
-            annotationIndexEntry.setPopFreqIndex(popFreqIndex);
 
             if (gtEntry.getClinicalIndex() != null) {
                 boolean clinical = AbstractSampleIndexEntryFilter.isClinical(annotationIndexEntry.getSummaryIndex());
-                annotationIndexEntry.setClinical(clinical);
+                annotationIndexEntry.setHasClinical(clinical);
                 if (clinical) {
                     int nextClinical = nextClinicalIndex();
-                    annotationIndexEntry.setClinicalIndex(gtEntry.getClinicalIndex(nextClinical));
+                    // TODO: Reuse BitBuffer
+                    annotationIndexEntry.setClinicalIndex(schema.getClinicalIndexSchema().read(clinicalIndex, nextClinical));
                 }
             }
 

@@ -24,8 +24,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -41,11 +39,13 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.Variable;
@@ -176,11 +176,23 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 throw new CatalogParameterException("Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
+            ParamUtils.checkIdentifier(cohortParams.getId(), "id");
+
             if (CollectionUtils.isNotEmpty(cohortParams.getSamples())) {
-                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), cohortParams.getSamples(),
+                List<String> sampleIds = new ArrayList<>(cohortParams.getSamples().size());
+                for (SampleReferenceParam sample : cohortParams.getSamples()) {
+                    if (StringUtils.isNotEmpty(sample.getId())) {
+                        sampleIds.add(sample.getId());
+                    } else if (StringUtils.isNotEmpty(sample.getUuid())) {
+                        sampleIds.add(sample.getUuid());
+                    } else {
+                        throw new CatalogParameterException("Found samples with missing id and uuid.");
+                    }
+                }
+                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds,
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList, 0,
-                        cohortParams.getAnnotationSets(), 1,
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(), 1,
                         cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                         cohortParams.getAttributes()));
 
@@ -218,15 +230,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             new Query(Constants.ANNOTATION, variableSetId + ":" + variableId + "=" + value),
                             SampleManager.INCLUDE_SAMPLE_IDS, token);
 
-                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                            sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
+                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                            cohortParams.getDescription(), sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
                             cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                             cohortParams.getAttributes()));
                 }
             } else {
                 //Create empty cohort
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getDescription(), Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
             }
         } catch (CatalogException e) {
             auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
@@ -351,14 +363,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
-        cohort.setCreationDate(TimeUtils.getTime());
+        cohort.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(cohort.getCreationDate()));
         cohort.setModificationDate(TimeUtils.getTime());
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
         cohort.setRelease(studyManager.getCurrentRelease(study));
-        cohort.setInternal(ParamUtils.defaultObject(cohort.getInternal(), CohortInternal::new));
-        cohort.getInternal().setStatus(ParamUtils.defaultObject(cohort.getInternal().getStatus(), CohortStatus::new));
+        cohort.setInternal(CohortInternal.init());
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
         cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), CustomStatus::new));
         cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
@@ -979,6 +990,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                                          QueryOptions options, String userId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
+        if (StringUtils.isNotEmpty(updateParams.getCreationDate())) {
+            ParamUtils.checkCreationDateFormat(updateParams.getCreationDate());
+        }
+
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
             try {
@@ -1033,14 +1048,23 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     break;
             }
 
-            if (ListUtils.isNotEmpty(updateParams.getSamples())) {
+            if (CollectionUtils.isNotEmpty(updateParams.getSamples())) {
                 // Remove possible duplications
-                updateParams.setSamples(updateParams.getSamples().stream().distinct().collect(Collectors.toList()));
+                Set<String> sampleIds = new HashSet<>(updateParams.getSamples().size());
+                for (SampleReferenceParam sample : updateParams.getSamples()) {
+                    if (StringUtils.isNotEmpty(sample.getId())) {
+                        sampleIds.add(sample.getId());
+                    } else if (StringUtils.isNotEmpty(sample.getUuid())) {
+                        sampleIds.add(sample.getUuid());
+                    } else {
+                        throw new CatalogParameterException("Found samples with missing id and uuid.");
+                    }
+                }
 
                 InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                        updateParams.getSamples(), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
+                        new ArrayList<>(sampleIds), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
 
-                if (sampleResult.getNumResults() != updateParams.getSamples().size()) {
+                if (sampleResult.getNumResults() != sampleIds.size()) {
                     throw new CatalogException("Could not find all the samples introduced. Update was not performed.");
                 }
 

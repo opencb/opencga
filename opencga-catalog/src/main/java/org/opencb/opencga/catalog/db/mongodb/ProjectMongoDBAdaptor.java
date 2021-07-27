@@ -129,12 +129,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         if (StringUtils.isEmpty(project.getUuid())) {
             project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
-        if (StringUtils.isEmpty(project.getCreationDate())) {
-            project.setCreationDate(TimeUtils.getTime());
-        }
 
         Document projectDocument = projectConverter.convertToStorageType(project);
-        projectDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(project.getCreationDate()));
+        projectDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(project.getCreationDate()) ? TimeUtils.toDate(project.getCreationDate()) : TimeUtils.getDate());
         projectDocument.put(PRIVATE_MODIFICATION_DATE, projectDocument.get(PRIVATE_CREATION_DATE));
 
         Bson update = Updates.push("projects", projectDocument);
@@ -336,17 +334,32 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document projectParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(),
                 QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 projectParameters.put("projects.$." + s, parameters.getString(s));
             }
         }
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            projectParameters.put("projects.$." + QueryParams.CREATION_DATE.key(), time);
+            projectParameters.put("projects.$." + PRIVATE_CREATION_DATE, date);
+        }
+
         Map<String, Object> attributes = parameters.getMap(QueryParams.ATTRIBUTES.key());
         if (attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
                 projectParameters.put("projects.$.attributes." + entry.getKey(), entry.getValue());
+            }
+        }
+        final String[] acceptedObjectParams = {QueryParams.INTERNAL_CELLBASE.key()};
+        for (String param : acceptedObjectParams) {
+            if (parameters.containsKey(param)) {
+                Object o = getMongoDBDocument(parameters.get(param), param);
+                projectParameters.put("projects.$." + param, o);
             }
         }
 
@@ -376,8 +389,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            projectParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
-            projectParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            projectParameters.put("projects.$." + QueryParams.MODIFICATION_DATE.key(), time);
+            projectParameters.put("projects.$." + PRIVATE_MODIFICATION_DATE, date);
         }
 
         return projectParameters;
@@ -573,11 +586,12 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
                 && !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies"))) {
+            QueryOptions studyOptions = options == null ? QueryOptions.empty() : extractNestedOptions(options, "studies");
             for (Project project : queryResult.getResults()) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.PROJECT_UID.key(), project.getUid());
                 try {
                     OpenCGAResult<Study> studyDataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(clientSession, studyQuery,
-                            options);
+                            studyOptions);
                     project.setStudies(studyDataResult.getResults());
                 } catch (CatalogDBException e) {
                     logger.error("{}", e.getMessage(), e);

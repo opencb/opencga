@@ -34,14 +34,16 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.*;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
@@ -1223,9 +1225,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Clinical clinvar : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
-                                + ".variantClassification.clinicalSignificance", 1),
-                new ObjectMap(onBackgroundSparse).append(NAME, "search"));
+//                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
+//                                + ".variantClassification.clinicalSignificance", 1),
+//                new ObjectMap(onBackgroundSparse).append(NAME, "search"));
+                                + '.' + DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS_FIELD, 1),
+                new ObjectMap(onBackgroundSparse).append(NAME, "clinical"));
 
         // Conserved region score (phastCons, phylop, gerp)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD

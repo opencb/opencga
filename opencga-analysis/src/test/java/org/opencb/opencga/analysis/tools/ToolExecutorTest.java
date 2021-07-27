@@ -18,9 +18,6 @@ package org.opencb.opencga.analysis.tools;
 
 import org.opencb.commons.test.GenericTest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class ToolExecutorTest extends GenericTest {
 
 //    public final static String PASSWORD = "asdf";

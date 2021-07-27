@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
@@ -66,6 +67,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             DELETED_FAMILY_COLLECTION,
             DELETED_CLINICAL_ANALYSIS_COLLECTION,
             DELETED_INTERPRETATION_COLLECTION,
+
+            MIGRATION_COLLECTION,
             METADATA_COLLECTION,
             AUDIT_COLLECTION
     );
@@ -95,6 +98,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
 
     public static final String METADATA_COLLECTION = "metadata";
+    public static final String MIGRATION_COLLECTION = "migration";
     public static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
     private final MongoDataStoreManager mongoManager;
@@ -118,6 +122,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private InterpretationMongoDBAdaptor interpretationDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
     private MetaMongoDBAdaptor metaDBAdaptor;
+    private MigrationMongoDBAdaptor migrationDBAdaptor;
 
     private Logger logger;
 
@@ -275,6 +280,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
+    public MigrationDBAdaptor getMigrationDBAdaptor() {
+        return migrationDBAdaptor;
+    }
+
+    @Override
     public Map<String, MongoDBCollection> getMongoDBCollectionMap() {
         return collections;
     }
@@ -295,6 +305,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         }
 
         metaCollection = mongoDataStore.getCollection(METADATA_COLLECTION);
+        MongoDBCollection migrationCollection = mongoDataStore.getCollection(MIGRATION_COLLECTION);
 
         MongoDBCollection userCollection = mongoDataStore.getCollection(USER_COLLECTION);
         MongoDBCollection studyCollection = mongoDataStore.getCollection(STUDY_COLLECTION);
@@ -324,6 +335,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         collections = new HashMap<>();
         collections.put(METADATA_COLLECTION, metaCollection);
+        collections.put(MIGRATION_COLLECTION, migrationCollection);
 
         collections.put(USER_COLLECTION, userCollection);
         collections.put(STUDY_COLLECTION, studyCollection);
@@ -366,6 +378,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 catalogConfiguration, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, catalogConfiguration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, catalogConfiguration);
+        migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, catalogConfiguration, this);
     }
 
 }

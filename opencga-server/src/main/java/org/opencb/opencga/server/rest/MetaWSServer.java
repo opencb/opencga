@@ -88,12 +88,9 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/ping")
-    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.", response = Map.class)
+    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.", response = String.class)
     public Response ping() {
-
-        OpenCGAResult queryResult = new OpenCGAResult();
-        queryResult.setTime(0);
-
+        OpenCGAResult<String> queryResult = new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList("pong"), 1);
         return createOkResponse(queryResult);
     }
 
@@ -220,7 +217,7 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/api")
-    @ApiOperation(value = "API", response = Map.class)
+    @ApiOperation(value = "API", response = List.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr) {
         List<LinkedHashMap<String, Object>> api = new ArrayList<>(20);
         Map<String, Class> classes = new LinkedHashMap<>();

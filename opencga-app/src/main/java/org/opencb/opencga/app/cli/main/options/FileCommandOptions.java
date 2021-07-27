@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
@@ -30,7 +27,9 @@ import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -54,6 +53,7 @@ public class FileCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public LinkCommandOptions linkCommandOptions;
     public LinkRunCommandOptions linkRunCommandOptions;
+    public PostLinkRunCommandOptions postLinkRunCommandOptions;
 //    public RelinkCommandOptions relinkCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
@@ -97,6 +97,7 @@ public class FileCommandOptions {
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
         this.linkRunCommandOptions = new LinkRunCommandOptions();
+        this.postLinkRunCommandOptions = new PostLinkRunCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
@@ -227,6 +228,9 @@ public class FileCommandOptions {
         @Parameter(names = {"--size"}, description = ParamConstants.FILE_SIZE_DESCRIPTION, arity = 1)
         public String size;
 
+        @Parameter(names = {"--index-status", "--internal-index-status"}, description = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION, arity = 1)
+        public String internalIndexStatus;
+
         @Parameter(names = {"--samples"}, description = ParamConstants.SAMPLES_DESCRIPTION, arity = 1)
         public String samples;
 
@@ -275,14 +279,14 @@ public class FileCommandOptions {
         @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", arity = 1)
         public long offset;
 
-        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        @Parameter(names = {"--lines"}, description = ParamConstants.MAXIMUM_LINES_CONTENT_DESCRIPTION, arity = 1)
         public Integer lines;
     }
 
     @Parameters(commandNames = {"tail"}, commandDescription = "Show the last lines of a file (up to a limit)")
     public class TailCommandOptions extends BaseFileCommand{
 
-        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        @Parameter(names = {"--lines"}, description = ParamConstants.MAXIMUM_LINES_CONTENT_DESCRIPTION, arity = 1)
         public Integer lines;
     }
 
@@ -316,6 +320,24 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--tags"}, description = "Comma separated list of sample names or ids", arity = 1)
         public List<String> tags;
+
+        @Parameter(names = {"--software-name"}, description = "Software name", arity = 1)
+        public String softwareName;
+
+        @Parameter(names = {"--software-version"}, description = "Software version", arity = 1)
+        public String softwareVersion;
+
+        @Parameter(names = {"--software-repository"}, description = "Software repository", arity = 1)
+        public String softwareRepository;
+
+        @Parameter(names = {"--software-commit"}, description = "Software commit", arity = 1)
+        public String softwareCommit;
+
+        @Parameter(names = {"--software-website"}, description = "Software website", arity = 1)
+        public String softwareWebsite;
+
+        @DynamicParameter(names = {"--software-params"}, description = "Software params")
+        public Map<String, String> softwareParams = new HashMap<>();
 
     }
 
@@ -412,6 +434,22 @@ public class FileCommandOptions {
         public boolean parents;
     }
 
+    @Parameters(commandNames = {"post-link-run"}, commandDescription = "Post link operation. Associate non-registered samples for files with high volumes of samples.")
+    public class PostLinkRunCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = new GeneralCliOptions.JobOptions();
+
+        @Parameter(names = {"--files"}, description = "Files that need to be processed. Use \"" + ParamConstants.ALL + "\" to process all files from the study", required = true, variableArity = true)
+        public List<String> files;
+
+        @Parameter(names = {"--batch-size"}, description = "Samples update batch size")
+        public Integer batchSize;
+    }
+
     @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")
     public class UploadCommandOptions extends StudyOption {
 
@@ -421,12 +459,12 @@ public class FileCommandOptions {
         @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
 
-        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true,
+        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
                 arity = 1)
         public String fileFormat;
 
         @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
-                required = true, arity = 1)
+               arity = 1)
         public String bioformat;
 
         @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)",

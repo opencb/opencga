@@ -10,6 +10,8 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class SearchIndexVariantAggregationExecutor extends VariantAggregationExecutor {
 
     private final VariantSearchManager searchManager;
@@ -23,7 +25,7 @@ public class SearchIndexVariantAggregationExecutor extends VariantAggregationExe
     }
 
     @Override
-    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet) throws Exception {
+    protected boolean canUseThisExecutor(Query query, QueryOptions options, String facet, List<String> reason) throws Exception {
         return VariantSearchUtils.isQueryCovered(query);
     }
 

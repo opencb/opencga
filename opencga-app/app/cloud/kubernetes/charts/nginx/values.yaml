@@ -1,8 +1,9 @@
 
-# https://github.com/helm/charts/tree/master/stable/nginx-ingress
+# https://github.com/kubernetes/ingress-nginx/tree/master/charts/ingress-nginx
+# DEPRECATED https://github.com/helm/charts/tree/master/stable/nginx-ingress
+# https://docs.nginx.com/nginx-ingress-controller/installation/installation-with-helm/
 # https://docs.microsoft.com/en-gb/azure/dev-spaces/how-to/ingress-https-nginx
 # https://docs.microsoft.com/en-gb/azure/aks/ingress-own-tls
-
 controller:
   replicaCount: 2
   nodeSelector:

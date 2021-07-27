@@ -456,7 +456,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param options   Other options
      *                  {@link VariantStorageOptions#STATS_AGGREGATION_MAPPING_FILE}
      *                  {@link VariantStorageOptions#STATS_OVERWRITE}
-     *                  {@link VariantStorageOptions#STATS_UPDATE}
      *                  {@link VariantStorageOptions#LOAD_THREADS}
      *                  {@link VariantStorageOptions#LOAD_BATCH_SIZE}
      *                  {@link VariantQueryParam#REGION}
@@ -506,12 +505,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 for (URI uri : files) {
                     String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
                     fileIds.add(metadataManager.getFileId(studyMetadata.getId(), fileName));
-                }
-                Integer defaultCohortId = metadataManager.getCohortId(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
-                CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadata.getId(), defaultCohortId);
-                if (defaultCohort.isStatsReady()) {
-                    logger.debug("Cohort '{}':{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
-                    statsOptions.append(VariantStorageOptions.STATS_UPDATE.key(), true);
                 }
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
                         .buildFilename(studyMetadata.getName(), fileIds.get(0)) + "." + TimeUtils.getTime());
@@ -902,6 +895,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     @Override
     public abstract void testConnection() throws StorageEngineException;
 
+    public void reloadCellbaseConfiguration() {
+        cellBaseUtils = null;
+    }
+
     public CellBaseUtils getCellBaseUtils() throws StorageEngineException {
         if (cellBaseUtils == null) {
             final ProjectMetadata metadata = getMetadataManager().getProjectMetadata(getOptions());
@@ -1029,6 +1026,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         executors.add(new CompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this));
+        executors.add(new BreakendVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
+                getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, configuration, getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(
@@ -1160,15 +1160,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @return VariantQueryExecutor to use
      */
     public VariantAggregationExecutor getVariantAggregationExecutor(Query query, QueryOptions options) {
+        List<String> messages = new LinkedList<>();
         for (VariantAggregationExecutor executor : getVariantAggregationExecutors()) {
-            if (executor.canUseThisExecutor(query, options)) {
+            if (executor.canUseThisExecutor(query, options, messages)) {
                 return executor;
             }
         }
         String facet = options == null ? null : options.getString(QueryOptions.FACET);
         // This should rarely happen
         logger.warn("Unable to run aggregation facet '" + facet + "' with query " + VariantQueryUtils.printQuery(query));
-        throw new VariantQueryException("No VariantAggregationExecutor found to run the query!").setQuery(query);
+        for (String message : messages) {
+            logger.warn(message);
+        }
+        throw new VariantQueryException("No VariantAggregationExecutor found to run the query. " + messages).setQuery(query);
     }
 
     @Override

@@ -50,7 +50,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
     @Override
     protected void run() throws Exception {
         Query filesQuery = new Query()
-                .append(FORMAT.key(), File.Format.VCF)
+                .append(FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
                 .append(INTERNAL_INDEX_STATUS_NAME.key(), "!" + FileIndex.IndexStatus.READY);
         filesQuery.putIfNotEmpty(NAME.key(), toolParams.getName());
         filesQuery.putIfNotEmpty(DIRECTORY.key(), toolParams.getDirectory());

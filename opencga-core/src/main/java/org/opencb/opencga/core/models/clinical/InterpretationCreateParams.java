@@ -21,6 +21,8 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 
 import java.util.List;
 import java.util.Map;
@@ -33,35 +35,44 @@ public class InterpretationCreateParams {
     private String id;
     private String description;
     private String clinicalAnalysisId;
+    private String creationDate;
     private ClinicalAnalystParam analyst;
     private List<InterpretationMethod> methods;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
+    private List<PanelReferenceParam> panels;
     private List<ClinicalCommentParam> comments;
     private Map<String, Object> attributes;
 
     public InterpretationCreateParams() {
     }
 
-    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalystParam analyst,
-                                      List<InterpretationMethod> methods, List<ClinicalVariant> primaryFindings,
-                                      List<ClinicalVariant> secondaryFindings, List<ClinicalCommentParam> comments,
+    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, String creationDate,
+                                      ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
+                                      List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments,
                                       Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
+        this.creationDate = creationDate;
         this.analyst = analyst;
         this.methods = methods;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
+        this.panels = panels;
         this.comments = comments;
         this.attributes = attributes;
     }
 
     public static InterpretationCreateParams of(Interpretation interpretation) {
         return new InterpretationCreateParams(interpretation.getId(), interpretation.getDescription(),
-                interpretation.getClinicalAnalysisId(), ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethods(),
+                interpretation.getClinicalAnalysisId(), interpretation.getCreationDate(),
+                ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethods(),
                 interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
+                interpretation.getPanels() != null
+                        ? interpretation.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
+                        : null,
                 interpretation.getComments() != null
                         ? interpretation.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
@@ -74,10 +85,12 @@ public class InterpretationCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", analyst=").append(analyst);
         sb.append(", methods=").append(methods);
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
+        sb.append(", panels=").append(panels);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -85,8 +98,9 @@ public class InterpretationCreateParams {
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(id, description, clinicalAnalysisId, analyst.toClinicalAnalyst(), methods, TimeUtils.getTime(),
+        return new Interpretation(id, description, clinicalAnalysisId, analyst.toClinicalAnalyst(), methods, creationDate,
                 TimeUtils.getTime(), primaryFindings, secondaryFindings,
+                panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 attributes);
     }
@@ -119,6 +133,15 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams setClinicalAnalysisId(String clinicalAnalysisId) {
         this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public InterpretationCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 
@@ -155,6 +178,15 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams setSecondaryFindings(List<ClinicalVariant> secondaryFindings) {
         this.secondaryFindings = secondaryFindings;
+        return this;
+    }
+
+    public List<PanelReferenceParam> getPanels() {
+        return panels;
+    }
+
+    public InterpretationCreateParams setPanels(List<PanelReferenceParam> panels) {
+        this.panels = panels;
         return this;
     }
 

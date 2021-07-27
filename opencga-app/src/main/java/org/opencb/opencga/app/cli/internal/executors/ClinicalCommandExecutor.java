@@ -24,6 +24,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationConfiguration;
@@ -33,6 +34,7 @@ import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysi
 import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationConfiguration;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -43,6 +45,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions.RGA_AUX_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
@@ -91,6 +94,10 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
                 rgaIndex();
                 break;
 
+            case RGA_AUX_INDEX_RUN_COMMAND:
+                auxRgaIndex();
+                break;
+
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -107,6 +114,14 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(RgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
     }
 
+    private void auxRgaIndex() throws ToolException {
+        ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions options = clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions;
+        Path outDir = Paths.get(options.outdir);
+        ObjectMap params = new ObjectMap()
+                .appendAll(options.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, options.study);
+        toolRunner.execute(AuxiliarRgaAnalysis.class, params, outDir, options.jobOptions.jobId, options.commonOptions.token);
+    }
 
     private void tiering() throws Exception {
         ClinicalCommandOptions.TieringCommandOptions cliOptions = clinicalCommandOptions.tieringCommandOptions;
@@ -226,10 +241,15 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         query.putIfNotNull("proteinKeyword", cliOptions.proteinKeywords);
         query.putIfNotNull("drug", cliOptions.drugs);
         query.putIfNotNull("functionalScore", cliOptions.basicQueryOptions.functionalScore);
+        query.putIfNotNull("clinical", cliOptions.clinical);
         query.putIfNotNull("clinicalSignificance", cliOptions.clinicalSignificance);
+        query.putIfNotNull("clinicalConfirmedStatus", cliOptions.clinicalConfirmedStatus);
         query.putIfNotNull("customAnnotation", cliOptions.annotations);
 
-        query.putIfNotNull("panel", cliOptions.panel);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL.key(), cliOptions.panel);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL_MODE_OF_INHERITANCE.key(), cliOptions.panelModeOfInheritance);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL_CONFIDENCE.key(), cliOptions.panelConfidence);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER.key(), cliOptions.panelRoleInCancer);
 
         query.putIfNotNull("trait", cliOptions.trait);
 

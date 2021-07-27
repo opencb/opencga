@@ -32,6 +32,7 @@ public class FileUpdateParams {
 
     private String name;
     private String description;
+    private String creationDate;
 
     private List<String> sampleIds;
 
@@ -49,18 +50,21 @@ public class FileUpdateParams {
 
     private CustomStatusParams status;
     private List<AnnotationSet> annotationSets;
+    private FileQualityControl qualityControl;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
     public FileUpdateParams() {
     }
 
-    public FileUpdateParams(String name, String description, List<String> sampleIds, String checksum, File.Format format,
-                            File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
+    public FileUpdateParams(String name, String description, String creationDate, List<String> sampleIds, String checksum,
+                            File.Format format, File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
                             SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles, CustomStatusParams status,
-                            List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
+                            List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats,
+                            Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
+        this.creationDate = creationDate;
         this.sampleIds = sampleIds;
         this.checksum = checksum;
         this.format = format;
@@ -73,6 +77,7 @@ public class FileUpdateParams {
         this.relatedFiles = relatedFiles;
         this.status = status;
         this.annotationSets = annotationSets;
+        this.qualityControl = qualityControl;
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -98,6 +103,7 @@ public class FileUpdateParams {
         final StringBuilder sb = new StringBuilder("FileUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", format=").append(format);
@@ -110,6 +116,7 @@ public class FileUpdateParams {
         sb.append(", size=").append(size);
         sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -131,6 +138,15 @@ public class FileUpdateParams {
 
     public FileUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public FileUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 
@@ -239,6 +255,15 @@ public class FileUpdateParams {
 
     public FileUpdateParams setAnnotationSets(List<AnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public FileQualityControl getQualityControl() {
+        return qualityControl;
+    }
+
+    public FileUpdateParams setQualityControl(FileQualityControl qualityControl) {
+        this.qualityControl = qualityControl;
         return this;
     }
 

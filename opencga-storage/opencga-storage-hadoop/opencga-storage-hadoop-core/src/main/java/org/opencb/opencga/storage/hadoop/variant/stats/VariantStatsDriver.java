@@ -44,7 +44,7 @@ import static org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsC
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class    VariantStatsDriver extends AbstractVariantsTableDriver {
+public class VariantStatsDriver extends AbstractVariantsTableDriver {
     private static final String STATS_OPERATION_NAME = "stats";
     public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     public static final String OUTPUT = "output";
@@ -56,7 +56,6 @@ public class    VariantStatsDriver extends AbstractVariantsTableDriver {
     private Path outdir;
     private Path localOutput;
     private Aggregation aggregation;
-    private boolean updateStats;
     private boolean overwrite;
     private boolean statsMultiAllelic;
     private String statsDefaultGenotype;
@@ -91,8 +90,6 @@ public class    VariantStatsDriver extends AbstractVariantsTableDriver {
         }
 
         aggregation = VariantStatsMapper.getAggregation(getConf());
-        updateStats = getConf().getBoolean(VariantStorageOptions.STATS_UPDATE.key(),
-                VariantStorageOptions.STATS_UPDATE.defaultValue());
         overwrite = getConf().getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(),
                 VariantStorageOptions.STATS_OVERWRITE.defaultValue());
         statsMultiAllelic = getConf().getBoolean(VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
@@ -141,7 +138,7 @@ public class    VariantStatsDriver extends AbstractVariantsTableDriver {
         getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
 
         Query query = VariantStatisticsManager.buildInputQuery(getMetadataManager(), readStudyMetadata(),
-                cohorts, overwrite, updateStats, options, aggregation);
+                cohorts, options, aggregation);
         QueryOptions queryOptions = VariantStatisticsManager.buildIncludeExclude();
 
         if (excludeFiles) {

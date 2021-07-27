@@ -26,14 +26,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
-import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.tools.annotations.ToolParams;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.rga.RgaManager;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -46,8 +41,10 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.BufferedWriter;
@@ -75,7 +72,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         steps.add(getId());
         steps.add("add-metadata-to-output-files");
         if (analysisParams.isIndex()) {
-            steps.add("launch-index");
+            steps.add("index");
         }
         return steps;
     }
@@ -112,12 +109,12 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             if (CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
                 throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by any panel");
             }
-            if (StringUtils.isNotEmpty(analysisParams.getConsequenceType())) {
-                Set<String> cts = new HashSet<>(Arrays.asList(analysisParams.getConsequenceType().split(",")));
-                if (!cts.equals(VariantQueryUtils.LOF_EXTENDED_SET)) {
-                    throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by consequence type : " + cts);
-                }
-            }
+//            if (StringUtils.isNotEmpty(analysisParams.getConsequenceType())) {
+//                Set<String> cts = new HashSet<>(Arrays.asList(analysisParams.getConsequenceType().split(",")));
+//                if (!cts.equals(VariantQueryUtils.LOF_EXTENDED_SET)) {
+//                    throw new IllegalArgumentException("Unable to index KnockoutAnalysis result filtering by consequence type : " + cts);
+//                }
+//            }
             analysisParams.setSkipGenesFile(true);
         }
 
@@ -291,11 +288,27 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                     } else {
                         sampleIdToIndividualIdMap.put(knockoutByIndividual.getSampleId(), individual.getId());
                         knockoutByIndividual.setId(individual.getId());
-                        if (individual.getFather() != null) {
+                        List<String> parentsIndividuals = new ArrayList<>(2);
+                        if (individual.getFather() != null && individual.getFather().getId() != null) {
                             knockoutByIndividual.setFatherId(individual.getFather().getId());
+                            parentsIndividuals.add(knockoutByIndividual.getFatherId());
                         }
-                        if (individual.getMother() != null) {
+                        if (individual.getMother() != null && individual.getMother().getId() != null) {
                             knockoutByIndividual.setMotherId(individual.getMother().getId());
+                            parentsIndividuals.add(knockoutByIndividual.getMotherId());
+                        }
+                        if (!parentsIndividuals.isEmpty()) {
+                            for (Individual parent : catalogManager.getIndividualManager().get(study, parentsIndividuals,
+                                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                                            IndividualDBAdaptor.QueryParams.SAMPLES.key() + ".id")), token).getResults()) {
+                                if (parent.getSamples() != null && !parent.getSamples().isEmpty()) {
+                                    if (parent.getId().equals(knockoutByIndividual.getFatherId())) {
+                                        knockoutByIndividual.setFatherSampleId(parent.getSamples().get(0).getId());
+                                    } else {
+                                        knockoutByIndividual.setMotherSampleId(parent.getSamples().get(0).getId());
+                                    }
+                                }
+                            }
                         }
                         knockoutByIndividual.setSex(individual.getSex());
                         knockoutByIndividual.setDisorders(individual.getDisorders());
@@ -327,6 +340,8 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, "transcripts,annotation.expression");
                         Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
                                 .search(new Query("name", knockoutByGene.getName()), queryOptions).firstResult();
+//                        Gene gene = cellBaseUtils.getCellBaseClient().getGeneClient()
+//                                .get(Collections.singletonList(knockoutByGene.getName()), queryOptions).firstResult();
                         knockoutByGene.setId(gene.getId());
                         knockoutByGene.setName(gene.getName());
                         knockoutByGene.setChromosome(gene.getChromosome());
@@ -366,33 +381,27 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
         });
 
         if (analysisParams.isIndex()) {
-            step("launch-index", () -> {
-                String thisJobOutdir = getCatalogManager()
-                        .getJobManager()
-                        .get(getStudyFqn(), getJobId(), new QueryOptions(), getToken()).first().getOutDir()
-                        .getPath();
-                if (!thisJobOutdir.endsWith("/")) {
-                    thisJobOutdir += "/";
-                }
-                String individualsOutputFileName = getIndividualsOutputFile().getFileName().toString();
-                RgaAnalysisParams rgaAnalysisParams = new RgaAnalysisParams(thisJobOutdir + individualsOutputFileName);
-
-                Job rgaJob = getCatalogManager().getJobManager().submit(getStudyFqn(), RgaAnalysis.ID, Enums.Priority.MEDIUM,
-                        rgaAnalysisParams.toParams(new ObjectMap(ParamConstants.STUDY_PARAM, getStudyFqn())), null, null,
-                        Collections.singletonList(getJobId()), analysisParams.getIndexJobTags(), getToken()).first();
-                addAttribute("rga-index-job", rgaJob.getId());
-                addAttribute("rga-index-job-uuid", rgaJob.getUuid());
-                logger.info("Run index job : " + rgaJob.getId());
+            step("index", () -> {
+                RgaManager rgaManager = new RgaManager(configuration, storageConfiguration);
+                rgaManager.index(study, getIndividualsOutputFile(), token);
             });
         }
     }
 
     private Path getIndividualsOutputFile() {
-        return getOutDir().resolve(KNOCKOUT_INDIVIDUALS_JSON);
+        if (analysisParams.isIndex()) {
+            return getScratchDir().resolve(KNOCKOUT_INDIVIDUALS_JSON);
+        } else {
+            return getOutDir().resolve(KNOCKOUT_INDIVIDUALS_JSON);
+        }
     }
 
     private Path getGenesOutputFile() {
-        return getOutDir().resolve(KNOCKOUT_GENES_JSON);
+        if (analysisParams.isIndex()) {
+            return getScratchDir().resolve(KNOCKOUT_GENES_JSON);
+        } else {
+            return getOutDir().resolve(KNOCKOUT_GENES_JSON);
+        }
     }
 
 }

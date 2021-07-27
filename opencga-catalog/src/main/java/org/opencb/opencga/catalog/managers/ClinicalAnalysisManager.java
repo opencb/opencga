@@ -29,8 +29,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -43,6 +41,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
@@ -52,6 +51,8 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -69,6 +70,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * Created by pfurio on 05/06/17.
@@ -230,16 +232,17 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("options", options)
                 .append("token", token);
         try {
-            if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null) {
+            if (study.getInternal() == null || study.getInternal().getConfiguration() == null
+                    || study.getInternal().getConfiguration().getClinical() == null) {
                 throw new CatalogException("Unexpected error: ClinicalConfiguration is null");
             }
-            ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getConfiguration().getClinical();
+            ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS);
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkObj(clinicalAnalysis, "clinicalAnalysis");
-            ParamUtils.checkAlias(clinicalAnalysis.getId(), "id");
+            ParamUtils.checkIdentifier(clinicalAnalysis.getId(), "id");
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
 
@@ -251,9 +254,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             }
 
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
-            clinicalAnalysis.setInternal(ParamUtils.defaultObject(clinicalAnalysis.getInternal(), ClinicalAnalysisInternal::new));
-            clinicalAnalysis.getInternal().setStatus(ParamUtils.defaultObject(clinicalAnalysis.getInternal().getStatus(),
-                    ClinicalAnalysisStatus::new));
+            clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
             clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
                     new Disorder("", "", "", Collections.emptyMap(), "", Collections.emptyList())));
             clinicalAnalysis.setDueDate(ParamUtils.defaultObject(clinicalAnalysis.getDueDate(),
@@ -262,6 +263,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             clinicalAnalysis.setAudit(ParamUtils.defaultObject(clinicalAnalysis.getAudit(), Collections.emptyList()));
             clinicalAnalysis.setQualityControl(ParamUtils.defaultObject(clinicalAnalysis.getQualityControl(),
                     ClinicalAnalysisQualityControl::new));
+            clinicalAnalysis.setPanels(ParamUtils.defaultObject(clinicalAnalysis.getPanels(), Collections.emptyList()));
 
             clinicalAnalysis.getQualityControl().setUser(userId);
             clinicalAnalysis.getQualityControl().setDate(TimeUtils.getDate());
@@ -275,6 +277,19 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     comment.setDate(TimeUtils.getTimeMillis(calendar.getTime()));
                     calendar.add(Calendar.MILLISECOND, 1);
                 }
+            }
+
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getPanels())) {
+                // Get panels
+                Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
+                Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
+                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                        panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+                if (panelResult.getNumResults() < panelIds.size()) {
+                    throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
+                }
+
+                clinicalAnalysis.setPanels(panelResult.getResults());
             }
 
             // Analyst
@@ -416,9 +431,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
                 // Validate there is only one sample per member
                 for (Individual member : family.getMembers()) {
-                    if (member.getSamples() == null || member.getSamples().isEmpty()) {
-                        throw new CatalogException("Missing sample for member '" + member.getId() + "'");
-                    }
                     if (member.getSamples().size() > 1) {
                         throw new CatalogException("More than one sample found for member '" + member.getId() + "'.");
                     }
@@ -435,6 +447,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 if (proband == null) {
                     throw new CatalogException("Proband '" + clinicalAnalysis.getProband().getId() + "' not found in family");
                 }
+                if (proband.getSamples() == null || proband.getSamples().isEmpty()) {
+                    throw new CatalogException("Missing samples for proband '" + proband.getId() + "'");
+                }
+
                 clinicalAnalysis.setProband(proband);
 
                 // Validate the proband has a disorder
@@ -494,7 +510,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 obtainFiles(study, clinicalAnalysis, userId);
             }
 
-            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
+            clinicalAnalysis.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(clinicalAnalysis.getCreationDate()));
             clinicalAnalysis.setModificationDate(TimeUtils.getTime());
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
@@ -1132,15 +1148,20 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                                                    ClinicalAnalysisUpdateParams updateParams, String userId, QueryOptions options)
             throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        if (study.getConfiguration() == null || study.getConfiguration().getClinical() == null) {
+        if (study.getInternal() == null || study.getInternal().getConfiguration() == null
+                || study.getInternal().getConfiguration().getClinical() == null) {
             throw new CatalogException("Unexpected error: ClinicalConfiguration is null");
         }
-        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getConfiguration().getClinical();
+        ClinicalAnalysisStudyConfiguration clinicalConfiguration = study.getInternal().getConfiguration().getClinical();
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
-        ObjectMap parameters = new ObjectMap();
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
+            ParamUtils.checkCreationDateFormat(clinicalAnalysis.getCreationDate());
+        }
+
+        ObjectMap parameters;
         if (updateParams != null) {
             try {
                 parameters = updateParams.getUpdateMap();
@@ -1155,7 +1176,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS);
 
         if (StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), "id");
+            ParamUtils.checkIdentifier(updateParams.getId(), "id");
         }
         if (StringUtils.isNotEmpty(updateParams.getDueDate()) && TimeUtils.toDate(updateParams.getDueDate()) == null) {
             throw new CatalogException("Unrecognised due date. Accepted format is: yyyyMMddHHmmss");
@@ -1226,8 +1247,46 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateFiles(study, clinicalAnalysis, userId);
         }
 
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) || updateParams.getPanelLock() != null) {
+            // Check the Clinical Analysis have no interpretations
+            Query query = new Query()
+                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId());
+            OpenCGAResult<Long> count = interpretationDBAdaptor.count(query);
+            if (count.getNumMatches() > 0) {
+                throw new CatalogException("Cannot update ClinicalAnalysis '" + clinicalAnalysis.getId()
+                        + "'. Updating 'panels' or 'panelLocked' fields is forbidden when the Clinical Analysis contains Interpretations");
+            }
+
+            if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
+                // Validate and get panels
+                List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
+                query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
+                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                        panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+                if (panelResult.getNumResults() < panelIds.size()) {
+                    throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
+                }
+
+                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+            }
+        }
+
         if (updateParams.getFiles() != null && !updateParams.getFiles().isEmpty()) {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), clinicalAnalysis.getFiles());
+        }
+
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
+            // Get panels
+            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(),
+                    updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList()));
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                    panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+            if (panelResult.getNumResults() < updateParams.getPanels().size()) {
+                throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
+            }
+
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
         }
 
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.DISORDER.key())) {
@@ -1764,7 +1823,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 .append("action", action)
                 .append("token", token);
 
-        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL);
 
         try {
             auditManager.initAuditBatch(operationUuid);
@@ -1905,4 +1964,39 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
     }
 
+    public OpenCGAResult configureStudy(String studyStr, ClinicalAnalysisStudyConfiguration clinicalConfiguration, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("clinicalConfiguration", clinicalConfiguration)
+                .append("token", token);
+
+        try {
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+            ParamUtils.checkObj(clinicalConfiguration, "clinical configuration");
+
+            // TODO: Check fields
+
+            ObjectMap update = new ObjectMap();
+            try {
+                update.putNested(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
+                        new ObjectMap(getUpdateObjectMapper().writeValueAsString(clinicalConfiguration)), true);
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Study> updateResult = studyDBAdaptor.update(study.getUid(), update, QueryOptions.empty());
+            auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return updateResult;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
 }

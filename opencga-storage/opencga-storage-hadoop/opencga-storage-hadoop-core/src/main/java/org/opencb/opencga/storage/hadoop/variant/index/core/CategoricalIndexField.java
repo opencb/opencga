@@ -8,7 +8,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFi
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.MultiValueIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.SingleValueIndexFieldFilter;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -19,16 +22,28 @@ import java.util.stream.Collectors;
  * Value "0" represents NA.
  */
 public class CategoricalIndexField<T> extends IndexField<T> implements IndexCodec<T> {
-    public static final int NA = 0;
     private final int numBits;
     private final IndexCodec<T> codec;
 
-    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values) {
-        this(configuration, bitOffset, values, true);
+    public static CategoricalIndexField<String> create(IndexFieldConfiguration configuration, int bitOffset) {
+        return new CategoricalIndexField<>(configuration, bitOffset, configuration.getValues(), configuration.getValuesMapping());
     }
 
-    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values, boolean useNa) {
-        this(configuration, bitOffset, values.length + (useNa ? 1 : 0), useNa ? new BasicCodecWithNa<>(values) : new BasicCodec<>(values));
+    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values) {
+        this(configuration, bitOffset, values, null);
+    }
+
+    public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values, Map<T, List<T>> valuesMapping) {
+        super(configuration, bitOffset);
+        int numValues;
+        if (configuration.getNullable()) {
+            numValues = values.length + 1;
+            codec = new BasicCodecWithNa<>(values, valuesMapping);
+        } else {
+            numValues = values.length;
+            codec = new BasicCodec<>(values, valuesMapping);
+        }
+        this.numBits = Math.max(1, IndexUtils.log2(numValues - 1) + 1);
     }
 
     public CategoricalIndexField(IndexFieldConfiguration configuration, int bitOffset, int numValues, IndexCodec<T> codec) {
@@ -67,13 +82,30 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
 
     private static class BasicCodec<T> implements IndexCodec<T> {
         private final T[] values;
+        private final Map<T, T> valuesMappingRev;
+        private final boolean[] ambiguousValues;
 
-        BasicCodec(T[] values) {
+        BasicCodec(T[] values, Map<T, List<T>> valuesMapping) {
             this.values = values;
+            if (valuesMapping == null) {
+                this.valuesMappingRev = Collections.emptyMap();
+            } else {
+                this.valuesMappingRev = new HashMap<>();
+                for (Map.Entry<T, List<T>> entry : valuesMapping.entrySet()) {
+                    for (T t : entry.getValue()) {
+                        valuesMappingRev.put(t, entry.getKey());
+                    }
+                }
+            }
+            ambiguousValues = new boolean[values.length];
+            for (T value : this.valuesMappingRev.values()) {
+                ambiguousValues[encode(value)] = true;
+            }
         }
 
         @Override
         public int encode(T value) {
+            value = valuesMappingRev.getOrDefault(value, value);
             for (int i = 0, valuesLength = values.length; i < valuesLength; i++) {
                 T t = values[i];
                 if (t.equals(value)) {
@@ -90,19 +122,38 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
 
         @Override
         public boolean ambiguous(int code) {
-            return false;
+            return ambiguousValues[code];
         }
     }
 
     private static class BasicCodecWithNa<T> implements IndexCodec<T> {
+        public static final int NA = 0;
         private final T[] values;
+        private final Map<T, T> valuesMappingRev;
+        private final boolean[] ambiguousValues;
 
-        BasicCodecWithNa(T[] values) {
+        BasicCodecWithNa(T[] values, Map<T, List<T>> valuesMapping) {
             this.values = values;
+            if (valuesMapping == null) {
+                this.valuesMappingRev = Collections.emptyMap();
+            } else {
+                this.valuesMappingRev = new HashMap<>();
+                for (Map.Entry<T, List<T>> entry : valuesMapping.entrySet()) {
+                    for (T t : entry.getValue()) {
+                        valuesMappingRev.put(t, entry.getKey());
+                    }
+                }
+            }
+            ambiguousValues = new boolean[values.length + 1];
+            ambiguousValues[NA] = true;
+            for (T value : this.valuesMappingRev.values()) {
+                ambiguousValues[encode(value)] = true;
+            }
         }
 
         @Override
         public int encode(T value) {
+            value = valuesMappingRev.getOrDefault(value, value);
             for (int i = 0, valuesLength = values.length; i < valuesLength; i++) {
                 T t = values[i];
                 if (t.equals(value)) {
@@ -125,7 +176,7 @@ public class CategoricalIndexField<T> extends IndexField<T> implements IndexCode
 
         @Override
         public boolean ambiguous(int code) {
-            return code == NA;
+            return ambiguousValues[code];
         }
     }
 

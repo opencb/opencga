@@ -16,26 +16,36 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.Status;
 
-public class ProjectInternal {
+public class ProjectInternal extends Internal {
 
     private Datastores datastores;
-    private Status status;
+    private CellBaseConfiguration cellbase;
 
     public ProjectInternal() {
     }
 
-    public ProjectInternal(Datastores datastores, Status status) {
+    public ProjectInternal(Status status, String registrationDate, Datastores datastores, CellBaseConfiguration cellbase) {
+        super(status, registrationDate);
         this.datastores = datastores;
-        this.status = status;
+        this.cellbase = cellbase;
+    }
+
+    public static ProjectInternal init() {
+        return new ProjectInternal(new Status(), TimeUtils.getTime(), new Datastores(), new CellBaseConfiguration());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ProjectInternal{");
-        sb.append("datastores=").append(datastores);
-        sb.append(", status=").append(status);
+        sb.append("status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", datastores=").append(datastores);
+        sb.append(", cellbase=").append(cellbase);
         sb.append('}');
         return sb.toString();
     }
@@ -49,12 +59,30 @@ public class ProjectInternal {
         return this;
     }
 
+    public CellBaseConfiguration getCellbase() {
+        return cellbase;
+    }
+
+    public ProjectInternal setCellbase(CellBaseConfiguration cellbase) {
+        this.cellbase = cellbase;
+        return this;
+    }
+
     public Status getStatus() {
         return status;
     }
 
     public ProjectInternal setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public Internal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
         return this;
     }
 }

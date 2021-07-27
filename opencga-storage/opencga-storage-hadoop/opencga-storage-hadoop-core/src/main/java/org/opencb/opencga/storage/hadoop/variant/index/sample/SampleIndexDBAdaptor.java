@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.core.utils.iterators.UnionMultiKeyIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -32,7 +33,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
@@ -302,6 +303,18 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             Iterator<Result> resultIterator = scanner.iterator();
             return Iterators.transform(resultIterator, converter::convert);
         });
+    }
+
+    /**
+     * Partially processed iterator. Internal usage only.
+     *
+     * @param study study
+     * @param sample sample
+     * @return SingleSampleIndexVariantDBIterator
+     */
+    public RawSingleSampleIndexVariantDBIterator rawIterator(String study, String sample) {
+        Query query = new Query(VariantQueryParam.STUDY.key(), study).append(VariantQueryParam.SAMPLE.key(), sample);
+        return rawInternalIterator(parseSampleIndexQuery(query).forSample(sample));
     }
 
     public CloseableIterator<SampleVariantIndexEntry> rawIterator(Query query) throws IOException {
@@ -625,26 +638,26 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
                 }
-                if (includeAll || query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK) {
+                if (includeAll || !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
                 }
-                if (includeAll || query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
+                if (includeAll || !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
                 }
-                if (/*includeAll ||*/ query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK
-                        && query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
+                if (includeAll || !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()
+                        && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
                 }
-                if (!/*includeAll ||*/ query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty()) {
+                if (includeAll || !query.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                 }
-                if (includeAll || query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
+                if (includeAll || !query.getAnnotationIndexQuery().getClinicalFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                 }
                 if (includeAll || !query.emptyFileIndex()) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
-                if (/*includeAll ||*/ query.hasFatherFilter() || query.hasMotherFilter()) {
+                if (includeAll || query.hasFatherFilter() || query.hasMotherFilter()) {
                     scan.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
                 }
             }
@@ -667,19 +680,40 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 //        logger.info("Filters = " + scan.getFilter());
 //        logger.info("Batch = " + scan.getBatch());
         logger.info("Caching = " + scan.getCaching());
-        logger.info("AnnotationIndex = " + IndexUtils.maskToString(query.getAnnotationIndexMask(), query.getAnnotationIndex()));
-        if (query.getAnnotationIndexQuery().getBiotypeMask() != EMPTY_MASK) {
-            logger.info("BiotypeIndex    = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getBiotypeMask()));
+        printQuery(query);
+
+//        try {
+//            System.out.println("scan = " + scan.toJSON() + " " + rowKeyToString(scan.getStartRow()) + " -> + "
+// + rowKeyToString(scan.getStopRow()));
+//        } catch (IOException e) {
+//            throw VariantQueryException.internalException(e);
+//        }
+
+        return scan;
+    }
+
+    public static void printQuery(SampleAnnotationIndexQuery annotationIndexQuery) {
+        logger.info("AnnotationIndex = " + IndexUtils.maskToString(
+                annotationIndexQuery.getAnnotationIndexMask(), annotationIndexQuery.getAnnotationIndex()));
+        if (!annotationIndexQuery.getBiotypeFilter().isNoOp()) {
+            logger.info("BiotypeIndex    = " + annotationIndexQuery.getBiotypeFilter().toString());
         }
-        if (query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
-            logger.info("CTIndex         = " + IndexUtils.shortToString(query.getAnnotationIndexQuery().getConsequenceTypeMask()));
+        if (!annotationIndexQuery.getConsequenceTypeFilter().isNoOp()) {
+            logger.info("CTIndex         = " + annotationIndexQuery.getConsequenceTypeFilter().toString());
         }
-        if (query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
-            logger.info("ClinicalIndex   = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getClinicalMask()));
+        if (!annotationIndexQuery.getCtBtFilter().isNoOp()) {
+            logger.info("CtBtIndex       = " + annotationIndexQuery.getCtBtFilter().toString());
         }
-        for (PopulationFrequencyQuery pf : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
-            logger.info("PopFreq         = " + pf);
+        if (!annotationIndexQuery.getClinicalFilter().isNoOp()) {
+            logger.info("ClinicalIndex   = " + annotationIndexQuery.getClinicalFilter());
         }
+        if (!annotationIndexQuery.getPopulationFrequencyFilter().isNoOp()) {
+            logger.info("PopFreq         = " + annotationIndexQuery.getPopulationFrequencyFilter());
+        }
+    }
+
+    public static void printQuery(SingleSampleIndexQuery query) {
+        printQuery(query.getAnnotationIndexQuery());
         for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
             for (IndexFieldFilter filter : sampleFileIndexQuery.getFilters()) {
                 logger.info("Filter       = " + filter);
@@ -694,15 +728,6 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (query.hasMotherFilter()) {
             logger.info("MotherFilter       = " + IndexUtils.parentFilterToString(query.getMotherFilter()));
         }
-
-//        try {
-//            System.out.println("scan = " + scan.toJSON() + " " + rowKeyToString(scan.getStartRow()) + " -> + "
-// + rowKeyToString(scan.getStopRow()));
-//        } catch (IOException e) {
-//            throw VariantQueryException.internalException(e);
-//        }
-
-        return scan;
     }
 
     private int toSampleId(int studyId, String sample) {

@@ -25,7 +25,7 @@ public class DataStore {
 
     private String storageEngine;
     private String dbName;
-    private ObjectMap configuration;
+    private ObjectMap options;
 
     public DataStore() {
     }
@@ -34,10 +34,10 @@ public class DataStore {
         this(storageEngine, dbName, new ObjectMap());
     }
 
-    public DataStore(String storageEngine, String dbName, ObjectMap configuration) {
+    public DataStore(String storageEngine, String dbName, ObjectMap options) {
         this.storageEngine = storageEngine;
         this.dbName = dbName;
-        this.configuration = configuration;
+        this.options = options;
     }
 
     @Override
@@ -51,12 +51,12 @@ public class DataStore {
         DataStore dataStore = (DataStore) o;
         return Objects.equals(storageEngine, dataStore.storageEngine)
                 && Objects.equals(dbName, dataStore.dbName)
-                && Objects.equals(configuration, dataStore.configuration);
+                && Objects.equals(options, dataStore.options);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(storageEngine, dbName, configuration);
+        return Objects.hash(storageEngine, dbName, options);
     }
 
     @Override
@@ -86,12 +86,12 @@ public class DataStore {
         return this;
     }
 
-    public ObjectMap getConfiguration() {
-        return configuration;
+    public ObjectMap getOptions() {
+        return options;
     }
 
-    public DataStore setConfiguration(ObjectMap configuration) {
-        this.configuration = configuration;
+    public DataStore setOptions(ObjectMap options) {
+        this.options = options;
         return this;
     }
 }

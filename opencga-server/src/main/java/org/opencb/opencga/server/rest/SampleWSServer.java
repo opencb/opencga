@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -92,25 +91,14 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @ApiOperation(value = "Create sample", response = Sample.class,
-            notes = "WARNING: The Individual object in the body is deprecated and will be completely removed in a future release. From"
-                    + " that moment on it will not be possible to create an individual when creating a new sample. To do that you must "
-                    + "use the individual/create web service, this web service allows now to create a new individual with its samples. "
-                    + "This web service now allows to create a new sample and associate it to an existing individual.")
+            notes = "Create a sample and optionally associate it to an existing individual.")
     public Response createSamplePOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "DEPRECATED: It should be passed in the body.") @QueryParam("individual") String individual,
             @ApiParam(value = "JSON containing sample information", required = true) SampleCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleCreateParams());
 
             Sample sample = params.toSample();
-            if (StringUtils.isNotEmpty(individual) && StringUtils.isNotEmpty(sample.getIndividualId())) {
-                throw new CatalogParameterException("Found both individual and individualId as a query parameter and in the body. Please, "
-                        + "only pass individualId in the body");
-            }
-            if (StringUtils.isNotEmpty(individual)) {
-                sample.setIndividualId(individual);
-            }
 
             return createOkResponse(sampleManager.create(studyStr, sample, queryOptions, token));
         } catch (Exception e) {

@@ -28,10 +28,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
-import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 import java.net.URI;
 import java.util.*;
@@ -59,10 +56,9 @@ public class Study extends PrivateFields {
     private List<Family> families;
     private List<Sample> samples;
     private List<Cohort> cohorts;
-    private List<Panel> panels;
+    private List<org.opencb.opencga.core.models.panel.Panel> panels;
     private List<ClinicalAnalysis> clinicalAnalyses;
     private List<VariableSet> variableSets;
-    private StudyConfiguration configuration;
 
     private Map<Enums.Entity, List<PermissionRule>> permissionRules;
     private URI uri;
@@ -79,15 +75,14 @@ public class Study extends PrivateFields {
     public Study(String name, String alias, String description, StudyInternal internal, URI uri, int release) {
         this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new HashMap<>(), uri, release, new CustomStatus(), internal,
-                new StudyConfiguration(new ClinicalAnalysisStudyConfiguration()), new HashMap<>());
+                new LinkedList<>(), new HashMap<>(), uri, release, new CustomStatus(), internal, new HashMap<>());
     }
 
     public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
                  List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
-                 List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
+                 List<Sample> samples, List<Cohort> cohorts, List<org.opencb.opencga.core.models.panel.Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
                  List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
-                 CustomStatus status, StudyInternal internal, StudyConfiguration configuration, Map<String, Object> attributes) {
+                 CustomStatus status, StudyInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -110,7 +105,6 @@ public class Study extends PrivateFields {
         this.uri = uri;
         this.status = status;
         this.release = release;
-        this.configuration = configuration;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
@@ -137,7 +131,6 @@ public class Study extends PrivateFields {
         sb.append(", panels=").append(panels);
         sb.append(", clinicalAnalyses=").append(clinicalAnalyses);
         sb.append(", variableSets=").append(variableSets);
-        sb.append(", configuration=").append(configuration);
         sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
@@ -298,11 +291,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public List<Panel> getPanels() {
+    public List<org.opencb.opencga.core.models.panel.Panel> getPanels() {
         return panels;
     }
 
-    public Study setPanels(List<Panel> panels) {
+    public Study setPanels(List<org.opencb.opencga.core.models.panel.Panel> panels) {
         this.panels = panels;
         return this;
     }
@@ -376,15 +369,6 @@ public class Study extends PrivateFields {
 
     public Study setStatus(CustomStatus status) {
         this.status = status;
-        return this;
-    }
-
-    public StudyConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    public Study setConfiguration(StudyConfiguration configuration) {
-        this.configuration = configuration;
         return this;
     }
 

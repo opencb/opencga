@@ -306,22 +306,22 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             if (qualityControl == null) {
                                 qualityControl = new SampleQualityControl();
                             }
-                            if (qualityControl.getVariantMetrics() == null) {
-                                qualityControl.setVariantMetrics(new SampleVariantQualityControlMetrics());
+                            if (qualityControl.getVariant() == null) {
+                                qualityControl.setVariant(new SampleVariantQualityControlMetrics());
                             }
-                            if (CollectionUtils.isEmpty(qualityControl.getVariantMetrics().getVariantStats())) {
-                                qualityControl.getVariantMetrics().setVariantStats(Collections.singletonList(o));
+                            if (CollectionUtils.isEmpty(qualityControl.getVariant().getVariantStats())) {
+                                qualityControl.getVariant().setVariantStats(Collections.singletonList(o));
                             } else {
                                 boolean hasItem = false;
-                                for (int i = 0; i < qualityControl.getVariantMetrics().getVariantStats().size(); i++) {
-                                    if (qualityControl.getVariantMetrics().getVariantStats().get(i).getId().equals(o.getId())) {
-                                        qualityControl.getVariantMetrics().getVariantStats().set(i, o);
+                                for (int i = 0; i < qualityControl.getVariant().getVariantStats().size(); i++) {
+                                    if (qualityControl.getVariant().getVariantStats().get(i).getId().equals(o.getId())) {
+                                        qualityControl.getVariant().getVariantStats().set(i, o);
                                         hasItem = true;
                                         break;
                                     }
                                 }
                                 if (!hasItem) {
-                                    qualityControl.getVariantMetrics().getVariantStats().add(o);
+                                    qualityControl.getVariant().getVariantStats().add(o);
                                 }
                             }
                             SampleUpdateParams updateParams = new SampleUpdateParams().setQualityControl(qualityControl);

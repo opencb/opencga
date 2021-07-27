@@ -28,9 +28,12 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
+import org.opencb.cellbase.core.config.SpeciesProperties;
+import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
@@ -41,19 +44,25 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -74,10 +83,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
@@ -95,11 +101,12 @@ import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.*;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.FILE_GET_QUERY_OPTIONS;
-import static org.opencb.opencga.core.api.ParamConstants.ACL_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE;
 import static org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager.SAMPLE_BATCH_SIZE_DEFAULT;
-import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.addDefaultSampleLimit;
+import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.isValidParam;
 
 public class VariantStorageManager extends StorageManager implements AutoCloseable {
 
@@ -172,11 +179,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                            Query query, QueryOptions queryOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
-        catalogUtils.parseQuery(query, token);
-        checkSamplesPermissions(query, queryOptions, token);
-
-        secureOperation(VariantExportTool.ID, catalogUtils.getAnyStudy(query, token), queryOptions, token, engine -> {
-            new VariantExportOperationManager(this, engine).export(outputFile, outputFormat, variantsFile, query, queryOptions, token);
+        Query finalQuery = catalogUtils.parseQuery(query, queryOptions, token);
+        checkSamplesPermissions(finalQuery, queryOptions, token);
+        String anyStudy = catalogUtils.getAnyStudy(finalQuery, token);
+        secureOperation(VariantExportTool.ID, anyStudy, queryOptions, token, engine -> {
+            new VariantExportOperationManager(this, engine).export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
             return null;
         });
     }
@@ -245,7 +252,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     public void annotationLoad(String projectStr, List<String> studies, String loadFile, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        String projectId = getProjectId(projectStr, studies, token);
+        String projectId = getProjectFqn(projectStr, studies, token);
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, studies, params, token, engine -> {
             new VariantAnnotationOperationManager(this, engine)
                     .annotationLoad(projectStr, getStudiesFqn(studies, token), params, loadFile, token);
@@ -256,7 +263,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public void annotate(String projectStr, List<String> studies, String region, boolean overwriteAnnotations, String outDir,
                          String outputFileName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
-        String projectId = getProjectId(projectStr, studies, token);
+        String projectId = getProjectFqn(projectStr, studies, token);
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
             List<String> studiesFqn = getStudiesFqn(studies, token);
             new VariantAnnotationOperationManager(this, engine)
@@ -297,12 +304,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secure(query, empty(), token, (engine) -> engine.getAnnotationMetadata(name));
     }
 
-    public void stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
+    public Collection<String> stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
-        secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
-            new VariantStatsOperationManager(this, engine).stats(getStudyFqn(study, token), cohorts, region, params, token);
-            return null;
+        return secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
+            return new VariantStatsOperationManager(this, engine)
+                    .stats(getStudyFqn(study, token), cohorts, region, params, token);
         });
     }
 
@@ -437,11 +444,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperationByProject("configure", projectStr, params, token, engine -> {
             DataStore dataStore = getDataStoreByProjectId(projectStr, token);
 
-            dataStore.getConfiguration().putAll(params);
+            dataStore.getOptions().putAll(params);
             catalogManager.getProjectManager()
-                    .update(projectStr, new ObjectMap(ProjectDBAdaptor.QueryParams.INTERNAL_DATASTORES_VARIANT.key(), dataStore),
-                            new QueryOptions(), token);
-            return dataStore.getConfiguration();
+                    .setDatastoreVariant(projectStr, dataStore, token);
+            return dataStore.getOptions();
         });
     }
 
@@ -454,9 +460,10 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     .first();
             ObjectMap options;
             if (study.getInternal() != null
-                    && study.getInternal().getVariantEngineConfiguration() != null
-                    && study.getInternal().getVariantEngineConfiguration().getOptions() != null) {
-                options = study.getInternal().getVariantEngineConfiguration().getOptions();
+                    && study.getInternal().getConfiguration() != null
+                    && study.getInternal().getConfiguration().getVariantEngine() != null
+                    && study.getInternal().getConfiguration().getVariantEngine().getOptions() != null) {
+                options = study.getInternal().getConfiguration().getVariantEngine().getOptions();
             } else {
                 options = new ObjectMap();
             }
@@ -469,15 +476,86 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public void configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+    /**
+     * Modify SampleIndex configuration. Automatically submit a job to rebuild the sample index.
+     * @param studyStr  Study identifier
+     * @param sampleIndexConfiguration New sample index configuration
+     * @param token User's token
+     * @return Result with VariantSampleIndexOperationTool job
+     * @throws CatalogException on catalog errors
+     * @throws StorageEngineException on storage engine errors
+     */
+    public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
+        return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
+            sampleIndexConfiguration.validate();
             String studyFqn = getStudyFqn(studyStr, token);
             engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration);
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
-            return null;
+            // If changes, launch sample-index-run
+            VariantSampleIndexParams params =
+                    new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
+            return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                    params.toParams(STUDY_PARAM, studyFqn), token);
+        });
+    }
+
+    /**
+     * Update Cellbase configuration.
+     * @param project  Study identifier
+     * @param cellbaseConfiguration New cellbase configuration
+     * @param annotate Launch variant annotation if needed
+     * @param annotationSaveId     Save previous variant annotation before annotating
+     * @param token User's token
+     * @return Result with VariantSampleIndexOperationTool job
+     * @throws CatalogException on catalog errors
+     * @throws StorageEngineException on storage engine errors
+     */
+    public OpenCGAResult<Job> setCellbaseConfiguration(String project, CellBaseConfiguration cellbaseConfiguration, boolean annotate,
+                                                       String annotationSaveId, String token)
+            throws CatalogException, StorageEngineException {
+        StopWatch stopwatch = StopWatch.createStarted();
+        return secureOperationByProject("configureCellbase", project, new ObjectMap(), token, engine -> {
+            OpenCGAResult<Job> result = new OpenCGAResult<>();
+            result.setResults(new ArrayList<>());
+            result.setEvents(new ArrayList<>());
+
+            engine.getConfiguration().setCellbase(cellbaseConfiguration);
+            engine.reloadCellbaseConfiguration();
+            CellBaseDataResponse<SpeciesProperties> species = engine.getCellBaseUtils().getCellBaseClient().getMetaClient().species();
+            if (species == null || species.firstResult() == null) {
+                throw new IllegalArgumentException("Unable to access cellbase url '" + cellbaseConfiguration.getUrl() + "'");
+            }
+
+            if (engine.getMetadataManager().exists()) {
+                List<String> jobDependsOn = new ArrayList<>(1);
+                if (StringUtils.isNotEmpty(annotationSaveId)) {
+                    VariantAnnotationSaveParams params = new VariantAnnotationSaveParams(annotationSaveId);
+                    OpenCGAResult<Job> saveResult = catalogManager.getJobManager()
+                            .submitProject(project, VariantAnnotationSaveOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                                    null, "Save variant annotation before changing cellbase configuration", null, null, token);
+                    result.getResults().add(saveResult.first());
+                    if (saveResult.getEvents() != null) {
+                        result.getEvents().addAll(saveResult.getEvents());
+                    }
+                    jobDependsOn.add(saveResult.first().getUuid());
+                }
+                if (annotate) {
+                    VariantAnnotationIndexParams params = new VariantAnnotationIndexParams().setOverwriteAnnotations(true);
+                    OpenCGAResult<Job> annotResult = catalogManager.getJobManager()
+                            .submitProject(project, VariantAnnotationIndexOperationTool.ID, null, params.toParams(PROJECT_PARAM, project),
+                                    null, "Forced re-annotation after changing cellbase configuration", jobDependsOn, null, token);
+                    result.getResults().add(annotResult.first());
+                    if (annotResult.getEvents() != null) {
+                        result.getEvents().addAll(annotResult.getEvents());
+                    }
+                }
+            }
+            catalogManager.getProjectManager().setInternalCellbaseConfiguration(project, cellbaseConfiguration, token);
+            result.setTime((int) stopwatch.getTime(TimeUnit.MILLISECONDS));
+            return result;
         });
     }
 
@@ -595,7 +673,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine storageEngine = getVariantStorageEngine(query, token);
-        catalogUtils.parseQuery(query, token);
+        query = catalogUtils.parseQuery(query, queryOptions, token);
         checkSamplesPermissions(query, queryOptions, storageEngine.getMetadataManager(), token);
         return storageEngine.iterator(query, queryOptions);
     }
@@ -614,15 +692,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery, String token)
             throws CatalogException, IOException, StorageEngineException {
         Query query = inputQuery == null ? new Query() : new Query(inputQuery);
-        query.put(STUDY.key(), studyStr);
+        String study = getStudyFqn(studyStr, token);
+        query.put(STUDY.key(), study);
         query.put(SAMPLE.key(), sample);
 
        return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
             logger.debug("getSampleStats {}", query);
-            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(
-                    query.getString(STUDY.key()),
-                    query.getString(SAMPLE.key()),
-                    query);
+            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(study, sample, query);
             logger.debug("getFacets in {}ms", result.getTime());
             return result;
         });
@@ -654,7 +730,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         int skip = options.getInt(SKIP, 0);
                         // Make initial batchLimit shorter
                         int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 3 + skip);
+                        // but not too short
+                        batchLimit = Math.max(100, batchLimit);
                         int batchSkip = 0;
+                        int numReadSamples = 0;
+                        int numValidSamples = 0;
+                        boolean exactNumSamples = false;
 
                         String studyFqn = query.getString(STUDY.key());
                         options.putAll(query);
@@ -688,6 +769,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                     .map(SampleEntry::getSampleId)
                                     .collect(Collectors.toList());
                             moreResults = samplesInResult.size() == batchLimit;
+                            // The count of samples is exact if there is no more results
+                            exactNumSamples = !moreResults;
+                            numReadSamples += samplesInResult.size();
 
                             StopWatch checkPermissionsStopWatch = StopWatch.createStarted();
                             String userId = catalogManager.getUserManager().getUserId(token);
@@ -704,6 +788,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             auditAttributes.put("checkSamplePermissionsTimeMillis",
                                     checkPermissionsStopWatch.getTime(TimeUnit.MILLISECONDS)
                                             + auditAttributes.getInt("checkSamplePermissionsTimeMillis", 0));
+                            numValidSamples += validSamples.size();
                             List<String> samplesToReturn;
                             if (skip > validSamples.size()) {
                                 samplesToReturn = Collections.emptyList();
@@ -737,25 +822,33 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         variantResult.getStudies().get(0).setSamples(sampleEntries);
                         variantResult.getStudies().get(0).setFiles(fileEntries);
 
-                        ObjectMap attributes = new ObjectMap();
-//                        VariantStats stats = variantResult.getStudies().get(0).getStats(StudyEntry.DEFAULT_COHORT);
-//                        if (stats != null) {
-//                            List<String> genotypesFilter = new ArrayList<>(options.getAsStringList(GENOTYPE.key()));
-//                            if (genotypesFilter.isEmpty()) {
-//                                genotypesFilter.add(GenotypeClass.MAIN_ALT.name());
-//                            }
-//                            int expectedSamplesCount = 0;
-//                            List<String> gtsInVariant = new ArrayList<>(stats.getGenotypeCount().keySet());
-//                            List<String> genotypesToReturn = GenotypeClass.filter(genotypesFilter, gtsInVariant);
-//                            for (String gt : genotypesToReturn) {
-//                                expectedSamplesCount += stats.getGenotypeCount().getOrDefault(gt, 0);
-//                            }
-//                        }
-//                        result.getAttributes().put(NUM_SAMPLES.key(), samplesToReturn.size());
-//                        result.getAttributes().put(NUM_TOTAL_SAMPLES.key(), validSamples.size());
+                        VariantQueryResult<Variant> result = new VariantQueryResult<>(
+                                ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
+                                1, 1, new ArrayList<>(), Collections.singletonList(variantResult), null, null)
+                                .setNumSamples(sampleEntries.size());
+                        if (exactNumSamples) {
+                            result.setNumTotalSamples(numValidSamples).setApproximateCount(false);
+                        } else {
+                            VariantStats stats = variantResult.getStudies().get(0).getStats(StudyEntry.DEFAULT_COHORT);
+                            if (stats != null) {
+                                List<String> genotypesFilter = new ArrayList<>(options.getAsStringList(GENOTYPE.key()));
+                                if (genotypesFilter.isEmpty()) {
+                                    genotypesFilter.add(GenotypeClass.MAIN_ALT.name());
+                                }
+                                int expectedSamplesCount = 0;
+                                List<String> gtsInVariant = new ArrayList<>(stats.getGenotypeCount().keySet());
+                                List<String> genotypesToReturn = GenotypeClass.filter(genotypesFilter, gtsInVariant);
+                                for (String gt : genotypesToReturn) {
+                                    expectedSamplesCount += stats.getGenotypeCount().getOrDefault(gt, 0);
+                                }
 
-                        return new DataResult<>(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)),
-                                new ArrayList<>(), 1, Collections.singletonList(variantResult), 1, attributes);
+                                int numTotalSamples = ((int) (expectedSamplesCount * (((float) numValidSamples) / numReadSamples)));
+                                result.setNumTotalSamples(numTotalSamples);
+                                result.setApproximateCountSamplingSize(numReadSamples);
+                            }
+                            result.setApproximateCount(true);
+                        }
+                        return result;
                     });
         }
     }
@@ -809,13 +902,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         DataStore dataStore = getDataStore(study.getFqn(), token);
         VariantStorageEngine variantStorageEngine = storageEngineFactory
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName(), study.getFqn());
-        if (dataStore.getConfiguration() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+        setCellbaseConfiguration(variantStorageEngine, getProjectFqn(null, studyStr, token), token);
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
         }
         if (study.getInternal() != null
-                && study.getInternal().getVariantEngineConfiguration() != null
-                && study.getInternal().getVariantEngineConfiguration().getOptions() != null) {
-            variantStorageEngine.getOptions().putAll(study.getInternal().getVariantEngineConfiguration().getOptions());
+                && study.getInternal().getConfiguration() != null
+                && study.getInternal().getConfiguration().getVariantEngine() != null
+                && study.getInternal().getConfiguration().getVariantEngine().getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(study.getInternal().getConfiguration().getVariantEngine().getOptions());
         }
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
@@ -830,27 +925,33 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     protected VariantStorageEngine getVariantStorageEngine(String study, String token)
             throws StorageEngineException, CatalogException {
-        DataStore dataStore = getDataStore(study, token);
-        return getVariantStorageEngine(dataStore);
+        return getVariantStorageEngineByProject(getProjectFqn(null, study, token), empty(), token);
     }
 
     protected VariantStorageEngine getVariantStorageEngineByProject(String project, ObjectMap params, String token)
             throws StorageEngineException, CatalogException {
         DataStore dataStore = getDataStoreByProjectId(project, token);
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+        VariantStorageEngine variantStorageEngine = storageEngineFactory
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        setCellbaseConfiguration(variantStorageEngine, project, token);
+        if (dataStore.getOptions() != null) {
+            variantStorageEngine.getOptions().putAll(dataStore.getOptions());
+        }
         if (params != null) {
             variantStorageEngine.getOptions().putAll(params);
         }
         return variantStorageEngine;
     }
 
-    private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        VariantStorageEngine variantStorageEngine = storageEngineFactory
-                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        if (dataStore.getConfiguration() != null) {
-            variantStorageEngine.getOptions().putAll(dataStore.getConfiguration());
+    private void setCellbaseConfiguration(VariantStorageEngine engine, String project, String token)
+            throws CatalogException {
+        CellBaseConfiguration cellbase = catalogManager.getProjectManager()
+                .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL.key()), token)
+                .first().getInternal().getCellbase();
+        if (cellbase != null) {
+            engine.getConfiguration().setCellbase(cellbase);
+            engine.reloadCellbaseConfiguration();
         }
-        return variantStorageEngine;
     }
 
     public boolean isSolrAvailable() {
@@ -935,6 +1036,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
+    public boolean exists(String study, String token) throws StorageEngineException, CatalogException {
+        String studyFqn = getStudyFqn(study, token);
+        VariantStorageEngine engine = getVariantStorageEngine(studyFqn, token);
+        return engine.getMetadataManager().studyExists(studyFqn);
+    }
+
     // Permission related methods
 
     private interface VariantReadOperation<R> {
@@ -983,7 +1090,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secureOperationByProject(String operationName, String projectStr, List<String> studies, ObjectMap params, String token,
                                            VariantOperationFunction<R> operation)
             throws CatalogException, StorageEngineException {
-        projectStr = getProjectId(projectStr, studies, token);
+        projectStr = getProjectFqn(projectStr, studies, token);
         return secureOperationByProject(operationName, projectStr, params, token, operation);
     }
 
@@ -1056,7 +1163,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         StopWatch storageStopWatch = null;
         try {
             StopWatch stopWatch = StopWatch.createStarted();
-            catalogUtils.parseQuery(query, token);
+            query = catalogUtils.parseQuery(query, queryOptions, token);
             auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
 
@@ -1122,13 +1229,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         String userId = catalogManager.getUserManager().getUserId(token);
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (auditAction == Enums.Action.FACET) {
-            if (!VariantQueryProjectionParser.isIncludeSamplesDefined(query, VariantField.getIncludeFields(null))) {
+            if (VariantQueryProjectionParser.isIncludeNoSamples(query, VariantField.all())) {
                 // General facet query. Do not check samples.
                 returnedFields = Collections.emptySet();
             }
         }
 
-        if (!returnedFields.contains(VariantField.STUDIES_SAMPLES) && !returnedFields.contains(VariantField.STUDIES_FILES)) {
+        VariantQueryProjectionParser.IncludeStatus includeSample = VariantQueryProjectionParser.getIncludeSampleStatus(query, returnedFields);
+        VariantQueryProjectionParser.IncludeStatus includeFile = VariantQueryProjectionParser.getIncludeFileStatus(query, returnedFields);
+        if (includeSample == VariantQueryProjectionParser.IncludeStatus.NONE
+                && includeFile == VariantQueryProjectionParser.IncludeStatus.NONE) {
             if (isValidParam(query, STUDY)) {
                 ParsedQuery<String> studies = VariantQueryUtils.splitValue(query, STUDY);
                 studies.getValues().replaceAll(VariantQueryUtils::removeNegation);
@@ -1141,11 +1251,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     query.put(STUDY.key(), validStudies);
                 }
             }
-            return Collections.emptyMap();
-        }
-
-        if (VariantQueryProjectionParser.isIncludeSamplesDefined(query, returnedFields)) {
-            Map<String, List<String>> samplesToReturn = VariantQueryUtils.getSamplesMetadata(query, queryOptions, mm);
+            // samplesMap = Collections.emptyMap();
+        } else if (includeSample == VariantQueryProjectionParser.IncludeStatus.SOME) {
+            Map<String, List<String>> samplesToReturn = VariantQueryProjectionParser.getIncludeSampleNames(query, queryOptions, mm);
             checkStudyPermissions(samplesToReturn.keySet(), userId, token);
 
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
@@ -1166,8 +1274,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     samplesMap.put(studyId, Collections.emptyList());
                 }
             }
-        } else {
-            logger.debug("Missing include samples! Obtaining samples to include from catalog.");
+        } else if (includeSample == VariantQueryProjectionParser.IncludeStatus.ALL) {
+            logger.debug("Include all samples. Obtaining samples to include from catalog.");
             List<String> includeStudies = VariantQueryProjectionParser.getIncludeStudies(query, queryOptions, mm)
                     .stream()
                     .map(mm::getStudyName)
@@ -1246,7 +1354,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private void checkStudyPermissions(String study, String userId, String token) throws CatalogException {
-        long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getUid();
+        long studyUid = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getUid();
         CatalogAuthorizationException exception = null;
 
         // Check VIEW_AGGREGATED_VARIANTS
@@ -1410,14 +1518,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     private String getStudyFqn(String study, String token) throws CatalogException {
-        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
+        return catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
     }
 
-    private String getProjectId(String projectStr, String study, String token) throws CatalogException {
-        return getProjectId(projectStr, Arrays.asList(StringUtils.split(study, ",")), token);
+    private String getProjectFqn(String projectStr, String study, String token) throws CatalogException {
+        return getProjectFqn(projectStr, Arrays.asList(StringUtils.split(study, ",")), token);
     }
 
-    private String getProjectId(String projectStr, List<String> studies, String token) throws CatalogException {
+    private String getProjectFqn(String projectStr, List<String> studies, String token) throws CatalogException {
         if (CollectionUtils.isEmpty(studies) && StringUtils.isEmpty(projectStr)) {
             List<Project> projects = catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).getResults();
             if (projects.size() == 1) {
@@ -1430,7 +1538,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         if (CollectionUtils.isNotEmpty(studies)) {
             // Ensure all studies are valid. Convert to FQN
             studies = catalogManager.getStudyManager()
-                    .get(studies, StudyManager.INCLUDE_STUDY_ID, false, token)
+                    .get(studies, StudyManager.INCLUDE_STUDY_IDS, false, token)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)
@@ -1491,8 +1599,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
             dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
         }
-        if (dataStore.getConfiguration() == null) {
-            dataStore.setConfiguration(new ObjectMap());
+        if (dataStore.getOptions() == null) {
+            dataStore.setOptions(new ObjectMap());
         }
 
         return dataStore;

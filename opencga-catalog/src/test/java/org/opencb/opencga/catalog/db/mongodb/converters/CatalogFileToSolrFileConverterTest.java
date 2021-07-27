@@ -45,7 +45,7 @@ public class CatalogFileToSolrFileConverterTest {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-                "test/base", null, "convertorTest", FileInternal.initialize(), 1111L, 2);
+                "test/base", null, "convertorTest", FileInternal.init(), 1111L, 2);
         file.setUid(111)
                 .setSampleIds(Arrays.asList("1", "2"))
                 .setSoftware(new Software().setName("Software"));

@@ -38,7 +38,8 @@
     * [Python](using-opencga/client-libraries/python.md)
     * [R](using-opencga/client-libraries/r.md)
     * [JavaScript](using-opencga/client-libraries/javascript.md)
-  * [Command Line](using-opencga/command-line.md)
+  * [Command Line](using-opencga/command-line/README.md)
+    * [Files](using-opencga/command-line/files.md)
   * [Public Demo](using-opencga/public-demo.md)
 * [Case Studies](case-studies/README.md)
   * [Genomics England Research](case-studies/genomics-england-research.md)
@@ -46,11 +47,15 @@
 
 ## User Manual <a id="manual"></a>
 
-* [Login](manual/login.md)
+* [Using OpenCGA](manual/use/README.md)
+  * [Command Line](manual/use/command-line.md)
+  * [Client Libraries](manual/use/client-libraries.md)
 * [Data Management](manual/data-management/README.md)
+  * [Data Ingestion Process](manual/data-management/data-ingestion-process.md)
   * [Projects and Studies](manual/data-management/projects-and-studies.md)
   * [Working with Files](manual/data-management/working-with-files.md)
-  * [Sharing and Permissions](manual/data-management/sharing-and-permissions.md)
+  * [Sharing and Permissions](manual/data-management/sharing-and-permissions/README.md)
+    * [Permissions](manual/data-management/sharing-and-permissions/permissions.md)
   * [Adding Custom Metadata](manual/data-management/adding-custom-metadata.md)
 * [Alignment Engine](manual/alignment-engine/README.md)
   * [BAM Index](manual/alignment-engine/bam-index.md)
@@ -66,11 +71,16 @@
   * [Clinical Interpretation](manual/clinical-genomics/clinical-interpretation.md)
   * [Clinical Analysis](manual/clinical-genomics/clinical-analysis.md)
 * [Data Models](manual/data-models/README.md)
-  * [Sample](manual/data-models/sample.md)
+  * [Sample Model](manual/data-models/sample-model.md)
   * [Individual](manual/data-models/individual.md)
+  * [File](manual/data-models/file.md)
+  * [Family](manual/data-models/family.md)
+  * [Cohort](manual/data-models/cohort.md)
+  * [Clinical Analysis](manual/data-models/clinical-analysis.md)
 * [Using JupyterLab](manual/using-jupyterlab.md)
 * [Administrator](manual/administrator/README.md)
   * [User Management](manual/administrator/user-management.md)
+  * [Templates / Manifest](manual/administrator/templates-manifest.md)
 
 ## About
 

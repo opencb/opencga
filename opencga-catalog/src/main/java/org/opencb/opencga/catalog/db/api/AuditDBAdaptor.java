@@ -20,7 +20,7 @@ import org.apache.commons.collections4.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.catalog.audit.AuditRecord;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -37,12 +37,17 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface AuditDBAdaptor {
 
     enum QueryParams implements QueryParam {
-        RESOURCE("resource", TEXT, ""),
-        ACTION("action", TEXT, ""),
-        BEFORE("before", TEXT_ARRAY, ""),
-        AFTER("after", TEXT_ARRAY, ""),
+        OPERATION_ID("operationId", TEXT, ""),
         USER_ID("userId", TEXT, ""),
-        DATE("date", TIMESTAMP, "");
+        ACTION("action", TEXT, ""),
+        RESOURCE("resource", TEXT, ""),
+        RESOURCE_ID("resourceId", TEXT, ""),
+        RESOURCE_UUID("resourceUuid", TEXT, ""),
+        STUDY_ID("studyId", TEXT, ""),
+        STUDY_UUID("studyUuid", TEXT, ""),
+        STATUS("status", OBJECT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
+        DATE("date", Type.DATE, "");
 
         private static Map<String, QueryParams> map;
         static {

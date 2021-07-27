@@ -32,7 +32,6 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.clinical.ClinicalVariantCreator;
 import org.opencb.biodata.tools.clinical.DefaultClinicalVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -56,7 +55,6 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Group;
@@ -271,7 +269,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (isValidParam(query, PANEL)) {
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
-                Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
+                org.opencb.opencga.core.models.panel.Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
                 for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
                     if (!genePanelMap.containsKey(genePanel.getName())) {
                         genePanelMap.put(genePanel.getName(), new HashSet<>());
@@ -368,11 +366,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
             for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
-                gFeature = new GenomicFeature(ct.getEnsemblGeneId(), "GENE", ct.getEnsemblTranscriptId(), ct.getGeneName(),
+                gFeature = new GenomicFeature(ct.getGeneId(), "GENE", ct.getTranscriptId(), ct.getGeneName(),
                         ct.getSequenceOntologyTerms(), null);
                 panelIds = null;
-                if (genePanelMap.containsKey(ct.getEnsemblGeneId())) {
-                    panelIds = new ArrayList<>(genePanelMap.get(ct.getEnsemblGeneId()));
+                if (genePanelMap.containsKey(ct.getGeneId())) {
+                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneId()));
                 } else if (genePanelMap.containsKey(ct.getGeneName())) {
                     panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
                 }
@@ -751,7 +749,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             throws ToolException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(diseasePanelIds)) {
-            OpenCGAResult<Panel> queryResults;
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> queryResults;
             try {
                 queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
                         sessionId);
@@ -763,7 +761,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                 throw new ToolException("The number of disease panels retrieved doesn't match the number of disease panels queried");
             }
 
-            for (Panel panel : queryResults.getResults()) {
+            for (org.opencb.opencga.core.models.panel.Panel panel : queryResults.getResults()) {
                 diseasePanels.add(panel);
             }
         }
@@ -1215,7 +1213,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     private void checkInterpretationPermissions(String study, long interpretationId, String token)
             throws CatalogException, ClinicalVariantException {
         // Get user ID from token and study numeric ID
-        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
+        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(), interpretationId);
@@ -1234,7 +1232,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (query != null && query.containsKey(ClinicalVariantEngine.QueryParams.STUDY.key())) {
             String study = query.getString(ClinicalVariantEngine.QueryParams.STUDY.key());
             List<String> studies = Arrays.asList(study.split(","));
-            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_ID, false, userId)
+            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_IDS, false, userId)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

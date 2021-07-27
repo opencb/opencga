@@ -49,7 +49,9 @@ public class CatalogCohortToSolrCohortConverterTest {
         Cohort cohort = new Cohort("id", Enums.CohortType.CASE_SET, TimeUtils.getTime(), "test",
                 Arrays.asList(new Sample().setId("1"), new Sample().setId("2")), 2, null)
                 .setAttributes(new HashMap<>());
-        cohort.setUid(200).setInternal(new CohortInternal(new CohortStatus("CALCULATING"))).setAnnotationSets(AnnotationHelper.createAnnotation());
+        cohort.setUid(200)
+                .setInternal(new CohortInternal(TimeUtils.getTime(), new CohortStatus("CALCULATING")))
+                .setAnnotationSets(AnnotationHelper.createAnnotation());
         CohortSolrModel cohortSolrModel = new CatalogCohortToSolrCohortConverter(study).convertToStorageType(cohort);
 
         assertEquals(cohortSolrModel.getUid(), cohort.getUid());

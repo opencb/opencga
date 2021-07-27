@@ -16,24 +16,36 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.common.Status;
 
-public class SampleInternal {
+/**
+ * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
+ * finibus.
+ */
+public class SampleInternal extends Internal {
 
-    private Status status;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     * @deprecated
+     */
     private RgaIndex rga;
 
     public SampleInternal() {
     }
 
-    public SampleInternal(Status status, RgaIndex rga) {
-        this.status = status;
+    public SampleInternal(String registrationDate, Status status, RgaIndex rga) {
+        super(status, registrationDate);
         this.rga = rga;
     }
 
     public static SampleInternal init() {
-        return new SampleInternal(new Status(Status.READY), RgaIndex.init());
+        return new SampleInternal(TimeUtils.getTime(), new Status(Status.READY), RgaIndex.init());
     }
 
     @Override
@@ -60,6 +72,15 @@ public class SampleInternal {
 
     public SampleInternal setRga(RgaIndex rga) {
         this.rga = rga;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public Internal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
         return this;
     }
 }

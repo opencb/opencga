@@ -20,6 +20,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.executors.accumulators.Range;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +38,8 @@ public class SampleVariantStatsAggregationQuery {
             .namingPattern("sample-variant-stats-pool-%s")
             .build());
     private final VariantStorageEngine engine;
+
+    private Logger logger = LoggerFactory.getLogger(SampleVariantStatsAggregationQuery.class);
 
     public SampleVariantStatsAggregationQuery(VariantStorageEngine engine) {
         this.engine = engine;
@@ -58,6 +63,12 @@ public class SampleVariantStatsAggregationQuery {
 
         query.put(STUDY.key(), studyStr);
         query.remove(SAMPLE.key());
+
+        // Test if there is any valid VariantAggregationExecutor
+        // If no, fast fail
+        engine.getVariantAggregationExecutor(new Query(query)
+                .append(SAMPLE.key(), sample), new QueryOptions(QueryOptions.FACET, "chromosome"));
+
         Future<DataResult<FacetField>> submit = THREAD_POOL.submit(() -> {
             DataResult<FacetField> result = engine.facet(
                     new Query(query)
@@ -69,12 +80,17 @@ public class SampleVariantStatsAggregationQuery {
         Future<DataResult<FacetField>> submitME = THREAD_POOL.submit(() -> {
             SampleMetadata sampleMetadata = engine.getMetadataManager().getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
-                DataResult<FacetField> result = engine.facet(
-                        new Query(query)
-                                .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sample),
-                        new QueryOptions(QueryOptions.FACET,
-                                "chromosome>>mendelianError"));
-                return result;
+                try {
+                    return engine.facet(
+                            new Query(query)
+                                    .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sample),
+                            new QueryOptions(QueryOptions.FACET,
+                                    "chromosome>>mendelianError"));
+                } catch (Exception e) {
+                    logger.warn("Could not get mendelian error stats: " + e.toString());
+                    logger.debug("Could not get mendelian error stats", e);
+                    return null;
+                }
             } else {
                 return null;
             }
@@ -129,25 +145,25 @@ public class SampleVariantStatsAggregationQuery {
                             && isIndel(facetField.getBuckets().get(0).getValue())
                             && CollectionUtils.isNotEmpty(facetField.getBuckets().get(0).getFacetFields())) {
                         for (FacetField.Bucket bucket : facetField.getBuckets().get(0).getFacetFields().get(0).getBuckets()) {
-                            String[] split = StringUtils.replaceChars(bucket.getValue(), "[]() ", "").split(",");
-                            String start = split[0];
-                            String endStr = split[1];
+                            Range<Double> range = Range.parse(bucket.getValue());
                             int count = (int) bucket.getCount();
 //                        [start, end)
                             IndelLength indelLength = stats.getIndelLengthCount();
-                            if (endStr.equals("inf")) {
-                                indelLength.setGte20(indelLength.getGte20() + count);
-                            } else {
-                                int end = Integer.parseInt(endStr);
-                                if (end != 1) {
-                                    if (end <= 5) {
-                                        indelLength.setLt5(indelLength.getLt5() + count);
-                                    } else if (end <= 10) {
-                                        indelLength.setLt10(indelLength.getLt10() + count);
-                                    } else if (end <= 20) {
-                                        indelLength.setLt20(indelLength.getLt20() + count);
-                                    } else {
-                                        indelLength.setGte20(indelLength.getGte20() + count);
+                            if (!range.isNA()) {
+                                if (range.isEndInfinity()) {
+                                    indelLength.setGte20(indelLength.getGte20() + count);
+                                } else {
+                                    int end = range.getEnd().intValue();
+                                    if (end != 1) {
+                                        if (end <= 5) {
+                                            indelLength.setLt5(indelLength.getLt5() + count);
+                                        } else if (end <= 10) {
+                                            indelLength.setLt10(indelLength.getLt10() + count);
+                                        } else if (end <= 20) {
+                                            indelLength.setLt20(indelLength.getLt20() + count);
+                                        } else {
+                                            indelLength.setGte20(indelLength.getGte20() + count);
+                                        }
                                     }
                                 }
                             }
@@ -188,16 +204,16 @@ public class SampleVariantStatsAggregationQuery {
                 case "depth":
                 case "dp":
                     for (FacetField.Bucket bucket : facetField.getBuckets()) {
-                        String[] split = StringUtils.replaceChars(bucket.getValue(), "[]() ", "").split(",");
-                        String start = split[0];
-                        String endStr = split[1];
+                        Range<Double> range = Range.parse(bucket.getValue());
                         int count = (int) bucket.getCount();
                         //[start, end)
                         DepthCount depthCount = stats.getDepthCount();
-                        if (endStr.equals("inf")) {
+                        if (range.isNA()) {
+                            depthCount.setNa(depthCount.getNa() + count);
+                        } else if (range.isEndInfinity()) {
                             depthCount.setGte20(depthCount.getGte20() + count);
                         } else {
-                            double end = Double.parseDouble(endStr);
+                            double end = range.getEnd();
                             if (end <= 5) {
                                 depthCount.setLt5(depthCount.getLt5() + count);
                             } else if (end <= 10) {

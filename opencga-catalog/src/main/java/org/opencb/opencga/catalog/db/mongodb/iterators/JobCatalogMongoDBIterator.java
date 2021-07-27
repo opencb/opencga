@@ -106,7 +106,7 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
             // Map each fileId uid to the file entry
             Map<Long, Document> fileMap = fileDocuments
                     .stream()
-                    .collect(Collectors.toMap(d -> d.getLong(FileDBAdaptor.QueryParams.UID.key()), d -> d));
+                    .collect(Collectors.toMap(d -> ((Number) d.get(FileDBAdaptor.QueryParams.UID.key())).longValue(), d -> d));
 
             buffer.forEach(job -> {
                 setDocuments(fileMap, job, JobDBAdaptor.QueryParams.INPUT);
@@ -136,7 +136,7 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
             // Map each job uid to the job entry
             Map<Long, Document> jobMap = jobDocuments
                     .stream()
-                    .collect(Collectors.toMap(d -> d.getLong(JobDBAdaptor.QueryParams.UID.key()), d -> d));
+                    .collect(Collectors.toMap(d -> ((Number) d.get(JobDBAdaptor.QueryParams.UID.key())).longValue(), d -> d));
 
             buffer.forEach(job -> {
                 setDocuments(jobMap, job, JobDBAdaptor.QueryParams.DEPENDS_ON);

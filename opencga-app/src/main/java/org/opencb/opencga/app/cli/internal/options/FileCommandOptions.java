@@ -100,6 +100,9 @@ public class FileCommandOptions {
         @Parameter(names = {"--files"}, description = "List of files to associate samples.", arity = 1)
         public List<String> files;
 
+        @Parameter(names = {"--batch-size"}, description = "Samples update batch size")
+        public Integer batchSize;
+
         @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
                 arity = 1)
         public String outDir;

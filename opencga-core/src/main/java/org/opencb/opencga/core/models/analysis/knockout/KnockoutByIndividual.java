@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.analysis.knockout;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
+import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.util.*;
 
@@ -27,7 +28,9 @@ public class KnockoutByIndividual {
     private String id;
     private String sampleId;
     private String motherId;
+    private String motherSampleId;
     private String fatherId;
+    private String fatherSampleId;
     private Sex sex;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
@@ -36,6 +39,20 @@ public class KnockoutByIndividual {
     private Map<String, KnockoutGene> genesMap = new HashMap<>();
 
     public KnockoutByIndividual() {
+    }
+
+    public KnockoutByIndividual(String id, String sampleId, String motherId, String motherSampleId, String fatherId, String fatherSampleId,
+                                Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders, GeneKnockoutByIndividualStats stats) {
+        this.id = id;
+        this.sampleId = sampleId;
+        this.motherId = motherId;
+        this.motherSampleId = motherSampleId;
+        this.fatherId = fatherId;
+        this.fatherSampleId = fatherSampleId;
+        this.sex = sex;
+        this.phenotypes = phenotypes;
+        this.disorders = disorders;
+        this.stats = stats;
     }
 
     public KnockoutByIndividual(String id, String sampleId, Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders,
@@ -54,7 +71,9 @@ public class KnockoutByIndividual {
         sb.append("id='").append(id).append('\'');
         sb.append(", sampleId='").append(sampleId).append('\'');
         sb.append(", motherId='").append(motherId).append('\'');
+        sb.append(", motherSampleId='").append(motherSampleId).append('\'');
         sb.append(", fatherId='").append(fatherId).append('\'');
+        sb.append(", fatherSampleId='").append(fatherSampleId).append('\'');
         sb.append(", sex=").append(sex);
         sb.append(", phenotypes=").append(phenotypes);
         sb.append(", disorders=").append(disorders);
@@ -91,12 +110,30 @@ public class KnockoutByIndividual {
         return this;
     }
 
+    public String getMotherSampleId() {
+        return motherSampleId;
+    }
+
+    public KnockoutByIndividual setMotherSampleId(String motherSampleId) {
+        this.motherSampleId = motherSampleId;
+        return this;
+    }
+
     public String getFatherId() {
         return fatherId;
     }
 
     public KnockoutByIndividual setFatherId(String fatherId) {
         this.fatherId = fatherId;
+        return this;
+    }
+
+    public String getFatherSampleId() {
+        return fatherSampleId;
+    }
+
+    public KnockoutByIndividual setFatherSampleId(String fatherSampleId) {
+        this.fatherSampleId = fatherSampleId;
         return this;
     }
 

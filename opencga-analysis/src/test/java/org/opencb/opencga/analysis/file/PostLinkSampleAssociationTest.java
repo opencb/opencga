@@ -7,7 +7,6 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -15,11 +14,9 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileStatus;
-import org.opencb.opencga.core.models.file.PostLinkToolParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -53,7 +50,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         fileManager.setFileSampleLinkThreshold(1);
 
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null), false, token);
+        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
         assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getName());
@@ -107,7 +104,7 @@ public class PostLinkSampleAssociationTest extends AbstractManagerTest {
         fileManager.setFileSampleLinkThreshold(1);
 
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null), false, token);
+        OpenCGAResult<File> link = fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null, null), false, token);
 
         assertEquals(0, link.first().getSampleIds().size());
         assertEquals(FileStatus.MISSING_SAMPLES, link.first().getInternal().getStatus().getName());

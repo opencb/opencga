@@ -18,15 +18,14 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
@@ -370,18 +369,20 @@ public class SolrQueryParser {
             filterList.add(parseCategoryTermValue("traits", query.getString(key)));
         }
 
-        // search significance
-        key = ANNOT_CLINICAL_SIGNIFICANCE.key();
-        if (StringUtils.isNotEmpty(query.getString(key))) {
-            Values<String> values = splitValues(query.getString(key));
-            List<String> clinSig = values.getValues();
+//        // search significance
+//        key = ANNOT_CLINICAL_SIGNIFICANCE.key();
+//        if (StringUtils.isNotEmpty(query.getString(key))) {
+//            Values<String> values = splitValues(query.getString(key));
+//            List<String> clinSig = values.getValues();
+        // clinical significance
+        for (List<String> clinicalCombinations : VariantQueryParser.parseClinicalCombination(query)) {
             StringBuilder sb = new StringBuilder();
             sb.append("(");
-            for (int i = 0; i < clinSig.size(); i++) {
+            for (int i = 0; i < clinicalCombinations.size(); i++) {
                 if (i > 0) {
-                    sb.append(QueryOperation.OR.equals(values.getOperation()) ? " OR " : " AND ");
+                    sb.append(" OR ");
                 }
-                sb.append("clinicalSig:\"").append(ClinicalSignificance.valueOf(clinSig.get(i)).name()).append("\"");
+                sb.append("clinicalSig:\"").append(clinicalCombinations.get(i)).append("\"");
             }
             sb.append(")");
             filterList.add(sb.toString());

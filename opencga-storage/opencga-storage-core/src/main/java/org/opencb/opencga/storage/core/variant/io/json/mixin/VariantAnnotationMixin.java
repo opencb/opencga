@@ -16,7 +16,11 @@
 
 package org.opencb.opencga.storage.core.variant.io.json.mixin;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.opencb.biodata.models.variant.avro.GeneCancerAssociation;
+
+import java.util.List;
 
 /**
  * Created by jacobo on 2/02/15.
@@ -24,4 +28,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties({"proteinSubstitutionScores", "variantTraitAssociation"})
 public abstract class VariantAnnotationMixin {
+
+    @JsonAlias("cancerGeneAssociations")
+    public abstract List<GeneCancerAssociation> getGeneCancerAssociations();
+
 }

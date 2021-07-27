@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.core.variant.query.executors;
 import com.google.common.collect.Iterators;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;

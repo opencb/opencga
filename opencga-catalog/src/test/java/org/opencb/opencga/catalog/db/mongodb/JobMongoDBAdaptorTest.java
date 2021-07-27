@@ -235,14 +235,14 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         job = getJob(studyId, "jobName1");
 
         List<File> fileInput = Arrays.asList(
-                new File().setUid(5L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
-                new File().setUid(6L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
-                new File().setUid(7L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples()))
+                new File().setUid(5L).setName("file1").setInternal(FileInternal.init()),
+                new File().setUid(6L).setName("file2").setInternal(FileInternal.init()),
+                new File().setUid(7L).setName("file3").setInternal(FileInternal.init())
         );
         List<File> fileOutput = Arrays.asList(
-                new File().setUid(15L).setName("file1").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
-                new File().setUid(16L).setName("file2").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples())),
-                new File().setUid(17L).setName("file3").setInternal(new FileInternal(new FileStatus(), new FileIndex(), Collections.emptyMap(), new MissingSamples()))
+                new File().setUid(15L).setName("file1").setInternal(FileInternal.init()),
+                new File().setUid(16L).setName("file2").setInternal(FileInternal.init()),
+                new File().setUid(17L).setName("file3").setInternal(FileInternal.init())
         );
         ObjectMap params = new ObjectMap()
                 .append(JobDBAdaptor.QueryParams.INPUT.key(), fileInput)

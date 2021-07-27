@@ -1,0 +1,15 @@
+configuration:
+  version: 2.1.0
+  index: false
+  projectId: project
+study:
+  id: study
+  groups:
+    - id: group1
+      users:
+        - user1
+        - user2
+    - id: group2
+      users:
+        - user3
+        - user4

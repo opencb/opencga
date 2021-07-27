@@ -107,12 +107,14 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         private final Set<Integer> fileIds;
         private final Map<Integer, Collection<Integer>> samplesInFile;
         private final boolean statsMultiAllelic;
+        private final int studyId;
         private String defaultGenotype;
 
         private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager,
                                               boolean statsMultiAllelic, String unknownGenotype) {
             super(metadataManager, null);
             sampleIdsSet = new HashSet<>(sampleIds);
+            studyId = sm.getId();
             this.statsMultiAllelic = statsMultiAllelic;
             if (excludeFiles(this.statsMultiAllelic, unknownGenotype, Aggregation.NONE)) {
                 fileIds = Collections.emptySet();
@@ -153,14 +155,14 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             AtomicBoolean withStudy = new AtomicBoolean(false);
             result.walker()
                     .onStudy(studyId -> {
-                        if (studyId == sm.getId()) {
+                        if (studyId == this.studyId) {
                             withStudy.set(true);
                         }
                     })
                     .onSample(sample -> {
                         int sampleId = sample.getSampleId();
                         // Exclude other samples
-                        if (sampleIdsSet.contains(sampleId)) {
+                        if (sample.getStudyId() == studyId && sampleIdsSet.contains(sampleId)) {
                             processedSamples.add(sampleId);
 
                             String gt = sample.getGT();
@@ -174,7 +176,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                     })
                     .onFile(file -> {
                         int fileId = file.getFileId();
-                        if (fileIds.contains(fileId)) {
+                        if (file.getStudyId() == studyId && fileIds.contains(fileId)) {
                             filesInThisVariant.add(fileId);
 
                             String secAlt = file.getString(FILE_SEC_ALTS_IDX);
@@ -199,7 +201,11 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                             }
                         }
                     })
-                    .onFillMissing((studyId, value) -> fillMissingColumnValue.set(value))
+                    .onFillMissing((studyId, value) -> {
+                        if (studyId == this.studyId) {
+                            fillMissingColumnValue.set(value);
+                        }
+                    })
                     .walk();
 
             if (!withStudy.get()) {

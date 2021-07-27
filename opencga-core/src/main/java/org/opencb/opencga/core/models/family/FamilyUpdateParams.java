@@ -18,14 +18,16 @@ package org.opencb.opencga.core.models.family;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -33,9 +35,8 @@ public class FamilyUpdateParams {
     private String id;
     private String name;
     private String description;
-    private List<Phenotype> phenotypes;
-    private List<Disorder> disorders;
-    private List<String> members;
+    private String creationDate;
+    private List<IndividualReferenceParam> members;
     private Integer expectedSize;
     private FamilyQualityControl qualityControl;
     private CustomStatusParams status;
@@ -45,14 +46,13 @@ public class FamilyUpdateParams {
     public FamilyUpdateParams() {
     }
 
-    public FamilyUpdateParams(String id, String name, String description, List<Phenotype> phenotypes, List<Disorder> disorders,
-                              List<String> members, Integer expectedSize, CustomStatusParams status, FamilyQualityControl qualityControl,
+    public FamilyUpdateParams(String id, String name, String description, String creationDate, List<IndividualReferenceParam> members,
+                              Integer expectedSize, CustomStatusParams status, FamilyQualityControl qualityControl,
                               List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.phenotypes = phenotypes;
-        this.disorders = disorders;
+        this.creationDate = creationDate;
         this.members = members;
         this.expectedSize = expectedSize;
         this.status = status;
@@ -77,18 +77,26 @@ public class FamilyUpdateParams {
         return params;
     }
 
+    public Family toFamily() {
+        return new Family(id, name, null, null,
+                members != null
+                        ? members.stream().map(m -> new Individual().setId(m.getId()).setUuid(m.getUuid())).collect(Collectors.toList())
+                        : null,
+                creationDate, description, members != null ? members.size() : 0, 1, 1, annotationSets,
+                status != null ? status.toCustomStatus() : null, new FamilyInternal(), Collections.emptyMap(), attributes);
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", phenotypes=").append(phenotypes);
-        sb.append(", disorders=").append(disorders);
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
-        sb.append(", status=").append(status);
         sb.append(", qualityControl=").append(qualityControl);
+        sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -122,29 +130,20 @@ public class FamilyUpdateParams {
         return this;
     }
 
-    public List<Phenotype> getPhenotypes() {
-        return phenotypes;
+    public String getCreationDate() {
+        return creationDate;
     }
 
-    public FamilyUpdateParams setPhenotypes(List<Phenotype> phenotypes) {
-        this.phenotypes = phenotypes;
+    public FamilyUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 
-    public List<Disorder> getDisorders() {
-        return disorders;
-    }
-
-    public FamilyUpdateParams setDisorders(List<Disorder> disorders) {
-        this.disorders = disorders;
-        return this;
-    }
-
-    public List<String> getMembers() {
+    public List<IndividualReferenceParam> getMembers() {
         return members;
     }
 
-    public FamilyUpdateParams setMembers(List<String> members) {
+    public FamilyUpdateParams setMembers(List<IndividualReferenceParam> members) {
         this.members = members;
         return this;
     }

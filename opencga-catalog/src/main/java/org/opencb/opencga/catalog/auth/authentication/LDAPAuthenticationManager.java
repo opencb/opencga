@@ -54,6 +54,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private String dnFormat;
     private String uidKey;
     private String uidFormat;
+    private int readTimeout;
+    private int connectTimeout;
 
     private long expiration;
 
@@ -85,6 +87,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         this.dnFormat = String.valueOf(authOptions.getOrDefault(LDAP_DN_FORMAT, "%s"));
         this.uidKey = String.valueOf(authOptions.getOrDefault(LDAP_UID_KEY, "uid"));
         this.uidFormat = String.valueOf(authOptions.getOrDefault(LDAP_UID_FORMAT, "%s"));  // no formatting by default
+        this.readTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(READ_TIMEOUT, DEFAULT_READ_TIMEOUT)));
+        this.connectTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)));
         this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(
                 String.valueOf(authOptions.getOrDefault(LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, false))
         );
@@ -104,7 +108,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         try {
             List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(host, Arrays.asList(userId), usersSearch);
             if (userInfoFromLDAP.isEmpty()) {
-                throw new CatalogAuthenticationException("The user id " + userId + " could not be found in LDAP.");
+                throw new CatalogAuthenticationException("LDAP: The user id " + userId + " could not be found.");
             }
 
             String rdn = getDN(userInfoFromLDAP.get(0));
@@ -133,7 +137,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             new InitialDirContext(env);
         } catch (NamingException e) {
             logger.error("{}", e.getMessage(), e);
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw new CatalogAuthenticationException("LDAP: " + e.getMessage(), e);
         }
 
         return new AuthenticationResponse(jwtManager.createJWTToken(userId, claims, expiration));
@@ -199,7 +203,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             attributes.put("LDAP_RDN", rdn);
             User user = new User(uid, displayName, mail, usersSearch, new Account().setType(Account.AccountType.GUEST)
                     .setAuthentication(new Account.AuthenticationOrigin(originId, false)), new UserInternal(new UserStatus()),
-                    new UserQuota(-1, -1, -1, -1), new ArrayList<>(), new HashMap<>(), new LinkedList<>(), attributes);
+                    new UserQuota(-1, -1, -1, -1), new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new LinkedList<>(), attributes);
 
             userList.add(user);
         }
@@ -246,6 +250,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             // Obtain users from external origin
             Hashtable env = new Hashtable();
             env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+            env.put("com.sun.jndi.ldap.connect.timeout", String.valueOf(connectTimeout));
+            env.put("com.sun.jndi.ldap.read.timeout", String.valueOf(readTimeout));
             env.put(Context.PROVIDER_URL, host);
 
             if (StringUtils.isNotEmpty(authUserId) && StringUtils.isNotEmpty(authPassword)) {
@@ -257,9 +263,6 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             if (ldaps && sslInvalidCertificatesAllowed) {
                 env.put("java.naming.ldap.factory.socket", "org.opencb.opencga.catalog.auth.authentication.MySSLSocketFactory");
             }
-
-            // Specify timeout to be 0.5 seconds
-            env.put("com.sun.jndi.ldap.connect.timeout", "500");
 
             dctx = null;
             while (dctx == null) {
@@ -334,7 +337,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase) throws NamingException {
-        return getUserInfoFromLDAP(host, userList, userBase, "uid");
+        return getUserInfoFromLDAP(host, userList, userBase, this.uidKey);
     }
 
     private List<Attributes> getUserInfoFromLDAP(String host, List<String> userList, String userBase, String key) throws NamingException {
@@ -360,7 +363,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private String getMail(Attributes attributes) throws NamingException {
-        return (String) attributes.get("mail").get(0);
+        return attributes.get("mail") != null ? (String) attributes.get("mail").get(0) : "";
     }
 
     private String getUID(Attributes attributes) throws NamingException {

@@ -132,7 +132,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--job", "--job-to-retry"}, description = ParamConstants.JOB_ID_DESCRIPTION + " of the job to retry", required = true, arity = 1)
         public String jobToRetry;
 
-        @Parameter(names = {"--id"}, description = ParamConstants.JOB_ID_CREATION_DESCRIPTION, required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = ParamConstants.JOB_ID_CREATION_DESCRIPTION, arity = 1)
         public String id;
 
         @Parameter(names = {"-d", "--description"}, description = ParamConstants.JOB_DESCRIPTION_DESCRIPTION, arity = 1)

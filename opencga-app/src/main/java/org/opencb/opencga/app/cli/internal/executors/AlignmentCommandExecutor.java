@@ -18,11 +18,22 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
+import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.alignment.*;
 
+import java.io.File;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
@@ -38,7 +49,8 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
  */
 public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
-    private final AlignmentCommandOptions alignmentCommandOptions;
+    private AlignmentCommandOptions alignmentCommandOptions;
+    private String jobId;
 //    private AlignmentStorageEngine alignmentStorageManager;
 
     public AlignmentCommandExecutor(AlignmentCommandOptions options) {
@@ -52,13 +64,31 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         configure();
+
+        jobId = alignmentCommandOptions.internalJobOptions.jobId;
+
         switch (subCommandString) {
             case "index-run":
                 indexRun();
                 break;
-            case "stats-run":
-                statsRun();
+            case "qc-run":
+                qcRun();
                 break;
+            case "gene-coveratge-stats-run":
+                geneCoverageStatsRun();
+                break;
+//            case "stats-run":
+//                statsRun();
+//                break;
+//            case "flagstats-run":
+//                flagStatsRun();
+//                break;
+//            case "fastqcmetrics-run":
+//                fastQcMetricsRun();
+//                break;
+//            case "hsmetrics-run":
+//                hsMetricsRun();
+//                break;
             case "coverage-run":
                 coverageRun();
                 break;
@@ -122,20 +152,102 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 //        }
 //    }
 
-    private void statsRun() throws ToolException {
-        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+    private void qcRun() throws ToolException {
+        AlignmentCommandOptions.QcAlignmentCommandOptions cliOptions = alignmentCommandOptions.qcAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
+        ObjectMap params = new AlignmentQcParams(
+                cliOptions.bamFile,
+                cliOptions.bedFile,
+                cliOptions.dictFile,
+                cliOptions.skip,
+                cliOptions.overwrite,
+                cliOptions.outdir
+        ).toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        alignmentManager.statsRun(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
+        toolRunner.execute(AlignmentQcAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
+
+    private void geneCoverageStatsRun() throws ToolException {
+        AlignmentCommandOptions.GeneCoverageStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions
+                .geneCoverageStatsAlignmentCommandOptions;
+
+        ObjectMap params = new AlignmentGeneCoverageStatsParams(
+                cliOptions.bamFile,
+                Arrays.asList(cliOptions.genes.split(",")),
+                cliOptions.outdir
+        ).toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(AlignmentGeneCoverageStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+    }
+
+//    private void statsRun() throws ToolException {
+//        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+//
+//        ObjectMap params = new AlignmentStatsParams(
+//                cliOptions.file,
+//                cliOptions.outdir
+//        ).toObjectMap(cliOptions.commonOptions.params)
+//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+//
+//        toolRunner.execute(AlignmentStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+//    }
+//
+//    private void flagStatsRun() throws ToolException {
+//        AlignmentCommandOptions.FlagStatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.flagStatsAlignmentCommandOptions;
+//
+//        ObjectMap params = new AlignmentFlagStatsParams(
+//                cliOptions.file,
+//                cliOptions.outdir
+//        ).toObjectMap(cliOptions.commonOptions.params)
+//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+//
+//        toolRunner.execute(AlignmentFlagStatsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+//    }
+//
+//    private void fastQcMetricsRun() throws ToolException {
+//        AlignmentCommandOptions.FastQcMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions
+//                .fastQcMetricsAlignmentCommandOptions;
+//
+//        ObjectMap params = new AlignmentFastQcMetricsParams(
+//                cliOptions.file,
+//                cliOptions.outdir
+//        ).toObjectMap(cliOptions.commonOptions.params)
+//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+//
+//        toolRunner.execute(AlignmentFastQcMetricsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+//    }
+//
+//    private void hsMetricsRun() throws ToolException {
+//        AlignmentCommandOptions.HsMetricsAlignmentCommandOptions cliOptions = alignmentCommandOptions.hsMetricsAlignmentCommandOptions;
+//
+//        ObjectMap params = new AlignmentHsMetricsParams(
+//                cliOptions.bamFile,
+//                cliOptions.bedFile,
+//                cliOptions.dictFile,
+//                cliOptions.outdir
+//        ).toObjectMap(cliOptions.commonOptions.params)
+//                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+//
+//        toolRunner.execute(AlignmentHsMetricsAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
+//    }
 
     private void coverageRun() throws ToolException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory, alignmentCommandOptions.internalJobOptions.jobId);
+        Map<String, String> deeptoolsParams = new HashMap<>();
+        deeptoolsParams.put("b", String.valueOf(cliOptions.file));
+        deeptoolsParams.put("o", new File(cliOptions.file).getName() + ".bw");
+        deeptoolsParams.put("binSize", String.valueOf(cliOptions.windowSize));
 
-        alignmentManager.coverageRun(cliOptions.study, cliOptions.file, cliOptions.windowSize, cliOptions.overwrite, cliOptions.outdir, cliOptions.commonOptions.token);
+        ObjectMap params = new DeeptoolsWrapperParams(
+                "bamCoverage",
+                cliOptions.outdir,
+                deeptoolsParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     private void delete() {
@@ -150,97 +262,74 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private void bwa() throws Exception {
         AlignmentCommandOptions.BwaCommandOptions cliOptions = alignmentCommandOptions.bwaCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
 
-        BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
-        bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new BwaWrapperParams(
+                cliOptions.command,
+                cliOptions.fastaFile,
+                cliOptions.fastq1File,
+                cliOptions.fastq2File,
+                cliOptions.outdir,
+                cliOptions.bwaParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        bwa.setStudy(cliOptions.study);
-
-        bwa.setCommand(cliOptions.command)
-                .setFastaFile(cliOptions.fastaFile)
-                .setIndexBaseFile(cliOptions.indexBaseFile)
-                .setFastq1File(cliOptions.fastq1File)
-                .setFastq2File(cliOptions.fastq2File)
-                .setSamFilename(cliOptions.samFilename);
-
-        bwa.start();
+        toolRunner.execute(BwaWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // Samtools
 
     private void samtools() throws Exception {
         AlignmentCommandOptions.SamtoolsCommandOptions cliOptions = alignmentCommandOptions.samtoolsCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.samtoolsParams);
 
-        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
-        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new SamtoolsWrapperParams(
+                cliOptions.command,
+                cliOptions.inputFile,
+                cliOptions.outdir,
+                cliOptions.samtoolsParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        samtools.setStudy(cliOptions.study);
-
-        samtools.setCommand(cliOptions.command)
-                .setInputFile(cliOptions.inputFile)
-                .setOutputFilename(cliOptions.outputFilename);
-
-        samtools.start();
+        toolRunner.execute(SamtoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // Deeptools
 
     private void deeptools() throws Exception {
         AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-        params.putAll(cliOptions.deeptoolsParams);
 
-        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
-        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new DeeptoolsWrapperParams(
+                cliOptions.command,
+                cliOptions.outdir,
+                cliOptions.deeptoolsParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        deeptools.setStudy(cliOptions.study);
-
-        deeptools.setCommand(cliOptions.executable)
-                .setBamFile(cliOptions.bamFile);
-
-        deeptools.start();
+        toolRunner.execute(DeeptoolsWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // FastQC
 
     private void fastqc() throws Exception {
         AlignmentCommandOptions.FastqcCommandOptions cliOptions = alignmentCommandOptions.fastqcCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
-        params.putAll(cliOptions.fastqcParams);
 
-        FastqcWrapperAnalysis fastqc = new FastqcWrapperAnalysis();
-        fastqc.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new FastqcWrapperParams(
+                cliOptions.inputFile,
+                cliOptions.outdir,
+                cliOptions.fastqcParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        fastqc.setStudy(cliOptions.study);
-
-        fastqc.setFile(cliOptions.file);
-
-        fastqc.start();
+        toolRunner.execute(FastqcWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     // Picard
 
     private void picard() throws Exception {
         AlignmentCommandOptions.PicardCommandOptions cliOptions = alignmentCommandOptions.picardCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
 
-        PicardWrapperAnalysis picard = new PicardWrapperAnalysis();
-        picard.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), alignmentCommandOptions.internalJobOptions.jobId, cliOptions.commonOptions.token);
+        ObjectMap params = new PicardWrapperParams(
+                cliOptions.command,
+                cliOptions.outdir,
+                cliOptions.picardParams)
+                .toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        picard.setStudy(cliOptions.study);
-        picard.setCommand(cliOptions.command);
-
-        picard.start();
+        toolRunner.execute(PicardWrapperAnalysis.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
 
     //-------------------------------------------------------------------------

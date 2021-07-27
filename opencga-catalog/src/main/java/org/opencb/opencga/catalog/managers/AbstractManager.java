@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Created by hpccoll1 on 12/05/15.
@@ -68,7 +67,7 @@ public abstract class AbstractManager {
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
     protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
-    protected static final String OPENCGA = "opencga";
+    public static final String OPENCGA = "opencga";
     public static final String ANONYMOUS = "*";
 
     public static final int BATCH_OPERATION_SIZE = 100;
@@ -212,26 +211,34 @@ public abstract class AbstractManager {
      * @return a new QueryOptions with the necessary modifications.
      */
     QueryOptions keepFieldInQueryOptions(QueryOptions options, String field) {
-        if (options.isEmpty()) {
+        return keepFieldsInQueryOptions(options, Collections.singletonList(field));
+    }
+
+    /**
+     * This method will make sure that 'field' is included in case there is a INCLUDE or never excluded in case there is a EXCLUDE list.
+     *
+     * @param options QueryOptions object.
+     * @param fields fields that need to remain.
+     * @return a new QueryOptions with the necessary modifications.
+     */
+    QueryOptions keepFieldsInQueryOptions(QueryOptions options, List<String> fields) {
+        if (options.isEmpty() || CollectionUtils.isEmpty(fields)) {
             // Everything will be included, so we don't need to do anything
             return options;
         }
 
         QueryOptions queryOptions = new QueryOptions(options);
-
-        List<String> includeList = queryOptions.getAsStringList(QueryOptions.INCLUDE);
-        if (!includeList.isEmpty() && !includeList.contains(field)) {
-            // We need to add the field
-            List<String> includeListCopy = new ArrayList<>(includeList);
-            includeListCopy.add(field);
-            queryOptions.put(QueryOptions.INCLUDE, includeListCopy);
+        Set<String> includeSet = new HashSet<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
+        if (!includeSet.isEmpty()) {
+            // We need to add the fields
+            includeSet.addAll(fields);
+            queryOptions.put(QueryOptions.INCLUDE, new ArrayList<>(includeSet));
         }
 
-        List<String> excludeList = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
-        if (!excludeList.isEmpty() && excludeList.contains(field)) {
-            // We need to remove the field from the exclusion list
-            List<String> excludeListCopy = excludeList.stream().filter(x -> !x.equals(field)).collect(Collectors.toList());
-            queryOptions.put(QueryOptions.EXCLUDE, excludeListCopy);
+        Set<String> excludeSet = new HashSet<>(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
+        if (!excludeSet.isEmpty()) {
+            fields.forEach(excludeSet::remove);
+            queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeSet));
         }
 
         return queryOptions;

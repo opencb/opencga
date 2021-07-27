@@ -1,0 +1,107 @@
+{{- if .Values.solr.deploy.enabled -}}
+apiVersion: solr.bloomberg.com/v1beta1
+#apiVersion: solr.apache.org/v1beta1
+kind: SolrCloud
+metadata:
+  name: {{ .Values.solr.deploy.name }}
+spec:
+  dataStorage:
+    persistent:
+      reclaimPolicy: Delete
+      pvcTemplate:
+        spec:
+          resources:
+            requests:
+              storage: {{ .Values.solr.deploy.volume.size }}
+#    backupRestoreOptions:
+#      volume:
+#        persistentVolumeClaim:
+#          claimName: "pvc-test"
+  replicas: {{ .Values.solr.deploy.replicas }}
+  solrImage:
+#    repository: {{ .Values.solr.deploy.image.repository }}
+    tag: {{ .Values.solr.deploy.image.tag }}
+#    imagePullSecret: {{ .Values.solr.deploy.image.imagePullSecret }}
+
+  solrJavaMem: {{ .Values.solr.deploy.javaMem }}
+  solrOpts: {{ .Values.solr.deploy.opts }}
+  solrGCTune: {{ .Values.solr.deploy.GCTune }}
+
+#  solrAddressability: {}
+#    external:
+#      method: Ingress
+#      domainName: {{ .Values.solr.deploy.domainName }}
+  updateStrategy:
+    managed:
+      maxPodsUnavailable: 1
+
+
+  customSolrKubeOptions:
+    podOptions:
+      resources:
+        {{- toYaml .Values.solr.deploy.resources | nindent 8 }}
+      nodeSelector:
+        {{- toYaml .Values.solr.deploy.nodeSelector | nindent 8 }}
+      initContainers: #Additional init containers to run in the pod. These will run along with the init container that sets up the "solr.xml"
+        - name: opencga-copy-configset
+          securityContext:
+            {{- toYaml .Values.init.securityContext | nindent 12 }}
+          image: {{ tpl .Values.init.image.repository . | quote }}
+          imagePullPolicy: {{ .Values.init.image.pullPolicy | quote }}
+          volumeMounts:
+            - name: opencgaconfigsets
+              mountPath: /opencga-solr-configsets
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - "mkdir -p /opencga-solr-configsets/misc/ && cp -r /opt/opencga/misc/solr/ /opencga-solr-configsets/misc/ && touch /opencga-solr-configsets/READY"
+
+#      sidecarContainers: #Sidecar containers to run in the pod. These are in addition to the Solr Container
+        - name: opencga-load-configset
+          securityContext:
+            {{- toYaml .Values.init.securityContext | nindent 12 }}
+          image: "{{ .Values.solr.deploy.image.repository }}:{{ .Values.solr.deploy.image.tag }}"
+          imagePullPolicy: {{ .Values.init.image.pullPolicy | quote }}
+          env:
+            - name: SOLR_HOME
+              value: /opt/solr
+            - name: ZK_HOST
+              value: {{ include "solrHosts" . | quote }}
+          volumeMounts:
+            - name: opencgaconfigsets
+              mountPath: /opencga-solr-configsets
+          command: [ "/bin/bash", "-c" ]
+          args:
+            - "while [ ! -f /opencga-solr-configsets/READY ] ; do echo 'Waiting for the configsets' ; sleep 1 ; done ; ls -lR /opencga-solr-configsets/; /opencga-solr-configsets/misc/solr/install.sh $ZK_HOST $SOLR_HOME /opencga-solr-configsets/"
+
+
+      #envVars: Additional environment variables to pass to the default container.
+      #podSecurityContext: PodSecurityContext is the security context for the pod.
+      #sidecarContainers: Sidecar containers to run in the pod. These are in addition to the Solr Container
+      volumes: # Additional non-data volumes to load into the default container
+        - name: opencgaconfigsets
+          defaultContainerMount:
+            # Default container mount is not actually needed, but the solr-operator will throw a "nil pointer exception" if missing
+            name: opencgaconfigsets
+            mountPath: /opencga-solr-configsets
+          source:
+            emptyDir:
+              sizeLimit: 1G
+
+  # The information for the Zookeeper this SolrCloud should connect to Can be a zookeeper that is running, or one that is created by the solr operator
+  zookeeperRef:
+    provided:
+      chroot: "/"
+      persistence:
+        spec:
+#          storageClassName: "hostpath"
+          storageClassName: "default"
+          resources:
+            requests:
+              storage: {{ .Values.solr.deploy.zookeeper.volume.size }}
+      replicas: {{ .Values.solr.deploy.zookeeper.replicas }}
+      zookeeperPodPolicy:
+        resources:
+          {{- toYaml .Values.solr.deploy.zookeeper.resources | nindent 10 }}
+        nodeSelector:
+          {{- toYaml .Values.solr.deploy.zookeeper.nodeSelector | nindent 10 }}
+{{- end -}}

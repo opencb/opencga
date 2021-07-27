@@ -41,6 +41,8 @@ public class ParamConstants {
 
     public static final String INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+    public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
+    public static final String INTERNAL_INDEX_STATUS_DESCRIPTION = "Filter by internal index status";
 
     public static final String STATUS_PARAM = "status";
     public static final String STATUS_DESCRIPTION = "Filter by status";
@@ -92,7 +94,33 @@ public class ParamConstants {
     public static final String MEMBERS_GROUP = "@members";
     public static final String ADMINS_GROUP = "@admins";
 
+    // -------------------- AUDIT -------------------------
+    public static final String OPERATION_ID = "operationId";
+    public static final String OPERATION_ID_DESCRIPTION = "Audit operation UUID";
+    public static final String USER_ID = "userId";
+    public static final String ACTION = "action";
+    public static final String ACTION_DESCRIPTION = "Action performed by the user";
+    public static final String RESOURCE = "resource";
+    public static final String RESOURCE_DESCRIPTION = "Resource involved";
+    public static final String RESOURCE_ID = "resourceId";
+    public static final String RESOURCE_ID_DESCRIPTION = "Resource ID";
+    public static final String RESOURCE_UUID = "resourceUuid";
+    public static final String RESOURCE_UUID_DESCRIPTION = "resource UUID";
+    public static final String STATUS = "status";
+    public static final String DATE = "date";
+    public static final String DATE_DESCRIPTION = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+
+    // ---------------------------------------------
+
+    public static final String USER = "user";
     public static final String USER_DESCRIPTION = "User ID";
+    public static final String USERS_DESCRIPTION = "Comma separated list of user IDs";
+    public static final String USER_ACCOUNT_TYPE = "account";
+    public static final String USER_ACCOUNT_TYPE_DESCRIPTION = "Account type [GUEST, FULL, ADMINISTRATOR]";
+    public static final String USER_AUTHENTICATION_ORIGIN = "authenticationId";
+    public static final String USER_AUTHENTICATION_ORIGIN_DESCRIPTION = "Authentication origin ID";
+    public static final String USER_CREATION_DATE = "creationDate";
+    public static final String USER_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
 
     // ---------------------------------------------
 
@@ -140,6 +168,10 @@ public class ParamConstants {
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
     public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
 
+    public static final int MAXIMUM_LINES_CONTENT = 1000;
+    public static final String MAXIMUM_LINES_CONTENT_DESCRIPTION =
+            "Maximum number of lines to be returned up to a maximum of " + MAXIMUM_LINES_CONTENT;
+
     // ---------------------------------------------
 
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
@@ -180,6 +212,8 @@ public class ParamConstants {
     public static final String INDIVIDUAL_VERSION_PARAM = "version";
     public static final String INDIVIDUAL_VERSION_DESCRIPTION = "Comma separated list of individual versions. 'all' to get all the "
             + "individual versions. Not supported if multiple individual ids are provided";
+    public static final String INDIVIDUAL_FAMILY_IDS_PARAM = "familyIds";
+    public static final String INDIVIDUAL_FAMILY_IDS_DESCRIPTION = "Comma separated list of family ids the individuals may belong to.";
 
     // ---------------------------------------------
 
@@ -216,7 +250,7 @@ public class ParamConstants {
 
     public static final String PANEL_SOURCE = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
-            + "sources are 'panelapp' and 'genecensus'";
+            + "sources are 'panelapp' and 'cancer-gene-census'";
     public static final String PANEL_SOURCE_ID = "id";
     public static final String PANEL_SOURCE_ID_DESCRIPTION = "Comma separated list of panel IDs to be imported from the defined source."
             + "If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one "
@@ -302,6 +336,11 @@ public class ParamConstants {
     public static final String GENE_PARAM = "gene";
 
     // ---------------------------------------------
+    // RGA
+    public static final String INDEX_AUXILIAR_COLLECTION_DESCRIPTION = "Index auxiliar collection to improve performance assuming RGA is completely indexed.";
+    public static final String INDEX_AUXILIAR_COLLECTION = "auxiliarIndex";
+
+    // ---------------------------------------------
     // alignment
 
     public static final String ALIGNMENT_INDEX_DESCRIPTION = "Index alignment file";
@@ -309,9 +348,16 @@ public class ParamConstants {
     public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
     public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs germline)";
-    public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats for a given alignment file";
-    public static final String ALIGNMENT_STATS_INFO_DESCRIPTION = "Show the stats for a given alignment file";
-    public static final String ALIGNMENT_STATS_QUERY_DESCRIPTION = "Fetch alignment files according to their stats";
+    public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file (including samtools stats, samtools flag stats, FastQC and HS metrics)";
+    public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats (based on samtools/stats command) for a given alignment file";
+    public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given alignment file";
+    public static final String ALIGNMENT_FASTQC_METRICS_DESCRIPTION = "Compute sequence stats (based on FastQC tool) for a given alignment file";
+    public static final String ALIGNMENT_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics (based on Picard tool) for a given alignment file";
+    public static final String ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION = "Compute gene coverage stats for a given alignment file and a list of genes";
+    public static final String ALIGNMENT_QC_SAMTOOLS_STATS_DESCRIPTION = "Compute samtools stats";
+    public static final String ALIGNMENT_QC_SAMTOOLS_FLAG_STATS_DESCRIPTION = "Compute samtools flag stats";
+    public static final String ALIGNMENT_QC_FASTQC_DESCRIPTION = "Compute FastQC";
+    public static final String ALIGNMENT_QC_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics based on the Picard/HsMetrics command";
 
     // ---------------------------------------------
     // alignment query
@@ -417,32 +463,38 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String SAMTOOLS_COMMANDS = "'sort', 'index' , 'view', 'stats', 'dict', 'faidx', 'depth'";
-    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Samtools command: " + SAMTOOLS_COMMANDS;
-
-    public static final String INPUT_FILE_DESCRIPTION = "Input file (full path).";
-    public static final String INPUT_FILE_PARAM = "inputFile";
-    public static final String OUTPUT_FILENAME_DESCRIPTION = "Output file name.";
-    public static final String OUTPUT_FILENAME_PARAM = "outputFilename";
-    public static final String REFERENCE_FILE_DESCRIPTION = "Reference sequence FASTA file";
-    public static final String REFERENCE_FILE_PARAM = "referenceFile";
-    public static final String READ_GROUP_FILE_DESCRIPTION = "Only include reads with read group listed in this file";
-    public static final String READ_GROUP_FILE_PARAM = "readGroupFile";
-    public static final String BED_FILE_DESCRIPTION = "File containing a list of positions or regions";
-    public static final String BED_FILE_PARAM = "bedFile";
-    public static final String REF_SEQ_FILE_DESCRIPTION = "Reference sequence (required for GC-depth and mismatches-per-cycle calculation)";
-    public static final String REF_SEQ_FILE_PARAM = "refSeqFile";
-    public static final String REFERENCE_NAMES_DESCRIPTION = "File listing reference names and lengths";
-    public static final String REFERENCE_NAMES_PARAM = "referenceNamesFile";
-    public static final String TARGET_REGION_DESCRIPTION = "Do stats in these regions only. Tab-delimited file chr,from,to, 1-based, inclusive";
-    public static final String TARGET_REGION_PARAM = "targetRegionFile";
-    public static final String READS_NOT_SELECTED_FILENAME_DESCRIPTION = "Output reads not selected by filters will be written into this file";
-    public static final String READS_NOT_SELECTED_FILENAME_PARAM = "readsNotSelectedFilename";
+    public static final String INPUT_FILE_DESCRIPTION = FILE_ID_DESCRIPTION + " (input file)";
 
     // ---------------------------------------------
 
-    public static final String PICARD_TOOL_NAME_PARAMETER = "command";
-    public static final String PICARD_TOOL_NAME_DESCRIPTION = "Picard tool name to execute. Supported tools: CollectHsMetrics, CollectWgsMetrics, BedToInvervalList";
+    public static final String SAMTOOLS_COMMANDS_SUPPORTED = "sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats";
+    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Supported Samtools commands: " + SAMTOOLS_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
+    public static final String DEEPTOOLS_COMMANDS_SUPPORTED = "bamCoverage, bamCompare";
+    public static final String DEEPTOOLS_COMMAND_DESCRIPTION = "Supported Deeptools commands: " + DEEPTOOLS_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
+    public static final String PICARD_COMMANDS_SUPPORTED = "CollectHsMetrics, CollectWgsMetrics, BedToIntervalList";
+    public static final String PICARD_COMMAND_DESCRIPTION = "Supported Picard commands: " + PICARD_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
+    public static final String BWA_COMMANDS_SUPPORTED = "index, mem";
+    public static final String BWA_COMMAND_DESCRIPTION = "Supported BWA commands: " + BWA_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
+    public static final String GATK_COMMANDS_SUPPORTED = "HaplotypeCaller";
+    public static final String GATK_COMMAND_DESCRIPTION = "Supported Gatk commands: " + GATK_COMMANDS_SUPPORTED;
+
+    // ---------------------------------------------
+
+    public static final String RVTESTS_COMMANDS_SUPPORTED = "rvtest, vcf2kinship";
+    public static final String RVTESTS_COMMAND_DESCRIPTION = "Supported RvTests commands: " + RVTESTS_COMMANDS_SUPPORTED;
+
     // ---------------------------------------------
 
     public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "
@@ -453,4 +505,5 @@ public class ParamConstants {
     public static final String COMMAND_PARAMETER = "command";
     public static final String COMMAND_PARAMETER_DESCRIPTION = "Command name to execute in this tool.";
 
+    public static final String FIELD_PARAM = "field";
 }

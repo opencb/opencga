@@ -4,9 +4,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
-import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -16,18 +17,16 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtCombinationIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
-import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
+import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.NoOpIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
-import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.PopulationFrequencyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,12 +163,14 @@ public class SampleIndexQueryParser {
 
         Set<String> mendelianErrorSet = new HashSet<>();
         boolean onlyDeNovo = false;
+        boolean partialGtIndex = false;
 
         // Extract sample and genotypes to filter
         if (isValidParam(query, GENOTYPE)) {
             // Get samples with non negated genotypes
 
             Map<Object, List<String>> map = new HashMap<>();
+            Map<String, SampleMetadata> allSamples = new HashMap<>();
             queryOperation = parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
             // Extract parents from each sample
@@ -180,6 +181,7 @@ public class SampleIndexQueryParser {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
 
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                allSamples.put(sampleMetadata.getName(), sampleMetadata);
 
                 List<String> gts = GenotypeClass.filter(entry.getValue(), allGenotypes);
                 if (gts.stream().allMatch(SampleIndexSchema::validGenotype)) {
@@ -214,7 +216,6 @@ public class SampleIndexQueryParser {
                 parentsSet.addAll(parentsMap.get(child));
             }
 
-            boolean partialGtIndex = false;
             for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
                 String sampleName = entry.getKey();
                 if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
@@ -233,6 +234,7 @@ public class SampleIndexQueryParser {
                     // Discard samples with negated genotypes
                     negatedGenotypesSamples.add(sampleName);
                     partialIndex = true;
+                    logger.info("Set partialGtIndex to true. Prev value: {}", partialGtIndex);
                     partialGtIndex = true;
                 } else {
                     samplesMap.put(sampleName, entry.getValue());
@@ -246,28 +248,47 @@ public class SampleIndexQueryParser {
                             Integer fatherId = metadataManager.getSampleId(studyId, father);
                             boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
                                     .equals(metadataManager.getLoadSplitData(studyId, fatherId));
-                            boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies);
+                            List<Integer> fatherFiles = allSamples.get(father).getFiles();
+                            List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
+                            boolean parentInSeparatedFile =
+                                    fatherFiles.size() != sampleFiles.size() || !fatherFiles.containsAll(sampleFiles);
+                            boolean[] filter = buildParentGtFilter(gtMap.get(father), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
+                                logger.debug("FATHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
                                 partialGtIndex = true;
                             }
+//                            logger.info("Father={}, includeDiscrepancies={}, fatherFiles={}, sampleFiles={}, "
+//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
+//                                    father, includeDiscrepancies, fatherFiles, sampleFiles,
+//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
                             fatherFilterMap.put(sampleName, filter);
                         }
                         if (mother != null) {
                             Integer motherId = metadataManager.getSampleId(studyId, mother);
                             boolean includeDiscrepancies = VariantStorageEngine.SplitData.MULTI
                                     .equals(metadataManager.getLoadSplitData(studyId, motherId));
-                            boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies);
+                            List<Integer> motherFiles = allSamples.get(mother).getFiles();
+                            List<Integer> sampleFiles = allSamples.get(sampleName).getFiles();
+                            boolean parentInSeparatedFile =
+                                    motherFiles.size() != sampleFiles.size() || !motherFiles.containsAll(sampleFiles);
+                            boolean[] filter = buildParentGtFilter(gtMap.get(mother), includeDiscrepancies, parentInSeparatedFile);
                             if (!isFullyCoveredParentFilter(filter)) {
+                                logger.debug("MOTHER - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
                                 partialGtIndex = true;
                             }
+//                            logger.info("Mother={}, includeDiscrepancies={}, motherFiles={}, sampleFiles={}, "
+//                                            + "parentInSeparatedFile={}, fullyCoveredFilter={}",
+//                                    mother, includeDiscrepancies, motherFiles, sampleFiles,
+//                                    parentInSeparatedFile, isFullyCoveredParentFilter(filter));
                             motherFilterMap.put(sampleName, filter);
                         }
                     }
                 }
-                // If not all genotypes are valid, query is not covered
-                if (!negatedSamples.isEmpty()) {
-                    partialGtIndex = true;
-                }
+            }
+            // If not all genotypes are valid, query is not covered
+            if (!negatedSamples.isEmpty()) {
+                logger.debug("NEG_SAMPLES - Set partialGtIndex to true. Prev value: {}", partialGtIndex);
+                partialGtIndex = true;
             }
 
             for (String negatedSample : negatedSamples) {
@@ -294,7 +315,7 @@ public class SampleIndexQueryParser {
             }
 
             if (!isValidParam(query, SAMPLE_DATA)) {
-                // Do not remove FORMAT
+                // Do not remove if SAMPLE_DATA filter is present
                 query.remove(SAMPLE.key());
             }
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
@@ -359,7 +380,7 @@ public class SampleIndexQueryParser {
         Map<String, Values<SampleFileIndexQuery>> fileIndexMap = new HashMap<>(samplesMap.size());
         for (String sample : samplesMap.keySet()) {
             Values<SampleFileIndexQuery> fileIndexQuery =
-                    parseFilesQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex);
+                    parseFilesQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex, partialGtIndex);
 
             fileIndexMap.put(sample, fileIndexQuery);
         }
@@ -523,7 +544,7 @@ public class SampleIndexQueryParser {
         return childrenSet;
     }
 
-    protected static boolean[] buildParentGtFilter(List<String> parentGts, boolean includeDiscrepancies) {
+    protected static boolean[] buildParentGtFilter(List<String> parentGts, boolean includeDiscrepancies, boolean parentInSeparatedFile) {
         boolean[] filter = new boolean[GenotypeCodec.NUM_CODES]; // all false by default
         for (String gt : parentGts) {
             filter[GenotypeCodec.encode(gt)] = true;
@@ -532,8 +553,11 @@ public class SampleIndexQueryParser {
             filter[GenotypeCodec.DISCREPANCY_SIMPLE] = true;
             filter[GenotypeCodec.DISCREPANCY_ANY] = true;
         }
-        if (filter[GenotypeCodec.MISSING_HOM] || filter[GenotypeCodec.HOM_REF_UNPHASED] || filter[GenotypeCodec.HOM_REF_PHASED]) {
-            filter[GenotypeCodec.UNKNOWN] = true;
+        if (parentInSeparatedFile) {
+            // If parents were in separated files, missing and hom_ref might be registered as "unknown"
+            if (filter[GenotypeCodec.MISSING_HOM] || filter[GenotypeCodec.HOM_REF_UNPHASED] || filter[GenotypeCodec.HOM_REF_PHASED]) {
+                filter[GenotypeCodec.UNKNOWN] = true;
+            }
         }
         return filter;
     }
@@ -551,7 +575,7 @@ public class SampleIndexQueryParser {
 
 
     protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
-                                                         boolean multiFileSample, boolean partialFilesIndex) {
+                                                           boolean multiFileSample, boolean partialFilesIndex, boolean partialGtIndex) {
         return parseFilesQuery(query, sample, multiFileSample, partialFilesIndex, s -> {
             Integer sampleId = metadataManager.getSampleId(studyId, s);
             List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
@@ -560,11 +584,11 @@ public class SampleIndexQueryParser {
                 fileNames.add(metadataManager.getFileName(studyId, fileId));
             }
             return fileNames;
-        });
+        }, partialGtIndex);
     }
 
     protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
-                                                         Function<String, List<String>> filesFromSample) {
+                                                           Function<String, List<String>> filesFromSample, boolean partialGtIndex) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
         List<String> filesFromFileData = fileDataParsedQuery.getValues(KeyValues::getKey);
 
@@ -585,7 +609,7 @@ public class SampleIndexQueryParser {
                 Query subQuery = new Query(query);
 //                    subQuery.remove(FILE.key());
                 subQuery.put(FILE_DATA.key(), fileDataParsedQuery.getValue(kv -> kv.getKey().equals(fileFromFileData)).toQuery());
-                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialFilesIndex, filesFromSample));
+                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialFilesIndex, filesFromSample, partialGtIndex));
                 if (isValidParam(subQuery, FILE_DATA)) {
                     // This subquery did not remove the fileData, so it's not fully covered. Can't remove the fileData filter.
                     fileDataCovered = false;
@@ -596,12 +620,12 @@ public class SampleIndexQueryParser {
             }
             return new Values<>(fileDataParsedQuery.getOperation(), fileIndexQueries);
         }
-        return new Values<>(null,
-                Collections.singletonList(parseFileQuery(query, sample, multiFileSample, partialFilesIndex, filesFromSample)));
+        return new Values<>(null, Collections.singletonList(
+                parseFileQuery(query, sample, multiFileSample, partialFilesIndex, filesFromSample, partialGtIndex)));
     }
 
     protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
-                                                  Function<String, List<String>> filesFromSample) {
+                                                  Function<String, List<String>> filesFromSample, boolean partialGtIndex) {
 
         List<String> files = null;
         List<IndexFieldFilter> filtersList = new ArrayList<>(schema.getFileIndex().getFields().size());
@@ -739,6 +763,10 @@ public class SampleIndexQueryParser {
                 if (!partialFilesIndex) {
                     if (sampleDataQuery.isEmpty()) {
                         query.remove(SAMPLE_DATA.key());
+                        if (!partialGtIndex) {
+                            query.remove(GENOTYPE.key());
+                            query.remove(SAMPLE.key());
+                        }
                     } else {
                         query.put(SAMPLE_DATA.key(), sampleDataQuery.toQuery());
                     }
@@ -773,9 +801,10 @@ public class SampleIndexQueryParser {
      */
     protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
         byte annotationIndex = 0;
-        byte biotypeMask = 0;
-        short consequenceTypeMask = 0;
-        byte clinicalMask = 0;
+        IndexFieldFilter biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+        IndexFieldFilter consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
+        CtBtCombinationIndexSchema.Filter ctBtFilter = schema.getCtBtIndex().getField().noOpFilter();
+        IndexFilter clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
 
         Boolean intergenic = null;
 
@@ -806,7 +835,7 @@ public class SampleIndexQueryParser {
                 intergenic = false;
             } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)) {
                 intergenic = true;
-            }
+            } // else, leave undefined : intergenic = null
             boolean ctFilterCoveredBySummary = false;
             boolean ctBtCombinationCoveredBySummary = false;
             if (LOF_SET.containsAll(soNames)) {
@@ -860,18 +889,8 @@ public class SampleIndexQueryParser {
             boolean useCtIndexFilter = !ctFilterCoveredBySummary || (!ctBtCombinationCoveredBySummary && combination.isBiotype());
             if (useCtIndexFilter) {
                 ctCovered = completeIndex;
-                for (String soName : soNames) {
-                    short mask = getMaskFromSoName(soName);
-                    if (mask == IndexUtils.EMPTY_MASK) {
-                        // If any element is not in the index, do not use this filter
-                        consequenceTypeMask = IndexUtils.EMPTY_MASK;
-                        ctCovered = false;
-                        break;
-                    }
-                    consequenceTypeMask |= mask;
-                    // Some CT filter values are not precise, so the query is not covered.
-                    ctCovered &= !isImpreciseCtMask(mask);
-                }
+                consequenceTypeFilter = schema.getCtIndex().getField().buildFilter(new OpValue<>("=", soNames));
+                ctCovered &= consequenceTypeFilter.isExactFilter();
                 // ConsequenceType filter is covered by index
                 if (ctCovered) {
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -901,18 +920,8 @@ public class SampleIndexQueryParser {
             boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.isConsequenceType();
             if (useBtIndexFilter) {
                 btCovered = completeIndex;
-                for (String biotype : biotypes) {
-                    byte mask = getMaskFromBiotype(biotype);
-                    if (mask == IndexUtils.EMPTY_MASK) {
-                        // If any element is not in the index, do not use this filter
-                        biotypeMask = IndexUtils.EMPTY_MASK;
-                        btCovered = false;
-                        break;
-                    }
-                    biotypeMask |= mask;
-                    // Some CT filter values are not precise, so the query is not covered.
-                    btCovered &= !isImpreciseBtMask(mask);
-                }
+                biotypeFilter = schema.getBiotypeIndex().getField().buildFilter(new OpValue<>("=", biotypes));
+                btCovered &= biotypeFilter.isExactFilter();
                 // Biotype filter is covered by index
                 if (btCovered) {
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -920,6 +929,10 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+        }
+
+        if (!consequenceTypeFilter.isNoOp() && !biotypeFilter.isNoOp()) {
+            ctBtFilter = schema.getCtBtIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter);
         }
         if (completeIndex && btCovered && ctCovered && !isValidParam(query, GENE)
                 && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
@@ -935,47 +948,43 @@ public class SampleIndexQueryParser {
             annotationIndex |= LOF_EXTENDED_MASK;
         }
 
-        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
+        List<IndexFieldFilter> clinicalFieldFilters = new ArrayList<>();
+        if (isValidParam(query, ANNOT_CLINICAL)) {
             annotationIndex |= CLINICAL_MASK;
-            boolean clinicalCovered = true;
-            for (String clinical : query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key())) {
-                switch (ClinicalSignificance.valueOf(clinical)) {
-                    case likely_benign:
-                    case benign:
-                        // These two values are covered by the same bit, so, they are not covered.
-                        clinicalCovered = false;
-                        clinicalMask |= CLINICAL_BENIGN_LIKELY_BENIGN_MASK;
-                        break;
-                    case VUS:
-                    case uncertain_significance:
-                        // These two values are synonymous
-                        clinicalMask |= CLINICAL_UNCERTAIN_SIGNIFICANCE_MASK;
-                        break;
-                    case likely_pathogenic:
-                        clinicalMask |= CLINICAL_LIKELY_PATHOGENIC_MASK;
-                        break;
-                    case pathogenic:
-                        clinicalMask |= CLINICAL_PATHOGENIC_MASK;
-                        break;
-                    default:
-                        clinicalCovered = false;
-                        break;
-                }
-            }
-            if (completeIndex && clinicalCovered) {
-                query.remove(ANNOT_CLINICAL_SIGNIFICANCE.key());
-            }
+            Values<String> sources = splitValues(query.getString(ANNOT_CLINICAL.key()));
+
+            clinicalFieldFilters.add(schema.getClinicalIndexSchema().getSourceField().buildFilter(
+                    new Values<>(sources.getOperation(), sources.getValues(s -> new OpValue<>("=", Collections.singletonList(s))))));
+        }
+        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)) {
+            annotationIndex |= CLINICAL_MASK;
+            List<List<String>> clinicalLists = VariantQueryParser.parseClinicalCombination(query, true);
+
+            clinicalFieldFilters.add(schema.getClinicalIndexSchema().getClinicalSignificanceField()
+                    .buildFilter(new Values<>(QueryOperation.AND, clinicalLists.stream()
+                            .map(l -> new OpValue<>("=", l)).collect(Collectors.toList()))));
+        }
+        if (!clinicalFieldFilters.isEmpty()) {
+            clinicalFilter = schema.getClinicalIndexSchema().buildFilter(clinicalFieldFilters, QueryOperation.AND);
+
+            boolean clinicalCovered = clinicalFilter.isExactFilter();
             if (!clinicalCovered) {
                 // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
-                clinicalMask = 0;
+                clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
+            }
+            if (completeIndex && clinicalCovered) {
+                query.remove(ANNOT_CLINICAL.key());
+                query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+                query.remove(ANNOT_CLINICAL_SIGNIFICANCE.key());
             }
         }
 
-        List<PopulationFrequencyQuery> popFreqQuery = new ArrayList<>();
-        QueryOperation popFreqOp = QueryOperation.AND;
-        boolean popFreqPartial = false;
+        IndexFilter populationFrequencyFilter = schema.getPopFreqIndex().noOpFilter();
         // TODO: This will skip filters ANNOT_POPULATION_REFERENCE_FREQUENCY and ANNOT_POPULATION_MINNOR_ALLELE_FREQUENCY
         if (isValidParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
+            List<IndexFieldFilter> populationFrequencyFilters = new ArrayList<>();
+            QueryOperation popFreqOp;
+            boolean popFreqPartial = false;
             ParsedQuery<String> popFreqFilter = VariantQueryUtils.splitValue(query, VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY);
             popFreqOp = popFreqFilter.getOperation();
 
@@ -987,7 +996,7 @@ public class SampleIndexQueryParser {
                 KeyOpValue<String, String> keyOpValue = VariantQueryUtils.parseKeyOpValue(popFreq);
                 String studyPop = keyOpValue.getKey();
                 studyPops.add(studyPop);
-                double freqFilter = Double.valueOf(keyOpValue.getValue());
+                double freqFilter = Double.parseDouble(keyOpValue.getValue());
                 if (keyOpValue.getOp().equals("<") || keyOpValue.getOp().equals("<<")) {
                     if (freqFilter <= POP_FREQ_THRESHOLD_001) {
                         popFreqLessThan001.add(studyPop);
@@ -996,19 +1005,12 @@ public class SampleIndexQueryParser {
 
                 boolean populationInSampleIndex = false;
                 boolean populationFilterFullyCovered = false;
-                int popFreqIdx = 0;
-                for (PopulationFrequencyRange populationRange : schema.getConfiguration().getPopulationRanges()) {
-                    if (populationRange.getStudyAndPopulation().equals(studyPop)) {
-                        populationInSampleIndex = true;
-                        RangeQuery rangeQuery = getRangeQuery(keyOpValue.getOp(), freqFilter, populationRange.getThresholds(),
-                                0, 1 + RangeIndexFieldFilter.DELTA);
-
-                        popFreqQuery.add(new PopulationFrequencyQuery(rangeQuery,
-                                popFreqIdx, populationRange.getStudy(),
-                                populationRange.getPopulation()));
-                        populationFilterFullyCovered |= rangeQuery.isExactQuery();
-                    }
-                    popFreqIdx++;
+                IndexField<Double> popFreqField = schema.getPopFreqIndex().getField(studyPop);
+                if (popFreqField != null) {
+                    populationInSampleIndex = true;
+                    IndexFieldFilter fieldFilter = popFreqField.buildFilter(new OpValue<>(keyOpValue.getOp(), freqFilter));
+                    populationFrequencyFilters.add(fieldFilter);
+                    populationFilterFullyCovered = fieldFilter.isExactFilter();
                 }
 
                 if (!populationInSampleIndex) {
@@ -1027,7 +1029,7 @@ public class SampleIndexQueryParser {
 
                     if (POP_FREQ_ANY_001_SET.size() == popFreqFilter.getValues().size()) {
                         // Do not filter using the PopFreq index, as the summary bit covers the filter
-                        popFreqQuery.clear();
+                        populationFrequencyFilters.clear();
 
                         // If the index is complete for all samples, remove the filter from main query
                         if (completeIndex) {
@@ -1037,7 +1039,7 @@ public class SampleIndexQueryParser {
                 }
                 if (popFreqPartial) {
                     // Can not use the index with partial OR queries.
-                    popFreqQuery.clear();
+                    populationFrequencyFilters.clear();
                 } else if (filtersNotCoveredByPopFreqQuery.isEmpty()) {
                     // If all filters are covered, remove filter form query.
                     if (completeIndex) {
@@ -1063,6 +1065,9 @@ public class SampleIndexQueryParser {
                     }
                 }
             }
+            if (!populationFrequencyFilters.isEmpty()) {
+                populationFrequencyFilter = schema.getPopFreqIndex().buildFilter(populationFrequencyFilters, popFreqOp);
+            }
         }
 
         byte annotationIndexMask = annotationIndex;
@@ -1075,13 +1080,12 @@ public class SampleIndexQueryParser {
 
         if (intergenic == null || intergenic) {
             // If intergenic is undefined, or true, CT and BT filters can not be used.
-            consequenceTypeMask = IndexUtils.EMPTY_MASK;
-            biotypeMask = IndexUtils.EMPTY_MASK;
+            biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
+            consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
         }
 
-
-        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex}, consequenceTypeMask, biotypeMask,
-                clinicalMask, popFreqOp, popFreqQuery, popFreqPartial);
+        return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex},
+                consequenceTypeFilter, biotypeFilter, ctBtFilter, clinicalFilter, populationFrequencyFilter);
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {
@@ -1101,14 +1105,14 @@ public class SampleIndexQueryParser {
         boolean exactQuery;
         if (rangeCode[0] == 0) {
             if (rangeCode[1] - 1 == thresholds.length) {
-                exactQuery = RangeIndexFieldFilter.equalsTo(range[0], min) && RangeIndexFieldFilter.equalsTo(range[1], max);
+                exactQuery = RangeIndexField.equalsTo(range[0], min) && RangeIndexField.equalsTo(range[1], max);
             } else {
-                exactQuery = RangeIndexFieldFilter.equalsTo(range[1], thresholds[rangeCode[1] - 1])
-                        && RangeIndexFieldFilter.equalsTo(range[0], min);
+                exactQuery = RangeIndexField.equalsTo(range[1], thresholds[rangeCode[1] - 1])
+                        && RangeIndexField.equalsTo(range[0], min);
             }
         } else if (rangeCode[1] - 1 == thresholds.length) {
-            exactQuery = RangeIndexFieldFilter.equalsTo(range[0], thresholds[rangeCode[0] - 1])
-                    && RangeIndexFieldFilter.equalsTo(range[1], max);
+            exactQuery = RangeIndexField.equalsTo(range[0], thresholds[rangeCode[0] - 1])
+                    && RangeIndexField.equalsTo(range[1], max);
         } else {
             exactQuery = false;
         }

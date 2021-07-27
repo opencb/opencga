@@ -13,6 +13,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -83,12 +84,12 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
                     Genotype motherGt = null;
                     Genotype childGt;
                     if (trio.getFather() != null) {
-                        fatherGt = new Genotype(study.getSampleData(trio.getFather(), "GT"));
+                        fatherGt = parseGenotype(study.getSampleData(trio.getFather(), "GT"));
                     }
                     if (trio.getMother() != null) {
-                        motherGt = new Genotype(study.getSampleData(trio.getMother(), "GT"));
+                        motherGt = parseGenotype(study.getSampleData(trio.getMother(), "GT"));
                     }
-                    childGt = new Genotype(study.getSampleData(trio.getChild(), "GT"));
+                    childGt = parseGenotype(study.getSampleData(trio.getChild(), "GT"));
                     int code = MendelianError.compute(fatherGt, motherGt, childGt, variant.getChromosome());
                     if (code != 0) {
                         if (study.getIssues() == null) {
@@ -100,12 +101,19 @@ public class SampleIndexMendelianErrorQueryExecutor extends SampleIndexVariantQu
                                         new SampleEntry(
                                                 trio.getChild(),
                                                 null,
-                                                Collections.singletonList(String.valueOf(code)))));
-
+                                                Collections.singletonList(String.valueOf(code))),
+                                        Collections.singletonMap("meCode", String.valueOf(code))));
                     }
                 }
             }
         }
         return variant;
+    }
+
+    private Genotype parseGenotype(String gt) {
+        if (gt.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
+            gt = "0/0";
+        }
+        return new Genotype(gt);
     }
 }

@@ -22,11 +22,16 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
@@ -35,8 +40,9 @@ public class IndividualUpdateParams {
     private String id;
     private String name;
 
-    private String father;
-    private String mother;
+    private IndividualReferenceParam father;
+    private IndividualReferenceParam mother;
+    private String creationDate;
     private Boolean parentalConsanguinity;
     private Location location;
     private IndividualProperty.Sex sex;
@@ -45,8 +51,7 @@ public class IndividualUpdateParams {
     private String dateOfBirth;
     private IndividualProperty.KaryotypicSex karyotypicSex;
     private IndividualProperty.LifeStatus lifeStatus;
-    private IndividualProperty.AffectationStatus affectationStatus;
-    private List<String> samples;
+    private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
@@ -57,17 +62,18 @@ public class IndividualUpdateParams {
     public IndividualUpdateParams() {
     }
 
-    public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity,
-                                  Location location, IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population,
-                                  String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
-                                  IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
-                                  List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
+    public IndividualUpdateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
+                                  String creationDate, Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex,
+                                  String ethnicity, IndividualPopulation population, String dateOfBirth,
+                                  IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
+                                  List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                   List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
                                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
         this.mother = mother;
+        this.creationDate = creationDate;
         this.parentalConsanguinity = parentalConsanguinity;
         this.location = location;
         this.sex = sex;
@@ -76,7 +82,6 @@ public class IndividualUpdateParams {
         this.dateOfBirth = dateOfBirth;
         this.karyotypicSex = karyotypicSex;
         this.lifeStatus = lifeStatus;
-        this.affectationStatus = affectationStatus;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.phenotypes = phenotypes;
@@ -102,13 +107,27 @@ public class IndividualUpdateParams {
         return params;
     }
 
+    @JsonIgnore
+    public Individual toIndividual() {
+        return new Individual(id, name,
+                father != null ? new Individual().setId(father.getId()).setUuid(father.getUuid()) : null,
+                mother != null ? new Individual().setId(mother.getId()).setUuid(mother.getUuid()) : null,
+                Collections.emptyList(), location, qualityControl, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1,
+                creationDate, lifeStatus, phenotypes, disorders,
+                samples != null
+                        ? samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
+                        : null, parentalConsanguinity, annotationSets, status != null ? status.toCustomStatus() : null,
+                new IndividualInternal(), attributes);
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualUpdateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", father='").append(father).append('\'');
-        sb.append(", mother='").append(mother).append('\'');
+        sb.append(", father=").append(father);
+        sb.append(", mother=").append(mother);
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
@@ -117,7 +136,6 @@ public class IndividualUpdateParams {
         sb.append(", dateOfBirth='").append(dateOfBirth).append('\'');
         sb.append(", karyotypicSex=").append(karyotypicSex);
         sb.append(", lifeStatus=").append(lifeStatus);
-        sb.append(", affectationStatus=").append(affectationStatus);
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", phenotypes=").append(phenotypes);
@@ -147,21 +165,30 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public String getFather() {
+    public IndividualReferenceParam getFather() {
         return father;
     }
 
-    public IndividualUpdateParams setFather(String father) {
+    public IndividualUpdateParams setFather(IndividualReferenceParam father) {
         this.father = father;
         return this;
     }
 
-    public String getMother() {
+    public IndividualReferenceParam getMother() {
         return mother;
     }
 
-    public IndividualUpdateParams setMother(String mother) {
+    public IndividualUpdateParams setMother(IndividualReferenceParam mother) {
         this.mother = mother;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public IndividualUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 
@@ -237,20 +264,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public IndividualProperty.AffectationStatus getAffectationStatus() {
-        return affectationStatus;
-    }
-
-    public IndividualUpdateParams setAffectationStatus(IndividualProperty.AffectationStatus affectationStatus) {
-        this.affectationStatus = affectationStatus;
-        return this;
-    }
-
-    public List<String> getSamples() {
+    public List<SampleReferenceParam> getSamples() {
         return samples;
     }
 
-    public IndividualUpdateParams setSamples(List<String> samples) {
+    public IndividualUpdateParams setSamples(List<SampleReferenceParam> samples) {
         this.samples = samples;
         return this;
     }

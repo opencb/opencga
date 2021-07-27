@@ -48,14 +48,13 @@ public class KnockoutAnalysisParams extends ToolParams {
     private String outdir;
 
     private boolean index;
-    private List<String> indexJobTags;
 
     public KnockoutAnalysisParams() {
     }
 
     public KnockoutAnalysisParams(List<String> sample, List<String> gene, List<String> panel, String biotype, String consequenceType,
                                   String filter, String qual, boolean skipGenesFile, String outdir,
-                                  boolean index, List<String> indexJobTags) {
+                                  boolean index) {
         this.sample = sample;
         this.gene = gene;
         this.panel = panel;
@@ -66,7 +65,6 @@ public class KnockoutAnalysisParams extends ToolParams {
         this.skipGenesFile = skipGenesFile;
         this.outdir = outdir;
         this.index = index;
-        this.indexJobTags = indexJobTags;
     }
 
     public List<String> getSample() {
@@ -159,12 +157,4 @@ public class KnockoutAnalysisParams extends ToolParams {
         return this;
     }
 
-    public List<String> getIndexJobTags() {
-        return indexJobTags;
-    }
-
-    public KnockoutAnalysisParams setIndexJobTags(List<String> indexJobTags) {
-        this.indexJobTags = indexJobTags;
-        return this;
-    }
 }

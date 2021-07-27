@@ -27,11 +27,14 @@ import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -63,6 +66,17 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public VariantOperationWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
+    }
+
+    @POST
+    @Path("/cellbase/configure")
+    @ApiOperation(value = "Update Cellbase configuration", response = Job.class)
+    public Response cellbaseConfigure(
+            @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = VariantAnnotationIndexOperationTool.DESCRIPTION) @QueryParam("annotationUpdate") boolean annotate,
+            @ApiParam(value = VariantAnnotationSaveOperationTool.DESCRIPTION) @QueryParam("annotationSaveId") String annotationSaveId,
+            @ApiParam(value = "New cellbase configuration") CellBaseConfiguration configuration) {
+        return run(() -> variantManager.setCellbaseConfiguration(project, configuration, annotate, annotationSaveId, token));
     }
 
     @POST
@@ -123,6 +137,19 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantStorageMetadataRepairToolParams.DESCRIPTION) VariantStorageMetadataRepairToolParams params) {
         return submitJobAdmin(VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/variant/stats/index")
+    @ApiOperation(value = VariantStatsIndexOperationTool.DESCRIPTION, response = Job.class)
+    public Response statsRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = VariantStatsAnalysisParams.DESCRIPTION, required = true) VariantStatsIndexParams params) {
+        return submitJob(VariantStatsIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -235,19 +262,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/sample/index/configure")
-    @ApiOperation(value = "Update SampleIndex configuration", response = ObjectMap.class)
+    @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
-        return run(() -> {
-            StopWatch stopWatch = StopWatch.createStarted();
-            variantManager.configureSampleIndex(study, sampleIndexConfiguration, token);
-
-            return new DataResult<>()
-                    .setResults(Collections.singletonList(sampleIndexConfiguration))
-                    .setNumResults(1)
-                    .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
-        });
+        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, token));
     }
 
     @POST

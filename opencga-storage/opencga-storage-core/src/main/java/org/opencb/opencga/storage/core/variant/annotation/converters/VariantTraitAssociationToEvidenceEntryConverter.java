@@ -6,7 +6,7 @@ import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.EvidenceEntry;
 import org.opencb.biodata.models.variant.avro.VariantClassification;
 import org.opencb.biodata.tools.commons.Converter;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

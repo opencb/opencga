@@ -22,43 +22,62 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
+ * finibus.
+ */
 public class SampleQualityControl implements Serializable {
 
-    private List<String> fileIds;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
+    private List<String> files;
+
+    /**
+     * Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui
+     * dignissim leo, quis ullamcorper felis elit a augue.
+     *
+     * @apiNote Required
+     */
     private List<ClinicalComment> comments;
-    private List<SampleAlignmentQualityControlMetrics> alignmentMetrics;
-    private SampleVariantQualityControlMetrics variantMetrics;
+
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
+    private SampleVariantQualityControlMetrics variant;
 
     public SampleQualityControl() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), null);
+        this(new ArrayList<>(), new ArrayList<>(), new SampleVariantQualityControlMetrics());
     }
 
-    public SampleQualityControl(List<String> fileIds, List<ClinicalComment> comments,
-                                List<SampleAlignmentQualityControlMetrics> alignmentMetrics,
-                                SampleVariantQualityControlMetrics variantMetrics) {
-        this.fileIds = fileIds;
+    public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variant) {
+        this.files = files;
         this.comments = comments;
-        this.alignmentMetrics = alignmentMetrics;
-        this.variantMetrics = variantMetrics;
+        this.variant = variant;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
-        sb.append("fileIds=").append(fileIds);
+        sb.append("files=").append(files);
         sb.append(", comments=").append(comments);
-        sb.append(", alignmentMetrics=").append(alignmentMetrics);
-        sb.append(", variantMetrics=").append(variantMetrics);
+        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<String> getFileIds() {
-        return fileIds;
+    public List<String> getFiles() {
+        return files;
     }
 
-    public SampleQualityControl setFileIds(List<String> fileIds) {
-        this.fileIds = fileIds;
+    public SampleQualityControl setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 
@@ -71,21 +90,12 @@ public class SampleQualityControl implements Serializable {
         return this;
     }
 
-    public List<SampleAlignmentQualityControlMetrics> getAlignmentMetrics() {
-        return alignmentMetrics;
+    public SampleVariantQualityControlMetrics getVariant() {
+        return variant;
     }
 
-    public SampleQualityControl setAlignmentMetrics(List<SampleAlignmentQualityControlMetrics> alignmentMetrics) {
-        this.alignmentMetrics = alignmentMetrics;
-        return this;
-    }
-
-    public SampleVariantQualityControlMetrics getVariantMetrics() {
-        return variantMetrics;
-    }
-
-    public SampleQualityControl setVariantMetrics(SampleVariantQualityControlMetrics variantMetrics) {
-        this.variantMetrics = variantMetrics;
+    public SampleQualityControl setVariant(SampleVariantQualityControlMetrics variant) {
+        this.variant = variant;
         return this;
     }
 }

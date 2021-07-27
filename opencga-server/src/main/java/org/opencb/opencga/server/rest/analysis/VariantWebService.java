@@ -22,8 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
-import org.opencb.biodata.models.clinical.qc.MutationalSignature;
-import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -38,6 +37,7 @@ import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.circos.CircosAnalysis;
 import org.opencb.opencga.analysis.variant.circos.CircosLocalAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -46,7 +46,6 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
-import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureLocalAnalysisExecutor;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -55,16 +54,18 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
-import org.opencb.opencga.core.models.alignment.FastQcWrapperParams;
 import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
@@ -74,19 +75,17 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleAlignmentQualityControlMetrics;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -287,10 +286,15 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "proteinKeyword", value = ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "drug", value = ANNOT_DRUG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinical", value = ANNOT_CLINICAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelModeOfInheritance", value = VariantCatalogQueryUtils.PANEL_MOI_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelConfidence", value = VariantCatalogQueryUtils.PANEL_CONFIDENCE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelRoleInCancer", value = VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER_DESC, dataType = "string", paramType = "query"),
 
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
@@ -626,16 +630,23 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinical", value = ANNOT_CLINICAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query")
     })
     public Response sampleAggregationStats(@ApiParam(value =
             "List of facet fields separated by semicolons, e.g.: studies;type."
                     + " For nested faceted fields use >>, e.g.: chromosome>>type ."
-                    + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam("fields") String fields) {
+                    + " Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter") @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.put(QueryOptions.FACET, fields);
+            if (StringUtils.isEmpty(field)) {
+                String fields = queryOptions.getString("fields");
+                queryOptions.put(QueryOptions.FACET, fields);
+            } else {
+                queryOptions.put(QueryOptions.FACET, field);
+            }
             Query query = getVariantQuery(queryOptions);
             return variantManager.facet(query, queryOptions, token);
         });
@@ -672,7 +683,9 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinical", value = ANNOT_CLINICAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query"),
     })
     @ApiOperation(value = "Obtain sample variant stats from a sample.", response = SampleVariantStats.class)
     public Response sampleStatsQuery(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -721,7 +734,7 @@ public class VariantWebService extends AnalysisWebService {
             statsResult.setNumMatches(result.getNumMatches());
             statsResult.setEvents(result.getEvents());
             statsResult.setTime(result.getTime());
-            statsResult.setNode(result.getNode());
+            statsResult.setFederationNode(result.getFederationNode());
             return statsResult;
         });
     }
@@ -810,17 +823,24 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "proteinKeyword", value = ANNOT_PROTEIN_KEYWORD_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "drug", value = ANNOT_DRUG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "functionalScore", value = ANNOT_FUNCTIONAL_SCORE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinical", value = ANNOT_CLINICAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "customAnnotation", value = CUSTOM_ANNOTATION_DESCR, dataType = "string", paramType = "query"),
 
             // WARN: Only available in Solr
             @ApiImplicitParam(name = "trait", value = ANNOT_TRAIT_DESCR, dataType = "string", paramType = "query"),
     })
-    public Response getAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam("fields") String fields) {
+    public Response getAggregationStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type;percentile(gerp)") @QueryParam(ParamConstants.FIELD_PARAM) String field) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.put(QueryOptions.FACET, fields);
+            if (StringUtils.isEmpty(field)) {
+                String fields = queryOptions.getString("fields");
+                queryOptions.put(QueryOptions.FACET, fields);
+            } else {
+                queryOptions.put(QueryOptions.FACET, field);
+            }
             Query query = getVariantQuery(queryOptions);
 
             return variantManager.facet(query, queryOptions, token);
@@ -891,7 +911,7 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/mutationalSignature/query")
-    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.", response = MutationalSignature.class)
+    @ApiOperation(value = MutationalSignatureAnalysis.DESCRIPTION + " Use context index.", response = Signature.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "sample", value = "Sample name", dataType = "string", paramType = "query"),
@@ -902,7 +922,10 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "panel", value = VariantCatalogQueryUtils.PANEL_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelModeOfInheritance", value = VariantCatalogQueryUtils.PANEL_MOI_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelConfidence", value = VariantCatalogQueryUtils.PANEL_CONFIDENCE_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "panelRoleInCancer", value = VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER_DESC, dataType = "string", paramType = "query"),
     })
     public Response mutationalSignatureQuery(
             @ApiParam(value = "Compute the relative proportions of the different mutational signatures demonstrated by the tumour",
@@ -918,6 +941,10 @@ public class VariantWebService extends AnalysisWebService {
                 return createErrorResponse(new Exception("Missing sample name"));
             }
 
+            if (!query.containsKey(STUDY.key())) {
+                return createErrorResponse(new Exception("Missing study name"));
+            }
+
             // Create temporal directory
             outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + System.nanoTime()).toFile();
             outDir.mkdir();
@@ -925,24 +952,27 @@ public class VariantWebService extends AnalysisWebService {
                 return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
             }
 
-            MutationalSignatureLocalAnalysisExecutor executor = new MutationalSignatureLocalAnalysisExecutor(variantManager);
-            executor.setOpenCgaHome(opencgaHome);
+            MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
+            params.setSample(query.getString(SAMPLE.key()))
+                    .setQuery(query)
+                    .setFitting(fitting);
 
-            ObjectMap executorParams = new ObjectMap();
-            executorParams.put("opencgaHome", opencgaHome);
-            executorParams.put("token", token);
-            executorParams.put("fitting", fitting);
-            executor.setUp(null, executorParams, outDir.toPath());
-            executor.setStudy(query.getString(STUDY.key()));
-            executor.setSampleName(query.getString(SAMPLE.key()));
+            MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
+            mutationalSignatureAnalysis.setUp(opencgaHome.toString(), catalogManager, storageEngineFactory, new ObjectMap(), outDir.toPath(), null,
+                    token);
+            mutationalSignatureAnalysis.setStudy(query.getString(STUDY.key()));
+            mutationalSignatureAnalysis.setSignatureParams(params);
 
             StopWatch watch = StopWatch.createStarted();
-            MutationalSignature signatureResult = executor.query(query, queryOptions);
+            mutationalSignatureAnalysis.start();
             watch.stop();
-            OpenCGAResult<MutationalSignature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
-                    Collections.singletonList(signatureResult), 1);
+
+            Signature signature = mutationalSignatureAnalysis.parse(outDir.toPath());
+
+            OpenCGAResult<Signature> result = new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1,
+                    Collections.singletonList(signature), 1);
             return createOkResponse(result);
-        } catch (CatalogException | ToolException | IOException | StorageEngineException e) {
+        } catch (ToolException | IOException e) {
             return createErrorResponse(e);
         } finally {
             if (outDir != null) {
@@ -1082,12 +1112,13 @@ public class VariantWebService extends AnalysisWebService {
 
                     // Coverage file does not exit, a job must be submitted to create the .bw file
                     DeeptoolsWrapperParams deeptoolsParams = new DeeptoolsWrapperParams()
-                            .setCommand("bamCoverage")
-                            .setBamFile(catalogBamFile.getId());
+                            .setCommand("bamCoverage");
 
                     Map<String, String> bamCoverageParams = new HashMap<>();
-                    bamCoverageParams.put("bs", "1");
-                    bamCoverageParams.put("of", "bigwig");
+                    bamCoverageParams.put("b", catalogBamFile.getId());
+                    bamCoverageParams.put("o", Paths.get(catalogBamFile.getUri()).getFileName() + ".bw");
+                    bamCoverageParams.put("binSize", "1");
+                    bamCoverageParams.put("outFileFormat", "bigwig");
                     bamCoverageParams.put("minMappingQuality", "20");
                     deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
 
@@ -1115,136 +1146,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
 
-        return run(() -> {
-            final String OPENCGA_ALL = "ALL";
-
-            List<String> dependsOnList = StringUtils.isEmpty(dependsOn) ? new ArrayList<>() : Arrays.asList(dependsOn.split(","));
-
-            Sample sample;
-            org.opencb.opencga.core.models.file.File catalogBamFile;
-            sample = IndividualQcUtils.getValidSampleById(study, params.getSample(), catalogManager, token);
-            if (sample == null) {
-                throw new ToolException("Sample '" + params.getSample() + "' not found.");
-            }
-            catalogBamFile = AnalysisUtils.getBamFileBySampleId(sample.getId(), study, catalogManager.getFileManager(), token);
-
-            // Check variant stats
-            if (OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                        + " variant stats ID");
-            }
-
-            if (StringUtils.isEmpty(params.getVariantStatsId()) && params.getVariantStatsQuery() != null
-                    && !params.getVariantStatsQuery().toParams().isEmpty()) {
-                throw new ToolException("Invalid parameters: if variant stats ID is empty, variant stats query must be"
-                        + " empty");
-            }
-            if (StringUtils.isNotEmpty(params.getVariantStatsId())
-                    && (params.getVariantStatsQuery() == null || params.getVariantStatsQuery().toParams().isEmpty())) {
-                throw new ToolException("Invalid parameters: if you provide a variant stats ID, variant stats query"
-                        + " can not be empty");
-            }
-            if (StringUtils.isEmpty(params.getVariantStatsId())) {
-                params.setVariantStatsId(OPENCGA_ALL);
-            }
-
-            boolean runVariantStats = true;
-            if (sample.getQualityControl() != null) {
-                if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getVariantStats())
-                        && OPENCGA_ALL.equals(params.getVariantStatsId())) {
-                    runVariantStats = false;
-                } else {
-                    for (SampleQcVariantStats variantStats : sample.getQualityControl().getVariantMetrics().getVariantStats()) {
-                        if (variantStats.getId().equals(params.getVariantStatsId())) {
-                            throw new ToolException("Invalid parameters: variant stats ID '" + params.getVariantStatsId()
-                                    + "' is already used");
-                        }
-                    }
-                }
-            }
-
-            // Check mutational signature
-            boolean runSignature = true;
-            if (!sample.isSomatic()) {
-                runSignature = false;
-            } else {
-                if (OPENCGA_ALL.equals(params.getSignatureId())) {
-                    throw new ToolException("Invalid parameters: " + OPENCGA_ALL + " is a reserved word, you can not use as a"
-                            + " signature ID");
-                }
-
-                if (StringUtils.isEmpty(params.getSignatureId()) && params.getSignatureQuery() != null
-                        && !params.getSignatureQuery().toParams().isEmpty()) {
-                    throw new ToolException("Invalid parameters: if signature ID is empty, signature query must be null");
-                }
-                if (StringUtils.isNotEmpty(params.getSignatureId())
-                        && (params.getSignatureQuery() == null || params.getSignatureQuery().toParams().isEmpty())) {
-                    throw new ToolException("Invalid parameters: if you provide a signature ID, signature query"
-                            + " can not be null");
-                }
-
-                if (sample.getQualityControl() != null) {
-                    if (CollectionUtils.isNotEmpty(sample.getQualityControl().getVariantMetrics().getSignatures())) {
-                        runSignature = false;
-                    }
-                }
-            }
-
-            boolean runFastQc = false;
-            if (catalogBamFile != null) {
-                if (sample.getQualityControl() == null || CollectionUtils.isEmpty(sample.getQualityControl().getAlignmentMetrics())) {
-                    runFastQc = true;
-                } else {
-                    runFastQc = true;
-                    for (SampleAlignmentQualityControlMetrics metrics : sample.getQualityControl().getAlignmentMetrics()) {
-                        if (catalogBamFile.getId().equals(metrics.getBamFileId()) && metrics.getFastQc() != null) {
-                            runFastQc = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Run variant stats if necessary
-            if (runVariantStats) {
-                SampleVariantStatsAnalysisParams sampleVariantStatsParams = new SampleVariantStatsAnalysisParams(
-                        Collections.singletonList(params.getSample()),
-                        null,
-                        params.getOutdir(), true, false, params.getVariantStatsId(), params.getVariantStatsDescription(), null,
-                        params.getVariantStatsQuery()
-                );
-
-                DataResult<Job> jobResult = submitJobRaw(SampleVariantStatsAnalysis.ID, null, study,
-                        sampleVariantStatsParams, null, null, null, null);
-                Job sampleStatsJob = jobResult.first();
-                dependsOnList.add(sampleStatsJob.getId());
-            }
-
-            // Run signature if necessary
-            if (runSignature) {
-                MutationalSignatureAnalysisParams mutationalSignatureParams =
-                        new MutationalSignatureAnalysisParams(params.getSample(), params.getOutdir());
-                DataResult<Job> jobResult = submitJobRaw(MutationalSignatureAnalysis.ID, null, study, mutationalSignatureParams,
-                        null, null, null, null);
-                Job signatureJob = jobResult.first();
-                dependsOnList.add(signatureJob.getId());
-            }
-
-            // Run FastQC, if bam file exists
-            if (runFastQc) {
-                Map<String, String> dynamicParams = new HashMap<>();
-                dynamicParams.put("extract", "true");
-                FastQcWrapperParams fastQcParams = new FastQcWrapperParams(catalogBamFile.getId(), null, dynamicParams);
-                logger.info("fastQcParams = " + fastQcParams);
-
-                DataResult<Job> jobResult = submitJobRaw(FastqcWrapperAnalysis.ID, null, study, fastQcParams,
-                        null, null, null, null);
-                Job fastqcJob = jobResult.first();
-                dependsOnList.add(fastqcJob.getId());
-            }
-
-            return submitJobRaw(SampleQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","), jobTags);
-        });
+        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1256,7 +1158,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = PlinkRunParams.DESCRIPTION, required = true) PlinkRunParams params) {
+            @ApiParam(value = PlinkWrapperParams.DESCRIPTION, required = true) PlinkWrapperParams params) {
         return submitJob(PlinkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
@@ -1269,7 +1171,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = RvtestsRunParams.DESCRIPTION, required = true) RvtestsRunParams params) {
+            @ApiParam(value = RvtestsWrapperParams.DESCRIPTION, required = true) RvtestsWrapperParams params) {
         return submitJob(RvtestsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
@@ -1282,7 +1184,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = GatkRunParams.DESCRIPTION, required = true) GatkRunParams params) {
+            @ApiParam(value = GatkWrapperParams.DESCRIPTION, required = true) GatkWrapperParams params) {
         return submitJob(GatkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
@@ -1325,6 +1227,21 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_PARAM) String job) {
         return run(() -> new KnockoutAnalysisResultReader(catalogManager)
                 .readKnockoutByIndividualFromJob(study, job, limit, (int) skip, p -> true, token));
+    }
+
+    @POST
+    @Path("/genomePlot/run")
+    @ApiOperation(value = GenomePlotAnalysis.DESCRIPTION, response = Job.class)
+    public Response genomePlotRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = GenomePlotAnalysisParams.DESCRIPTION, required = true) GenomePlotAnalysisParams params) {
+        // To be sure: do not update quality control sample
+        params.setSample(null);
+        return submitJob(GenomePlotAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

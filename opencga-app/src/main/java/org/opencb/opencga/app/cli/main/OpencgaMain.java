@@ -136,6 +136,9 @@ public class OpencgaMain {
                         case OperationsCommandOptions.OPERATIONS_COMMAND:
                             commandExecutor = new OperationsCommandExecutor(cliOptionsParser.getOperationsCommands());
                             break;
+                        case "meta":
+                            commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
+                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

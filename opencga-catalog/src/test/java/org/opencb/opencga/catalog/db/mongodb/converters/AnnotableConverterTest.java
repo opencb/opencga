@@ -289,7 +289,7 @@ public class AnnotableConverterTest {
         AnnotableConverter<Sample> c = new AnnotableConverter<>(Sample.class);
         c.convertToStorageType(
                 new Sample().setQualityControl(
-                        new SampleQualityControl().setVariantMetrics(
+                        new SampleQualityControl().setVariant(
                                 new SampleVariantQualityControlMetrics().setVariantStats(Collections.singletonList(
                                         new SampleQcVariantStats().setStats(
                                                 new SampleVariantStats()))))));

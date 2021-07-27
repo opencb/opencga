@@ -128,7 +128,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
         preAnnotate(query, doCreate, doLoad, params);
 
-        if (doCreate) {
+        if (doCreate && doLoad) {
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
                 checkCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
                 return projectMetadata;
@@ -136,7 +136,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         }
 
         long variants = 0;
-        if (checkpointSize > 0 && doLoad && doCreate && !overwrite) {
+        if (checkpointSize > 0 && doLoad && doCreate && doBatchAnnotation(params)) {
             int batch = 0;
             long newVariants;
             do {
@@ -152,6 +152,12 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         postAnnotate(query, doCreate, doLoad, params);
 
         return variants;
+    }
+
+    protected boolean doBatchAnnotation(ObjectMap params) {
+        // Can't run in batches if overwrite=true, as every batch would be starting over and over
+        boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
+        return !overwrite;
     }
 
     protected long annotateBatch(Query query, ObjectMap params, boolean doCreate, boolean doLoad,
@@ -388,8 +394,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      * @param doLoad           if loading the annotation
      * @param params           Other annotation params
      * @throws StorageEngineException if an error occurs
+     * @throws VariantAnnotatorException if an error occurs
      */
-    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params) throws StorageEngineException {
+    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
+            throws StorageEngineException, VariantAnnotatorException {
         if (!doCreate || !doLoad) {
             // Do not continue if loading an external annotation file, or not loading it.
             return;

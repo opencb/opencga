@@ -3,13 +3,12 @@ package org.opencb.opencga.storage.core.variant.query;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -26,7 +25,6 @@ import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProj
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.EXCLUDE_GENOTYPES;
@@ -57,6 +55,88 @@ public class VariantQueryParser {
         this.cellBaseUtils = cellBaseUtils;
         this.metadataManager = metadataManager;
         this.projectionParser = new VariantQueryProjectionParser(metadataManager);
+    }
+
+    public static List<List<String>> parseClinicalCombination(Query query) {
+        return parseClinicalCombination(query, false);
+    }
+
+    public static List<List<String>> parseClinicalCombination(Query query, boolean allCombinations) {
+        List<String> clinicalCombinationSet = parseClinicalCombinationsList(query, allCombinations);
+        if (clinicalCombinationSet.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
+        if (QueryOperation.AND.equals(clinicalSources.getOperation()) && clinicalSources.getValues().size() > 1) {
+            List<List<String>> combinationsPerSource = new ArrayList<>(clinicalSources.getValues().size());
+            for (String source : clinicalSources.getValues()) {
+                combinationsPerSource.add(clinicalCombinationSet.stream().filter(s -> s.contains(source)).collect(Collectors.toList()));
+            }
+            return combinationsPerSource;
+        } else {
+            return Collections.singletonList(clinicalCombinationSet);
+        }
+    }
+
+    protected static List<String> parseClinicalCombinationsList(Query query) {
+        return parseClinicalCombinationsList(query, false);
+    }
+
+    protected static List<String> parseClinicalCombinationsList(Query query, boolean allCombinations) {
+        Values<String> clinicalSources = splitValues(query.getString(ANNOT_CLINICAL.key()));
+        List<String> clinicalSourceList = clinicalSources.getValues();
+        List<ClinicalSignificance> clinicalSigList = getAsEnumList(query, ANNOT_CLINICAL_SIGNIFICANCE, ClinicalSignificance.class);
+        boolean clinicalConfirmedStatus = query.getBoolean(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
+
+        List<String> clinicalCombinations = new LinkedList<>();
+        if (clinicalSourceList.isEmpty()) {
+            if (allCombinations) {
+                clinicalSourceList.add("clinvar");
+                clinicalSourceList.add("cosmic");
+            } else {
+                // Add at least one value to enter the loop
+                clinicalSourceList.add(null);
+            }
+        }
+        if (clinicalSigList.isEmpty()) {
+            if (allCombinations) {
+                clinicalSigList.add(ClinicalSignificance.benign);
+                clinicalSigList.add(ClinicalSignificance.likely_benign);
+                clinicalSigList.add(ClinicalSignificance.likely_pathogenic);
+                clinicalSigList.add(ClinicalSignificance.pathogenic);
+                clinicalSigList.add(ClinicalSignificance.uncertain_significance);
+            } else {
+                // Add at least one value to enter the loop
+                clinicalSigList.add(null);
+            }
+        }
+        for (String clinicalSource : clinicalSourceList) {
+            for (ClinicalSignificance clinicalSignificance : clinicalSigList) {
+                String value = "";
+                if (clinicalSource != null) {
+                    value = clinicalSource;
+                }
+                if (clinicalSignificance != null) {
+                    if (!value.isEmpty()) {
+                        value += "_";
+                    }
+                    value += clinicalSignificance.name();
+                }
+                if (clinicalConfirmedStatus || allCombinations) {
+                    if (allCombinations) {
+                        clinicalCombinations.add(value);
+                    }
+                    if (!value.isEmpty()) {
+                        value += "_";
+                    }
+                    value += "confirmed";
+                }
+                if (!value.isEmpty()) {
+                    clinicalCombinations.add(value);
+                }
+            }
+        }
+        return clinicalCombinations;
     }
 
     public ParsedVariantQuery parseQuery(Query query, QueryOptions options) {
@@ -657,39 +737,8 @@ public class VariantQueryParser {
             if (negated) {
                 genotypeStr = removeNegation(genotypeStr);
             }
-            if (GenotypeClass.from(genotypeStr) != null) {
-                // Discard GenotypeClass
-                continue;
-            }
-            if (genotypeStr.equals(GenotypeClass.NA_GT_VALUE)) {
-                // Discard special genotypes
-                continue;
-            }
-            Genotype genotype;
-            try {
-                genotype = new Genotype(genotypeStr);
-            } catch (RuntimeException e) {
-                throw new VariantQueryException("Malformed genotype '" + genotypeStr + "'", e);
-            }
-            int[] allelesIdx = genotype.getAllelesIdx();
-            boolean multiallelic = false;
-            for (int i = 0; i < allelesIdx.length; i++) {
-                if (allelesIdx[i] > 1) {
-                    allelesIdx[i] = 2;
-                    multiallelic = true;
-                }
-            }
-            if (multiallelic) {
-                String regex = genotype.toString()
-                        .replace(".", "\\.")
-                        .replace("|", "\\|")
-                        .replace("2", "([2-9]|[0-9][0-9])"); // Replace allele "2" with "any number >= 2")
-                Pattern pattern = Pattern.compile(regex);
-                for (String loadedGenotype : loadedGenotypes) {
-                    if (pattern.matcher(loadedGenotype).matches()) {
-                        genotypes.add((negated ? NOT : "") + loadedGenotype);
-                    }
-                }
+            for (String multiAllelicGenotype : GenotypeClass.expandMultiAllelicGenotype(genotypeStr, loadedGenotypes)) {
+                genotypes.add((negated ? NOT : "") + multiAllelicGenotype);
             }
         }
         genotypes = GenotypeClass.filter(genotypes, loadedGenotypes);

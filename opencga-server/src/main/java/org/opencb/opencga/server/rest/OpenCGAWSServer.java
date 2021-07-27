@@ -262,6 +262,7 @@ public class OpenCGAWSServer {
             logger.error(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
+//        ActionableVariantManager.init(opencgaHome);
 
         logger.info("| OpenCGA REST successfully started!");
         logger.info("| - Version " + GitRepositoryState.get().getBuildVersion());
@@ -413,9 +414,6 @@ public class OpenCGAWSServer {
                 case Constants.INCREMENT_VERSION:
                     queryOptions.put(Constants.INCREMENT_VERSION, Boolean.parseBoolean(value));
                     break;
-                case Constants.REFRESH:
-                    queryOptions.put(Constants.REFRESH, Boolean.parseBoolean(value));
-                    break;
                 case QueryOptions.COUNT:
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);
@@ -463,12 +461,6 @@ public class OpenCGAWSServer {
         }
         queryOptions.put(QueryOptions.LIMIT, limit);
         query.remove("sid");
-
-//      Exceptions
-        if (query.containsKey("status")) {
-            query.put("status.name", query.get("status"));
-            query.remove("status");
-        }
 
         // Remove deprecated fields
         query.remove("variableSet");
@@ -664,7 +656,7 @@ public class OpenCGAWSServer {
     }
 
     private static void setFederationServer(OpenCGAResult result, UriInfo uriInfo) {
-        result.setNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
+        result.setFederationNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
                 GitRepositoryState.get().getBuildVersion()));
     }
 

@@ -1,6 +1,12 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
+import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class AnnotationIndexEntry {
 
@@ -8,39 +14,49 @@ public class AnnotationIndexEntry {
     private byte summaryIndex;
     private boolean intergenic;
     private boolean hasCtIndex;
-    private short ctIndex;
+    // should be a long? a BitBuffer?
+    private int ctIndex;
     private boolean hasBtIndex;
-    private byte btIndex;
+    // should be a long? a BitBuffer?
+    private int btIndex;
     private CtBtCombination ctBtCombination;
-    private boolean clinical;
-    private byte[] popFreqIndex;
-    private byte clinicalIndex;
+    private BitBuffer popFreqIndex;
+    private boolean hasClinical;
+    private BitBuffer clinicalIndex;
 
 
     public AnnotationIndexEntry() {
     }
 
-    public AnnotationIndexEntry(
-            byte summaryIndex, boolean intergenic, short ctIndex, byte btIndex, byte[] ctBtCombination, byte[] popFreqIndex,
-            boolean clinical, byte clinicalIndex) {
-        this(summaryIndex, intergenic, ctIndex, btIndex, new CtBtCombination(ctBtCombination,
-                Integer.bitCount(Short.toUnsignedInt(ctIndex)),
-                Integer.bitCount(Byte.toUnsignedInt(btIndex))), popFreqIndex,
-                clinical, clinicalIndex);
+    public AnnotationIndexEntry(AnnotationIndexEntry annotationIndexEntry) {
+        this(
+                annotationIndexEntry.summaryIndex,
+                annotationIndexEntry.intergenic,
+                annotationIndexEntry.ctIndex,
+                annotationIndexEntry.btIndex,
+                new CtBtCombination(
+                        Arrays.copyOf(
+                                annotationIndexEntry.ctBtCombination.ctBtMatrix, annotationIndexEntry.ctBtCombination.ctBtMatrix.length),
+                        annotationIndexEntry.ctBtCombination.numCt, annotationIndexEntry.ctBtCombination.numBt),
+                annotationIndexEntry.popFreqIndex == null ? null : new BitBuffer(annotationIndexEntry.popFreqIndex),
+                annotationIndexEntry.hasClinical,
+                annotationIndexEntry.clinicalIndex == null ? null : new BitBuffer(annotationIndexEntry.clinicalIndex)
+        );
     }
 
     public AnnotationIndexEntry(
-            byte summaryIndex, boolean intergenic, short ctIndex, byte btIndex, CtBtCombination ctBtCombination, byte[] popFreqIndex,
-            boolean clinical, byte clinicalIndex) {
+            byte summaryIndex, boolean intergenic, int ctIndex, int btIndex, CtBtCombination ctBtCombination, BitBuffer popFreqIndex,
+            boolean hasClinical, BitBuffer clinicalIndex) {
         this.summaryIndex = summaryIndex;
         this.intergenic = intergenic;
         this.ctIndex = ctIndex;
         this.btIndex = btIndex;
         this.ctBtCombination = ctBtCombination == null ? CtBtCombination.empty() : ctBtCombination;
-        this.clinical = clinical;
+        this.hasClinical = hasClinical;
         this.clinicalIndex = clinicalIndex;
         this.popFreqIndex = popFreqIndex;
     }
+
 
     /**
      * Matrix that contains the ConsequenceType and Biotype transcript combinations in one variant.
@@ -48,7 +64,7 @@ public class AnnotationIndexEntry {
      * Each non-intergenic variant has a set of pairs (CT, BT), which defines a list of CT and BT values.
      * This can be represented as a matrix where the rows are CT values in the variant, the columns are BT values,
      * and the intersection is a boolean representing if that specific combination occurs in the variant.
-     *
+     * <pre>
      *       +---------+---------+----+
      *       | bt1     | bt2     | ...|
      * +-----+---------+---------+----+
@@ -56,7 +72,8 @@ public class AnnotationIndexEntry {
      * | ct2 | ct2+bt1 | ct2+bt2 |    |
      * | ... |         |         | ...|
      * +-----+---------+---------+----+
-
+     * </pre>
+     *
      * In this class, the matrix is stored as an array of rows: ctBtMatrix = {ct1_row, ct2_row, ...}
      * As the max number of BTs is 8, we can use an array of bytes.
      * This matrix can be stored sequentially using {@link org.opencb.opencga.storage.core.io.bit.BitOutputStream}.
@@ -67,22 +84,22 @@ public class AnnotationIndexEntry {
      *
      */
     public static class CtBtCombination {
-        public static final CtBtCombination EMPTY = new CtBtCombination(new byte[0], 0, 0);
-        private byte[] ctBtMatrix;
+        public static final CtBtCombination EMPTY = new CtBtCombination(new int[0], 0, 0);
+        private int[] ctBtMatrix;
         private int numCt;
         private int numBt;
 
-        public CtBtCombination(byte[] ctBtMatrix, int numCt, int numBt) {
+        public CtBtCombination(int[] ctBtMatrix, int numCt, int numBt) {
             this.ctBtMatrix = ctBtMatrix;
             this.numCt = numCt;
             this.numBt = numBt;
         }
 
-        public byte[] getCtBtMatrix() {
+        public int[] getCtBtMatrix() {
             return ctBtMatrix;
         }
 
-        public CtBtCombination setCtBtMatrix(byte[] ctBtMatrix) {
+        public CtBtCombination setCtBtMatrix(int[] ctBtMatrix) {
             this.ctBtMatrix = ctBtMatrix;
             return this;
         }
@@ -108,10 +125,24 @@ public class AnnotationIndexEntry {
         public static CtBtCombination empty() {
             return EMPTY;
         }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("CtBtCombination{");
+            sb.append("numCt=").append(numCt);
+            sb.append(", numBt=").append(numBt);
+            sb.append(", ctBtMatrix=").append(IntStream.of(ctBtMatrix)
+                    .mapToObj(i -> IndexUtils.binaryToString(i, numBt))
+                    .collect(Collectors.joining(", ", "[", "]")));
+            sb.append('}');
+            return sb.toString();
+        }
     }
 
-    public static AnnotationIndexEntry empty(int numPopFreq) {
-        return new AnnotationIndexEntry().setPopFreqIndex(new byte[numPopFreq]).setCtBtCombination(new CtBtCombination(new byte[0], 0, 0));
+    public static AnnotationIndexEntry empty(SampleIndexSchema schema) {
+        return new AnnotationIndexEntry()
+                .setPopFreqIndex(new BitBuffer(schema.getPopFreqIndex().getBitsLength()))
+                .setCtBtCombination(new CtBtCombination(new int[0], 0, 0));
     }
 
     public boolean hasSummaryIndex() {
@@ -151,11 +182,11 @@ public class AnnotationIndexEntry {
         return this;
     }
 
-    public short getCtIndex() {
+    public int getCtIndex() {
         return ctIndex;
     }
 
-    public AnnotationIndexEntry setCtIndex(short ctIndex) {
+    public AnnotationIndexEntry setCtIndex(int ctIndex) {
         hasCtIndex = true;
         this.ctIndex = ctIndex;
         return this;
@@ -170,11 +201,11 @@ public class AnnotationIndexEntry {
         return this;
     }
 
-    public byte getBtIndex() {
+    public int getBtIndex() {
         return btIndex;
     }
 
-    public AnnotationIndexEntry setBtIndex(byte btIndex) {
+    public AnnotationIndexEntry setBtIndex(int btIndex) {
         setHasBtIndex(true);
         this.btIndex = btIndex;
         return this;
@@ -189,47 +220,42 @@ public class AnnotationIndexEntry {
         return this;
     }
 
-    public byte[] getPopFreqIndex() {
+    public BitBuffer getPopFreqIndex() {
         return popFreqIndex;
     }
 
-    public AnnotationIndexEntry setPopFreqIndex(byte[] popFreqIndex) {
+    public AnnotationIndexEntry setPopFreqIndex(BitBuffer popFreqIndex) {
         this.popFreqIndex = popFreqIndex;
         return this;
     }
 
-    public boolean isClinical() {
-        return clinical;
+    public boolean hasClinical() {
+        return hasClinical;
     }
 
-    public AnnotationIndexEntry setClinical(boolean clinical) {
-        this.clinical = clinical;
+    public AnnotationIndexEntry setHasClinical(boolean hasClinical) {
+        this.hasClinical = hasClinical;
         return this;
     }
 
-    public byte getClinicalIndex() {
+    public BitBuffer getClinicalIndex() {
         return clinicalIndex;
     }
 
-    public AnnotationIndexEntry setClinicalIndex(byte clinicalIndex) {
+    public AnnotationIndexEntry setClinicalIndex(BitBuffer clinicalIndex) {
         this.clinicalIndex = clinicalIndex;
         return this;
     }
 
     @Override
     public String toString() {
-        StringBuilder pf = new StringBuilder("[");
-        for (byte freqIndex : popFreqIndex) {
-            pf.append(IndexUtils.byteToString(freqIndex)).append(", ");
-        }
-        pf.append("]");
         return "AnnotationIndexEntry{"
                 + "summaryIndex=" + IndexUtils.byteToString(summaryIndex)
                 + ", intergenic=" + intergenic
                 + (intergenic
                     ? ""
-                    : (", ctIndex=" + IndexUtils.shortToString(ctIndex) + ", btIndex=" + IndexUtils.byteToString(btIndex)))
-                + ", popFreqIndex=" + pf
+                    : (", ctIndex=" + IndexUtils.intToString(ctIndex) + ", btIndex=" + IndexUtils.intToString(btIndex)))
+                + ", popFreqIndex=" + popFreqIndex
                 + '}';
     }
 }

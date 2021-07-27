@@ -16,15 +16,11 @@
 
 package org.opencb.opencga.core.config;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
-import org.opencb.commons.utils.FileUtils;
 
 import java.io.*;
-import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**

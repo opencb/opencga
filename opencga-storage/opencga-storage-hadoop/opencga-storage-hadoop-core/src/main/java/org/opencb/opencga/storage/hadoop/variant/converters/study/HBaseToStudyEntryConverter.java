@@ -338,7 +338,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 oldSampleEntry.setFileIndex(fileId);
             }
             oldSampleEntry.setSampleId(sampleName);
-            studyEntry.getIssues().add(new IssueEntry(IssueType.DISCREPANCY, oldSampleEntry));
+            studyEntry.getIssues().add(new IssueEntry(IssueType.DISCREPANCY, oldSampleEntry, Collections.emptyMap()));
         }
     }
 

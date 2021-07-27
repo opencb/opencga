@@ -237,17 +237,17 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             result = future.get();
         } catch (Exception e) {
             logger.error(e.getMessage());
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw new CatalogAuthenticationException("AzureAD: " + e.getMessage(), e);
         }
 
         if (result == null) {
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw CatalogAuthenticationException.incorrectUserOrPassword("AzureAD");
         }
 
         if (jwtManager.passFilters(result.getAccessToken(), this.filters, getPublicKey(result.getAccessToken()))) {
             return new AuthenticationResponse(result.getAccessToken(), result.getRefreshToken());
         } else {
-            throw CatalogAuthenticationException.userNotAllowed();
+            throw CatalogAuthenticationException.userNotAllowed("AzureAD");
         }
     }
 
@@ -262,17 +262,17 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             result = future.get();
         } catch (Exception e) {
             logger.error(e.getMessage());
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw new CatalogAuthenticationException("AzureAD: " + e.getMessage(), e);
         }
 
         if (result == null) {
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+            throw CatalogAuthenticationException.incorrectUserOrPassword("AzureAD");
         }
 
         if (jwtManager.passFilters(result.getAccessToken(), this.filters, getPublicKey(result.getAccessToken()))) {
             return new AuthenticationResponse(result.getAccessToken(), result.getRefreshToken());
         } else {
-            throw CatalogAuthenticationException.userNotAllowed();
+            throw CatalogAuthenticationException.userNotAllowed("AzureAD");
         }
     }
 
@@ -378,7 +378,8 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
             User user = new User(id, name, mail, "", new Account().setType(Account.AccountType.GUEST).
                     setAuthentication(new Account.AuthenticationOrigin(originId, false)), new UserInternal(new UserStatus()),
-                    new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyMap(), new LinkedList<>(), attributes);
+                    new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(),
+                    new LinkedList<>(), attributes);
 
             userList.add(user);
         }

@@ -51,6 +51,7 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -378,6 +379,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
             document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
@@ -479,6 +487,29 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 throw new IllegalStateException("Unknown operation " + findingsOperation);
         }
 
+        // Panels
+        if (parameters.containsKey(QueryParams.PANELS.key())) {
+            operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.ADD);
+            String[] panelParams = {QueryParams.PANELS.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), panelParams);
+                    interpretationConverter.validatePanelsToUpdate(document.getSet());
+                    break;
+                case REMOVE:
+                    fixPanelsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPullAll(), panelParams);
+                    interpretationConverter.validatePanelsToUpdate(document.getPullAll());
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), panelParams);
+                    interpretationConverter.validatePanelsToUpdate(document.getAddToSet());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
         if (!document.toFinalUpdateDocument().isEmpty()) {
             // Update modificationDate param
             String time = TimeUtils.getTime();
@@ -488,6 +519,20 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         return document;
+    }
+
+    static void fixPanelsForRemoval(ObjectMap parameters) {
+        if (parameters.get(QueryParams.PANELS.key()) == null) {
+            return;
+        }
+
+        List<Panel> panelParamList = new LinkedList<>();
+        for (Object panel : parameters.getAsList(QueryParams.PANELS.key())) {
+            if (panel instanceof Panel) {
+                panelParamList.add(new Panel().setId(((Panel) panel).getId()));
+            }
+        }
+        parameters.put(QueryParams.PANELS.key(), panelParamList);
     }
 
     static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {

@@ -49,7 +49,6 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
@@ -178,9 +177,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (StringUtils.isEmpty(study.getUuid())) {
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
         }
-        if (StringUtils.isEmpty(study.getCreationDate())) {
-            study.setCreationDate(TimeUtils.getTime());
-        }
 
         //Empty nested fields
         List<File> files = study.getFiles();
@@ -192,7 +188,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Cohort> cohorts = study.getCohorts();
         study.setCohorts(Collections.emptyList());
 
-        List<Panel> panels = study.getPanels();
+        List<org.opencb.opencga.core.models.panel.Panel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
         List<Family> families = study.getFamilies();
@@ -212,30 +208,41 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         );
         studyObject.put(PRIVATE_OWNER_ID, StringUtils.split(project.getFqn(), "@")[0]);
 
-        studyObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(study.getCreationDate()));
+        studyObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(study.getCreationDate()) ? TimeUtils.toDate(study.getCreationDate()) : TimeUtils.getDate());
         studyObject.put(PRIVATE_MODIFICATION_DATE, studyObject.get(PRIVATE_CREATION_DATE));
 
         studyCollection.insert(clientSession, studyObject, null);
 
-        for (File file : files) {
-            dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
-                    Collections.emptyList(), Collections.emptyList());
+        if (files != null) {
+            for (File file : files) {
+                dbAdaptorFactory.getCatalogFileDBAdaptor().insert(clientSession, study.getUid(), file, Collections.emptyList(),
+                        Collections.emptyList(), Collections.emptyList());
+            }
         }
 
-        for (Job job : jobs) {
-            dbAdaptorFactory.getCatalogJobDBAdaptor().insert(clientSession, study.getUid(), job);
+        if (jobs != null) {
+            for (Job job : jobs) {
+                dbAdaptorFactory.getCatalogJobDBAdaptor().insert(clientSession, study.getUid(), job);
+            }
         }
 
-        for (Cohort cohort : cohorts) {
-            dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
+        if (cohorts != null) {
+            for (Cohort cohort : cohorts) {
+                dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(clientSession, study.getUid(), cohort, Collections.emptyList());
+            }
         }
 
-        for (Panel panel : panels) {
-            dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
+        if (panels != null) {
+            for (org.opencb.opencga.core.models.panel.Panel panel : panels) {
+                dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
+            }
         }
 
-        for (Family family : families) {
-            dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
+        if (families != null) {
+            for (Family family : families) {
+                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
+            }
         }
 
         return study;
@@ -677,7 +684,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public OpenCGAResult<VariableSet> createVariableSet(long studyId, VariableSet variableSet) throws CatalogDBException {
         if (variableSetExists(variableSet.getId(), studyId) > 0) {
-            throw new CatalogDBException("VariableSet { name: '" + variableSet.getId() + "'} already exists.");
+            throw new CatalogDBException("VariableSet { id: '" + variableSet.getId() + "'} already exists.");
         }
 
         long variableSetId = getNewUid();
@@ -685,12 +692,15 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document object = getMongoDBDocument(variableSet, "VariableSet");
         object.put(PRIVATE_UID, variableSetId);
 
-        Bson bsonQuery = Filters.eq(PRIVATE_UID, studyId);
+        Bson bsonQuery = Filters.and(
+                Filters.eq(PRIVATE_UID, studyId),
+                Filters.ne(QueryParams.VARIABLE_SET_ID.key(), variableSet.getId())
+        );
         Bson update = Updates.push("variableSets", object);
         DataResult result = studyCollection.update(bsonQuery, update, null);
 
         if (result.getNumUpdated() == 0) {
-            throw new CatalogDBException("createVariableSet: Could not create a new variable set in study " + studyId);
+            throw new CatalogDBException("CreateVariableSet: Could not create the VariableSet '" + variableSet.getId() + "'");
         }
 
         return new OpenCGAResult<>(result);
@@ -1331,12 +1341,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
-    static Document getDocumentUpdateParams(ObjectMap parameters) throws CatalogDBException {
+    static Document getDocumentUpdateParams(ObjectMap parameters) {
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(),
-                QueryParams.DESCRIPTION.key(), };
+        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(QueryParams.CREATION_DATE.key(), time);
+            studyParameters.put(PRIVATE_CREATION_DATE, date);
+        }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, studyParameters, acceptedLongParams);
@@ -1344,8 +1360,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.CONFIGURATION_CLINICAL.key(),
-                QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key()};
+        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
+                QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key(), QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
 
         if (studyParameters.containsKey(QueryParams.STATUS.key())) {

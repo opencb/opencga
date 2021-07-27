@@ -34,6 +34,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.converters.VariantTraitAssociationToEvidenceEntryConverter;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -757,11 +758,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
                         // DO NOT change the order of the following code
                         genes.get(conseqType.getGeneName()).add(conseqType.getGeneName());
-                        genes.get(conseqType.getGeneName()).add(conseqType.getEnsemblGeneId());
-                        genes.get(conseqType.getGeneName()).add(conseqType.getEnsemblTranscriptId());
+                        genes.get(conseqType.getGeneName()).add(conseqType.getGeneId());
+                        genes.get(conseqType.getGeneName()).add(conseqType.getTranscriptId());
 
-                        if (StringUtils.isNotEmpty(conseqType.getEnsemblTranscriptId())) {
-                            trans.append("TRANS").append(FIELD_SEP).append(conseqType.getEnsemblTranscriptId());
+                        if (StringUtils.isNotEmpty(conseqType.getTranscriptId())) {
+                            trans.append("TRANS").append(FIELD_SEP).append(conseqType.getTranscriptId());
                             trans.append(FIELD_SEP).append(StringUtils.isEmpty(conseqType.getBiotype())
                                     ? "" : conseqType.getBiotype());
                             trans.append(FIELD_SEP);
@@ -771,8 +772,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
 
                         xrefs.add(conseqType.getGeneName());
-                        xrefs.add(conseqType.getEnsemblGeneId());
-                        xrefs.add(conseqType.getEnsemblTranscriptId());
+                        xrefs.add(conseqType.getGeneId());
+                        xrefs.add(conseqType.getTranscriptId());
 
                         if (StringUtils.isNotEmpty(conseqType.getBiotype())) {
                             biotypes.add(conseqType.getBiotype());
@@ -780,8 +781,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             // Add the combination of Gene and Biotype, this will prevent variants to be returned when they overlap
                             // two different genes where the overlapping gene has the wanted Biotype.
                             geneToSOAccessions.add(conseqType.getGeneName() + "_" + conseqType.getBiotype());
-                            geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + conseqType.getBiotype());
-                            geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + conseqType.getBiotype());
+                            geneToSOAccessions.add(conseqType.getGeneId() + "_" + conseqType.getBiotype());
+                            geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + conseqType.getBiotype());
                         }
                     }
 
@@ -792,13 +793,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                         if (StringUtils.isNotEmpty(conseqType.getGeneName())) {
                             geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt);
-                            geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soIdInt);
-                            geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soIdInt);
+                            geneToSOAccessions.add(conseqType.getGeneId() + "_" + soIdInt);
+                            geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + soIdInt);
 
                             if (StringUtils.isNotEmpty(conseqType.getBiotype())) {
                                 geneToSOAccessions.add(conseqType.getGeneName() + "_" + conseqType.getBiotype() + "_" + soIdInt);
-                                geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
-                                geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
+                                geneToSOAccessions.add(conseqType.getGeneId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
+                                geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
 
                                 // This is useful when no gene or transcript is passed, for example we want 'LoF' in real 'protein_coding'
                                 geneToSOAccessions.add(conseqType.getBiotype() + "_" + soIdInt);
@@ -809,8 +810,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                 for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
                                     if (transcriptFlag.equalsIgnoreCase("basic") || transcriptFlag.equalsIgnoreCase("CCDS")) {
                                         geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt + "_" + transcriptFlag);
-                                        geneToSOAccessions.add(conseqType.getEnsemblGeneId() + "_" + soIdInt + "_" + transcriptFlag);
-                                        geneToSOAccessions.add(conseqType.getEnsemblTranscriptId() + "_" + soIdInt + "_" + transcriptFlag);
+                                        geneToSOAccessions.add(conseqType.getGeneId() + "_" + soIdInt + "_" + transcriptFlag);
+                                        geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + soIdInt + "_" + transcriptFlag);
                                         // This is useful when no gene or transcript is used, for example 'LoF' in 'basic' transcripts
                                         geneToSOAccessions.add(soIdInt + "_" + transcriptFlag);
                                     }
@@ -903,7 +904,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             }
                         }
                     }
-                    if (StringUtils.isNotEmpty(conseqType.getEnsemblTranscriptId()) && trans.length() > 0) {
+                    if (StringUtils.isNotEmpty(conseqType.getTranscriptId()) && trans.length() > 0) {
                         other.add(trans.toString());
                     }
                 }
@@ -976,7 +977,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Set variant traits: ClinVar, Cosmic, HPO, ...
             if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
-                Set<String> clinSigSet = new HashSet<>();
+                List<String> clinical = VariantQueryUtils.buildClinicalCombinations(variantAnnotation);
                 for (EvidenceEntry ev : variantAnnotation.getTraitAssociation()) {
                     if (ev.getSource() != null && StringUtils.isNotEmpty(ev.getSource().getName())) {
                         if (StringUtils.isNotEmpty(ev.getId())) {
@@ -987,7 +988,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             if (ev.getVariantClassification() != null
                                     && ev.getVariantClassification().getClinicalSignificance() != null) {
                                 clinSigSuffix = FIELD_SEP + ev.getVariantClassification().getClinicalSignificance().name();
-                                clinSigSet.add(ev.getVariantClassification().getClinicalSignificance().name());
                             }
                             if (CollectionUtils.isNotEmpty(ev.getHeritableTraits())) {
                                 for (HeritableTrait trait : ev.getHeritableTraits()) {
@@ -1002,8 +1002,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         }
                     }
                 }
-                if (CollectionUtils.isNotEmpty(clinSigSet)) {
-                    variantSearchModel.setClinicalSig(new ArrayList<>(clinSigSet));
+
+                if (CollectionUtils.isNotEmpty(clinical)) {
+                    variantSearchModel.setClinicalSig(clinical);
                 }
             }
             if (variantAnnotation.getGeneTraitAssociation() != null
@@ -1068,7 +1069,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.getStudies().add(studyId);
 
             // We store the cohort stats:
-            //    - altStats__STUDY__COHORT = alternalte allele freq, e.g. altStats_1kg_phase3_ALL=0.02
+            //    - altStats__STUDY__COHORT = alternate allele freq, e.g. altStats_1kg_phase3_ALL=0.02
             //    - passStats__STUDY__COHORT = pass filter freq
             if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                 List<VariantStats> studyStats = studyEntry.getStats();

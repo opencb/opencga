@@ -16,31 +16,28 @@
 
 package org.opencb.opencga.core.models.individual;
 
-import org.opencb.opencga.core.models.common.RgaIndex;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.Status;
 
-public class IndividualInternal {
-
-    private Status status;
-    private RgaIndex rga;
+public class IndividualInternal extends Internal {
 
     public IndividualInternal() {
     }
 
-    public IndividualInternal(Status status, RgaIndex rga) {
-        this.status = status;
-        this.rga = rga;
+    public IndividualInternal(Status status, String registrationDate) {
+        super(status, registrationDate);
     }
 
     public static IndividualInternal init() {
-        return new IndividualInternal(new Status(Status.READY), RgaIndex.init());
+        return new IndividualInternal(new Status(Status.READY), TimeUtils.getTime());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualInternal{");
         sb.append("status=").append(status);
-        sb.append(", rga=").append(rga);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -54,12 +51,13 @@ public class IndividualInternal {
         return this;
     }
 
-    public RgaIndex getRga() {
-        return rga;
+    public String getRegistrationDate() {
+        return registrationDate;
     }
 
-    public IndividualInternal setRga(RgaIndex rga) {
-        this.rga = rga;
+    public Internal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
         return this;
     }
+
 }

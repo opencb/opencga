@@ -17,7 +17,11 @@
 package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 
@@ -34,8 +38,12 @@ public class AlignmentCommandOptions {
 
     public IndexAlignmentCommandOptions indexAlignmentCommandOptions;
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
-    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
-    public StatsInfoAlignmentCommandOptions statsInfoAlignmentCommandOptions;
+    public QcAlignmentCommandOptions qcAlignmentCommandOptions;
+    public GeneCoverageStatsAlignmentCommandOptions geneCoverageStatsAlignmentCommandOptions;
+//    public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
+//    public FlagStatsAlignmentCommandOptions flagStatsAlignmentCommandOptions;
+//    public FastQcMetricsAlignmentCommandOptions fastQcMetricsAlignmentCommandOptions;
+//    public HsMetricsAlignmentCommandOptions hsMetricsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
     public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
@@ -66,8 +74,12 @@ public class AlignmentCommandOptions {
 
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
-        this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
-        this.statsInfoAlignmentCommandOptions = new StatsInfoAlignmentCommandOptions();
+        this.qcAlignmentCommandOptions = new QcAlignmentCommandOptions();
+        this.geneCoverageStatsAlignmentCommandOptions = new GeneCoverageStatsAlignmentCommandOptions();
+//        this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
+//        this.flagStatsAlignmentCommandOptions = new FlagStatsAlignmentCommandOptions();
+//        this.fastQcMetricsAlignmentCommandOptions = new FastQcMetricsAlignmentCommandOptions();
+//        this.hsMetricsAlignmentCommandOptions = new HsMetricsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
         this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
@@ -175,6 +187,38 @@ public class AlignmentCommandOptions {
         public boolean count;
     }
 
+    @Parameters(commandNames = {"qc-run"}, commandDescription = ALIGNMENT_QC_DESCRIPTION)
+    public class QcAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " for the BAM file", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--bed-file"}, description = FILE_ID_DESCRIPTION + " for the BED file, mandatory to compute hybrid-selection (HS) metrics", arity = 1)
+        public String bedFile;
+
+        @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " for the dictionary file, mandatory to compute hybrid-selection (Hs) metrics", arity = 1)
+        public String dictFile;
+
+        @Parameter(names = {"--skip"}, description = "Do not compute some metrics. Use the following keywords (separated by commas): "
+                + "stats, flagstats, fastqc and hsmetrics", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--overwrite"}, description = "Force to overwrite the metrics", arity = 0)
+        public boolean overwrite;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
     @Parameters(commandNames = {"stats-run"}, commandDescription = ALIGNMENT_STATS_DESCRIPTION)
     public class StatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
@@ -194,8 +238,8 @@ public class AlignmentCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"stats-info"}, commandDescription = ALIGNMENT_STATS_INFO_DESCRIPTION)
-    public class StatsInfoAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {"flagstats-run"}, commandDescription = ALIGNMENT_FLAG_STATS_DESCRIPTION)
+    public class FlagStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -208,6 +252,72 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"fastqcmetrics-run"}, commandDescription = ALIGNMENT_FASTQC_METRICS_DESCRIPTION)
+    public class FastQcMetricsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"hsmetrics-run"}, commandDescription = ALIGNMENT_HS_METRICS_DESCRIPTION)
+    public class HsMetricsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " (BAM file)", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--bed-file"}, description = FILE_ID_DESCRIPTION + " (BED file with the interest regions)", required = true, arity = 1)
+        public String bedFile;
+
+        @Parameter(names = {"--dict-file"}, description = FILE_ID_DESCRIPTION + " (dictionary file)", required = true, arity = 1)
+        public String dictFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"gene-coverage-stats-run"}, commandDescription = ALIGNMENT_GENE_COVERAGE_STATS_DESCRIPTION)
+    public class GeneCoverageStatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
+        @ParametersDelegate
+        public Object internalJobOptions = internalJobOptionsObject;
+
+        @Parameter(names = {"--bam-file"}, description = FILE_ID_DESCRIPTION + " (BAM file)", required = true, arity = 1)
+        public String bamFile;
+
+        @Parameter(names = {"--genes"}, description = GENE_DESCRIPTION, required = true, arity = 1)
+        public String genes;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
@@ -363,14 +473,11 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
-        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index, mem.")
+        @Parameter(names = {"--command"}, description = BWA_COMMAND_DESCRIPTION)
         public String command;
 
         @Parameter(names = {"--fasta-file"}, description = "Fasta file.")
         public String fastaFile;
-
-        @Parameter(names = {"--index-base-file"}, description = "Index base file.")
-        public String indexBaseFile;
 
         @Parameter(names = {"--fastq1-file"}, description = "FastQ #1 file.")
         public String fastq1File;
@@ -378,11 +485,11 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--fastq2-file"}, description = "FastQ #2 file.")
         public String fastq2File;
 
-        @Parameter(names = {"--sam-filename"}, description = "SAM file name.")
-        public String samFilename;
-
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
+
+        @DynamicParameter(names = {"--bwa-params"}, description = "BWA parameters e.g.:. --bwa-params k=20 --bwa-params S=true")
+        public Map<String, String> bwaParams = new HashMap<>();
     }
 
     // Samtools
@@ -409,34 +516,10 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--input-file"}, description = INPUT_FILE_DESCRIPTION)
         public String inputFile;
 
-        @Parameter(names = {"--output-filename"}, description = OUTPUT_FILENAME_DESCRIPTION)
-        public String outputFilename;
-
-        @Parameter(names = {"--reference-file"}, description = REFERENCE_FILE_DESCRIPTION)
-        public String referenceFile;
-
-        @Parameter(names = {"--read-group-file"}, description = READ_GROUP_FILE_DESCRIPTION)
-        public String readGroupFile;
-
-        @Parameter(names = {"--bed-file"}, description = BED_FILE_DESCRIPTION)
-        public String bedFile;
-
-        @Parameter(names = {"--ref-seq-file"}, description = REF_SEQ_FILE_DESCRIPTION)
-        public String refSeqFile;
-
-        @Parameter(names = {"--reference-names-file"}, description = REFERENCE_NAMES_DESCRIPTION)
-        public String referenceNamesFile;
-
-        @Parameter(names = {"--target-region-file"}, description = TARGET_REGION_DESCRIPTION)
-        public String targetRegionFile;
-
-        @Parameter(names = {"--reads-not-selected-filename"}, description = READS_NOT_SELECTED_FILENAME_DESCRIPTION)
-        public String readsNotSelectedFilename;
-
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
 
-        @DynamicParameter(names = {"--samtools-params"}, description = "Samtools parameters e.g.:. --samtools-params stats-index=true")
+        @DynamicParameter(names = {"--samtools-params"}, description = "Samtools parameters e.g.:. --samtools-params F=0x800 --samtools-params remove-dups=true")
         public Map<String, String> samtoolsParams = new HashMap<>();
     }
 
@@ -458,11 +541,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
-        @Parameter(names = {"--command"}, description = "Deeptools command. Valid values: bamCoverage.")
-        public String executable;
-
-        @Parameter(names = {"--bam-file"}, description = "BAM file.")
-        public String bamFile;
+        @Parameter(names = {"--command"}, description = DEEPTOOLS_COMMAND_DESCRIPTION)
+        public String command;
 
         @DynamicParameter(names = {"--deeptools-params"}, description = "Deeptools parameters e.g.:. --deeptools-params bs=1 --deeptools-params of=bigwig")
         public Map<String, String> deeptoolsParams = new HashMap<>();
@@ -489,8 +569,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
         public String study;
 
-        @Parameter(names = {"--file"}, description = INPUT_FILE_DESCRIPTION)
-        public String file;
+        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION + " (FastQ, SAM or BAM file)", required = true)
+        public String inputFile;
 
         @DynamicParameter(names = {"--fastqc-params"}, description = "FastQc parameters e.g.:. --fastqc-params kmers=10")
         public Map<String, String> fastqcParams = new HashMap<>();
@@ -517,10 +597,13 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
         public String study;
 
-        @Parameter(names = {"--" + PICARD_TOOL_NAME_PARAMETER}, description = PICARD_TOOL_NAME_DESCRIPTION, required = true)
+        @Parameter(names = {"--command"}, description = PICARD_COMMAND_DESCRIPTION)
         public String command;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
+
+        @DynamicParameter(names = {"--picard-params"}, description = "Picard parameters.")
+        public Map<String, String> picardParams = new HashMap<>();
     }
 }

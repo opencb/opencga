@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -67,6 +70,7 @@ import java.util.function.Function;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
+import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -154,9 +158,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         if (StringUtils.isEmpty(sample.getUuid())) {
             sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
         }
-        if (StringUtils.isEmpty(sample.getCreationDate())) {
-            sample.setCreationDate(TimeUtils.getTime());
-        }
         if (sample.getFileIds() == null) {
             sample.setFileIds(Collections.emptyList());
         }
@@ -167,7 +168,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
         sampleObject.put(LAST_OF_VERSION, true);
         sampleObject.put(LAST_OF_RELEASE, true);
-        sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
+        sampleObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(sample.getCreationDate()) ? TimeUtils.toDate(sample.getCreationDate()) : TimeUtils.getDate());
         sampleObject.put(PRIVATE_MODIFICATION_DATE, sampleObject.get(PRIVATE_CREATION_DATE));
         sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
@@ -421,6 +423,25 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
     }
 
+    void updateIndividualIdFromSamples(ClientSession clientSession, long studyUid, String oldIndividualId, String newIndividualId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (StringUtils.isEmpty(oldIndividualId)) {
+            throw new CatalogDBException("Empty old individual ID");
+        }
+        if (StringUtils.isEmpty(newIndividualId)) {
+            throw new CatalogDBException("Empty new individual ID");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.INDIVIDUAL_ID.key(), oldIndividualId);
+        Bson bsonQuery = parseQuery(query);
+
+        Bson update = Updates.set(QueryParams.INDIVIDUAL_ID.key(), newIndividualId);
+
+        sampleCollection.update(clientSession, bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true));
+    }
+
     /**
      * Checks whether the sample that is going to be updated is in use in any locked Clinical Analysis.
      *
@@ -520,6 +541,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
 
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
@@ -676,6 +704,30 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) {
         return unmarkPermissionRule(sampleCollection, studyId, permissionRuleId);
+    }
+
+    @Override
+    public OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException {
+        ObjectMap params;
+        try {
+            params = new ObjectMap(getDefaultObjectMapper().writeValueAsString(rgaIndex));
+        } catch (JsonProcessingException e) {
+            throw new CatalogDBException("Could not parse RgaIndex object", e);
+        }
+
+        Document rootDocument = new Document(QueryParams.INTERNAL_RGA.key(), params);
+
+        List<Bson> filters = new ArrayList<>();
+        filters.add(Filters.eq(QueryParams.STUDY_UID.key(), studyUid));
+        if (CollectionUtils.isNotEmpty(sampleUids)) {
+            filters.add(Filters.in(QueryParams.UID.key(), sampleUids));
+        }
+        Bson query = Filters.and(filters);
+
+        UpdateDocument updateDocument = new UpdateDocument().setSet(rootDocument);
+
+        DataResult<Sample> multi = sampleCollection.update(query, updateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
+        return new OpenCGAResult<>(multi);
     }
 
     @Override
@@ -1225,6 +1277,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case DESCRIPTION:
                     case INDIVIDUAL_ID:
                     case INTERNAL_STATUS_DATE:
+                    case INTERNAL_RGA_STATUS:
                     case SOMATIC:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:

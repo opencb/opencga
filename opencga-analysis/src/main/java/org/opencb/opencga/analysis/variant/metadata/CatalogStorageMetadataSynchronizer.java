@@ -45,6 +45,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -259,8 +260,10 @@ public class CatalogStorageMetadataSynchronizer {
                 logger.info("Update cohort " + defaultCohortName);
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                         ParamUtils.BasicUpdateAction.SET));
+                List<SampleReferenceParam> samples = cohortFromStorage.stream().map(s -> new SampleReferenceParam().setId(s))
+                        .collect(Collectors.toList());
                 catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
-                        new CohortUpdateParams().setSamples(new ArrayList<>(cohortFromStorage)),
+                        new CohortUpdateParams().setSamples(samples),
                         true, options, sessionId);
                 modified = true;
             }

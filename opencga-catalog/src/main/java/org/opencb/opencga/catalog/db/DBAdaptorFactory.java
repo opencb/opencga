@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface DBAdaptorFactory {
+public interface DBAdaptorFactory extends AutoCloseable {
 
     /**
      * Says if the catalog database is ready to be used. If false, needs to be initialized.
@@ -63,6 +63,8 @@ public interface DBAdaptorFactory {
     void deleteCatalogDB() throws CatalogDBException;
 
     void close();
+
+    MigrationDBAdaptor getMigrationDBAdaptor();
 
     MetaDBAdaptor getCatalogMetaDBAdaptor();
 

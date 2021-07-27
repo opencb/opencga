@@ -4,20 +4,20 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.Map;
 
+import static org.opencb.opencga.core.api.ParamConstants.DEEPTOOLS_COMMAND_DESCRIPTION;
+
 public class DeeptoolsWrapperParams extends ToolParams {
-    public static final String DESCRIPTION = "Deeptools parameters";
+    public static final String DESCRIPTION = "Deeptools parameters. " + DEEPTOOLS_COMMAND_DESCRIPTION;
 
     private String command;     // Valid values: bamCoverage
-    private String bamFile;        // BAM file
     private String outdir;
     private Map<String, String> deeptoolsParams;
 
     public DeeptoolsWrapperParams() {
     }
 
-    public DeeptoolsWrapperParams(String command, String bamFile, String outdir, Map<String, String> deeptoolsParams) {
+    public DeeptoolsWrapperParams(String command, String outdir, Map<String, String> deeptoolsParams) {
         this.command = command;
-        this.bamFile = bamFile;
         this.outdir = outdir;
         this.deeptoolsParams = deeptoolsParams;
     }
@@ -26,7 +26,6 @@ public class DeeptoolsWrapperParams extends ToolParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("DeeptoolsWrapperParams{");
         sb.append("command='").append(command).append('\'');
-        sb.append(", bamFile='").append(bamFile).append('\'');
         sb.append(", outdir='").append(outdir).append('\'');
         sb.append(", deeptoolsParams=").append(deeptoolsParams);
         sb.append('}');
@@ -39,15 +38,6 @@ public class DeeptoolsWrapperParams extends ToolParams {
 
     public DeeptoolsWrapperParams setCommand(String command) {
         this.command = command;
-        return this;
-    }
-
-    public String getBamFile() {
-        return bamFile;
-    }
-
-    public DeeptoolsWrapperParams setBamFile(String bamFile) {
-        this.bamFile = bamFile;
         return this;
     }
 

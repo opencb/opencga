@@ -61,6 +61,11 @@ public class CohortMetadata extends StudyResourceMetadata<CohortMetadata> {
         return isError("stats");
     }
 
+    public CohortMetadata setInvalidStats() {
+        setStatsStatus(TaskMetadata.Status.ERROR);
+        return this;
+    }
+
     public TaskMetadata.Status getSecondaryIndexStatus() {
         return getStatus("secondaryIndex");
     }

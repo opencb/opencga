@@ -124,15 +124,5 @@ We simulated two different disorders and few phenotypes for the different member
 
 To be documented soon.
 
-#### Test
-
-test
-
-#### Test2 <a id="UsingOpenCGA-rams_cml"></a>
-
-test2
-
-#### Test 3
-
-aaa
+#### 
 

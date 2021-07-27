@@ -19,16 +19,21 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -36,9 +41,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
 
 @Path("/{apiVersion}/studies")
@@ -59,20 +67,11 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class)
     public Response createStudyPOST(
-            @Deprecated @ApiParam(value = "Deprecated: Project id") @QueryParam("projectId") String projectId,
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_PARAM, required = true) StudyCreateParams study) {
         try {
-            study = ObjectUtils.defaultIfNull(study, new StudyCreateParams());
-
-            if (StringUtils.isNotEmpty(projectId) && StringUtils.isEmpty(project)) {
-                project = projectId;
-            }
-
-            String studyId = StringUtils.isEmpty(study.getId()) ? study.getAlias() : study.getId();
-            return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(),
-                    study.getDescription(), study.getNotification(), null,
-                    study.getStatus() != null ? study.getStatus().toCustomStatus() : null, study.getAttributes(), queryOptions, token));
+            return createOkResponse(catalogManager.getStudyManager().create(project, study != null ? study.toStudy() : new Study(),
+                    queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -174,18 +173,13 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups")
-    @ApiOperation(value = "Return the groups present in the study", response = Group.class)
+    @ApiOperation(value = "Return the groups present in the study. For owners and administrators only.", response = CustomGroup.class)
     public Response getGroups(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true)
-                @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Group id. If provided, it will only fetch information for the provided group.") @QueryParam("id") String groupId,
-            @ApiParam(value = "[DEPRECATED] Replaced by id.") @QueryParam("name") String groupName,
             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
-            if (StringUtils.isNotEmpty(groupName)) {
-                groupId = groupName;
-            }
-            return createOkResponse(catalogManager.getStudyManager().getGroup(studyStr, groupId, token));
+            return createOkResponse(catalogManager.getStudyManager().getCustomGroups(studyStr, groupId, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -457,6 +451,81 @@ public class StudyWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @GET
+    @Path("/{study}/audit/search")
+    @ApiOperation(value = "Search audit collection", response = AuditRecord.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query")
+    })
+    public Response auditSearch(
+            @ApiParam(value = ParamConstants.STUDY_ID_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyId,
+            @ApiParam(value = ParamConstants.OPERATION_ID_DESCRIPTION) @QueryParam(ParamConstants.OPERATION_ID) String operationId,
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION) @QueryParam(ParamConstants.USER_ID) String userId,
+            @ApiParam(value = ParamConstants.ACTION_DESCRIPTION) @QueryParam(ParamConstants.ACTION) String action,
+            @ApiParam(value = ParamConstants.RESOURCE_DESCRIPTION) @QueryParam(ParamConstants.RESOURCE) Enums.Resource resource,
+            @ApiParam(value = ParamConstants.RESOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.RESOURCE_ID) String resourceId,
+            @ApiParam(value = ParamConstants.RESOURCE_UUID_DESCRIPTION) @QueryParam(ParamConstants.RESOURCE_UUID) String resourceUuid,
+            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS) AuditRecord.Status.Result status,
+            @ApiParam(value = ParamConstants.DATE_DESCRIPTION) @QueryParam(ParamConstants.DATE) String date) {
+        try {
+            OpenCGAResult<AuditRecord> queryResult = catalogManager.getAuditManager().search(studyId, query, queryOptions, token);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    /*
+    ========================= TEMPLATES ===========================
+     */
+    @POST
+    @Path("/{study}/templates/upload")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @ApiOperation(httpMethod = "POST", value = "Resource to upload a zipped template", response = String.class)
+    public Response upload(
+            @FormDataParam("file") InputStream fileInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileMetaData,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr) {
+        try {
+            return createOkResponse(studyManager.uploadTemplate(studyStr, fileMetaData.getFileName(), fileInputStream, token));
+        } catch (Exception e) {
+            return createErrorResponse("Upload template file", e.getMessage());
+        }
+    }
+
+    @POST
+    @Path("/{study}/templates/{templateId}/delete")
+    @ApiOperation(value = "Delete template", response = Boolean.class)
+    public Response delete(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Template id") @PathParam("templateId") String templateId) {
+        try {
+            return createOkResponse(studyManager.deleteTemplate(studyStr, templateId, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/templates/run")
+    @ApiOperation(value = "Execute template", response = Job.class)
+    public Response executeTemplate(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
+        return submitJob(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     private void fixVariable(Variable variable) {

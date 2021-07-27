@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
 
@@ -10,17 +11,23 @@ public class SampleVariantQualityControlMetrics {
 
     private List<SampleQcVariantStats> variantStats;
     private List<Signature> signatures;
-    private List<String> vcfFileIds;
+    private List<GenomePlot> genomePlots;
 
     public SampleVariantQualityControlMetrics() {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              List<String> vcfFileIds) {
+    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures) {
         this.variantStats = variantStats;
         this.signatures = signatures;
-        this.vcfFileIds = vcfFileIds;
+        this.genomePlots = new ArrayList<>();
+    }
+
+    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
+                                              List<GenomePlot> genomePlots) {
+        this.variantStats = variantStats;
+        this.signatures = signatures;
+        this.genomePlots = genomePlots;
     }
 
     @Override
@@ -28,7 +35,7 @@ public class SampleVariantQualityControlMetrics {
         final StringBuilder sb = new StringBuilder("SampleVariantQualityControlMetrics{");
         sb.append("variantStats=").append(variantStats);
         sb.append(", signatures=").append(signatures);
-        sb.append(", vcfFileIds=").append(vcfFileIds);
+        sb.append(", genomePlots=").append(genomePlots);
         sb.append('}');
         return sb.toString();
     }
@@ -51,12 +58,12 @@ public class SampleVariantQualityControlMetrics {
         return this;
     }
 
-    public List<String> getVcfFileIds() {
-        return vcfFileIds;
+    public List<GenomePlot> getGenomePlots() {
+        return genomePlots;
     }
 
-    public SampleVariantQualityControlMetrics setVcfFileIds(List<String> vcfFileIds) {
-        this.vcfFileIds = vcfFileIds;
+    public SampleVariantQualityControlMetrics setGenomePlots(List<GenomePlot> genomePlots) {
+        this.genomePlots = genomePlots;
         return this;
     }
 }

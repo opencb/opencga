@@ -35,6 +35,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.File;
@@ -108,8 +109,12 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         IndividualCreateParams createParams = new IndividualCreateParams()
                 .setId(commandOptions.id)
                 .setName(commandOptions.name)
-                .setFather(commandOptions.fatherId)
-                .setMother(commandOptions.motherId)
+                .setFather(StringUtils.isNotEmpty(commandOptions.fatherId)
+                        ? new IndividualReferenceParam().setId(commandOptions.fatherId)
+                        : null)
+                .setMother(StringUtils.isNotEmpty(commandOptions.motherId)
+                        ? new IndividualReferenceParam().setId(commandOptions.motherId)
+                        : null)
                 .setSex(commandOptions.sex)
                 .setParentalConsanguinity(commandOptions.parentalConsanguinity)
                 .setEthnicity(commandOptions.ethnicity)
@@ -183,15 +188,16 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         IndividualUpdateParams updateParams = new IndividualUpdateParams()
                 .setId(commandOptions.name)
                 .setName(commandOptions.name)
-                .setFather(commandOptions.fatherId)
-                .setMother(commandOptions.motherId)
+                .setFather(new IndividualReferenceParam(commandOptions.fatherId, ""))
+                .setMother(new IndividualReferenceParam(commandOptions.motherId, ""))
                 .setDateOfBirth(commandOptions.dateOfBirth)
                 .setSex(commandOptions.sex)
-                .setSamples(commandOptions.samples)
+                .setSamples(commandOptions.samples != null
+                        ? commandOptions.samples.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())
+                        : null)
                 .setEthnicity(commandOptions.ethnicity)
                 .setKaryotypicSex(commandOptions.karyotypicSex)
-                .setLifeStatus(commandOptions.lifeStatus)
-                .setAffectationStatus(commandOptions.affectationStatus);
+                .setLifeStatus(commandOptions.lifeStatus);
         if (StringUtils.isNotEmpty(commandOptions.populationDescription) || StringUtils.isNotEmpty(commandOptions.populationName)
                 || StringUtils.isNotEmpty(commandOptions.populationSubpopulation)) {
             updateParams.setPopulation(new IndividualPopulation(commandOptions.name, commandOptions.populationSubpopulation,
@@ -257,7 +263,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
         params.putIfNotEmpty("status", commandOptions.status);
         params.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
-        params.putIfNotEmpty("affectationStatus", commandOptions.affectationStatus);
         params.putIfNotEmpty("numSamples", commandOptions.numSamples);
         params.putIfNotEmpty("sex", commandOptions.sex);
         params.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);

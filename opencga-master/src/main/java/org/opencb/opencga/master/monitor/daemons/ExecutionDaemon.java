@@ -18,6 +18,7 @@ package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.glassfish.jersey.client.ClientProperties;
@@ -26,6 +27,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.tiering.CancerTieringInterpretationAnalysis;
@@ -44,6 +46,7 @@ import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
+import org.opencb.opencga.analysis.templates.TemplateRunner;
 import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -59,7 +62,14 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.opencga.analysis.wrappers.*;
+import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.gatk.GatkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -224,9 +234,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(ZettaInterpretationAnalysis.ID, "search " + ZettaInterpretationAnalysis.ID + "-run");
             put(CancerTieringInterpretationAnalysis.ID, "search " + CancerTieringInterpretationAnalysis.ID + "-run");
 
-            put(RgaAnalysis.ID, "search " + RgaAnalysis.ID + "-run");
+            put(RgaAnalysis.ID, "clinical " + RgaAnalysis.ID + "-run");
+            put(AuxiliarRgaAnalysis.ID, "clinical " + AuxiliarRgaAnalysis.ID + "-run");
 
             put(JulieTool.ID, "variant julie-run");
+
+            put(TemplateRunner.ID, "studies " + TemplateRunner.ID + "-run");
         }};
     }
 
@@ -1091,7 +1104,32 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         job.getInternal().setStatus(updateParams.getInternal().getStatus());
         notifyStatusChange(job);
 
+        // If it is a template, we will store the execution results in the same template folder
+        String toolId = job.getTool().getId();
+        if (toolId.equals(TemplateRunner.ID)) {
+            copyJobResultsInTemplateFolder(job, outDirUri);
+        }
+
         return 1;
+    }
+
+    private void copyJobResultsInTemplateFolder(Job job, Path outDirPath) {
+        try {
+            String templateId = String.valueOf(job.getParams().get("id"));
+
+            // We obtain the basic studyPath where we will upload the file temporarily
+            Study study = catalogManager.getStudyManager().get(job.getStudy().getId(),
+                    new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key()), token).first();
+
+            java.nio.file.Path studyPath = Paths.get(study.getUri());
+            Path path = studyPath.resolve("OPENCGA").resolve("TEMPLATE").resolve(templateId);
+
+            FileUtils.copyDirectory(outDirPath.toFile(), path.resolve(outDirPath.getFileName()).toFile());
+            FileUtils.copyFile(outDirPath.resolve(TemplateRunner.ID + ".result.json").toFile(),
+                    path.resolve(TemplateRunner.ID + ".result.json").toFile());
+        } catch (CatalogException | IOException e) {
+            logger.error("Could not store job results in template folder", e);
+        }
     }
 
     private void notifyStatusChange(Job job) {
@@ -1107,7 +1145,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private void sendWebhookNotification(Job job, URL url) throws URISyntaxException, CatalogException, CloneNotSupportedException {
-        JobInternal jobInternal = new JobInternal(null, job.getInternal().getWebhook().clone(), null);
+        JobInternal jobInternal = new JobInternal(null, null, job.getInternal().getWebhook().clone(), null);
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams()
                 .setInternal(jobInternal);
 

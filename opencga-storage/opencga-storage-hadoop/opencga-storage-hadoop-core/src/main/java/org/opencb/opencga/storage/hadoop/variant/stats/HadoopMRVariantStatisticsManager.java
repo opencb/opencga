@@ -52,14 +52,13 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
 //            throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
 //                    + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
         }
-        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         boolean overwriteStats = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
 //
 //        DefaultVariantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(sc, cohorts.stream()
 //                    .collect(Collectors.toMap(c -> c, c -> Collections.emptySet())), null, updateStats, overwriteStats);
 //        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(sc, options);
 
-        preCalculateStats(metadataManager, sm, cohorts, overwriteStats, updateStats, options);
+        preCalculateStats(metadataManager, sm, cohorts, overwriteStats, options);
 
         options.put(VariantStatsDriver.COHORTS, cohorts);
         options.remove(VariantStatsDriver.OUTPUT);
@@ -70,7 +69,7 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
                     dbAdaptor.getTableNameGenerator().getArchiveTableName(sm.getId()),
                     dbAdaptor.getTableNameGenerator().getVariantTableName(),
                     sm.getId(), Collections.emptyList(), options);
-            mrExecutor.run(VariantStatsDriver.class, args, options, "Calculate stats of cohorts " + cohorts);
+            mrExecutor.run(VariantStatsDriver.class, args, "Calculate stats of cohorts " + cohorts);
         } catch (Exception e) {
             error = true;
             throw e;

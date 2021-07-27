@@ -19,21 +19,23 @@ package org.opencb.opencga.storage.core.variant.query;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -370,16 +372,24 @@ public final class VariantQueryUtils {
         return value != null && (value.isEmpty() || value.size() == 1 && isNone(value.get(0)));
     }
 
-    private static boolean isNone(String value) {
-        return value.equals(NONE);
+    public static boolean isNone(Query q, QueryParam queryParam) {
+        return isNone(q.getString(queryParam.key()));
+    }
+
+    public static boolean isNone(String value) {
+        return NONE.equals(value);
     }
 
     public static boolean isAllOrNull(List<String> value) {
         return value == null || value.size() == 1 && isAll(value.get(0));
     }
 
+    public static boolean isAll(Query q, QueryParam queryParam) {
+        return isAll(q.getString(queryParam.key()));
+    }
+
     public static boolean isAll(String s) {
-        return s.equals(ALL);
+        return ALL.equals(s);
     }
 
     /**
@@ -395,14 +405,15 @@ public final class VariantQueryUtils {
     /**
      * Determines if the given value is a known search accession or not.
      * <p>
-     * ClinVar accession starts with 'RCV' or 'SCV'
-     * COSMIC mutationId starts with 'COSM'
+     * ClinVar accession starts with 'VCV', 'RCV' or 'SCV'
+     * COSMIC mutationId starts with 'COSM', 'COSV'
      *
      * @param value Value to check
      * @return If is a known accession
      */
     public static boolean isClinicalAccession(String value) {
-        return value.startsWith("RCV") || value.startsWith("SCV") || value.startsWith("COSM");
+        return value.startsWith("RCV") || value.startsWith("SCV")  || value.startsWith("VCV")
+                || value.startsWith("COSM") || value.startsWith("COSV");
     }
 
     /**
@@ -499,29 +510,6 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options,
-                                                               VariantStorageMetadataManager metadataManager) {
-        if (VariantField.getIncludeFields(options).contains(VariantField.STUDIES)) {
-            Map<Integer, List<Integer>> includeSamples = VariantQueryProjectionParser.getIncludeSamples(query, options, metadataManager);
-            Map<String, List<String>> sampleMetadata = new HashMap<>(includeSamples.size());
-
-            for (Map.Entry<Integer, List<Integer>> entry : includeSamples.entrySet()) {
-                Integer studyId = entry.getKey();
-                List<Integer> sampleIds = entry.getValue();
-                String studyName = metadataManager.getStudyName(studyId);
-                ArrayList<String> sampleNames = new ArrayList<>(sampleIds.size());
-                for (Integer sampleId : sampleIds) {
-                    sampleNames.add(metadataManager.getSampleName(studyId, sampleId));
-                }
-                sampleMetadata.put(studyName, sampleNames);
-            }
-
-            return sampleMetadata;
-        } else {
-            return Collections.emptyMap();
-        }
-    }
-
     public static <T> VariantQueryResult<T> addSamplesMetadataIfRequested(DataResult<T> result, Query query, QueryOptions options,
                                                                           VariantStorageMetadataManager variantStorageMetadataManager) {
         return addSamplesMetadataIfRequested(new VariantQueryResult<>(result, null), query, options, variantStorageMetadataManager);
@@ -532,7 +520,8 @@ public final class VariantQueryUtils {
         if (query.getBoolean(SAMPLE_METADATA.key(), false)) {
             int numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key(), -1);
             int numSamples = query.getInt(NUM_SAMPLES.key(), -1);
-            Map<String, List<String>> samplesMetadata = getSamplesMetadata(query, options, variantStorageMetadataManager);
+            Map<String, List<String>> samplesMetadata = VariantQueryProjectionParser
+                    .getIncludeSampleNames(query, options, variantStorageMetadataManager);
             if (numTotalSamples < 0 && numSamples < 0) {
                 numTotalSamples = samplesMetadata.values().stream().mapToInt(List::size).sum();
                 VariantQueryProjectionParser.skipAndLimitSamples(query, samplesMetadata);
@@ -1263,6 +1252,100 @@ public final class VariantQueryUtils {
         return new String[]{key.trim(), operator.trim(), filter.trim()};
     }
 
+    public static List<String> buildClinicalCombinations(VariantAnnotation variantAnnotation) {
+        if (CollectionUtils.isEmpty(variantAnnotation.getTraitAssociation())) {
+            return Collections.emptyList();
+        }
+        Set<String> clinicalSet = new HashSet<>();
+        for (EvidenceEntry ev : variantAnnotation.getTraitAssociation()) {
+            if (ev.getSource() != null && StringUtils.isNotEmpty(ev.getSource().getName())) {
+                String source = ev.getSource().getName().toLowerCase();
+                ClinicalSignificance clinicalSig = null;
+                String status = null;
+
+                if ("clinvar".equalsIgnoreCase(ev.getSource().getName())) {
+                    if (ev.getVariantClassification() != null
+                            && ev.getVariantClassification().getClinicalSignificance() != null) {
+                        clinicalSig = ev.getVariantClassification().getClinicalSignificance();
+                    }
+                    if (ConsistencyStatus.congruent.equals(ev.getConsistencyStatus())) {
+                        status = "confirmed";
+                    }
+                } else if ("cosmic".equalsIgnoreCase(ev.getSource().getName())) {
+                    if (CollectionUtils.isNotEmpty(ev.getAdditionalProperties())) {
+                        for (Property additionalProperty : ev.getAdditionalProperties()) {
+                            if ("FATHMM_PREDICTION".equals(additionalProperty.getId())) {
+                                if ("PATHOGENIC".equals(additionalProperty.getValue())) {
+                                    clinicalSig = ClinicalSignificance.pathogenic;
+                                } else {
+                                    if ("NEUTRAL".equals(additionalProperty.getValue())) {
+                                        clinicalSig = ClinicalSignificance.benign;
+                                    }
+                                }
+                            }
+
+                            if ("MUTATION_SOMATIC_STATUS".equals(additionalProperty.getId())
+                                    || "mutationSomaticStatus_in_source_file".equals(additionalProperty.getName())) {
+                                if ("Confirmed somatic variant".equals(additionalProperty.getValue())) {
+                                    status = "confirmed";
+                                }
+                            }
+                            // Stop the for
+                            if (clinicalSig != null && StringUtils.isNotEmpty(status)) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Create all possible combinations in this order from left to right: source, clinicalSig and status
+                if (StringUtils.isNotEmpty(source)) {
+                    // Let's add the source to filter easily by clinvar or cosmic
+                    clinicalSet.add(source);
+
+                    if (clinicalSig != null) {
+                        // Add only clinicalSig, this replaces old index
+                        clinicalSet.add(clinicalSig.name());
+                        clinicalSet.add(source + "_" + clinicalSig);
+
+                        // Combine the three parts
+                        if (StringUtils.isNotEmpty(status)) {
+                            clinicalSet.add(clinicalSig + "_" + status);
+                            clinicalSet.add(source + "_" + clinicalSig + "_" + status);
+                        }
+                    }
+
+                    // source with status, just in case clinicalSig does not exist
+                    if (StringUtils.isNotEmpty(status)) {
+                        clinicalSet.add(status);
+                        clinicalSet.add(source + "_" + status);
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(clinicalSet);
+    }
+
+    public static <T extends Enum<T>> List<T> getAsEnumList(Query query, QueryParam queryParam, Class<T> enumClass) {
+        return getAsEnumValues(query, queryParam, enumClass).getValues();
+    }
+
+    public static <T extends Enum<T>> Values<T> getAsEnumValues(Query query, QueryParam queryParam, Class<T> enumClass) {
+        Values<String> values = splitValues(query.getString(queryParam.key()));
+        return new Values<>(values.getOperation(), values.getValues()
+                .stream()
+                .map(enumName -> {
+                    String simplified = StringUtils.replaceChars(enumName, "_-", "");
+                    for (final T each : enumClass.getEnumConstants()) {
+                        if (each.name().equalsIgnoreCase(enumName)
+                                || StringUtils.replaceChars(each.name(), "_-", "").equalsIgnoreCase(simplified)) {
+                            return each;
+                        }
+                    }
+                    throw VariantQueryException.malformedParam(queryParam, enumName, "Unknown value");
+                })
+                .collect(Collectors.toList()));
+    }
 
     public static void convertExpressionToGeneQuery(Query query, CellBaseUtils cellBaseUtils) {
         if (cellBaseUtils == null) {
