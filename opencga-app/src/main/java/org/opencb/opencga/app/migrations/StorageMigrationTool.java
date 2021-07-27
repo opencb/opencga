@@ -19,10 +19,16 @@ public abstract class StorageMigrationTool extends MigrationTool {
 
     protected final VariantStorageManager getVariantStorageManager() throws MigrationException {
         if (variantStorageManager == null) {
-            engineFactory = StorageEngineFactory.get(readStorageConfiguration());
-            variantStorageManager = new VariantStorageManager(catalogManager, engineFactory);
+            variantStorageManager = new VariantStorageManager(catalogManager, getVariantStorageEngineFactory());
         }
         return variantStorageManager;
+    }
+
+    public StorageEngineFactory getVariantStorageEngineFactory() throws MigrationException {
+        if (engineFactory == null) {
+            engineFactory = StorageEngineFactory.get(readStorageConfiguration());
+        }
+        return engineFactory;
     }
 
     protected final VariantStorageEngine getVariantStorageEngineByProject(String projectFqn) throws Exception {

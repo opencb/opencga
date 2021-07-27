@@ -4,7 +4,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 2.0.0-RC1 \(June 2020\)
 
-### Catalog
+#### Catalog
 
 * \[**FEATURE**\] Improve audit \([\#1322](https://github.com/opencb/opencga/issues/1322), [\#1483](https://github.com/opencb/opencga/issues/1483)\)
 * \[**FEATURE**\] Allow queries based on permissions \([\#1486](https://github.com/opencb/opencga/issues/1486)\)
@@ -48,7 +48,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[BUGFIX\] Unable to update "relatedFiles" list \([\#1451](https://github.com/opencb/opencga/issues/1451)\)
 * \[PERFORMANCE\] Move deleted documents to different collection \([\#1369](https://github.com/opencb/opencga/issues/1369)\)
 
-### Analysis
+#### Analysis
 
 * \[CLINICAL\] Tiering interpretation analysis for cancer \([\#1300](https://github.com/opencb/opencga/issues/1300)\)
 * \[VARIANT\] Implement Fisher Test Analysis MapReduce \([\#1361](https://github.com/opencb/opencga/issues/1361)\)
@@ -62,7 +62,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[CLINICAL\] Implement the relatedness analysis based on IBD/IBS \([\#1521](https://github.com/opencb/opencga/issues/1521)\)
 * \[CLINICAL\] Implement genetic checks to compare with the reported results \([\#1522](https://github.com/opencb/opencga/issues/1522)\)
 
-### Variant Storage
+#### Variant Storage
 
 * \[**FEATURE**\] Support Hadoop3.x and HBase2.x \([\#925](https://github.com/opencb/opencga/issues/925)\)
 * \[**FEATURE**\] Divide opencga-storage-hadoop-deps in submodules \([\#1333](https://github.com/opencb/opencga/issues/1333)\)
@@ -90,7 +90,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.4.2 \(June 2019\)
 
-### Catalog
+#### Catalog
 
 * \[CHANGE\] Rename web services from _/stats_ to _/aggregationStats_  \([\#1253](https://github.com/opencb/opencga/issues/1253)\)
 * \[BUGFIX\] Index fails when passing ":" instead of "/" \([\#1241](https://github.com/opencb/opencga/issues/1241)\)
@@ -123,7 +123,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
   <tbody></tbody>
 </table>
 
-### Variant Storage
+#### Variant Storage
 
 * \[CHANGE\] Rename filter "`transcriptionFlag`" to "`transcriptFlag`" \([\#1256](https://github.com/opencb/opencga/issues/1256)\)
 * \[BUGFIX\] HashMap$Node cannot be cast to java.util.HashMap$TreeNode \([\#1323](https://github.com/opencb/opencga/issues/1323)\)
@@ -155,7 +155,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.4.0-rc1 \(August 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[IMPROVEMENT\] Recognise bigwig files automatically. \([\#283](https://github.com/opencb/opencga/issues#283)\)
 * \[IMPROVEMENT\] **Major improvements in annotationSets** \([\#635](https://github.com/opencb/opencga/issues#635), [\#772](https://github.com/opencb/opencga/issues#772), [\#849](https://github.com/opencb/opencga/issues#849)\): 
@@ -180,7 +180,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
   * Add new inmutable _**uuid**_ field to all entries.
 * \[FEATURE\] Create catalog solr sync mechanism and enable facet queries [\#875](https://github.com/opencb/opencga/issues#875)
 
-### Variant Storage
+#### Variant Storage
 
 * \[FEATURE\] Aggregate operation for all samples from a study in the Variant \([\#757](https://github.com/opencb/opencga/issues/757)\)
   * \[IMPROVEMENT\] Move HBase write step to a separated MR for fill-missing operation \([\#815](https://github.com/opencb/opencga/issues/815)\)
@@ -225,7 +225,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.3.11 \(August 2019\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FEATURE\] Support "application users" \([\#1268](https://github.com/opencb/opencga/issues/1268)\) \(**migration required**\) → [https://github.com/opencb/opencga/blob/develop/opencga-app/app/migration/v1.4.2/catalog/migration.js\#L24](https://github.com/opencb/opencga/blob/develop/opencga-app/app/migration/v1.4.2/catalog/migration.js#L24)
 * \[FEATURE\] Add CRAM support \([\#1301](https://github.com/opencb/opencga/issues/1301)\)
@@ -235,52 +235,52 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.3.10 \(February 2019\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FIX\] Remove base64 conversion of the secret key.
 * \[FIX\] Update pom dependencies to avoid conflicts.
 
 ## 1.3.9 \(January 2019\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FEATURE\] Support Azure AD authentication.
 * \[CHANGE\] Add _id_ to Group data model \(**migration required**\) → [https://github.com/opencb/opencga/blob/v.1.3.9/opencga-app/app/migration/v1.3.0/catalog/10\_add\_group-id.js](https://github.com/opencb/opencga/blob/v.1.3.9/opencga-app/app/migration/v1.3.0/catalog/10_add_group-id.js)
 
 ## 1.3.8 \(August 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FIX\] Fix permission issue affecting users and groups with the "\_" symbol \([\#881](https://github.com/opencb/opencga/issues#881)\)
 
 ## 1.3.7 \(July 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[ENHANCEMENT\] Add new _tags_ field to the File data model \([\#855](https://github.com/opencb/opencga/issues#855)\)
 * \[CHANGE\] Configuration change. Add hooks to configuration file \([\#856](https://github.com/opencb/opencga/issues#856)\)
 
 ## 1.3.6 \(May 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FIX\] Improve performance of sample queries filtering by individual \([\#843](https://github.com/opencb/opencga/issues#843)\)
 
 ## 1.3.5 \(May 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FIX\] Fix issue when assigning permissions given the id\(s\) of different entities  \([\#836](https://github.com/opencb/opencga/issues#836)\)
 
 ## 1.3.4 \(April 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[ENHANCEMENT\] Performance improvement when assigning permissions  \([\#829](https://github.com/opencb/opencga/issues#829)\)
 
 ## 1.3.3 \(March 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[ENHANCEMENT\] Remove old deprecated fields from Family data model \([\#810](https://github.com/opencb/opencga/issues#810)\)
 * \[ENHANCEMENT\] Allow looking for Individuals and Families by a new sample field \([\#811](https://github.com/opencb/opencga/issues#811)\)
@@ -290,14 +290,14 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.3.2 \(February 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FIX\] Add missing individual-sample indexes \([\#790](https://github.com/opencb/opencga/issues#790)\)
 * \[FIX\] Fix smart name resolution \([\#791](https://github.com/opencb/opencga/issues#791)\)
 
 ## 1.3.1 \(February 2018\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FIX\] Propagation of permissions sample-individual not working \([\#780](https://github.com/opencb/opencga/issues#780)\)
 * \[ENHANCEMENT\] Ask for admin password automatically when using admin command line \([\#785](https://github.com/opencb/opencga/issues#785)\)
@@ -305,12 +305,12 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.3.0 \(January 2018\)
 
-### General
+#### General
 
 * \[FEATURE\] Admin migration command line \([\#690](https://github.com/opencb/opencga/issues#690)\)
 * \[FEATURE\] Implement AutoComplete for CLI \([\#714](https://github.com/opencb/opencga/issues#714)\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[REMOVE\] Remove ACL from data models. \([\#666](https://github.com/opencb/opencga/issues/666)\)
 * \[ENHANCEMENT\] Clean old code and refactoring. \([\#667](https://github.com/opencb/opencga/issues/667), [\#668](https://github.com/opencb/opencga/issues/668), [\#669](https://github.com/opencb/opencga/issues/669), [\#670](https://github.com/opencb/opencga/issues/670)\)
@@ -332,7 +332,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[ENHANCEMENT\] Support a list of ids in all GET webservices \([\#727](https://github.com/opencb/opencga/issues/727)\)
 * \[CHANGE\] Internal modification: Change ACL delimiter used \([\#740](https://github.com/opencb/opencga/issues/740)\)
 
-### Variant Storage
+#### Variant Storage
 
 * \[FEATURE\] Make use of the new VariantMetadata model from Biodata \([\#673](https://github.com/opencb/opencga/issues#673)\)
 * \[FEATURE\] Major support of Symbolic variants in Variants Storage \([\#695](https://github.com/opencb/opencga/issues#695)\)
@@ -353,7 +353,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.2.0 \(September 2017\)
 
-### **Catalog**
+#### **Catalog**
 
 * \[FIX\] Fix job search by input and output files. \([\#533](https://github.com/opencb/opencga/issues/533)\)
 * \[ENHANCEMENT\] Hide deprecated webservices. \([\#599](https://github.com/opencb/opencga/issues/599)\)
@@ -374,7 +374,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[FEATURE\] Propagate permissions from samples to individuals. \([\#657](https://github.com/opencb/opencga/issues/657)\)
 * \[ENHANCEMENT\] Return HTTP 401 error code when user is not successfully logged in or the token is invalid. \([\#658](https://github.com/opencb/opencga/issues/658)\)  
 
-### Variant Storage
+#### Variant Storage
 
 * \[FEATURE\] Improve Solr integration with VariantStorage when querying \([\#638](https://github.com/opencb/opencga/issues/638)\)
 * \[ENHANCEMENT\] Improve Solr variant iterator by using Solr cursors \([\#640](https://github.com/opencb/opencga/issues/)\)
@@ -394,7 +394,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[FIX\] Avoid OutOfMemoryError updating storage metadata from catalog \([\#645](https://github.com/opencb/opencga/issues/645)\)
 * \[FIX\] Error indexing vcf files containing "variants" in the file name\([\#691](https://github.com/opencb/opencga/issues/691)\)
 
-### Relevant changes
+#### Relevant changes 
 
 * CLI install changed and need two additional parameters 1: secretKey, algorithm
 * Configuration file has changed and need to be adopted on all opencga installation 
@@ -407,7 +407,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.1.0 \(June 2017\)
 
-### Catalog
+#### Catalog
 
 * \[ENHANCEMENT\] Support integers and floats type for variables. \([\#545](https://github.com/opencb/opencga/issues/545)\)
 * \[BUG\] Fix link race condition. \([\#551](https://github.com/opencb/opencga/issues/551)\)
@@ -428,7 +428,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[ENHANCEMENT\] Add support to change _public/private_ User registration  \([\#594](https://github.com/opencb/opencga/issues/594)\)
 * \[DEPRECATE\] Deprecate all _xx/create_ and _xx/update_ GET webservices. \([\#598](https://github.com/opencb/opencga/issues/598)\)
 
-### Variant Storage
+#### Variant Storage
 
 * \[FEATURE\] Make optional to merge non same overlapping variants in MongoDB \([\#574](https://github.com/opencb/opencga/issues/574)\)
 * \[FEATURE\] Implement a benchmark framework for OpenCGA Storage \([\#248](https://github.com/opencb/opencga/issues/248)\)
@@ -438,7 +438,7 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[BUGFIX\] Fix ArrayIndexOutOfBounds when loading variants data \([\#597](https://github.com/opencb/opencga/issues/597)\)
 * \[FEATURE\] Add VCF export to gRPC command line \([\#606](https://github.com/opencb/opencga/issues/606)\) 
 
-### Relevant changes - migration
+#### Relevant changes - migration
 
 * Add new permissions to admin user in the general configuration file. To add: VIEW\_STUDY, UPDATE\_STUDY and SHARE\_STUDY
 * Added sampleIds parameter in each individual entry. 
@@ -447,18 +447,18 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.0.2
 
-### General
+#### General
 
 * \[BUGFIX\] Fix VCF output format \([\#584](https://github.com/opencb/opencga/issues/584)\)
 
-### Catalog
+#### Catalog
 
 * \[ENHANCEMENT\] New _dateOfBirth_ field added to Individual \([\#580](https://github.com/opencb/opencga/issues/580)\) and _somatic_ field to Sample \([\#576](https://github.com/opencb/opencga/issues/576)\)
 * \[ENHANCEMENT\] Performance improvement when annotating new variants \([\#575](https://github.com/opencb/opencga/issues/575)\)
 
 ## 1.0.0 \(February 2017\)
 
-### Catalog
+#### Catalog
 
 * \[FIX\] Authenticated users can now see public data \([\#501](https://github.com/opencb/opencga/issues/501)\)
 * Permissions assigned to _individuals_ are directly propagated to _samples_ \([\#509](https://github.com/opencb/opencga/issues/509)\)
@@ -466,16 +466,16 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * \[CHANGED\] Permissions given to folders are now propagated in the database \([\#505](https://github.com/opencb/opencga/issues/505)\), this increase significantly the performance of the ACL resolution 
 * \[CHANGED\] Changes in session data model \([\#479](https://github.com/opencb/opencga/issues/479)\)
 
-### Storage
+#### Storage
 
 * Complete the implementation of _exclude_ and _include_ of fields for Variant queries \([\#515](https://github.com/opencb/opencga/issues/515)\)
 
-### Clients
+#### Clients
 
 * \[Python\] new Python client implemented following the same architecture than Java and Javascript clients \([https://github.com/opencb/opencga/pull/516](https://github.com/opencb/opencga/pull/516)\). This improves the quality significantly and add many new features, thanks [Antonio Rueda](http://docs.opencb.org/display/~aruemar)!
 * Java and Javascript client libs use always POST when available
 
-### Server
+#### Server
 
 * \[REST\] Add new _files/create using_ POST to create new folders and files with some content \([\#514](https://github.com/opencb/opencga/issues/514)\)
 * \[REST\] Rename parameters from _acl/update_ \([2617993](https://github.com/opencb/opencga/commit/2617993fef6aefe06802da5d6dc590f7d099687a)\)
@@ -487,19 +487,19 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 ## 1.0.0-rc3 \(January 2017\)
 
-### General
+#### General
 
 * Major changes in maven properties and configuration files. \([\#480](https://github.com/opencb/opencga/issues/480)\)
 * catalog-configuration.yml and configuration.yml have been merged. \([\#476](https://github.com/opencb/opencga/issues/476)\)
 
-### Catalog
+#### Catalog
 
 * Added support to fetch shared projects and studies.
 * Added organism information to the project data model. \([\#455](https://github.com/opencb/opencga/issues/455)\)
 * Renamed diskUsage and diskQuota for size and quota respectively in all data models were present.
 * Closed sessions are now removed from the array of sessions \(but they can still be found in the audit collection\). \([\#475](https://github.com/opencb/opencga/issues/475)\)
 
-### Storage
+#### Storage
 
 * Improve error handling for storage operations \([\#447](https://github.com/opencb/opencga/issues/447), [\#463](https://github.com/opencb/opencga/issues/463), [\#465](https://github.com/opencb/opencga/issues/465)\)
 * Add param --resume to opencga-analysis.sh and opencga-storage.sh command line \([\#465](https://github.com/opencb/opencga/issues/465)\)
@@ -508,11 +508,11 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 * New top layer StorageManager connecting catalog with storage \([\#486](https://github.com/opencb/opencga/issues/486)\)
 * Shade proto and guava dependencies for Hadoop \([\#440](https://github.com/opencb/opencga/issues/440)\)
 
-### Server
+#### Server
 
 * Create and update webservices have been all implemented via POST.
 
-### Known issues
+#### Known issues
 
 * OpenCGA storage hadoop is not available in this version. To compile use this line:
 
@@ -524,11 +524,11 @@ You can find more detailed information at [GitHub Issues](https://github.com/ope
 
 This release constitutes the first release candidate \(RC1\). This is the biggest release ever with more than **1,400 commits**, special mention to [**j-coll**](https://github.com/j-coll) and [**pfurio**](https://github.com/pfurio) for their contribution in Catalog, Storage and Server components.
 
-### General
+#### General
 
 * New command line interfaces \(CLI\) for users \(_opencga.sh_\), admins \(_opencga-admin.sh_\) and analysis \(_opencga-analysis.sh_\)
 
-### Catalog
+#### Catalog
 
 * New catalog configuration file using YAML.
 * New authorisation method. A big list of permission have been defined.
@@ -537,13 +537,13 @@ This release constitutes the first release candidate \(RC1\). This is the bigges
 * New javascript, java and R client implementations.
 * Support for annotations in cohorts.
 
-### Storage
+#### Storage
 
 * Many performance improvements and fixes in MongoBD storage engine, the most notable include a new load strategy to improve file merging scalability
 * New storage engine based on **Apache HBase**, this is completely functional but is tagged as _beta_ until more tests are done.
 * New custom variant annotation implemented
 
-### Server
+#### Server
 
 * An experimental gRPC server implemented
 

@@ -214,10 +214,10 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void testManualMigrations() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
-        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
+        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
 
-        migrationRun= catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
+        migrationRun= catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
 
@@ -225,7 +225,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void testMigrationsWithJobs() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
-        catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
+        catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
 
         // RUN. New status ON_HOLD
         catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), "", token);
