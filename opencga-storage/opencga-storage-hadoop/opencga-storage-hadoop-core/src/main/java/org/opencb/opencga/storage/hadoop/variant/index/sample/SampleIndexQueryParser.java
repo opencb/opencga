@@ -727,7 +727,9 @@ public class SampleIndexQueryParser {
                             // Unknown key
                             fileDataCovered = false;
                         } else {
-                            IndexFieldFilter indexFieldFilter = fileDataIndexField.buildFilter(keyOpValue);
+                            Values<String> values = splitValues(keyOpValue.getValue());
+                            IndexFieldFilter indexFieldFilter =
+                                    fileDataIndexField.buildFilter(values.getOperation(), keyOpValue.getOp(), values.getValues());
                             filtersList.add(indexFieldFilter);
                             if (!indexFieldFilter.isExactFilter()) {
                                 fileDataCovered = false;

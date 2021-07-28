@@ -4,7 +4,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
 import java.util.Comparator;
@@ -101,49 +100,9 @@ public class SampleVariantIndexEntry {
                 .append(this.getGenotype());
         sb.append(separator).append("file: ")
                 .append(this.getFileIndex());
-        sb.append(separator).append("ct: ")
-                .append(IndexUtils.binaryToString(
-                        this.getAnnotationIndexEntry().getCtIndex(),
-                        schema.getCtIndex().getField().getBitLength()))
-                .append(" : ")
-                .append(schema.getCtIndex().getField()
-                        .decode(this.getAnnotationIndexEntry().getCtIndex()));
-        sb.append(separator).append("bt: ")
-                .append(IndexUtils.binaryToString(
-                        this.getAnnotationIndexEntry().getBtIndex(),
-                        schema.getBiotypeIndex().getField().getBitLength()))
-                .append(" : ")
-                .append(schema.getBiotypeIndex().getField()
-                        .decode(this.getAnnotationIndexEntry().getBtIndex()));
-        sb.append(separator).append("tf: ")
-                .append(IndexUtils.binaryToString(
-                        this.getAnnotationIndexEntry().getTfIndex(),
-                        schema.getTranscriptFlagIndexSchema().getField().getBitLength()))
-                .append(" : ")
-                .append(schema.getTranscriptFlagIndexSchema().getField()
-                        .decode(this.getAnnotationIndexEntry().getTfIndex()));
-        sb.append(separator).append("ct_bt: ")
-                .append(schema.getCtBtIndex().getField()
-                        .encode(this.getAnnotationIndexEntry().getCtBtCombination()))
-                .append(" : ")
-                .append(this.getAnnotationIndexEntry().getCtBtCombination())
-                .append(" : ")
-                .append(schema.getCtBtIndex().getField()
-                        .getPairs(
-                                this.getAnnotationIndexEntry().getCtBtCombination(),
-                                this.getAnnotationIndexEntry().getCtIndex(),
-                                this.getAnnotationIndexEntry().getBtIndex()));
-        sb.append(separator).append("ct_tf: ")
-                .append(schema.getCtTfIndex().getField()
-                        .encode(this.getAnnotationIndexEntry().getCtTfCombination()))
-                .append(" : ")
-                .append(this.getAnnotationIndexEntry().getCtTfCombination())
-                .append(" : ")
-                .append(schema.getCtTfIndex().getField()
-                        .getPairs(
-                                this.getAnnotationIndexEntry().getCtTfCombination(),
-                                this.getAnnotationIndexEntry().getCtIndex(),
-                                this.getAnnotationIndexEntry().getTfIndex()));
+        if (annotationIndexEntry != null) {
+            annotationIndexEntry.toString(schema, separator, sb);
+        }
         return sb.toString();
     }
 

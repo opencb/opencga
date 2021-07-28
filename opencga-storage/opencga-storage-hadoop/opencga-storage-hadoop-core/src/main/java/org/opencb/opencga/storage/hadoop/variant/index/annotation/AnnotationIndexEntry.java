@@ -229,4 +229,51 @@ public class AnnotationIndexEntry {
                 + ", popFreqIndex=" + popFreqIndex
                 + '}';
     }
+
+
+    public void toString(SampleIndexSchema schema, String separator, StringBuilder sb) {
+        sb.append(separator).append("ct: ")
+                .append(IndexUtils.binaryToString(
+                        getCtIndex(),
+                        schema.getCtIndex().getField().getBitLength()))
+                .append(" : ")
+                .append(schema.getCtIndex().getField()
+                        .decode(getCtIndex()));
+        sb.append(separator).append("bt: ")
+                .append(IndexUtils.binaryToString(
+                        getBtIndex(),
+                        schema.getBiotypeIndex().getField().getBitLength()))
+                .append(" : ")
+                .append(schema.getBiotypeIndex().getField()
+                        .decode(getBtIndex()));
+        sb.append(separator).append("tf: ")
+                .append(IndexUtils.binaryToString(
+                        getTfIndex(),
+                        schema.getTranscriptFlagIndexSchema().getField().getBitLength()))
+                .append(" : ")
+                .append(schema.getTranscriptFlagIndexSchema().getField()
+                        .decode(getTfIndex()));
+        sb.append(separator).append("ct_bt: ")
+                .append(schema.getCtBtIndex().getField()
+                        .encode(getCtBtCombination()))
+                .append(" : ")
+                .append(getCtBtCombination())
+                .append(" : ")
+                .append(schema.getCtBtIndex().getField()
+                        .getPairs(
+                                getCtBtCombination(),
+                                getCtIndex(),
+                                getBtIndex()));
+        sb.append(separator).append("ct_tf: ")
+                .append(schema.getCtTfIndex().getField()
+                        .encode(getCtTfCombination()))
+                .append(" : ")
+                .append(getCtTfCombination())
+                .append(" : ")
+                .append(schema.getCtTfIndex().getField()
+                        .getPairs(
+                                getCtTfCombination(),
+                                getCtIndex(),
+                                getTfIndex()));
+    }
 }
