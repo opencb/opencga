@@ -1,0 +1,69 @@
+options:
+  server_url: http://localhost:8080/opencga
+  version: 1.0
+  options_output_dir: /tmp/outputdir/
+  executors_output_dir: /tmp/outputdir/executors
+  executors_package: org.opencb.opencga.app.cli.main.executors.catalog
+  methods_update:
+    - create
+    - update
+api:
+  Users:
+    ignore: False
+    key: User
+  Projects:
+    ignore: False
+    key: Project
+  Studies:
+    ignore: False
+    key: Study
+  Files:
+    ignore: False
+    key: File
+    commands:
+      upload:
+        ignore: True
+        subcommands:
+          hash:
+            ignore: True
+          serialVersionUID:
+            ignore: True
+  Jobs:
+    ignore: False
+    key: Job
+  Samples:
+    ignore: False
+    key: Sample
+  Individuals:
+    ignore: False
+    key: Individual
+  Families:
+    ignore: False
+    key: Family
+  Cohorts:
+    ignore: False
+    key: Cohort
+  Disease Panels:
+    ignore: False
+    key: DiseasePanel
+  Analysis - Alignment:
+    ignore: False
+    key: Alignment
+  Analysis - Variant:
+    ignore: False
+    key: Variant
+  Analysis - Clinical:
+    ignore: False
+    key: Clinical
+  Operations - Variant Storage:
+    ignore: False
+    key: VariantOperation
+  Meta:
+    ignore: False
+    key: Meta
+  GA4GH:
+    ignore: True
+    key: GA4GH
+  Admin:
+    ignore: True
+    key: Admin

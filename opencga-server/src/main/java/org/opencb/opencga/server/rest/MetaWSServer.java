@@ -37,6 +37,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.time.Duration;
@@ -55,14 +56,14 @@ import java.util.concurrent.atomic.AtomicReference;
 @Api(value = "Meta", description = "Meta RESTful Web Services API")
 public class MetaWSServer extends OpenCGAWSServer {
 
+    private static final AtomicReference<String> healthCheckErrorMessage = new AtomicReference<>();
+    private static final AtomicReference<LocalTime> lastAccess = new AtomicReference<>(LocalTime.now());
+    private static final Map<String, String> healthCheckResults = new ConcurrentHashMap<>();
     private final String OKAY = "OK";
     private final String NOT_OKAY = "KO";
     private final String SOLR = "Solr";
     private final String VARIANT_STORAGE = "VariantStorage";
     private final String CATALOG_MONGO_DB = "CatalogMongoDB";
-    private static final AtomicReference<String> healthCheckErrorMessage = new AtomicReference<>();
-    private static final AtomicReference<LocalTime> lastAccess = new AtomicReference<>(LocalTime.now());
-    private static final Map<String, String> healthCheckResults = new ConcurrentHashMap<>();
 
     public MetaWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -174,7 +175,8 @@ public class MetaWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             newHealthCheckResults.put(VARIANT_STORAGE, NOT_OKAY);
             errorMsg.append(e.getMessage());
-//            errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()).append(", ");
+//            errorMsg.append(" No storageEngineId is set in configuration or Unable to initiate storage Engine, ").append(e.getMessage()
+//            ).append(", ");
         }
         storageTime.stop();
 
@@ -263,7 +265,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         for (Method method : clazz.getMethods()) {
             Path pathAnnotation = method.getAnnotation(Path.class);
             String httpMethod = "GET";
-            if (method.getAnnotation(POST.class) != null ) {
+            if (method.getAnnotation(POST.class) != null) {
                 httpMethod = "POST";
             } else {
                 if (method.getAnnotation(DELETE.class) != null) {
@@ -275,7 +277,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                 LinkedHashMap<String, Object> endpoint = new LinkedHashMap<>();
                 endpoint.put("path", map.get("path") + pathAnnotation.value());
                 endpoint.put("method", httpMethod);
-                endpoint.put("response", StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""), "."));
+                endpoint.put("response", StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""),
+                        "."));
 
                 String responseClass = apiOperationAnnotation.response().getName().replace("Void", "");
                 endpoint.put("responseClass", responseClass.endsWith(";") ? responseClass : responseClass + ";");
@@ -304,6 +307,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                     for (Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
                         if (apiParam != null && !apiParam.hidden()) {
+
+                            List<Map> bodyParams = new ArrayList<>();
                             LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
                             if (methodParameter.getAnnotation(PathParam.class) != null) {
                                 parameter.put("name", methodParameter.getAnnotation(PathParam.class).value());
@@ -333,6 +338,26 @@ public class MetaWSServer extends OpenCGAWSServer {
                                     }
                                 } else {
                                     type = "object";
+                                    try {
+                                        Class<?> aClass = Class.forName(typeClass);
+                                        for (Field declaredField : aClass.getDeclaredFields()) {
+                                            //  if (declaredField != null && isPrimitive(declaredField)) {
+                                            Map<String, Object> innerparams = new LinkedHashMap<>();
+                                            innerparams.put("name", declaredField.getName());
+                                            innerparams.put("param", "typeClass");
+                                            innerparams.put("type", declaredField.getType().getSimpleName());
+                                            innerparams.put("typeClass", declaredField.getType().getName() + ";");
+                                            innerparams.put("allowedValues", "");
+                                            innerparams.put("required", "false");
+                                            innerparams.put("defaultValue", "");
+                                            innerparams.put("description", "The body web service " + declaredField.getName() + " " +
+                                                    "parameter");
+                                            bodyParams.add(innerparams);
+                                            // }
+                                        }
+                                    } catch (ClassNotFoundException e) {
+                                        System.err.println("Error procesando " + typeClass);
+                                    }
                                 }
                             }
                             parameter.put("type", type);
@@ -341,6 +366,9 @@ public class MetaWSServer extends OpenCGAWSServer {
                             parameter.put("required", apiParam.required());
                             parameter.put("defaultValue", apiParam.defaultValue());
                             parameter.put("description", apiParam.value());
+                            if (!bodyParams.isEmpty()) {
+                                parameter.put("data", bodyParams);
+                            }
                             parameters.add(parameter);
                         }
                     }
@@ -353,6 +381,19 @@ public class MetaWSServer extends OpenCGAWSServer {
         Collections.sort(endpoints, Comparator.comparing(endpoint -> (String) endpoint.get("path")));
         map.put("endpoints", endpoints);
         return map;
+    }
+
+    private boolean isPrimitive(Field declaredField) {
+        List<String> primitiveTypes = new ArrayList<>();
+        primitiveTypes.add("java.lang.String");
+        primitiveTypes.add("java.lang.Boolean");
+        primitiveTypes.add("java.lang.Integer");
+        primitiveTypes.add("java.lang.Long");
+        primitiveTypes.add("java.lang.Short");
+        primitiveTypes.add("java.lang.Double");
+        primitiveTypes.add("java.lang.Float");
+
+        return declaredField.getType().isPrimitive() || primitiveTypes.contains(declaredField.getType().getName());
     }
 
     private boolean isHealthy() {
