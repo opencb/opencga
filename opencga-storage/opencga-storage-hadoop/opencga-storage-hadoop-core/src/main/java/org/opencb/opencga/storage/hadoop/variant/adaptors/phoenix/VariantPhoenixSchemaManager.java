@@ -214,7 +214,8 @@ public class VariantPhoenixSchemaManager {
 
         Lock lock = null;
         try {
-            StopWatch stopWatch = StopWatch.createStarted();
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
             int attempt = 0;
             Set<PhoenixHelper.Column> pendingColumns;
             do {
