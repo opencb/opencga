@@ -67,6 +67,8 @@ public class CatalogManager implements AutoCloseable {
     private ProjectManager projectManager;
     private StudyManager studyManager;
     private FileManager fileManager;
+    private ExecutionManager executionManager;
+    private PipelineManager pipelineManager;
     private JobManager jobManager;
     private IndividualManager individualManager;
     private SampleManager sampleManager;
@@ -114,6 +116,9 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManager, configuration);
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
+        executionManager = new ExecutionManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
+                configuration);
+        pipelineManager = new PipelineManager();
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         individualManager = new IndividualManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
@@ -301,6 +306,14 @@ public class CatalogManager implements AutoCloseable {
 
     public JobManager getJobManager() {
         return jobManager;
+    }
+
+    public ExecutionManager getExecutionManager() {
+        return executionManager;
+    }
+
+    public PipelineManager getPipelineManager() {
+        return pipelineManager;
     }
 
     public IndividualManager getIndividualManager() {

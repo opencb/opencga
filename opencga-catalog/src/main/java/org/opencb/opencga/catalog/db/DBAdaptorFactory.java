@@ -80,6 +80,8 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     IndividualDBAdaptor getCatalogIndividualDBAdaptor();
 
+    ExecutionDBAdaptor getExecutionDBAdaptor();
+
     JobDBAdaptor getCatalogJobDBAdaptor();
 
     AuditDBAdaptor getCatalogAuditDbAdaptor();

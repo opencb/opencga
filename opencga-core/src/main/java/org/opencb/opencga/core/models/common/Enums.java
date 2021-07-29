@@ -65,6 +65,7 @@ public final class Enums {
         STUDY,
         FILE,
         SAMPLE,
+        EXECUTION,
         JOB,
         INDIVIDUAL,
         COHORT,
@@ -94,6 +95,7 @@ public final class Enums {
                             .collect(Collectors.toList());
                 case FAMILY:
                     return EnumSet.allOf(FamilyAclEntry.FamilyPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                case EXECUTION:
                 case JOB:
                     return EnumSet.allOf(JobAclEntry.JobPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case DISEASE_PANEL:

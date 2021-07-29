@@ -76,6 +76,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String USER_COLLECTION = "user";
     public static final String STUDY_COLLECTION = "study";
     public static final String FILE_COLLECTION = "file";
+    public static final String EXECUTION_COLLECTION = "execution";
     public static final String JOB_COLLECTION = "job";
     public static final String SAMPLE_COLLECTION = "sample";
     public static final String INDIVIDUAL_COLLECTION = "individual";
@@ -88,6 +89,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String DELETED_USER_COLLECTION = "deleted_user";
     public static final String DELETED_STUDY_COLLECTION = "deleted_study";
     public static final String DELETED_FILE_COLLECTION = "deleted_file";
+    public static final String DELETED_EXECUTION_COLLECTION = "deleted_execution";
     public static final String DELETED_JOB_COLLECTION = "deleted_job";
     public static final String DELETED_SAMPLE_COLLECTION = "deleted_sample";
     public static final String DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
@@ -113,6 +115,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private IndividualMongoDBAdaptor individualDBAdaptor;
     private SampleMongoDBAdaptor sampleDBAdaptor;
     private FileMongoDBAdaptor fileDBAdaptor;
+    private ExecutionMongoDBAdaptor executionDBAdaptor;
     private JobMongoDBAdaptor jobDBAdaptor;
     private ProjectMongoDBAdaptor projectDBAdaptor;
     private CohortMongoDBAdaptor cohortDBAdaptor;
@@ -250,6 +253,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
+    public ExecutionMongoDBAdaptor getExecutionDBAdaptor() {
+        return executionDBAdaptor;
+    }
+
+    @Override
     public JobMongoDBAdaptor getCatalogJobDBAdaptor() {
         return jobDBAdaptor;
     }
@@ -312,6 +320,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection fileCollection = mongoDataStore.getCollection(FILE_COLLECTION);
         MongoDBCollection sampleCollection = mongoDataStore.getCollection(SAMPLE_COLLECTION);
         MongoDBCollection individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
+        MongoDBCollection executionCollection = mongoDataStore.getCollection(EXECUTION_COLLECTION);
         MongoDBCollection jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
         MongoDBCollection cohortCollection = mongoDataStore.getCollection(COHORT_COLLECTION);
         MongoDBCollection panelCollection = mongoDataStore.getCollection(PANEL_COLLECTION);
@@ -324,6 +333,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection deletedFileCollection = mongoDataStore.getCollection(DELETED_FILE_COLLECTION);
         MongoDBCollection deletedSampleCollection = mongoDataStore.getCollection(DELETED_SAMPLE_COLLECTION);
         MongoDBCollection deletedIndividualCollection = mongoDataStore.getCollection(DELETED_INDIVIDUAL_COLLECTION);
+        MongoDBCollection deletedExecutionCollection = mongoDataStore.getCollection(DELETED_EXECUTION_COLLECTION);
         MongoDBCollection deletedJobCollection = mongoDataStore.getCollection(DELETED_JOB_COLLECTION);
         MongoDBCollection deletedCohortCollection = mongoDataStore.getCollection(DELETED_COHORT_COLLECTION);
         MongoDBCollection deletedPanelCollection = mongoDataStore.getCollection(DELETED_PANEL_COLLECTION);
@@ -342,6 +352,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(FILE_COLLECTION, fileCollection);
         collections.put(SAMPLE_COLLECTION, sampleCollection);
         collections.put(INDIVIDUAL_COLLECTION, individualCollection);
+        collections.put(EXECUTION_COLLECTION, executionCollection);
         collections.put(JOB_COLLECTION, jobCollection);
         collections.put(COHORT_COLLECTION, cohortCollection);
         collections.put(PANEL_COLLECTION, panelCollection);
@@ -354,6 +365,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(DELETED_FILE_COLLECTION, deletedFileCollection);
         collections.put(DELETED_SAMPLE_COLLECTION, deletedSampleCollection);
         collections.put(DELETED_INDIVIDUAL_COLLECTION, deletedIndividualCollection);
+        collections.put(DELETED_EXECUTION_COLLECTION, deletedExecutionCollection);
         collections.put(DELETED_JOB_COLLECTION, deletedJobCollection);
         collections.put(DELETED_COHORT_COLLECTION, deletedCohortCollection);
         collections.put(DELETED_PANEL_COLLECTION, deletedPanelCollection);
@@ -365,6 +377,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         fileDBAdaptor = new FileMongoDBAdaptor(fileCollection, deletedFileCollection, catalogConfiguration, this);
         individualDBAdaptor = new IndividualMongoDBAdaptor(individualCollection, deletedIndividualCollection, catalogConfiguration, this);
+        executionDBAdaptor = new ExecutionMongoDBAdaptor(executionCollection, deletedExecutionCollection, catalogConfiguration, this);
         jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
         projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
         sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, deletedSampleCollection, catalogConfiguration, this);
