@@ -62,6 +62,7 @@ public abstract class AbstractManager {
     protected final SampleDBAdaptor sampleDBAdaptor;
     protected final CohortDBAdaptor cohortDBAdaptor;
     protected final FamilyDBAdaptor familyDBAdaptor;
+    protected final ExecutionDBAdaptor executionDBAdaptor;
     protected final JobDBAdaptor jobDBAdaptor;
     protected final PanelDBAdaptor panelDBAdaptor;
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
@@ -86,6 +87,7 @@ public abstract class AbstractManager {
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
         this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
+        this.executionDBAdaptor = catalogDBAdaptorFactory.getExecutionDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();

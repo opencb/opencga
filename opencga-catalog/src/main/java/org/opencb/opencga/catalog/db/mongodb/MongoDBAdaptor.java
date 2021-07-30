@@ -45,7 +45,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocum
  */
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
-    static final String PRIVATE_UID = "uid";
+    public static final String PRIVATE_UID = "uid";
     static final String PRIVATE_UUID = "uuid";
     static final String PRIVATE_ID = "id";
     static final String PRIVATE_FQN = "fqn";

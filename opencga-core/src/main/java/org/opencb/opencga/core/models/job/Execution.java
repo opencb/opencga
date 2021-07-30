@@ -36,7 +36,7 @@ public class Execution extends PrivateStudyUid {
     private boolean isPipeline;
     private boolean visited;
 
-    private List<Job> executions;
+    private List<Job> jobs;
 
     private int release;
     private JobStudyParam study;
@@ -62,7 +62,7 @@ public class Execution extends PrivateStudyUid {
     public Execution(long studyUid, String id, String uuid, String description, String userId, String creationDate, String modificationDate,
                      Map<String, Object> params, Enums.Priority priority, ExecutionInternal internal, File outDir, List<String> tags,
                      List<Execution> dependsOn, File stdout, File stderr, Pipeline pipeline, boolean isPipeline, boolean visited,
-                     List<Job> executions, int release, JobStudyParam study, Map<String, Object> attributes) {
+                     List<Job> jobs, int release, JobStudyParam study, Map<String, Object> attributes) {
         super(studyUid);
         this.id = id;
         this.uuid = uuid;
@@ -81,7 +81,7 @@ public class Execution extends PrivateStudyUid {
         this.pipeline = pipeline;
         this.isPipeline = isPipeline;
         this.visited = visited;
-        this.executions = executions;
+        this.jobs = jobs;
         this.release = release;
         this.study = study;
         this.attributes = attributes;
@@ -107,7 +107,7 @@ public class Execution extends PrivateStudyUid {
         sb.append(", pipeline=").append(pipeline);
         sb.append(", isPipeline=").append(isPipeline);
         sb.append(", visited=").append(visited);
-        sb.append(", executions=").append(executions);
+        sb.append(", jobs=").append(jobs);
         sb.append(", release=").append(release);
         sb.append(", study=").append(study);
         sb.append(", attributes=").append(attributes);
@@ -271,12 +271,12 @@ public class Execution extends PrivateStudyUid {
         return this;
     }
 
-    public List<Job> getExecutions() {
-        return executions;
+    public List<Job> getJobs() {
+        return jobs;
     }
 
-    public Execution setExecutions(List<Job> executions) {
-        this.executions = executions;
+    public Execution setJobs(List<Job> jobs) {
+        this.jobs = jobs;
         return this;
     }
 

@@ -34,9 +34,9 @@ import java.util.stream.Collectors;
 public class ExecutionManager extends ResourceManager<Execution> {
 
     protected static Logger logger = LoggerFactory.getLogger(ExecutionManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-    private IOManagerFactory ioManagerFactory;
+    private final UserManager userManager;
+    private final StudyManager studyManager;
+    private final IOManagerFactory ioManagerFactory;
 
     // TODO: Point to execution variables
     public static final QueryOptions INCLUDE_EXECUTION_IDS = new QueryOptions(QueryOptions.INCLUDE,
@@ -153,13 +153,14 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
             autoCompleteNewExecution(study, execution, toolId, token);
 
-//            jobDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
-//            OpenCGAResult<Job> jobResult = jobDBAdaptor.get(execution.getUid(), new QueryOptions());
+            executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
+            OpenCGAResult<Execution> executionResult = executionDBAdaptor.get(execution.getUid(), new QueryOptions());
+            executionResult.setNumInserted(1);
 
             auditManager.auditCreate(userId, Enums.Resource.EXECUTION, execution.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return null;
+            return executionResult;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.EXECUTION, execution.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -171,7 +172,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
             execution.getInternal().getStatus().setDescription(e.toString());
-//            jobDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
+            executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
 
             throw e;
         }

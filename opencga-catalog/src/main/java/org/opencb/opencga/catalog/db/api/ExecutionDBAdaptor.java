@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -59,7 +60,7 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
-        UID("uid", LONG, ""),
+        UID(MongoDBAdaptor.PRIVATE_UID, LONG, ""),
         UUID("uuid", TEXT, ""),
         USER_ID("userId", TEXT, ""),
         PARAMS("params", MAP, ""),
@@ -74,6 +75,7 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
 
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS("internal.status", OBJECT, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
         INTERNAL_EVENTS("internal.events", OBJECT, ""),
         OUT_DIR("outDir", OBJECT, ""),
@@ -82,12 +84,15 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
         OUTPUT("output", OBJECT, ""),
         DEPENDS_ON("dependsOn", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
+        JOBS("jobs", OBJECT, ""),
 
         STDOUT("stdout", OBJECT, ""),
         STDERR("stderr", OBJECT, ""),
 
         RELEASE("release", INTEGER, ""),
-        ATTRIBUTES("attributes", TEXT, ""); // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+
+        STUDY_UID(MongoDBAdaptor.PRIVATE_STUDY_UID, LONG, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
         static {
