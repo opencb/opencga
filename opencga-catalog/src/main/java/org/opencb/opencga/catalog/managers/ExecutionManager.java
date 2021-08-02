@@ -6,11 +6,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
@@ -29,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ExecutionManager extends ResourceManager<Execution> {
@@ -60,7 +64,65 @@ public class ExecutionManager extends ResourceManager<Execution> {
     @Override
     InternalGetDataResult<Execution> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                                  String user, boolean ignoreException) throws CatalogException {
-        return null;
+        if (ListUtils.isEmpty(entryList)) {
+            throw new CatalogException("Missing execution entries.");
+        }
+        List<String> uniqueList = ListUtils.unique(entryList);
+
+        QueryOptions queryOptions = new QueryOptions(ParamUtils.defaultObject(options, QueryOptions::new));
+        Query queryCopy = query == null ? new Query() : new Query(query);
+
+        Function<Execution, String> executionStringFunction = Execution::getId;
+        ExecutionDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : uniqueList) {
+            ExecutionDBAdaptor.QueryParams param = ExecutionDBAdaptor.QueryParams.ID;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = ExecutionDBAdaptor.QueryParams.UUID;
+                executionStringFunction = Execution::getUuid;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        queryCopy.put(idQueryParam.key(), uniqueList);
+
+        // Ensure the field by which we are querying for will be kept in the results
+        queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
+
+        if (studyUid <= 0) {
+            if (!idQueryParam.equals(ExecutionDBAdaptor.QueryParams.UUID)) {
+                // studyUid is mandatory except for uuids
+                throw new CatalogException("Missing mandatory study");
+            }
+
+            // If studyUid has not been provided, we will look for
+            OpenCGAResult<Execution> executionDataResult = executionDBAdaptor.get(queryCopy, options);
+            for (Execution execution : executionDataResult.getResults()) {
+                // TODO: check Execution permissions?
+                // Check view permissions
+                authorizationManager.checkJobPermission(execution.getStudyUid(), execution.getUid(), user,
+                        JobAclEntry.JobPermissions.VIEW);
+            }
+            return keepOriginalOrder(uniqueList, executionStringFunction, executionDataResult, ignoreException, false);
+        }
+
+        queryCopy.put(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        OpenCGAResult<Execution> executionDataResult = executionDBAdaptor.get(studyUid, queryCopy, options, user);
+        if (ignoreException || executionDataResult.getNumResults() == uniqueList.size()) {
+            return keepOriginalOrder(uniqueList, executionStringFunction, executionDataResult, ignoreException, false);
+        }
+        // Query without adding the user check
+        OpenCGAResult<Execution> resultsNoCheck = executionDBAdaptor.get(queryCopy, queryOptions);
+        if (resultsNoCheck.getNumResults() == executionDataResult.getNumResults()) {
+            throw CatalogException.notFound("executions", getMissingFields(uniqueList, executionDataResult.getResults(),
+                    executionStringFunction));
+        } else {
+            throw new CatalogAuthorizationException("Permission denied. " + user
+                    + " is not allowed to see some or none of the executions.");
+        }
     }
 
     @Override
@@ -252,12 +314,45 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
     @Override
     public DBIterator<Execution> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        fixQueryObject(query);
+        query.put(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return executionDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
     public OpenCGAResult<Execution> search(String studyId, Query query, QueryOptions options, String token) throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("options", options)
+                .append("token", token);
+        try {
+            fixQueryObject(query);
+            query.put(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            OpenCGAResult<Execution> queryResult = executionDBAdaptor.get(study.getUid(), query, options, userId);
+            auditManager.auditSearch(userId, Enums.Resource.EXECUTION, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return queryResult;
+        } catch (CatalogException e) {
+            auditManager.auditSearch(userId, Enums.Resource.EXECUTION, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     @Override
