@@ -49,7 +49,7 @@
         <io.dropwizard.metrics-core.version>3.2.1</io.dropwizard.metrics-core.version>
         <commons-math3.version>3.6.1</commons-math3.version>
 
-        <commons-compress.version>1.18</commons-compress.version>
+        <commons-compress.version>1.21</commons-compress.version>
         <commons-io.version>2.5</commons-io.version>
         <commons-net.version>3.6</commons-net.version>
         <curator.version>2.12.0</curator.version>

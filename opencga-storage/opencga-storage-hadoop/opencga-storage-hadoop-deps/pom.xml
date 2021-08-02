@@ -83,7 +83,7 @@
 
         <!--Read from main hadoop pom.xml . Versions not as a property in that pom-->
         <commons-httpclient.version>3.1</commons-httpclient.version>
-        <commons-compress.version>1.4.1</commons-compress.version>
+        <commons-compress.version>1.21</commons-compress.version>
         <commons-io.version>2.5</commons-io.version>
         <commons-net.version>3.1</commons-net.version>
         <curator.version>2.7.1</curator.version>
