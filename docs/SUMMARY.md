@@ -50,10 +50,12 @@
 ## User Manual <a id="manual"></a>
 
 * [Login](manual/login.md)
-* [Data Management](manual/data-management/README.md)
-  * [Projects and Studies](manual/data-management/projects-and-studies.md)
+* [Managing Data](manual/data-management/README.md)
+  * [Working with Projects and Studies](manual/data-management/projects-and-studies.md)
+  * [Loading of VCF files](manual/data-management/ingestion-of-vcf-files.md)
   * [Working with Files](manual/data-management/working-with-files.md)
   * [Sharing and Permissions](manual/data-management/sharing-and-permissions.md)
+  * [Data Versioning](manual/data-management/data-versioning.md)
   * [Adding Custom Metadata](manual/data-management/adding-custom-metadata.md)
 * [Alignment Engine](manual/alignment-engine/README.md)
   * [BAM Index](manual/alignment-engine/bam-index.md)
@@ -61,7 +63,6 @@
   * [Working with Coverage](manual/alignment-engine/working-with-coverage.md)
   * [Alignment Analysis](manual/alignment-engine/alignment-analysis.md)
 * [Variant Storage Engine](manual/variant-storage-engine/README.md)
-  * [VCF Index Pipeline](manual/variant-storage-engine/vcf-index-pipeline.md)
   * [Variant Query](manual/variant-storage-engine/variant-query.md)
   * [Variant Aggregation Stats](manual/variant-storage-engine/variant-aggregation-stats.md)
   * [Variant Analysis](manual/variant-storage-engine/variant-analysis.md)

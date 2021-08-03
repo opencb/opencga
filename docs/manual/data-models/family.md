@@ -1,237 +1,182 @@
 # Family
+
 ## Overview
+
 Created by pfurio on 02/05/17.
-### Summary 
-| Field | create | update | unique | required|
-| :--- | :---: | :---: |:---: |:---: |
-| id | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |
-| name | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| members | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| phenotypes | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| disorders | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| qualityControl | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| expectedSize | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| description | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| status | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| roles | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| attributes | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| uuid | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| creationDate | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| modificationDate | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| release | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| version | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
-| internal | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
+
+### Summary
+
+| Field | create | update | unique | required |
+| :--- | :---: | :---: | :---: | :---: |
+| id | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |
+| name | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| members | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| phenotypes | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| disorders | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| qualityControl | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| expectedSize | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| description | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| status | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| roles | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| attributes | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| uuid | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| creationDate | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| modificationDate | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| release | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| version | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| internal | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
 
 ## Data Model
+
 ### Family
+
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
 
 | Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p>Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the Family creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **name**<br> *String* <br> | <p></p> |
-| **members**<br> List<*<a href="family.md#Individual"><em>Individual</em></a>*> <br> | <p></p> |
-| **phenotypes**<br> List<*Phenotype*> <br> | <p></p> |
-| **disorders**<br> List<*Disorder*> <br> | <p></p> |
-| **qualityControl**<br>*<a href="family.md#FamilyQualityControl"><em>FamilyQualityControl</em></a>* <br> | <p></p> |
-| **creationDate**<br> *String* <br> | <p>String representing when the Family was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the Family was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **expectedSize**<br> *int* <br> | <p></p> |
-| **description**<br> *String* <br> | <p>An string to describe the properties of the Family.</p> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **version**<br> *int* <br> | <p>An integer describing the current version.</p>_Tags_: _internal_ |
-| **status**<br>*<a href="family.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Family.</p> |
-| **internal**<br>*<a href="family.md#FamilyInternal"><em>FamilyInternal</em></a>* <br> | <p>An object describing the internal information of the Family. This is managed by OpenCGA.</p>_Tags_: _internal_ |
-| **roles**<br> Map<*MapString*,*String*,*FamiliarRelationship*> <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### FamilyQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
+| :--- | :--- |
+| **id**  _String_   | Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **uuid**  _String_   | Global unique ID at the whole OpenCGA installation. This is automatically created during the Family creation and cannot be changed._Tags_: _internal, unique, immutable_ |
+| **name**  _String_   |  |
+| **members**  List&lt;[_Individual_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Individual)&gt;   |  |
+| **phenotypes**  List&lt;_Phenotype_&gt;   |  |
+| **disorders**  List&lt;_Disorder_&gt;   |  |
+| **qualityControl** [_FamilyQualityControl_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#FamilyQualityControl)   |  |
+| **creationDate**  _String_   | String representing when the Family was created, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **modificationDate**  _String_   | String representing when was the last time the Family was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **expectedSize**  _int_   |  |
+| **description**  _String_   | An string to describe the properties of the Family. |
+| **release**  _int_   | An integer describing the current data release._Tags_: _internal_ |
+| **version**  _int_   | An integer describing the current version._Tags_: _internal_ |
+| **status** [_CustomStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#CustomStatus)   | An object describing the status of the Family. |
+| **internal** [_FamilyInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#FamilyInternal)   | An object describing the internal information of the Family. This is managed by OpenCGA._Tags_: _internal_ |
+| **roles**  Map&lt;_MapString_,_String_,_FamiliarRelationship_&gt;   |  |
+| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
-| Field | Description |
-| :---  | :--- |
-| **relatedness**<br> List<*RelatednessReport*> <br> | <p></p> |
-| **fileIds**<br> List<*String*> <br> | <p></p> |
-| **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
 ### Individual
+
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/Individual.java).
 
 | Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p>Individual ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter<br> when creating a new Individual, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **name**<br> *String* <br> | <p></p> |
-| **father**<br>*<a href="family.md#Individual"><em>Individual</em></a>* <br> | <p></p> |
-| **mother**<br>*<a href="family.md#Individual"><em>Individual</em></a>* <br> | <p></p> |
-| **location**<br>*<a href="family.md#Location"><em>Location</em></a>* <br> | <p></p> |
-| **qualityControl**<br>*<a href="family.md#IndividualQualityControl"><em>IndividualQualityControl</em></a>* <br> | <p></p> |
-| **sex**<br> *Sex* <br> | <p></p> |
-| **karyotypicSex**<br> *KaryotypicSex* <br> | <p></p> |
-| **ethnicity**<br> *String* <br> | <p></p> |
-| **population**<br>*<a href="family.md#IndividualPopulation"><em>IndividualPopulation</em></a>* <br> | <p></p> |
-| **dateOfBirth**<br> *String* <br> | <p></p> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **version**<br> *int* <br> | <p>An integer describing the current version.</p>_Tags_: _internal_ |
-| **creationDate**<br> *String* <br> | <p>String representing when the sample was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the sample was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **lifeStatus**<br> *LifeStatus* <br> | <p></p> |
-| **phenotypes**<br> List<*Phenotype*> <br> | <p>A List with related phenotypes.</p> |
-| **disorders**<br> List<*Disorder*> <br> | <p>A List with related disorders.</p> |
-| **samples**<br> List<*<a href="family.md#Sample"><em>Sample</em></a>*> <br> | <p>A List with related samples.</p> |
-| **parentalConsanguinity**<br> *boolean* <br> | <p></p> |
-| **status**<br>*<a href="family.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p></p> |
-| **internal**<br>*<a href="family.md#IndividualInternal"><em>IndividualInternal</em></a>* <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### IndividualPopulation
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualPopulation.java).
+| :--- | :--- |
+| **id**  _String_   | Individual ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter  when creating a new Individual, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **uuid**  _String_   | Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed._Tags_: _internal, unique, immutable_ |
+| **name**  _String_   |  |
+| **father** [_Individual_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Individual)   |  |
+| **mother** [_Individual_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Individual)   |  |
+| **location** [_Location_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Location)   |  |
+| **qualityControl** [_IndividualQualityControl_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#IndividualQualityControl)   |  |
+| **sex**  _Sex_   |  |
+| **karyotypicSex**  _KaryotypicSex_   |  |
+| **ethnicity**  _String_   |  |
+| **population** [_IndividualPopulation_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#IndividualPopulation)   |  |
+| **dateOfBirth**  _String_   |  |
+| **release**  _int_   | An integer describing the current data release._Tags_: _internal_ |
+| **version**  _int_   | An integer describing the current version._Tags_: _internal_ |
+| **creationDate**  _String_   | String representing when the sample was created, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **modificationDate**  _String_   | String representing when was the last time the sample was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **lifeStatus**  _LifeStatus_   |  |
+| **phenotypes**  List&lt;_Phenotype_&gt;   | A List with related phenotypes. |
+| **disorders**  List&lt;_Disorder_&gt;   | A List with related disorders. |
+| **samples**  List&lt;[_Sample_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Sample)&gt;   | A List with related samples. |
+| **parentalConsanguinity**  _boolean_   |  |
+| **status** [_CustomStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#CustomStatus)   |  |
+| **internal** [_IndividualInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#IndividualInternal)   |  |
+| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
-| Field | Description |
-| :---  | :--- |
-| **name**<br> *String* <br> | <p></p> |
-| **subpopulation**<br> *String* <br> | <p></p> |
-| **description**<br> *String* <br> | <p></p> |
-### Sample
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p>Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter<br> when creating a new sample, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **processing**<br>*<a href="family.md#SampleProcessing"><em>SampleProcessing</em></a>* <br> | <p>Describes how the sample was processed in the lab.</p> |
-| **collection**<br>*<a href="family.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.1 | <p>Describes how the sample was collected.</p>_Note_: _The sample collection is a list of samples_ |
-| **qualityControl**<br>*<a href="family.md#SampleQualityControl"><em>SampleQualityControl</em></a>* <br><br>_since_: 2.1 | <p>Contains different metrics to evaluate the quality of the sample.</p>_Note_: _The sample collection is a list of samples_</br>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **version**<br> *int* <br> | <p>An integer describing the current version.</p>_Tags_: _internal_ |
-| **creationDate**<br> *String* <br> | <p>String representing when the sample was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the sample was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **description**<br> *String* <br> | <p>An string to describe the properties of the sample.</p> |
-| **somatic**<br> *boolean* <br> | <p>Indicates if the sample is somatic or germline (default)</p> |
-| **phenotypes**<br> List<*Phenotype*> <br> | <p>A List with related phenotypes.</p> |
-| **individualId**<br> *String* <br> | <p>A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not<br> mandatory..</p>_More info at_: <a href="https://www.zettagenomics.com">ZetaGenomics</a> |
-| **fileIds**<br> List<*String*> <br><br>_Deprecated_ | <p>List of File ID containing this sample, eg BAM, VCF, QC images, ...</p> |
-| **status**<br>*<a href="family.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
-| **internal**<br>*<a href="family.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-### SampleCollection
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
-
-| Field | Description |
-| :---  | :--- |
-| **tissue**<br> *String* <br> | <p></p> |
-| **organ**<br> *String* <br> | <p></p> |
-| **quantity**<br> *String* <br> | <p></p> |
-| **method**<br> *String* <br> | <p></p> |
-| **date**<br> *String* <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
-### SampleProcessing
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
-
-| Field | Description |
-| :---  | :--- |
-| **product**<br> *String* <br> | <p></p> |
-| **preparationMethod**<br> *String* <br> | <p></p> |
-| **extractionMethod**<br> *String* <br> | <p></p> |
-| **labSampleId**<br> *String* <br> | <p></p> |
-| **quantity**<br> *String* <br> | <p></p> |
-| **date**<br> *String* <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
-### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br> *String* <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>_Tags_: _required, immutable_ |
-| **description**<br> *String* <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p>_Tags_: _required_ |
-| **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
-### SampleQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **files**<br> List<*String*> <br> | <p></p> |
-| **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
-| **variant**<br>*<a href="family.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p></p> |
-### SampleVariantQualityControlMetrics
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
-
-| Field | Description |
-| :---  | :--- |
-| **variantStats**<br> List<*SampleQcVariantStats*> <br> | <p></p> |
-| **signatures**<br> List<*Signature*> <br> | <p></p> |
-| **genomePlots**<br> List<*GenomePlot*> <br> | <p></p> |
 ### SampleInternal
+
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
 | Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="family.md#Status"><em>Status</em></a>* <br> | <p></p> |
-| **rga**<br>*<a href="family.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
-### RgaIndex
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
+| :--- | :--- |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Status)   |  |
+| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#RgaIndex)   |  |
 
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="family.md#enum-rgaindexstatus"><em>RgaIndex.Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
-| **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
-### Enum RgaIndex.Status
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex/Status.java).
-
-| Field | Description |
-| :---  | :--- |
-| **NOT_INDEXED** <br> | <p></p> |
-| **INDEXED** <br> | <p></p> |
-| **INVALID_PERMISSIONS** <br> | <p></p> |
-| **INVALID_METADATA** <br> | <p></p> |
-| **INVALID** <br> | <p></p> |
-### Status
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br> *String* <br> | <p></p> |
-| **date**<br> *String* <br> | <p></p> |
-| **description**<br> *String* <br> | <p></p> |
-| **message**<br> *String* <br> | <p></p> |
-| **READY**<br> *String* <br> | <p>READY name means that the object is being used.</p> |
-| **DELETED**<br> *String* <br> | <p>DELETED name means that the object is marked as removed, so it can be completely removed from the database with a clean action.</p> |
-| **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
-### Location
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/Location.java).
-
-| Field | Description |
-| :---  | :--- |
-| **address**<br> *String* <br> | <p></p> |
-| **postalCode**<br> *String* <br> | <p></p> |
-| **city**<br> *String* <br> | <p></p> |
-| **state**<br> *String* <br> | <p></p> |
-| **country**<br> *String* <br> | <p></p> |
-### IndividualQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **sampleId**<br> *String* <br> | <p>Sample ID, only germinal sample and indexed</p> |
-| **inferredSexReports**<br> List<*InferredSexReport*> <br> | <p>List of inferred sex reports, it depends on the method (currently by coverage ratio)</p> |
-| **mendelianErrorReport**<br> *MendelianErrorReport* <br> | <p>Mendelian errors</p> |
-| **fileIds**<br> List<*String*> <br> | <p>File IDs related to the quality control</p> |
-| **comments**<br> List<*ClinicalComment*> <br> | <p>Comments related to the quality control</p> |
 ### IndividualInternal
+
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
 
 | Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="family.md#Status"><em>Status</em></a>* <br> | <p></p> |
+| :--- | :--- |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Status)   |  |
+
 ### FamilyInternal
+
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
 
 | Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="family.md#FamilyStatus"><em>FamilyStatus</em></a>* <br> | <p></p> |
-### FamilyStatus
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyStatus.java).
+| :--- | :--- |
+| **status** [_FamilyStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#FamilyStatus)   |  |
+
+### FileInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
 
 | Field | Description |
-| :---  | :--- |
-| **INCOMPLETE**<br> *String* <br> | <p></p> |
-| **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+| :--- | :--- |
+| **status** [_FileStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#FileStatus)   |  |
+| **index** [_FileIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#FileIndex)   |  |
+| **sampleMap**  Map&lt;_String_&gt;   |  |
+| **missingSamples** [_MissingSamples_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#MissingSamples)   |  |
+
+### JobInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
+
+| Field | Description |
+| :--- | :--- |
+| **status** [_ExecutionStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#ExecutionStatus)   |  |
+| **webhook** [_JobInternalWebhook_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#JobInternalWebhook)   |  |
+| **events**  List&lt;_Event_&gt;   |  |
+
+### InterpretationInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationInternal.java).
+
+| Field | Description |
+| :--- | :--- |
+| **status** [_InterpretationStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#InterpretationStatus)   |  |
+
+### ProjectInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
+
+| Field | Description |
+| :--- | :--- |
+| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Datastores)   |  |
+| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#CellBaseConfiguration)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Status)   |  |
+
+### CohortInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
+
+| Field | Description |
+| :--- | :--- |
+| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#CohortStatus)   |  |
+
+### ClinicalAnalysisInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisInternal.java).
+
+| Field | Description |
+| :--- | :--- |
+| **status** [_ClinicalAnalysisStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#ClinicalAnalysisStatus)   |  |
+
+### UserInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
+
+| Field | Description |
+| :--- | :--- |
+| **status** [_UserStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#UserStatus)   |  |
+
+### StudyInternal
+
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
+
+| Field | Description |
+| :--- | :--- |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#Status)   |  |
+| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Family.md#StudyConfiguration)   |  |
+
