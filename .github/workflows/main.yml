@@ -10,6 +10,7 @@ on:
       - '**.java'
       - '**pom.xml'
       - 'Dockerfile'
+      - '**/workflows/main.yml'
 
 jobs:
   build:
