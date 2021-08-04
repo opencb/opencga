@@ -23,6 +23,8 @@ class RestClientGenerator(ABC):
         self.id2 = None
         self.version = None
         self.executors_package = None
+        self.options_package = None
+        self.ignore_types = []
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
@@ -37,16 +39,18 @@ class RestClientGenerator(ABC):
         self.read_yaml()
 
     def read_yaml(self):
-        yaml_file = open("cli_config.yaml", 'r')
+        yaml_file = open("cli/cli_config.yaml", 'r')
         yaml_content = yaml.load(yaml_file, Loader=yaml.FullLoader)
 
         options = yaml_content["options"]
-        self.methods_update = options["methods_update"]
+
+        self.ignore_types = options["ignore_types"]
         self.version = options["version"]
         self.server_url = options["server_url"]
         self.options_output_dir = options["options_output_dir"]
         self.executors_output_dir = options["executors_output_dir"]
         self.executors_package = options["executors_package"]
+        self.options_package = options["options_package"]
         for categories in yaml_content["api"].items():
             category, data = categories
             if not data["ignore"]:
