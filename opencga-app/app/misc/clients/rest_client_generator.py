@@ -22,7 +22,7 @@ class RestClientGenerator(ABC):
         self.action = None
         self.id1 = None
         self.id2 = None
-
+        self.json_response = None
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
@@ -30,28 +30,11 @@ class RestClientGenerator(ABC):
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
         }
-        self.categories = {
-            'Users': 'User',
-            'Projects': 'Project',
-            'Studies': 'Study',
-            'Files': 'File',
-            'Jobs': 'Job',
-            'Samples': 'Sample',
-            'Individuals': 'Individual',
-            'Families': 'Family',
-            'Cohorts': 'Cohort',
-            'Disease Panels': 'DiseasePanel',
-            'Analysis - Alignment': 'Alignment',
-            'Analysis - Variant': 'Variant',
-            'Analysis - Clinical': 'Clinical',
-            'Operations - Variant Storage': 'VariantOperation',
-            'Meta': 'Meta',
-            'GA4GH': 'GA4GH',
-            'Admin': 'Admin'
-        }
+        self.categories = {}
         self.exclude_commands = {}
         self.exclude_command_params = {}
         self.read_yaml()
+        self.json_resource = requests.get(self.server_url + '/webservices/rest/v2/meta/api').json()['responses'][0]['results'][0]
 
     def read_yaml(self):
         yaml_file = open("cli_config.yaml", 'r')
@@ -59,6 +42,7 @@ class RestClientGenerator(ABC):
         options = yaml_content["options"]
 
         self.ignore_types = options["ignore_types"]
+        self.parser_package = options["parser_package"]
         self.server_url = options["server_url"]
         self.version = requests.get(
             self.server_url + '/webservices/rest/v2/meta/about'
@@ -101,6 +85,9 @@ class RestClientGenerator(ABC):
             'Manual changes to this file may cause unexpected behavior in your application.',
             'Manual changes to this file will be overwritten if the code is regenerated.'
         ]
+
+    def get_as_variable_name(self, attribute):
+        return attribute[0].lower() + attribute[1:]
 
     @staticmethod
     def get_category_name(category):
@@ -257,8 +244,9 @@ class RestClientGenerator(ABC):
         pass
 
     def create_rest_clients(self):
-        for category in requests.get(self.server_url + '/webservices/rest/v2/meta/api').json()['responses'][0]['results'][0]:
-            cats = list(self.categories.keys())
+
+        cats = list(self.categories.keys())
+        for category in self.json_resource:
             if category["name"] in cats:
                 text = []
                 text.append(self.get_class_definition(category))

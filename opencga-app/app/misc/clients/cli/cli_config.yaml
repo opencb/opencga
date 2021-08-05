@@ -6,6 +6,7 @@ options:
   executors_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/executors/catalog
   executors_package: org.opencb.opencga.app.cli.main.executors.catalog
   options_package: org.opencb.opencga.app.cli.main.options
+  parser_package: org.opencb.opencga.app.cli.main
   ignore_types:
     - string
     - object
@@ -81,5 +82,5 @@ api:
     ignore: True
     key: GA4GH
   Admin:
-    ignore: False
+    ignore: True
     key: Admin
