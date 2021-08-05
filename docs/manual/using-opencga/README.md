@@ -1,6 +1,18 @@
+---
+description: >-
+  You can interact with your data in OpenCGA in several different ways, find the
+  one that suits you most and get started!
+---
+
 # Using OpenCGA
 
 ## Overview <a id="UsingOpenCGA-RESTfulWebServices"></a>
+
+OpenCGA is implemented to provide users with multiple resources to manage and query variant and phenotypic information. 
+
+Each method comes with specific advantages: whilst ones are more versatile and allow users to do almost anything, others are less limited in the use but quicker to configure and use. 
+
+OpenCGA is a very versatile piece of software and thus we've dedicated special care to allow the final user to explore every possibility. Anyone can explore and choose the client methods which adapts better to their own specific use case.
 
 ### REST Web Services
 
