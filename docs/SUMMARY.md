@@ -41,7 +41,7 @@
   * [IVA Web App](manual/using-opencga/iva-web-app.md)
   * [Client Libraries](manual/using-opencga/client-libraries/README.md)
     * [Java](manual/using-opencga/client-libraries/java.md)
-    * [Python](manual/using-opencga/client-libraries/python.md)
+    * [pyopencga - Python Library](manual/using-opencga/client-libraries/python.md)
     * [opencgaR - R  library](manual/using-opencga/client-libraries/r.md)
     * [JavaScript](manual/using-opencga/client-libraries/javascript.md)
   * [Command Line](manual/using-opencga/command-line/README.md)

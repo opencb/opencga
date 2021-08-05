@@ -1,7 +1,5 @@
 # Using OpenCGA
 
-##  <a id="UsingOpenCGA-RESTfulWebServices"></a>
-
 ## Overview <a id="UsingOpenCGA-RESTfulWebServices"></a>
 
 OpenCGA is implemented to provide users with multiple resources to manage and query variant and phenotypic information. 

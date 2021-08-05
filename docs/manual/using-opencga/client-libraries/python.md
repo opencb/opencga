@@ -1,4 +1,10 @@
-# Python
+---
+description: >-
+  If you're a Python user and you're keen of running OpenCGA through Python,
+  you're in the right place!
+---
+
+# pyopencga - Python Library
 
 ## Overview <a id="Python-Overview"></a>
 
