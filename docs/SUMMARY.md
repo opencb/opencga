@@ -57,7 +57,7 @@
   * [Client Libraries](manual/using-opencga/client-libraries/README.md)
     * [Java](manual/using-opencga/client-libraries/java.md)
     * [Python](manual/using-opencga/client-libraries/python.md)
-    * [R](manual/using-opencga/client-libraries/r.md)
+    * [opencgaR - R  library](manual/using-opencga/client-libraries/r.md)
     * [JavaScript](manual/using-opencga/client-libraries/javascript.md)
   * [Command Line](manual/using-opencga/command-line.md)
   * [Public Demo](manual/using-opencga/public-demo.md)
