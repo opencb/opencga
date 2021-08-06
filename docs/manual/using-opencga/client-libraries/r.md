@@ -34,3 +34,5 @@ Once requirements have been fulfilled, installing opencgaR becomes as easy as us
 > install.packages("opencgaR_2.0.0.tar.gz", repos=NULL, type="source")
 ```
 
+
+
