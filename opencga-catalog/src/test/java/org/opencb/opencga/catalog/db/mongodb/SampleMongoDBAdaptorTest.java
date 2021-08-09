@@ -332,6 +332,48 @@ public class SampleMongoDBAdaptorTest {
         assertEquals("sample1", sampleDataResult.first().getId());
     }
 
+    @Test
+    public void caseInsensitiveSearchTest() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+
+        Sample sample1 = new Sample("sample1", null, "A description", 1);
+        Sample sample2 = new Sample("sample2", null, "A description", 1);
+        Sample sample2Ext = new Sample("sample2Ext", null, "A description", 1);
+
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample1, null, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample2, null, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample2Ext, null, null);
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMpl*/i");
+        DataResult<Sample> sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(3, sampleDataResult.getNumResults());
+        assertTrue(Arrays.asList("sample1", "sample2", "sample2Ext")
+                .containsAll(sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMpl*/");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMple2ext/");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMple2ext/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample2Ext", sampleDataResult.first().getId());
+    }
+
 
     // Test if we can search for samples of an individual
     @Test
