@@ -348,7 +348,7 @@ public class SampleMongoDBAdaptorTest {
 
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMpl*/i");
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMpl*/i");
         DataResult<Sample> sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
         assertEquals(3, sampleDataResult.getNumResults());
         assertTrue(Arrays.asList("sample1", "sample2", "sample2Ext")
@@ -356,22 +356,57 @@ public class SampleMongoDBAdaptorTest {
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMpl*/");
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMpl*/");
         sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
         assertEquals(0, sampleDataResult.getNumResults());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMple2ext/");
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMple2ext/");
         sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
         assertEquals(0, sampleDataResult.getNumResults());
 
         query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-                .append(SampleDBAdaptor.QueryParams.ID.key(), "/SAMple2ext/i");
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMple2ext/i");
         sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
         assertEquals(1, sampleDataResult.getNumResults());
         assertEquals("sample2Ext", sampleDataResult.first().getId());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^SAMple/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(3, sampleDataResult.getNumResults());
+        assertTrue(Arrays.asList("sample1", "sample2", "sample2Ext")
+                .containsAll(sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^SAMple/");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^AMple/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/eXt$/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample2Ext", sampleDataResult.first().getId());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^Sam\\w+eXt$/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample2Ext", sampleDataResult.first().getId());
+
     }
 
 
