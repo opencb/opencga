@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -363,8 +362,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
-        cohort.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(cohort.getCreationDate()));
-        cohort.setModificationDate(TimeUtils.getTime());
+        cohort.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getCreationDate(),
+                CohortDBAdaptor.QueryParams.CREATION_DATE.key()));
+        cohort.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getModificationDate(),
+                CohortDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
@@ -991,7 +992,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (StringUtils.isNotEmpty(updateParams.getCreationDate())) {
-            ParamUtils.checkCreationDateFormat(updateParams.getCreationDate());
+            ParamUtils.checkDateFormat(updateParams.getCreationDate(), "creationDate");
         }
 
         ObjectMap parameters = new ObjectMap();

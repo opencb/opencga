@@ -170,7 +170,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(LAST_OF_RELEASE, true);
         sampleObject.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(sample.getCreationDate()) ? TimeUtils.toDate(sample.getCreationDate()) : TimeUtils.getDate());
-        sampleObject.put(PRIVATE_MODIFICATION_DATE, sampleObject.get(PRIVATE_CREATION_DATE));
+        sampleObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(sample.getModificationDate())
+                ? TimeUtils.toDate(sample.getModificationDate()) : TimeUtils.getDate());
         sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 

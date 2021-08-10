@@ -177,7 +177,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(individual.getCreationDate())
                 ? TimeUtils.toDate(individual.getCreationDate())
                 : TimeUtils.getDate());
-        individualDocument.put(PRIVATE_MODIFICATION_DATE, individualDocument.get(PRIVATE_CREATION_DATE));
+        individualDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(individual.getModificationDate())
+                ? TimeUtils.toDate(individual.getModificationDate()) : TimeUtils.getDate());
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());

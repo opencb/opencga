@@ -133,7 +133,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Document projectDocument = projectConverter.convertToStorageType(project);
         projectDocument.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(project.getCreationDate()) ? TimeUtils.toDate(project.getCreationDate()) : TimeUtils.getDate());
-        projectDocument.put(PRIVATE_MODIFICATION_DATE, projectDocument.get(PRIVATE_CREATION_DATE));
+        projectDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(project.getModificationDate())
+                ? TimeUtils.toDate(project.getModificationDate()) : TimeUtils.getDate());
 
         Bson update = Updates.push("projects", projectDocument);
 

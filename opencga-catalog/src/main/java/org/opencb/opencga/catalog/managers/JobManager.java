@@ -498,7 +498,8 @@ public class JobManager extends ResourceManager<Job> {
             if (job.getInternal() != null) {
                 job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             } else {
-                job.setInternal(new JobInternal(TimeUtils.getTime(), new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
+                job.setInternal(new JobInternal(TimeUtils.getTime(), TimeUtils.getTime(),
+                        new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
             job.getInternal().getStatus().setDescription(e.toString());

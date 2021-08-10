@@ -254,8 +254,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
-        interpretation.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(interpretation.getCreationDate()));
-        interpretation.setModificationDate(TimeUtils.getTime());
+        interpretation.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(interpretation.getCreationDate(),
+                InterpretationDBAdaptor.QueryParams.CREATION_DATE.key()));
+        interpretation.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(interpretation.getModificationDate(),
+                InterpretationDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         interpretation.setDescription(ParamUtils.defaultString(interpretation.getDescription(), ""));
         interpretation.setInternal(InterpretationInternal.init());
         interpretation.setMethods(ParamUtils.defaultObject(interpretation.getMethods(), Collections.emptyList()));
@@ -865,7 +867,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getCreationDate())) {
-            ParamUtils.checkCreationDateFormat(updateParams.getCreationDate());
+            ParamUtils.checkDateFormat(updateParams.getCreationDate(), "creationDate");
         }
 
         ObjectMap parameters = new ObjectMap();

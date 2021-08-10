@@ -179,8 +179,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
         sample.setCollection(ParamUtils.defaultObject(sample.getCollection(), SampleCollection::new));
         sample.setQualityControl(ParamUtils.defaultObject(sample.getQualityControl(), SampleQualityControl::new));
-        sample.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(sample.getCreationDate()));
-        sample.setModificationDate(TimeUtils.getTime());
+        sample.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(sample.getCreationDate(),
+                SampleDBAdaptor.QueryParams.CREATION_DATE.key()));
+        sample.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(sample.getModificationDate(),
+                SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
 
@@ -1007,7 +1009,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkCreationDateFormat(parameters.getString(SampleDBAdaptor.QueryParams.CREATION_DATE.key()));
+            ParamUtils.checkDateFormat(parameters.getString(SampleDBAdaptor.QueryParams.CREATION_DATE.key()), "creationDate");
         }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {

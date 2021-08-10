@@ -120,7 +120,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         cohortObject.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(cohort.getCreationDate()) ? TimeUtils.toDate(cohort.getCreationDate()) : TimeUtils.getDate());
-        cohortObject.put(PRIVATE_MODIFICATION_DATE, cohortObject.get(PRIVATE_CREATION_DATE));
+        cohortObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(cohort.getModificationDate())
+                ? TimeUtils.toDate(cohort.getModificationDate()) : TimeUtils.getDate());
         cohortObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting cohort '{}' ({})...", cohort.getId(), cohort.getUid());

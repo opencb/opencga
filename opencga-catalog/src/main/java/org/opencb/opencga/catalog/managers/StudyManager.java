@@ -310,7 +310,10 @@ public class StudyManager extends AbstractManager {
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
-            study.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(study.getCreationDate()));
+            study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
+                    StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
+            study.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(study.getModificationDate(),
+                    StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
@@ -630,7 +633,7 @@ public class StudyManager extends AbstractManager {
             }
 
             if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
-                ParamUtils.checkCreationDateFormat(parameters.getCreationDate());
+                ParamUtils.checkDateFormat(parameters.getCreationDate(), "creationDate");
             }
 
             ObjectMap update;
@@ -1106,7 +1109,7 @@ public class StudyManager extends AbstractManager {
             authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
             ParamUtils.checkObj(summaryIndex, "RecessiveGeneSummaryIndex");
-            summaryIndex.setModificationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(summaryIndex.getModificationDate()));
+            summaryIndex.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(summaryIndex.getModificationDate(), "creationDate"));
 
             ObjectMap update;
             try {

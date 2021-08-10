@@ -210,7 +210,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         studyObject.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(study.getCreationDate()) ? TimeUtils.toDate(study.getCreationDate()) : TimeUtils.getDate());
-        studyObject.put(PRIVATE_MODIFICATION_DATE, studyObject.get(PRIVATE_CREATION_DATE));
+        studyObject.put(PRIVATE_MODIFICATION_DATE,
+                StringUtils.isNotEmpty(study.getModificationDate()) ? TimeUtils.toDate(study.getModificationDate()) : TimeUtils.getDate());
 
         studyCollection.insert(clientSession, studyObject, null);
 

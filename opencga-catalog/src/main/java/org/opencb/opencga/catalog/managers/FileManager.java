@@ -2049,7 +2049,7 @@ public class FileManager extends AnnotationSetManager<File> {
         ParamUtils.checkUpdateParametersMap(parameters);
 
         if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkCreationDateFormat(parameters.getString(FileDBAdaptor.QueryParams.CREATION_DATE.key()));
+            ParamUtils.checkDateFormat(parameters.getString(FileDBAdaptor.QueryParams.CREATION_DATE.key()), "creationDate");
         }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -3322,7 +3322,9 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
 
-        String creationDate = ParamUtils.checkCreationDateOrGetCurrentCreationDate(params.getCreationDate());
+        String creationDate = ParamUtils.checkDateOrGetCurrentDate(params.getCreationDate(), FileDBAdaptor.QueryParams.CREATION_DATE.key());
+        String modificationDate = ParamUtils.checkDateOrGetCurrentDate(params.getModificationDate(),
+                FileDBAdaptor.QueryParams.MODIFICATION_DATE.key());
 
         // This list will contain the list of transformed files detected during the link
         List<File> transformedFiles = new ArrayList<>();
@@ -3367,8 +3369,8 @@ public class FileManager extends AnnotationSetManager<File> {
                         }
 
                         File folder = new File(Paths.get(dir).getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                File.Bioformat.NONE, dir, destinyPath, null, creationDate,
-                                TimeUtils.getTime(), params.getDescription(), true, 0, new Software(), new FileExperiment(),
+                                File.Bioformat.NONE, dir, destinyPath, null, creationDate, modificationDate,
+                                params.getDescription(), true, 0, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(),
@@ -3426,8 +3428,8 @@ public class FileManager extends AnnotationSetManager<File> {
                         }
 
                         File subfile = new File(Paths.get(fileUri).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                                File.Bioformat.NONE, fileUri, destinyPath, null, creationDate,
-                                TimeUtils.getTime(), params.getDescription(), true, size, new Software(), new FileExperiment(),
+                                File.Bioformat.NONE, fileUri, destinyPath, null, creationDate, modificationDate,
+                                params.getDescription(), true, size, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(), internal,

@@ -208,7 +208,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         fileDocument.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(file.getCreationDate()) ? TimeUtils.toDate(file.getCreationDate()) : TimeUtils.getDate());
-        fileDocument.put(PRIVATE_MODIFICATION_DATE, fileDocument.get(PRIVATE_CREATION_DATE));
+        fileDocument.put(PRIVATE_MODIFICATION_DATE,
+                StringUtils.isNotEmpty(file.getModificationDate()) ? TimeUtils.toDate(file.getModificationDate()) : TimeUtils.getDate());
 
         fileCollection.insert(clientSession, fileDocument, null);
 

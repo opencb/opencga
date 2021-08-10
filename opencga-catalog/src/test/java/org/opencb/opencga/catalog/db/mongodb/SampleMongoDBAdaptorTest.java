@@ -87,9 +87,9 @@ public class SampleMongoDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, null, 1, 1, "", false,
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, null, null, 1, 1, "", false,
                 Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
-        catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, null, 1, 1, "", false,
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, null, null, 1, 1, "", false,
                 Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
     }
 

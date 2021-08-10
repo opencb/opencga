@@ -209,7 +209,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             family.setMembers(ParamUtils.defaultObject(family.getMembers(), Collections.emptyList()));
             family.setPhenotypes(ParamUtils.defaultObject(family.getPhenotypes(), Collections.emptyList()));
             family.setDisorders(ParamUtils.defaultObject(family.getDisorders(), Collections.emptyList()));
-            family.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(family.getCreationDate()));
+            family.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(family.getCreationDate(),
+                    FamilyDBAdaptor.QueryParams.CREATION_DATE.key()));
+            family.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(family.getModificationDate(),
+                    FamilyDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             family.setDescription(ParamUtils.defaultString(family.getDescription(), ""));
             family.setInternal(FamilyInternal.init());
             family.setAnnotationSets(ParamUtils.defaultObject(family.getAnnotationSets(), Collections.emptyList()));
@@ -882,7 +885,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkCreationDateFormat(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()));
+            ParamUtils.checkDateFormat(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()), "creationDate");
         }
 
         // If there is nothing to update, we fail

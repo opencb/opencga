@@ -804,7 +804,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             clinicalDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
-        clinicalDocument.put(PRIVATE_MODIFICATION_DATE, clinicalDocument.get(PRIVATE_CREATION_DATE));
+        clinicalDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(clinicalAnalysis.getModificationDate())
+                ? TimeUtils.toDate(clinicalAnalysis.getModificationDate()) : TimeUtils.getDate());
         clinicalDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting ClinicalAnalysis '{}' ({})...", clinicalAnalysis.getId(), clinicalAnalysis.getUid());

@@ -225,7 +225,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         } else {
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
-        interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
+        interpretationObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(interpretation.getModificationDate())
+                ? TimeUtils.toDate(interpretation.getModificationDate()) : TimeUtils.getDate());
 
         // Versioning private parameters
         interpretationObject.put(RELEASE_FROM_VERSION, Arrays.asList(interpretation.getRelease()));

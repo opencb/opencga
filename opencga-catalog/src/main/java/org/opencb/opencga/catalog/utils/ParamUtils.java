@@ -155,25 +155,24 @@ public class ParamUtils {
         }
     }
 
-    public static void checkCreationDateFormat(String creationDate) throws CatalogParameterException {
+    public static void checkDateFormat(String creationDate, String param) throws CatalogParameterException {
         if (StringUtils.isEmpty(creationDate)) {
-            throw new CatalogParameterException("'creationDate' is null or empty");
+            throw new CatalogParameterException("'" + param + "' is null or empty");
         } else {
             // Validate creationDate can be parsed and has the proper format
             Date date = TimeUtils.toDate(creationDate);
             if (date == null || creationDate.length() != 14) {
-                throw new CatalogParameterException("Unexpected 'creationDate' format. Expected format is 'yyyyMMddHHmmss'");
+                throw new CatalogParameterException("Unexpected '" + param + "' format. Expected format is 'yyyyMMddHHmmss'");
             }
         }
     }
 
-
-    public static String checkCreationDateOrGetCurrentCreationDate(String creationDate) throws CatalogParameterException {
-        if (StringUtils.isEmpty(creationDate)) {
+    public static String checkDateOrGetCurrentDate(String date, String param) throws CatalogParameterException {
+        if (StringUtils.isEmpty(date)) {
             return TimeUtils.getTime();
         } else {
-            checkCreationDateFormat(creationDate);
-            return creationDate;
+            checkDateFormat(date, param);
+            return date;
         }
     }
 

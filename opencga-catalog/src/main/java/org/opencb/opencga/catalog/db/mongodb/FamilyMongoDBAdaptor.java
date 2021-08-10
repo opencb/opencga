@@ -183,7 +183,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(LAST_OF_RELEASE, true);
         familyDocument.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(family.getCreationDate()) ? TimeUtils.toDate(family.getCreationDate()) : TimeUtils.getDate());
-        familyDocument.put(PRIVATE_MODIFICATION_DATE, familyDocument.get(PRIVATE_CREATION_DATE));
+        familyDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(family.getModificationDate())
+                ? TimeUtils.toDate(family.getModificationDate()) : TimeUtils.getDate());
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting family '{}' ({})...", family.getId(), family.getUid());

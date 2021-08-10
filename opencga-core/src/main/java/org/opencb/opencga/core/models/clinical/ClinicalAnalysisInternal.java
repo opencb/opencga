@@ -26,13 +26,13 @@ public class ClinicalAnalysisInternal extends Internal {
     public ClinicalAnalysisInternal() {
     }
 
-    public ClinicalAnalysisInternal(String registrationDate, ClinicalAnalysisStatus status) {
-        super(null, registrationDate);
+    public ClinicalAnalysisInternal(String registrationDate, String modificationDate, ClinicalAnalysisStatus status) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
     }
 
     public static ClinicalAnalysisInternal init() {
-        return new ClinicalAnalysisInternal(TimeUtils.getTime(), new ClinicalAnalysisStatus());
+        return new ClinicalAnalysisInternal(TimeUtils.getTime(), TimeUtils.getTime(), new ClinicalAnalysisStatus());
     }
 
     @Override
@@ -40,6 +40,7 @@ public class ClinicalAnalysisInternal extends Internal {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -57,8 +58,17 @@ public class ClinicalAnalysisInternal extends Internal {
         return registrationDate;
     }
 
-    public Internal setRegistrationDate(String registrationDate) {
+    public ClinicalAnalysisInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public ClinicalAnalysisInternal setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 }
