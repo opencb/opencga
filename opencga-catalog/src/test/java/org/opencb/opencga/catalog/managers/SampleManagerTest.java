@@ -183,7 +183,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testCustomModificationDate() throws CatalogException, InterruptedException {
+    public void testCustomModificationDate() throws CatalogException {
         Date date = TimeUtils.toDate(TimeUtils.getTime());
 
         Sample s1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("s1").setModificationDate("20140101120000"),
