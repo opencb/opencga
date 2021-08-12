@@ -867,7 +867,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getCreationDate())) {
-            ParamUtils.checkDateFormat(updateParams.getCreationDate(), "creationDate");
+            ParamUtils.checkDateFormat(updateParams.getCreationDate(), InterpretationDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getModificationDate())) {
+            ParamUtils.checkDateFormat(updateParams.getModificationDate(), InterpretationDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         ObjectMap parameters = new ObjectMap();

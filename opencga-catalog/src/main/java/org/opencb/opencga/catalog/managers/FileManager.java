@@ -592,9 +592,11 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setDescription(ParamUtils.defaultString(file.getDescription(), ""));
         file.setRelatedFiles(ParamUtils.defaultObject(file.getRelatedFiles(), ArrayList::new));
         file.setSampleIds(ParamUtils.defaultObject(file.getSampleIds(), ArrayList::new));
-        file.setCreationDate(TimeUtils.getTime());
+        file.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(file.getCreationDate(),
+                FileDBAdaptor.QueryParams.CREATION_DATE.key()));
+        file.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(file.getModificationDate(),
+                FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         file.setJobId(ParamUtils.defaultString(file.getJobId(), ""));
-        file.setModificationDate(file.getCreationDate());
         file.setTags(ParamUtils.defaultObject(file.getTags(), ArrayList::new));
         file.setQualityControl(ParamUtils.defaultObject(file.getQualityControl(), FileQualityControl::new));
         file.setInternal(FileInternal.init());
@@ -2049,7 +2051,12 @@ public class FileManager extends AnnotationSetManager<File> {
         ParamUtils.checkUpdateParametersMap(parameters);
 
         if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkDateFormat(parameters.getString(FileDBAdaptor.QueryParams.CREATION_DATE.key()), "creationDate");
+            ParamUtils.checkDateFormat(parameters.getString(FileDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    FileDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                    FileDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);

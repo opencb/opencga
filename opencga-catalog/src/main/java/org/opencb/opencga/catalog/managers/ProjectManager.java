@@ -478,7 +478,12 @@ public class ProjectManager extends AbstractManager {
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.CREATION_DATE.key())) {
                 // Validate creationDate format
                 String creationDate = parameters.getString(ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
-                ParamUtils.checkDateFormat(creationDate, "creationDate");
+                ParamUtils.checkDateFormat(creationDate, ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
+            }
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key())) {
+                // Validate modificationDate format
+                String modificationDate = parameters.getString(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+                ParamUtils.checkDateFormat(modificationDate, ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
 
             // Update organism information only if any of the fields was not properly defined

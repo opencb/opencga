@@ -1293,7 +1293,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()), "creationDate");
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {

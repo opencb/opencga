@@ -1160,7 +1160,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
-            ParamUtils.checkDateFormat(clinicalAnalysis.getCreationDate(), "creationDate");
+            ParamUtils.checkDateFormat(clinicalAnalysis.getCreationDate(), ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getModificationDate())) {
+            ParamUtils.checkDateFormat(clinicalAnalysis.getModificationDate(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         ObjectMap parameters;

@@ -885,7 +885,12 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         if (StringUtils.isNotEmpty(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkDateFormat(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()), "creationDate");
+            ParamUtils.checkDateFormat(parameters.getString(FamilyDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    FamilyDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(FamilyDBAdaptor.QueryParams.MODIFICATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(FamilyDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                    FamilyDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         // If there is nothing to update, we fail

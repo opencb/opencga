@@ -633,7 +633,10 @@ public class StudyManager extends AbstractManager {
             }
 
             if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
-                ParamUtils.checkDateFormat(parameters.getCreationDate(), "creationDate");
+                ParamUtils.checkDateFormat(parameters.getCreationDate(), StudyDBAdaptor.QueryParams.CREATION_DATE.key());
+            }
+            if (StringUtils.isNotEmpty(parameters.getModificationDate())) {
+                ParamUtils.checkDateFormat(parameters.getModificationDate(), StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
 
             ObjectMap update;
