@@ -35,24 +35,26 @@ public class JobInternal extends Internal implements Cloneable {
     }
 
     public JobInternal(Enums.ExecutionStatus status) {
-        this(null, status, null, null);
+        this(null, null, status, null, null);
     }
 
-    public JobInternal(String registrationDate, Enums.ExecutionStatus status, JobInternalWebhook webhook, List<Event> events) {
-        super(null, registrationDate);
+    public JobInternal(String registrationDate, String modificationDate, Enums.ExecutionStatus status, JobInternalWebhook webhook,
+                       List<Event> events) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
         this.webhook = webhook;
         this.events = events;
     }
 
     public static JobInternal init() {
-        return new JobInternal(TimeUtils.getTime(), new Enums.ExecutionStatus(), null, new ArrayList<>());
+        return new JobInternal(TimeUtils.getTime(), TimeUtils.getTime(), new Enums.ExecutionStatus(), null, new ArrayList<>());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("JobInternal{");
         sb.append("registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", webhook=").append(webhook);
         sb.append(", events=").append(events);
@@ -62,7 +64,7 @@ public class JobInternal extends Internal implements Cloneable {
 
     @Override
     public JobInternal clone() throws CloneNotSupportedException {
-        return new JobInternal(registrationDate, status, webhook.clone(), new LinkedList<>(events));
+        return new JobInternal(registrationDate, modificationDate, status, webhook.clone(), new LinkedList<>(events));
     }
 
     public Enums.ExecutionStatus getStatus() {
@@ -96,8 +98,17 @@ public class JobInternal extends Internal implements Cloneable {
         return registrationDate;
     }
 
-    public Internal setRegistrationDate(String registrationDate) {
+    public JobInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public JobInternal setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 }

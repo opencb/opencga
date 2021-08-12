@@ -27,6 +27,7 @@ public class FileLinkParams {
     private String path;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private List<SmallRelatedFileParams> relatedFiles;
     private CustomStatusParams status;
     private FileLinkInternalParams internal;
@@ -34,12 +35,13 @@ public class FileLinkParams {
     public FileLinkParams() {
     }
 
-    public FileLinkParams(String uri, String path, String description, String creationDate, List<SmallRelatedFileParams> relatedFiles,
-                          CustomStatusParams status, FileLinkInternalParams internal) {
+    public FileLinkParams(String uri, String path, String description, String creationDate, String modificationDate,
+                          List<SmallRelatedFileParams> relatedFiles, CustomStatusParams status, FileLinkInternalParams internal) {
         this.uri = uri;
         this.path = path;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.relatedFiles = relatedFiles;
         this.status = status;
         this.internal = internal;
@@ -47,7 +49,7 @@ public class FileLinkParams {
 
     public static FileLinkParams of(File file) {
         return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(), file.getCreationDate(),
-                file.getRelatedFiles() != null
+                file.getModificationDate(),  file.getRelatedFiles() != null
                         ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
                         : Collections.emptyList(), CustomStatusParams.of(file.getStatus()),
                 new FileLinkInternalParams(file.getInternal().getSampleMap()));
@@ -60,6 +62,7 @@ public class FileLinkParams {
         sb.append(", path='").append(path).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -115,6 +118,15 @@ public class FileLinkParams {
 
     public FileLinkParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public FileLinkParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

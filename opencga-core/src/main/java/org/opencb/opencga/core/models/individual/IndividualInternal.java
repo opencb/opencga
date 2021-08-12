@@ -25,12 +25,12 @@ public class IndividualInternal extends Internal {
     public IndividualInternal() {
     }
 
-    public IndividualInternal(Status status, String registrationDate) {
-        super(status, registrationDate);
+    public IndividualInternal(Status status, String registrationDate, String modificationDate) {
+        super(status, registrationDate, modificationDate);
     }
 
     public static IndividualInternal init() {
-        return new IndividualInternal(new Status(Status.READY), TimeUtils.getTime());
+        return new IndividualInternal(new Status(Status.READY), TimeUtils.getTime(), TimeUtils.getTime());
     }
 
     @Override
@@ -38,6 +38,7 @@ public class IndividualInternal extends Internal {
         final StringBuilder sb = new StringBuilder("IndividualInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -55,8 +56,17 @@ public class IndividualInternal extends Internal {
         return registrationDate;
     }
 
-    public Internal setRegistrationDate(String registrationDate) {
+    public IndividualInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public IndividualInternal setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

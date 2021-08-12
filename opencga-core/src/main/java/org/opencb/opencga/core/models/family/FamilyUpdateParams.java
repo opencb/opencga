@@ -36,6 +36,7 @@ public class FamilyUpdateParams {
     private String name;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private List<IndividualReferenceParam> members;
     private Integer expectedSize;
     private FamilyQualityControl qualityControl;
@@ -46,13 +47,14 @@ public class FamilyUpdateParams {
     public FamilyUpdateParams() {
     }
 
-    public FamilyUpdateParams(String id, String name, String description, String creationDate, List<IndividualReferenceParam> members,
-                              Integer expectedSize, CustomStatusParams status, FamilyQualityControl qualityControl,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public FamilyUpdateParams(String id, String name, String description, String creationDate, String modificationDate,
+                              List<IndividualReferenceParam> members, Integer expectedSize, CustomStatusParams status,
+                              FamilyQualityControl qualityControl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.members = members;
         this.expectedSize = expectedSize;
         this.status = status;
@@ -82,7 +84,7 @@ public class FamilyUpdateParams {
                 members != null
                         ? members.stream().map(m -> new Individual().setId(m.getId()).setUuid(m.getUuid())).collect(Collectors.toList())
                         : null,
-                creationDate, description, members != null ? members.size() : 0, 1, 1, annotationSets,
+                creationDate, modificationDate, description, members != null ? members.size() : 0, 1, 1, annotationSets,
                 status != null ? status.toCustomStatus() : null, new FamilyInternal(), Collections.emptyMap(), attributes);
     }
 
@@ -93,6 +95,7 @@ public class FamilyUpdateParams {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", qualityControl=").append(qualityControl);
@@ -136,6 +139,15 @@ public class FamilyUpdateParams {
 
     public FamilyUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public FamilyUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

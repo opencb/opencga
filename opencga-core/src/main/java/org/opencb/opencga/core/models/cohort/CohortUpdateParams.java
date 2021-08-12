@@ -37,6 +37,7 @@ public class CohortUpdateParams {
     private Enums.CohortType type;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -45,12 +46,14 @@ public class CohortUpdateParams {
     public CohortUpdateParams() {
     }
 
-    public CohortUpdateParams(String id, Enums.CohortType type, String description, String creationDate, List<SampleReferenceParam> samples,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
+    public CohortUpdateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
+                              List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
+                              CustomStatusParams status) {
         this.id = id;
         this.type = type;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -74,7 +77,7 @@ public class CohortUpdateParams {
     }
 
     public Cohort toCohort() {
-        return new Cohort(id, type, creationDate, description,
+        return new Cohort(id, type, creationDate, modificationDate, description,
                 samples != null ?
                         samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
                         : null,
@@ -88,6 +91,7 @@ public class CohortUpdateParams {
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -129,6 +133,15 @@ public class CohortUpdateParams {
 
     public CohortUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public CohortUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

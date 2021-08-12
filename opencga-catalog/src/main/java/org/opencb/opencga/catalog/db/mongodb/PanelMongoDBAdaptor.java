@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -413,11 +414,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         if (!panelParameters.isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            panelParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
-            panelParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                panelParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
+                panelParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            panelParameters.put(INTERNAL_MODIFICATION_DATE, time);
         }
 
         return panelParameters;

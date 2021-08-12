@@ -26,13 +26,13 @@ public class InterpretationInternal extends Internal {
     public InterpretationInternal() {
     }
 
-    public InterpretationInternal(String registrationDate, InterpretationStatus status) {
-        super(null, registrationDate);
+    public InterpretationInternal(String registrationDate, String modificationDate, InterpretationStatus status) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
     }
 
     public static InterpretationInternal init() {
-        return new InterpretationInternal(TimeUtils.getTime(), new InterpretationStatus());
+        return new InterpretationInternal(TimeUtils.getTime(), TimeUtils.getTime(), new InterpretationStatus());
     }
 
     @Override
@@ -40,6 +40,7 @@ public class InterpretationInternal extends Internal {
         final StringBuilder sb = new StringBuilder("InterpretationInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -59,6 +60,15 @@ public class InterpretationInternal extends Internal {
 
     public InterpretationInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public InterpretationInternal setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 }

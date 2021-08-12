@@ -65,6 +65,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -177,7 +178,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(individual.getCreationDate())
                 ? TimeUtils.toDate(individual.getCreationDate())
                 : TimeUtils.getDate());
-        individualDocument.put(PRIVATE_MODIFICATION_DATE, individualDocument.get(PRIVATE_CREATION_DATE));
+        individualDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(individual.getModificationDate())
+                ? TimeUtils.toDate(individual.getModificationDate()) : TimeUtils.getDate());
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());
@@ -733,6 +735,12 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             document.getSet().put(QueryParams.CREATION_DATE.key(), time);
             document.getSet().put(PRIVATE_CREATION_DATE, date);
         }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), IndividualProperty.Sex.class);
         filterEnumParams(parameters, document.getSet(), acceptedEnums);
@@ -802,11 +810,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_MODIFICATION_DATE, time);
         }
 
         return document;

@@ -194,10 +194,10 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testLinkVCFandBAMPair() throws CatalogException {
         String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", null, null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(vcfFile, "", "", "", null, null, null, null), false, token);
 
         String bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", null, null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(bamFile, "", "", "", null, null, null, null), false, token);
 
         Sample sample = catalogManager.getSampleManager().get(studyFqn, "NA19600",
                 new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).first();
@@ -208,7 +208,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testGetBase64Image() throws CatalogException {
         String qualityImageFile = getClass().getResource("/fastqc-per_base_sequence_quality.png").getFile();
-        fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", null, null, null, null), false, token);
+        fileManager.link(studyFqn, new FileLinkParams(qualityImageFile, "", "", "", null, null, null, null), false, token);
 
         OpenCGAResult<FileContent> result = fileManager.image(studyFqn, "fastqc-per_base_sequence_quality.png", token);
         assertEquals(1, result.getNumResults());

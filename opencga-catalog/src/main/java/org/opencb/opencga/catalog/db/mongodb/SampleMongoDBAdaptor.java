@@ -67,6 +67,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -170,7 +171,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(LAST_OF_RELEASE, true);
         sampleObject.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(sample.getCreationDate()) ? TimeUtils.toDate(sample.getCreationDate()) : TimeUtils.getDate());
-        sampleObject.put(PRIVATE_MODIFICATION_DATE, sampleObject.get(PRIVATE_CREATION_DATE));
+        sampleObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(sample.getModificationDate())
+                ? TimeUtils.toDate(sample.getModificationDate()) : TimeUtils.getDate());
         sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 
@@ -548,6 +550,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             document.getSet().put(QueryParams.CREATION_DATE.key(), time);
             document.getSet().put(PRIVATE_CREATION_DATE, date);
         }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
@@ -631,11 +639,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_MODIFICATION_DATE, time);
         }
 
         return document;

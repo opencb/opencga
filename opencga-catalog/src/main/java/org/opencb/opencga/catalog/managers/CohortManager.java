@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -192,8 +191,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds,
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
                 cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
-                        cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(), 1,
-                        cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                        cohortParams.getModificationDate(), cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(),
+                        1, cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                         cohortParams.getAttributes()));
 
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -231,14 +230,16 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             SampleManager.INCLUDE_SAMPLE_IDS, token);
 
                     cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
-                            cohortParams.getDescription(), sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
+                            cohortParams.getModificationDate(), cohortParams.getDescription(), sampleResults.getResults(), 0,
+                            cohortParams.getAnnotationSets(), 1,
                             cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                             cohortParams.getAttributes()));
                 }
             } else {
                 //Create empty cohort
                 cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
-                        cohortParams.getDescription(), Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
+                        cohortParams.getModificationDate(), cohortParams.getDescription(), Collections.emptyList(),
+                        cohortParams.getAnnotationSets(), -1, null));
             }
         } catch (CatalogException e) {
             auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
@@ -363,8 +364,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
-        cohort.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(cohort.getCreationDate()));
-        cohort.setModificationDate(TimeUtils.getTime());
+        cohort.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getCreationDate(),
+                CohortDBAdaptor.QueryParams.CREATION_DATE.key()));
+        cohort.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getModificationDate(),
+                CohortDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
@@ -991,7 +994,10 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (StringUtils.isNotEmpty(updateParams.getCreationDate())) {
-            ParamUtils.checkCreationDateFormat(updateParams.getCreationDate());
+            ParamUtils.checkDateFormat(updateParams.getCreationDate(), CohortDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(updateParams.getModificationDate())) {
+            ParamUtils.checkDateFormat(updateParams.getModificationDate(), CohortDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         ObjectMap parameters = new ObjectMap();

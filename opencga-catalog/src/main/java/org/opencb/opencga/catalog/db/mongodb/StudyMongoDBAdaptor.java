@@ -62,6 +62,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkCanViewStudy;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkStudyPermission;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -210,7 +211,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         studyObject.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(study.getCreationDate()) ? TimeUtils.toDate(study.getCreationDate()) : TimeUtils.getDate());
-        studyObject.put(PRIVATE_MODIFICATION_DATE, studyObject.get(PRIVATE_CREATION_DATE));
+        studyObject.put(PRIVATE_MODIFICATION_DATE,
+                StringUtils.isNotEmpty(study.getModificationDate()) ? TimeUtils.toDate(study.getModificationDate()) : TimeUtils.getDate());
 
         studyCollection.insert(clientSession, studyObject, null);
 
@@ -1353,6 +1355,12 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             studyParameters.put(QueryParams.CREATION_DATE.key(), time);
             studyParameters.put(PRIVATE_CREATION_DATE, date);
         }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
+            studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, studyParameters, acceptedLongParams);
@@ -1384,11 +1392,14 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         if (!studyParameters.isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
-            studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
+                studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            studyParameters.put(INTERNAL_MODIFICATION_DATE, time);
         }
         return studyParameters;
     }

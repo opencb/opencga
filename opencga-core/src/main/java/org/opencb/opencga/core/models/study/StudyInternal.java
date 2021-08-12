@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.clinical.InterpretationInternal;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
@@ -30,20 +31,22 @@ public class StudyInternal extends Internal {
     public StudyInternal() {
     }
 
-    public StudyInternal(Status status, String registrationDate, StudyIndex index, StudyConfiguration configuration) {
-        super(status, registrationDate);
+    public StudyInternal(Status status, String registrationDate, String modificationDate, StudyIndex index,
+                         StudyConfiguration configuration) {
+        super(status, registrationDate, modificationDate);
         this.index = index;
         this.configuration = configuration;
     }
 
     public static StudyInternal init() {
-        return new StudyInternal(new Status(), TimeUtils.getTime(), StudyIndex.init(), StudyConfiguration.init());
+        return new StudyInternal(new Status(), TimeUtils.getTime(), TimeUtils.getTime(), StudyIndex.init(), StudyConfiguration.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyInternal{");
         sb.append("registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", index=").append(index);
         sb.append(", configuration=").append(configuration);
@@ -64,8 +67,17 @@ public class StudyInternal extends Internal {
         return registrationDate;
     }
 
-    public Internal setRegistrationDate(String registrationDate) {
+    public StudyInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public StudyInternal setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

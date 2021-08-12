@@ -27,6 +27,7 @@ public class StudyCreateParams {
     private String alias;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private StudyNotification notification;
     private CustomStatusParams status;
     private Map<String, Object> attributes;
@@ -34,13 +35,14 @@ public class StudyCreateParams {
     public StudyCreateParams() {
     }
 
-    public StudyCreateParams(String id, String name, String alias, String description, String creationDate, StudyNotification notification,
-                             Map<String, Object> attributes, CustomStatusParams status) {
+    public StudyCreateParams(String id, String name, String alias, String description, String creationDate, String modificationDate,
+                             StudyNotification notification, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.notification = notification;
         this.attributes = attributes;
         this.status = status;
@@ -48,7 +50,7 @@ public class StudyCreateParams {
 
     public static StudyCreateParams of(Study study) {
         return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getDescription(), study.getCreationDate(),
-                study.getNotification(), study.getAttributes(), CustomStatusParams.of(study.getStatus()));
+                study.getModificationDate(), study.getNotification(), study.getAttributes(), CustomStatusParams.of(study.getStatus()));
     }
 
     public Study toStudy() {
@@ -58,6 +60,7 @@ public class StudyCreateParams {
                 .setAlias(alias)
                 .setDescription(description)
                 .setCreationDate(creationDate)
+                .setModificationDate(modificationDate)
                 .setNotification(notification)
                 .setStatus(status != null ? status.toCustomStatus() : null)
                 .setAttributes(attributes);
@@ -71,9 +74,10 @@ public class StudyCreateParams {
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", notification=").append(notification);
-        sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
@@ -120,6 +124,15 @@ public class StudyCreateParams {
 
     public StudyCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public StudyCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
