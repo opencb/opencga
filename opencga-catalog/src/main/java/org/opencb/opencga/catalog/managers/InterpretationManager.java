@@ -426,7 +426,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
-                        Collections.emptyList(), TimeUtils.getTime(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList(),
                         clinicalAnalysis.getPanels() != null
                                 ? clinicalAnalysis.getPanels().stream()
                                     .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())

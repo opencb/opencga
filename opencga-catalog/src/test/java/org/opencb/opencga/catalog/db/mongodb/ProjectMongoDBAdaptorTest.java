@@ -39,11 +39,11 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {
-        Project p = new Project("1000G", "Project about some genomes", "Today", "Cool", null, 1, ProjectInternal.init());
+        Project p = new Project("1000G", "Project about some genomes", "", "", "Cool", null, 1, ProjectInternal.init());
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
-        p = new Project("2000G", "Project about some more genomes", "Tomorrow", "Cool", null, 1, ProjectInternal.init());
+        p = new Project("2000G", "Project about some more genomes", "", "", "Cool", null, 1, ProjectInternal.init());
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
-        p = new Project("pmp", "Project management project", "yesterday", "it is a system", null, 1, ProjectInternal.init());
+        p = new Project("pmp", "Project management project", "", "", "it is a system", null, 1, ProjectInternal.init());
         System.out.println(catalogProjectDBAdaptor.insert(p, user2.getId(), null));
         System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
 
@@ -130,9 +130,9 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void renameProjectTest() throws CatalogException {
-        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
+        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
         Project p1 = getProject(user1.getId(), "p1");
-        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
+        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
         Project p2 = getProject(user1.getId(), "p2");
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap(ProjectDBAdaptor.QueryParams.ID.key(), "newpmp"), QueryOptions.empty());
@@ -153,9 +153,9 @@ public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void test() throws Exception {
-        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
+        catalogProjectDBAdaptor.insert(new Project("p1", "project1", null, null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
         Project p1 = getProject(user1.getId(), "p1");
-        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
+        catalogProjectDBAdaptor.insert(new Project("p2", "project2", null, null, "Cool", null, 1, ProjectInternal.init()), user1.getId(), null);
         Project p2 = getProject(user1.getId(), "p2");
 
         catalogProjectDBAdaptor.update(p1.getUid(), new ObjectMap("internal.cellbase", new CellBaseConfiguration("url", "v")), new QueryOptions());

@@ -13,6 +13,7 @@ public class CohortGenerateParams {
     private Enums.CohortType type;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private List<AnnotationSet> annotationSets;
     private CustomStatusParams status;
     private Map<String, Object> attributes;
@@ -20,20 +21,21 @@ public class CohortGenerateParams {
     public CohortGenerateParams() {
     }
 
-    public CohortGenerateParams(String id, Enums.CohortType type, String description, String creationDate,
+    public CohortGenerateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
                                 List<AnnotationSet> annotationSets, CustomStatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.annotationSets = annotationSets;
         this.status = status;
         this.attributes = attributes;
     }
 
     public Cohort toCohort() {
-        return new Cohort(id, type, creationDate, description, null, 0, annotationSets, 0, status != null ? status.toCustomStatus() : null,
-                null, attributes);
+        return new Cohort(id, type, creationDate, modificationDate, description, null, 0, annotationSets, 0,
+                status != null ? status.toCustomStatus() : null, null, attributes);
     }
 
     @Override
@@ -43,6 +45,7 @@ public class CohortGenerateParams {
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
@@ -83,6 +86,15 @@ public class CohortGenerateParams {
 
     public CohortGenerateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public CohortGenerateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

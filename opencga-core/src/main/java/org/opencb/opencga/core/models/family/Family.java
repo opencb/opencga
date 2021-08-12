@@ -136,20 +136,21 @@ public class Family extends Annotable {
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), description, expectedSize, -1, 1, annotationSets,
-                new CustomStatus(), null, null, attributes);
+        this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), TimeUtils.getTime(), description, expectedSize, -1, 1,
+                annotationSets, new CustomStatus(), null, null, attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
-                  String creationDate, String description, int expectedSize, int release, int version, List<AnnotationSet> annotationSets,
-                  CustomStatus status, FamilyInternal internal, Map<String, Map<String, FamiliarRelationship>> roles,
-                  Map<String, Object> attributes) {
+                  String creationDate, String modificationDate, String description, int expectedSize, int release, int version,
+                  List<AnnotationSet> annotationSets, CustomStatus status, FamilyInternal internal,
+                  Map<String, Map<String, FamiliarRelationship>> roles, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
         this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
         this.members = ObjectUtils.defaultIfNull(members, new ArrayList<>());
         this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
+        this.modificationDate = modificationDate;
         this.expectedSize = expectedSize;
         this.description = description;
         this.release = release;

@@ -213,7 +213,7 @@ public class ProjectManager extends AbstractManager {
     @Deprecated
     public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,
                                          String assembly, QueryOptions options, String sessionId) throws CatalogException {
-        ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null,
+        ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null, null,
                 new ProjectOrganism(scientificName, commonName, assembly), null);
         return create(projectCreateParams, options, sessionId);
     }
