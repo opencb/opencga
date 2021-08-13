@@ -532,7 +532,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.reloadCellbaseConfiguration();
             CellBaseDataResponse<SpeciesProperties> species = engine.getCellBaseUtils().getCellBaseClient().getMetaClient().species();
             if (species == null || species.firstResult() == null) {
-                throw new IllegalArgumentException("Unable to access cellbase url '" + cellbaseConfiguration.getUrl() + "'");
+                throw new IllegalArgumentException("Unable to access cellbase url '" + cellbaseConfiguration.getUrl() + "'"
+                        + " version '" + cellbaseConfiguration.getVersion() + "'");
             }
 
             if (engine.getMetadataManager().exists()) {
