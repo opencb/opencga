@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_2_0.catalog.addInternalModificationDate;
+package org.opencb.opencga.app.migrations.v2_2_0.catalog.addInternalLastModified;
 
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;

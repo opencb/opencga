@@ -1399,7 +1399,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
                 studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
             }
-            studyParameters.put(INTERNAL_MODIFICATION_DATE, time);
+            studyParameters.put(INTERNAL_LAST_MODIFIED, time);
         }
         return studyParameters;
     }

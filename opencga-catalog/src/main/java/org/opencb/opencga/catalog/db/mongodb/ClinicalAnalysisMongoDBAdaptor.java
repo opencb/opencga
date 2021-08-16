@@ -392,7 +392,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
                 document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
             }
-            document.getSet().put(INTERNAL_MODIFICATION_DATE, time);
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;

@@ -54,7 +54,7 @@ public class JobInternal extends Internal implements Cloneable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("JobInternal{");
         sb.append("registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", status=").append(status);
         sb.append(", webhook=").append(webhook);
         sb.append(", events=").append(events);
@@ -64,7 +64,7 @@ public class JobInternal extends Internal implements Cloneable {
 
     @Override
     public JobInternal clone() throws CloneNotSupportedException {
-        return new JobInternal(registrationDate, modificationDate, status, webhook.clone(), new LinkedList<>(events));
+        return new JobInternal(registrationDate, lastModified, status, webhook.clone(), new LinkedList<>(events));
     }
 
     public Enums.ExecutionStatus getStatus() {
@@ -103,12 +103,12 @@ public class JobInternal extends Internal implements Cloneable {
         return this;
     }
 
-    public String getModificationDate() {
-        return modificationDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public JobInternal setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
+    public JobInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

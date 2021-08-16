@@ -189,7 +189,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         Sample s1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("s1").setModificationDate("20140101120000"),
                 QueryOptions.empty(), token).first();
         assertEquals("20140101120000", s1.getModificationDate());
-        Date date1 = TimeUtils.toDate(s1.getInternal().getModificationDate());
+        Date date1 = TimeUtils.toDate(s1.getInternal().getLastModified());
         assertTrue(date1.after(date) || date1.equals(date));
 
         OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn,
@@ -207,7 +207,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(1, search.getNumResults());
         assertEquals("s1", search.first().getId());
 
-        Date date2 = TimeUtils.toDate(search.first().getInternal().getModificationDate());
+        Date date2 = TimeUtils.toDate(search.first().getInternal().getLastModified());
         assertTrue(date2.after(date) || date2.equals(date));
         assertTrue(date2.after(date1) || date2.equals(date1));
     }

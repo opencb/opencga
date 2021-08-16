@@ -70,7 +70,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_CREATION_DATE = "_creationDate";
     static final String PRIVATE_MODIFICATION_DATE = "_modificationDate";
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
-    static final String INTERNAL_MODIFICATION_DATE = "internal.modificationDate";
+    static final String INTERNAL_LAST_MODIFIED = "internal.lastModified";
 
     static final String INTERNAL_DELIMITER = "__";
 

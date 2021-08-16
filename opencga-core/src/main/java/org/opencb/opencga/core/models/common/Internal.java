@@ -4,15 +4,15 @@ public abstract class Internal {
 
     protected Status status;
     protected String registrationDate;
-    protected String modificationDate;
+    protected String lastModified;
 
     public Internal() {
     }
 
-    public Internal(Status status, String registrationDate, String modificationDate) {
+    public Internal(Status status, String registrationDate, String lastModified) {
         this.status = status;
         this.registrationDate = registrationDate;
-        this.modificationDate = modificationDate;
+        this.lastModified = lastModified;
     }
 
     @Override
@@ -20,7 +20,7 @@ public abstract class Internal {
         final StringBuilder sb = new StringBuilder("Internal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -43,12 +43,12 @@ public abstract class Internal {
         return this;
     }
 
-    public String getModificationDate() {
-        return modificationDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public Internal setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
+    public Internal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

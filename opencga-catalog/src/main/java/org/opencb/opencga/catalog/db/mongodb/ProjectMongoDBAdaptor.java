@@ -398,7 +398,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 projectParameters.put("projects.$." + QueryParams.MODIFICATION_DATE.key(), time);
                 projectParameters.put("projects.$." + PRIVATE_MODIFICATION_DATE, date);
             }
-            projectParameters.put("projects.$." + INTERNAL_MODIFICATION_DATE, time);
+            projectParameters.put("projects.$." + INTERNAL_LAST_MODIFIED, time);
         }
 
         return projectParameters;

@@ -38,7 +38,7 @@ public class IndividualInternal extends Internal {
         final StringBuilder sb = new StringBuilder("IndividualInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -61,12 +61,12 @@ public class IndividualInternal extends Internal {
         return this;
     }
 
-    public String getModificationDate() {
-        return modificationDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public IndividualInternal setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
+    public IndividualInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 

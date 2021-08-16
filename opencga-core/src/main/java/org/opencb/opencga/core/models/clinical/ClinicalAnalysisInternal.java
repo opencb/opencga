@@ -40,7 +40,7 @@ public class ClinicalAnalysisInternal extends Internal {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -63,12 +63,12 @@ public class ClinicalAnalysisInternal extends Internal {
         return this;
     }
 
-    public String getModificationDate() {
-        return modificationDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public ClinicalAnalysisInternal setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
+    public ClinicalAnalysisInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

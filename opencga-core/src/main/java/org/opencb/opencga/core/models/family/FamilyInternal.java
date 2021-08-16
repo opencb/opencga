@@ -39,7 +39,7 @@ public class FamilyInternal extends Internal {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyInternal{");
         sb.append("registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
@@ -63,12 +63,12 @@ public class FamilyInternal extends Internal {
         return this;
     }
 
-    public String getModificationDate() {
-        return modificationDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public FamilyInternal setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
+    public FamilyInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

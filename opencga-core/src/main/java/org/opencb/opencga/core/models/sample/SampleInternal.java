@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.models.sample;
 
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.clinical.InterpretationInternal;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.common.Status;
@@ -85,12 +84,12 @@ public class SampleInternal extends Internal {
         return this;
     }
 
-    public String getModificationDate() {
-        return modificationDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public SampleInternal setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
+    public SampleInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

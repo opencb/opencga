@@ -45,7 +45,7 @@ public class ProjectInternal extends Internal {
         final StringBuilder sb = new StringBuilder("ProjectInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", datastores=").append(datastores);
         sb.append(", cellbase=").append(cellbase);
         sb.append('}');
@@ -88,12 +88,12 @@ public class ProjectInternal extends Internal {
         return this;
     }
 
-    public String getModificationDate() {
-        return modificationDate;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public ProjectInternal setModificationDate(String modificationDate) {
-        this.modificationDate = modificationDate;
+    public ProjectInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

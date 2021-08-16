@@ -329,7 +329,9 @@ public class JobManager extends ResourceManager<Job> {
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
-        job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
+        job.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(job.getCreationDate(), JobDBAdaptor.QueryParams.CREATION_DATE.key()));
+        job.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(job.getModificationDate(),
+                JobDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
         // Set default internal

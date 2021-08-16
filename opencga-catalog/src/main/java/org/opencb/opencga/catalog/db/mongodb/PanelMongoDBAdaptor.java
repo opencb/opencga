@@ -421,7 +421,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 panelParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
                 panelParameters.put(PRIVATE_MODIFICATION_DATE, date);
             }
-            panelParameters.put(INTERNAL_MODIFICATION_DATE, time);
+            panelParameters.put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return panelParameters;
