@@ -253,7 +253,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                             delete.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
+                            delete.addColumn(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));

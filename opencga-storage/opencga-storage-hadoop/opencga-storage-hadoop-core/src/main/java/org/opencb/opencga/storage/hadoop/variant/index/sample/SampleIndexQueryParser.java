@@ -18,7 +18,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtCombinationIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtFtCombinationIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
@@ -806,8 +806,7 @@ public class SampleIndexQueryParser {
         IndexFieldFilter biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
         IndexFieldFilter consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
         IndexFieldFilter tfFilter = schema.getTranscriptFlagIndexSchema().getField().noOpFilter();
-        CtBtCombinationIndexSchema.Filter ctBtFilter = schema.getCtBtIndex().getField().noOpFilter();
-        CtBtCombinationIndexSchema.Filter ctTfFilter = schema.getCtTfIndex().getField().noOpFilter();
+        CtBtFtCombinationIndexSchema.Filter ctBtTfFilter = schema.getCtBtTfIndex().getField().noOpFilter();
         IndexFilter clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
 
         Boolean intergenic = null;
@@ -954,23 +953,39 @@ public class SampleIndexQueryParser {
             }
         }
 
-        if (!consequenceTypeFilter.isNoOp() && !biotypeFilter.isNoOp()) {
-            ctBtFilter = schema.getCtBtIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter);
+        if (combination.numParams() > 1 && schema.getConfiguration().getAnnotationIndexConfiguration().isTranscriptCombination()) {
+            ctBtTfFilter = schema.getCtBtTfIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter, tfFilter);
 
-            if (completeIndex && btCovered && ctCovered && !isValidParam(query, GENE)
-                    && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
-                query.remove(ANNOT_BIOTYPE.key());
-                query.remove(ANNOT_CONSEQUENCE_TYPE.key());
-            }
-        }
-
-        if (!consequenceTypeFilter.isNoOp() && !tfFilter.isNoOp()) {
-            ctTfFilter = schema.getCtTfIndex().getField().buildFilter(consequenceTypeFilter, tfFilter);
-
-            if (completeIndex && ctCovered && tfCovered && !isValidParam(query, GENE)
-                    && combination.equals(BiotypeConsquenceTypeFlagCombination.CT_FLAG)) {
-                query.remove(ANNOT_CONSEQUENCE_TYPE.key());
-                query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+            if (completeIndex && !isValidParam(query, GENE)) {
+                switch (combination) {
+                    case BIOTYPE_CT:
+                        if (btCovered && ctCovered) {
+                            query.remove(ANNOT_BIOTYPE.key());
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                        }
+                    break;
+                    case CT_FLAG:
+                        if (ctCovered && tfCovered) {
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                            query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+                        }
+                    break;
+                    case BIOTYPE_FLAG:
+                        if (btCovered && tfCovered) {
+                            query.remove(ANNOT_BIOTYPE.key());
+                            query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+                        }
+                    break;
+                    case BIOTYPE_CT_FLAG:
+                        if (btCovered && ctCovered && tfCovered) {
+                            query.remove(ANNOT_BIOTYPE.key());
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                            query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+                        }
+                    break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + combination);
+                }
             }
         }
 
@@ -1119,7 +1134,7 @@ public class SampleIndexQueryParser {
         }
 
         return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex},
-                consequenceTypeFilter, biotypeFilter, tfFilter, ctBtFilter, ctTfFilter, clinicalFilter, populationFrequencyFilter);
+                consequenceTypeFilter, biotypeFilter, tfFilter, ctBtTfFilter, clinicalFilter, populationFrequencyFilter);
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {

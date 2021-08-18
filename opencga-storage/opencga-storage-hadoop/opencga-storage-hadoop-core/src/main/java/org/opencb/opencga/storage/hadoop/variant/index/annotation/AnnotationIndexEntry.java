@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationIndexSchema.Combination;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema.CombinationTriple;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 public class AnnotationIndexEntry {
@@ -18,8 +18,7 @@ public class AnnotationIndexEntry {
     private int btIndex;
     private boolean hasTfIndex;
     private int tfIndex;
-    private Combination ctBtCombination;
-    private Combination ctTfCombination;
+    private CombinationTriple ctBtTfCombination;
     private BitBuffer popFreqIndex;
     private boolean hasClinical;
     private BitBuffer clinicalIndex;
@@ -39,8 +38,7 @@ public class AnnotationIndexEntry {
         this.btIndex = other.btIndex;
         this.hasTfIndex = other.hasTfIndex;
         this.tfIndex = other.tfIndex;
-        this.ctBtCombination = new Combination(other.ctBtCombination);
-        this.ctTfCombination = new Combination(other.ctTfCombination);
+        this.ctBtTfCombination = new CombinationTriple(other.ctBtTfCombination);
         this.popFreqIndex = other.popFreqIndex == null ? null : new BitBuffer(other.popFreqIndex);
         this.hasClinical = other.hasClinical;
         this.clinicalIndex = other.clinicalIndex == null ? null : new BitBuffer(other.clinicalIndex);
@@ -48,7 +46,7 @@ public class AnnotationIndexEntry {
 
     public AnnotationIndexEntry(
             byte summaryIndex, boolean intergenic, int ctIndex, int btIndex, int tfIndex,
-            Combination ctBtCombination, Combination ctTfCombination, BitBuffer popFreqIndex,
+            CombinationTriple ctBtTfCombination, BitBuffer popFreqIndex,
             boolean hasClinical, BitBuffer clinicalIndex) {
         this.summaryIndex = summaryIndex;
         this.intergenic = intergenic;
@@ -58,8 +56,7 @@ public class AnnotationIndexEntry {
         this.hasBtIndex = !intergenic;
         this.tfIndex = tfIndex;
         this.hasTfIndex = !intergenic;
-        this.ctBtCombination = ctBtCombination == null ? new Combination() : ctBtCombination;
-        this.ctTfCombination = ctTfCombination == null ? new Combination() : ctTfCombination;
+        this.ctBtTfCombination = ctBtTfCombination == null ? new CombinationTriple() : ctBtTfCombination;
         this.hasClinical = hasClinical;
         this.clinicalIndex = clinicalIndex;
         this.popFreqIndex = popFreqIndex;
@@ -68,8 +65,7 @@ public class AnnotationIndexEntry {
     public static AnnotationIndexEntry empty(SampleIndexSchema schema) {
         return new AnnotationIndexEntry()
                 .setPopFreqIndex(new BitBuffer(schema.getPopFreqIndex().getBitsLength()))
-                .setCtBtCombination(new Combination())
-                .setCtTfCombination(new Combination());
+                .setCtBtTfCombination(new CombinationTriple());
     }
 
     public boolean hasSummaryIndex() {
@@ -157,21 +153,12 @@ public class AnnotationIndexEntry {
         return this;
     }
 
-    public Combination getCtBtCombination() {
-        return ctBtCombination;
+    public CombinationTriple getCtBtTfCombination() {
+        return ctBtTfCombination;
     }
 
-    public AnnotationIndexEntry setCtBtCombination(Combination ctBtCombination) {
-        this.ctBtCombination = ctBtCombination;
-        return this;
-    }
-
-    public Combination getCtTfCombination() {
-        return ctTfCombination;
-    }
-
-    public AnnotationIndexEntry setCtTfCombination(Combination ctTfCombination) {
-        this.ctTfCombination = ctTfCombination;
+    public AnnotationIndexEntry setCtBtTfCombination(CombinationTriple ctBtTfCombination) {
+        this.ctBtTfCombination = ctBtTfCombination;
         return this;
     }
 
@@ -212,10 +199,9 @@ public class AnnotationIndexEntry {
         ctIndex = 0;
         btIndex = 0;
         tfIndex = 0;
-        ctBtCombination.setNumA(0);
-        ctBtCombination.setNumB(0);
-        ctTfCombination.setNumA(0);
-        ctTfCombination.setNumB(0);
+        ctBtTfCombination.setNumX(0);
+        ctBtTfCombination.setNumY(0);
+        ctBtTfCombination.setNumZ(0);
     }
 
     @Override
@@ -253,27 +239,17 @@ public class AnnotationIndexEntry {
                 .append(" : ")
                 .append(schema.getTranscriptFlagIndexSchema().getField()
                         .decode(getTfIndex()));
-        sb.append(separator).append("ct_bt: ")
-                .append(schema.getCtBtIndex().getField()
-                        .encode(getCtBtCombination()))
+        sb.append(separator).append("ct_bt_tf: ")
+                .append(schema.getCtBtTfIndex().getField()
+                        .encode(getCtBtTfCombination()))
                 .append(" : ")
-                .append(getCtBtCombination())
+                .append(getCtBtTfCombination())
                 .append(" : ")
-                .append(schema.getCtBtIndex().getField()
-                        .getPairs(
-                                getCtBtCombination(),
+                .append(schema.getCtBtTfIndex().getField()
+                        .getTriples(
+                                getCtBtTfCombination(),
                                 getCtIndex(),
-                                getBtIndex()));
-        sb.append(separator).append("ct_tf: ")
-                .append(schema.getCtTfIndex().getField()
-                        .encode(getCtTfCombination()))
-                .append(" : ")
-                .append(getCtTfCombination())
-                .append(" : ")
-                .append(schema.getCtTfIndex().getField()
-                        .getPairs(
-                                getCtTfCombination(),
-                                getCtIndex(),
+                                getBtIndex(),
                                 getTfIndex()));
     }
 }

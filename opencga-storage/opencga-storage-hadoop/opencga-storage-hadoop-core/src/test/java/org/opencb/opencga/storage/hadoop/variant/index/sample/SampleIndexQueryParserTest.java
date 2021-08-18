@@ -936,7 +936,7 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
-        assertFalse(indexQuery.getCtTfFilter().isNoOp());
+        assertFalse(indexQuery.getCtBtTfFilter().isNoOp());
         assertTrue(query.isEmpty());
     }
 
@@ -949,7 +949,7 @@ public class SampleIndexQueryParserTest {
         assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
         assertTrue(indexQuery.getTranscriptFlagFilter().isExactFilter());
-        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(indexQuery.getCtBtTfFilter().isNoOp());
         assertTrue(query.isEmpty());
 
         // Imprecise query
@@ -958,7 +958,7 @@ public class SampleIndexQueryParserTest {
         assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isExactFilter());
-        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(indexQuery.getCtBtTfFilter().isNoOp());
         assertFalse(query.isEmpty());
     }
 

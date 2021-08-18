@@ -132,6 +132,7 @@ public class SampleIndexConfiguration {
                         IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "do_not_use"
                 ).setNullable(false));
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(false);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
@@ -265,7 +266,8 @@ public class SampleIndexConfiguration {
                         "LRG",
                         "EGLH_HaemOnc",
                         "TSO500"
-                        ).setNullable(false));
+                        ).setNullable(true));
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(true);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
@@ -425,6 +427,7 @@ public class SampleIndexConfiguration {
         private IndexFieldConfiguration clinicalSource;
         private IndexFieldConfiguration clinicalSignificance;
         private IndexFieldConfiguration transcriptFlagIndexConfiguration;
+        private boolean transcriptCombination;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
             return populationFrequency;
@@ -479,6 +482,14 @@ public class SampleIndexConfiguration {
             return this;
         }
 
+        public boolean isTranscriptCombination() {
+            return transcriptCombination;
+        }
+
+        public AnnotationIndexConfiguration setTranscriptCombination(boolean transcriptCombination) {
+            this.transcriptCombination = transcriptCombination;
+            return this;
+        }
 
         @Override
         public boolean equals(Object o) {

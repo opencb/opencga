@@ -8,6 +8,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -21,6 +22,9 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndex
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 public class SampleIndexMain extends AbstractMain {
@@ -84,16 +88,21 @@ public class SampleIndexMain extends AbstractMain {
                 rawQuery(dbAdaptor, argsMap);
                 break;
             }
+            case "index-stats": {
+                indexStats(dbAdaptor, argsMap);
+                break;
+            }
             case "help":
             default:
                 System.out.println("Commands:");
                 System.out.println("  help");
-                System.out.println("  count           <databaseName> [--region <region>] [--study <study>] [--sample <sample>] ...");
-                System.out.println("  query           <databaseName> [--region <region>] [--study <study>] [--sample <sample>] [--quiet] "
+                System.out.println("  count           <databaseName> [--study <study>] [--sample <sample>] [--region <region>] ...");
+                System.out.println("  query           <databaseName> [--study <study>] [--sample <sample>] [--region <region>] [--quiet] "
                         + "[query...]");
-                System.out.println("  query-detailed  <databaseName> [--region <region>] [--study <study>] [--sample <sample>] [--quiet] "
+                System.out.println("  query-detailed  <databaseName> [--study <study>] [--sample <sample>] [--region <region>] [--quiet] "
                         + "[query...]");
                 System.out.println("  query-raw       <databaseName> [--study <study>] [--sample <sample>] [--quiet]");
+                System.out.println("  index-stats     <databaseName> [--study <study>] [--sample <sample>]");
                 break;
         }
         System.err.println("--------------------------");
@@ -156,4 +165,52 @@ public class SampleIndexMain extends AbstractMain {
         }
         iterator.close();
     }
+
+    private void indexStats(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
+
+
+
+        SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        int studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
+        if (sampleIndexQuery.getSamplesMap().size() != 1) {
+            printError("Unable to get raw content from more than one sample at a time");
+            return;
+        }
+
+        int sampleId = metadataManager.getSampleIdOrFail(studyId, sampleIndexQuery.getSamplesMap().keySet().iterator().next());
+        Region region = argsMap.containsKey(VariantQueryParam.REGION.key())
+                ? Region.parseRegion(argsMap.getString(VariantQueryParam.REGION.key()))
+                : null;
+
+        Map<String, Integer> counts = new TreeMap<>();
+        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region)) {
+            while (iterator.hasNext()) {
+                SampleIndexEntry entry = iterator.next();
+                for (SampleIndexEntry.SampleIndexGtEntry gtEntry : entry.getGts().values()) {
+                    String gt = gtEntry.getGt();
+
+                    counts.merge("Variants_bytes", gtEntry.getVariantsLength(), Integer::sum);
+                    addLength(gt, counts, "FileIndex", gtEntry.getFileIndexStream());
+                    addLength(gt, counts, "PopulationFrequencyIndex", gtEntry.getPopulationFrequencyIndexStream());
+                    addLength(gt, counts, "CtBtTfIndex", gtEntry.getCtBtTfIndexStream());
+                    addLength(gt, counts, "biotypeIndex", gtEntry.getBiotypeIndexStream());
+                    addLength(gt, counts, "ctIndex", gtEntry.getConsequenceTypeIndexStream());
+                    addLength(gt, counts, "clinicalIndex", gtEntry.getClinicalIndexStream());
+                    addLength(gt, counts, "transcriptFlagIndex", gtEntry.getTranscriptFlagIndexStream());
+                }
+            }
+        }
+        print(counts);
+    }
+
+    private void addLength(String gt, Map<String, Integer> counts, String key, BitInputStream stream) {
+        if (stream != null) {
+            counts.merge(key + "_bytes", stream.getByteLength(), Integer::sum);
+            counts.merge(key + "_count", 1, Integer::sum);
+            counts.merge(gt + "_" + key + "_bytes", stream.getByteLength(), Integer::sum);
+            counts.merge(gt + "_" + key + "_count", 1, Integer::sum);
+        }
+    }
+
 }

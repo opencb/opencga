@@ -552,8 +552,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("biotype            = " + indexQuery.getAnnotationIndexQuery().getBiotypeFilter());
         System.out.println("ct                 = " + indexQuery.getAnnotationIndexQuery().getConsequenceTypeFilter());
         System.out.println("transcriptFlag     = " + indexQuery.getAnnotationIndexQuery().getTranscriptFlagFilter());
-        System.out.println("ctBt               = " + indexQuery.getAnnotationIndexQuery().getCtBtFilter());
-        System.out.println("ctTf               = " + indexQuery.getAnnotationIndexQuery().getCtTfFilter());
+        System.out.println("ctBtTf             = " + indexQuery.getAnnotationIndexQuery().getCtBtTfFilter());
         System.out.println("clinical           = " + indexQuery.getAnnotationIndexQuery().getClinicalFilter());
         System.out.println("popFreq            = " + indexQuery.getAnnotationIndexQuery().getPopulationFrequencyFilter());
         for (String sample : indexQuery.getSamplesMap().keySet()) {
@@ -709,14 +708,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         FacetField facetAll = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType>>transcriptFlag")
                 .append("filterTranscript", false)).first();
 
-        assertEquals(count.get(), facet.getCount());
+        String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
+                + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
+        assertEquals(msg, count.get(), facet.getCount());
         FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
         FacetField.Bucket bucketAll = facetAll.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
         System.out.println("ct = " + ct + " : " + count.get());
         System.out.println("facet    = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
         System.out.println("facetAll = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetAll));
-        String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
-                + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
         if (count.get() == 0) {
             // Count be null if no counts
             if (bucket != null) {

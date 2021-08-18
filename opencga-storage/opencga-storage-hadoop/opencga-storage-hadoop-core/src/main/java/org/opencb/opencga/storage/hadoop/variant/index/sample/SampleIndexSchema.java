@@ -91,12 +91,9 @@ public final class SampleIndexSchema {
     // Transcript Flag
     static final String ANNOTATION_TF_PREFIX = META_PREFIX + "TF_";
     static final byte[] ANNOTATION_TF_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_TF_PREFIX);
-    // ConsequenceType + Biotype combination
-    static final String ANNOTATION_CT_BT_PREFIX = META_PREFIX + "CB_";
-    static final byte[] ANNOTATION_CT_BT_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CT_BT_PREFIX);
-    // ConsequenceType + TranscriptFlag combination
-    static final String ANNOTATION_CT_TF_PREFIX = META_PREFIX + "CF_";
-    static final byte[] ANNOTATION_CT_TF_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CT_TF_PREFIX);
+    // ConsequenceType + Biotype + TranscriptFlag combination combination
+    static final String ANNOTATION_CT_BT_TF_PREFIX = META_PREFIX + "CBT_";
+    static final byte[] ANNOTATION_CT_BT_TF_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CT_BT_TF_PREFIX);
     // PopFreq
     static final String ANNOTATION_POP_FREQ_PREFIX = META_PREFIX + "PF_";
     static final byte[] ANNOTATION_POP_FREQ_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_POP_FREQ_PREFIX);
@@ -110,8 +107,7 @@ public final class SampleIndexSchema {
     private final ConsequenceTypeIndexSchema ctIndex;
     private final BiotypeIndexSchema biotypeIndex;
     private final TranscriptFlagIndexSchema transcriptFlagIndexSchema;
-    private final CtBtCombinationIndexSchema ctBtIndex;
-    private final CtFlagCombinationIndexSchema ctFlagIndex;
+    private final CtBtFtCombinationIndexSchema ctBtTfIndex;
     private final ClinicalIndexSchema clinicalIndexSchema;
 //    private final AnnotationSummaryIndexSchema annotationSummaryIndexSchema;
 
@@ -123,8 +119,7 @@ public final class SampleIndexSchema {
         biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
         transcriptFlagIndexSchema = new TranscriptFlagIndexSchema(
                 configuration.getAnnotationIndexConfiguration().getTranscriptFlagIndexConfiguration());
-        ctBtIndex = new CtBtCombinationIndexSchema(ctIndex, biotypeIndex);
-        ctFlagIndex = new CtFlagCombinationIndexSchema(ctIndex, transcriptFlagIndexSchema);
+        ctBtTfIndex = new CtBtFtCombinationIndexSchema(ctIndex, biotypeIndex, transcriptFlagIndexSchema);
         popFreqIndex = new PopulationFrequencyIndexSchema(configuration.getAnnotationIndexConfiguration().getPopulationFrequency());
         clinicalIndexSchema = new ClinicalIndexSchema(
                 configuration.getAnnotationIndexConfiguration().getClinicalSource(),
@@ -162,12 +157,8 @@ public final class SampleIndexSchema {
         return transcriptFlagIndexSchema;
     }
 
-    public CtBtCombinationIndexSchema getCtBtIndex() {
-        return ctBtIndex;
-    }
-
-    public CtFlagCombinationIndexSchema getCtTfIndex() {
-        return ctFlagIndex;
+    public CtBtFtCombinationIndexSchema getCtBtTfIndex() {
+        return ctBtTfIndex;
     }
 
     public PopulationFrequencyIndexSchema getPopFreqIndex() {
@@ -290,12 +281,8 @@ public final class SampleIndexSchema {
         return Bytes.toBytes(ANNOTATION_TF_PREFIX + genotype);
     }
 
-    public static byte[] toAnnotationCtBtIndexColumn(String genotype) {
-        return Bytes.toBytes(ANNOTATION_CT_BT_PREFIX + genotype);
-    }
-
-    public static byte[] toAnnotationCtTfIndexColumn(String genotype) {
-        return Bytes.toBytes(ANNOTATION_CT_TF_PREFIX + genotype);
+    public static byte[] toAnnotationCtBtTfIndexColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_CT_BT_TF_PREFIX + genotype);
     }
 
     public static byte[] toAnnotationPopFreqIndexColumn(String genotype) {

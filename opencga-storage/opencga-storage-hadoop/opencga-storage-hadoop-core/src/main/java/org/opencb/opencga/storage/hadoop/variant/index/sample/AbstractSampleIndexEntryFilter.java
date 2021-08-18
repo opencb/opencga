@@ -365,16 +365,10 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             return false;
         }
 
-        if (annotationIndexEntry.getCtBtCombination().getMatrix() != null
-                && !query.getAnnotationIndexQuery().getCtBtFilter().test(annotationIndexEntry.getCtBtCombination(),
+        if (annotationIndexEntry.getCtBtTfCombination().getMatrix() != null
+                && !query.getAnnotationIndexQuery().getCtBtTfFilter().test(annotationIndexEntry.getCtBtTfCombination(),
                 annotationIndexEntry.getCtIndex(),
-                annotationIndexEntry.getBtIndex())) {
-            return false;
-        }
-
-        if (annotationIndexEntry.getCtTfCombination().getMatrix() != null
-                && !query.getAnnotationIndexQuery().getCtTfFilter().test(annotationIndexEntry.getCtTfCombination(),
-                annotationIndexEntry.getCtIndex(),
+                annotationIndexEntry.getBtIndex(),
                 annotationIndexEntry.getTfIndex())) {
             return false;
         }
