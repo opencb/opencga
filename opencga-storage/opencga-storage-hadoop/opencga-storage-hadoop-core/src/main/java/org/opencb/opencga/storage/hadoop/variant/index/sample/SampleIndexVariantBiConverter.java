@@ -327,7 +327,10 @@ public class SampleIndexVariantBiConverter {
                         annotationIndexEntry.setTfIndex(schema.getTranscriptFlagIndexSchema().readFieldValue(tfIndex, nextNonIntergenic));
                     }
 
-                    if (ctBtTfIndex != null && annotationIndexEntry.getCtIndex() != 0 && annotationIndexEntry.getBtIndex() != 0) {
+                    if (ctBtTfIndex != null
+                            && annotationIndexEntry.getCtIndex() != 0
+                            && annotationIndexEntry.getBtIndex() != 0
+                            && annotationIndexEntry.getTfIndex() != 0) {
                         schema.getCtBtTfIndex().getField().read(
                                 ctBtTfIndex,
                                 annotationIndexEntry.getCtIndex(),

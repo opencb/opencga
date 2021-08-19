@@ -133,10 +133,12 @@ public class AnnotationIndexConverter {
                     }
                 }
             }
-            schema.getBiotypeIndex().getField().write(new ArrayList<>(biotypes), btIndex);
-            schema.getCtIndex().getField().write(new ArrayList<>(cts), ctIndex);
-            schema.getTranscriptFlagIndexSchema().getField().write(new ArrayList<>(flags), tfIndex);
-            ctBtTfCombination = schema.getCtBtTfIndex().getField().getCombination(ctBtTfTriples, ctIndex, btIndex, tfIndex);
+            if (!intergenic) {
+                schema.getBiotypeIndex().getField().write(new ArrayList<>(biotypes), btIndex);
+                schema.getCtIndex().getField().write(new ArrayList<>(cts), ctIndex);
+                schema.getTranscriptFlagIndexSchema().getField().write(new ArrayList<>(flags), tfIndex);
+                ctBtTfCombination = schema.getCtBtTfIndex().getField().getCombination(ctBtTfTriples, ctIndex, btIndex, tfIndex);
+            }
         }
         if (intergenic) {
             b |= INTERGENIC_MASK;

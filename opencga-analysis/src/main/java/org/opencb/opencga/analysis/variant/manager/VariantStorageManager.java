@@ -525,6 +525,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         StopWatch stopwatch = StopWatch.createStarted();
         return secureOperationByProject("configureCellbase", project, new ObjectMap(), token, engine -> {
             OpenCGAResult<Job> result = new OpenCGAResult<>();
+            result.setResultType(Job.class.getCanonicalName());
             result.setResults(new ArrayList<>());
             result.setEvents(new ArrayList<>());
 

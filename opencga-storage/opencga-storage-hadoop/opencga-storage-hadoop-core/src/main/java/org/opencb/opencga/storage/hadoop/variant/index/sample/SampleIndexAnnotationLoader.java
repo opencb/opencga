@@ -306,7 +306,7 @@ public class SampleIndexAnnotationLoader {
             }
 
             ListIterator<Pair<Variant, AnnotationIndexEntry>> iterator = annotationMasks.listIterator();
-            AnnotationIndexPutBuilder builder = new AnnotationIndexPutBuilder(variantsToAnnotate.size());
+            AnnotationIndexPutBuilder builder = new AnnotationIndexPutBuilder(schema, variantsToAnnotate.size());
             int missingVariants = 0;
             // Assume both lists are ordered, and "variantsToAnnotate" is fully contained in "annotationMasks"
             for (Variant variantToAnnotate : variantsToAnnotate) {

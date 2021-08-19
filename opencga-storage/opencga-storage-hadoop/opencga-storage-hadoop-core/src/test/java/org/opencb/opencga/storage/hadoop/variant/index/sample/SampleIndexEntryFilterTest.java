@@ -120,7 +120,7 @@ public class SampleIndexEntryFilterTest {
     private SampleIndexEntry getSampleIndexEntry1() {
         AnnotationIndexConverter converter = new AnnotationIndexConverter(schema);
         //{0.001, 0.005, 0.01};
-        Map<String, byte[]> map = new AnnotationIndexPutBuilder()
+        Map<String, byte[]> map = new AnnotationIndexPutBuilder(schema)
                 .add(converter.convert(annot(
                         pf("s1", "ALL", 0.0),
                         pf("s2", "ALL", 0.0),
@@ -196,7 +196,7 @@ public class SampleIndexEntryFilterTest {
     private SampleIndexEntry getSampleIndexEntry2() {
         AnnotationIndexConverter converter = new AnnotationIndexConverter(schema);
 
-        Map<String, byte[]> map = new AnnotationIndexPutBuilder()
+        Map<String, byte[]> map = new AnnotationIndexPutBuilder(schema)
                 .add(converter.convert(annot(
                         ct("missense_variant", "protein_coding"),
                         ct("start_lost", "nonsense_mediated_decay"),
