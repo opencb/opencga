@@ -314,8 +314,6 @@ public class SampleIndexConfiguration {
         for (IndexFieldConfiguration configuration : annotationIndexConfiguration.getPopulationFrequency().toIndexFieldConfiguration()) {
             configuration.validate();
         }
-        // Always enable transcriptCombination
-        annotationIndexConfiguration.setTranscriptCombination(true);
         annotationIndexConfiguration.biotype.validate();
         annotationIndexConfiguration.consequenceType.validate();
         annotationIndexConfiguration.transcriptFlagIndexConfiguration.validate();
@@ -347,6 +345,9 @@ public class SampleIndexConfiguration {
         if (annotationIndexConfiguration.transcriptFlagIndexConfiguration == null) {
             annotationIndexConfiguration.transcriptFlagIndexConfiguration = defaultConfiguration.annotationIndexConfiguration
                     .transcriptFlagIndexConfiguration;
+        }
+        if (annotationIndexConfiguration.transcriptCombination == null) {
+            annotationIndexConfiguration.transcriptCombination = defaultConfiguration.annotationIndexConfiguration.transcriptCombination;
         }
         if (annotationIndexConfiguration.clinicalSignificance == null) {
             annotationIndexConfiguration.clinicalSignificance = defaultConfiguration.annotationIndexConfiguration.clinicalSignificance;
@@ -429,7 +430,7 @@ public class SampleIndexConfiguration {
         private IndexFieldConfiguration clinicalSource;
         private IndexFieldConfiguration clinicalSignificance;
         private IndexFieldConfiguration transcriptFlagIndexConfiguration;
-        private boolean transcriptCombination;
+        private Boolean transcriptCombination;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
             return populationFrequency;
@@ -484,11 +485,11 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public boolean isTranscriptCombination() {
+        public Boolean getTranscriptCombination() {
             return transcriptCombination;
         }
 
-        public AnnotationIndexConfiguration setTranscriptCombination(boolean transcriptCombination) {
+        public AnnotationIndexConfiguration setTranscriptCombination(Boolean transcriptCombination) {
             this.transcriptCombination = transcriptCombination;
             return this;
         }

@@ -953,7 +953,7 @@ public class SampleIndexQueryParser {
             }
         }
 
-        if (combination.numParams() > 1 && schema.getConfiguration().getAnnotationIndexConfiguration().isTranscriptCombination()) {
+        if (combination.numParams() > 1 && schema.getConfiguration().getAnnotationIndexConfiguration().getTranscriptCombination()) {
             ctBtTfFilter = schema.getCtBtTfIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter, tfFilter);
 
             if (completeIndex && !isValidParam(query, GENE)) {

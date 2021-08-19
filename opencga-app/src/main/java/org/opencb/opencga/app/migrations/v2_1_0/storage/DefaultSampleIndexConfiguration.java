@@ -23,7 +23,7 @@ import java.util.Date;
 @Migration(id="default_sample_index_configuration", description = "Add a default backward compatible sample index configuration", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        patch = 5,
+        patch = 6,
         rank = 16) // Needs to run after StudyClinicalConfigurationRelocation
 public class DefaultSampleIndexConfiguration extends StorageMigrationTool {
 
@@ -69,6 +69,11 @@ public class DefaultSampleIndexConfiguration extends StorageMigrationTool {
                         sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
                                 new IndexFieldConfiguration(IndexFieldConfiguration.Source.ANNOTATION, "transcriptFlag",
                                         IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE, "invalid_transcript_flag_index"));
+                    }
+                    if (sampleIndexConfiguration.getAnnotationIndexConfiguration().getTranscriptCombination() == null) {
+                        // If null, this combination was not computed.
+                        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(false);
+                        updateConfiguration = true;
                     }
                 }
 
