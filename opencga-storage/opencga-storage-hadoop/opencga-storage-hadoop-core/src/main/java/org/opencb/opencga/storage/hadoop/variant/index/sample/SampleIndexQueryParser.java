@@ -926,7 +926,7 @@ public class SampleIndexQueryParser {
                 }
             }
 
-            boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.isConsequenceType();
+            boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.numParams() > 1;
             if (useBtIndexFilter) {
                 biotypeFilter = schema.getBiotypeIndex().getField().buildFilter(new OpValue<>("=", biotypes));
                 btCovered = completeIndex & biotypeFilter.isExactFilter();
@@ -1138,9 +1138,7 @@ public class SampleIndexQueryParser {
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {
-        return combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE)
-                || combination.equals(BiotypeConsquenceTypeFlagCombination.CT)
-                || combination.equals(BiotypeConsquenceTypeFlagCombination.FLAG);
+        return combination.numParams() == 1;
     }
 
     @Deprecated

@@ -314,6 +314,8 @@ public class SampleIndexConfiguration {
         for (IndexFieldConfiguration configuration : annotationIndexConfiguration.getPopulationFrequency().toIndexFieldConfiguration()) {
             configuration.validate();
         }
+        // Always enable transcriptCombination
+        annotationIndexConfiguration.setTranscriptCombination(true);
         annotationIndexConfiguration.biotype.validate();
         annotationIndexConfiguration.consequenceType.validate();
         annotationIndexConfiguration.transcriptFlagIndexConfiguration.validate();

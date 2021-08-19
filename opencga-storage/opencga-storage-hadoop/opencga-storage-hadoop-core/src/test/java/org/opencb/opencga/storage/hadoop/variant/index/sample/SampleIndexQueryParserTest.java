@@ -941,6 +941,19 @@ public class SampleIndexQueryParserTest {
     }
 
     @Test
+    public void testCoveredQuery_bt_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING).append(ANNOT_TRANSCRIPT_FLAG.key(), "canonical");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getCtBtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+    }
+
+    @Test
     public void testCoveredQuery_tf() {
         Query query;
         SampleAnnotationIndexQuery indexQuery;

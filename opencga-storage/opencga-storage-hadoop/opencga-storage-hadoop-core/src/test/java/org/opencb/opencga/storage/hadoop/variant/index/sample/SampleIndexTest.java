@@ -417,6 +417,20 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     @Test
+    public void testQueryAnnotationIndex_CtBtTf() throws Exception {
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")
+                .append(ANNOT_BIOTYPE.key(), "protein_coding")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_BtTf() throws Exception {
+        testQueryAnnotationIndex(new Query()
+                .append(ANNOT_BIOTYPE.key(), "protein_coding")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
+    }
+
+    @Test
     public void testQueryAnnotationIndex_Tf() throws Exception {
         // Available flags in cellbase v4, grch37:
         //  basic

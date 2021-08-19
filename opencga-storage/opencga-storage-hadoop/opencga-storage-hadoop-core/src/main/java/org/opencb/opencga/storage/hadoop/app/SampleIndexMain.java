@@ -22,7 +22,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndex
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
