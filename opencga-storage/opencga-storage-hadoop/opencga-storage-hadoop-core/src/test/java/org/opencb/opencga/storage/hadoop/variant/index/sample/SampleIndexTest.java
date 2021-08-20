@@ -211,13 +211,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
-                    Collections.emptySet(), options), options);
+                    Collections.emptySet(), options));
 
             new TestMRExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
-                    Collections.emptySet(), options), options);
+                    Collections.emptySet(), options));
 
             if (sampleNames.get(study).containsAll(trios.get(0))) {
                 options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
@@ -226,7 +226,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,
-                        Collections.emptySet(), options), options);
+                        Collections.emptySet(), options));
             } else if (study.equals(STUDY_NAME_3)) {
                 options.put(FamilyIndexDriver.TRIOS, triosPlatinum.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
@@ -234,7 +234,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,
-                        Collections.emptySet(), options), options);
+                        Collections.emptySet(), options));
             }
 
             Connection c = dbAdaptor.getHBaseManager().getConnection();
