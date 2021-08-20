@@ -176,9 +176,10 @@ public class VariantWebService extends AnalysisWebService {
         return createErrorResponse(new UnsupportedOperationException("Deprecated endpoint. Please, use via POST"));
     }
 
+    @Deprecated
     @POST
     @Path("/index/run")
-    @ApiOperation(value = VariantIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = DEPRECATED + "Use operation/variant/index", response = Job.class)
     public Response variantFileIndex(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -189,9 +190,10 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @Deprecated
     @DELETE
     @Path("/file/delete")
-    @ApiOperation(value = VariantFileDeleteOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = DEPRECATED + "Use operation/variant/delete", response = Job.class)
     public Response variantFileDelete(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,

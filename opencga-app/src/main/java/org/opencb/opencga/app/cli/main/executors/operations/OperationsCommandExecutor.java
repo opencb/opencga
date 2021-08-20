@@ -14,6 +14,7 @@ import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
@@ -50,9 +51,12 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
             case VARIANT_CONFIGURE:
                 queryResponse = variantConfigure();
                 break;
-//            case VARIANT_INDEX:
-//                queryResponse = variantIndex();
-//                break;
+            case VARIANT_INDEX:
+                queryResponse = variantIndex();
+                break;
+            case VARIANT_DELETE:
+                queryResponse = variantFileDelete();
+                break;
             case VARIANT_INDEX_LAUNCHER:
                 queryResponse = variantIndexLauncher();
                 break;
@@ -128,6 +132,51 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = getParams(cliOptions.project, cliOptions.study);
 
         return openCGAClient.getVariantOperationClient().configureVariant(new ObjectMap(cliOptions.commonOptions.params), params);
+    }
+
+    private RestResponse<Job> variantIndex() throws ClientException {
+        OperationsCommandOptions.VariantIndexCommandOptions cliOptions = operationsCommandOptions.variantIndex;
+        return openCGAClient.getVariantOperationClient().indexVariant(
+                new VariantIndexParams(
+                        cliOptions.fileId,
+                        cliOptions.genericVariantIndexOptions.resume,
+                        null,
+                        cliOptions.genericVariantIndexOptions.transform,
+                        cliOptions.genericVariantIndexOptions.gvcf,
+                        cliOptions.genericVariantIndexOptions.normalizationSkip,
+                        cliOptions.genericVariantIndexOptions.referenceGenome,
+                        cliOptions.genericVariantIndexOptions.family,
+                        cliOptions.genericVariantIndexOptions.somatic,
+                        cliOptions.genericVariantIndexOptions.load,
+                        cliOptions.genericVariantIndexOptions.loadSplitData,
+                        cliOptions.genericVariantIndexOptions.loadMultiFileData,
+                        cliOptions.genericVariantIndexOptions.loadSampleIndex,
+                        cliOptions.genericVariantIndexOptions.loadArchive,
+                        cliOptions.genericVariantIndexOptions.loadHomRef,
+                        cliOptions.genericVariantIndexOptions.postLoadCheck,
+                        cliOptions.genericVariantIndexOptions.excludeGenotype,
+                        cliOptions.genericVariantIndexOptions.includeSampleData,
+                        cliOptions.genericVariantIndexOptions.merge,
+                        cliOptions.genericVariantIndexOptions.deduplicationPolicy,
+                        cliOptions.genericVariantIndexOptions.calculateStats,
+                        cliOptions.genericVariantIndexOptions.aggregated,
+                        cliOptions.genericVariantIndexOptions.aggregationMappingFile,
+                        cliOptions.genericVariantIndexOptions.annotate,
+                        cliOptions.genericVariantIndexOptions.annotator,
+                        cliOptions.genericVariantIndexOptions.overwriteAnnotations,
+                        cliOptions.genericVariantIndexOptions.indexSearch,
+                        cliOptions.skipIndexedFiles),
+                getParams(cliOptions));
+    }
+
+    private RestResponse<Job> variantFileDelete() throws ClientException {
+        OperationsCommandOptions.VariantFileDeleteCommandOptions cliOptions = operationsCommandOptions.variantFileDelete;
+
+        return openCGAClient.getVariantOperationClient().deleteVariant(
+                new VariantFileDeleteParams(
+                        cliOptions.genericVariantDeleteOptions.file,
+                        cliOptions.genericVariantDeleteOptions.resume),
+                getParams(cliOptions));
     }
 
     private RestResponse<Job> variantIndexLauncher() throws ClientException {

@@ -105,7 +105,7 @@ Contrary to the Catalog File Register step, only one file should be provided as 
 Use this command to launch a variant index job:
 
 ```text
-$ ./opencga.sh variant index-run --study <study>
+$ ./opencga.sh operations variant-index --study <study>
                                  --file <catalog-logical-path>
 ```
 

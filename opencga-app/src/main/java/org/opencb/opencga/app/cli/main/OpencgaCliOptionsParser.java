@@ -324,6 +324,8 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
         operationsSubCommands.addCommand(CELLBASE_CONFIGURE, operationsCommandOptions.cellbaseConfigure);
         operationsSubCommands.addCommand(VARIANT_CONFIGURE, operationsCommandOptions.variantConfigure);
+        operationsSubCommands.addCommand(VARIANT_INDEX, operationsCommandOptions.variantIndex);
+        operationsSubCommands.addCommand(VARIANT_DELETE, operationsCommandOptions.variantFileDelete);
         operationsSubCommands.addCommand(VARIANT_INDEX_LAUNCHER, operationsCommandOptions.variantIndexLauncher);
         operationsSubCommands.addCommand(VARIANT_STATS_INDEX, operationsCommandOptions.variantStatsIndex);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX, operationsCommandOptions.variantSecondaryIndex);
