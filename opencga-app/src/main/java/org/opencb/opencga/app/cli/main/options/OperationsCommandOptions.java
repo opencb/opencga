@@ -29,6 +29,7 @@ public class OperationsCommandOptions {
 
     public static final String OPERATIONS_COMMAND = "operations";
 
+    public static final String CELLBASE_CONFIGURE = "cellbase-configure";
     public static final String VARIANT_CONFIGURE = "variant-configure";
     public static final String VARIANT_INDEX_LAUNCHER = "variant-index-launcher";
 
@@ -51,6 +52,7 @@ public class OperationsCommandOptions {
     public static final String VARIANT_FAMILY_AGGREGATE = "variant-family-aggregate";
     public static final String VARIANT_AGGREGATE = "variant-aggregate";
 
+    public final CellbaseConfigureCommandOptions cellbaseConfigure;
     public final VariantConfigureCommandOptions variantConfigure;
     public final VariantIndexLauncherCommandOptions variantIndexLauncher;
 
@@ -93,6 +95,7 @@ public class OperationsCommandOptions {
         this.jCommander = jCommander;
         commonJobOptions = new GeneralCliOptions.JobOptions();
 
+        cellbaseConfigure = new CellbaseConfigureCommandOptions();
         variantConfigure = new VariantConfigureCommandOptions();
         variantIndexLauncher = new VariantIndexLauncherCommandOptions();
         variantStatsIndex = new VariantStatsIndexCommandOptions();
@@ -111,13 +114,36 @@ public class OperationsCommandOptions {
         julieRun = new JulieRunCommandOptions();
     }
 
+    @Parameters(commandNames = CELLBASE_CONFIGURE,
+            commandDescription = "Update Cellbase configuration for one specific project")
+    public class CellbaseConfigureCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC)
+        public String project;
+
+        @Parameter(names = {"--cellbase-url"}, required = true, description = "New CellBase url")
+        public String url;
+
+        @Parameter(names = {"--cellbase-version"}, required = true, description = "New CellBase version")
+        public String version;
+
+        @Parameter(names = {"--annotation-update"}, description = "Create and load variant annotations into the database.")
+        public boolean annotationUpdate;
+
+        @Parameter(names = {"--annotation-save-id"}, description = "Save a copy of the current variant annotation at the database.")
+        public String annotationSaveId;
+    }
+
     @Parameters(commandNames = {VARIANT_CONFIGURE}, commandDescription = "Modify variant storage configuration")
     public class VariantConfigureCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
     }
 

@@ -10,6 +10,7 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
@@ -41,8 +42,11 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing variant command line");
 
         String subCommandString = getParsedSubCommand(operationsCommandOptions.jCommander);
-        RestResponse queryResponse = null;
+        RestResponse<?> queryResponse = null;
         switch (subCommandString) {
+            case CELLBASE_CONFIGURE:
+                queryResponse = cellbaseConfigure();
+                break;
             case VARIANT_CONFIGURE:
                 queryResponse = variantConfigure();
                 break;
@@ -106,6 +110,18 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+    private RestResponse<Job> cellbaseConfigure() throws ClientException {
+        OperationsCommandOptions.CellbaseConfigureCommandOptions cliOptions = operationsCommandOptions.cellbaseConfigure;
+
+        ObjectMap params = getParams(cliOptions.project, null);
+        params.put("annotationUpdate", cliOptions.annotationUpdate);
+        params.putIfNotNull("annotationSaveId", cliOptions.annotationSaveId);
+        return openCGAClient.getVariantOperationClient().configureCellbase(
+                new CellBaseConfiguration(cliOptions.url, cliOptions.version),
+                params);
+    }
+
+
     private RestResponse<ObjectMap> variantConfigure() throws ClientException {
         OperationsCommandOptions.VariantConfigureCommandOptions cliOptions = operationsCommandOptions.variantConfigure;
 
@@ -156,7 +172,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.overwrite), params);
     }
 
-    private RestResponse variantSecondaryIndexDelete() throws ClientException {
+    private RestResponse<Job> variantSecondaryIndexDelete() throws ClientException {
         OperationsCommandOptions.VariantSecondaryIndexDeleteCommandOptions cliOptions = operationsCommandOptions.variantSecondaryIndexDelete;
 
         ObjectMap params = getParams(cliOptions)
@@ -186,7 +202,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().indexVariantAnnotation(body, params);
     }
 
-    private RestResponse variantAnnotationSave() throws ClientException {
+    private RestResponse<Job> variantAnnotationSave() throws ClientException {
         OperationsCommandOptions.VariantAnnotationSaveCommandOptions cliOptions = operationsCommandOptions.variantAnnotationSave;
 
         ObjectMap params = getParams(cliOptions.project, null);
@@ -194,7 +210,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().saveVariantAnnotation(new VariantAnnotationSaveParams(cliOptions.annotationId), params);
     }
 
-    private RestResponse variantAnnotationDelete() throws ClientException {
+    private RestResponse<Job> variantAnnotationDelete() throws ClientException {
         OperationsCommandOptions.VariantAnnotationDeleteCommandOptions cliOptions = operationsCommandOptions.variantAnnotationDelete;
 
         ObjectMap params = getParams(cliOptions.project, null)
@@ -203,7 +219,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().deleteVariantAnnotation(params);
     }
 
-    private RestResponse variantScoreIndex() throws ClientException {
+    private RestResponse<Job> variantScoreIndex() throws ClientException {
         OperationsCommandOptions.VariantScoreIndexCommandOptions cliOptions = operationsCommandOptions.variantScoreIndex;
 
         ObjectMap params = getParams(cliOptions.study);
@@ -219,7 +235,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 ), params);
     }
 
-    private RestResponse variantScoreDelete() throws ClientException {
+    private RestResponse<Job> variantScoreDelete() throws ClientException {
         OperationsCommandOptions.VariantScoreDeleteCommandOptions cliOptions = operationsCommandOptions.variantScoreDelete;
 
         ObjectMap params = getParams(cliOptions.study)
