@@ -153,22 +153,14 @@ Similar to the variant-index process, this command line will queue an asynchrono
 The second enrichment operation is the Variant Statistics Calculation. After defining a cohort, you might decide to compute the Variant Stats for that cohort. These statistics include the most typical values like allele and genotype frequencies, MAF, QUAL average, FILTER count...
 
 ```text
-$ ./opencga.sh variant stats-run --study <study> 
-                                 --index --cohort <coh1>,..,<cohN>
+$ ./opencga.sh operations variant-stats-index --study <study> 
+                                  --cohort <coh1>,..,<cohN>
 ```
 
 For updating the stats of all the cohorts, or when there are no cohorts in the study apart from the default `ALL cohort`:
 
 ```text
-$ ./opencga.sh variant stats-run --study <study> --index --cohort ALL
-```
-
-**Special scenario:** when loading new files split by chromosome/region to a study that already contains data the annotation step can be performed as usual. However, when calculating the variant stats you need to add the param --update-stats. E.g:
-
-```text
-$ ./opencga.sh variant stats-run --study <study> 
-                                 --index --cohort <ALL> 
-                                 --update-stats
+$ ./opencga.sh operations variant-stats-index --study <study> --cohort ALL
 ```
 
 #### **Aggregated VCFs** 
@@ -227,8 +219,8 @@ custom\_mapping.properties**
 </table>
 
 ```text
-$ ./opencga.sh variant stats-run --study <study> 
-                                 --index --cohort <ALL>
+$ ./opencga.sh operations variant-stats-index --study <study> 
+                                 --cohort <ALL>
                                  --aggregation EXAC
                                  --aggregation-mapping-file custom_mapping.properties
 ```
