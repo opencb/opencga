@@ -4,7 +4,7 @@
 
 You can download any _stable_ or _pre-release_ version from [OpenCGA GitHub Releases](https://github.com/opencb/opencga/releases). You will find a _tar.gz_ file with the name of _opencga_ and the _version,_ for instance, to download OpenCGA 2.0.0-rc3 you have to go to GitHub Release page at [https://github.com/opencb/opencga/releases/tag/v2.0.0-rc3](https://github.com/opencb/opencga/releases/tag/v2.0.0-rc3) and download the file _**opencga-2.0.0-rc3.tar.gz**_ from the _Assets_ section:
 
-![Download the tar.gz with the OpenCGA and version](../../.gitbook/assets/opencga_binary-github.png)
+![Download the tar.gz with the OpenCGA and version](../../../.gitbook/assets/opencga_binary-github.png)
 
 ## Building from Source
 

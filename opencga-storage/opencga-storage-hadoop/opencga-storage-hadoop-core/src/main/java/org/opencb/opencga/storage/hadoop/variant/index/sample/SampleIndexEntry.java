@@ -179,9 +179,17 @@ public class SampleIndexEntry {
         private int biotypeIndexOffset;
         private int biotypeIndexLength;
 
+        private byte[] transcriptFlagIndex;
+        private int transcriptFlagIndexOffset;
+        private int transcriptFlagIndexLength;
+
         private byte[] ctBtIndex;
         private int ctBtIndexOffset;
         private int ctBtIndexLength;
+
+        private byte[] ctTfIndex;
+        private int ctTfIndexOffset;
+        private int ctTfIndexLength;
 
         private byte[] populationFrequencyIndex;
         private int populationFrequencyIndexOffset;
@@ -352,6 +360,19 @@ public class SampleIndexEntry {
             return this;
         }
 
+        public BitInputStream getTranscriptFlagIndexStream() {
+            return transcriptFlagIndex == null
+                    ? null
+                    : new BitInputStream(transcriptFlagIndex, transcriptFlagIndexOffset, transcriptFlagIndexLength);
+        }
+
+        public SampleIndexGtEntry setTranscriptFlagIndex(byte[] value, int offset, int length) {
+            this.transcriptFlagIndex = value;
+            this.transcriptFlagIndexOffset = offset;
+            this.transcriptFlagIndexLength = length;
+            return this;
+        }
+
         public byte[] getCtBtIndex() {
             return ctBtIndex;
         }
@@ -376,6 +397,17 @@ public class SampleIndexEntry {
             this.ctBtIndex = ctBtIndex;
             this.ctBtIndexOffset = offset;
             this.ctBtIndexLength = length;
+            return this;
+        }
+
+        public BitInputStream getCtTfIndexStream() {
+            return ctTfIndex == null ? null : new BitInputStream(ctTfIndex, ctTfIndexOffset, ctTfIndexLength);
+        }
+
+        public SampleIndexGtEntry setCtTfIndex(byte[] value, int offset, int length) {
+            this.ctTfIndex = value;
+            this.ctTfIndexOffset = offset;
+            this.ctTfIndexLength = length;
             return this;
         }
 

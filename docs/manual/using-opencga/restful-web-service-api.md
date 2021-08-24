@@ -48,7 +48,7 @@ This is the unique identifier\(s\) corresponding to the _resource_ we want to in
 
 These query parameters can modify the behavior of the query \(_exclude_, _include_, _limit_, _skip_ and _count_\) or add some filters to some specific endpoints to add useful functionality. The following image shows some typical options for a certain web service.
 
-![](../.gitbook/assets/opencga-rest-example.png)
+![](../../.gitbook/assets/opencga-rest-example.png)
 
 ## REST Response
 

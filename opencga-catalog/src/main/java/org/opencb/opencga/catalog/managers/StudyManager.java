@@ -310,7 +310,10 @@ public class StudyManager extends AbstractManager {
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
-            study.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(study.getCreationDate()));
+            study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
+                    StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
+            study.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(study.getModificationDate(),
+                    StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
@@ -630,7 +633,10 @@ public class StudyManager extends AbstractManager {
             }
 
             if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
-                ParamUtils.checkCreationDateFormat(parameters.getCreationDate());
+                ParamUtils.checkDateFormat(parameters.getCreationDate(), StudyDBAdaptor.QueryParams.CREATION_DATE.key());
+            }
+            if (StringUtils.isNotEmpty(parameters.getModificationDate())) {
+                ParamUtils.checkDateFormat(parameters.getModificationDate(), StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
 
             ObjectMap update;
@@ -866,6 +872,7 @@ public class StudyManager extends AbstractManager {
         try {
             ParamUtils.checkObj(group, "group");
             ParamUtils.checkGroupId(group.getId());
+            group.setUserIds(ParamUtils.defaultObject(group.getUserIds(), Collections::emptyList));
 
             if (group.getSyncedFrom() != null) {
                 ParamUtils.checkParameter(group.getSyncedFrom().getAuthOrigin(), "Authentication origin");
@@ -885,7 +892,7 @@ public class StudyManager extends AbstractManager {
             }
 
             List<String> users = group.getUserIds();
-            if (ListUtils.isNotEmpty(users)) {
+            if (CollectionUtils.isNotEmpty(users)) {
                 // We remove possible duplicates
                 users = users.stream().collect(Collectors.toSet()).stream().collect(Collectors.toList());
                 userDBAdaptor.checkIds(users);
@@ -895,7 +902,7 @@ public class StudyManager extends AbstractManager {
             group.setUserIds(users);
 
             // Add those users to the members group
-            if (ListUtils.isNotEmpty(users)) {
+            if (CollectionUtils.isNotEmpty(users)) {
                 studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
             }
 
@@ -1106,7 +1113,7 @@ public class StudyManager extends AbstractManager {
             authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
             ParamUtils.checkObj(summaryIndex, "RecessiveGeneSummaryIndex");
-            summaryIndex.setModificationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(summaryIndex.getModificationDate()));
+            summaryIndex.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(summaryIndex.getModificationDate(), "creationDate"));
 
             ObjectMap update;
             try {

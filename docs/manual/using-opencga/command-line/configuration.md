@@ -1,8 +1,4 @@
----
-description: How to configure the OpenCGA command line for my installation?
----
-
-# Command Line
+# Configuration
 
 ## **How to configure the OpenCGA command line for my installation?**
 
@@ -87,6 +83,5 @@ $ echo "demouser" | $HOME/opencga-client-2.0.3/bin/opencga.sh users login -u dem
 
 If the login is successful, the token associated with your session will appear on the screen. 
 
-Now you should be ready to start using the CLI for querying, updating and ingesting data in OpenCGA!  
-
+Now you should be ready to start using the CLI for querying, updating and ingesting data in OpenCGA!
 

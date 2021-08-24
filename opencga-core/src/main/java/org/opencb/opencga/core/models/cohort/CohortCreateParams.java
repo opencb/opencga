@@ -32,6 +32,7 @@ public class CohortCreateParams {
     private Enums.CohortType type;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -40,12 +41,14 @@ public class CohortCreateParams {
     public CohortCreateParams() {
     }
 
-    public CohortCreateParams(String id, Enums.CohortType type, String description, String creationDate, List<SampleReferenceParam> samples,
-                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
+    public CohortCreateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
+                              List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
+                              CustomStatusParams status) {
         this.id = id;
         this.type = type;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.samples = samples;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -54,7 +57,7 @@ public class CohortCreateParams {
 
     public static CohortCreateParams of(Cohort cohort) {
         return new CohortCreateParams(cohort.getId(), cohort.getType(), cohort.getDescription(), cohort.getCreationDate(),
-                cohort.getSamples() != null
+                cohort.getModificationDate(), cohort.getSamples() != null
                         ? cohort.getSamples().stream().map(s -> new SampleReferenceParam(s.getId(), s.getUuid()))
                         .collect(Collectors.toList())
                         : Collections.emptyList(),
@@ -68,6 +71,7 @@ public class CohortCreateParams {
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", samples=").append(samples);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -110,6 +114,15 @@ public class CohortCreateParams {
 
     public CohortCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public CohortCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

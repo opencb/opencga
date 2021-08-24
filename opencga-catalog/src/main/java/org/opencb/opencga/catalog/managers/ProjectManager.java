@@ -213,7 +213,7 @@ public class ProjectManager extends AbstractManager {
     @Deprecated
     public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,
                                          String assembly, QueryOptions options, String sessionId) throws CatalogException {
-        ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null,
+        ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null, null,
                 new ProjectOrganism(scientificName, commonName, assembly), null);
         return create(projectCreateParams, options, sessionId);
     }
@@ -296,7 +296,10 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkParameter(project.getId(), ProjectDBAdaptor.QueryParams.ID.key());
         project.setName(ParamUtils.defaultString(project.getName(), project.getId()));
         project.setDescription(ParamUtils.defaultString(project.getDescription(), ""));
-        project.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(project.getCreationDate()));
+        project.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(project.getCreationDate(),
+                ProjectDBAdaptor.QueryParams.CREATION_DATE.key()));
+        project.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(project.getModificationDate(),
+                ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         project.setModificationDate(TimeUtils.getTime());
         project.setCurrentRelease(1);
         project.setInternal(ProjectInternal.init());
@@ -475,7 +478,12 @@ public class ProjectManager extends AbstractManager {
             if (parameters.containsKey(ProjectDBAdaptor.QueryParams.CREATION_DATE.key())) {
                 // Validate creationDate format
                 String creationDate = parameters.getString(ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
-                ParamUtils.checkCreationDateFormat(creationDate);
+                ParamUtils.checkDateFormat(creationDate, ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
+            }
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key())) {
+                // Validate modificationDate format
+                String modificationDate = parameters.getString(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+                ParamUtils.checkDateFormat(modificationDate, ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
 
             // Update organism information only if any of the fields was not properly defined

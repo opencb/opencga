@@ -12,4 +12,9 @@ public class BiotypeIndexSchema extends SingleFieldIndexSchema<List<String>> {
         super(new CategoricalMultiValuedIndexField<>(configuration, 0, configuration.getValues(), configuration.getValuesMapping()));
     }
 
+    @Override
+    public CategoricalMultiValuedIndexField<String> getField() {
+        return (CategoricalMultiValuedIndexField<String>) super.getField();
+    }
+
 }
